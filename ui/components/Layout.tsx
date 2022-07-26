@@ -40,7 +40,7 @@ type Indexable = {
 
 const navigation = [
   {
-    name: 'home',
+    name: 'Home',
     href: '/',
     icon: <ViewGridIcon className="h-5 w-5" />,
   },
@@ -55,13 +55,18 @@ const navigation = [
     icon: <PlusIcon className="h-5 w-5" />,
   },
   {
+    name: 'Governance MoonDAO',
+    href: `https://snapshot.org/#/tomoondao.eth`,
+    icon: <UserAddIcon className="h-5 w-5" />,
+  },
+  {
     name: 'Homepage',
     href: 'https://moondao.com',
     icon: <HomeIcon className="h-5 w-5" />,
   },
   {
     name: 'Docs',
-    href: 'https://wiki.nation3.org',
+    href: 'https://moondao.com/docs/introduction',
     icon: <NewspaperIcon className="h-5 w-5" />,
   },
 ]
@@ -206,7 +211,7 @@ export default function Layout({ children }: any) {
                       htmlFor="web3-modal"
                       className="btn btn-primary normal-case font-medium text-white modal-button"
                     >
-                      Sign in
+                      Connect Wallet
                     </label>
                   </li>
                 )}
