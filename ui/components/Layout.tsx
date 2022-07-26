@@ -28,7 +28,7 @@ import { useConnect, useEnsName, useDisconnect } from 'wagmi'
 import { nationToken } from '../lib/config'
 import { connectorIcons } from '../lib/connectors'
 import { useAccount } from '../lib/use-wagmi'
-import Logo from '../public/Original_Black.png'
+import Logo from '../public/Original_White.png'
 import ErrorCard from './ErrorCard'
 import { useErrorContext } from './ErrorProvider'
 import PassportCheck from './PassportCheck'
@@ -135,7 +135,7 @@ export default function Layout({ children }: any) {
               htmlFor="side-drawer"
               className="drawer-overlay z-10"
             ></label>
-            <div className="bg-white w-80 flex flex-col justify-between pb-24 lg:pb-0 overflow-y-auto drop-shadow-md min-h-screen">
+            <div className="sidebar w-80 flex flex-col justify-between pb-24 lg:pb-0 overflow-y-auto drop-shadow-md min-h-screen">
               <div className="mt-6 py-4 hidden lg:block">
                 <div className="px-8 pt-2 cursor-pointer">
                   <Link href="/" passHref>

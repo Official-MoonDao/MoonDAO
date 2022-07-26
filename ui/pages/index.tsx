@@ -27,7 +27,7 @@ export default function Index() {
         MoonDAO’s mission is is to create a self-sustaining, 
         self-governing colony on the Moon to act as a launch point for 
         humanity to explore the cosmos.{' '}
-          <a href="https://moondao.com"> Read more </a>
+          <GradientLink text="Read more" href="https://moondao.com" />
           <br />
           <br />
           Here you can perform on-chain operations related to the MoonDAO

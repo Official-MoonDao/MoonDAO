@@ -17,8 +17,8 @@ module.exports = {
     },
     extend: {
       colors: {
-        n3blue: '#69C9FF',
-        n3green: '#88F1BB',
+        n3blue: '#ffbc5c',
+        n3green: '#d85c4c',
         'n3blue-100': '#DCFFFF',
         'n3green-100': '#D5FFFF',
         n3bg: '#F4FAFF',
@@ -31,9 +31,9 @@ module.exports = {
     themes: [
       {
         mytheme: {
-          primary: '#69C9FF',
-          secondary: '#88F1BB',
-          accent: '#88F1BB',
+          primary: '#ffbc5c',
+          secondary: '#d85c4c',
+          accent: '#ffbc5c',
           neutral: '#3d4451',
           'primary-content': '#ffffff',
           'base-100': '#ffffff',

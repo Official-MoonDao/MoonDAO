@@ -28,5 +28,20 @@ a {
 }
 
 .card {
-  color: black;
+  color: white;
+  background-color: black;
+  border-style: solid;
+  border-radius: 3px;
+  border-color: yellow;
+}
+
+.drawer-side {
+  background-color: black;
+  color: white;
+}
+
+.sidebar {
+  border-style: solid;
+  border-radius: 3px;
+  border-color: white;
 }
