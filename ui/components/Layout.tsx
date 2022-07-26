@@ -59,11 +59,11 @@ const navigation = [
     href: '/lock',
     icon: <LockClosedIcon className="h-5 w-5" />,
   },
-  {
-    name: 'Liquidity rewards',
-    href: '/liquidity',
-    icon: <CurrencyDollarIcon className="h-5 w-5" />,
-  },
+  // {
+  //   name: 'Liquidity rewards',
+  //   href: '/liquidity',
+  //   icon: <CurrencyDollarIcon className="h-5 w-5" />,
+  // },
   {
     name: 'Coming soon',
     href: '/',
@@ -76,12 +76,12 @@ const navigation = [
   },
   {
     name: 'Homepage',
-    href: 'https://nation3.org',
+    href: 'https://moondao.com',
     icon: <HomeIcon className="h-5 w-5" />,
   },
   {
     name: 'Wiki',
-    href: 'https://wiki.nation3.org',
+    href: 'https://moondao.com/docs/introduction',
     icon: <NewspaperIcon className="h-5 w-5" />,
   },
 ]
