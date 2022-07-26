@@ -431,7 +431,7 @@ export default function Lock() {
                                 lockAmount ?? '0',
                                 NumberType.bignumber
                               ),
-                        approveText: 'Approve $NATION',
+                        approveText: 'Approve $MOONEY',
                       }}
                     >
                       {!hasLock
@@ -446,7 +446,7 @@ export default function Lock() {
                 </>
               ) : (
                 <>
-                  <p>Your previous lock has expired, you need to withdraw </p>
+                  <p className='white-text'>Your previous lock has expired, you need to withdraw </p>
 
                   <div className="card-actions mt-4">
                     <ActionButton

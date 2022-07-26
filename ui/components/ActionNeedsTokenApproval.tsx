@@ -59,10 +59,10 @@ export default function ActionNeedsTokenApproval({
             <label className="label cursor-pointer w-full flex justify-end">
               <div
                 className="tooltip tooltip-top md:tooltip-left flex items-center gap-2"
-                data-tip="Check this to avoid having to approve your veNATION on future locks."
+                data-tip="Check this to avoid having to approve your veMOONEY on future locks."
               >
-                <span className="label-text flex items-center gap-1">
-                  <InformationCircleIcon className="w-4 h-4" />
+                <span className="label-text flex items-center gap-1 white-text">
+                  <InformationCircleIcon className="w-4 h-4 white-text" />
                   Approve unlimited
                 </span>
                 <input
