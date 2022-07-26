@@ -2,7 +2,7 @@
 
 [![](/ui/public/logo.svg)](https://app.nation3.org)
 
-The Nation3 App at https://app.nation3.org is where people can connect their Ethereum wallet and interact with the Nation3 smart contracts.
+The MoonDAO App at https://app.moondao.com is where people can connect their Ethereum wallet and interact with the MoonDAO smart contracts.
 
 > [![app](https://user-images.githubusercontent.com/95955389/169034356-f1fdb540-d65b-4c1b-bd4d-21c76f7f8af3.png)](https://app.nation3.org)
 

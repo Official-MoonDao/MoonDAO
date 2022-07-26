@@ -29,6 +29,7 @@ import { nationToken } from '../lib/config'
 import { connectorIcons } from '../lib/connectors'
 import { useAccount } from '../lib/use-wagmi'
 import Logo from '../public/Original_Black.png'
+import ErrorCard from './ErrorCard'
 import { useErrorContext } from './ErrorProvider'
 import PassportCheck from './PassportCheck'
 import PreferredNetworkWrapper from './PreferredNetworkWrapper'
@@ -39,20 +40,20 @@ type Indexable = {
 
 const navigation = [
   {
-    name: 'Start',
+    name: 'home',
     href: '/',
     icon: <ViewGridIcon className="h-5 w-5" />,
   },
-  {
-    name: 'Become a citizen',
-    href: '/join',
-    icon: <UserAddIcon className="h-5 w-5" />,
-  },
-  {
-    name: 'Claim airdrop',
-    href: '/claim',
-    icon: <SparklesIcon className="h-5 w-5" />,
-  },
+  // {
+  //   name: 'Become a citizen',
+  //   href: '/join',
+  //   icon: <UserAddIcon className="h-5 w-5" />,
+  // },
+  // {
+  //   name: 'Claim airdrop',
+  //   href: '/claim',
+  //   icon: <SparklesIcon className="h-5 w-5" />,
+  // },
   {
     name: 'Lock tokens',
     href: '/lock',
@@ -62,6 +63,11 @@ const navigation = [
     name: 'Liquidity rewards',
     href: '/liquidity',
     icon: <CurrencyDollarIcon className="h-5 w-5" />,
+  },
+  {
+    name: 'Coming soon',
+    href: '/',
+    icon: <UserAddIcon className="h-5 w-5" />,
   },
   {
     name: 'Buy $MOONEY',

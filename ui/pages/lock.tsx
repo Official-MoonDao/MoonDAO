@@ -174,15 +174,15 @@ export default function Lock() {
 
   return (
     <>
-      <Head title="$veNATION" />
+      <Head title="$veMOONEY" />
 
-      <MainCard title="Lock $NATION to get $veNATION">
+      <MainCard title="Lock $MOONEY to get $veMOONEY">
         <p className="mb-4">
-          $veNATION enables governance, minting passport NFTs and boosting
+          $veMOONEY enables governance, and boosting
           liquidity rewards (up to {veNationRewardsMultiplier}x).{' '}
           <GradientLink
             text="Learn more"
-            href="https://wiki.nation3.org/token/#venation"
+            href="#"
             internal={false}
             textSize={'md'}
           ></GradientLink>
@@ -190,23 +190,17 @@ export default function Lock() {
         {!hasLock ? (
           <>
             <p>
-              Your veNATION balance is dynamic and always correlates to the
+              Your $veMOONEY balance is dynamic and always correlates to the
               remainder of the time lock. As time passes and the remainder of
-              time lock decreases, your veNATION balance decreases. If you want
+              time lock decreases, your $veMOONEY balance decreases. If you want
               to increase it, you have to either increase the time lock or add
-              more NATION. $NATION balance stays the same.
+              more $MOONEY. $MOONEY balance stays the same.
               <br />
               <br />
-              <span className="font-semibold">
-                {veNationRequiredStake} $veNATION
-              </span>{' '}
-              will be needed to mint a passport NFT.
-              <br />
-              <br />
-              Some examples of how to get to {veNationRequiredStake} $veNATION:
+          
             </p>
 
-            <ul className="list-disc list-inside mb-4">
+            {/* <ul className="list-disc list-inside mb-4">
               <li>
                 At least {veNationRequiredStake as unknown as number} $NATION
                 locked for 4 years, or
@@ -221,9 +215,9 @@ export default function Lock() {
                 At least {(veNationRequiredStake as unknown as number) * 4}{' '}
                 $NATION locked for 1 year
               </li>
-            </ul>
+            </ul> */}
 
-            <div className="alert mb-4">
+            {/* <div className="alert mb-4">
               <div>
                 <InformationCircleIcon className="h-24 w-24 text-n3blue" />
                 <span>
@@ -234,7 +228,7 @@ export default function Lock() {
                   revoked. You can always lock more $NATION later.
                 </span>
               </div>
-            </div>
+            </div> */}
           </>
         ) : (
           ''
@@ -302,7 +296,7 @@ export default function Lock() {
                       balance={nationBalance?.formatted}
                       loading={nationBalanceLoading}
                     />{' '}
-                    $NATION
+                    $MOONEY
                   </p>
                   <label className="label">
                     <span className="label-text">
@@ -409,7 +403,7 @@ export default function Lock() {
                         ),
                         max: Date.parse(minMaxLockTime.max),
                       })}{' '}
-                      $veNATION
+                      $veMOONEY
                     </p>
                   ) : (
                     ''

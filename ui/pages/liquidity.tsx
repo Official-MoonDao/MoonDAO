@@ -91,9 +91,9 @@ export default function Liquidity() {
 
   return (
     <>
-      <Head title="$NATION liquidity rewards" />
+      <Head title="$MOONEY liquidity rewards" />
 
-      <MainCard title="$NATION liquidity rewards">
+      <MainCard title="$MOONEY liquidity rewards">
         <p>
           Provide liquidity in the pool and then deposit the pool token here.{' '}
           <GradientLink
