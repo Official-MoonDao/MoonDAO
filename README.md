@@ -4,7 +4,7 @@
 
 The MoonDAO App at https://app.moondao.com is where people can connect their Ethereum wallet and interact with the MoonDAO smart contracts.
 
-> [![app](https://user-images.githubusercontent.com/95955389/169034356-f1fdb540-d65b-4c1b-bd4d-21c76f7f8af3.png)](https://app.nation3.org)
+> [![app](/ui/public/screenshot.png)](https://app.moondao.com)
 
 ## File Structure
 
@@ -32,7 +32,7 @@ Start the development server:
 yarn dev
 ```
 
-Once you go to http://localhost:42069, you will see the message "Nation3 uses Goerli as its preferred network":
+Once you go to http://localhost:42069, you will see the message "uses Goerli as its preferred network":
 
 > <img width="966" alt="Screen Shot 2022-05-21 at 11 10 06 AM" src="https://user-images.githubusercontent.com/95955389/169633157-50b239e4-9b4f-484d-a62e-8c3b6627dc29.png">
 
