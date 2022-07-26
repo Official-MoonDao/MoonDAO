@@ -1,13 +1,4 @@
-# Nation3 App ☁️🇺🇳
-
-![Vercel](https://vercelbadge.vercel.app/api/nation3/app)
-
-<a href="https://github.com/nation3/app/graphs/contributors" alt="Contributors">
-  <img src="https://img.shields.io/github/contributors/nation3/app" /></a>
-<a href="https://github.com/nation3/app/pulse" alt="Activity">
-  <img src="https://img.shields.io/github/commit-activity/m/nation3/app" /></a>
-
----
+# MoonDAO App 🌕🌕
 
 [![](/ui/public/logo.svg)](https://app.nation3.org)
 

@@ -1,6 +1,6 @@
-Copyright (c) Nation3 DAO and individual contributors
+Copyright (c) MoonDAO and individual contributors
 
-Nation3 is an open-source project using using MIT, GPLv3 and other open-source licenses has been built by a global team of software developers, crypto enthusiasts and believers in cloud nations.
+MoonDAO is an open-source project using using MIT, GPLv3 and other open-source licenses has been built by a global team of software developers, crypto enthusiasts and believers in cloud nations.
 Contracts has been audited by GoldmanDAO, but any usage of this code is at your own risk.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
