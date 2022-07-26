@@ -56,7 +56,7 @@ const navigation = [
   },
   {
     name: 'Homepage',
-    href: 'https://nation3.org',
+    href: 'https://moondao.com',
     icon: <HomeIcon className="h-5 w-5" />,
   },
   {

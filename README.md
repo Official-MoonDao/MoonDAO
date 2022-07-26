@@ -1,6 +1,6 @@
 # MoonDAO App 🌕🌕
 
-[![](/ui/public/logo.svg)](https://app.nation3.org)
+[![](/ui/public/Original_Black.png)](https://app.moondao.com)
 
 The MoonDAO App at https://app.moondao.com is where people can connect their Ethereum wallet and interact with the MoonDAO smart contracts.
 
