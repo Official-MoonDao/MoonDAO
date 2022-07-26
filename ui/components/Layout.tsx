@@ -28,8 +28,7 @@ import { useConnect, useEnsName, useDisconnect } from 'wagmi'
 import { nationToken } from '../lib/config'
 import { connectorIcons } from '../lib/connectors'
 import { useAccount } from '../lib/use-wagmi'
-import Logo from '../public/logo.svg'
-import ErrorCard from './ErrorCard'
+import Logo from '../public/Original_Black.png'
 import { useErrorContext } from './ErrorProvider'
 import PassportCheck from './PassportCheck'
 import PreferredNetworkWrapper from './PreferredNetworkWrapper'
@@ -65,8 +64,8 @@ const navigation = [
     icon: <CurrencyDollarIcon className="h-5 w-5" />,
   },
   {
-    name: 'Buy $NATION',
-    href: `https://app.balancer.fi/#/trade/ether/${nationToken}`,
+    name: 'Buy $MOONEY',
+    href: `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet`,
     icon: <PlusIcon className="h-5 w-5" />,
   },
   {

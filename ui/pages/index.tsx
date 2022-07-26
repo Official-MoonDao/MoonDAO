@@ -11,7 +11,7 @@ import { nationToken, veNationRewardsMultiplier } from '../lib/config'
 import GradientLink from '../components/GradientLink'
 import Head from '../components/Head'
 import HomeCard from '../components/HomeCard'
-import flag from '../public/flag.svg'
+import flag from '../public/Original.png'
 
 export default function Index() {
   return (
@@ -19,23 +19,24 @@ export default function Index() {
       <Head title="Home" />
       <div className="flex flex-col max-w-3xl">
         <h1 className="card-title text-center text-3xl font-semibold mb-2">
-          Welcome to Nation3
+          Welcome to MoonDAO
           <Image src={flag} width={36} height={36} />
         </h1>
 
         <p className="mb-8">
-          Nation3 is a sovereign cloud nation. We are building a community of
-          like-minded people creating a nation on the cloud.{' '}
-          <GradientLink text="Read more" href="https://nation3.org" />
+        MoonDAO’s mission is is to create a self-sustaining, 
+        self-governing colony on the Moon to act as a launch point for 
+        humanity to explore the cosmos.{' '}
+          <GradientLink text="Read more" href="https://moondao.com" />
           <br />
           <br />
-          Here you can perform on-chain operations related to the Nation3
+          Here you can perform on-chain operations related to the MoonDAO
           communinity, such as...
         </p>
 
         <Link href="/claim">
           <a className="btn btn-lg btn-primary mb-1 normal-case font-medium">
-            Claim $NATION
+            Claim $MOONEY
           </a>
         </Link>
 
@@ -47,65 +48,15 @@ export default function Index() {
             icon={
               <LockClosedIcon className="h-5 w-5 absolute right-8 text-n3blue" />
             }
-            title="Get $veNATION"
-            linkText="Get $veNATION"
+            title="Get $veMOONEY"
+            linkText="Get $veMOONEY"
           >
             <p>
-              Lock your $NATION to obtain $veNATION and help govern the Nation3
-              DAO. $veNATION will be required to mint the upcoming passport NFTs
-              to become a citizen.
+              Lock your $MOONEY to obtain $veMOONEY and help govern MoonDAO. 
+              $veMOONEY is required to vote on MooDAO proposals through Snapshot.
             </p>
           </HomeCard>
 
-          <HomeCard
-            href="/join"
-            icon={
-              <UserAddIcon className="h-5 w-5 absolute right-8 text-n3blue" />
-            }
-            title="Become a citizen"
-            linkText="Claim a passport"
-          >
-            <p>
-              Once you have $veNATION, you can claim a passport. Only 420
-              Genesis passports will be launched in the beginning.
-            </p>
-          </HomeCard>
-
-          <HomeCard
-            href="/liquidity"
-            icon={
-              <CurrencyDollarIcon className="h-5 w-5 absolute right-8 text-n3blue" />
-            }
-            title="Earn LP rewards"
-            linkText="Provide liquidity"
-          >
-            <p>
-              Provide liquidity in the{' '}
-              <a
-                href="https://app.balancer.fi/#/pool/0x0bf37157d30dfe6f56757dcadff01aed83b08cd600020000000000000000019a"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-n3blue"
-              >
-                80% $NATION / 20% $ETH Balancer pool
-              </a>{' '}
-              and earn liquidity rewards. Boost your APY by $
-              {veNationRewardsMultiplier}x by having $veNATION.
-            </p>
-          </HomeCard>
-
-          <HomeCard
-            href={`https://app.balancer.fi/#/trade/ether/${nationToken}`}
-            icon={<PlusIcon className="h-5 w-5 absolute right-8 text-n3blue" />}
-            title="Buy more $NATION"
-            linkText="Buy $NATION"
-          >
-            <p>
-              You can buy more $NATION and participate in liquidity rewards. You
-              can also lock your $NATION to get $veNATION to boost your rewards,
-              get a passport NFT, and govern the DAO.
-            </p>
-          </HomeCard>
         </div>
       </div>
     </>

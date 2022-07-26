@@ -2,7 +2,7 @@ describe('Nation3 App UI', () => {
 
   it('should load the index page', () => {
     cy.visit('/')
-    cy.get('h1').contains('Welcome to Nation3')
+    cy.get('h1').contains('Welcome to MoonDAO')
   }),
 
   it('should load the /join page', () => {
