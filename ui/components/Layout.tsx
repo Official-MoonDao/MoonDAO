@@ -55,6 +55,11 @@ const navigation = [
     icon: <PlusIcon className="h-5 w-5" />,
   },
   {
+    name: 'Governance MoonDAO',
+    href: `https://snapshot.org/#/tomoondao.eth`,
+    icon: <UserAddIcon className="h-5 w-5" />,
+  },
+  {
     name: 'Homepage',
     href: 'https://moondao.com',
     icon: <HomeIcon className="h-5 w-5" />,
