@@ -21,3 +21,27 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.hero {
+  background-color: black;
+  color: aliceblue;
+}
+
+.card {
+  color: white;
+  background-color: black;
+  border-style: solid;
+  border-radius: 3px;
+  border-color: yellow;
+}
+
+.drawer-side {
+  background-color: black;
+  color: white;
+}
+
+.sidebar {
+  border-style: solid;
+  border-radius: 3px;
+  border-color: white;
+}

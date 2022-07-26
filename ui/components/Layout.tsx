@@ -28,7 +28,7 @@ import { useConnect, useEnsName, useDisconnect } from 'wagmi'
 import { nationToken } from '../lib/config'
 import { connectorIcons } from '../lib/connectors'
 import { useAccount } from '../lib/use-wagmi'
-import Logo from '../public/Original_Black.png'
+import Logo from '../public/Original_White.png'
 import ErrorCard from './ErrorCard'
 import { useErrorContext } from './ErrorProvider'
 import PassportCheck from './PassportCheck'
@@ -44,30 +44,10 @@ const navigation = [
     href: '/',
     icon: <ViewGridIcon className="h-5 w-5" />,
   },
-  // {
-  //   name: 'Become a citizen',
-  //   href: '/join',
-  //   icon: <UserAddIcon className="h-5 w-5" />,
-  // },
-  // {
-  //   name: 'Claim airdrop',
-  //   href: '/claim',
-  //   icon: <SparklesIcon className="h-5 w-5" />,
-  // },
   {
     name: 'Lock tokens',
     href: '/lock',
     icon: <LockClosedIcon className="h-5 w-5" />,
-  },
-  // {
-  //   name: 'Liquidity rewards',
-  //   href: '/liquidity',
-  //   icon: <CurrencyDollarIcon className="h-5 w-5" />,
-  // },
-  {
-    name: 'Coming soon',
-    href: 'https://moondao.com',
-    icon: <UserAddIcon className="h-5 w-5" />,
   },
   {
     name: 'Buy $MOONEY',
@@ -80,8 +60,8 @@ const navigation = [
     icon: <HomeIcon className="h-5 w-5" />,
   },
   {
-    name: 'Wiki',
-    href: 'https://moondao.com/docs/introduction',
+    name: 'Docs',
+    href: 'https://wiki.nation3.org',
     icon: <NewspaperIcon className="h-5 w-5" />,
   },
 ]
@@ -155,7 +135,7 @@ export default function Layout({ children }: any) {
               htmlFor="side-drawer"
               className="drawer-overlay z-10"
             ></label>
-            <div className="bg-white w-80 flex flex-col justify-between pb-24 lg:pb-0 overflow-y-auto drop-shadow-md min-h-screen">
+            <div className="sidebar w-80 flex flex-col justify-between pb-24 lg:pb-0 overflow-y-auto drop-shadow-md min-h-screen">
               <div className="mt-6 py-4 hidden lg:block">
                 <div className="px-8 pt-2 cursor-pointer">
                   <Link href="/" passHref>

@@ -34,15 +34,7 @@ export default function Index() {
           communinity, such as...
         </p>
 
-        <Link href="/claim">
-          <a className="btn btn-lg btn-primary mb-1 normal-case font-medium">
-            Claim $MOONEY
-          </a>
-        </Link>
-
-        <p className="text-center">and then...</p>
-
-        <div className="grid xl:grid-cols-2 mt-2 gap-8">
+        <div className="grid xl:grid-cols-1 mt-2 gap-8">
           <HomeCard
             href="/lock"
             icon={
