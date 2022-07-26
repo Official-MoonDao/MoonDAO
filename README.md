@@ -4,7 +4,7 @@
 
 The MoonDAO App at https://app.moondao.com is where people can connect their Ethereum wallet and interact with the MoonDAO smart contracts.
 
-> [![app](/ui/public/screenshot.png)](https://app.nation3.org)
+> [![app](https://user-images.githubusercontent.com/95955389/169034356-f1fdb540-d65b-4c1b-bd4d-21c76f7f8af3.png)](https://app.moondao.com)
 
 ## File Structure
 
