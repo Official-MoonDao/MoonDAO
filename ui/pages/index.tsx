@@ -50,6 +50,20 @@ export default function Index() {
           </HomeCard>
 
         </div>
+        
+        <div className="grid xl:grid-cols-1 mt-2 gap-8">
+          <HomeCard
+            href="#"
+            icon={
+              <CurrencyDollarIcon className="h-5 w-5 absolute right-8 text-n3blue" />
+            }
+            title="Earn LP rewards"
+            linkText="Provide liquidity"
+          >
+          <p>Coming soon</p>
+          </HomeCard>
+
+        </div>
       </div>
     </>
   )

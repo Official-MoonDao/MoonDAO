@@ -61,7 +61,7 @@ const navigation = [
   },
   {
     name: 'Docs',
-    href: 'https://wiki.nation3.org',
+    href: 'https://moondao.com/docs/introduction',
     icon: <NewspaperIcon className="h-5 w-5" />,
   },
 ]
