@@ -19,7 +19,7 @@ export default function TimeRange({
         onChange={(e) => {
           onChange(new Date(parseFloat(e.target.value)))
         }}
-        className="range range-secondary mt-4"
+        className="range range-secondary mt-4 range3"
         step={step || 0}
       />
 

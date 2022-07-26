@@ -299,17 +299,17 @@ export default function Lock() {
                     $MOONEY
                   </p>
                   <label className="label">
-                    <span className="label-text">
+                    <span className="label-text white-text">
                       Lock amount
                       <br />
-                      <span className="text-xs">
+                      <span className="text-xs ">
                         This is the final total amount. To increase it, enter
                         your current amount plus the amount you want to
                         increase.
                       </span>
                     </span>
                   </label>
-                  <div className="input-group mb-4">
+                  <div className="input-group mb-4 black-text">
                     <input
                       type="number"
                       placeholder="0"
@@ -327,7 +327,7 @@ export default function Lock() {
                     />
 
                     <button
-                      className="btn btn-outline"
+                      className="btn btn-outline white-text"
                       onClick={() => {
                         setLockAmount(
                           veNationLock
@@ -343,7 +343,7 @@ export default function Lock() {
                     </button>
                   </div>
                   <label className="label">
-                    <span className="label-text">
+                    <span className="label-text white-text">
                       Lock expiration date
                       <br />
                       <span className="text-xs">
@@ -354,7 +354,7 @@ export default function Lock() {
                   <input
                     type="date"
                     placeholder="Expiration date"
-                    className="input input-bordered w-full"
+                    className="input input-bordered w-full black-text"
                     value={lockTime.formatted}
                     min={minMaxLockTime.min}
                     max={minMaxLockTime.max}
@@ -408,7 +408,7 @@ export default function Lock() {
                   ) : (
                     ''
                   )}
-                  <div className="card-actions mt-4">
+                  <div className="card-actions mt-4 white-text">
                     <ActionButton
                       className={`btn btn-primary normal-case font-medium w-full ${
                         !(canIncrease.amount || canIncrease.time)
