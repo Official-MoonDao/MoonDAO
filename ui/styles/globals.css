@@ -21,3 +21,12 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.hero {
+  background-color: black;
+  color: aliceblue;
+}
+
+.card {
+  color: black;
+}

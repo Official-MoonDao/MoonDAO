@@ -44,24 +44,9 @@ const navigation = [
     icon: <ViewGridIcon className="h-5 w-5" />,
   },
   {
-    name: 'Become a citizen',
-    href: '/join',
-    icon: <UserAddIcon className="h-5 w-5" />,
-  },
-  {
-    name: 'Claim airdrop',
-    href: '/claim',
-    icon: <SparklesIcon className="h-5 w-5" />,
-  },
-  {
     name: 'Lock tokens',
     href: '/lock',
     icon: <LockClosedIcon className="h-5 w-5" />,
-  },
-  {
-    name: 'Liquidity rewards',
-    href: '/liquidity',
-    icon: <CurrencyDollarIcon className="h-5 w-5" />,
   },
   {
     name: 'Buy $MOONEY',
@@ -74,7 +59,7 @@ const navigation = [
     icon: <HomeIcon className="h-5 w-5" />,
   },
   {
-    name: 'Wiki',
+    name: 'Docs',
     href: 'https://wiki.nation3.org',
     icon: <NewspaperIcon className="h-5 w-5" />,
   },

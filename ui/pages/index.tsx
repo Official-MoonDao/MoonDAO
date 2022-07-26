@@ -27,22 +27,14 @@ export default function Index() {
         MoonDAO’s mission is is to create a self-sustaining, 
         self-governing colony on the Moon to act as a launch point for 
         humanity to explore the cosmos.{' '}
-          <GradientLink text="Read more" href="https://moondao.com" />
+          <a href="https://moondao.com"> Read more </a>
           <br />
           <br />
           Here you can perform on-chain operations related to the MoonDAO
           communinity, such as...
         </p>
 
-        <Link href="/claim">
-          <a className="btn btn-lg btn-primary mb-1 normal-case font-medium">
-            Claim $MOONEY
-          </a>
-        </Link>
-
-        <p className="text-center">and then...</p>
-
-        <div className="grid xl:grid-cols-2 mt-2 gap-8">
+        <div className="grid xl:grid-cols-1 mt-2 gap-8">
           <HomeCard
             href="/lock"
             icon={
