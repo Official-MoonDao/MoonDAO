@@ -66,3 +66,6 @@ a {
   border-radius: 25px;
   border-width: 2px;
 }
+.drop-shadow-md {
+  background-color: black;
+}
