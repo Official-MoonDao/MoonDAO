@@ -31,7 +31,7 @@ export default function Index() {
           <br />
           <br />
           Here you can perform on-chain operations related to the MoonDAO
-          communinity, such as...
+          communinity.
         </p>
 
         <div className="grid xl:grid-cols-1 mt-2 gap-8">
