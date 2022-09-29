@@ -37,7 +37,7 @@ module.exports = {
           neutral: '#3d4451',
           'primary-content': '#ffffff',
           'base-100': '#ffffff',
-          'base-content': '#224059',
+          'base-content': '#ffffff',
         },
       },
     ],
