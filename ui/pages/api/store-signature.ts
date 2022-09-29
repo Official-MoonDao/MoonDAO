@@ -1,3 +1,4 @@
+export {}
 // import { ethers } from 'ethers'
 // import type { NextApiRequest, NextApiResponse } from 'next'
 // import { NFTStorage, Blob } from 'nft.storage'
