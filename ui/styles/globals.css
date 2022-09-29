@@ -36,6 +36,21 @@ a {
   border-color: #ffbc5c;
 }
 
+.border-style {
+  border-style: solid;
+  border-radius: 20px;
+  border-width: 2px;
+  border-color: #ffbc5c;
+}
+
+.border-disabled {
+  border-style: solid;
+  border-radius: 20px;
+  border-width: 2px;
+  border-color: #d85c4c;
+  color: #d85c4c;
+}
+
 .card-body {
   color: white;
 }
@@ -48,8 +63,20 @@ a {
   color: white;
 }
 
+.yellow-text {
+  color: #ffbc5c;
+}
+
 .black-text {
   color: black;
+}
+
+#red {
+  border-style: solid;
+  border-radius: 20px;
+  border-width: 2px;
+  border-color: #d85c4c;
+  color: #d85c4c;
 }
 
 .drawer-side {

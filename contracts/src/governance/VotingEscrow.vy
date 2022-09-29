@@ -1,4 +1,4 @@
-# @version 0.2.4
+# @version 0.3.0
 """
 @title Voting Escrow
 @author Curve Finance
@@ -64,9 +64,6 @@ event CommitOwnership:
 event ApplyOwnership:
     admin: address
 
-event DepositsLockedChange:
-    status: bool
-
 event Deposit:
     provider: indexed(address)
     value: uint256
@@ -103,10 +100,6 @@ slope_changes: public(HashMap[uint256, int128])  # time -> signed slope change
 controller: public(address)
 transfersEnabled: public(bool)
 
-
-# Allows to unlock all deposits at once in exceptional scenarios
-depositsLocked: public(bool)
-
 name: public(String[64])
 symbol: public(String[32])
 version: public(String[32])
@@ -136,7 +129,6 @@ def __init__(token_addr: address, _name: String[64], _symbol: String[32], _versi
     self.point_history[0].ts = block.timestamp
     self.controller = msg.sender
     self.transfersEnabled = True
-    self.depositsLocked = True
 
     _decimals: uint256 = ERC20(token_addr).decimals()
     assert _decimals <= 255
@@ -156,17 +148,6 @@ def commit_transfer_ownership(addr: address):
     assert msg.sender == self.admin  # dev: admin only
     self.future_admin = addr
     log CommitOwnership(addr)
-
-
-@external
-def set_depositsLocked(new_status: bool):
-    """
-    @notice Able / disable locks end restriction on withdraws
-    @param new_status Boolean to set as status of the variable
-    """
-    assert msg.sender == self.admin # dev: admin only
-    self.depositsLocked = new_status
-    log DepositsLockedChange(new_status)
 
 
 @external
@@ -491,8 +472,7 @@ def withdraw():
     @dev Only possible if the lock has expired
     """
     _locked: LockedBalance = self.locked[msg.sender]
-    if self.depositsLocked:
-        assert block.timestamp >= _locked.end, "The lock didn't expire"
+    assert block.timestamp >= _locked.end, "The lock didn't expire"
     value: uint256 = convert(_locked.amount, uint256)
 
     old_locked: LockedBalance = _locked
@@ -689,4 +669,3 @@ def changeController(_newController: address):
     """
     assert msg.sender == self.controller
     self.controller = _newController
-

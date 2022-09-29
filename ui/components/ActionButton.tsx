@@ -30,7 +30,7 @@ export default function ActionButton({
   return (
     <>
       {!isPreferredNetwork ? (
-        <button className={className} disabled>
+        <button id="red" className={className} disabled>
           {!activeChain?.id ? 'Not connected' : 'Wrong network'}
         </button>
       ) : !account ? (

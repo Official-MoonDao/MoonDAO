@@ -1,6 +1,6 @@
-# Nation3 App UI
+# MoonDAO App UI
 
-https://app.nation3.org
+https://app.moondao.com
 
 ## Run the UI locally
 

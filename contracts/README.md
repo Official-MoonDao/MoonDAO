@@ -1,13 +1,10 @@
-# Nation3 smart contracts
+# MOONEY smart contracts
 
 ## Overview
 
-- [NATION Token](./src/tokens/NATION.sol)
-- [Voting Escrow (veNATION)](./src/governance/VotingEscrow.vy)
-- [NATION Airdrop Distributor](./src/distributors/MerkleDistributor.sol)
-- Liquidity Rewards Distributor (WIP)
-- Passport Token (WIP)
-- Passport Issuer (WIP)
+- [MOONEY Token](./src/tokens/MyToken.sol)
+- [Voting Escrow (vMOONEY)](./src/governance/VotingEscrow.vy)
+- [MOONEY Airdrop Distributor](./src/distributors/MerkleDistributor.sol)
 
 ## Contributing
 
@@ -55,7 +52,3 @@ If you want to test/develop locally, you'll need to run a local node, for exampl
 ### Testing
 
 [Forge testing guide](https://book.getfoundry.sh/forge/tests.html)
-
-## Audits
-
-- [GoldmanDAO Nation3 launch report](https://prong-distance-e49.notion.site/Nation3-Launch-Report-59990449a8ef4814985f44eadb1c75a1)

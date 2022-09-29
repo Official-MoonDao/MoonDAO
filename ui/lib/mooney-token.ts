@@ -1,10 +1,10 @@
-import { nationToken } from '../lib/config'
+import { MOONEYToken } from '../lib/config'
 import { useBalance } from './use-wagmi'
 
-export function useNationBalance(address: any) {
+export function useMOONEYBalance(address: any) {
   return useBalance({
     addressOrName: address,
-    token: nationToken,
+    token: MOONEYToken,
     watch: true,
     enabled: address,
   })

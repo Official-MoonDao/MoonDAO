@@ -45,7 +45,7 @@ export const connectors = [
   new CoinbaseWalletConnector({
     chains,
     options: {
-      appName: 'Nation3 app',
+      appName: 'MoonDAO app',
     },
   }),
 ]

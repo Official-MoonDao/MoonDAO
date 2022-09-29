@@ -25,13 +25,12 @@ import { useState, useEffect } from 'react'
 // @ts-expect-error ts-migrate(7016) FIXME: Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import Blockies from 'react-blockies'
 import { useConnect, useEnsName, useDisconnect } from 'wagmi'
-import { nationToken } from '../lib/config'
+import { MOONEYToken } from '../lib/config'
 import { connectorIcons } from '../lib/connectors'
 import { useAccount } from '../lib/use-wagmi'
 import Logo from '../public/Original_White.png'
 import ErrorCard from './ErrorCard'
 import { useErrorContext } from './ErrorProvider'
-import PassportCheck from './PassportCheck'
 import PreferredNetworkWrapper from './PreferredNetworkWrapper'
 
 type Indexable = {
@@ -80,21 +79,6 @@ export default function Layout({ children }: any) {
   const { disconnect } = useDisconnect()
   const [nav, setNav] = useState(navigation)
   const errorContext = useErrorContext()
-
-  const onPassportChecked = (hasPassport: boolean) => {
-    if (hasPassport) {
-      navigation[1].name = 'Welcome citizen'
-      navigation[1].href = '/citizen'
-      setNav(navigation)
-      if (router.pathname === '/join' && !router.query.mintingPassport) {
-        router.push('/citizen')
-      }
-    } else {
-      if (router.pathname === '/citizen') {
-        router.push('/join')
-      }
-    }
-  }
 
   const layout = (
     <div className="mx-auto bg-n3bg font-display">
@@ -344,17 +328,6 @@ export default function Layout({ children }: any) {
       )}
     </div>
   )
-
-  if (account?.address) {
-    return (
-      <PassportCheck
-        address={account.address}
-        onPassportChecked={onPassportChecked}
-      >
-        {layout}
-      </PassportCheck>
-    )
-  } else {
-    return layout
-  }
+  
+  return layout
 }

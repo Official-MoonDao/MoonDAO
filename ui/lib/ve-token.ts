@@ -1,17 +1,17 @@
 import { useCallback } from 'react'
-import { veNationToken } from '../lib/config'
+import { vMOONEYToken } from '../lib/config'
 import VotingEscrow from '../abis/VotingEscrow.json'
 import { useContractRead, useContractWrite, useBalance } from './use-wagmi'
 
 const contractParams = {
-  addressOrName: veNationToken,
+  addressOrName: vMOONEYToken,
   contractInterface: VotingEscrow.abi,
 }
 
-export function useVeNationBalance(address: any) {
+export function useVMOONEYBalance(address: any) {
   return useBalance({
     addressOrName: address,
-    token: veNationToken,
+    token: vMOONEYToken,
     watch: true,
     enabled: address,
   })
@@ -25,7 +25,7 @@ let gasLimits = {
   withdraw: 400000,
 }
 
-export function useVeNationLock(address: any) {
+export function useVMOONEYLock(address: any) {
   return useContractRead(contractParams, 'locked', {
     args: [address],
     watch: true,
@@ -36,7 +36,7 @@ export function useVeNationLock(address: any) {
   })
 }
 
-export function useVeNationCreateLock(amount: any, time: any) {
+export function useVMOONEYCreateLock(amount: any, time: any) {
   return useContractWrite(contractParams, 'create_lock', {
     args: [amount, time],
     overrides: {
@@ -45,15 +45,15 @@ export function useVeNationCreateLock(amount: any, time: any) {
   })
 }
 
-export function useVeNationIncreaseLock({
+export function useVMOONEYIncreaseLock({
   newAmount,
   currentTime,
   newTime,
 }: any) {
   const { writeAsync: increaseLockAmount, data: lockAmountData } =
-    useVeNationIncreaseLockAmount(newAmount)
+    useVMOONEYIncreaseLockAmount(newAmount)
   const { writeAsync: increaseLockTime, data: lockTimeData } =
-    useVeNationIncreaseLockTime(newTime)
+    useVMOONEYIncreaseLockTime(newTime)
   const action = useCallback(() => {
     if (newAmount && newAmount.gt(0)) {
       return { writeAsync: increaseLockAmount, data: lockAmountData }
@@ -67,7 +67,7 @@ export function useVeNationIncreaseLock({
   return action()
 }
 
-export function useVeNationIncreaseLockAmount(amount: any) {
+export function useVMOONEYIncreaseLockAmount(amount: any) {
   return useContractWrite(contractParams, 'increase_amount', {
     args: [amount],
     overrides: {
@@ -76,7 +76,7 @@ export function useVeNationIncreaseLockAmount(amount: any) {
   })
 }
 
-export function useVeNationIncreaseLockTime(time: any) {
+export function useVMOONEYIncreaseLockTime(time: any) {
   return useContractWrite(contractParams, 'increase_unlock_time', {
     args: [time],
     overrides: {
@@ -85,7 +85,7 @@ export function useVeNationIncreaseLockTime(time: any) {
   })
 }
 
-export function useVeNationWithdrawLock() {
+export function useVMOONEYWithdrawLock() {
   return useContractWrite(contractParams, 'withdraw', {
     overrides: {
       gasLimit: gasLimits.withdraw,
@@ -93,6 +93,6 @@ export function useVeNationWithdrawLock() {
   })
 }
 
-export function useVeNationSupply() {
+export function useVMOONEYSupply() {
   return useContractRead(contractParams, 'totalSupply()', {})
 }

@@ -7,7 +7,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
-import { nationToken, veNationRewardsMultiplier } from '../lib/config'
+import { MOONEYToken } from '../lib/config'
 import GradientLink from '../components/GradientLink'
 import Head from '../components/Head'
 import HomeCard from '../components/HomeCard'
@@ -40,27 +40,13 @@ export default function Index() {
             icon={
               <LockClosedIcon className="h-5 w-5 absolute right-8 text-n3blue" />
             }
-            title="Get $veMOONEY"
-            linkText="Get $veMOONEY"
+            title="Get $vMOONEY"
+            linkText="Get $vMOONEY"
           >
             <p>
-              Lock your $MOONEY to obtain $veMOONEY and help govern MoonDAO. 
-              $veMOONEY is required to vote on MooDAO proposals through Snapshot.
+              Lock your $MOONEY to obtain $vMOONEY and help govern MoonDAO. 
+              $vMOONEY is required to vote on MooDAO proposals through Snapshot. 
             </p>
-          </HomeCard>
-
-        </div>
-        
-        <div className="grid xl:grid-cols-1 mt-2 gap-8">
-          <HomeCard
-            href="#"
-            icon={
-              <CurrencyDollarIcon className="h-5 w-5 absolute right-8 text-n3blue" />
-            }
-            title="Earn LP rewards"
-            linkText="Provide liquidity"
-          >
-          <p>Coming soon</p>
           </HomeCard>
 
         </div>
