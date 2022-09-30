@@ -208,7 +208,7 @@ export default function Layout({ children }: any) {
       <input type="checkbox" id="web3-modal" className="modal-toggle" />
 
       <label htmlFor="web3-modal" className="modal cursor-pointer">
-        <label className="modal-box relative" htmlFor="">
+        <label className="black-text modal-box relative" htmlFor="">
           <label
             htmlFor="web3-modal"
             className="btn btn-sm btn-circle btn-ghost absolute right-6 top-5"
