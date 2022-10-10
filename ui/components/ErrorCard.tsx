@@ -7,7 +7,7 @@ export default function ErrorCard({ error }: any) {
   return (
     <div className="card shadow-md bg-error text-primary-content">
       <div className="card-body">
-        <h2 className="card-title">Oopsie</h2>
+        <h2 className="card-title">Houston, we have a problem</h2>
         <p>
           {error?.message ||
             error?.reason ||

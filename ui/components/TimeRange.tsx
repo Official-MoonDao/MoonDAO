@@ -1,6 +1,7 @@
 import React from 'react'
 
 export default function TimeRange({
+  disabled,
   time,
   min,
   max,
@@ -19,7 +20,11 @@ export default function TimeRange({
         onChange={(e) => {
           onChange(new Date(parseFloat(e.target.value)))
         }}
-        className="range range-secondary mt-4 range3"
+        className={`range range-secondary mt-4 range3 ${
+                    disabled 
+                    ? 'border-disabled btn-disabled' 
+                    : ''
+                  }`}
         step={step || 0}
       />
 
