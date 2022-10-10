@@ -274,7 +274,7 @@ export default function Lock() {
                         This is the final total amount. To increase it, enter
                         your current amount plus the amount you want to
                         increase.
-                        {canIncrease.time ? ' **Note, both lock amount and expiration date cannot be increased at once**' : ''}
+                        {hasLock && canIncrease.time ? ' **Note, both lock amount and expiration date cannot be increased at once**' : ''}
                       </span>
                     </span>
                   </label>
@@ -284,7 +284,7 @@ export default function Lock() {
                       placeholder="0"
                       className="input input-bordered w-full"
                       value={lockAmount}
-                      disabled={canIncrease.time ? true : false }
+                      disabled={hasLock && canIncrease.time ? true : false }
                       min={
                         VMOONEYLock
                           ? ethers.utils.formatEther(VMOONEYLock[0])
@@ -298,7 +298,7 @@ export default function Lock() {
 
                     <button
                       className="btn btn-outline white-text"
-                      disabled={canIncrease.time ? true : false }
+                      disabled={hasLock && canIncrease.time ? true : false }
                       onClick={() => {
                         setLockAmount(
                           VMOONEYLock
@@ -319,7 +319,7 @@ export default function Lock() {
                       <br />
                       <span className="text-xs">
                         Minimum one week, maximum four years from now. If you have already staked, you may only extend the lock time.
-                        {canIncrease.amount ? ' **Note, both lock amount and expiration date cannot be increased at once**' : ''}
+                        {hasLock && canIncrease.amount ? ' **Note, both lock amount and expiration date cannot be increased at once**' : ''}
                       </span>
                     </span>
                   </label>
@@ -328,9 +328,9 @@ export default function Lock() {
                     placeholder="Expiration date"
                     className="input input-bordered w-full black-text"
                     value={lockTime.formatted}
-                    min={minMaxLockTime.min}
+                    min={hasLock ? dateToReadable(bigNumberToDate(VMOONEYLock[1])) : minMaxLockTime.min}
                     max={minMaxLockTime.max}
-                    disabled={canIncrease.amount ? true : false }
+                    disabled={hasLock && canIncrease.amount ? true : false }
                     onChange={(e: any) => {
                       setLockTime({
                         ...lockTime,
@@ -346,7 +346,7 @@ export default function Lock() {
                   />
 
                   <TimeRange
-                    disabled={canIncrease.amount ? true : false }
+                    disabled={hasLock && canIncrease.amount ? true : false }
                     time={Date.parse(lockTime.formatted)}
                     min={Date.parse(minMaxLockTime.min)}
                     max={Date.parse(minMaxLockTime.max)}
@@ -390,7 +390,7 @@ export default function Lock() {
                   <div className="card-actions mt-4 white-text">
                     <ActionButton
                       className={`border-style btn btn-primary normal-case font-medium w-full ${
-                        !((!canIncrease.amount && canIncrease.time) || (canIncrease.amount && !canIncrease.time))
+                        (hasLock && ((canIncrease.amount && canIncrease.time) || (!canIncrease.amount && !canIncrease.time)))
                           ? 'border-disabled btn-disabled'
                           : ''
                       }`}
