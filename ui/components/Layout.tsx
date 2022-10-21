@@ -81,10 +81,10 @@ export default function Layout({ children }: any) {
   const errorContext = useErrorContext()
 
   const layout = (
-    <div className="mx-auto bg-n3bg font-display">
+    <div className="mx-auto font-display">
       <Script src="https://cdn.splitbee.io/sb.js" />
       <div className="h-screen">
-        <div className="navbar black-back yellow-text bg-base-100 border-slate-100 border-b-2 py-0 pl-0 lg:hidden sticky z-10">
+        <div className="navbar yellow-text bg-black border-slate-100 border-b-2 py-0 pl-0 lg:hidden sticky z-10">
           <div className="navbar-start border-slate-100 pl-0">
             <div className="w-80 border-slate-100 py-4 box-content">
               <div className="pl-6 pt-2 cursor-pointer">
@@ -108,9 +108,9 @@ export default function Layout({ children }: any) {
           </div>
         </div>
 
-        <div className="drawer drawer-mobile">
+        <div className="drawer drawer-mobile stars-bg">
           <input id="side-drawer" type="checkbox" className="drawer-toggle" />
-          <div className="stars-bg drawer-content fixed top-0 left-0 right-0 bottom-0 lg:static pt-24 lg:pt-0 z-0 max-h-screen">
+          <div className="drawer-content fixed top-0 left-0 right-0 bottom-0 lg:static pt-24 lg:pt-0 z-0 max-h-screen">
             <div className="flex flex-col w-full h-full">
               <PreferredNetworkWrapper>
                 <div className="hero h-full bg-repeat">
@@ -119,13 +119,13 @@ export default function Layout({ children }: any) {
               </PreferredNetworkWrapper>
             </div>
           </div>
-          <div className="drawer-side bg-black">
+          <div className="drawer-side bg-transparent">
             <label
               htmlFor="side-drawer"
               className="drawer-overlay z-10"
             ></label>
             <div className="sidebar w-80 flex flex-col justify-between pb-24 lg:pb-0 overflow-y-auto drop-shadow-md min-h-screen">
-              <div className="mt-6 bg-black py-4 hidden lg:block">
+              <div className="mt-6 py-4 hidden lg:block">
                 <div className="px-8 pt-2 cursor-pointer">
                   <Link href="/" passHref>
                     <a>
@@ -134,7 +134,7 @@ export default function Layout({ children }: any) {
                   </Link>
                 </div>
               </div>
-              <ul className="menu p-4 overflow-y-auto text-base-400 grow bg-black font-GoodTimes">
+              <ul className="menu p-4 overflow-y-auto text-base-400 grow font-GoodTimes">
                 {nav.map((item: any) => (
                   <li
                     className="mt-1 relative py-2"
@@ -173,7 +173,7 @@ export default function Layout({ children }: any) {
                   </li>
                 ))}
               </ul>
-              <ul className="menu p-4 bg-black text-base-400">
+              <ul className="menu p-4 text-base-400">
                 {account?.address ? (
                   <li>
                     <label htmlFor="web3-modal">
