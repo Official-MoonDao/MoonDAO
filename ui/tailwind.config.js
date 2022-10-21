@@ -7,6 +7,8 @@ module.exports = {
     fontFamily: {
       display: ['Poppins', 'sans-serif'],
       body: ['UniversalSans', 'sans-serif'],
+      GoodTimes: ["Good Times", "sans-serif"],
+      RobotoMono: ["Roboto Mono", "sans-serif"],
     },
     fontWeight: {
       light: 200,

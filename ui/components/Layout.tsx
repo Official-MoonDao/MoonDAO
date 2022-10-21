@@ -119,7 +119,7 @@ export default function Layout({ children }: any) {
               </PreferredNetworkWrapper>
             </div>
           </div>
-          <div className="drawer-side">
+          <div className=" bg-black">
             <label
               htmlFor="side-drawer"
               className="drawer-overlay z-10"
@@ -134,7 +134,7 @@ export default function Layout({ children }: any) {
                   </Link>
                 </div>
               </div>
-              <ul className="menu p-4 overflow-y-auto text-base-400 grow bg-black">
+              <ul className="menu p-4 overflow-y-auto text-base-400 grow bg-black font-GoodTimes">
                 {nav.map((item: any) => (
                   <li
                     className="mt-1 relative py-2"

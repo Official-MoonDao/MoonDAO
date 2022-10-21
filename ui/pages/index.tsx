@@ -18,14 +18,14 @@ export default function Index() {
     <>
       <Head title="Home" />
       <div className="flex flex-col max-w-3xl">
-        <h1 className="card-title text-center text-3xl font-semibold mb-2">
-          Welcome to the MoonDAO App
+        <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
+          The MoonDAO App
           <Image src={flag} width={36} height={36} />
         </h1>
 
-        <p className="mb-8">
+        <p className="mb-8 font-RobotoMono">
           Here you can perform on-chain operations related to the MoonDAO
-          communinity.
+          community.
         </p>
 
         <div className="grid xl:grid-cols-1 mt-2 gap-8">

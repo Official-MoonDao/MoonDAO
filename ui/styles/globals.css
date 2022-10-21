@@ -22,6 +22,16 @@ a {
   box-sizing: border-box;
 }
 
+@font-face {
+  font-family: 'Good Times';
+  src: url('../public/fonts/goodtimesrg.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Roboto Mono';
+  src: url('../public/fonts/RobotoMono-Regular.ttf') format('truetype');
+}
+
 .stars-bg {
   background: url("../public/star-background.png") repeat, linear-gradient(to right,rgb(14, 15, 15),rgb(25, 20, 58),rgb(13, 0, 31));
 }
@@ -80,11 +90,6 @@ a {
   border-width: 2px;
   border-color: #d85c4c;
   color: #d85c4c;
-}
-
-.drawer-side {
-  background-color: black;
-  color: white;
 }
 
 .range3 {
