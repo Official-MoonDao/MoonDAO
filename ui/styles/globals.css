@@ -22,19 +22,18 @@ a {
   box-sizing: border-box;
 }
 
-.hero {
-  background-color: black;
-  color: aliceblue;
+.stars-bg {
+  background: url("../public/star-background.png") repeat, linear-gradient(to right,rgb(14, 15, 15),rgb(25, 20, 58),rgb(13, 0, 31));
 }
 
-.card {
+/* .card {
   background-color: black;
   color: white;
   border-style: solid;
   border-radius: 20px;
   border-width: 2px;
   border-color: #ffbc5c;
-}
+} */
 
 .border-style {
   border-style: solid;
@@ -88,15 +87,8 @@ a {
   color: white;
 }
 
-.drawer-content {
-  background-color: black;
-}
-
 .range3 {
   border-color: #ffbc5c;
   border-radius: 25px;
   border-width: 2px;
-}
-.drop-shadow-md {
-  background-color: black;
 }

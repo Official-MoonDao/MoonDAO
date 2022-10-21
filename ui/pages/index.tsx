@@ -19,17 +19,11 @@ export default function Index() {
       <Head title="Home" />
       <div className="flex flex-col max-w-3xl">
         <h1 className="card-title text-center text-3xl font-semibold mb-2">
-          Welcome to MoonDAO
+          Welcome to the MoonDAO App
           <Image src={flag} width={36} height={36} />
         </h1>
 
         <p className="mb-8">
-        MoonDAO’s mission is is to create a self-sustaining, 
-        self-governing colony on the Moon to act as a launch point for 
-        humanity to explore the cosmos.{' '}
-          <GradientLink text="Read more" href="https://moondao.com" />
-          <br />
-          <br />
           Here you can perform on-chain operations related to the MoonDAO
           communinity.
         </p>

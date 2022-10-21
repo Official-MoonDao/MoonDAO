@@ -15,7 +15,7 @@ export default function MainCard({
             }
         >
           <div
-            className={`card no-border min-w-80 md:w-full bg-base-100 shadow-md overflow-visible ${
+            className={`card min-w-80 md:w-full rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white shadow-md overflow-visible ${
               gradientBg && 'bg-gradient-to-r from-n3blue to-n3green'
             }`}
           >

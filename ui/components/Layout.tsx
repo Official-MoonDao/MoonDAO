@@ -110,10 +110,10 @@ export default function Layout({ children }: any) {
 
         <div className="drawer drawer-mobile">
           <input id="side-drawer" type="checkbox" className="drawer-toggle" />
-          <div className="drawer-content fixed top-0 left-0 right-0 bottom-0 lg:static pt-24 lg:pt-0 z-0 max-h-screen">
+          <div className="stars-bg drawer-content fixed top-0 left-0 right-0 bottom-0 lg:static pt-24 lg:pt-0 z-0 max-h-screen">
             <div className="flex flex-col w-full h-full">
               <PreferredNetworkWrapper>
-                <div className="hero h-full">
+                <div className="hero h-full bg-repeat">
                   <div className="hero-content">{children}</div>
                 </div>
               </PreferredNetworkWrapper>
@@ -125,7 +125,7 @@ export default function Layout({ children }: any) {
               className="drawer-overlay z-10"
             ></label>
             <div className="sidebar w-80 flex flex-col justify-between pb-24 lg:pb-0 overflow-y-auto drop-shadow-md min-h-screen">
-              <div className="mt-6 py-4 hidden lg:block">
+              <div className="mt-6 bg-black py-4 hidden lg:block">
                 <div className="px-8 pt-2 cursor-pointer">
                   <Link href="/" passHref>
                     <a>
@@ -134,7 +134,7 @@ export default function Layout({ children }: any) {
                   </Link>
                 </div>
               </div>
-              <ul className="menu p-4 overflow-y-auto text-base-400 grow">
+              <ul className="menu p-4 overflow-y-auto text-base-400 grow bg-black">
                 {nav.map((item: any) => (
                   <li
                     className="mt-1 relative py-2"
@@ -173,7 +173,7 @@ export default function Layout({ children }: any) {
                   </li>
                 ))}
               </ul>
-              <ul className="menu p-4 text-base-400">
+              <ul className="menu p-4 bg-black text-base-400">
                 {account?.address ? (
                   <li>
                     <label htmlFor="web3-modal">
