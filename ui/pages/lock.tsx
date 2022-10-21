@@ -297,7 +297,7 @@ export default function Lock() {
                     />
 
                     <button
-                      className="btn btn-outline white-text"
+                      className="btn btn-outline white-text hover:bg-accent"
                       disabled={hasLock && canIncrease.time ? true : false }
                       onClick={() => {
                         setLockAmount(
