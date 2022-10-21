@@ -119,7 +119,7 @@ export default function Layout({ children }: any) {
               </PreferredNetworkWrapper>
             </div>
           </div>
-          <div className=" bg-black">
+          <div className="drawer-side bg-black">
             <label
               htmlFor="side-drawer"
               className="drawer-overlay z-10"
