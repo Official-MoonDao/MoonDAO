@@ -24,16 +24,16 @@ a {
 
 @font-face {
   font-family: 'Good Times';
-  src: url('../public/fonts/goodtimesrg.otf') format('opentype');
+  src: url('~/public/fonts/goodtimesrg.otf') format('opentype');
 }
 
 @font-face {
   font-family: 'Roboto Mono';
-  src: url('../public/fonts/RobotoMono-Regular.ttf') format('truetype');
+  src: url('~/public/fonts/RobotoMono-Regular.ttf') format('truetype');
 }
 
 .stars-bg {
-  background: url("../public/star-background.png") repeat, linear-gradient(to right,rgb(14, 15, 15),rgb(25, 20, 58),rgb(13, 0, 31));
+  background: url("~/public/star-background.png") repeat, linear-gradient(to right,rgb(14, 15, 15),rgb(25, 20, 58),rgb(13, 0, 31));
 }
 
 /* .card {
