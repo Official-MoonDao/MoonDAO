@@ -390,7 +390,11 @@ export default function Lock() {
                   <div className="card-actions mt-4 white-text">
                     <ActionButton
                       className={`border-style btn btn-primary normal-case font-medium w-full ${
-                        (hasLock && ((canIncrease.amount && canIncrease.time) || (!canIncrease.amount && !canIncrease.time)))
+                        (
+                          (hasLock && ((canIncrease.amount && canIncrease.time) || (!canIncrease.amount && !canIncrease.time))) || 
+                          (lockAmount && parseFloat(lockAmount) > parseFloat(ethers.utils.formatEther(VMOONEYLock[0].add(MOONEYBalance?.value)))) ||
+                          !lockAmount
+                        ) 
                           ? 'border-disabled btn-disabled'
                           : ''
                       }`}
