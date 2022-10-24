@@ -394,7 +394,7 @@ export default function Lock() {
                           ? 'border-disabled btn-disabled'
                           : ''
                       }`}
-                      action={hasLock ? increaseLock : createLock}
+                      action={hasLock && increaseLock || MOONEYBalance > lockAmount && createLock || null}
                       approval={{
                         token: MOONEYToken,
                         spender: vMOONEYToken,
@@ -413,12 +413,12 @@ export default function Lock() {
                         approveText: 'Approve $MOONEY',
                       }}
                     >
-                      {!hasLock
-                        ? 'Lock'
-                        : `Increase lock ${
-                            (canIncrease.amount && !canIncrease.time) ? 'amount' : ''
-                          }  
-                          ${(!canIncrease.amount && canIncrease.time) ? 'time' : ''}`
+                      {hasLock 
+                        ? `Increase lock ${
+                          (canIncrease.amount && !canIncrease.time) ? 'amount' : ''
+                        }  
+                        ${(!canIncrease.amount && canIncrease.time) ? 'time' : ''}`
+                        : !hasLock && MOONEYBalance > lockAmount ? 'Lock' : ''
                         }
                     </ActionButton>
                   </div>
