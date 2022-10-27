@@ -2,7 +2,7 @@
   "name": "MoonDAO-app",
   "private": true,
   "scripts": {
-    "dev": "PORT=42069 next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -21,11 +21,11 @@
     "next": "12.1.0",
     "nft.storage": "^6.3.0",
     "react": "17.0.2",
-    "react-animated-3d-card": "^1.0.2",
     "react-blockies": "^1.4.1",
     "react-confetti": "^6.0.1",
     "react-dom": "17.0.2",
     "react-use": "^17.3.2",
+    "sass": "^1.55.0",
     "typescript": "^4.6.4",
     "use-nft": "^0.12.0",
     "wagmi": "^0.4.2"
