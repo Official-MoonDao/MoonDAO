@@ -6,7 +6,7 @@ import { WagmiConfig, createClient } from 'wagmi'
 import { connectors, provider as externalProvider } from '../lib/connectors'
 import { ErrorProvider } from '../components/ErrorProvider'
 import Layout from '../components/Layout'
-import '../styles/globals.css'
+import '../styles/globals.scss'
 
 function App({ Component, pageProps }: any) {
   const [client, setClient] = useState<any>()

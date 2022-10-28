@@ -1,0 +1,109 @@
+@import url('/fonts/stylesheet.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  /* @apply font-body; */
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: 'Good Times';
+  src: url('/fonts/goodtimesrg.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Roboto Mono';
+  src: url('/fonts/RobotoMono-Regular.ttf') format('truetype');
+}
+
+.pgContain {
+  animation: fadeIn 0.5s;
+}
+
+.stars-bg {
+  background: url('/star-background.png') repeat,
+    linear-gradient(to right, rgb(14, 15, 15), rgb(25, 20, 58), rgb(13, 0, 31));
+}
+
+/* .card {
+  background-color: black;
+  color: white;
+  border-style: solid;
+  border-radius: 20px;
+  border-width: 2px;
+  border-color: #ffbc5c;
+} */
+
+.border-style {
+  border-style: solid;
+  border-radius: 20px;
+  border-width: 2px;
+  border-color: #ffbc5c;
+}
+
+.border-disabled {
+  border-style: solid;
+  border-radius: 20px;
+  border-width: 2px;
+  border-color: #d85c4c;
+  color: #d85c4c;
+}
+
+.card-body {
+  color: white;
+}
+
+.no-border {
+  border-width: 0px;
+}
+
+.white-text {
+  color: white;
+}
+
+.yellow-text {
+  color: #ffbc5c;
+}
+
+.black-text {
+  color: black;
+}
+
+#red {
+  border-style: solid;
+  border-radius: 20px;
+  border-width: 2px;
+  border-color: #d85c4c;
+  color: #d85c4c;
+}
+
+.range3 {
+  border-color: #ffbc5c;
+  border-radius: 25px;
+  border-width: 2px;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

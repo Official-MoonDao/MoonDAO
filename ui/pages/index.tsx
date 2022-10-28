@@ -12,10 +12,12 @@ import GradientLink from '../components/GradientLink'
 import Head from '../components/Head'
 import HomeCard from '../components/HomeCard'
 import flag from '../public/Original.png'
+import { Scene } from '../r3f/Scene'
 
 export default function Index() {
   return (
-    <>
+    <div className="pgContain">
+      <Scene />
       <Head title="Home" />
       <div className="flex flex-col max-w-3xl">
         <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
@@ -38,13 +40,12 @@ export default function Index() {
             linkText="Get $vMOONEY"
           >
             <p>
-              Lock your $MOONEY to obtain $vMOONEY and help govern MoonDAO. 
-              $vMOONEY is required to vote on MooDAO proposals through Snapshot. 
+              Lock your $MOONEY to obtain $vMOONEY and help govern MoonDAO.
+              $vMOONEY is required to vote on MooDAO proposals through Snapshot.
             </p>
           </HomeCard>
-
         </div>
       </div>
-    </>
+    </div>
   )
 }
