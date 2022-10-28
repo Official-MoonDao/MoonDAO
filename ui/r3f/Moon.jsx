@@ -1,11 +1,10 @@
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import React, { useRef } from 'react'
-import { Group } from 'three'
 
 export function Moon() {
   const { nodes, materials } = useGLTF('/textures/moon.glb')
-  const moonRef = useRef<any>()
+  const moonRef = useRef()
   useFrame(() => {
     if (moonRef.current) {
       moonRef.current.rotation.y += 0.001
