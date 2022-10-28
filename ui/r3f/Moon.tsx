@@ -2,7 +2,7 @@ import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import React, { useRef } from 'react'
 
-export function Moon(props) {
+export function Moon() {
   const { nodes, materials } = useGLTF('/textures/moon.glb')
   const moonRef = useRef()
   useFrame(() => {
@@ -13,8 +13,8 @@ export function Moon(props) {
 
   return (
     <group
-      {...props}
       dispose={null}
+      position={[2, 0, 0]}
       rotation={[Math.PI / 6, 0, 0]}
       ref={moonRef}
     >

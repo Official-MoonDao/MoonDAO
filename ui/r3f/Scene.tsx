@@ -16,7 +16,7 @@ export function Scene() {
       >
         <hemisphereLight color={'slateblue'} intensity={0.5} />
         <pointLight position={[-2, 0, 4]} color={'white'} intensity={0.5} />
-        <Moon position={[2, 0, 0]} />
+        <Moon />
       </Canvas>
     </Suspense>
   )
