@@ -7,6 +7,7 @@ export function Scene() {
   return (
     <Suspense fallback={null}>
       <Canvas
+        className={'animate-fadeIn'}
         style={{
           position: 'absolute',
           top: '0%',
@@ -15,7 +16,7 @@ export function Scene() {
         }}
       >
         <hemisphereLight color={'slateblue'} intensity={0.5} />
-        <pointLight position={[-2, 0, 4]} color={'white'} intensity={0.5} />
+        <pointLight position={[-2, 1, 4]} color={'white'} intensity={0.35} />
         <Moon />
       </Canvas>
     </Suspense>

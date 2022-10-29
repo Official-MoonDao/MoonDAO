@@ -16,7 +16,7 @@ import { Scene } from '../r3f/Scene'
 
 export default function Index() {
   return (
-    <div className="pgContain">
+    <div className="animate-fadeIn">
       <Scene />
       <Head title="Home" />
       <div className="flex flex-col max-w-3xl">

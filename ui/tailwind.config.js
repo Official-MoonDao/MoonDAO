@@ -7,8 +7,8 @@ module.exports = {
     fontFamily: {
       display: ['Poppins', 'sans-serif'],
       body: ['UniversalSans', 'sans-serif'],
-      GoodTimes: ["Good Times", "sans-serif"],
-      RobotoMono: ["Roboto Mono", "sans-serif"],
+      GoodTimes: ['Good Times', 'sans-serif'],
+      RobotoMono: ['Roboto Mono', 'sans-serif'],
     },
     fontWeight: {
       light: 200,
@@ -18,6 +18,10 @@ module.exports = {
       bold: 500,
     },
     extend: {
+      animation: {
+        fadeIn: 'fadeIn 0.5s linear',
+        notification: 'notification 5s',
+      },
       colors: {
         n3blue: '#ffbc5c',
         n3green: '#d85c4c',
@@ -25,6 +29,34 @@ module.exports = {
         'n3green-100': '#D5FFFF',
         n3bg: '#F4FAFF',
         n3nav: '#7395B2',
+      },
+      keyframes: {
+        notification: {
+          '0%': {
+            left: '350px',
+            opacity: 1,
+          },
+          '15%': {
+            left: '-15px',
+            opacity: 1,
+          },
+          '80%': {
+            left: '-10px',
+            opacity: 1,
+          },
+          '100%': {
+            left: '350px',
+            opacity: 0,
+          },
+        },
+        fadeIn: {
+          '0%': {
+            opacity: 0,
+          },
+          '100%': {
+            opacity: 1,
+          },
+        },
       },
     },
   },

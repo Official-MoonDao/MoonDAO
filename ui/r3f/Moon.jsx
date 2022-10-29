@@ -5,16 +5,16 @@ import React, { useRef } from 'react'
 export function Moon() {
   const { nodes, materials } = useGLTF('/textures/moon.glb')
   const moonRef = useRef()
-  useFrame(() => {
+  useFrame(({ clock }) => {
     if (moonRef.current) {
-      moonRef.current.rotation.y += 0.001
+      moonRef.current.rotation.y += 0.00125
     }
   })
 
   return (
     <group
       dispose={null}
-      position={[2, 0, 0]}
+      position={[1.5, 0, 0]}
       rotation={[Math.PI / 6, 0, 0]}
       ref={moonRef}
     >

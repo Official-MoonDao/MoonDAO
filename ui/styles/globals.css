@@ -32,10 +32,6 @@ a {
   src: url('/fonts/RobotoMono-Regular.ttf') format('truetype');
 }
 
-.pgContain {
-  animation: fadeIn 0.5s;
-}
-
 .stars-bg {
   background: url('/star-background.png') repeat,
     linear-gradient(to right, rgb(14, 15, 15), rgb(25, 20, 58), rgb(13, 0, 31));
@@ -99,11 +95,3 @@ a {
   border-width: 2px;
 }
 
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}

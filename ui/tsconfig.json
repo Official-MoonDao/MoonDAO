@@ -97,8 +97,8 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "r3f/Scene.tsx",
-    "r3f/Moon.tsx"
+    "r3f/Scene.jsx",
+    "r3f/Moon.jsx"
   ],
   "exclude": ["node_modules"]
 }

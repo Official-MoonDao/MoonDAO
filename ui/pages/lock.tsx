@@ -172,7 +172,7 @@ export default function Lock() {
   const withdraw = useVMOONEYWithdrawLock()
 
   return (
-    <div className='pgContain'>
+    <div className='animate-fadeIn'>
       <Head title="$vMOONEY" />
 
       <MainCard title="Lock $MOONEY to get $vMOONEY">
