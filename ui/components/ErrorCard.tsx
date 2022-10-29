@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useErrorContext } from './ErrorProvider'
 
 export default function ErrorCard({ error }: any) {
   const { removeError } = useErrorContext()
-
+  let timer
   useEffect(() => {
-    setTimeout(() => {
+    timer = setTimeout(() => {
       removeError(error.key)
-    }, 4900)
+    }, 5000)
   })
   return (
     <div className="card shadow-md bg-error text-primary-content animate-notification">
@@ -22,7 +22,10 @@ export default function ErrorCard({ error }: any) {
       </div>
       <div
         className="btn btn-sm btn-circle btn-ghost absolute right-6 top-1 p-2.5"
-        onClick={() => removeError(error.key)}
+        onClick={() => {
+          clearTimeout(timer)
+          removeError(error.key)
+        }}
       >
         ✕
       </div>
