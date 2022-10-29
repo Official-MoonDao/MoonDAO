@@ -3,7 +3,7 @@ import { useErrorContext } from './ErrorProvider'
 
 export default function ErrorCard({ error }: any) {
   const { removeError } = useErrorContext()
-  let timer
+  let timer: ReturnType<typeof setTimeout>
   useEffect(() => {
     timer = setTimeout(() => {
       removeError(error.key)
