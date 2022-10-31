@@ -172,7 +172,7 @@ export default function Lock() {
   const withdraw = useVMOONEYWithdrawLock()
 
   return (
-    <>
+    <div className='animate-fadeIn'>
       <Head title="$vMOONEY" />
 
       <MainCard title="Lock $MOONEY to get $vMOONEY">
@@ -445,6 +445,6 @@ export default function Lock() {
           </div>
         </div>
       </MainCard>
-    </>
+    </div>
   )
 }

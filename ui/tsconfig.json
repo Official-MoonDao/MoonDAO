@@ -93,6 +93,12 @@
     "isolatedModules": true,
     "jsx": "preserve"
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "r3f/Scene.jsx",
+    "r3f/Moon.jsx"
+  ],
   "exclude": ["node_modules"]
 }

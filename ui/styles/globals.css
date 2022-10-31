@@ -33,7 +33,8 @@ a {
 }
 
 .stars-bg {
-  background: url("/star-background.png") repeat, linear-gradient(to right,rgb(14, 15, 15),rgb(25, 20, 58),rgb(13, 0, 31));
+  background: url('/star-background.png') repeat,
+    linear-gradient(to right, rgb(14, 15, 15), rgb(25, 20, 58), rgb(13, 0, 31));
 }
 
 /* .card {
@@ -93,3 +94,4 @@ a {
   border-radius: 25px;
   border-width: 2px;
 }
+
