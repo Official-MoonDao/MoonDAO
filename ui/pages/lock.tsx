@@ -28,6 +28,7 @@ import GradientLink from '../components/GradientLink'
 import Head from '../components/Head'
 import MainCard from '../components/MainCard'
 import TimeRange from '../components/TimeRange'
+import LockPresets from '../components/LockPresets'
 
 const dateToReadable = (date: any) => {
   return date && date.toISOString().substring(0, 10)
@@ -342,6 +343,23 @@ export default function Lock() {
                           : lockTime.orig.value,
                       })
                       setWantsToIncrease(!!e.target.value)
+                    }}
+                  />
+
+                  <LockPresets
+                    disabled={hasLock && canIncrease.amount ? true : false }
+                    expirationTime={Date.parse(bigNumberToDate(VMOONEYLock[1]))}
+                    min={Date.parse(minMaxLockTime.min)}
+                    max={Date.parse(minMaxLockTime.max)}
+                    displaySteps={!hasLock}
+                    onChange={(newDate: any) => {
+                      console.log(newDate)
+                      setWantsToIncrease(true);
+                      setLockTime({
+                        ...lockTime,
+                        formatted: dateToReadable(newDate),
+                        value: ethers.BigNumber.from(Date.parse(newDate)),
+                      })
                     }}
                   />
 
