@@ -348,7 +348,7 @@ export default function Lock() {
 
                   <LockPresets
                     disabled={hasLock && canIncrease.amount ? true : false }
-                    expirationTime={Date.parse(bigNumberToDate(VMOONEYLock[1]))}
+                    expirationTime={VMOONEYLock ? Date.parse(bigNumberToDate(VMOONEYLock[1])) : Date.now}
                     min={Date.parse(minMaxLockTime.min)}
                     max={Date.parse(minMaxLockTime.max)}
                     displaySteps={!hasLock}
