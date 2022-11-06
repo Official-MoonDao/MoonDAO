@@ -91,7 +91,7 @@ export default function Layout({ children }: any) {
                 <div className="flex-none hidden lg:block">
                   <Link href="/" passHref>
                     <a>
-                      <Image src={Logo} />
+                      <Image alt="MoonDAO Logo" src={Logo} />
                     </a>
                   </Link>
                 </div>

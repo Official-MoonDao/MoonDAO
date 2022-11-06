@@ -29,6 +29,7 @@ import Head from '../components/Head'
 import MainCard from '../components/MainCard'
 import TimeRange from '../components/TimeRange'
 import LockPresets from '../components/LockPresets'
+import { AllowanceWarning } from '../components/AllowanceWarning'
 
 const dateToReadable = (date: any) => {
   return date && date.toISOString().substring(0, 10)
@@ -189,11 +190,12 @@ export default function Lock() {
         {!hasLock ? (
           <>
             <p>
-              Your $vMOONEY balance is dynamic and always correlates to the
-              remainder of the time lock. As time passes and the remainder of
-              time lock decreases, your $vMOONEY balance decreases. If you want
-              to increase it, you have to either increase the time lock or add
-              more $MOONEY. $MOONEY balance stays the same.
+            You will always have the same amount of $MOONEY, 
+            regardless of your lock. The amount of $vMOONEY, 
+            and hence your voting power, decreases over time.  
+            To recharge your voting power you can visit this 
+            page to increase the time lock or add more $MOONEY  
+            to your time lock.
               <br />
               <br />
           
@@ -272,9 +274,7 @@ export default function Lock() {
                       Lock amount
                       <br />
                       <span className="text-xs ">
-                        This is the final total amount. To increase it, enter
-                        your current amount plus the amount you want to
-                        increase.
+                        This is the total amount you are locking, including the amount already locked.
                         {hasLock && canIncrease.time ? ' **Note, both lock amount and expiration date cannot be increased at once**' : ''}
                       </span>
                     </span>
@@ -319,7 +319,7 @@ export default function Lock() {
                       Lock expiration date
                       <br />
                       <span className="text-xs">
-                        Minimum one week, maximum four years from now. If you have already staked, you may only extend the lock time.
+                        Minimum one week, maximum four years from now. If you have already locked $MOONEY, you may only extend the lock time.
                         {hasLock && canIncrease.amount ? ' **Note, both lock amount and expiration date cannot be increased at once**' : ''}
                       </span>
                     </span>
@@ -349,8 +349,6 @@ export default function Lock() {
                   <LockPresets
                     disabled={hasLock && canIncrease.amount ? true : false }
                     expirationTime={VMOONEYLock ? Date.parse(bigNumberToDate(VMOONEYLock[1])) : Date.now}
-                    min={Date.parse(minMaxLockTime.min)}
-                    max={Date.parse(minMaxLockTime.max)}
                     displaySteps={!hasLock}
                     onChange={(newDate: any) => {
                       console.log(newDate)
@@ -380,6 +378,7 @@ export default function Lock() {
                           formatted: dateToReadable(newDate),
                           value: ethers.BigNumber.from(Date.parse(newDate)),
                         })
+                        console.log(lockTime)
                       }
                     }}
                   />
@@ -407,14 +406,14 @@ export default function Lock() {
                   )}
                   <div className="card-actions mt-4 white-text">
                     <ActionButton
-                      className={`border-style btn btn-primary normal-case font-medium w-full ${
+                      className={`border-style btn text-black normal-case font-medium w-full ${
                         (
                           (hasLock && ((canIncrease.amount && canIncrease.time) || (!canIncrease.amount && !canIncrease.time))) || 
                           (lockAmount && parseFloat(lockAmount) > parseFloat(ethers.utils.formatEther(VMOONEYLock[0].add(MOONEYBalance?.value)))) ||
                           !lockAmount
                         ) 
-                          ? 'border-disabled btn-disabled'
-                          : ''
+                          ? 'border-disabled btn-disabled bg-transparent'
+                          : 'bg-primary'
                       }`}
                       action={hasLock ? increaseLock : createLock}
                       approval={{
@@ -460,6 +459,7 @@ export default function Lock() {
                 </>
               )}
             </div>
+            <AllowanceWarning token={MOONEYToken} spender={vMOONEYToken} />
           </div>
         </div>
       </MainCard>

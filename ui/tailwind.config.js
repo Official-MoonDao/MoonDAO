@@ -29,6 +29,7 @@ module.exports = {
         'n3green-100': '#D5FFFF',
         n3bg: '#F4FAFF',
         n3nav: '#7395B2',
+        moonBlue: "#0B3B8E"
       },
       keyframes: {
         notification: {
