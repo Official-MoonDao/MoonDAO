@@ -21,7 +21,7 @@ export default function Index() {
       <Head title="Home" />
       <div className="flex flex-col max-w-3xl">
         <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
-          The MoonDAO App
+          The MoonDAO App Testing
           <Image src={flag} width={36} height={36} />
         </h1>
 
