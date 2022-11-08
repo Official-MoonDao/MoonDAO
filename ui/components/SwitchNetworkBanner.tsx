@@ -1,6 +1,7 @@
 import { ExclamationCircleIcon } from '@heroicons/react/outline'
 import React from 'react'
 import { useNetwork } from '../lib/use-wagmi'
+import useTranslation from 'next-translate/useTranslation';
 
 const chainIds = {
   mainnet: 1,
@@ -18,11 +19,13 @@ export default function SwitchNetworkBanner({ newNetwork }: any) {
   const capitalized = (network: any) =>
     network.charAt(0).toUpperCase() + network.slice(1)
 
+  const { t } = useTranslation('common');
+
   return (
     <div className="p-4 px-8 flex flex-col gap-4 md:flex-row justify-between md:items-center z-10">
       <div className="flex flex-col sm:flex-row gap-2 items-center">
         <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
-        MoonDAO uses {capitalized(newNetwork)} as its preferred network.
+        {t('networkBanner1')} {capitalized(newNetwork)} {t('networkBanner2')}
       </div>
 
       {/* There's a small chance the wallet used won't support switchNetwork, in which case the user needs to manually switch */}
@@ -32,7 +35,7 @@ export default function SwitchNetworkBanner({ newNetwork }: any) {
           className="btn btn-md btn-secondary normal-case font-medium"
           onClick={() => switchNetwork((chainIds as Indexable)[newNetwork])}
         >
-          Switch to {capitalized(newNetwork)}
+          {t('networkButton')} {capitalized(newNetwork)}
         </div>
       )}
     </div>

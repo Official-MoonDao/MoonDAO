@@ -80,6 +80,14 @@ export default function Layout({ children }: any) {
   const [nav, setNav] = useState(navigation)
   const errorContext = useErrorContext()
 
+  const [currentLang, setCurrentLang] = useState(router.locale)
+  
+  const changeLang = (e : any, lang : any) => {
+    e.preventDefault()
+    setCurrentLang(lang)
+    router.push(router.pathname, router.pathname, { locale: lang })
+  }
+
   const layout = (
     <div className="mx-auto font-display">
       <Script src="https://cdn.splitbee.io/sb.js" />
@@ -134,7 +142,7 @@ export default function Layout({ children }: any) {
                   </Link>
                 </div>
               </div>
-              <ul className="menu p-4 overflow-y-auto text-base-400 grow font-GoodTimes">
+              <ul className="menu scrollbar-hide p-4 overflow-y-auto text-base-400 grow font-GoodTimes">
                 {nav.map((item: any) => (
                   <li
                     className="mt-1 relative py-2"
@@ -172,6 +180,28 @@ export default function Layout({ children }: any) {
                     )}
                   </li>
                 ))}
+                <li className="mt-1 relative py-2" >
+                  {
+                    currentLang === 'en' ? (
+                      <Link href="/" locale="zh">
+                        <a className='py-4 active text-black text-center' onClick={(e) => changeLang(e, 'zh')}>
+                          <h1 className="mx-auto">切换到普通话</h1>
+                        </a>
+                      </Link>
+                    ) : (
+                      <Link href="/" locale="en">
+                        <a className='py-4 active text-black text-center' onClick={(e) => changeLang(e, 'en')}>
+                          <h1 className="mx-auto">Switch to English</h1>
+                        </a>
+                      </Link>
+                    )
+                  }
+                  </li>
+                {/* <li className="relative py-2 px-2">
+                  <select className="">
+                    <option>{currentLang}</option>
+                  </select>
+                </li> */}
               </ul>
               <ul className="menu p-4 text-base-400">
                 {account?.address ? (
