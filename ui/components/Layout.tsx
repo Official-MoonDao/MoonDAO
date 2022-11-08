@@ -184,14 +184,14 @@ export default function Layout({ children }: any) {
                   {
                     currentLang === 'en' ? (
                       <Link href="/" locale="zh">
-                        <a className='py-4 active' onClick={(e) => changeLang(e, 'zh')}>
-                          切换到普通话
+                        <a className='py-4 active text-black text-center' onClick={(e) => changeLang(e, 'zh')}>
+                          <h1 className="mx-auto">切换到普通话</h1>
                         </a>
                       </Link>
                     ) : (
                       <Link href="/" locale="en">
-                        <a className='py-4 active' onClick={(e) => changeLang(e, 'en')}>
-                          Switch to English
+                        <a className='py-4 active text-black text-center' onClick={(e) => changeLang(e, 'en')}>
+                          <h1 className="mx-auto">Switch to English</h1>
                         </a>
                       </Link>
                     )
