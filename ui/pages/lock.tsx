@@ -30,6 +30,7 @@ import MainCard from '../components/MainCard'
 import TimeRange from '../components/TimeRange'
 import LockPresets from '../components/LockPresets'
 import { AllowanceWarning } from '../components/AllowanceWarning'
+import useTranslation from 'next-translate/useTranslation';
 
 const dateToReadable = (date: any) => {
   return date && date.toISOString().substring(0, 10)
@@ -173,13 +174,15 @@ export default function Lock() {
 
   const withdraw = useVMOONEYWithdrawLock()
 
+  const { t } = useTranslation('common');
+
   return (
     <div className='animate-fadeIn'>
       <Head title="$vMOONEY" />
 
-      <MainCard title="Lock $MOONEY to get $vMOONEY">
+      <MainCard title={t('lockCardTitle')}>
         <p className="mb-4">
-          $vMOONEY enables governance for MoonDAO through Snapshot.{' '}
+          {t('lockTitle')}{' '}
           <GradientLink
             text="Learn more"
             href="#"
@@ -190,12 +193,7 @@ export default function Lock() {
         {!hasLock ? (
           <>
             <p>
-            You will always have the same amount of $MOONEY, 
-            regardless of your lock. The amount of $vMOONEY, 
-            and hence your voting power, decreases over time.  
-            To recharge your voting power you can visit this 
-            page to increase the time lock or add more $MOONEY  
-            to your time lock.
+            {t('lockDesc')}
               <br />
               <br />
           
@@ -211,7 +209,7 @@ export default function Lock() {
                 <div className="white-text stat-figure text-primary">
                   <MoonIcon className="h-8 w-8" />
                 </div>
-                <div className="white-text">Your $vMOONEY</div>
+                <div className="white-text">{t('hasLockMoney1')}</div>
                 <div className="stat-value text-primary">
                   <Balance
                     balance={VMOONEYBalance.value}
@@ -230,7 +228,7 @@ export default function Lock() {
                 <div className="white-text stat-figure text-secondary">
                   <LockClosedIcon className="h-8 w-8" />
                 </div>
-                <div className="white-text">Your locked $MOONEY</div>
+                <div className="white-text">{t('hasLockMoney2')}</div>
                 <div className="stat-value text-secondary">
                   <Balance
                     balance={VMOONEYLock && VMOONEYLock[0]}
@@ -262,7 +260,7 @@ export default function Lock() {
               {!hasExpired ? (
                 <>
                   <p className="mb-4">
-                    Available to lock:{' '}
+                    {t('lockAvailableMoney')}{' '}
                     <Balance
                       balance={MOONEYBalance?.formatted}
                       loading={MOONEYBalanceLoading}
@@ -271,11 +269,11 @@ export default function Lock() {
                   </p>
                   <label className="label">
                     <span className="label-text white-text">
-                      Lock amount
+                      {t('lockAmount')}
                       <br />
                       <span className="text-xs ">
-                        This is the total amount you are locking, including the amount already locked.
-                        {hasLock && canIncrease.time ? ' **Note, both lock amount and expiration date cannot be increased at once**' : ''}
+                        {t('lockAmountDesc')}
+                        {hasLock && canIncrease.time ? t('lockAmountNote') : ''}
                       </span>
                     </span>
                   </label>
@@ -316,17 +314,17 @@ export default function Lock() {
                   </div>
                   <label className="label">
                     <span className="label-text white-text">
-                      Lock expiration date
+                      {t('lockExpDate')}
                       <br />
                       <span className="text-xs">
-                        Minimum one week, maximum four years from now. If you have already locked $MOONEY, you may only extend the lock time.
-                        {hasLock && canIncrease.amount ? ' **Note, both lock amount and expiration date cannot be increased at once**' : ''}
+                        {t('lockDesc2')}
+                        {hasLock && canIncrease.amount ? t('lockAmountNote') : ''}
                       </span>
                     </span>
                   </label>
                   <input
                     type="date"
-                    placeholder="Expiration date"
+                    placeholder={t('lockExpDate')}
                     className="input input-bordered w-full black-text"
                     value={lockTime.formatted}
                     min={hasLock ? dateToReadable(bigNumberToDate(VMOONEYLock[1])) : minMaxLockTime.min}
@@ -384,7 +382,7 @@ export default function Lock() {
                   />
                   {(canIncrease.time || canIncrease.amount) && wantsToIncrease ? (
                     <p>
-                      Your final balance will be approx{' '}
+                      {t('lockBalance')}{' '}
                       {calculateVMOONEY({
                         MOONEYAmount: lockAmount && +lockAmount,
                         VMOONEYAmount: transformNumber(
@@ -431,29 +429,29 @@ export default function Lock() {
                                 lockAmount ?? '0',
                                 NumberType.bignumber
                               ),
-                        approveText: 'Approve $MOONEY',
+                        approveText: t('lockApproveText'),
                       }}
                     >
                       {!hasLock
-                        ? 'Lock'
-                        : `Increase lock ${
-                            (canIncrease.amount && !canIncrease.time) ? 'amount' : ''
+                        ? t('lock')
+                        : `${t('lockInc')} ${
+                            (canIncrease.amount && !canIncrease.time) ? t('amount') : ''
                           }  
-                          ${(!canIncrease.amount && canIncrease.time) ? 'time' : ''}`
+                          ${(!canIncrease.amount && canIncrease.time) ? t('time') : ''}`
                         }
                     </ActionButton>
                   </div>
                 </>
               ) : (
                 <>
-                  <p className='white-text'>Your previous lock has expired, you need to withdraw </p>
+                  <p className='white-text'>{t('expDesc')} </p>
 
                   <div className="card-actions mt-4">
                     <ActionButton
                       className="btn btn-primary normal-case font-medium w-full"
                       action={withdraw}
                     >
-                      Withdraw
+                      {t('withdraw')}
                     </ActionButton>
                   </div>
                 </>

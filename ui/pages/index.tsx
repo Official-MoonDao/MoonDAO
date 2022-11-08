@@ -5,7 +5,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/outline'
 import Image from 'next/image'
-import Link from 'next/link'
+import Link from 'next/link';
 import React from 'react'
 import { MOONEYToken } from '../lib/config'
 import GradientLink from '../components/GradientLink'
@@ -13,21 +13,22 @@ import Head from '../components/Head'
 import HomeCard from '../components/HomeCard'
 import flag from '../public/Original.png'
 import { Scene } from '../r3f/Scene'
+import useTranslation from 'next-translate/useTranslation';
 
 export default function Index() {
+  const { t } = useTranslation('common');
   return (
     <div className="animate-fadeIn">
       <Scene />
       <Head title="Home" />
       <div className="flex flex-col max-w-3xl">
         <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
-          The MoonDAO App Testing
+          {t('indexTitle')}
           <Image src={flag} width={36} height={36} />
         </h1>
 
         <p className="mb-8 font-RobotoMono">
-          Here you can perform on-chain operations related to the MoonDAO
-          community.
+          {t('indexDesc')}
         </p>
 
         <div className="grid xl:grid-cols-1 mt-2 gap-8">
@@ -40,8 +41,7 @@ export default function Index() {
             linkText="Get $vMOONEY"
           >
             <p>
-              Lock your $MOONEY to obtain $vMOONEY and help govern MoonDAO.
-              $vMOONEY is required to vote on MooDAO proposals through Snapshot.
+              {t('indexCard')}
             </p>
           </HomeCard>
         </div>
