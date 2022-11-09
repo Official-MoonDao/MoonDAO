@@ -283,7 +283,7 @@ export default function Lock() {
                       placeholder="0"
                       className="input input-bordered w-full"
                       value={lockAmount}
-                      disabled={hasLock && canIncrease.time ? true : false }
+                      disabled={MOONEYBalance?.formatted == 0 || (hasLock && canIncrease.time) ? true : false }
                       min={
                         VMOONEYLock
                           ? ethers.utils.formatEther(VMOONEYLock[0])
@@ -297,7 +297,7 @@ export default function Lock() {
 
                     <button
                       className="btn btn-outline white-text hover:bg-accent"
-                      disabled={hasLock && canIncrease.time ? true : false }
+                      disabled={MOONEYBalance?.formatted == 0 || (hasLock && canIncrease.time) ? true : false }
                       onClick={() => {
                         setLockAmount(
                           VMOONEYLock
@@ -329,7 +329,7 @@ export default function Lock() {
                     value={lockTime.formatted}
                     min={hasLock ? dateToReadable(bigNumberToDate(VMOONEYLock[1])) : minMaxLockTime.min}
                     max={minMaxLockTime.max}
-                    disabled={hasLock && canIncrease.amount ? true : false }
+                    disabled={MOONEYBalance?.formatted == 0 || (hasLock && canIncrease.amount) ? true : false }
                     onChange={(e: any) => {
                       setLockTime({
                         ...lockTime,
@@ -345,7 +345,7 @@ export default function Lock() {
                   />
 
                   <LockPresets
-                    disabled={hasLock && canIncrease.amount ? true : false }
+                    disabled={MOONEYBalance?.formatted == 0 || (hasLock && canIncrease.amount) ? true : false }
                     expirationTime={VMOONEYLock ? Date.parse(bigNumberToDate(VMOONEYLock[1])) : Date.now}
                     displaySteps={!hasLock}
                     onChange={(newDate: any) => {
@@ -360,7 +360,7 @@ export default function Lock() {
                   />
 
                   <TimeRange
-                    disabled={hasLock && canIncrease.amount ? true : false }
+                    disabled={MOONEYBalance?.formatted == 0 || (hasLock && canIncrease.amount) ? true : false }
                     time={Date.parse(lockTime.formatted)}
                     min={Date.parse(minMaxLockTime.min)}
                     max={Date.parse(minMaxLockTime.max)}
