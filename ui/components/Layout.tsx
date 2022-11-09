@@ -81,8 +81,8 @@ export default function Layout({ children }: any) {
   const errorContext = useErrorContext()
 
   const [currentLang, setCurrentLang] = useState(router.locale)
-  
-  const changeLang = (e : any, lang : any) => {
+
+  const changeLang = (e: any, lang: any) => {
     e.preventDefault()
     setCurrentLang(lang)
     router.push(router.pathname, router.pathname, { locale: lang })
@@ -180,23 +180,7 @@ export default function Layout({ children }: any) {
                     )}
                   </li>
                 ))}
-                <li className="mt-1 relative py-2" >
-                  {
-                    currentLang === 'en' ? (
-                      <Link href="/" locale="zh">
-                        <a className='py-4 active text-black text-center' onClick={(e) => changeLang(e, 'zh')}>
-                          <h1 className="mx-auto">切换到普通话</h1>
-                        </a>
-                      </Link>
-                    ) : (
-                      <Link href="/" locale="en">
-                        <a className='py-4 active text-black text-center' onClick={(e) => changeLang(e, 'en')}>
-                          <h1 className="mx-auto">Switch to English</h1>
-                        </a>
-                      </Link>
-                    )
-                  }
-                  </li>
+
                 {/* <li className="relative py-2 px-2">
                   <select className="">
                     <option>{currentLang}</option>
@@ -223,12 +207,33 @@ export default function Layout({ children }: any) {
                   <li>
                     <label
                       htmlFor="web3-modal"
-                      className="btn btn-primary normal-case font-medium text-white modal-button"
+                      className="btn btn-primary normal-case font-medium text-black modal-button"
                     >
                       Connect Wallet
                     </label>
                   </li>
                 )}
+                <li className="mt-1 relative py-2">
+                  {currentLang === 'en' ? (
+                    <Link href="/" locale="zh">
+                      <a
+                        className="py-2 active text-black text-center"
+                        onClick={(e) => changeLang(e, 'zh')}
+                      >
+                        <h1 className="mx-auto">切换到普通话</h1>
+                      </a>
+                    </Link>
+                  ) : (
+                    <Link href="/" locale="en">
+                      <a
+                        className="py-2 active text-black text-center"
+                        onClick={(e) => changeLang(e, 'en')}
+                      >
+                        <h1 className="mx-auto">Switch to English</h1>
+                      </a>
+                    </Link>
+                  )}
+                </li>
               </ul>
             </div>
           </div>
@@ -358,6 +363,6 @@ export default function Layout({ children }: any) {
       )}
     </div>
   )
-  
+
   return layout
 }

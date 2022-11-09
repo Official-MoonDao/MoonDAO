@@ -4,8 +4,9 @@ import {
   LockClosedIcon,
   PlusIcon,
 } from '@heroicons/react/outline'
+import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
-import Link from 'next/link';
+import Link from 'next/link'
 import React from 'react'
 import { MOONEYToken } from '../lib/config'
 import GradientLink from '../components/GradientLink'
@@ -13,10 +14,9 @@ import Head from '../components/Head'
 import HomeCard from '../components/HomeCard'
 import flag from '../public/Original.png'
 import { Scene } from '../r3f/Scene'
-import useTranslation from 'next-translate/useTranslation';
 
 export default function Index() {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">
       <Scene />
@@ -27,9 +27,7 @@ export default function Index() {
           <Image src={flag} width={36} height={36} />
         </h1>
 
-        <p className="mb-8 font-RobotoMono">
-          {t('indexDesc')}
-        </p>
+        <p className="mb-8 font-RobotoMono">{t('indexDesc')}</p>
 
         <div className="grid xl:grid-cols-1 mt-2 gap-8">
           <HomeCard
@@ -40,9 +38,7 @@ export default function Index() {
             title="Get $vMOONEY"
             linkText="Get $vMOONEY"
           >
-            <p>
-              {t('indexCard')}
-            </p>
+            <p>{t('indexCard')}</p>
           </HomeCard>
         </div>
       </div>
