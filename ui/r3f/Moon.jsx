@@ -4,12 +4,12 @@ import React, { useRef, useState, useEffect } from 'react'
 import { Camera } from 'three'
 
 export function Moon() {
-  const { nodes, materials } = useGLTF('/textures/moon.glb')
+  const { nodes, materials } = useGLTF('/textures/the_moon.glb')
   const [isMobile, setIsMobile] = useState(false)
   const { camera, viewport } = useThree()
   const moonRef = useRef()
   useEffect(() => {
-    if (viewport.width < 800) camera.position.set(2.5, 0, 5)
+    if (viewport.width < 800) camera.position.set(4.5, 0, 5)
     else camera.position.set(0, 0, 5)
     camera.aspect = viewport.width / viewport.height
     camera.updateProjectionMatrix()
@@ -23,24 +23,22 @@ export function Moon() {
   return (
     <group
       dispose={null}
-      position={[5, -2.5, -1]}
-      rotation={[Math.PI / 8, 0, 0]}
+      position={[7, -1.5, -1]}
+      rotation={[Math.PI / 8, Math.PI / 4, 0]}
       ref={moonRef}
     >
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <group rotation={[Math.PI / 2, 0, 0]}>
-          <group rotation={[-Math.PI / 2, 0, 0]} scale={4}>
-            <mesh
-              castShadow
-              receiveShadow
-              geometry={nodes.Sphere_Material002_0.geometry}
-              material={materials['Material.002']}
-            />
-          </group>
+        <group rotation={[Math.PI / 2, 0, -Math.PI / 16]} scale={2.9}>
+          <mesh
+            castShadow
+            receiveShadow
+            geometry={nodes.defaultMaterial.geometry}
+            material={materials.Material__50}
+          />
         </group>
       </group>
     </group>
   )
 }
 
-useGLTF.preload('/textures/moon.glb')
+useGLTF.preload('/textures/the_moon.glb')

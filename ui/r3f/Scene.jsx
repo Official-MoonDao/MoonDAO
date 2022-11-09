@@ -1,6 +1,7 @@
-import { Canvas } from '@react-three/fiber'
+import { Effects } from '@react-three/drei'
+import { Canvas, extend, useThree } from '@react-three/fiber'
 import { Suspense } from 'react'
-import { BoxGeometry } from 'three'
+import Bloom from './Bloom'
 import { Moon } from './Moon'
 
 export function Scene() {
@@ -15,15 +16,17 @@ export function Scene() {
           zIndex: '-1',
         }}
         camera={{
-          fov: 50,
-          near: 0.1,
+          fov: 45,
+          near: 1,
           far: 1000,
           position: [0, 0, 5],
         }}
       >
-        <hemisphereLight color={'slateblue'} intensity={0.5} />
-        <pointLight position={[-2, 1, 4]} color={'white'} intensity={0.35} />
-        <Moon />
+        <Bloom>
+          <hemisphereLight args={['slateblue', 'lightblue', 0.75]} />
+          <pointLight position={[-2, 1, 4]} color={'white'} intensity={0.08} />
+          <Moon />
+        </Bloom>
       </Canvas>
     </Suspense>
   )
