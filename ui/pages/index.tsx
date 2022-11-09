@@ -35,8 +35,8 @@ export default function Index() {
             icon={
               <LockClosedIcon className="h-5 w-5 absolute right-8 text-n3blue" />
             }
-            title="Get $vMOONEY"
-            linkText="Get $vMOONEY"
+            title={t('getVMOONEY')}
+            linkText={t('getVMOONEY')}
           >
             <p>{t('indexCard')}</p>
           </HomeCard>

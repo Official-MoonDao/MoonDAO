@@ -32,6 +32,7 @@ import Logo from '../public/Original_White.png'
 import ErrorCard from './ErrorCard'
 import { useErrorContext } from './ErrorProvider'
 import PreferredNetworkWrapper from './PreferredNetworkWrapper'
+import useTranslation from 'next-translate/useTranslation'
 
 type Indexable = {
   [key: string]: any
@@ -39,32 +40,32 @@ type Indexable = {
 
 const navigation = [
   {
-    name: 'Home',
+    name: 'home',
     href: '/',
     icon: <ViewGridIcon className="h-5 w-5" />,
   },
   {
-    name: 'Lock tokens',
+    name: 'lockTokens',
     href: '/lock',
     icon: <LockClosedIcon className="h-5 w-5" />,
   },
   {
-    name: 'Buy $MOONEY',
+    name: 'buyMOONEY',
     href: `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet`,
     icon: <PlusIcon className="h-5 w-5" />,
   },
   {
-    name: 'MoonDAO Governance ',
+    name: 'governance',
     href: `https://snapshot.org/#/tomoondao.eth`,
     icon: <UserAddIcon className="h-5 w-5" />,
   },
   {
-    name: 'Homepage',
+    name: 'homepage',
     href: 'https://moondao.com',
     icon: <HomeIcon className="h-5 w-5" />,
   },
   {
-    name: 'Docs',
+    name: 'docs',
     href: 'https://moondao.com/docs/introduction',
     icon: <NewspaperIcon className="h-5 w-5" />,
   },
@@ -87,6 +88,8 @@ export default function Layout({ children }: any) {
     setCurrentLang(lang)
     router.push(router.pathname, router.pathname, { locale: lang })
   }
+
+  const { t } = useTranslation('common')
 
   const layout = (
     <div className="mx-auto font-display">
@@ -160,7 +163,7 @@ export default function Layout({ children }: any) {
                           }`}
                         >
                           {item.icon}
-                          {item.name}
+                          {t(item.name)}
                           <ChevronRightIcon className="h-5 w-5 absolute right-4 opacity-50" />
                         </a>
                       </Link>
@@ -174,7 +177,7 @@ export default function Layout({ children }: any) {
                         rel="noopener noreferrer"
                       >
                         {item.icon}
-                        {item.name}
+                        {t(item.name)}
                         <ExternalLinkIcon className="h-5 w-5 absolute right-4 opacity-50" />
                       </a>
                     )}
@@ -209,7 +212,7 @@ export default function Layout({ children }: any) {
                       htmlFor="web3-modal"
                       className="btn btn-primary normal-case font-medium text-black modal-button"
                     >
-                      Connect Wallet
+                      {t('connectWallet')}
                     </label>
                   </li>
                 )}
@@ -220,6 +223,9 @@ export default function Layout({ children }: any) {
                         className="py-2 active text-black text-center"
                         onClick={(e) => changeLang(e, 'zh')}
                       >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" />
+                        </svg>
                         <h1 className="mx-auto">切换到普通话</h1>
                       </a>
                     </Link>
@@ -229,6 +235,9 @@ export default function Layout({ children }: any) {
                         className="py-2 active text-black text-center"
                         onClick={(e) => changeLang(e, 'en')}
                       >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" />
+                        </svg>
                         <h1 className="mx-auto">Switch to English</h1>
                       </a>
                     </Link>

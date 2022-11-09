@@ -184,7 +184,7 @@ export default function Lock() {
         <p className="mb-4">
           {t('lockTitle')}{' '}
           <GradientLink
-            text="Learn more"
+            text={t('learnMore')}
             href="#"
             internal={false}
             textSize={'md'}
@@ -244,7 +244,7 @@ export default function Lock() {
                 <div className="stat-figure">
                   <ClockIcon className="h-8 w-8" />
                 </div>
-                <div className="white-text">Your lock expiration date</div>
+                <div className="white-text">{t('yourlockExpDate')}</div>
                 <div className="yellow-text stat-value">
                   {VMOONEYLock &&
                     dateToReadable(bigNumberToDate(VMOONEYLock[1]))}
