@@ -18,6 +18,10 @@ a {
   text-decoration: none;
 }
 
+.active {
+  color: black;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -94,4 +98,3 @@ a {
   border-radius: 25px;
   border-width: 2px;
 }
-
