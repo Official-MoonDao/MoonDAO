@@ -56,7 +56,7 @@ const calculateVMOONEY = ({
   max,
 }: any) => {
   if (!MOONEYAmount) return 0
-
+  
   const vestingStart = calculateVestingStart({
     MOONEYAmount,
     VMOONEYAmount,
@@ -81,8 +81,6 @@ export default function Lock() {
 
   const { data: MOONEYBalance, isLoading: MOONEYBalanceLoading } =
     useMOONEYBalance(account?.address)
-
-    console.log(MOONEYBalance?.formatted)
 
   const { data: VMOONEYBalance, isLoading: VMOONEYBalanceLoading } =
     useVMOONEYBalance(account?.address)
@@ -187,7 +185,7 @@ export default function Lock() {
           {t('lockTitle')}{' '}
           <GradientLink
             text={t('learnMore')}
-            href="#"
+            href="https://docs.moondao.com/token/#vmooney-characteristics"
             internal={false}
             textSize={'md'}
           ></GradientLink>
@@ -351,7 +349,6 @@ export default function Lock() {
                     expirationTime={VMOONEYLock ? Date.parse(bigNumberToDate(VMOONEYLock[1])) : Date.now}
                     displaySteps={!hasLock}
                     onChange={(newDate: any) => {
-                      console.log(newDate)
                       setWantsToIncrease(true);
                       setLockTime({
                         ...lockTime,
@@ -378,7 +375,6 @@ export default function Lock() {
                           formatted: dateToReadable(newDate),
                           value: ethers.BigNumber.from(Date.parse(newDate)),
                         })
-                        console.log(lockTime)
                       }
                     }}
                   />
@@ -386,6 +382,7 @@ export default function Lock() {
                     <p>
                       {t('lockBalance')}{' '}
                       {calculateVMOONEY({
+                        CurrentMOONEYLock: ethers.utils.formatEther(VMOONEYLock[0]),
                         MOONEYAmount: lockAmount && +lockAmount,
                         VMOONEYAmount: transformNumber(
                           VMOONEYBalance?.value || 0,
