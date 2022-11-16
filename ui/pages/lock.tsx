@@ -56,7 +56,7 @@ const calculateVMOONEY = ({
   max,
 }: any) => {
   if (!MOONEYAmount) return 0
-
+  
   const vestingStart = calculateVestingStart({
     MOONEYAmount,
     VMOONEYAmount,
@@ -184,8 +184,8 @@ export default function Lock() {
         <p className="mb-4">
           {t('lockTitle')}{' '}
           <GradientLink
-            text="Learn more"
-            href="#"
+            text={t('learnMore')}
+            href="https://docs.moondao.com/token/#vmooney-characteristics"
             internal={false}
             textSize={'md'}
           ></GradientLink>
@@ -244,7 +244,7 @@ export default function Lock() {
                 <div className="stat-figure">
                   <ClockIcon className="h-8 w-8" />
                 </div>
-                <div className="white-text">Your lock expiration date</div>
+                <div className="white-text">{t('yourlockExpDate')}</div>
                 <div className="yellow-text stat-value">
                   {VMOONEYLock &&
                     dateToReadable(bigNumberToDate(VMOONEYLock[1]))}
@@ -283,7 +283,7 @@ export default function Lock() {
                       placeholder="0"
                       className="input input-bordered w-full"
                       value={lockAmount}
-                      disabled={hasLock && canIncrease.time ? true : false }
+                      disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.time) ? true : false }
                       min={
                         VMOONEYLock
                           ? ethers.utils.formatEther(VMOONEYLock[0])
@@ -297,7 +297,7 @@ export default function Lock() {
 
                     <button
                       className="btn btn-outline white-text hover:bg-accent"
-                      disabled={hasLock && canIncrease.time ? true : false }
+                      disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.time) ? true : false }
                       onClick={() => {
                         setLockAmount(
                           VMOONEYLock
@@ -329,7 +329,7 @@ export default function Lock() {
                     value={lockTime.formatted}
                     min={hasLock ? dateToReadable(bigNumberToDate(VMOONEYLock[1])) : minMaxLockTime.min}
                     max={minMaxLockTime.max}
-                    disabled={hasLock && canIncrease.amount ? true : false }
+                    disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.amount) ? true : false }
                     onChange={(e: any) => {
                       setLockTime({
                         ...lockTime,
@@ -345,11 +345,10 @@ export default function Lock() {
                   />
 
                   <LockPresets
-                    disabled={hasLock && canIncrease.amount ? true : false }
+                    disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.amount) ? true : false }
                     expirationTime={VMOONEYLock ? Date.parse(bigNumberToDate(VMOONEYLock[1])) : Date.now}
                     displaySteps={!hasLock}
                     onChange={(newDate: any) => {
-                      console.log(newDate)
                       setWantsToIncrease(true);
                       setLockTime({
                         ...lockTime,
@@ -360,7 +359,7 @@ export default function Lock() {
                   />
 
                   <TimeRange
-                    disabled={hasLock && canIncrease.amount ? true : false }
+                    disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.amount) ? true : false }
                     time={Date.parse(lockTime.formatted)}
                     min={Date.parse(minMaxLockTime.min)}
                     max={Date.parse(minMaxLockTime.max)}
@@ -376,7 +375,6 @@ export default function Lock() {
                           formatted: dateToReadable(newDate),
                           value: ethers.BigNumber.from(Date.parse(newDate)),
                         })
-                        console.log(lockTime)
                       }
                     }}
                   />
@@ -384,6 +382,7 @@ export default function Lock() {
                     <p>
                       {t('lockBalance')}{' '}
                       {calculateVMOONEY({
+                        CurrentMOONEYLock: ethers.utils.formatEther(VMOONEYLock[0]),
                         MOONEYAmount: lockAmount && +lockAmount,
                         VMOONEYAmount: transformNumber(
                           VMOONEYBalance?.value || 0,
