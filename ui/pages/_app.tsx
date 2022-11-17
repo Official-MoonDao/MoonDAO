@@ -8,6 +8,7 @@ import { ErrorProvider } from '../components/ErrorProvider'
 import Layout from '../components/Layout'
 import '../styles/globals.css'
 
+declare let window: any
 function App({ Component, pageProps }: any) {
   const [client, setClient] = useState<any>()
 

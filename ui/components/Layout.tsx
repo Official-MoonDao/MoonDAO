@@ -16,6 +16,7 @@ import {
   ChevronDownIcon,
   ExternalLinkIcon,
 } from '@heroicons/react/outline'
+import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -24,15 +25,16 @@ import React from 'react'
 import { useState, useEffect } from 'react'
 // @ts-expect-error ts-migrate(7016) FIXME: Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import Blockies from 'react-blockies'
+import { isToken } from 'typescript'
 import { useConnect, useEnsName, useDisconnect } from 'wagmi'
 import { MOONEYToken } from '../lib/config'
 import { connectorIcons } from '../lib/connectors'
+import { importToken } from '../lib/import-token'
 import { useAccount } from '../lib/use-wagmi'
 import Logo from '../public/Original_White.png'
 import ErrorCard from './ErrorCard'
 import { useErrorContext } from './ErrorProvider'
 import PreferredNetworkWrapper from './PreferredNetworkWrapper'
-import useTranslation from 'next-translate/useTranslation'
 
 type Indexable = {
   [key: string]: any
@@ -82,13 +84,15 @@ export default function Layout({ children }: any) {
   const errorContext = useErrorContext()
 
   const [currentLang, setCurrentLang] = useState(router.locale)
-
+  const [isTokenImported, setIsTokenImported] = useState(false)
   const changeLang = (e: any, lang: any) => {
     e.preventDefault()
     setCurrentLang(lang)
     router.push(router.pathname, router.pathname, { locale: lang })
   }
-
+  useEffect(() => {
+    if (localStorage.getItem('MOONEY_isImported')) setIsTokenImported(true)
+  }, [account])
   const { t } = useTranslation('common')
 
   const layout = (
@@ -223,8 +227,19 @@ export default function Layout({ children }: any) {
                         className="py-2 active text-black text-center"
                         onClick={(e) => changeLang(e, 'zh')}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="w-6 h-6"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802"
+                          />
                         </svg>
                         <h1 className="mx-auto">切换到中文</h1>
                       </a>
@@ -235,14 +250,43 @@ export default function Layout({ children }: any) {
                         className="py-2 active text-black text-center"
                         onClick={(e) => changeLang(e, 'en')}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="w-6 h-6"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802"
+                          />
                         </svg>
                         <h1 className="mx-auto">Switch to English</h1>
                       </a>
                     </Link>
                   )}
                 </li>
+
+                {account && !isTokenImported && (
+                  <li className="mt-1 relative">
+                    <a
+                      className="active p-2 "
+                      onClick={async () => {
+                        const wasAdded = await importToken()
+                        setIsTokenImported(wasAdded)
+                      }}
+                    >
+                      <h1 className="mx-auto">
+                        {currentLang === 'en'
+                          ? 'Import $MOONEY Token'
+                          : '导入 $MOONEY 代币'}
+                      </h1>
+                    </a>
+                  </li>
+                )}
               </ul>
             </div>
           </div>
@@ -310,7 +354,7 @@ export default function Layout({ children }: any) {
               )}
 
               <ul className="menu bg-base-100 p-2 -m-2 rounded-box">
-                {connectors.map((connector) => (
+                {connectors.map((connector: any) => (
                   <li key={connector.id}>
                     <button
                       disabled={!connector.ready}

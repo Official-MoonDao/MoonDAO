@@ -5,13 +5,10 @@ import {
   InformationCircleIcon,
 } from '@heroicons/react/outline'
 import { BigNumber, ethers } from 'ethers'
+import useTranslation from 'next-translate/useTranslation'
 import { useEffect, useState } from 'react'
 import React from 'react'
-import {
-  MOONEYToken,
-  vMOONEYToken,
-  vMOONEYRequiredStake,
-} from '../lib/config'
+import { MOONEYToken, vMOONEYToken, vMOONEYRequiredStake } from '../lib/config'
 import { useMOONEYBalance } from '../lib/mooney-token'
 import { NumberType, transformNumber } from '../lib/numbers'
 import { useAccount } from '../lib/use-wagmi'
@@ -23,14 +20,13 @@ import {
   useVMOONEYWithdrawLock,
 } from '../lib/ve-token'
 import ActionButton from '../components/ActionButton'
+import { AllowanceWarning } from '../components/AllowanceWarning'
 import Balance from '../components/Balance'
 import GradientLink from '../components/GradientLink'
 import Head from '../components/Head'
+import LockPresets from '../components/LockPresets'
 import MainCard from '../components/MainCard'
 import TimeRange from '../components/TimeRange'
-import LockPresets from '../components/LockPresets'
-import { AllowanceWarning } from '../components/AllowanceWarning'
-import useTranslation from 'next-translate/useTranslation';
 
 const dateToReadable = (date: any) => {
   return date && date.toISOString().substring(0, 10)
@@ -56,7 +52,7 @@ const calculateVMOONEY = ({
   max,
 }: any) => {
   if (!MOONEYAmount) return 0
-  
+
   const vestingStart = calculateVestingStart({
     MOONEYAmount,
     VMOONEYAmount,
@@ -85,8 +81,9 @@ export default function Lock() {
   const { data: VMOONEYBalance, isLoading: VMOONEYBalanceLoading } =
     useVMOONEYBalance(account?.address)
 
-  const { data: VMOONEYLock, isLoading: VMOONEYLockLoading } =
-    useVMOONEYLock(account?.address)
+  const { data: VMOONEYLock, isLoading: VMOONEYLockLoading } = useVMOONEYLock(
+    account?.address
+  )
 
   const [hasLock, setHasLock] = useState<boolean>()
   useEffect(() => {
@@ -135,9 +132,7 @@ export default function Lock() {
   useEffect(() => {
     if (hasLock && VMOONEYLock) {
       setMinMaxLockTime({
-        min: dateToReadable(
-          oneWeekOut
-        ),
+        min: dateToReadable(oneWeekOut),
         max: dateToReadable(dateOut(new Date(), { years: 4 })),
       })
       setCanIncrease({
@@ -174,10 +169,10 @@ export default function Lock() {
 
   const withdraw = useVMOONEYWithdrawLock()
 
-  const { t } = useTranslation('common');
+  const { t } = useTranslation('common')
 
   return (
-    <div className='animate-fadeIn'>
+    <div className="animate-fadeIn">
       <Head title="$vMOONEY" />
 
       <MainCard title={t('lockCardTitle')}>
@@ -193,10 +188,9 @@ export default function Lock() {
         {!hasLock ? (
           <>
             <p>
-            {t('lockDesc')}
+              {t('lockDesc')}
               <br />
               <br />
-          
             </p>
           </>
         ) : (
@@ -271,7 +265,11 @@ export default function Lock() {
                     <span className="label-text white-text">
                       {t('lockAmount')}
                       <br />
-                      <span className="text-xs ">
+                      <span
+                        className={
+                          hasLock && canIncrease.time ? 'animate-highlight' : ''
+                        }
+                      >
                         {t('lockAmountDesc')}
                         {hasLock && canIncrease.time ? t('lockAmountNote') : ''}
                       </span>
@@ -282,8 +280,14 @@ export default function Lock() {
                       type="number"
                       placeholder="0"
                       className="input input-bordered w-full"
-                      value={lockAmount}
-                      disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.time) ? true : false }
+                      value={lockAmount || 0}
+                      disabled={
+                        !MOONEYBalance?.formatted ||
+                        MOONEYBalance?.formatted == 0.0 ||
+                        (hasLock && canIncrease.time)
+                          ? true
+                          : false
+                      }
                       min={
                         VMOONEYLock
                           ? ethers.utils.formatEther(VMOONEYLock[0])
@@ -297,7 +301,13 @@ export default function Lock() {
 
                     <button
                       className="btn btn-outline white-text hover:bg-accent"
-                      disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.time) ? true : false }
+                      disabled={
+                        !MOONEYBalance?.formatted ||
+                        MOONEYBalance?.formatted == 0.0 ||
+                        (hasLock && canIncrease.time)
+                          ? true
+                          : false
+                      }
                       onClick={() => {
                         setLockAmount(
                           VMOONEYLock
@@ -318,7 +328,9 @@ export default function Lock() {
                       <br />
                       <span className="text-xs">
                         {t('lockDesc2')}
-                        {hasLock && canIncrease.amount ? t('lockAmountNote') : ''}
+                        {hasLock && canIncrease.amount
+                          ? t('lockAmountNote')
+                          : ''}
                       </span>
                     </span>
                   </label>
@@ -326,10 +338,20 @@ export default function Lock() {
                     type="date"
                     placeholder={t('lockExpDate')}
                     className="input input-bordered w-full black-text"
-                    value={lockTime.formatted}
-                    min={hasLock ? dateToReadable(bigNumberToDate(VMOONEYLock[1])) : minMaxLockTime.min}
+                    value={lockTime?.formatted || 0}
+                    min={
+                      hasLock
+                        ? dateToReadable(bigNumberToDate(VMOONEYLock[1]))
+                        : minMaxLockTime.min
+                    }
                     max={minMaxLockTime.max}
-                    disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.amount) ? true : false }
+                    disabled={
+                      !MOONEYBalance?.formatted ||
+                      MOONEYBalance?.formatted == 0.0 ||
+                      (hasLock && canIncrease.amount)
+                        ? true
+                        : false
+                    }
                     onChange={(e: any) => {
                       setLockTime({
                         ...lockTime,
@@ -345,11 +367,21 @@ export default function Lock() {
                   />
 
                   <LockPresets
-                    disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.amount) ? true : false }
-                    expirationTime={VMOONEYLock ? Date.parse(bigNumberToDate(VMOONEYLock[1])) : Date.now}
+                    disabled={
+                      !MOONEYBalance?.formatted ||
+                      MOONEYBalance?.formatted == 0.0 ||
+                      (hasLock && canIncrease.amount)
+                        ? true
+                        : false
+                    }
+                    expirationTime={
+                      VMOONEYLock
+                        ? Date.parse(bigNumberToDate(VMOONEYLock[1]))
+                        : Date.now
+                    }
                     displaySteps={!hasLock}
                     onChange={(newDate: any) => {
-                      setWantsToIncrease(true);
+                      setWantsToIncrease(true)
                       setLockTime({
                         ...lockTime,
                         formatted: dateToReadable(newDate),
@@ -359,17 +391,27 @@ export default function Lock() {
                   />
 
                   <TimeRange
-                    disabled={(!MOONEYBalance?.formatted || MOONEYBalance?.formatted == 0.0) || (hasLock && canIncrease.amount) ? true : false }
+                    disabled={
+                      !MOONEYBalance?.formatted ||
+                      MOONEYBalance?.formatted == 0.0 ||
+                      (hasLock && canIncrease.amount)
+                        ? true
+                        : false
+                    }
                     time={Date.parse(lockTime.formatted)}
                     min={Date.parse(minMaxLockTime.min)}
                     max={Date.parse(minMaxLockTime.max)}
                     displaySteps={!hasLock}
                     onChange={(newDate: any) => {
-                      if (Date.parse(newDate) < Date.parse(dateToReadable(bigNumberToDate(VMOONEYLock[1])))) {
-                        setWantsToIncrease(false);
-                      }
-                      else {
-                        setWantsToIncrease(true);
+                      if (
+                        Date.parse(newDate) <
+                        Date.parse(
+                          dateToReadable(bigNumberToDate(VMOONEYLock[1]))
+                        )
+                      ) {
+                        setWantsToIncrease(false)
+                      } else {
+                        setWantsToIncrease(true)
                         setLockTime({
                           ...lockTime,
                           formatted: dateToReadable(newDate),
@@ -378,11 +420,14 @@ export default function Lock() {
                       }
                     }}
                   />
-                  {(canIncrease.time || canIncrease.amount) && wantsToIncrease ? (
+                  {(canIncrease.time || canIncrease.amount) &&
+                  wantsToIncrease ? (
                     <p>
                       {t('lockBalance')}{' '}
                       {calculateVMOONEY({
-                        CurrentMOONEYLock: ethers.utils.formatEther(VMOONEYLock[0]),
+                        CurrentMOONEYLock: ethers.utils.formatEther(
+                          VMOONEYLock[0]
+                        ),
                         MOONEYAmount: lockAmount && +lockAmount,
                         VMOONEYAmount: transformNumber(
                           VMOONEYBalance?.value || 0,
@@ -404,11 +449,17 @@ export default function Lock() {
                   <div className="card-actions mt-4 white-text">
                     <ActionButton
                       className={`border-style btn text-black normal-case font-medium w-full ${
-                        (
-                          (hasLock && ((canIncrease.amount && canIncrease.time) || (!canIncrease.amount && !canIncrease.time))) || 
-                          (lockAmount && parseFloat(lockAmount) > parseFloat(ethers.utils.formatEther(VMOONEYLock[0].add(MOONEYBalance?.value)))) ||
-                          !lockAmount
-                        ) 
+                        (hasLock &&
+                          ((canIncrease.amount && canIncrease.time) ||
+                            (!canIncrease.amount && !canIncrease.time))) ||
+                        (lockAmount &&
+                          parseFloat(lockAmount) >
+                            parseFloat(
+                              ethers.utils.formatEther(
+                                VMOONEYLock[0].add(MOONEYBalance?.value)
+                              )
+                            )) ||
+                        !lockAmount
                           ? 'border-disabled btn-disabled bg-transparent'
                           : 'bg-primary'
                       }`}
@@ -434,16 +485,21 @@ export default function Lock() {
                       {!hasLock
                         ? t('lock')
                         : `${t('lockInc')} ${
-                            (canIncrease.amount && !canIncrease.time) ? t('amount') : ''
+                            canIncrease.amount && !canIncrease.time
+                              ? t('amount')
+                              : ''
                           }  
-                          ${(!canIncrease.amount && canIncrease.time) ? t('time') : ''}`
-                        }
+                          ${
+                            !canIncrease.amount && canIncrease.time
+                              ? t('time')
+                              : ''
+                          }`}
                     </ActionButton>
                   </div>
                 </>
               ) : (
                 <>
-                  <p className='white-text'>{t('expDesc')} </p>
+                  <p className="white-text">{t('expDesc')} </p>
 
                   <div className="card-actions mt-4">
                     <ActionButton
