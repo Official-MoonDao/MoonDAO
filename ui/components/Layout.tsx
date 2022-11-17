@@ -281,7 +281,7 @@ export default function Layout({ children }: any) {
                     >
                       <h1 className="mx-auto">
                         {currentLang === 'en'
-                          ? 'Import MOONEY Token'
+                          ? 'Import $MOONEY Token'
                           : '导入 $MOONEY 代币'}
                       </h1>
                     </a>
