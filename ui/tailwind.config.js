@@ -19,8 +19,9 @@ module.exports = {
     },
     extend: {
       animation: {
-        fadeIn: 'fadeIn 0.5s linear',
+        fadeIn: 'fadeIn 0.5s',
         notification: 'notification 5s',
+        highlight: 'highlight 3s ease-out',
       },
       colors: {
         n3blue: '#ffbc5c',
@@ -29,7 +30,7 @@ module.exports = {
         'n3green-100': '#D5FFFF',
         n3bg: '#F4FAFF',
         n3nav: '#7395B2',
-        moonBlue: "#0B3B8E"
+        moonBlue: '#0B3B8E',
       },
       keyframes: {
         notification: {
@@ -57,6 +58,11 @@ module.exports = {
           '100%': {
             opacity: 1,
           },
+        },
+        highlight: {
+          '0%': { color: 'white' },
+          '50%': { color: '#ffae42 ' },
+          '100%': { color: 'white' },
         },
       },
     },
