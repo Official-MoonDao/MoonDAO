@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 import { chain } from 'wagmi'
 import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet'
-import { InjectedConnector } from 'wagmi/connectors/injected'
+import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
 import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
 import CoinbaseWalletIcon from '../public/icons/connectors/coinbase.svg'
 import FrameIcon from '../public/icons/connectors/frame.svg'
@@ -32,9 +32,10 @@ export function provider() {
 }
 
 export const connectors = [
-  new InjectedConnector({
-    chains,
-    options: { shimDisconnect: true },
+  new MetaMaskConnector({
+    options: {
+      shimDisconnect: true,
+    },
   }),
   new WalletConnectConnector({
     chains,
