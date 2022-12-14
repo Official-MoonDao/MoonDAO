@@ -7,6 +7,7 @@ import {
   KeyIcon,
   UserIcon,
   LogoutIcon,
+  GiftIcon,
   XCircleIcon,
   MenuIcon,
   LockClosedIcon,
@@ -50,6 +51,11 @@ const navigation = [
     name: 'lockTokens',
     href: '/lock',
     icon: <LockClosedIcon className="h-5 w-5" />,
+  },
+  {
+    name: 'wrapped',
+    href: '/wrapped',
+    icon: <GiftIcon className="h-5 w-5" />,
   },
   {
     name: 'buyMOONEY',

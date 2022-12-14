@@ -50,6 +50,10 @@ a {
   border-color: #ffbc5c;
 } */
 
+.bg-galaxy {
+  background: url('/galaxy.jpg') repeat;
+}
+
 .border-style {
   border-style: solid;
   border-radius: 20px;

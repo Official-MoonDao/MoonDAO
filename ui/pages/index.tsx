@@ -13,7 +13,7 @@ import GradientLink from '../components/GradientLink'
 import Head from '../components/Head'
 import HomeCard from '../components/HomeCard'
 import flag from '../public/Original.png'
-import { Scene } from '../r3f/Scene'
+import { Scene } from '../r3f/Moon/Scene'
 
 export default function Index() {
   const { t } = useTranslation('common')
