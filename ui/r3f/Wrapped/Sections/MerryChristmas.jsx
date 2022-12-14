@@ -1,3 +1,7 @@
-export function MerryChristmas({ id }) {
-  return <Text text={`Merry Christmas! ${id}`} size={2} />
+import { Text } from '../Text'
+
+export function MerryChristmas(props) {
+  return (
+    <Text {...props} text={`     Merry\nChristmas! ${props.id}`} size={1} />
+  )
 }

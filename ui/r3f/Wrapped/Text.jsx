@@ -11,23 +11,11 @@ export function Text(props) {
   const { viewport, camera } = useThree()
   const offsetX = props.offsetX || 0
   const font = new FontLoader().parse(goodtimes)
-  const textRef = useRef()
-
   return (
-    <mesh
-      position={[
-        -props.size * viewport.width * 0.05 * 3 + offsetX || 0,
-        -0.5,
-        -0.25,
-      ]}
-      rotation={props.rotation}
-      receiveShadow
-      castShadow
-      ref={textRef}
-    >
+    <mesh {...props} rotation={props.rotation} receiveShadow castShadow>
       <textGeometry
         args={[
-          props.text,
+          props.text || '...loading',
           {
             font,
             size: props.size * viewport.width * 0.08,
@@ -37,10 +25,10 @@ export function Text(props) {
       />
       <meshLambertMaterial
         attach="material"
-        color={props.color || 'white'}
-        transparent
-        emissive={true}
-        emissiveIntensity={10}
+        color={props.color || 'orange'}
+        opacity={0.6}
+        emissive={props.color || 'orange'}
+        emissiveIntensity={1}
       />
     </mesh>
   )

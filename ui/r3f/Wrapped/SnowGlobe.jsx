@@ -1,26 +1,56 @@
 import { useGLTF, useAnimations, useTexture } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
+import gsap from 'gsap'
 import React, { useRef, useEffect, useState } from 'react'
 import { MooneyCoin } from './MooneyCoin'
+import { Text } from './Text'
 
 export function SnowGlobe(props) {
   const group = useRef()
   const snowRef = useRef()
+  const instructionRef = useRef()
+  const { camera } = useThree()
   const { nodes, materials, animations } = useGLTF('/textures/snowglobe.glb')
   const logo = useTexture('/Original.png')
   const { actions } = useAnimations(animations, group)
   const [hover, setHover] = useState(false)
   useFrame(({ clock, mouse }) => {
     const time = clock.getElapsedTime()
-    const speed = hover ? 2.5 : 1
+    const speed = hover ? 10 : 5
     if (snowRef.current) {
-      snowRef.current.rotation.y += 0.01 * speed
+      snowRef.current.rotation.y += 0.001 * speed
     }
 
     if (group.current) {
-      group.current.rotation.y += Math.sin(time * 0.01) * 0.0025
-      group.current.rotation.z = Math.cos(time * 0.5) * 0.01 + mouse.y * 0.05
-      group.current.rotation.x = Math.cos(time) * 0.05 - mouse.y * 0.05
+      group.current.rotation.y = Math.sin(time * 0.1) * 0.025
+      group.current.rotation.z = Math.cos(time * 0.1) * 0.15
+      group.current.rotation.x = Math.cos(time * 0.25) * 0.075
+      if (hover) {
+        gsap.to(group.current.position, {
+          duration: 2,
+          x: 0.5,
+          y: -1.5,
+          z: 2,
+        })
+      } else
+        gsap.to(group.current.position, { duration: 2, x: 0.5, y: -1, z: 0 })
+    }
+    if (instructionRef.current) {
+      if (hover) {
+        gsap.to(instructionRef.current.position, {
+          duration: 1.5,
+          x: -0.75,
+          y: 2.5,
+          z: -0.5,
+        })
+      } else {
+        gsap.to(instructionRef.current.position, {
+          duration: 2,
+          x: -0.25,
+          y: 0.5,
+          z: -0.5,
+        })
+      }
     }
   })
   return (
@@ -30,12 +60,18 @@ export function SnowGlobe(props) {
       dispose={null}
       onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
+      onClick={() => {
+        props.onClick()
+      }}
     >
+      <group position={[-0.25, 0.5, -0.5]} ref={instructionRef}>
+        <Text text={'click\nto\ncontinue'} size={0.5} height={0.0025} />
+      </group>
       <group name="Sketchfab_Scene">
         <group
           name="Sketchfab_model"
           rotation={[-Math.PI / 2, 0, 0]}
-          scale={0.225}
+          scale={0.3}
         >
           <group name="root">
             <group name="GLTF_SceneRootNode" rotation={[Math.PI / 2, 0, 0]}>
@@ -49,8 +85,10 @@ export function SnowGlobe(props) {
                 >
                   <meshLambertMaterial
                     color={'white'}
-                    opacity={0.1}
+                    opacity={0.075}
                     transparent
+                    emissive={'navy'}
+                    emissiveIntensity={0}
                   />
                 </mesh>
                 <MooneyCoin position={[0, 0.27, 0]} />

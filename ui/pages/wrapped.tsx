@@ -1,18 +1,8 @@
-import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import { getSubgraph } from '../lib/analytics'
+import { getSnapshot, getSubgraph } from '../lib/analytics'
 import { useMOONEYBalance } from '../lib/mooney-token'
 import { useAccount } from '../lib/use-wagmi'
 import { WrappedScene } from '../r3f/Wrapped/WrappedScene'
-
-function Title({ text, flag }: any) {
-  return (
-    <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
-      {text}
-      {flag && <Image src={'/original.png'} width={36} height={36} />}
-    </h1>
-  )
-}
 
 export default function Wrapped(props: any) {
   const [userData, setUserData]: any = useState({})
@@ -25,24 +15,24 @@ export default function Wrapped(props: any) {
       setUserData({
         ...vMooneyData,
         unlockedMooney: balance.formatted,
+        votes: props.snapshot,
       })
     }
-    console.log(userData)
   }, [balance, address])
-
   return (
     <div className="animate-fadeIn">
-      <WrappedScene />
+      <WrappedScene userData={userData} />
     </div>
   )
 }
 
 export async function getStaticProps() {
   const holders = await getSubgraph()
-
+  const snapshot = await getSnapshot()
   return {
     props: {
       holders,
+      snapshot,
     },
     revalidate: 60,
   }

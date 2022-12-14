@@ -1,10 +1,9 @@
-import { Effects } from '@react-three/drei'
-import { Canvas, extend, useThree } from '@react-three/fiber'
+import { Canvas } from '@react-three/fiber'
 import { Suspense } from 'react'
 import Bloom from '../Moon/Bloom'
-import { SnowGlobe } from './SnowGlobe'
+import { GroupControl } from './GroupControl'
 
-export function WrappedScene() {
+export function WrappedScene({ userData }) {
   return (
     <Suspense fallback={null}>
       <Canvas
@@ -25,7 +24,9 @@ export function WrappedScene() {
         <Bloom>
           <hemisphereLight args={['slateblue', 'lightblue', 0.75]} />
           <pointLight position={[-2, 1, 4]} color={'white'} intensity={0.08} />
-          <SnowGlobe position={[0.5, -1, 0]} />
+          <ambientLight intensity={0.05} />
+          <directionalLight position={[10, -10, 8]} intensity={0.4} />
+          <GroupControl userData={userData} />
         </Bloom>
       </Canvas>
     </Suspense>
