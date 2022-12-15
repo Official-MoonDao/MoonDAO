@@ -65,7 +65,11 @@ export function SnowGlobe(props) {
       }}
     >
       <group position={[-0.25, 0.5, -0.5]} ref={instructionRef}>
-        <Text text={'click\nto\ncontinue'} size={0.5} height={0.0025} />
+        <Text
+          text={props.noWallet ? 'connect \nwallet' : 'click\nto\ncontinue'}
+          size={0.3}
+          height={0.0025}
+        />
       </group>
       <group name="Sketchfab_Scene">
         <group

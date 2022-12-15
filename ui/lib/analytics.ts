@@ -9,12 +9,12 @@ import { useContractWrite } from './use-wagmi'
 const THE_GRAPH_URL =
   'https://api.studio.thegraph.com/query/38443/vmooney/v0.1.834'
 const SNAPSHOT_URL = 'https://hub.snapshot.org/graphql'
-
 const now = new Date().getTime() / 1000
-
 function calcVMOONEY(mooney: number, locktime: number) {
   return mooney * ((locktime - now) / (4 * 365 * 86400))
 }
+
+export let TOTAL_VMOONEY = 0
 
 export async function getSubgraph() {
   const graphClient: any = createClient({
@@ -22,7 +22,7 @@ export async function getSubgraph() {
   })
   const query = `
     query {
-        holders(first: 1000) {
+        holders(first: 1000, orderBy: totalLocked, orderDirection: desc) {
             id
             totalLocked
             locktime
@@ -33,26 +33,26 @@ export async function getSubgraph() {
   const res = await graphClient.query(query).toPromise()
   const holders = res.data.holders.map((h: any) => {
     const mooney = h.totalLocked / 10 ** 18
-    const vmooney = calcVMOONEY(h.totalLocked, h.locktime)
+    const vmooney = calcVMOONEY(mooney, h.locktime)
+    TOTAL_VMOONEY += vmooney
     return {
-      id: `${h.id.slice(0, 4)}...${h.id.slice(-4)}`,
       address: h.id,
-      lockedMooney: mooney,
-      totalVMooney: vmooney,
-      locktime: h.locktime - now / 86400 + 'days',
-      initialLock: moment.unix(h.locktime).format('YYYY-MM-DD'),
+      lockedMooney: Math.floor(mooney),
+      totalVMooney: Math.floor(vmooney),
+      locktime: Math.floor((h.locktime - now) / (3600 * 24)) + ' days',
+      initialLock: moment.unix(h.initialLock).format('YYYY-MM-DD'),
     }
   })
   return holders
 }
 
-export async function getSnapshot() {
+export async function getSnapshot(address: any) {
   const snapshotClient: any = createClient({
     url: SNAPSHOT_URL,
   })
   const query = `
     query {
-      votes (first:1000, skip:0, where:{ space: "tomoondao.eth", voter: "0x679d87D8640e66778c3419D164998E720D7495f6"}){
+      votes (first:1000, skip:0, where:{ space: "tomoondao.eth", voter: "${address}"}){
         id 
         voter
         vp
@@ -65,5 +65,6 @@ export async function getSnapshot() {
   `
 
   const res = await snapshotClient.query(query).toPromise()
-  return res.data.votes.length
+  const numberOfVotes = res.data?.votes.length
+  return `${numberOfVotes} ${numberOfVotes === 1 ? 'time !' : 'times !'}`
 }

@@ -15,7 +15,7 @@ export function Text(props) {
     <mesh {...props} rotation={props.rotation} receiveShadow castShadow>
       <textGeometry
         args={[
-          props.text || '...loading',
+          props.text,
           {
             font,
             size: props.size * viewport.width * 0.08,

@@ -6,19 +6,25 @@ import { WrappedScene } from '../r3f/Wrapped/WrappedScene'
 
 export default function Wrapped(props: any) {
   const [userData, setUserData]: any = useState({})
-  //   const { data: account } = useAccount()
-  const address: any = '0x679d87d8640e66778c3419d164998e720d7495f6'
-  const { data: balance } = useMOONEYBalance(address)
+  const { data: account } = useAccount()
+  const walletAddress: any = account?.address
+  const { data: balance } = useMOONEYBalance(walletAddress)
+  let votes
   useEffect(() => {
-    if (props.holders && address && balance) {
-      const vMooneyData = props.holders.find((h: any) => h.address === address)
-      setUserData({
-        ...vMooneyData,
-        unlockedMooney: balance.formatted,
-        votes: props.snapshot,
-      })
+    if (props.holders && account?.address && balance) {
+      ;(async () => {
+        const vMooneyData = (await props.holders.find(
+          ({ address }: any) => address === account.address
+        )) || { address: account.address, totalVMooney: '0' }
+        votes = await getSnapshot(account.address)
+        setUserData({
+          ...vMooneyData,
+          unlockedMooney: balance.formatted,
+          votes,
+        })
+      })()
     }
-  }, [balance, address])
+  }, [props.holders, account, balance])
   return (
     <div className="animate-fadeIn">
       <WrappedScene userData={userData} />
@@ -28,11 +34,9 @@ export default function Wrapped(props: any) {
 
 export async function getStaticProps() {
   const holders = await getSubgraph()
-  const snapshot = await getSnapshot()
   return {
     props: {
       holders,
-      snapshot,
     },
     revalidate: 60,
   }

@@ -2,15 +2,17 @@ import { useFrame } from '@react-three/fiber'
 import gsap from 'gsap'
 import { useState } from 'react'
 import { useRef } from 'react'
+import { TOTAL_VMOONEY } from '../../lib/analytics'
+import { useAccount } from '../../lib/use-wagmi'
 import { Data } from './Data'
 import { SnowGlobe } from './SnowGlobe'
 import { Text } from './Text'
 
-export function GroupControl(props) {
+export function GroupControl({ userData }) {
   const groupRef = useRef()
   const [section, setSection] = useState(0)
-
   function startWrapped() {
+    if (!userData.address) return
     setSection(1)
     setTimeout(() => {
       setSection(2)
@@ -38,12 +40,19 @@ export function GroupControl(props) {
   return (
     <group ref={groupRef}>
       <group position={[0, 0, 0]}>
-        <SnowGlobe onClick={() => startWrapped()} />
+        <SnowGlobe
+          onClick={() => startWrapped()}
+          noWallet={!userData.address}
+        />
       </group>
       <group position={[-0.5, -4, 0]}>
         <Text text={'Happy\nHolidays'} size={0.6} height={0.1} />
         <Text
-          text={props?.userData.id || '...loading'}
+          text={
+            `${userData?.address?.slice(0, 4)}...${userData?.address?.slice(
+              -4
+            )}` || '...loading'
+          }
           size={0.6}
           height={0.1}
           position={[0, -0.75, 0]}
@@ -56,8 +65,13 @@ export function GroupControl(props) {
           position={[0, -1.25, 0]}
         />
       </group>
-      <group position={[-0.75, -10, 0]}>
-        <Data label={'You voted'} data={'49 times!'} />
+      <group position={[-0.75, -9, 0]}>
+        <Data label={'You voted'} data={userData?.votes || '...loading'} />
+        <Data
+          position={[0, -1, 0]}
+          label={'You own'}
+          data={userData?.totalVMooney?.toLocaleString('en-US') + '\nvMOONEY'}
+        />
       </group>
       <group position={[-0.25, -15, 0]}>
         <Data label={'votes'} data={'49'} />
