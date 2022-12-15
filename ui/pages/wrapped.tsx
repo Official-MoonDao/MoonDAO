@@ -27,7 +27,9 @@ export default function Wrapped(props: any) {
   }, [props.holders, account, balance])
   return (
     <div className="animate-fadeIn">
-      <WrappedScene userData={userData} />
+      <div className="w-full">
+        <WrappedScene userData={userData} />
+      </div>
     </div>
   )
 }

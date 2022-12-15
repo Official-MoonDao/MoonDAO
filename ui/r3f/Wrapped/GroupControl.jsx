@@ -24,12 +24,17 @@ export function GroupControl({ userData }) {
 
   function resetWrapped() {}
 
-  useFrame(() => {
+  useFrame(({ clock }) => {
     if (groupRef.current) {
       if (section === 0)
         gsap.to(groupRef.current.position, { duration: 2, x: 0, y: 0, z: 0 })
       if (section === 1)
-        gsap.to(groupRef.current.position, { duration: 2, x: 0, y: 5, z: 0 })
+        gsap.to(groupRef.current.position, {
+          duration: 2,
+          x: 0,
+          y: 5,
+          z: 0,
+        })
       if (section === 2)
         gsap.to(groupRef.current.position, { duration: 2, x: 0, y: 10, z: 0 })
       if (section === 3)
@@ -46,29 +51,29 @@ export function GroupControl({ userData }) {
         />
       </group>
       <group position={[-0.5, -4, 0]}>
-        <Text text={'Happy\nHolidays'} size={0.6} height={0.1} />
+        <Text text={'Happy\nHolidays'} size={0.5} height={0.1} />
         <Text
           text={
             `${userData?.address?.slice(0, 4)}...${userData?.address?.slice(
               -4
             )}` || '...loading'
           }
-          size={0.6}
-          height={0.1}
-          position={[0, -0.75, 0]}
+          size={0.5}
+          height={0.05}
+          position={[0, -1.1, 0]}
           color="white"
         />
         <Text
           text={'Here are\nyour\nstats from\nthis year'}
-          size={0.4}
+          size={0.35}
           height={0.1}
-          position={[0, -1.25, 0]}
+          position={[0, -1.55, 0]}
         />
       </group>
       <group position={[-0.75, -9, 0]}>
         <Data label={'You voted'} data={userData?.votes || '...loading'} />
         <Data
-          position={[0, -1, 0]}
+          position={[0, -1.5, 0]}
           label={'You own'}
           data={userData?.totalVMooney?.toLocaleString('en-US') + '\nvMOONEY'}
         />

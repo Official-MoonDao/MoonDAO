@@ -10,7 +10,7 @@ export function Data(props) {
         height={0.01}
       />
       <Text
-        position={[0.5, -0.25, 0]}
+        position={[0.5, -0.5, 0]}
         text={props.data}
         size={0.5}
         color={'green'}
