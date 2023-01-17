@@ -247,4 +247,4 @@ export function SnowGlobe(props) {
   )
 }
 
-useGLTF.preload('/textures/snowglobe.glb')
+// useGLTF.preload('/textures/snowglobe.glb')

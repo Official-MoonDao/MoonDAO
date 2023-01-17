@@ -83,4 +83,4 @@ export function MooneyCoin(props) {
   )
 }
 
-useGLTF.preload('/textures/mooney.glb')
+// useGLTF.preload('/textures/mooney.glb')
