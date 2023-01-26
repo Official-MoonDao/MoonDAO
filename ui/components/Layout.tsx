@@ -16,6 +16,7 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   ExternalLinkIcon,
+  TicketIcon,
 } from '@heroicons/react/outline'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
@@ -51,6 +52,11 @@ const navigation = [
     name: 'lockTokens',
     href: '/lock',
     icon: <LockClosedIcon className="h-5 w-5" />,
+  },
+  {
+    name: 'raffle',
+    href: '/raffle',
+    icon: <TicketIcon className="h-5 w-5" />,
   },
   {
     name: 'buyMOONEY',

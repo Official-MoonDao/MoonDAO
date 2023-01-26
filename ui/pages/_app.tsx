@@ -1,4 +1,5 @@
 import { ethers } from 'ethers'
+import { SessionProvider } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import React from 'react'
 import { NftProvider } from 'use-nft'
@@ -9,7 +10,7 @@ import Layout from '../components/Layout'
 import '../styles/globals.css'
 
 declare let window: any
-function App({ Component, pageProps }: any) {
+function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const [client, setClient] = useState<any>()
 
   useEffect(() => {
@@ -45,9 +46,11 @@ function App({ Component, pageProps }: any) {
         <WagmiConfig client={client}>
           <NftProvider fetcher={['ethers', { provider: externalProvider() }]}>
             <ErrorProvider>
-              <Layout>
-                <Component {...pageProps} />
-              </Layout>
+              <SessionProvider session={session}>
+                <Layout>
+                  <Component {...pageProps} />
+                </Layout>
+              </SessionProvider>
             </ErrorProvider>
           </NftProvider>
         </WagmiConfig>

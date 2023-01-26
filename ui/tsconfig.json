@@ -98,7 +98,8 @@
     "**/*.ts",
     "**/*.tsx",
     "r3f/Moon/Scene.jsx",
-    "r3f/Moon/Moon.jsx"
+    "r3f/Moon/Moon.jsx",
+    "lib/get-twitter-account.ts"
   ],
   "exclude": ["node_modules"]
 }
