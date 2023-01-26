@@ -5,7 +5,7 @@ export const authOptions = {
   providers: [
     TwitterProvider({
       clientId: 'Wmc3RXJDUktGMS1DdzRGdkYzc2k6MTpjaQ',
-      clientSecret: '7s8-5x1jfggOyN8MAYbFIZ0tvyJrW7yPp-bv_n3rgw6D94fwlD', //dev secret, reset and add .env variable
+      clientSecret: 'ell7ydKMJZdNuWpehdf9vDjGFGTdUOmV-an-cU7YsQYFLzF7dE',
       version: '2.0',
     }),
   ],
