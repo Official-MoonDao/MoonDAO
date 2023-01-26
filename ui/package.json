@@ -21,6 +21,7 @@
     "@uniswap/merkle-distributor": "^1.0.1",
     "daisyui": "^2.13.5",
     "ethers": "^5.6.0",
+    "google-spreadsheet": "^3.3.0",
     "graphql": "^16.6.0",
     "gsap": "^3.11.3",
     "moment": "^2.29.4",
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
+    "@types/google-spreadsheet": "^3.3.0",
     "@types/passport": "^1.0.11",
     "@types/passport-twitter": "^1.0.37",
     "@types/react": "18.0.1",

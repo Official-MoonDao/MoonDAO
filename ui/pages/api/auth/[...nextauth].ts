@@ -1,11 +1,12 @@
 import NextAuth from 'next-auth'
 import TwitterProvider from 'next-auth/providers/twitter'
+import KEYS from '../../../namegetKeys'
 
 export const authOptions = {
   providers: [
     TwitterProvider({
-      clientId: 'Wmc3RXJDUktGMS1DdzRGdkYzc2k6MTpjaQ',
-      clientSecret: 'ell7ydKMJZdNuWpehdf9vDjGFGTdUOmV-an-cU7YsQYFLzF7dE',
+      clientId: KEYS.twitterClientId,
+      clientSecret: KEYS.twitterClientSecret,
       version: '2.0',
     }),
   ],
