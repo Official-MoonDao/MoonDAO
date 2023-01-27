@@ -26,7 +26,6 @@ export async function submitRaffleForm({
   walletAddress,
   email,
 }: any) {
-  console.log(twitterName, discordName, walletAddress, email)
   const newRow = {
     DiscUsername: discordName,
     TwitterDisplayName: twitterName,
