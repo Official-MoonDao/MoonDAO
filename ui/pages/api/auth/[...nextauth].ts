@@ -1,7 +1,5 @@
 import NextAuth from 'next-auth'
-import DiscordProvider from 'next-auth/providers/discord'
 import TwitterProvider from 'next-auth/providers/twitter'
-import KEYS from '../../../namegetKeys'
 
 export const authOptions = {
   providers: [

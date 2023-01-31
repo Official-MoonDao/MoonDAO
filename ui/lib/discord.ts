@@ -1,5 +1,4 @@
 import DiscordOauth2 from 'discord-oauth2'
-import KEYS from '../namegetKeys'
 
 const oauth = new DiscordOauth2()
 

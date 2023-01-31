@@ -1,5 +1,4 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
-import KEYS from '../namegetKeys'
 
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET_ID)
 
