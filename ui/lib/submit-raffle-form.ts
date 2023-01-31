@@ -1,13 +1,13 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 import KEYS from '../namegetKeys'
 
-const doc = new GoogleSpreadsheet(KEYS.googleSpreadsheetId)
+const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET_ID)
 
 async function appendSpreadsheet(row: any) {
   try {
     await doc.useServiceAccountAuth({
-      client_email: KEYS.googlSheetsEmail,
-      private_key: KEYS.googleSheetsSecret?.replace(/\\n/g, '\n'),
+      client_email: process.env.GOOGLE_SHEETS_EMAIL,
+      private_key: process.env.GOOGLE_SHEETS_SECRET.replace(/\\n/g, '\n'),
     })
 
     await doc.loadInfo()
@@ -31,6 +31,7 @@ export async function submitRaffleForm({
     TwitterDisplayName: twitterName,
     WalletAddress: walletAddress,
     Email: email,
+    Date: new Date(Date.now()).toDateString(),
   }
   await appendSpreadsheet(newRow)
 }
