@@ -29,7 +29,7 @@
     "gsap": "^3.11.3",
     "moment": "^2.29.4",
     "next": "12.1.0",
-    "next-auth": "^4.18.10",
+    "next-auth": "4.17.0",
     "next-translate": "^1.6.0",
     "nft.storage": "^6.3.0",
     "passport": "^0.6.0",
