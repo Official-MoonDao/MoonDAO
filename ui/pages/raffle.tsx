@@ -111,7 +111,7 @@ export default function Raffle({ userDiscordData }: any) {
                   className="flex flex-col text-black"
                   type="text"
                   readOnly
-                  value={twitter?.user?.name}
+                  value={twitter?.user?.name || ''}
                 />
               </label>
               <label>
