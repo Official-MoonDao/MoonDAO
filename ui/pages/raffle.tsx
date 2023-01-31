@@ -33,7 +33,6 @@ export default function Raffle({ userDiscordData }: any) {
         ? setState(3)
         : setState(2)
     } else setState(0)
-    console.log(vMooneyBalance?.formatted)
   }, [twitter, account, vMooneyBalance])
 
   const devUrl =
@@ -54,12 +53,12 @@ export default function Raffle({ userDiscordData }: any) {
             <button
               className="text-[orange] text-[2vw] hover:scale-[1.1] ease-in-ease-out duration-300 hover:glow-orange-300"
               onClick={async () => {
-                account?.address && vMooneyBalance.formatted > 0 && setState(1)
+                account?.address && vMooneyBalance?.formatted > 0 && setState(1)
               }}
             >
               Enter Raffle
             </button>
-            {account?.address && vMooneyBalance.formatted > 0 && (
+            {account?.address && vMooneyBalance?.formatted > 0 && (
               <p className="text-[lightgreen] ease-in duration-300">
                 Wallet is connected & has vMooney!
               </p>
