@@ -3,11 +3,9 @@ import { GoogleSpreadsheet } from 'google-spreadsheet'
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET_ID)
 async function appendSpreadsheet(row: any) {
   try {
-    const clientEmail: any = process.env.GOOGLE_SHEETS_EMAIL
-    const privateKey: any = process.env.GOOGLE_SHEETS_SECRET
     await doc.useServiceAccountAuth({
-      client_email: clientEmail,
-      private_key: privateKey.replace(/\\n/g, '\n'),
+      client_email: process.env.GOOGLE_SHEETS_EMAIL,
+      private_key: process.env.GOOGLE_SHEETS_SECRET.replace(/\\n/g, '\n'),
     })
 
     await doc.loadInfo()

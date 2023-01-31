@@ -1968,6 +1968,13 @@
   resolved "https://registry.yarnpkg.com/@types/minimist/-/minimist-1.2.2.tgz#ee771e2ba4b3dc5b372935d549fd9617bf345b8c"
   integrity sha512-jhuKLIRrhvCPLqwPcx6INqmKeiA5EWrsCOPhrlFSrbrmU4ZMPjj5Ul/oLCMDO98XRUIwVm78xICz4EPCektzeQ==
 
+"@types/next-auth@^3.15.0":
+  version "3.15.0"
+  resolved "https://registry.yarnpkg.com/@types/next-auth/-/next-auth-3.15.0.tgz#b602f4689b35fff3d2af09500c79ab11c4745bca"
+  integrity sha512-ZVfejlu81YiIRX1m0iKAfvZ3nK7K9EyZWhNARNKsFop8kNAgEvMnlKpTpwN59xkK2OhyWLagPuiDAVBYSO9jSA==
+  dependencies:
+    next-auth "*"
+
 "@types/node@*", "@types/node@^17.0.34":
   version "17.0.34"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.34.tgz#3b0b6a50ff797280b8d000c6281d229f9c538cef"
@@ -6571,6 +6578,21 @@ neo-async@^2.5.0:
   version "2.6.2"
   resolved "https://registry.npmjs.org/neo-async/-/neo-async-2.6.2.tgz"
   integrity sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==
+
+next-auth@*:
+  version "4.19.1"
+  resolved "https://registry.yarnpkg.com/next-auth/-/next-auth-4.19.1.tgz#4b5dca8fd7dc25d2c099e4a8401dafb20d1bf8ae"
+  integrity sha512-Wo0b1tWtEh1ORR+AzTtBHSPxAA2zKqynoMS/nQQVrT5RD/umVzpXz25fOkoRrO9t+Is+scU2DmKeyFIkhx45WQ==
+  dependencies:
+    "@babel/runtime" "^7.16.3"
+    "@panva/hkdf" "^1.0.1"
+    cookie "^0.5.0"
+    jose "^4.9.3"
+    oauth "^0.9.15"
+    openid-client "^5.1.0"
+    preact "^10.6.3"
+    preact-render-to-string "^5.1.19"
+    uuid "^8.3.2"
 
 next-auth@^4.18.10:
   version "4.18.10"
