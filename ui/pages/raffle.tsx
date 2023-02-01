@@ -164,7 +164,7 @@ export default function Raffle({ userDiscordData }: any) {
 export async function getServerSideProps(context: any) {
   const code = context?.query?.code
   let userDiscordData = {}
-  if (code) userDiscordData = await getUserDiscordData(code)
+  if (code) userDiscordData = (await getUserDiscordData(code)) || {}
   console.log('code:' + code, 'data:' + userDiscordData)
   return {
     props: {
