@@ -154,7 +154,9 @@ export default function Raffle({ userDiscordData }: any) {
         )}
         {state === 4 && (
           <>
-            <h2>Thanks for entering the raffle!</h2>
+            <h2 className="text-[lightgreen]">
+              Thanks for entering the raffle!
+            </h2>
           </>
         )}
       </div>
