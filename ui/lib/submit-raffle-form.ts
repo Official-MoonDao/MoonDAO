@@ -1,5 +1,4 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
-import KEYS from '../namegetKeys'
 
 export async function submitRaffleForm({
   twitterName,
