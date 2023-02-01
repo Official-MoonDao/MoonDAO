@@ -9,6 +9,7 @@ export const authOptions = {
       version: '2.0',
     }),
   ],
+  secret: process.env.NEXT_PUBLIC_SECRET,
 }
 
 export default NextAuth(authOptions)
