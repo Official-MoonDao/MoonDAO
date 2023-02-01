@@ -32,7 +32,7 @@ export default function Raffle({ userDiscordData }: any) {
         ? setState(3)
         : setState(2)
     } else setState(0)
-  }, [twitter, account, vMooneyBalance])
+  }, [twitter, account, vMooneyBalance, userDiscordData])
 
   return (
     <MainCard>
@@ -141,9 +141,6 @@ export default function Raffle({ userDiscordData }: any) {
                     walletAddress: account.address,
                     email: userDiscordData.email,
                   })
-                  setTimeout(async () => {
-                    await signOut()
-                  }, 3000)
                 }}
               >
                 Submit ✔
@@ -166,10 +163,9 @@ export default function Raffle({ userDiscordData }: any) {
 
 export async function getServerSideProps(context: any) {
   const code = context?.query?.code
-  console.log(code)
   let userDiscordData = {}
   if (code) userDiscordData = await getUserDiscordData(code)
-  console.log(userDiscordData)
+  console.log('code:' + code, 'data:' + userDiscordData)
   return {
     props: {
       userDiscordData,

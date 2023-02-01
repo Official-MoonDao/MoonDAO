@@ -1,22 +1,5 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
-
-const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET_ID)
-async function appendSpreadsheet(row: any) {
-  try {
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SHEETS_EMAIL,
-      private_key: process.env.GOOGLE_SHEETS_SECRET.replace(/\\n/g, '\n'),
-    })
-
-    await doc.loadInfo()
-
-    const sheet = doc.sheetsById['0']
-    console.log(sheet)
-    await sheet.addRow(row)
-  } catch (e) {
-    console.error('Error : ', e)
-  }
-}
+import KEYS from '../namegetKeys'
 
 export async function submitRaffleForm({
   twitterName,
@@ -24,6 +7,20 @@ export async function submitRaffleForm({
   walletAddress,
   email,
 }: any) {
+  const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET_ID)
+  async function appendSpreadsheet(row: any) {
+    try {
+      await doc.useServiceAccountAuth({
+        client_email: process.env.GOOGLE_SHEETS_EMAIL,
+        private_key: process.env.GOOGLE_SHEETS_SECRET.replace(/\\n/g, '\n'),
+      })
+      await doc.loadInfo()
+      const sheet = doc.sheetsById['0']
+      await sheet.addRow(row)
+    } catch (e: any) {
+      console.error('Error : ', e.message)
+    }
+  }
   const newRow = {
     DiscUsername: discordName,
     TwitterDisplayName: twitterName,
