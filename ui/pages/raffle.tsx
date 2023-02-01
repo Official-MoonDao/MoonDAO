@@ -1,7 +1,7 @@
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { getUserDiscordData } from '../lib/discord'
+import { discordOauthUrl, getUserDiscordData } from '../lib/discord'
 import { submitRaffleForm } from '../lib/submit-raffle-form'
 import { useAccount } from '../lib/use-wagmi'
 import { useVMOONEYBalance } from '../lib/ve-token'
@@ -12,7 +12,7 @@ export default function Raffle({ userDiscordData }: any) {
   const { data: twitter } = useSession()
   const [state, setState] = useState(0)
   const { data: vMooneyBalance, isLoading: vMooneyBalanceLoading } =
-    useVMOONEYBalance('0x679d87d8640e66778c3419d164998e720d7495f6')
+    useVMOONEYBalance('0x679d87d8640e66778c3419d164998e720d7495f6') //exchange with account?.address for production
   function Cancle(stage: any) {
     return (
       <button
@@ -33,15 +33,6 @@ export default function Raffle({ userDiscordData }: any) {
         : setState(2)
     } else setState(0)
   }, [twitter, account, vMooneyBalance])
-
-  const devUrl =
-    'https://discord.com/api/oauth2/authorize?client_id=1068591529620418610&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fraffle&response_type=code&scope=identify%20email'
-
-  const previewUrl =
-    'https://discord.com/api/oauth2/authorize?client_id=1068591529620418610&redirect_uri=https%3A%2F%2Fdeploy-preview-17--moondao-stc.netlify.app%2Fraffle&response_type=code&scope=identify%20email'
-
-  const productionUrl =
-    'https://discord.com/api/oauth2/authorize?client_id=1068591529620418610&redirect_uri=https%3A%2F%2Fapp.moondao.com%2Fraffle&response_type=code&scope=identify%20email'
 
   return (
     <MainCard>
@@ -94,7 +85,7 @@ export default function Raffle({ userDiscordData }: any) {
           <>
             <h2>Step 2: Verify your Discord username and email </h2>
             <button className="text-[purple] text-[2vw] hover:scale-[1.1] ease-in-ease-out duration-300">
-              <Link href={previewUrl}>Verify Discord</Link>
+              <Link href={discordOauthUrl.preview}>Verify Discord</Link>
             </button>
             <Cancle stage={2} />
           </>

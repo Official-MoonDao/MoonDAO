@@ -29,3 +29,11 @@ export async function getUserDiscordData(code: any) {
     return err.message
   }
 }
+
+export const discordOauthUrl = {
+  dev: 'https://discord.com/api/oauth2/authorize?client_id=1068591529620418610&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fraffle&response_type=code&scope=identify%20email',
+  preview:
+    'https://discord.com/api/oauth2/authorize?client_id=1068591529620418610&redirect_uri=https%3A%2F%2Fdeploy-preview-17--moondao-stc.netlify.app%2Fraffle&response_type=code&scope=identify%20email',
+  production:
+    'https://discord.com/api/oauth2/authorize?client_id=1068591529620418610&redirect_uri=https%3A%2F%2Fapp.moondao.com%2Fraffle&response_type=code&scope=identify%20email',
+}
