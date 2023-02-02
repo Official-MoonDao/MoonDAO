@@ -1,5 +1,4 @@
 const nextTranslate = require('next-translate')
-const result = require('dotenv').config()
 module.exports = nextTranslate({
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
@@ -11,5 +10,4 @@ module.exports = nextTranslate({
     }
     return config
   },
-  env: result.parsed,
 })

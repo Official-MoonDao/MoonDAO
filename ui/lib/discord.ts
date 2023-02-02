@@ -1,7 +1,6 @@
 import DiscordOauth2 from 'discord-oauth2'
 
 const oauth = new DiscordOauth2()
-
 async function getToken(code: any, redirectUri: string) {
   return await oauth.tokenRequest({
     clientId: process.env.DISCORD_CLIENT_ID,

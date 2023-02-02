@@ -2,7 +2,7 @@ import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { discordOauthUrl, getUserDiscordData } from '../lib/discord'
-import { submitRaffleForm } from '../lib/submit-raffle-form'
+import { checkUserData, submitRaffleForm } from '../lib/google-sheets'
 import { useAccount } from '../lib/use-wagmi'
 import { useVMOONEYBalance } from '../lib/ve-token'
 import MainCard from '../components/MainCard'
@@ -12,7 +12,7 @@ export default function Raffle({ userDiscordData }: any) {
   const { data: twitter } = useSession()
   const [state, setState] = useState(0)
   const { data: vMooneyBalance, isLoading: vMooneyBalanceLoading } =
-    useVMOONEYBalance('0x679d87d8640e66778c3419d164998e720d7495f6') //exchange with account?.address for production
+    useVMOONEYBalance(account?.address)
   function Cancle(stage: any) {
     return (
       <button
@@ -53,7 +53,7 @@ export default function Raffle({ userDiscordData }: any) {
                 Wallet is connected & has vMooney!
               </p>
             )}
-            {!account?.address && !vMooneyBalance?.formatted ? (
+            {!account?.address && vMooneyBalance?.formatted > 0 ? (
               <p className="text-[orangered] ease-in duration-300">
                 Please connect a wallet that has vMooney
               </p>
@@ -134,13 +134,22 @@ export default function Raffle({ userDiscordData }: any) {
                 className="m-6 text-[lightgreen]"
                 onClick={async (e) => {
                   e.preventDefault()
-                  setState(4)
-                  await submitRaffleForm({
+                  const userData = {
                     twitterName: twitter?.user?.name,
                     discordName: userDiscordData.username,
                     walletAddress: account.address,
                     email: userDiscordData.email,
-                  })
+                  }
+                  //check if wallet, twitter, discord or email has already been used
+                  if (await checkUserData(userData)) {
+                    console.log('user has already entered the raffle')
+                    setState(5)
+                    return setTimeout(() => {
+                      signOut()
+                    }, 5000)
+                  }
+                  setState(4)
+                  await submitRaffleForm(userData).then(() => signOut())
                 }}
               >
                 Submit ✔
@@ -153,6 +162,13 @@ export default function Raffle({ userDiscordData }: any) {
           <>
             <h2 className="text-[lightgreen]">
               Thanks for entering the raffle!
+            </h2>
+          </>
+        )}
+        {state === 5 && (
+          <>
+            <h2 className="text-[orangered]">
+              You've already entered the raffle, you may only enter one time
             </h2>
           </>
         )}
