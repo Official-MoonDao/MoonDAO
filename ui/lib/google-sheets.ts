@@ -1,16 +1,19 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 
-const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET_ID)
+const doc = new GoogleSpreadsheet(process.env.NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID)
 
 //Init GoogleSheets
 async function spreadsheetAuth() {
   try {
     await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SHEETS_EMAIL,
-      private_key: process.env.GOOGLE_SHEETS_SECRET.replace(/\\n/g, '\n'),
+      client_email: process.env.NEXT_PUBLIC_GOOGLE_SHEETS_EMAIL,
+      private_key: process.env.NEXT_PUBLIC_GOOGLE_SHEETS_SECRET.replace(
+        /\\n/g,
+        '\n'
+      ),
     })
   } catch (e: any) {
-    console.error(e.message)
+    console.error('google-sheets: auth', e.message)
   }
 }
 
@@ -21,7 +24,7 @@ async function appendSpreadsheet(row: any) {
     const sheet = doc.sheetsById['0']
     await sheet.addRow(row)
   } catch (e: any) {
-    console.error(e.message)
+    console.error('google-sheets: append spreadsheet', e.message)
   }
 }
 
@@ -47,19 +50,21 @@ export async function checkUserData({
   walletAddress,
   email,
 }: any) {
-  await spreadsheetAuth()
-  await doc.loadInfo()
-  const sheet = doc.sheetsById['0']
-  const rows = await sheet.getRows()
-  const userHasEnteredRaffle =
-    rows.filter(
-      (row: any) =>
-        row.DiscUsername === discordName ||
-        row.TwitterDisplayName === twitterName ||
-        row.Email === email ||
-        row.WalletAddress === walletAddress
-    )?.length > 0
-      ? true
-      : false
-  return userHasEnteredRaffle
+  try {
+    await spreadsheetAuth()
+    await doc.loadInfo()
+    const sheet = doc.sheetsById['0']
+    const rows = await sheet.getRows()
+    const userHasEnteredRaffle =
+      rows.filter(
+        (row: any) =>
+          row.DiscUsername === discordName ||
+          row.TwitterDisplayName === twitterName ||
+          row.Email === email ||
+          row.WalletAddress === walletAddress
+      ).length > 0 && true
+    return userHasEnteredRaffle
+  } catch (e: any) {
+    console.error('google-sheets: checkUserData', e.message)
+  }
 }
