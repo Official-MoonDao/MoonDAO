@@ -1,16 +1,13 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 
-const doc = new GoogleSpreadsheet(process.env.NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID)
+const doc = new GoogleSpreadsheet(process.env.GOOGLE_SPREADSHEET_ID)
 
 //Init GoogleSheets
 async function spreadsheetAuth() {
   try {
     await doc.useServiceAccountAuth({
-      client_email: process.env.NEXT_PUBLIC_GOOGLE_SHEETS_EMAIL,
-      private_key: process.env.NEXT_PUBLIC_GOOGLE_SHEETS_SECRET.replace(
-        /\\n/g,
-        '\n'
-      ),
+      client_email: process.env.GOOGLE_SHEETS_EMAIL,
+      private_key: process.env.GOOGLE_SHEETS_SECRET.replace(/\\n/g, '\n'),
     })
   } catch (e: any) {
     console.error(e.message)
