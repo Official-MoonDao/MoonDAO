@@ -58,6 +58,8 @@ export async function checkUserData({
         row.TwitterDisplayName === twitterName ||
         row.Email === email ||
         row.WalletAddress === walletAddress
-    ).length > 0 && true
+    )?.length > 0
+      ? true
+      : false
   return userHasEnteredRaffle
 }
