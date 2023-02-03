@@ -27,7 +27,7 @@ export default function Raffle({ userDiscordData }: any) {
   }
 
   useEffect(() => {
-    if (twitter?.user && account?.address && vMooneyBalance.formatted > 0) {
+    if (twitter?.user && account?.address && vMooneyBalance?.formatted > 0) {
       userDiscordData.username && userDiscordData.email
         ? setState(3)
         : setState(2)
