@@ -41,6 +41,7 @@ export async function submitRaffleForm({
     Email: email,
     Date: new Date(Date.now()).toDateString(),
   }
+  console.log(newRow)
   await appendSpreadsheet(newRow)
 }
 
