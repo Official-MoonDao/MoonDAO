@@ -13,7 +13,7 @@ async function spreadsheetAuth() {
       ),
     })
   } catch (e: any) {
-    console.error('google-sheets: auth', e.message)
+    console.error('google-sheets: useServiceAcount', e.message)
   }
 }
 
