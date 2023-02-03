@@ -148,8 +148,11 @@ export default function Raffle({ userDiscordData }: any) {
                       signOut()
                     }, 5000)
                   }
-                  setState(4)
-                  await submitRaffleForm(userData).then(() => signOut())
+
+                  await submitRaffleForm(userData).then(() => {
+                    setState(4)
+                    setTimeout(async () => await signOut(), 5000)
+                  })
                 }}
               >
                 Submit ✔
