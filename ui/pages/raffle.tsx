@@ -12,7 +12,7 @@ export default function Raffle({ userDiscordData }: any) {
   const { data: twitter } = useSession()
   const [state, setState] = useState(0)
   const { data: vMooneyBalance, isLoading: vMooneyBalanceLoading } =
-    useVMOONEYBalance(account?.address)
+    useVMOONEYBalance('0x679d87D8640e66778c3419D164998E720D7495f6')
   function Cancle(stage: any) {
     return (
       <button
