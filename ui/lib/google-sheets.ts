@@ -1,10 +1,10 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
 
-const doc = new GoogleSpreadsheet(process.env.NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID)
-
+let doc: any
 //Init GoogleSheets
 async function spreadsheetAuth() {
   try {
+    doc = new GoogleSpreadsheet(process.env.NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID)
     await doc.useServiceAccountAuth({
       client_email: process.env.NEXT_PUBLIC_GOOGLE_SHEETS_EMAIL,
       private_key: process.env.NEXT_PUBLIC_GOOGLE_SHEETS_SECRET.replace(
