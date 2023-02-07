@@ -1,0 +1,6 @@
+[[plugins]]
+package = "netlify-plugin-inline-functions-env"
+    [plugins.inputs]
+    include = ["REALLY_LONG_ENV_VAR"]
+[functions]
+    directory = "netlify/functions/"
