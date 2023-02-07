@@ -1,6 +1,6 @@
 [[plugins]]
 package = "netlify-plugin-inline-functions-env"
     [plugins.inputs]
-    include = ["REALLY_LONG_ENV_VAR"]
+    include = ["NEXT_PUBLIC_GOOGLE_SHEETS_SECRET"]
 [functions]
     directory = "netlify/functions/"
