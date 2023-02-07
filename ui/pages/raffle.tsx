@@ -95,7 +95,7 @@ export default function Raffle({ userDiscordData }: any) {
           <>
             <h2>Step 2: Verify your Discord username and email </h2>
             <button className="text-[purple] text-[2vw] hover:scale-[1.1] ease-in-ease-out duration-300">
-              <Link href={discordOauthUrl.dev}>Verify Discord</Link>
+              <Link href={discordOauthUrl.preview}>Verify Discord</Link>
             </button>
             <Cancle stage={2} />
           </>
