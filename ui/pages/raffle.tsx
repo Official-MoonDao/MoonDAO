@@ -7,6 +7,16 @@ import { useAccount } from '../lib/use-wagmi'
 import { useVMOONEYBalance } from '../lib/ve-token'
 import MainCard from '../components/MainCard'
 
+/*
+STAGES:
+  0) Check if wallet is connected and that it has vMooney
+  1) Verify the user's twitter account
+  2) Verify the user's discord account and email 
+  3) Check if the user has already entered the raffle
+  4) Raffle submission success
+  5) User has already entered the raffle
+*/
+
 export default function Raffle({ userDiscordData }: any) {
   const { data: account } = useAccount()
   const { data: twitter } = useSession()
@@ -85,7 +95,7 @@ export default function Raffle({ userDiscordData }: any) {
           <>
             <h2>Step 2: Verify your Discord username and email </h2>
             <button className="text-[purple] text-[2vw] hover:scale-[1.1] ease-in-ease-out duration-300">
-              <Link href={discordOauthUrl.preview}>Verify Discord</Link>
+              <Link href={discordOauthUrl.dev}>Verify Discord</Link>
             </button>
             <Cancle stage={2} />
           </>
