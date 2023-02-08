@@ -29,12 +29,13 @@ async function appendSpreadsheet(row: any) {
 
 export async function submitRaffleForm({
   twitterName,
-  discordName,
+  userDiscordData,
   walletAddress,
   email,
 }: any) {
   const newRow = {
-    DiscUsername: discordName,
+    DiscUsername: userDiscordData.username,
+    DiscID: userDiscordData.id,
     TwitterDisplayName: twitterName,
     WalletAddress: walletAddress,
     Email: email,
@@ -46,7 +47,7 @@ export async function submitRaffleForm({
 
 export async function checkUserData({
   twitterName,
-  discordName,
+  userDiscordData,
   walletAddress,
   email,
 }: any) {
@@ -58,7 +59,7 @@ export async function checkUserData({
     const userHasEnteredRaffle =
       rows.filter(
         (row: any) =>
-          row.DiscUsername === discordName ||
+          row.DiscID === userDiscordData.id ||
           row.TwitterDisplayName === twitterName ||
           row.Email === email ||
           row.WalletAddress === walletAddress

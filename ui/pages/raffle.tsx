@@ -17,6 +17,20 @@ STAGES:
   5) User has already entered the raffle
 */
 
+function StageContainer({ children, opacity75 }: any) {
+  return (
+    <div
+      className={
+        opacity75
+          ? 'flex flex-col justify-center items-center animate-fadeInSlowTo75'
+          : 'flex flex-col justify-center items-center animate-fadeInSlow'
+      }
+    >
+      {children}
+    </div>
+  )
+}
+
 export default function Raffle({ userDiscordData }: any) {
   const { data: account } = useAccount()
   const { data: twitter } = useSession()
@@ -42,16 +56,17 @@ export default function Raffle({ userDiscordData }: any) {
         ? setState(3)
         : setState(2)
     } else setState(0)
+    console.log(userDiscordData)
   }, [twitter, account, vMooneyBalance, userDiscordData])
 
   return (
     <MainCard>
       <div className="flex flex-col animate-fadeIn justify-center items-center">
         {state === 0 && (
-          <>
-            <h2>Zero G Charter Raffle</h2>
+          <StageContainer>
+            <h2 className="text-[3.5vw]">Zero G Charter Raffle</h2>
             <button
-              className="text-[orange] text-[2vw] hover:scale-[1.1] ease-in-ease-out duration-300 hover:glow-orange-300"
+              className="text-[orange] text-[2.5vw] hover:scale-[1.075] ease-in-ease-out duration-500 hover:glow-orange-300 my-4 glass p-2 rounded-md"
               onClick={async () => {
                 account?.address && vMooneyBalance?.formatted > 0 && setState(1)
               }}
@@ -75,13 +90,13 @@ export default function Raffle({ userDiscordData }: any) {
             ) : (
               ''
             )}
-          </>
+          </StageContainer>
         )}
         {state === 1 && (
-          <>
+          <StageContainer>
             <h2>Step 1: Verify your Twitter display name</h2>
             <button
-              className="text-[cyan] text-[2vw] hover:scale-[1.1] ease-in-ease-out duration-300"
+              className="text-[cyan] text-[2.5vw] hover:scale-[1.1] rounded-md glass p-2 ease-in-ease-out duration-300 my-6"
               onClick={async () => {
                 await signIn()
               }}
@@ -89,52 +104,53 @@ export default function Raffle({ userDiscordData }: any) {
               Verify Twitter
             </button>
             <Cancle stage={1} />
-          </>
+          </StageContainer>
         )}
         {state === 2 && (
-          <>
+          <StageContainer>
             <h2>Step 2: Verify your Discord username and email </h2>
-            <button className="text-[purple] text-[2vw] hover:scale-[1.1] ease-in-ease-out duration-300">
+            <button className="text-[#5e27b0] text-[2.5vw] hover:scale-[1.1] ease-in-ease-out duration-300 my-4 p-2 glass rounded-md">
               <Link href={discordOauthUrl.preview}>Verify Discord</Link>
             </button>
             <Cancle stage={2} />
-          </>
+          </StageContainer>
         )}
         {state === 3 && (
-          <>
-            <h2>Step 3: Review and submit form</h2>
-            <form className="flex flex-col justify-center items-center">
-              <label>
+          <StageContainer opacity75>
+            <h2 className="my-6">Step 3: Review and submit form</h2>
+            <div className="bg-galaxy w-full rounded-2xl absolute h-full z-[-10] top-0 ease-in duration-[5s] opacity-[0.75]" />
+            <form className="flex gap-8 flex-col justify-center items-center p-4 w-[50vw] h-[40vh] text-center">
+              <label className="w-1/2">
                 Twitter Display Name:
                 <input
-                  className="flex flex-col text-black"
+                  className="flex flex-col text-black w-full"
                   type="text"
                   readOnly
                   value={twitter?.user?.name || ''}
                 />
               </label>
-              <label>
+              <label className="w-1/2">
                 Discord Username:
                 <input
-                  className="flex flex-col text-black"
+                  className="flex flex-col text-black w-full"
                   type="text"
                   readOnly
                   value={userDiscordData.username}
                 />
               </label>
-              <label>
+              <label className="w-1/2">
                 Wallet Address:
                 <input
-                  className="flex flex-col text-black"
+                  className="flex flex-col text-black w-full"
                   type="text"
                   readOnly
                   value={account?.address}
                 />
               </label>
-              <label>
+              <label className="w-1/2">
                 Discord Email:
                 <input
-                  className="flex flex-col text-black"
+                  className="flex flex-col text-black w-full"
                   type="text"
                   readOnly
                   value={userDiscordData.email}
@@ -146,7 +162,7 @@ export default function Raffle({ userDiscordData }: any) {
                   e.preventDefault()
                   const userData = {
                     twitterName: twitter?.user?.name,
-                    discordName: userDiscordData.username,
+                    userDiscordData,
                     walletAddress: account.address,
                     email: userDiscordData.email,
                   }
@@ -168,22 +184,24 @@ export default function Raffle({ userDiscordData }: any) {
                 Submit ✔
               </button>
             </form>
-            <Cancle stage={2} />
-          </>
+            <div className="relative bottom-14">
+              <Cancle stage={2} />
+            </div>
+          </StageContainer>
         )}
         {state === 4 && (
-          <>
+          <StageContainer>
             <h2 className="text-[lightgreen]">
               Thanks for entering the raffle!
             </h2>
-          </>
+          </StageContainer>
         )}
         {state === 5 && (
-          <>
+          <StageContainer>
             <h2 className="text-[orangered]">
               You've already entered the raffle, you may only enter one time
             </h2>
-          </>
+          </StageContainer>
         )}
       </div>
     </MainCard>
