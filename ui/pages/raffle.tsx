@@ -12,9 +12,9 @@ STAGES:
   0) Check if wallet is connected and that it has vMooney
   1) Verify the user's twitter account
   2) Verify the user's discord account and email 
-  3) Check if the user has already entered the raffle
+  3) Check if the user has already entered the raffle, submit raffle form
   4) Raffle submission success
-  5) User has already entered the raffle
+  5) Error, user has already entered the raffle
 */
 
 function StageContainer({ children, opacity75 }: any) {
@@ -26,6 +26,14 @@ function StageContainer({ children, opacity75 }: any) {
           : 'flex flex-col justify-center items-center animate-fadeInSlow'
       }
     >
+      {children}
+    </div>
+  )
+}
+
+function InputContainer({ children }: any) {
+  return (
+    <div className="flex flex-col justify-center items-center glass p-4 rounded-sm">
       {children}
     </div>
   )
@@ -94,7 +102,7 @@ export default function Raffle({ userDiscordData }: any) {
         )}
         {state === 1 && (
           <StageContainer>
-            <h2>Step 1: Verify your Twitter display name</h2>
+            <h2>Step 1: Verify your Twitter account</h2>
             <button
               className="text-[cyan] text-[2.5vw] hover:scale-[1.1] rounded-md glass p-2 ease-in-ease-out duration-300 my-6"
               onClick={async () => {
@@ -108,7 +116,7 @@ export default function Raffle({ userDiscordData }: any) {
         )}
         {state === 2 && (
           <StageContainer>
-            <h2>Step 2: Verify your Discord username and email </h2>
+            <h2>Step 2: Verify your Discord account</h2>
             <button className="text-[#5e27b0] text-[2.5vw] hover:scale-[1.1] ease-in-ease-out duration-300 my-4 p-2 glass rounded-md">
               <Link href={discordOauthUrl.preview}>Verify Discord</Link>
             </button>
@@ -117,47 +125,55 @@ export default function Raffle({ userDiscordData }: any) {
         )}
         {state === 3 && (
           <StageContainer opacity75>
-            <h2 className="my-6">Step 3: Review and submit form</h2>
+            <h2 className="my-8">Step 3: Review and submit the form</h2>
             <div className="bg-galaxy w-full rounded-2xl absolute h-full z-[-10] top-0 ease-in duration-[5s] opacity-[0.75]" />
-            <form className="flex gap-8 flex-col justify-center items-center p-4 w-[50vw] h-[40vh] text-center">
-              <label className="w-1/2">
-                Twitter Display Name:
-                <input
-                  className="flex flex-col text-black w-full"
-                  type="text"
-                  readOnly
-                  value={twitter?.user?.name || ''}
-                />
-              </label>
-              <label className="w-1/2">
-                Discord Username:
-                <input
-                  className="flex flex-col text-black w-full"
-                  type="text"
-                  readOnly
-                  value={userDiscordData.username}
-                />
-              </label>
-              <label className="w-1/2">
-                Wallet Address:
-                <input
-                  className="flex flex-col text-black w-full"
-                  type="text"
-                  readOnly
-                  value={account?.address}
-                />
-              </label>
-              <label className="w-1/2">
-                Discord Email:
-                <input
-                  className="flex flex-col text-black w-full"
-                  type="text"
-                  readOnly
-                  value={userDiscordData.email}
-                />
-              </label>
+            <form className="flex gap-4 flex-col justify-center items-center p-4 w-[50vw] text-center">
+              <InputContainer>
+                <label className="text-[cyan]">
+                  Twitter Display Name:
+                  <input
+                    className="flex flex-col text-black w-full"
+                    type="text"
+                    readOnly
+                    value={twitter?.user?.name || ''}
+                  />
+                </label>
+              </InputContainer>
+              <InputContainer>
+                <label className="text-[orange]">
+                  Wallet Address:
+                  <input
+                    className="flex flex-col text-black w-full"
+                    type="text"
+                    readOnly
+                    value={account?.address}
+                  />
+                </label>
+              </InputContainer>
+              <InputContainer>
+                <label className="text-[#7c1fff]">
+                  Discord Username:
+                  <input
+                    className="flex flex-col text-black w-full"
+                    type="text"
+                    readOnly
+                    value={userDiscordData.username}
+                  />
+                </label>
+              </InputContainer>
+              <InputContainer>
+                <label className="text-[#7c1fff]">
+                  Discord Email:
+                  <input
+                    className="flex flex-col text-black w-full"
+                    type="text"
+                    readOnly
+                    value={userDiscordData.email}
+                  />
+                </label>
+              </InputContainer>
               <button
-                className="m-6 text-[lightgreen]"
+                className="m-8 text-[lightgreen]"
                 onClick={async (e) => {
                   e.preventDefault()
                   const userData = {
@@ -184,7 +200,7 @@ export default function Raffle({ userDiscordData }: any) {
                 Submit ✔
               </button>
             </form>
-            <div className="relative bottom-14">
+            <div className="relative bottom-6">
               <Cancle stage={2} />
             </div>
           </StageContainer>
