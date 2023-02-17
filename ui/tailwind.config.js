@@ -34,7 +34,6 @@ module.exports = {
         n3bg: '#F4FAFF',
         n3nav: '#7395B2',
         moonBlue: '#0B3B8E',
-        raffleOrange: '#f0720c',
       },
       keyframes: {
         notification: {

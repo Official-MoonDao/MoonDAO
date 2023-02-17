@@ -36,6 +36,10 @@ a {
   src: url('/fonts/RobotoMono-Regular.ttf') format('truetype');
 }
 
+button {
+  background-color: '#ffbc5c';
+}
+
 .stars-bg {
   background: url('/star-background.png') repeat,
     linear-gradient(to right, rgb(14, 15, 15), rgb(25, 20, 58), rgb(13, 0, 31));
@@ -52,6 +56,10 @@ a {
 
 .galaxy-bg {
   background: url('/galaxy.jpg') repeat;
+}
+
+.backdropBlur {
+  backdrop-filter: blur(10px);
 }
 
 .border-style {
