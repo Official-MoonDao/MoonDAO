@@ -249,14 +249,12 @@ export default function Raffle({ userDiscordData }: any) {
         )}
         {state === 4 && (
           <StageContainer>
-            <h2 className="text-[lightgreen]">
-              Thanks for entering the raffle!
-            </h2>
+            <h2 className="text-n3blue">Thanks for entering the raffle!</h2>
           </StageContainer>
         )}
         {state === 5 && (
           <StageContainer>
-            <h2 className="text-[orangered]">
+            <h2 className="text-n3green">
               You've already entered the raffle, you may only enter one time
             </h2>
           </StageContainer>
