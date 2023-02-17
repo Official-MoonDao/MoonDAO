@@ -105,6 +105,10 @@ button {
   color: #d85c4c;
 }
 
+#providerLogo {
+  src: '/galaxy.png';
+}
+
 .range3 {
   border-color: #ffbc5c;
   border-radius: 25px;
