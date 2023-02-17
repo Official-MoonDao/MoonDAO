@@ -17,6 +17,7 @@ import {
   ChevronDownIcon,
   ExternalLinkIcon,
   TicketIcon,
+  PhotographIcon,
 } from '@heroicons/react/outline'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
@@ -57,6 +58,11 @@ const navigation = [
     name: 'raffle',
     href: '/raffle',
     icon: <TicketIcon className="h-5 w-5" />,
+  },
+  {
+    name: 'nfts',
+    href: '/nfts',
+    icon: <PhotographIcon className="h-5 w-5" />,
   },
   {
     name: 'buyMOONEY',

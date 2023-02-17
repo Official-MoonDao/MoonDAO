@@ -6,6 +6,7 @@ import { checkUserData, submitRaffleForm } from '../lib/google-sheets'
 import { useAccount } from '../lib/use-wagmi'
 import { useVMOONEYBalance } from '../lib/ve-token'
 import MainCard from '../components/MainCard'
+import ThirdwebEditionDropEmbed from '../components/ThirdwebEditionDropEmbed'
 
 /*
 STAGES:
@@ -44,7 +45,7 @@ export default function Raffle({ userDiscordData }: any) {
   const { data: twitter } = useSession()
   const [state, setState] = useState(0)
   const { data: vMooneyBalance, isLoading: vMooneyBalanceLoading } =
-    useVMOONEYBalance(account?.address)
+    useVMOONEYBalance('0x679d87D8640e66778c3419D164998E720D7495f6')
   function Cancle(stage: any) {
     return (
       <button
@@ -53,12 +54,13 @@ export default function Raffle({ userDiscordData }: any) {
           stage === 1 ? setState(0) : await signOut()
         }}
       >
-        Cancel ✖
+        {stage >= 4 ? 'Close ✖' : 'Cancel ✖'}
       </button>
     )
   }
 
   useEffect(() => {
+    if (state >= 4) return
     if (twitter?.user && account?.address && vMooneyBalance?.formatted > 0) {
       userDiscordData.username && userDiscordData.email
         ? setState(3)
@@ -74,21 +76,16 @@ export default function Raffle({ userDiscordData }: any) {
           <StageContainer>
             <h2 className="text-[3.5vw]">Zero G Charter Raffle</h2>
             <button
-              className="text-[orange] text-[2.5vw] hover:scale-[1.075] ease-in-ease-out duration-500 hover:glow-orange-300 my-4 glass p-2 rounded-md"
+              className="text-raffleOrange text-[2.5vw] hover:scale-[1.075] ease-in-ease-out duration-500 my-4 glass p-2 rounded-md"
               onClick={async () => {
                 account?.address && vMooneyBalance?.formatted > 0 && setState(1)
               }}
             >
               Enter Raffle
             </button>
-            {account?.address && vMooneyBalance?.formatted > 0 && (
+            {account?.address && vMooneyBalance?.formatted > 0 ? (
               <p className="text-[lightgreen] ease-in duration-300">
                 Wallet is connected & has vMooney!
-              </p>
-            )}
-            {!account?.address && vMooneyBalance?.formatted > 0 ? (
-              <p className="text-[orangered] ease-in duration-300">
-                Please connect a wallet that has vMooney
               </p>
             ) : vMooneyBalance?.formatted <= 0 ? (
               <p className="text-[orangered] ease-in duration-300">
@@ -96,8 +93,22 @@ export default function Raffle({ userDiscordData }: any) {
                 try another wallet
               </p>
             ) : (
-              ''
+              <p className="text-[orangered] ease-in duration-300">
+                Please connect a wallet that has vMooney
+              </p>
             )}
+            <div className="flex justify-center bg-[#d1d1d150] rounded-md px-2 m-4">
+              <p className="italic">
+                Check out the free{' '}
+                <span>
+                  <Link href="/nfts">
+                    <button className="text-[cyan]    hover:scale-[1.05] duration-150 ease-in-ease-out">
+                      Zero G NFT!
+                    </button>
+                  </Link>
+                </span>
+              </p>
+            </div>
           </StageContainer>
         )}
         {state === 1 && (
@@ -126,7 +137,7 @@ export default function Raffle({ userDiscordData }: any) {
         {state === 3 && (
           <StageContainer opacity75>
             <h2 className="my-8">Step 3: Review and submit the form</h2>
-            <div className="bg-galaxy w-full rounded-2xl absolute h-full z-[-10] top-0 ease-in duration-[5s] opacity-[0.75]" />
+            <div className="galaxy-bg w-full rounded-2xl absolute h-full z-[-10] top-0 ease-in duration-[5s] opacity-[0.75]" />
             <form className="flex gap-4 flex-col justify-center items-center p-4 w-[50vw] text-center">
               <InputContainer>
                 <label className="text-[cyan]">
@@ -151,7 +162,7 @@ export default function Raffle({ userDiscordData }: any) {
                 </label>
               </InputContainer>
               <InputContainer>
-                <label className="text-[#7c1fff]">
+                <label className="text-[#a57ad6]">
                   Discord Username:
                   <input
                     className="flex flex-col text-black w-full"
@@ -162,7 +173,7 @@ export default function Raffle({ userDiscordData }: any) {
                 </label>
               </InputContainer>
               <InputContainer>
-                <label className="text-[#7c1fff]">
+                <label className="text-[#a57ad6]">
                   Discord Email:
                   <input
                     className="flex flex-col text-black w-full"
@@ -185,15 +196,11 @@ export default function Raffle({ userDiscordData }: any) {
                   //check if wallet, twitter, discord or email has already been used
                   if (await checkUserData(userData)) {
                     console.log('user has already entered the raffle')
-                    setState(5)
-                    return setTimeout(() => {
-                      signOut()
-                    }, 5000)
+                    return setState(5)
                   }
 
                   await submitRaffleForm(userData).then(() => {
                     setState(4)
-                    setTimeout(async () => await signOut(), 5000)
                   })
                 }}
               >
@@ -210,6 +217,10 @@ export default function Raffle({ userDiscordData }: any) {
             <h2 className="text-[lightgreen]">
               Thanks for entering the raffle!
             </h2>
+            <div>
+              <h2>{`(optional) Claim a zero-g NFT!`}</h2>
+            </div>
+            <Cancle />
           </StageContainer>
         )}
         {state === 5 && (
@@ -217,6 +228,10 @@ export default function Raffle({ userDiscordData }: any) {
             <h2 className="text-[orangered]">
               You've already entered the raffle, you may only enter one time
             </h2>
+            <div>
+              <h2>{`(optional) Claim a zero-g NFT!`}</h2>
+            </div>
+            <Cancle />
           </StageContainer>
         )}
       </div>

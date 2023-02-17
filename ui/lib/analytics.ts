@@ -1,10 +1,5 @@
-import { Client } from '@urql/core'
 import moment from 'moment'
 import { createClient } from 'urql'
-import ERC20 from '../abis/ERC20.json'
-import { useMOONEYBalance } from './mooney-token'
-import { useContractRead } from './use-wagmi'
-import { useContractWrite } from './use-wagmi'
 
 const THE_GRAPH_URL =
   'https://api.studio.thegraph.com/query/38443/vmooney/v0.1.834'
