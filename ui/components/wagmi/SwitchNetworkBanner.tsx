@@ -1,7 +1,7 @@
 import { ExclamationCircleIcon } from '@heroicons/react/outline'
+import useTranslation from 'next-translate/useTranslation'
 import React from 'react'
-import { useNetwork } from '../lib/use-wagmi'
-import useTranslation from 'next-translate/useTranslation';
+import { useNetwork } from '../../lib/use-wagmi'
 
 const chainIds = {
   mainnet: 1,
@@ -19,7 +19,7 @@ export default function SwitchNetworkBanner({ newNetwork }: any) {
   const capitalized = (network: any) =>
     network.charAt(0).toUpperCase() + network.slice(1)
 
-  const { t } = useTranslation('common');
+  const { t } = useTranslation('common')
 
   return (
     <div className="p-4 px-8 flex flex-col gap-4 md:flex-row justify-between md:items-center z-10">

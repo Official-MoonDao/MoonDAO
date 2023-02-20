@@ -7,8 +7,8 @@ import { checkUserData, submitRaffleForm } from '../lib/google-sheets'
 import { useAccount } from '../lib/use-wagmi'
 import { useVMOONEYBalance, useVMOONEYLock } from '../lib/ve-token'
 import { BigNumber } from 'ethers/lib/ethers'
-import MainCard from '../components/MainCard'
 import ThirdwebEditionDropEmbed from '../components/ThirdwebEditionDropEmbed'
+import MainCard from './layout/MainCard'
 
 /*
 STAGES:
@@ -28,8 +28,8 @@ function StageContainer({ children, opacity75 }: any) {
     <div
       className={
         opacity75
-          ? 'flex flex-col justify-center items-center animate-fadeInSlowTo75'
-          : 'flex flex-col justify-center items-center animate-fadeInSlow text-center'
+          ? 'flex flex-col justify-center items-left animate-fadeInSlowTo75 gap-2 p-2'
+          : 'flex flex-col justify-center items-left animate-fadeInSlow gap-2 pr-6'
       }
     >
       {children}
@@ -45,7 +45,7 @@ function InputContainer({ children }: any) {
   )
 }
 
-export default function Raffle({ userDiscordData }: any) {
+export default function ZeroGRaffle({ userDiscordData }: any) {
   const { data: account } = useAccount()
   const { data: twitter } = useSession()
   const [state, setState] = useState(0)
@@ -70,7 +70,7 @@ export default function Raffle({ userDiscordData }: any) {
   function AdvanceButton({ onClick, children }: any) {
     return (
       <button
-        className={`m-4 border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-[2vw] ${
+        className={`m-4 border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl ${
           !account && 'btn-disabled'
         }`}
         onClick={onClick}
@@ -98,20 +98,18 @@ export default function Raffle({ userDiscordData }: any) {
       <div className="flex flex-col animate-fadeIn justify-center items-center">
         {state === 0 && (
           <StageContainer>
-            <h2 className="text-[3.5vw] font-semibold font-GoodTimes">
-              Zero G Raffle
-            </h2>
+            <h2 className="text-3xl font-semibold font-GoodTimes">Raffle</h2>
             {account?.address && validLock ? (
-              <p className="text-n3blue ease-in duration-300 text-[1.5vw]">
+              <p className="text-n3blue ease-in duration-300 text-1xl">
                 Wallet is connected & has Mooney staked through June 9th
               </p>
-            ) : validLock ? (
-              <p className="text-n3green ease-in duration-300 text-[1.5vw]">
+            ) : account?.address && !validLock ? (
+              <p className="text-n3green ease-in duration-300 text-1xl">
                 This wallet either doesn't have vMooney or your lock-time
                 doesn't exceed June 9th
               </p>
             ) : (
-              <p className="text-white ease-in duration-300 text-[1.5vw]">
+              <p className="text-white ease-in duration-300 text-1xl">
                 Please connect a wallet that has vMooney, ensure that your
                 lock-time exceeds June 9th
               </p>
@@ -262,16 +260,4 @@ export default function Raffle({ userDiscordData }: any) {
       </div>
     </MainCard>
   )
-}
-
-export async function getServerSideProps(context: any) {
-  const code = context?.query?.code
-  let userDiscordData = {}
-  if (code) userDiscordData = (await getUserDiscordData(code)) || {}
-  console.log('code:' + code, 'data:' + userDiscordData)
-  return {
-    props: {
-      userDiscordData,
-    },
-  }
 }

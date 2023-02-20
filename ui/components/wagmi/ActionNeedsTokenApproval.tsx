@@ -1,9 +1,9 @@
 import { InformationCircleIcon } from '@heroicons/react/outline'
 import { BigNumber } from 'ethers'
 import React, { useEffect, useState } from 'react'
-import { useTokenAllowance, useTokenApproval } from '../lib/approve'
-import { NumberType, transformNumber } from '../lib/numbers'
-import { useAccount } from '../lib/use-wagmi'
+import { useTokenAllowance, useTokenApproval } from '../../lib/approve'
+import { NumberType, transformNumber } from '../../lib/numbers'
+import { useAccount } from '../../lib/use-wagmi'
 import ActionButton from './ActionButton'
 
 export default function ActionNeedsTokenApproval({

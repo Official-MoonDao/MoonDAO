@@ -21,8 +21,8 @@ module.exports = {
       animation: {
         fadeIn: 'fadeIn 0.5s ease-in',
         fadeInTo75: 'fadeIn 0.5s ease-in',
-        fadeInSlow: 'fadeIn 1.5s ease-in',
-        fadeInSlowTo75: 'fadeInTo75 1.5s ease-in',
+        fadeInSlow: 'fadeIn 1s ease-in',
+        fadeInSlowTo75: 'fadeInTo75 1s ease-in',
         notification: 'notification 5s',
         highlight: 'highlight 3s ease-out',
       },

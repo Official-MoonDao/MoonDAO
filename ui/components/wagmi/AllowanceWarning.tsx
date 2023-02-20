@@ -1,8 +1,8 @@
 import { ExclamationCircleIcon } from '@heroicons/react/outline'
 import { BigNumber } from 'ethers'
-import { useTokenAllowance, useTokenApproval } from '../lib/approve'
-import { useAccount } from '../lib/use-wagmi'
-import useTranslation from 'next-translate/useTranslation';
+import useTranslation from 'next-translate/useTranslation'
+import { useTokenAllowance, useTokenApproval } from '../../lib/approve'
+import { useAccount } from '../../lib/use-wagmi'
 
 interface AllowanceWarningProps {
   token: string
@@ -20,16 +20,14 @@ export const AllowanceWarning = ({ token, spender }: AllowanceWarningProps) => {
     spender,
   })
 
-  const { t } = useTranslation('common');
+  const { t } = useTranslation('common')
 
   return (
     <div className="alert mt-4 mb-4 bg-transparent border border-primary">
       <div>
         <ExclamationCircleIcon className="text-primary h-12 w-12" />
         <div className="flex flex-col gap-0.5 text-xs text-justify">
-          <span>
-            {t('safetyNote')}
-          </span>
+          <span>{t('safetyNote')}</span>
           {!tokenAllowanceLoading && tokenAllowance > 0 && (
             <div className="flex w-full justify-end">
               <button

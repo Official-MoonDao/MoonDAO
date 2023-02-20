@@ -1,10 +1,10 @@
-import MainCard from '../components/MainCard'
 import ThirdwebEditionDropEmbed from '../components/ThirdwebEditionDropEmbed'
+import MainCard from '../components/layout/MainCard'
 
 export default function NFTs() {
   return (
     <MainCard>
-      <h2 className="font-GoodTimes text-[3.5vw] text-center">MoonDAO NFTs</h2>
+      <h2 className="font-GoodTimes text-3xl text-center">MoonDAO NFTs</h2>
       <ThirdwebEditionDropEmbed />
     </MainCard>
   )

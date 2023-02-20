@@ -1,9 +1,9 @@
+import useTranslation from 'next-translate/useTranslation'
 import React from 'react'
 import { useWaitForTransaction } from 'wagmi'
-import usePreferredNetwork from '../lib/use-preferred-network'
-import { useAccount, useNetwork } from '../lib/use-wagmi'
+import usePreferredNetwork from '../../lib/use-preferred-network'
+import { useAccount, useNetwork } from '../../lib/use-wagmi'
 import ActionNeedsTokenApproval from './ActionNeedsTokenApproval'
-import useTranslation from 'next-translate/useTranslation';
 
 export default function ActionButton({
   className,
@@ -28,7 +28,7 @@ export default function ActionButton({
   const { activeChain } = useNetwork({})
   const { isPreferredNetwork } = usePreferredNetwork()
 
-  const { t } = useTranslation('common');
+  const { t } = useTranslation('common')
 
   return (
     <>

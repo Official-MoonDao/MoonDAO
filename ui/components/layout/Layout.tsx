@@ -30,14 +30,14 @@ import { useState, useEffect } from 'react'
 import Blockies from 'react-blockies'
 import { isToken } from 'typescript'
 import { useConnect, useEnsName, useDisconnect } from 'wagmi'
-import { MOONEYToken } from '../lib/config'
-import { connectorIcons } from '../lib/connectors'
-import { importToken } from '../lib/import-token'
-import { useAccount } from '../lib/use-wagmi'
-import Logo from '../public/Original_White.png'
+import { MOONEYToken } from '../../lib/config'
+import { connectorIcons } from '../../lib/connectors'
+import { importToken } from '../../lib/import-token'
+import { useAccount } from '../../lib/use-wagmi'
+import Logo from '../../public/Original_White.png'
+import PreferredNetworkWrapper from '../wagmi/PreferredNetworkWrapper'
 import ErrorCard from './ErrorCard'
 import { useErrorContext } from './ErrorProvider'
-import PreferredNetworkWrapper from './PreferredNetworkWrapper'
 
 type Indexable = {
   [key: string]: any
@@ -55,8 +55,8 @@ const navigation = [
     icon: <LockClosedIcon className="h-5 w-5" />,
   },
   {
-    name: 'raffle',
-    href: '/raffle',
+    name: 'zero-g',
+    href: '/zero-g',
     icon: <TicketIcon className="h-5 w-5" />,
   },
   {

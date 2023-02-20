@@ -5,8 +5,8 @@ import React from 'react'
 import { NftProvider } from 'use-nft'
 import { WagmiConfig, createClient } from 'wagmi'
 import { connectors, provider as externalProvider } from '../lib/connectors'
-import { ErrorProvider } from '../components/ErrorProvider'
-import Layout from '../components/Layout'
+import { ErrorProvider } from '../components/layout/ErrorProvider'
+import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
 
 declare let window: any
