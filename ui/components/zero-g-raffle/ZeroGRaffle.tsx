@@ -2,13 +2,14 @@ import { ExclamationCircleIcon, PhotographIcon } from '@heroicons/react/outline'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { discordOauthUrl, getUserDiscordData } from '../lib/discord'
-import { checkUserData, submitRaffleForm } from '../lib/google-sheets'
-import { useAccount } from '../lib/use-wagmi'
-import { useVMOONEYBalance, useVMOONEYLock } from '../lib/ve-token'
+import { discordOauthUrl, getUserDiscordData } from '../../lib/discord'
+import { checkUserData, submitRaffleForm } from '../../lib/google-sheets'
+import { useAccount } from '../../lib/use-wagmi'
+import { useVMOONEYBalance, useVMOONEYLock } from '../../lib/ve-token'
 import { BigNumber } from 'ethers/lib/ethers'
-import ThirdwebEditionDropEmbed from '../components/ThirdwebEditionDropEmbed'
-import MainCard from './layout/MainCard'
+import ThirdwebEditionDropEmbed from '../ThirdwebEditionDropEmbed'
+import MainCard from '../layout/MainCard'
+import EnterRaffleButton from './EnterRaffleButton'
 
 /*
 STAGES:
@@ -51,18 +52,18 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
   const [state, setState] = useState(0)
   const [validLock, setValidLock] = useState(false)
   const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
-    account?.address
+    '0x679d87D8640e66778c3419D164998E720D7495f6'
   )
 
-  function Cancle({ stage }: any) {
+  function Cancel() {
     return (
       <button
         className="text-n3green hover:scale-[1.05] ease-in duration-150"
         onClick={async () => {
-          stage === 1 ? setState(0) : await signOut()
+          await signOut()
         }}
       >
-        {stage >= 4 ? 'Close ✖' : 'Cancel ✖'}
+        {'Cancel ✖'}
       </button>
     )
   }
@@ -85,7 +86,7 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
       setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
     }
     console.log(validLock)
-    if (state >= 4) return
+    if (state >= 5 || state === 1) return
     if (twitter?.user && account?.address && validLock) {
       userDiscordData.username && userDiscordData.email
         ? setState(3)
@@ -99,28 +100,11 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
         {state === 0 && (
           <StageContainer>
             <h2 className="text-3xl font-semibold font-GoodTimes">Raffle</h2>
-            {account?.address && validLock ? (
-              <p className="text-n3blue ease-in duration-300 text-1xl">
-                Wallet is connected & has Mooney staked through June 9th
-              </p>
-            ) : account?.address && !validLock ? (
-              <p className="text-n3green ease-in duration-300 text-1xl">
-                This wallet either doesn't have vMooney or your lock-time
-                doesn't exceed June 9th
-              </p>
-            ) : (
-              <p className="text-white ease-in duration-300 text-1xl">
-                Please connect a wallet that has vMooney, ensure that your
-                lock-time exceeds June 9th
-              </p>
-            )}
-            <AdvanceButton
-              onClick={async () => {
-                account?.address && validLock && setState(1)
-              }}
-            >
-              Enter Raffle
-            </AdvanceButton>
+            <EnterRaffleButton
+              setState={(stage: any) => setState(stage)}
+              account={account}
+              validLock={validLock}
+            />
             <div className="alert m-4 bg-transparent border border-primary">
               <div>
                 <PhotographIcon className="text-primary h-8 w-8" />
@@ -129,7 +113,7 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
                   Check out the free{' '}
                   <span>
                     <Link href="/nfts">
-                      <button className="text-n3blue    hover:scale-[1.05] duration-150 ease-in-ease-out">
+                      <button className="text-n3blue hover:scale-[1.05] duration-150 ease-in-ease-out">
                         Zero G NFT!
                       </button>
                     </Link>
@@ -141,6 +125,11 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
         )}
         {state === 1 && (
           <StageContainer>
+            <h2 className="text-3xl font-semibold font-GoodTimes">Alt Entry</h2>
+          </StageContainer>
+        )}
+        {state === 2 && (
+          <StageContainer>
             <h2>Step 1: Verify your Twitter account</h2>
             <AdvanceButton
               onClick={async () => {
@@ -149,19 +138,19 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
             >
               Verify Twitter
             </AdvanceButton>
-            <Cancle stage={1} />
+            <Cancel />
           </StageContainer>
         )}
-        {state === 2 && (
+        {state === 3 && (
           <StageContainer>
             <h2>Step 2: Verify your Discord account</h2>
             <AdvanceButton>
               <Link href={discordOauthUrl.preview}>Verify Discord</Link>
             </AdvanceButton>
-            <Cancle stage={2} />
+            <Cancel />
           </StageContainer>
         )}
-        {state === 3 && (
+        {state === 4 && (
           <StageContainer opacity75>
             <h2 className="my-8">Step 3: Review and submit the form</h2>
             <div className="galaxy-bg w-full rounded-2xl absolute h-full z-[-10] top-0 ease-in duration-[5s] opacity-[0.75]" />
@@ -241,16 +230,16 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
               </button>
             </form>
             <div className="relative bottom-6">
-              <Cancle stage={2} />
+              <Cancel />
             </div>
           </StageContainer>
         )}
-        {state === 4 && (
+        {state === 5 && (
           <StageContainer>
             <h2 className="text-n3blue">Thanks for entering the raffle!</h2>
           </StageContainer>
         )}
-        {state === 5 && (
+        {state === 6 && (
           <StageContainer>
             <h2 className="text-n3green">
               You've already entered the raffle, you may only enter one time
