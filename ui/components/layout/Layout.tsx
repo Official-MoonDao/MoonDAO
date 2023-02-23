@@ -60,11 +60,6 @@ const navigation = [
     icon: <TicketIcon className="h-5 w-5" />,
   },
   {
-    name: 'nfts',
-    href: '/nfts',
-    icon: <PhotographIcon className="h-5 w-5" />,
-  },
-  {
     name: 'buyMOONEY',
     href: `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet`,
     icon: <PlusIcon className="h-5 w-5" />,

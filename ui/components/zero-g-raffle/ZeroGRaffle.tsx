@@ -97,28 +97,12 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
       <div className="flex flex-col animate-fadeIn justify-center items-center">
         {state === 0 && (
           <StageContainer>
-            <h2 className="text-3xl font-semibold font-GoodTimes">Raffle</h2>
+            <h2 className="text-3xl font-semibold text-center">Raffle</h2>
             <EnterRaffleButton
               setState={(stage: any) => setState(stage)}
               account={account}
               validLock={validLock}
             />
-            <div className="alert bg-transparent border border-primary">
-              <div>
-                <PhotographIcon className="text-primary h-8 w-8" />
-                <div className="flex flex-col gap-0.5 text-xs text-justify"></div>
-                <p className="italic">
-                  Check out the free{' '}
-                  <span>
-                    <Link href="/nfts">
-                      <button className="text-n3blue hover:scale-[1.05] duration-150 ease-in-ease-out">
-                        Zero G NFT!
-                      </button>
-                    </Link>
-                  </span>
-                </p>
-              </div>
-            </div>
           </StageContainer>
         )}
         {state === 1 && (

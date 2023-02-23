@@ -1,6 +1,8 @@
+import { InformationCircleIcon, PhotographIcon } from '@heroicons/react/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { getUserDiscordData } from '../../lib/discord'
+import ThirdwebEditionDropEmbed from '../../components/ThirdwebEditionDropEmbed'
 import MainCard from '../../components/layout/MainCard'
 import ZeroGRaffle from '../../components/zero-g-raffle/ZeroGRaffle'
 
@@ -34,9 +36,18 @@ Witness breathtaking views of our planet as you float and soar in a weightless e
         </button>
       </div>
       <MainCard>
-        <h1 className="font-GoodTimes text-3xl">Payment Portal</h1>
+        <h1 className="text-center text-3xl">Payment Portal</h1>
       </MainCard>
       <ZeroGRaffle userDiscordData={userDiscordData} router={router} />
+      <MainCard>
+        <div className="flex alert bg-transparent border border-primary">
+          <div className="flex justify-center items-center">
+            <InformationCircleIcon className="text-primary h-8 w-8" />
+            <p className="italic">Claim your free Zero-G NFT!</p>
+          </div>
+        </div>
+        <ThirdwebEditionDropEmbed />
+      </MainCard>
     </MainCard>
   )
 }
