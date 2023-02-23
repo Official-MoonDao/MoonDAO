@@ -29,8 +29,8 @@ function StageContainer({ children, opacity75 }: any) {
     <div
       className={
         opacity75
-          ? 'flex flex-col justify-center items-left animate-fadeInSlowTo75 gap-2 p-2'
-          : 'flex flex-col justify-center items-left animate-fadeInSlow gap-2 pr-6'
+          ? 'flex flex-col justify-center items-left animate-fadeInSlowTo75 gap-6'
+          : 'flex flex-col justify-center items-left animate-fadeInSlow gap-6'
       }
     >
       {children}
@@ -46,19 +46,19 @@ function InputContainer({ children }: any) {
   )
 }
 
-export default function ZeroGRaffle({ userDiscordData }: any) {
+export default function ZeroGRaffle({ userDiscordData, router }: any) {
   const { data: account } = useAccount()
   const { data: twitter } = useSession()
   const [state, setState] = useState(0)
   const [validLock, setValidLock] = useState(false)
   const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
-    '0x679d87D8640e66778c3419D164998E720D7495f6'
+    account?.address
   )
 
   function Cancel() {
     return (
       <button
-        className="text-n3green hover:scale-[1.05] ease-in duration-150"
+        className="text-n3green hover:scale-[1.05] ease-in duration-150 w-full text-center"
         onClick={async () => {
           await signOut()
         }}
@@ -71,9 +71,7 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
   function AdvanceButton({ onClick, children }: any) {
     return (
       <button
-        className={`m-4 border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl ${
-          !account && 'btn-disabled'
-        }`}
+        className={`border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl`}
         onClick={onClick}
       >
         {children}
@@ -89,8 +87,8 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
     if (state >= 5 || state === 1) return
     if (twitter?.user && account?.address && validLock) {
       userDiscordData.username && userDiscordData.email
-        ? setState(3)
-        : setState(2)
+        ? setState(4)
+        : setState(3)
     } else setState(0)
   }, [twitter, account, vMooneyLock, userDiscordData])
 
@@ -105,7 +103,7 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
               account={account}
               validLock={validLock}
             />
-            <div className="alert m-4 bg-transparent border border-primary">
+            <div className="alert bg-transparent border border-primary">
               <div>
                 <PhotographIcon className="text-primary h-8 w-8" />
                 <div className="flex flex-col gap-0.5 text-xs text-justify"></div>
@@ -144,8 +142,8 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
         {state === 3 && (
           <StageContainer>
             <h2>Step 2: Verify your Discord account</h2>
-            <AdvanceButton>
-              <Link href={discordOauthUrl.preview}>Verify Discord</Link>
+            <AdvanceButton onClick={() => router.push(discordOauthUrl.preview)}>
+              Verify Discord
             </AdvanceButton>
             <Cancel />
           </StageContainer>
@@ -153,8 +151,8 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
         {state === 4 && (
           <StageContainer opacity75>
             <h2 className="my-8">Step 3: Review and submit the form</h2>
-            <div className="galaxy-bg w-full rounded-2xl absolute h-full z-[-10] top-0 ease-in duration-[5s] opacity-[0.75]" />
-            <form className="flex gap-4 flex-col justify-center items-center p-4 w-[50vw] text-center">
+            <div className="galaxy-bg w-full rounded-2xl absolute h-full z-[-10] left-0 top-0 ease-in duration-[5s] opacity-[0.75]" />
+            <form className="flex gap-4 flex-col justify-center items-center p-4 w-full text-center">
               <InputContainer>
                 <label>
                   Twitter Display Name:
@@ -212,14 +210,14 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
                   //check if wallet, twitter, discord or email has already been used
                   if (await checkUserData(userData)) {
                     console.log('user has already entered the raffle')
-                    setState(5)
+                    setState(6)
                     return setTimeout(async () => {
                       await signOut()
                     }, 5000)
                   }
 
                   await submitRaffleForm(userData).then(() => {
-                    setState(4)
+                    setState(5)
                     return setTimeout(async () => {
                       await signOut()
                     }, 5000)
@@ -229,7 +227,7 @@ export default function ZeroGRaffle({ userDiscordData }: any) {
                 Submit ✔
               </button>
             </form>
-            <div className="relative bottom-6">
+            <div className="relative bottom-6 text-center">
               <Cancel />
             </div>
           </StageContainer>

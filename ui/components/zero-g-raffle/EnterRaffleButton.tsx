@@ -3,7 +3,7 @@ import { useState } from 'react'
 function Button({ children, onClick }: any) {
   return (
     <button
-      className="m-4 border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl"
+      className="border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl"
       onClick={onClick}
     >
       {children}
@@ -21,7 +21,7 @@ export default function EnterRaffleButton({
 
   if (dropdown) {
     return (
-      <div className="flex flex-col justify-center items-center">
+      <div className="flex flex-col justify-center items-center gap-4">
         <p className="font-RobotoMono">Are you a vMooney Holder?</p>
         {error === 'invalid-lock' && (
           <p className="text-n3green ease-in duration-300">
