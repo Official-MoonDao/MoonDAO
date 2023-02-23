@@ -107,7 +107,9 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         )}
         {state === 1 && (
           <StageContainer>
-            <h2 className="text-3xl font-semibold font-GoodTimes">Alt Entry</h2>
+            <h2 className="text-3xl font-semibold font-RobotoMono">
+              Alt Entry
+            </h2>
           </StageContainer>
         )}
         {state === 2 && (
