@@ -1,4 +1,6 @@
+import { errorMonitor } from 'events'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
+import { walkUpBindingElementsAndPatterns } from 'typescript'
 
 let doc: any
 //Init GoogleSheets
@@ -16,11 +18,11 @@ async function spreadsheetAuth() {
   }
 }
 
-async function appendSpreadsheet(row: any) {
+async function appendSpreadsheet(row: any, sheetId: string) {
   try {
-    await spreadsheetAuth()
+    if (!doc) await spreadsheetAuth()
     await doc.loadInfo()
-    const sheet = doc.sheetsById['0']
+    const sheet = await doc.sheetsById[sheetId]
     await sheet.addRow(row)
   } catch (e: any) {
     console.error('google-sheets: append spreadsheet', e.message)
@@ -42,30 +44,67 @@ export async function submitRaffleForm({
     Date: new Date(Date.now()).toDateString(),
   }
   console.log(newRow)
-  await appendSpreadsheet(newRow)
+  await appendSpreadsheet(newRow, '0')
 }
 
-export async function checkUserData({
+export async function checkUserDataRaffle({
   twitterName,
   userDiscordData,
   walletAddress,
   email,
 }: any) {
   try {
-    await spreadsheetAuth()
+    if (!doc) await spreadsheetAuth()
     await doc.loadInfo()
-    const sheet = doc.sheetsById['0']
+    const sheet = await doc.sheetsById['0']
     const rows = await sheet.getRows()
-    const userHasEnteredRaffle =
-      rows.filter(
-        (row: any) =>
-          row.DiscID === userDiscordData.id ||
-          row.TwitterDisplayName === twitterName ||
-          row.Email === email ||
-          row.WalletAddress === walletAddress
-      ).length > 0 && true
+    const userHasEnteredRaffle = await rows.some(
+      (row: any) =>
+        row.DiscID === userDiscordData.id ||
+        row.TwitterDisplayName === twitterName ||
+        row.Email === email ||
+        row.WalletAddress === walletAddress
+    )
     return userHasEnteredRaffle
-  } catch (e: any) {
-    console.error('google-sheets: checkUserData', e.message)
+  } catch (err: any) {
+    console.error('google-sheets: checkUserDataRaffle', err.message)
   }
+}
+
+export async function checkUserDataReservation({
+  fullName,
+  email,
+  walletAddress = '',
+}: any) {
+  try {
+    if (!doc) await spreadsheetAuth()
+    await doc.loadInfo()
+    const sheet = await doc.sheetsById['1202870397']
+    const rows = await sheet.getRows()
+    const userHasEnteredRaffle = await rows.some(
+      (row: any) =>
+        row.FullName === fullName ||
+        row.Email === email ||
+        row?.WalletAddress === walletAddress
+    )
+    return userHasEnteredRaffle
+  } catch (err: any) {
+    console.error('google-sheets: checkUserDataRaffle', err.message)
+  }
+}
+
+export async function submitReservation({
+  fullName,
+  email,
+  isVMOONEYHolder = false,
+  walletAddress = 'none',
+}: any) {
+  const newRow = {
+    FullName: fullName,
+    Email: email,
+    IsVMOONEYHolder: isVMOONEYHolder,
+    Timestamp: new Date(Date.now()),
+    WalletAddress: walletAddress,
+  }
+  await appendSpreadsheet(newRow, '1202870397')
 }

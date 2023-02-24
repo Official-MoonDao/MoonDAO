@@ -15,6 +15,7 @@ export default function EnterRaffleButton({
   setState,
   account,
   validLock,
+  label = 'Enter Raffle',
 }: any) {
   const [dropdown, setDropdown] = useState(false)
   const [error, setError] = useState('')
@@ -55,5 +56,5 @@ export default function EnterRaffleButton({
     )
   }
 
-  return <Button onClick={() => setDropdown(true)}>Enter Raffle</Button>
+  return <Button onClick={() => setDropdown(true)}>{label}</Button>
 }

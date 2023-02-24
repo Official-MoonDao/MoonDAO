@@ -3,13 +3,15 @@ import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { discordOauthUrl, getUserDiscordData } from '../../lib/discord'
-import { checkUserData, submitRaffleForm } from '../../lib/google-sheets'
+import { checkUserDataRaffle, submitRaffleForm } from '../../lib/google-sheets'
 import { useAccount } from '../../lib/use-wagmi'
 import { useVMOONEYBalance, useVMOONEYLock } from '../../lib/ve-token'
 import { BigNumber } from 'ethers/lib/ethers'
 import ThirdwebEditionDropEmbed from '../ThirdwebEditionDropEmbed'
 import MainCard from '../layout/MainCard'
 import EnterRaffleButton from './EnterRaffleButton'
+import InputContainer from './InputContainer'
+import StageContainer from './StageContainer'
 
 /*
 STAGES:
@@ -23,28 +25,6 @@ STAGES:
 
 //The member's lock-time must exceed this date =>
 const lockCutoff = +new Date('2023-06-09T00:00:00')
-
-function StageContainer({ children, opacity75 }: any) {
-  return (
-    <div
-      className={
-        opacity75
-          ? 'flex flex-col justify-center items-left animate-fadeInSlowTo75 gap-6'
-          : 'flex flex-col justify-center items-left animate-fadeInSlow gap-6'
-      }
-    >
-      {children}
-    </div>
-  )
-}
-
-function InputContainer({ children }: any) {
-  return (
-    <div className="flex flex-col justify-center items-center p-5 rounded-sm border-style backdropBlur">
-      {children}
-    </div>
-  )
-}
 
 export default function ZeroGRaffle({ userDiscordData, router }: any) {
   const { data: account } = useAccount()
@@ -194,7 +174,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
                     email: userDiscordData.email,
                   }
                   //check if wallet, twitter, discord or email has already been used
-                  if (await checkUserData(userData)) {
+                  if (await checkUserDataRaffle(userData)) {
                     console.log('user has already entered the raffle')
                     setState(6)
                     return setTimeout(async () => {

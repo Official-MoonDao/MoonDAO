@@ -4,7 +4,8 @@ import { useRouter } from 'next/router'
 import { getUserDiscordData } from '../../lib/discord'
 import ThirdwebEditionDropEmbed from '../../components/ThirdwebEditionDropEmbed'
 import MainCard from '../../components/layout/MainCard'
-import ZeroGRaffle from '../../components/zero-g-raffle/ZeroGRaffle'
+import Reservations from '../../components/zero-g/Reservations'
+import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
 
 export default function ZeroG({ userDiscordData }: any) {
   const router = useRouter()
@@ -35,10 +36,8 @@ Witness breathtaking views of our planet as you float and soar in a weightless e
           Event Details...
         </button>
       </div>
-      <MainCard>
-        <h1 className="text-center text-3xl">Payment Portal</h1>
-      </MainCard>
-      <ZeroGRaffle userDiscordData={userDiscordData} router={router} />
+      <Reservations />
+      {/* <ZeroGRaffle userDiscordData={userDiscordData} router={router} /> */}
       <MainCard>
         <div className="flex alert bg-transparent border border-primary">
           <div className="flex justify-center items-center">
