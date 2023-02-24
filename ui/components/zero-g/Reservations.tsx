@@ -1,4 +1,3 @@
-import { ApplicationCommandManager } from 'discord.js'
 import { BigNumber } from 'ethers'
 import { useEffect, useRef, useState } from 'react'
 import {

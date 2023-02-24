@@ -1,11 +1,9 @@
-import { InformationCircleIcon, PhotographIcon } from '@heroicons/react/outline'
-import Link from 'next/link'
+import { InformationCircleIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
 import { getUserDiscordData } from '../../lib/discord'
 import ThirdwebEditionDropEmbed from '../../components/ThirdwebEditionDropEmbed'
 import MainCard from '../../components/layout/MainCard'
 import Reservations from '../../components/zero-g/Reservations'
-import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
 
 export default function ZeroG({ userDiscordData }: any) {
   const router = useRouter()
