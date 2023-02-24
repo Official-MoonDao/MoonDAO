@@ -26,7 +26,7 @@ export default function Reservations() {
 
   const [validLock, setValidLock] = useState(false)
   const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
-    '0x679d87D8640e66778c3419D164998E720D7495f6'
+    account?.address
   )
   const altEmailInput: any = useRef()
   const altNameInput: any = useRef()
