@@ -22,7 +22,11 @@ export function Moon({ zoomEnabled = false }) {
       moonRef.current.rotation.y += 0.0005
       if (zoomEnabled)
         setTimeout(() => {
-          gsap.to(camera.position, { z: 11, y: -1.5, duration: 10 })
+          gsap.to(camera.position, {
+            z: viewport.height < 800 ? 7 : 9,
+            y: -1.5,
+            duration: 10,
+          })
           gsap.to(camera.rotation, {
             y: -Math.PI / 27,
             z: Math.PI / 10,
@@ -38,8 +42,6 @@ export function Moon({ zoomEnabled = false }) {
       position={[7, -1.5, -1]}
       rotation={[Math.PI / 8, Math.PI / 4, 0]}
       ref={moonRef}
-      onPointerEnter={() => hoverEnabled && setHover(true)}
-      onPointerLeave={() => hoverEnabled && setHover(false)}
     >
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <group rotation={[Math.PI / 2, 0, -Math.PI / 16]} scale={2.9}>
