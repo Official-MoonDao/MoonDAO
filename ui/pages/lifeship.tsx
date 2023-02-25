@@ -21,6 +21,17 @@ import MainCard from '../components/layout/MainCard'
 import flag from '../public/Original.png'
 import { Scene } from '../r3f/Moon/Scene'
 
+function Button({ children, onClick }: any) {
+  return (
+    <button
+      className="border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl"
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
 export default function Lifeship() {
   const { data: account } = useAccount()
   const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
@@ -38,18 +49,60 @@ export default function Lifeship() {
     }
   }, [account, vMooneyLock])
   function LifeshipLinkButton({ label }: any) {
+    const [dropdown, setDropdown] = useState(false)
+    const [error, setError] = useState('')
+
+    if (dropdown) {
+      return (
+        <div className="flex flex-col justify-center items-center gap-4">
+          <p className="font-RobotoMono">Are you a vMooney Holder?</p>
+          {error === 'no-vmooney' && (
+            <p className="text-n3green ease-in duration-300">
+              This wallet doesn't have vMooney
+            </p>
+          )}
+          {error === 'no-wallet' && (
+            <p className="text-n3green ease-in duration-300">
+              Please connect a wallet that has vMooney
+            </p>
+          )}
+          <Button
+            onClick={() => {
+              if (!account?.address) return setError('no-wallet')
+              if (!validLock) return setError('no-vmooney')
+              window.open(
+                'https://lifeship.com/discount/MOONDAO1$?redirect=/collections/shop-all/products/dna-to-moon'
+              )
+              setDropdown(false)
+            }}
+          >
+            Yes
+          </Button>
+          <Button
+            onClick={() =>
+              window.open(
+                'https://lifeship.com/discount/MOONDAO$?redirect=/collections/shop-all/products/dna-to-moon'
+              )
+            }
+          >
+            No
+          </Button>
+          <button
+            className="text-n3green hover:scale-[1.05] ease-in duration-150"
+            onClick={() => setDropdown(false)}
+          >
+            Cancel ✖
+          </button>
+        </div>
+      )
+    }
+
     return (
       <button
         className="border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl"
-        onClick={() =>
-          window.open(
-            `https://lifeship.com/discount/MOONDAO${
-              validLock ? '1' : ''
-            }?redirect=/collections/shop-all/products/dna-to-moon`
-          )
-        }
+        onClick={() => setDropdown(true)}
       >
-        {label}
+        Send your DNA to the Moon!
       </button>
     )
   }
@@ -90,7 +143,7 @@ export default function Lifeship() {
               </p>
             </div>
             <div className="flex flex-col items-center gap-4">
-              <LifeshipLinkButton label="Send your DNA to the Moon!" />
+              <LifeshipLinkButton />
             </div>
           </MainCard>
         </div>
