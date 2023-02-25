@@ -7,6 +7,7 @@ import {
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import React from 'react'
 import { MOONEYToken } from '../lib/config'
 import GradientLink from '../components/layout/GradientLink'
@@ -16,19 +17,21 @@ import MainCard from '../components/layout/MainCard'
 import flag from '../public/Original.png'
 import { Scene } from '../r3f/Moon/Scene'
 
-function LifeshipLinkButton({ label, linkNumber = '' }: any) {
-  return (
-    <button className="border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl">
-      <Link
-        href={`https://lifeship.com/discount/MOONDAO${linkNumber}?redirect=/collections/shop-all/products/dna-to-moon`}
+export default function Lifeship() {
+  function LifeshipLinkButton({ label, linkNumber = '' }: any) {
+    return (
+      <button
+        className="border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl"
+        onClick={() =>
+          window.open(
+            `https://lifeship.com/discount/MOONDAO${linkNumber}?redirect=/collections/shop-all/products/dna-to-moon`
+          )
+        }
       >
         {label}
-      </Link>
-    </button>
-  )
-}
-
-export default function Lifeship() {
+      </button>
+    )
+  }
   return (
     <div className="animate-fadeIn">
       <Scene zoomEnabled />
