@@ -164,7 +164,7 @@ export default function Reservations() {
               {'Full Name:'}
               <input
                 className="flex flex-col text-black w-full rounded-md p-2"
-                placeholder="enter your first and last name"
+                placeholder="first and last name"
                 ref={altNameInput}
               />
             </label>
@@ -174,7 +174,7 @@ export default function Reservations() {
               {'Email:'}
               <input
                 className="flex flex-col text-black w-full rounded-md p-2"
-                placeholder="enter your email address"
+                placeholder="email address"
                 ref={altEmailInput}
               />
             </label>

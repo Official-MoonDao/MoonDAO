@@ -18,6 +18,7 @@ import {
   ExternalLinkIcon,
   TicketIcon,
   PhotographIcon,
+  MoonIcon,
 } from '@heroicons/react/outline'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
@@ -58,6 +59,11 @@ const navigation = [
     name: 'zero-g',
     href: '/zero-g',
     icon: <TicketIcon className="h-5 w-5" />,
+  },
+  {
+    name: 'lifeship',
+    href: '/lifeship',
+    icon: <MoonIcon className="h-5 w-5" />,
   },
   {
     name: 'buyMOONEY',

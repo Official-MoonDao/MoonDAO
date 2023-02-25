@@ -4,7 +4,7 @@ import { Suspense } from 'react'
 import Bloom from './Bloom'
 import { Moon } from './Moon'
 
-export function Scene() {
+export function Scene({ hoverEnabled = false }) {
   return (
     <Suspense fallback={null}>
       <Canvas
@@ -25,7 +25,7 @@ export function Scene() {
         <Bloom>
           <hemisphereLight args={['slateblue', 'lightblue', 0.75]} />
           <pointLight position={[-2, 1, 4]} color={'white'} intensity={0.08} />
-          <Moon />
+          <Moon hoverEnabled={hoverEnabled} />
         </Bloom>
       </Canvas>
     </Suspense>

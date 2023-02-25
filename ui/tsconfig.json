@@ -100,7 +100,8 @@
     "r3f/Moon/Scene.jsx",
     "r3f/Moon/Moon.jsx",
     "lib/get-twitter-account.ts",
-    "env.d.ts"
+    "env.d.ts",
+    "r3f/hooks"
   ],
   "exclude": ["node_modules"]
 }
