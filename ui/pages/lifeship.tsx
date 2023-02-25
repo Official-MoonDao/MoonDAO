@@ -55,9 +55,9 @@ export default function Lifeship() {
             <div className="mb-2 max-w-2xl font-RobotoMono">
               <p>
                 {'MoonDAO has parterned with '}
-                <span>
+                <span onClick={() => window.open('https://lifeship.com/')}>
                   <button className="text-n3blue hover:scale-[1.025] ease-in-ease-out duration-300">
-                    <Link href="https://lifeship.com/"> Lifeship</Link>
+                    Lifeship
                   </button>
                 </span>
               </p>
