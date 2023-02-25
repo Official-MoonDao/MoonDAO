@@ -40,7 +40,7 @@ Witness breathtaking views of our planet as you float and soar in a weightless e
         </div>
         <Reservations />
         {/* <ZeroGRaffle userDiscordData={userDiscordData} router={router} /> */}
-        <MainCard>
+        {/* <MainCard>
           <div className="flex alert bg-transparent border border-primary">
             <div className="flex justify-center items-center">
               <InformationCircleIcon className="text-primary h-8 w-8" />
@@ -48,7 +48,7 @@ Witness breathtaking views of our planet as you float and soar in a weightless e
             </div>
           </div>
           <ThirdwebEditionDropEmbed />
-        </MainCard>
+  </MainCard>*/}
       </MainCard>
     </div>
   )

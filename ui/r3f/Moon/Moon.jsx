@@ -1,4 +1,4 @@
-import { useGLTF } from '@react-three/drei'
+import { useGLTF, useTexture } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import gsap from 'gsap'
 import React, { useRef, useState, useEffect } from 'react'
@@ -9,6 +9,7 @@ export function Moon({ zoomEnabled = false }) {
   const [isMobile, setIsMobile] = useState(false)
   const { camera, viewport } = useThree()
   const [hover, setHover] = useState(false)
+  const texture = useTexture('/LifeShip_Horizontal.png')
   const moonRef = useRef()
   useEffect(() => {
     if (viewport.width < 800) camera.position.set(4.5, 0, 5)
