@@ -4,7 +4,7 @@ import { Suspense } from 'react'
 import Bloom from './Bloom'
 import { Moon } from './Moon'
 
-export function Scene({ hoverEnabled = false }) {
+export function Scene({ zoomEnabled = false }) {
   return (
     <Suspense fallback={null}>
       <Canvas

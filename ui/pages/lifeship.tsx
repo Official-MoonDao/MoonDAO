@@ -31,7 +31,7 @@ function LifeshipLinkButton({ label, linkNumber = '' }: any) {
 export default function Lifeship() {
   return (
     <div className="animate-fadeIn">
-      <Scene hoverEnabled />
+      <Scene zoomEnabled />
       <Head title="Lifeship" />
       <div className="flex flex-col max-w-3xl">
         <div className="grid xl:grid-cols-1 mt-2 gap-8">

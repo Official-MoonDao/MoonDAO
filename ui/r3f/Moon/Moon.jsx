@@ -4,7 +4,7 @@ import gsap from 'gsap'
 import React, { useRef, useState, useEffect } from 'react'
 import { Camera } from 'three'
 
-export function Moon({ hoverEnabled = false }) {
+export function Moon({ zoomEnabled = false }) {
   const { nodes, materials } = useGLTF('/textures/the_moon.glb')
   const [isMobile, setIsMobile] = useState(false)
   const { camera, viewport } = useThree()
@@ -20,7 +20,7 @@ export function Moon({ hoverEnabled = false }) {
   useFrame(() => {
     if (moonRef.current) {
       moonRef.current.rotation.y += 0.0005
-      if (hoverEnabled)
+      if (zoomEnabled)
         setTimeout(() => {
           gsap.to(camera.position, { z: 11, y: -1.5, duration: 10 })
           gsap.to(camera.rotation, {
