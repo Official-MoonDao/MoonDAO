@@ -25,7 +25,7 @@ export function Scene({ zoomEnabled = false }) {
         <Bloom>
           <hemisphereLight args={['slateblue', 'lightblue', 0.75]} />
           <pointLight position={[-2, 1, 4]} color={'white'} intensity={0.08} />
-          <Moon hoverEnabled={hoverEnabled} />
+          <Moon zoomEnabled={zoomEnabled} />
         </Bloom>
       </Canvas>
     </Suspense>
