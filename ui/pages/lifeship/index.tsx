@@ -43,19 +43,19 @@ export default function Lifeship() {
   //stages
   const [state, setState] = useState(0)
 
-  const [product, setProdcut] = useState({})
+  const [product, setProdcut]: any = useState({})
 
   //user-feedback
-  const [notification, setNotification] = useState('')
+  const [notification, setNotification]: any = useState('')
 
   //NFT submission
   const [userImage, setUserImage]: any = useState({})
 
   //# of kits
-  const [quantity, setQuantity] = useState(0)
+  const [quantity, setQuantity]: any = useState(0)
 
   //current preview image
-  const [preview, setPreview] = useState(0)
+  const [preview, setPreview]: any = useState(0)
 
   //check if user has already submited a NFT
   const [userSubmittedNFT, setUserSubmittedNFT]: any = useState(false)
@@ -223,12 +223,14 @@ export default function Lifeship() {
                       Please connect your wallet to proceed
                     </p>
                   )}
-                  <Image
-                    className="rounded-2xl backdropBlur"
-                    src={product.images[preview].src}
-                    width={400}
-                    height={320}
-                  />
+                  {product?.images && (
+                    <Image
+                      className="rounded-2xl backdropBlur"
+                      src={product.images[preview].src}
+                      width={400}
+                      height={320}
+                    />
+                  )}
                   <div className="flex justify-center items-center gap-[22%] w-1/2">
                     <button
                       className={`border-style btn text-n3blue normal-case font-medium w-1/2 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
@@ -277,7 +279,7 @@ export default function Lifeship() {
                     <div className="flex gap-2 justify-center">
                       <p className="text-3xl text-n3blue">Total:</p>
                       <p className="text-3xl">{`$${(
-                        product.variants[0].price.amount * quantity
+                        product.variants[0].price.amount * quantity || 0
                       ).toFixed(2)}`}</p>
                     </div>
                     <div className="my-2 flex justify-center items-center gap-8 w-full">
