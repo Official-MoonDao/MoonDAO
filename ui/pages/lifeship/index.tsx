@@ -37,7 +37,7 @@ function StageContainer({ children }: any) {
   )
 }
 
-export default function Lifeship({ product }: any) {
+export default function Lifeship({ product = {} }: any) {
   const router = useRouter()
   const { data: account } = useAccount()
   //stages
@@ -335,12 +335,12 @@ export default function Lifeship({ product }: any) {
   )
 }
 
-export async function getStaticProps({ params }: any) {
-  const product = await getProductByHandle('dna-to-moon')
+// export async function getStaticProps({ params }: any) {
+//   const product = await getProductByHandle('dna-to-moon')
 
-  return {
-    props: {
-      product: product || {},
-    },
-  }
-}
+//   return {
+//     props: {
+//       product: product || {},
+//     },
+//   }
+// }
