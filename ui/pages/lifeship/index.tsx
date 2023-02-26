@@ -91,7 +91,7 @@ export default function Lifeship() {
         body: JSON.stringify({ handle: 'dna-to-moon' }),
       })
         .then((res) => res.json())
-        .then((data) => setProdcut(data.product))
+        .then(async (data) => await setProdcut(data.product))
     })()
     console.log(product)
   }, [])
@@ -223,7 +223,7 @@ export default function Lifeship() {
                       Please connect your wallet to proceed
                     </p>
                   )}
-                  {product?.images && (
+                  {product?.images[0] && (
                     <Image
                       className="rounded-2xl backdropBlur"
                       src={product.images[preview].src}
@@ -243,7 +243,7 @@ export default function Lifeship() {
                       {'<'}
                     </button>
                     <div className="flex justify-center items-center">
-                      {product?.images &&
+                      {product?.images[0] &&
                         product.images.map((image: any, i: number) => (
                           <button
                             key={'pagination' + i}
@@ -258,14 +258,16 @@ export default function Lifeship() {
                     </div>
                     <button
                       className={`border-style btn text-n3blue normal-case font-medium w-1/2 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
+                        product?.images[0] &&
                         preview === product.images.length - 1 &&
                         'disabled opacity-[0.5]'
                       }`}
-                      onClick={() =>
+                      onClick={() => {
+                        if (!product?.images) return
                         preview < product.images.length - 1
                           ? setPreview(preview + 1)
                           : ''
-                      }
+                      }}
                     >
                       {'>'}
                     </button>
@@ -279,9 +281,13 @@ export default function Lifeship() {
                     </div>
                     <div className="flex gap-2 justify-center">
                       <p className="text-3xl text-n3blue">Total:</p>
-                      <p className="text-3xl">{`$${(
-                        product.variants[0].price.amount * quantity || 0
-                      ).toFixed(2)}`}</p>
+                      <p className="text-3xl">{`$${
+                        product?.variants
+                          ? (
+                              product.variants[0].price.amount * quantity
+                            ).toFixed(2)
+                          : 0
+                      }`}</p>
                     </div>
                     <div className="my-2 flex justify-center items-center gap-8 w-full">
                       <button
