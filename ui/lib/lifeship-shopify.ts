@@ -7,7 +7,11 @@ const client: any = Client.buildClient({
 })
 
 export async function getProductByHandle(handle: string) {
-  return parseShopifyResponse(await client.product.fetchByHandle(handle))
+  try {
+    return parseShopifyResponse(await client.product.fetchByHandle(handle))
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 export async function buyDNAKit(
