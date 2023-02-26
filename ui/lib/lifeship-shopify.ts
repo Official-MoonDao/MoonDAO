@@ -1,12 +1,17 @@
 import Client from 'shopify-buy'
 
-const client: any = Client.buildClient({
-  domain: 'lifeship.myshopify.com',
-  storefrontAccessToken: process.env.SHOPIFY_ACCESS_TOKEN,
-  apiVersion: '2023-01',
-})
+let client: any
+
+function initClient() {
+  client = Client.buildClient({
+    domain: 'lifeship.myshopify.com',
+    storefrontAccessToken: process.env.SHOPIFY_ACCESS_TOKEN,
+    apiVersion: '2023-01',
+  })
+}
 
 export async function getProductByHandle(handle: string) {
+  if (!client) initClient()
   try {
     return parseShopifyResponse(await client.product.fetchByHandle(handle))
   } catch (err) {
@@ -18,8 +23,8 @@ export async function buyDNAKit(
   quantity: number,
   walletAddress: string = '0x0000'
 ) {
-  const checkout = await client.checkout.create()
   const product = await getProductByHandle('dna-to-moon')
+  const checkout = await client.checkout.create()
   await client.checkout.updateAttributes(checkout.id, {
     customAttributes: [{ key: 'WalletAddress', value: walletAddress }],
   })
