@@ -40,11 +40,22 @@ function StageContainer({ children }: any) {
 export default function Lifeship({ product }: any) {
   const router = useRouter()
   const { data: account } = useAccount()
+  //stages
   const [state, setState] = useState(0)
+
+  //user-feedback
   const [notification, setNotification] = useState('')
+
+  //NFT submission
   const [userImage, setUserImage]: any = useState({})
+
+  //# of kits
   const [quantity, setQuantity] = useState(0)
+
+  //current preview image
   const [preview, setPreview] = useState(0)
+
+  //check if user has already submited a NFT
   const [userSubmittedNFT, setUserSubmittedNFT]: any = useState(false)
 
   function Cancel() {

@@ -28,7 +28,7 @@ async function appendSpreadsheet(row: any, sheetId: string) {
     console.error('google-sheets: append spreadsheet', e.message)
   }
 }
-
+//zero-g raffle
 export async function submitRaffleForm({
   twitterName,
   userDiscordData,
@@ -46,7 +46,7 @@ export async function submitRaffleForm({
   console.log(newRow)
   await appendSpreadsheet(newRow, '0')
 }
-
+//zero-g raffle
 export async function checkUserDataRaffle({
   twitterName,
   userDiscordData,
@@ -70,7 +70,7 @@ export async function checkUserDataRaffle({
     console.error('google-sheets: checkUserDataRaffle', err.message)
   }
 }
-
+//zero-g reservation
 export async function checkUserDataReservation({
   fullName,
   email,
@@ -92,7 +92,7 @@ export async function checkUserDataReservation({
     console.error('google-sheets: checkUserDataRaffle', err.message)
   }
 }
-
+//zero-g reservation
 export async function submitReservation({
   fullName,
   email,
