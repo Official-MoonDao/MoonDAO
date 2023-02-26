@@ -1,17 +1,12 @@
 import Client from 'shopify-buy'
 
-let client: any
-
-function initClient() {
-  client = Client.buildClient({
-    domain: 'lifeship.myshopify.com',
-    storefrontAccessToken: process.env.SHOPIFY_ACCESS_TOKEN,
-    apiVersion: '2023-01',
-  })
-}
+const client = Client.buildClient({
+  domain: 'lifeship.myshopify.com',
+  storefrontAccessToken: process.env.SHOPIFY_ACCESS_TOKEN,
+  apiVersion: '2023-01',
+})
 
 export async function getProductByHandle(handle: string) {
-  if (!client) initClient()
   try {
     return parseShopifyResponse(await client.product.fetchByHandle(handle))
   } catch (err) {
