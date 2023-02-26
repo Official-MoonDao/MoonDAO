@@ -243,17 +243,18 @@ export default function Lifeship() {
                       {'<'}
                     </button>
                     <div className="flex justify-center items-center">
-                      {product.images.map((image: any, i: number) => (
-                        <button
-                          key={'pagination' + i}
-                          className={`${
-                            preview === i && 'text-n3blue'
-                          } text-3xl hover:scale-[1.025]`}
-                          onClick={() => setPreview(i)}
-                        >
-                          .
-                        </button>
-                      ))}
+                      {product?.images &&
+                        product.images.map((image: any, i: number) => (
+                          <button
+                            key={'pagination' + i}
+                            className={`${
+                              preview === i && 'text-n3blue'
+                            } text-3xl hover:scale-[1.025]`}
+                            onClick={() => setPreview(i)}
+                          >
+                            .
+                          </button>
+                        ))}
                     </div>
                     <button
                       className={`border-style btn text-n3blue normal-case font-medium w-1/2 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
