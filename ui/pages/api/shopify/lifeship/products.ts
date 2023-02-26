@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { buyDNAKit } from '../../../../lib/lifeship-shopify'
+import { getProductByHandle } from '../../../../lib/lifeship-shopify'
 
 //1 Human
 export default async function handler(
@@ -7,11 +7,10 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === 'POST') {
-    const { quantity, walletAddress } = JSON.parse(req.body)
-    console.log(quantity)
+    const { handle } = JSON.parse(req.body)
     try {
-      const checkoutURL = await buyDNAKit(quantity, walletAddress)
-      return res.status(200).json({ checkoutURL })
+      const product = await getProductByHandle(handle)
+      return res.status(200).json({ product })
     } catch (err) {
       console.log(err)
       return res.status(500)

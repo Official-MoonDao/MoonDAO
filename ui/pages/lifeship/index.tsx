@@ -37,11 +37,13 @@ function StageContainer({ children }: any) {
   )
 }
 
-export default function Lifeship({ product = {} }: any) {
+export default function Lifeship() {
   const router = useRouter()
   const { data: account } = useAccount()
   //stages
   const [state, setState] = useState(0)
+
+  const [product, setProdcut] = useState({})
 
   //user-feedback
   const [notification, setNotification] = useState('')
@@ -81,6 +83,18 @@ export default function Lifeship({ product = {} }: any) {
       console.log(userSubmittedNFT, userImage)
     }
   }, [state, account, router])
+
+  useEffect(() => {
+    ;(async () => {
+      await fetch('/api/shopify/lifeship/products', {
+        method: 'POST',
+        body: JSON.stringify({ handle: 'dna-to-moon' }),
+      })
+        .then((res) => res.json())
+        .then((data) => setProdcut(data.product))
+    })()
+    console.log(product)
+  }, [])
   return (
     <div className="animate-fadeIn">
       <Scene zoomEnabled />
@@ -295,7 +309,7 @@ export default function Lifeship({ product = {} }: any) {
                       try {
                         if (quantity <= 0) return
                         const checkoutURL: any = await fetch(
-                          '/api/shopify/lifeship/dna-to-moon',
+                          '/api/shopify/lifeship/checkout/dna-to-moon',
                           {
                             method: 'POST',
                             body: JSON.stringify({
