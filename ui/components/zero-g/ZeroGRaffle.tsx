@@ -35,7 +35,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
   function Cancel() {
     return (
       <button
-        className="text-n3green hover:scale-[1.05] ease-in duration-150 w-full text-center"
+        className="border-n3green border-2 text-n3green hover:scale-[1.05] ease-in duration-150 w-1/3 rounded-2xl text-center py-2"
         onClick={async () => {
           await signOut()
         }}

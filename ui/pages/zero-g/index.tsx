@@ -1,7 +1,5 @@
-import { InformationCircleIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
 import { getUserDiscordData } from '../../lib/discord'
-import ThirdwebEditionDropEmbed from '../../components/ThirdwebEditionDropEmbed'
 import GradientLink from '../../components/layout/GradientLink'
 import Head from '../../components/layout/Head'
 import MainCard from '../../components/layout/MainCard'
@@ -11,7 +9,7 @@ export default function ZeroG({ userDiscordData }: any) {
   const router = useRouter()
   return (
     <div className="animate-fadeIn">
-      <Head title={'Zero-G Flight'} />
+      <Head title="Zero-G Flight" />
       <MainCard className="gap-4" title="Zero-G Flight">
         <div className="mb-2 max-w-2xl font-RobotoMono">
           <div className="flex">

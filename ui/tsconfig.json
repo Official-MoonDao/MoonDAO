@@ -101,7 +101,8 @@
     "r3f/Moon/Moon.jsx",
     "lib/get-twitter-account.ts",
     "env.d.ts",
-    "r3f/hooks"
+    "r3f/hooks",
+    "lib/lifeship-shopify.ts"
   ],
   "exclude": ["node_modules"]
 }

@@ -10,7 +10,7 @@ export function Scene({ zoomEnabled = false }) {
       <Canvas
         className={'animate-fadeIn'}
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: '0%',
           left: '0%',
           zIndex: '-1',

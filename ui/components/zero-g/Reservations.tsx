@@ -41,7 +41,7 @@ export default function Reservations() {
   function Cancel() {
     return (
       <button
-        className="text-n3green hover:scale-[1.05] ease-in duration-150 w-full text-center"
+        className="border-n3green border-2 text-n3green hover:scale-[1.05] ease-in duration-150 w-1/3 rounded-2xl text-center py-2"
         onClick={async () => {
           setState(0)
         }}
@@ -53,7 +53,7 @@ export default function Reservations() {
 
   function SubmitButton() {
     return (
-      <div className="flex flex-col">
+      <div className="flex flex-col justify-center items-center w-full">
         {error === 'no-wallet' && (
           <p className="text-n3green ease-in duration-300">
             Please connect a wallet that has vMooney, ensure that your lock-time
@@ -72,7 +72,7 @@ export default function Reservations() {
           </p>
         )}
         <button
-          className="m-8 text-n3blue"
+          className="border-n3blue border-2 text-n3blue hover:scale-[1.05] ease-in duration-150 w-1/3 rounded-2xl text-center py-2"
           onClick={async () => {
             let fullName, email
             if (state === 1) {
@@ -179,8 +179,10 @@ export default function Reservations() {
               />
             </label>
           </InputContainer>
-          <SubmitButton />
-          <Cancel />
+          <div className="flex flex-col justify-center items-center">
+            <SubmitButton />
+            <Cancel />
+          </div>
         </StageContainer>
       )}
       {state === 2 && (
@@ -205,8 +207,10 @@ export default function Reservations() {
               />
             </label>
           </InputContainer>
-          <SubmitButton />
-          <Cancel />
+          <div className="flex flex-col justify-center items-center">
+            <SubmitButton />
+            <Cancel />
+          </div>
         </StageContainer>
       )}
       {state === 3 && (
