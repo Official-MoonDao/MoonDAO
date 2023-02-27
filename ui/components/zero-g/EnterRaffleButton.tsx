@@ -26,14 +26,12 @@ export default function EnterRaffleButton({
         <p className="font-RobotoMono">Are you a vMooney Holder?</p>
         {error === 'invalid-lock' && (
           <p className="text-n3green ease-in duration-300">
-            This wallet either doesn't have vMooney or your lock-time doesn't
-            exceed June 9th
+            This wallet doesn't have vMooney
           </p>
         )}
         {error === 'no-wallet' && (
           <p className="text-n3green ease-in duration-300">
-            Please connect a wallet that has vMooney, ensure that your lock-time
-            exceeds June 9th
+            Please connect a wallet that has vMooney
           </p>
         )}
         <Button

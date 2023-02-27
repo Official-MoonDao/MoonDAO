@@ -11,17 +11,12 @@ import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
 import StageContainer from './StageContainer'
 
-const lockCutoff = +new Date('2023-06-09T00:00:00')
+const lockCutoff = +new Date('2023-02-26T00:00:00')
 
 export default function Reservations() {
   const { data: account } = useAccount()
   const [state, setState] = useState(0)
   const [error, setError] = useState('')
-  const [userData, setUserData] = useState({
-    fullName: '',
-    email: '',
-    isVMOONEYHolder: false,
-  })
 
   const [validLock, setValidLock] = useState(false)
   const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
@@ -56,14 +51,12 @@ export default function Reservations() {
       <div className="flex flex-col justify-center items-center w-full">
         {error === 'no-wallet' && (
           <p className="text-n3green ease-in duration-300">
-            Please connect a wallet that has vMooney, ensure that your lock-time
-            exceeds June 9th
+            Please connect a wallet that has vMooney
           </p>
         )}
         {error === 'invalid-lock' && (
           <p className="text-n3green ease-in duration-300">
-            This wallet either doesn't have vMooney or your lock-time doesn't
-            exceed June 9th
+            This wallet doesn't have any vMooney
           </p>
         )}
         {error === 'invalid-input' && (
@@ -140,9 +133,12 @@ export default function Reservations() {
   }
 
   useEffect(() => {
-    if (vMooneyLock && vMooneyLock[1] !== 0) {
-      setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
-    }
+    if (!vMooneyLockLoading)
+      setValidLock(
+        vMooneyLock &&
+          vMooneyLock[1] != 0 &&
+          BigNumber.from(+new Date()).lte(vMooneyLock[1].mul(1000))
+      )
   }, [vMooneyLock])
 
   return (
