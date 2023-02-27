@@ -152,7 +152,7 @@ export default function Lifeship() {
                 <StageContainer>
                   <p className="mb-2 max-w-2xl font-RobotoMono">
                     {
-                      'Send a NFT to Space! Submit a file, after you have purchased your kit your image will be tranformed, sent to the Moon and then airdropped to you! Please connect your wallet.'
+                      'Send a NFT to Space! Submit a file, after you have purchased your kit your image will be transformed, sent to the Moon and then airdropped to you! Please connect your wallet.'
                     }
                   </p>
                   <GradientLink
