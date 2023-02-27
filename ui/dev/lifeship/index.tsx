@@ -2,11 +2,12 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { hasUserSubmittedNFT, uploadFile } from '../../lib/firebase'
-import { getProductByHandle } from '../../lib/lifeship-shopify'
+import { getKits, getProductByHandle } from '../../lib/lifeship-shopify'
 import { useAccount } from '../../lib/use-wagmi'
 import GradientLink from '../../components/layout/GradientLink'
 import Head from '../../components/layout/Head'
 import MainCard from '../../components/layout/MainCard'
+import Product from '../../components/shopify/Product'
 import flag from '../../public/Original.png'
 import { Scene } from '../../r3f/Moon/Scene'
 
@@ -37,13 +38,11 @@ function StageContainer({ children }: any) {
   )
 }
 
-export default function Lifeship() {
+export default function Lifeship({ products = [] }) {
   const router = useRouter()
   const { data: account } = useAccount()
   //stages
   const [state, setState] = useState(0)
-
-  const [product, setProdcut]: any = useState({})
 
   //user-feedback
   const [notification, setNotification]: any = useState('')
@@ -51,8 +50,7 @@ export default function Lifeship() {
   //NFT submission
   const [userImage, setUserImage]: any = useState({})
 
-  //# of kits
-  const [quantity, setQuantity]: any = useState(0)
+  const [quantities, setQuantities] = useState({ dna: 0, ashes: 0 })
 
   //current preview image
   const [preview, setPreview]: any = useState(0)
@@ -84,17 +82,6 @@ export default function Lifeship() {
     }
   }, [state, account, router])
 
-  useEffect(() => {
-    ;(async () => {
-      await fetch('/api/shopify/lifeship/products', {
-        method: 'POST',
-        body: JSON.stringify({ handle: 'dna-to-moon' }),
-      })
-        .then((res) => res.json())
-        .then(async (data) => await setProdcut(data.product))
-    })()
-    console.log(product)
-  }, [])
   return (
     <div className="animate-fadeIn">
       <Scene zoomEnabled />
@@ -223,110 +210,43 @@ export default function Lifeship() {
                       Please connect your wallet to proceed
                     </p>
                   )}
-                  {product?.images[0] && (
-                    <Image
-                      className="rounded-2xl backdropBlur"
-                      src={product.images[preview].src}
-                      width={400}
-                      height={320}
-                    />
-                  )}
-                  <div className="flex justify-center items-center gap-[22%] w-1/2">
-                    <button
-                      className={`border-style btn text-n3blue normal-case font-medium w-1/2 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
-                        preview === 0 && 'disabled opacity-[0.5]'
-                      }`}
-                      onClick={() =>
-                        preview > 0 ? setPreview(preview - 1) : ''
-                      }
-                    >
-                      {'<'}
-                    </button>
-                    <div className="flex justify-center items-center">
-                      {product?.images[0] &&
-                        product.images.map((image: any, i: number) => (
-                          <button
-                            key={'pagination' + i}
-                            className={`${
-                              preview === i && 'text-n3blue'
-                            } text-3xl hover:scale-[1.025]`}
-                            onClick={() => setPreview(i)}
-                          >
-                            .
-                          </button>
-                        ))}
-                    </div>
-                    <button
-                      className={`border-style btn text-n3blue normal-case font-medium w-1/2 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
-                        product?.images[0] &&
-                        preview === product.images.length - 1 &&
-                        'disabled opacity-[0.5]'
-                      }`}
-                      onClick={() => {
-                        if (!product?.images) return
-                        preview < product.images.length - 1
-                          ? setPreview(preview + 1)
-                          : ''
-                      }}
-                    >
-                      {'>'}
-                    </button>
-                  </div>
-
-                  <hr className="w-full border-n3blue"></hr>
-                  <div className="w-full flex flex-col justify-center items-center gap-4 ">
-                    <div className="flex gap-2 justify-center">
-                      <p className="text-3xl text-n3blue">Quantity:</p>
-                      <p className="text-3xl">{quantity}</p>
-                    </div>
-                    <div className="flex gap-2 justify-center">
-                      <p className="text-3xl text-n3blue">Total:</p>
-                      <p className="text-3xl">{`$${
-                        product?.variants
-                          ? (
-                              product.variants[0].price.amount * quantity
-                            ).toFixed(2)
-                          : 0
-                      }`}</p>
-                    </div>
-                    <div className="my-2 flex justify-center items-center gap-8 w-full">
-                      <button
-                        className={`border-style btn text-n3blue normal-case font-medium w-1/4 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
-                          quantity <= 0 && 'disable opacity-[0.5]'
-                        }`}
-                        onClick={() =>
-                          setQuantity(quantity > 0 ? quantity - 1 : 0)
+                  {products[0] && (
+                    <div>
+                      <Product
+                        product={products[0]}
+                        label="DNA kit"
+                        quantity={quantities.dna}
+                        setQuantity={(q: number) =>
+                          setQuantities({ ...quantities, dna: q })
                         }
-                      >
-                        -
-                      </button>
-                      <button
-                        className="border-style btn text-n3blue normal-case font-medium w-1/4 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out"
-                        onClick={() => setQuantity(quantity + 1)}
-                      >
-                        +
-                      </button>
+                      />
+                      <Product
+                        product={products[1]}
+                        label="Ashes kit"
+                        quantity={quantities.ashes}
+                        setQuantity={(q: number) =>
+                          setQuantities({ ...quantities, ashes: q })
+                        }
+                      />
                     </div>
-                    <hr className="w-full border-n3blue"></hr>
-                  </div>
-
+                  )}
                   <button
                     className={` border-style btn text-n3blue normal-case font-medium w-full my-4 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
-                      quantity === 0 && 'disabled opacity-[0]'
+                      quantities.dna === 0 &&
+                      quantities.ashes === 0 &&
+                      'disabled opacity-[0]'
                     }`}
                     onClick={async () => {
                       try {
-                        if (quantity <= 0) return
-                        const checkoutURL: any = await fetch(
-                          '/api/shopify/lifeship/checkout/dna-to-moon',
-                          {
-                            method: 'POST',
-                            body: JSON.stringify({
-                              quantity: quantity,
-                              walletAddress: account?.address,
-                            }),
-                          }
-                        )
+                        if (quantities.dna <= 0 && quantities.ashes <= 0) return
+                        await fetch('/api/shopify/lifeship/checkout', {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            quantityDNA: quantities.dna,
+                            quantityAshes: quantities.ashes,
+                            walletAddress: account?.address,
+                          }),
+                        })
                           .then((res) => res.json())
                           .then((data) => window.open(data.checkoutURL))
                       } catch {
@@ -336,7 +256,6 @@ export default function Lifeship() {
                   >
                     Checkout
                   </button>
-                  <Cancel />
                 </StageContainer>
               )}
               {state === 3 && (
@@ -358,12 +277,12 @@ export default function Lifeship() {
   )
 }
 
-// export async function getStaticProps({ params }: any) {
-//   const product = await getProductByHandle('dna-to-moon')
+export async function getStaticProps({ params }: any) {
+  const products = await getKits()
 
-//   return {
-//     props: {
-//       product: product || {},
-//     },
-//   }
-// }
+  return {
+    props: {
+      products: products || {},
+    },
+  }
+}

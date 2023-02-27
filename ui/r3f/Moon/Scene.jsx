@@ -8,7 +8,6 @@ export function Scene({ zoomEnabled = false }) {
   return (
     <Suspense fallback={null}>
       <Canvas
-        className={'animate-fadeIn'}
         style={{
           position: 'fixed',
           top: '0%',

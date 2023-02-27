@@ -9,8 +9,8 @@ export function Moon({ zoomEnabled = false }) {
   const [isMobile, setIsMobile] = useState(false)
   const { camera, viewport } = useThree()
   const [hover, setHover] = useState(false)
-  const texture = useTexture('/LifeShip_Horizontal.png')
   const moonRef = useRef()
+  const moonMeshRef = useRef()
   useEffect(() => {
     if (viewport.width < 800) camera.position.set(4.5, 0, 5)
     else camera.position.set(0, 0, 5)
@@ -51,6 +51,7 @@ export function Moon({ zoomEnabled = false }) {
             receiveShadow
             geometry={nodes.defaultMaterial.geometry}
             material={materials.Material__50}
+            ref={moonMeshRef}
           />
         </group>
       </group>
