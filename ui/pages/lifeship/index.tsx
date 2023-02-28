@@ -116,8 +116,16 @@ export default function Lifeship({ products = [] }) {
                 <div className="flex flex-col gap-4">
                   <p className="max-w-2xl font-RobotoMono">
                     {
-                      'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through Lifeship. '
+                      'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through '
                     }
+                    <span>
+                      <button
+                        className="text-n3blue hover:scale-[1.025] ease-in-ease-out duration-300"
+                        onClick={() => window.open('https://lifeship.com/')}
+                      >
+                        {'Lifeship'}
+                      </button>
+                    </span>
                   </p>
                   <p className="max-w-2xl font-RobotoMono">
                     {
