@@ -13,12 +13,12 @@ export default function Product({
     <div className="w-full backdropBlur flex justify-center items-center">
       <div className="flex flex-col m-4">
         <h1 className="font-GoodTimes mx-4">{label}</h1>
-        <div className="m-2">
+        <div className="m-2 ease-in-ease-out duration-300">
           <Image
             className="rounded-2xl backdropBlur"
             src={product.images[preview].src}
-            width={550}
-            height={500}
+            width={1200}
+            height={1000}
           />
         </div>
         <div className="flex justify-center items-center mb-2">
