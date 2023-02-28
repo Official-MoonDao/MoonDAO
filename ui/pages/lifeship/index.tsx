@@ -285,7 +285,10 @@ export default function Lifeship({ products = [] }) {
                           }),
                         })
                           .then((res) => res.json())
-                          .then((data) => window.open(data.checkoutURL))
+                          .then((data) => {
+                            window.open(data.checkoutURL)
+                            reset()
+                          })
                       } catch {
                         console.error('Problem submitting shopify checkout')
                       }
