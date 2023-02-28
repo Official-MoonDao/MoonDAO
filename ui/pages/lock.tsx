@@ -19,14 +19,14 @@ import {
   useVMOONEYIncreaseLock,
   useVMOONEYWithdrawLock,
 } from '../lib/ve-token'
-import ActionButton from '../components/ActionButton'
-import { AllowanceWarning } from '../components/AllowanceWarning'
 import Balance from '../components/Balance'
-import GradientLink from '../components/GradientLink'
-import Head from '../components/Head'
-import LockPresets from '../components/LockPresets'
-import MainCard from '../components/MainCard'
 import TimeRange from '../components/TimeRange'
+import GradientLink from '../components/layout/GradientLink'
+import Head from '../components/layout/Head'
+import MainCard from '../components/layout/MainCard'
+import ActionButton from '../components/wagmi/ActionButton'
+import { AllowanceWarning } from '../components/wagmi/AllowanceWarning'
+import LockPresets from '../components/wagmi/LockPresets'
 
 const dateToReadable = (date: any) => {
   return date && date.toISOString().substring(0, 10)

@@ -50,6 +50,14 @@ a {
   border-color: #ffbc5c;
 } */
 
+.galaxy-bg {
+  background: url('/galaxy.jpg') repeat;
+}
+
+.backdropBlur {
+  backdrop-filter: blur(10px);
+}
+
 .border-style {
   border-style: solid;
   border-radius: 20px;
@@ -91,6 +99,10 @@ a {
   border-width: 2px;
   border-color: #d85c4c;
   color: #d85c4c;
+}
+
+#providerLogo {
+  src: '/galaxy.png';
 }
 
 .range3 {

@@ -19,7 +19,10 @@ module.exports = {
     },
     extend: {
       animation: {
-        fadeIn: 'fadeIn 0.5s',
+        fadeIn: 'fadeIn 0.5s ease-in',
+        fadeInTo75: 'fadeIn 0.5s ease-in',
+        fadeInSlow: 'fadeIn 1s ease-in',
+        fadeInSlowTo75: 'fadeInTo75 1s ease-in',
         notification: 'notification 5s',
         highlight: 'highlight 3s ease-out',
       },
@@ -57,6 +60,14 @@ module.exports = {
           },
           '100%': {
             opacity: 1,
+          },
+        },
+        fadeInTo75: {
+          '0%': {
+            opacity: 0,
+          },
+          '100%': {
+            opacity: 0.75,
           },
         },
         highlight: {

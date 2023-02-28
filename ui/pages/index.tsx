@@ -9,11 +9,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 import { MOONEYToken } from '../lib/config'
-import GradientLink from '../components/GradientLink'
-import Head from '../components/Head'
-import HomeCard from '../components/HomeCard'
+import GradientLink from '../components/layout/GradientLink'
+import Head from '../components/layout/Head'
+import HomeCard from '../components/layout/HomeCard'
 import flag from '../public/Original.png'
-import { Scene } from '../r3f/Scene'
+import { Scene } from '../r3f/Moon/Scene'
 
 export default function Index() {
   const { t } = useTranslation('common')
