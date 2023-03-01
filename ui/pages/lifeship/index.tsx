@@ -106,7 +106,7 @@ export default function Lifeship({ products = [] }) {
               state === 0
                 ? 'Join us on our first mission to the Moon!'
                 : state === 1
-                ? 'Send an image to the Moon!'
+                ? 'Send a file to the Moon!'
                 : ''
             }
             className="w-full"
