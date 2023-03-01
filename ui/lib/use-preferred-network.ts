@@ -15,7 +15,6 @@ export default function usePreferredNetwork() {
     } else {
       setIsPreferredNetwork(false)
     }
-  }, [activeChain?.id])
-
+  }, [activeChain?.id, preferredNetwork])
   return { isPreferredNetwork, preferredNetwork }
 }
