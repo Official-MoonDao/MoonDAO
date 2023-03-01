@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { getUserDiscordData } from '../../lib/discord'
 import GradientLink from '../../components/layout/GradientLink'

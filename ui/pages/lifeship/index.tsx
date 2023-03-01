@@ -235,7 +235,7 @@ export default function Lifeship({ products = [] }) {
                   <input
                     className="pt-[2.5%] border-style btn text-n3blue normal-case font-medium w-full bg-transparent"
                     type="file"
-                    accept="image/png, image/jpeg"
+                    accept="image/png, image/jpeg, video/mp4"
                     onChange={(e: any) => {
                       setNotification('')
                       if (e.target.files[0]) setUserImage(e.target.files[0])
@@ -244,8 +244,6 @@ export default function Lifeship({ products = [] }) {
                   <Button
                     onClick={async () => {
                       if (!userImage.type) return setNotification('no-file')
-                      if (!userImage.type.startsWith('image'))
-                        return setNotification('invalid-file-format')
                       if (!account) return setNotification('no-wallet')
                       if (quantities.dna <= 0 && quantities.ashes <= 0)
                         return setNotification('no-quantity')
@@ -308,12 +306,12 @@ export default function Lifeship({ products = [] }) {
               )}
               {state === 2 && (
                 <StageContainer>
-                  <p className="text-2xl text-n3blue">{`Your Image was successfully uploaded!`}</p>
+                  <p className="text-2xl text-n3blue">{`Your file was successfully uploaded!`}</p>
                 </StageContainer>
               )}
               {state === 3 && (
                 <MainCard title="Welcome back!">
-                  <p className="text-2xl text-n3blue">{`Looks like you've already submitted an image!`}</p>
+                  <p className="text-2xl text-n3blue">{`Looks like you've already submitted an file!`}</p>
                 </MainCard>
               )}
             </div>
