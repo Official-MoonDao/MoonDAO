@@ -12,11 +12,10 @@ import flag from '../../public/Original.png'
 import { Scene } from '../../r3f/Moon/Scene'
 
 /* STAGES
-0. START
-1. SUBMIT IMAGE
-2. CHECKOUT
-3. USER ALREADY HAS NFT
-
+0. SELECT KITS
+1. UPLOAD IMAGE
+2. UPLOAD IMAGE SUCCESS
+3. USER ALREADY UPLOADED IMAGE
 */
 
 function Button({ children, onClick, className = '' }: any) {
@@ -32,7 +31,7 @@ function Button({ children, onClick, className = '' }: any) {
 
 function StageContainer({ children }: any) {
   return (
-    <div className="flex flex-col justify-center items-center gap-4">
+    <div className="flex flex-col justify-center items-center gap-4 w-full">
       {children}
     </div>
   )
@@ -52,9 +51,6 @@ export default function Lifeship({ products = [] }) {
 
   const [quantities, setQuantities] = useState({ dna: 0, ashes: 0 })
 
-  //current preview image
-  const [preview, setPreview]: any = useState(0)
-
   //check if user has already submited a NFT
   const [userSubmittedNFT, setUserSubmittedNFT]: any = useState(false)
 
@@ -69,6 +65,12 @@ export default function Lifeship({ products = [] }) {
     )
   }
 
+  function reset() {
+    setState(0)
+    setQuantities({ dna: 0, ashes: 0 })
+    setNotification('')
+  }
+
   useEffect(() => {
     if (router && router.query.state === '1') setState(1)
     if (account?.address) {
@@ -77,8 +79,6 @@ export default function Lifeship({ products = [] }) {
         const res = await hasUserSubmittedNFT(account?.address)
         setUserSubmittedNFT(res)
       })()
-
-      console.log(userSubmittedNFT, userImage)
     }
   }, [state, account, router])
 
@@ -107,7 +107,7 @@ export default function Lifeship({ products = [] }) {
                 ? 'Join us on our first mission to the Moon!'
                 : state === 1
                 ? 'Send an image to the Moon!'
-                : 'Send your DNA to the Moon!'
+                : ''
             }
             className="w-full"
           >
@@ -116,19 +116,78 @@ export default function Lifeship({ products = [] }) {
                 <div className="flex flex-col gap-4">
                   <p className="max-w-2xl font-RobotoMono">
                     {
-                      'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through Lifeship. '
+                      'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through '
                     }
+                    <span>
+                      <button
+                        className="text-n3blue hover:scale-[1.025] ease-in-ease-out duration-300"
+                        onClick={() => window.open('https://lifeship.com/')}
+                      >
+                        {'Lifeship'}
+                      </button>
+                    </span>
                   </p>
                   <p className="max-w-2xl font-RobotoMono">
                     {
                       'Connect with an international community dedicated to a permanent settlement on the Moon and learn about participating in Astronaut and Zero G Flights!'
                     }
                   </p>
+                  {notification === 'no-quantity' && (
+                    <p className="text-n3green ease-in duration-300">
+                      Please select a kit!
+                    </p>
+                  )}
+                  {products[0] && (
+                    <div className="flex flex-col gap-8 w-full">
+                      <Product
+                        product={products[0]}
+                        label="DNA kit"
+                        quantity={quantities.dna}
+                        setQuantity={(q: number) =>
+                          setQuantities({ ...quantities, dna: q })
+                        }
+                      />
+                      <Product
+                        product={products[1]}
+                        label="Ashes kit"
+                        quantity={quantities.ashes}
+                        setQuantity={(q: number) =>
+                          setQuantities({ ...quantities, ashes: q })
+                        }
+                      />
+                    </div>
+                  )}
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
+                      if (quantities.dna <= 0 && quantities.ashes <= 0)
+                        return setNotification('no-quantity')
                       if (userSubmittedNFT) {
                         setState(3)
-                      } else setState(1)
+                        try {
+                          if (quantities.dna <= 0 && quantities.ashes <= 0)
+                            return setNotification('no-quantity')
+                          await fetch('/api/shopify/lifeship/checkout', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              quantityDNA: quantities.dna,
+                              quantityAshes: quantities.ashes,
+                              walletAddress: account?.address,
+                            }),
+                          })
+                            .then((res) => res.json())
+                            .then((data) => {
+                              setTimeout(() => {
+                                window.open(data.checkoutURL)
+                                reset()
+                              }, 3000)
+                            })
+                        } catch {
+                          console.error('Problem submitting shopify checkout')
+                        }
+                      } else {
+                        setNotification('')
+                        setState(1)
+                      }
                     }}
                   >
                     Continue
@@ -168,10 +227,15 @@ export default function Lifeship({ products = [] }) {
                       {"You've already submitted a NFT!"}
                     </p>
                   )}
+                  {notification === 'no-quantity' && (
+                    <p className="text-n3green ease-in duration-300">
+                      {'Please select a kit'}
+                    </p>
+                  )}
                   <input
                     className="pt-[2.5%] border-style btn text-n3blue normal-case font-medium w-full bg-transparent"
                     type="file"
-                    accept="image/png, image/jpeg"
+                    accept="image/png, image/jpeg, video/mp4"
                     onChange={(e: any) => {
                       setNotification('')
                       if (e.target.files[0]) setUserImage(e.target.files[0])
@@ -180,65 +244,16 @@ export default function Lifeship({ products = [] }) {
                   <Button
                     onClick={async () => {
                       if (!userImage.type) return setNotification('no-file')
-                      if (!userImage.type.startsWith('image'))
-                        return setNotification('invalid-file-format')
                       if (!account) return setNotification('no-wallet')
-                      if (userSubmittedNFT)
-                        return setNotification('user-already-submitted')
-                      else {
+                      if (quantities.dna <= 0 && quantities.ashes <= 0)
+                        return setNotification('no-quantity')
+                      if (userSubmittedNFT) {
+                        setState(3)
+                      } else {
                         await uploadFile(userImage, account?.address)
                         setState(2)
                       }
-                    }}
-                  >
-                    Submit Image
-                  </Button>
-                  <Button
-                    className="w-2/3 mt-4 p-1"
-                    onClick={() => {
-                      setState(2)
-                    }}
-                  >
-                    {'Skip (opt out of NFT submission)'}
-                  </Button>
-                </StageContainer>
-              )}
-              {state === 2 && (
-                <StageContainer>
-                  {!account && notification === 'no-wallet' && (
-                    <p className="text-n3green ease-in duration-300">
-                      Please connect your wallet to proceed
-                    </p>
-                  )}
-                  {products[0] && (
-                    <div>
-                      <Product
-                        product={products[0]}
-                        label="DNA kit"
-                        quantity={quantities.dna}
-                        setQuantity={(q: number) =>
-                          setQuantities({ ...quantities, dna: q })
-                        }
-                      />
-                      <Product
-                        product={products[1]}
-                        label="Ashes kit"
-                        quantity={quantities.ashes}
-                        setQuantity={(q: number) =>
-                          setQuantities({ ...quantities, ashes: q })
-                        }
-                      />
-                    </div>
-                  )}
-                  <button
-                    className={` border-style btn text-n3blue normal-case font-medium w-full my-4 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
-                      quantities.dna === 0 &&
-                      quantities.ashes === 0 &&
-                      'disabled opacity-[0]'
-                    }`}
-                    onClick={async () => {
                       try {
-                        if (quantities.dna <= 0 && quantities.ashes <= 0) return
                         await fetch('/api/shopify/lifeship/checkout', {
                           method: 'POST',
                           body: JSON.stringify({
@@ -248,25 +263,55 @@ export default function Lifeship({ products = [] }) {
                           }),
                         })
                           .then((res) => res.json())
-                          .then((data) => window.open(data.checkoutURL))
+                          .then((data) => {
+                            setTimeout(() => {
+                              window.open(data.checkoutURL)
+                              reset()
+                            }, 3000)
+                          })
                       } catch {
                         console.error('Problem submitting shopify checkout')
                       }
                     }}
                   >
-                    Checkout
-                  </button>
+                    Submit Image
+                  </Button>
+                  <Button
+                    className="w-2/3 mt-4 p-1"
+                    onClick={async () => {
+                      try {
+                        if (quantities.dna <= 0 && quantities.ashes <= 0)
+                          return setNotification('no-quantity')
+                        await fetch('/api/shopify/lifeship/checkout', {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            quantityDNA: quantities.dna,
+                            quantityAshes: quantities.ashes,
+                            walletAddress: account?.address,
+                          }),
+                        })
+                          .then((res) => res.json())
+                          .then((data) => {
+                            window.open(data.checkoutURL)
+                            reset()
+                          })
+                      } catch {
+                        console.error('Problem submitting shopify checkout')
+                      }
+                    }}
+                  >
+                    {'Skip (opt out of NFT submission)'}
+                  </Button>
+                </StageContainer>
+              )}
+              {state === 2 && (
+                <StageContainer>
+                  <p className="text-2xl text-n3blue">{`Your file was successfully uploaded!`}</p>
                 </StageContainer>
               )}
               {state === 3 && (
                 <MainCard title="Welcome back!">
-                  <p className="text-2xl text-n3blue">{`Looks like you've already submitted an image, please purchase a Lifeship DNA Kit to make your image into a NFT and send it to the Moon!`}</p>
-                  <button
-                    className="border-style btn text-n3blue normal-case font-medium w-full bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out"
-                    onClick={() => setState(2)}
-                  >
-                    continue
-                  </button>
+                  <p className="text-2xl text-n3blue">{`Looks like you've already submitted an file!`}</p>
                 </MainCard>
               )}
             </div>

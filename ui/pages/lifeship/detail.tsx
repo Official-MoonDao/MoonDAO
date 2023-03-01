@@ -6,7 +6,7 @@ export default function LifeshipNFTDetail() {
   return (
     <div className="animate-fadeIn">
       <MainCard title="Lifeship NFT Details">
-        <p>{`MoonDAO is partnering with lifeship to send NFTs to space! In order to send a NFT to space you must also purchase a DNA kit. Please only submit still images and use your best judgement.  Your NFT will be sent to the wallet you have connected to the site.`}</p>
+        <p>{`MoonDAO is partnering with lifeship to send NFTs to space! In order to send a NFT to space you must also purchase a DNA kit. Upload an image or video.  Your NFT will be sent to the wallet you have connected to the site.`}</p>
         <button
           className="text-n3green hover:scale-[1.05] ease-in duration-150"
           onClick={() => router.push('/lifeship')}
