@@ -22,6 +22,7 @@ export async function getKits() {
     return parseShopifyResponse([
       await getProductByHandle('dna-to-moon'),
       await getProductByHandle('ash-on-the-moon'),
+      await getProductByHandle('beam-your-photo-to-the-moon'),
     ])
   } catch (err) {
     console.error(err)
@@ -31,13 +32,16 @@ export async function getKits() {
 export async function checkout(
   quantityDNA: number,
   quantityAshes: number,
-  walletAddress: string = 'none'
+  quantityNFT: number,
+  walletAddress: string = 'none',
+  file: File
 ) {
   try {
-    if (quantityDNA <= 0 && quantityAshes <= 0)
+    if (quantityDNA <= 0 && quantityAshes <= 0 && quantityDNA <= 0)
       return Error('Checkout has no quantity')
     const kitDNA = await getProductByHandle('dna-to-moon')
     const kitAshes = await getProductByHandle('ash-on-the-moon')
+    const kitNFT = await getProductByHandle('beam-your-photo-to-the-moon')
     const checkout = await client.checkout.create()
     await client.checkout.updateAttributes(checkout.id, {
       customAttributes: [{ key: 'WalletAddress', value: walletAddress }],
@@ -57,6 +61,15 @@ export async function checkout(
         {
           variantId: kitAshes.variants[0].id,
           quantity: quantityAshes,
+        },
+      ])
+    }
+    if (quantityNFT > 0) {
+      await client.checkout.addLineItems(checkout.id, [
+        {
+          variantId: kitNFT.variants[0].id,
+          quantity: quantityNFT,
+          customAttributes: [{ key: 'Photo', value: `${file}` }],
         },
       ])
     }

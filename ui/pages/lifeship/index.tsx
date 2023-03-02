@@ -49,7 +49,7 @@ export default function Lifeship({ products = [] }) {
   //NFT submission
   const [userImage, setUserImage]: any = useState({})
 
-  const [quantities, setQuantities] = useState({ dna: 0, ashes: 0 })
+  const [quantities, setQuantities] = useState({ dna: 0, ashes: 0, nft: 0 })
 
   //check if user has already submited a NFT
   const [userSubmittedNFT, setUserSubmittedNFT]: any = useState(false)
@@ -67,7 +67,7 @@ export default function Lifeship({ products = [] }) {
 
   function reset() {
     setState(0)
-    setQuantities({ dna: 0, ashes: 0 })
+    setQuantities({ dna: 0, ashes: 0, nft: 0 })
     setNotification('')
   }
 
@@ -139,6 +139,14 @@ export default function Lifeship({ products = [] }) {
                   )}
                   {products[0] && (
                     <div className="flex flex-col gap-8 w-full">
+                      {/* <Product
+                        product={products[2]}
+                        label="NFT kit"
+                        quantity={quantities.nft}
+                        setQuantity={(q: number) =>
+                          setQuantities({ ...quantities, nft: q })
+                        }
+                      /> */}
                       <Product
                         product={products[0]}
                         label="DNA kit"
@@ -159,18 +167,27 @@ export default function Lifeship({ products = [] }) {
                   )}
                   <Button
                     onClick={async () => {
-                      if (quantities.dna <= 0 && quantities.ashes <= 0)
+                      if (
+                        quantities.dna <= 0 &&
+                        quantities.ashes <= 0 &&
+                        quantities.nft <= 0
+                      )
                         return setNotification('no-quantity')
                       if (userSubmittedNFT) {
                         setState(3)
                         try {
-                          if (quantities.dna <= 0 && quantities.ashes <= 0)
+                          if (
+                            quantities.dna <= 0 &&
+                            quantities.ashes <= 0 &&
+                            quantities.nft <= 0
+                          )
                             return setNotification('no-quantity')
                           await fetch('/api/shopify/lifeship/checkout', {
                             method: 'POST',
                             body: JSON.stringify({
                               quantityDNA: quantities.dna,
                               quantityAshes: quantities.ashes,
+                              quantityNFT: quantities.nft,
                               walletAddress: account?.address,
                             }),
                           })
@@ -250,7 +267,11 @@ export default function Lifeship({ products = [] }) {
                       if (userSubmittedNFT) {
                         setState(3)
                       } else {
-                        await uploadFile(userImage, account?.address)
+                        const url = await uploadFile(
+                          userImage,
+                          account?.address
+                        )
+                        console.log(url)
                         setState(2)
                       }
                       try {
@@ -259,6 +280,7 @@ export default function Lifeship({ products = [] }) {
                           body: JSON.stringify({
                             quantityDNA: quantities.dna,
                             quantityAshes: quantities.ashes,
+                            quantityNFT: quantities.nft,
                             walletAddress: account?.address,
                           }),
                         })
@@ -280,18 +302,25 @@ export default function Lifeship({ products = [] }) {
                     className="w-2/3 mt-4 p-1"
                     onClick={async () => {
                       try {
-                        if (quantities.dna <= 0 && quantities.ashes <= 0)
+                        if (
+                          quantities.dna <= 0 &&
+                          quantities.ashes <= 0 &&
+                          quantities.nft <= 0
+                        )
                           return setNotification('no-quantity')
+                        console.log(quantities)
                         await fetch('/api/shopify/lifeship/checkout', {
                           method: 'POST',
                           body: JSON.stringify({
                             quantityDNA: quantities.dna,
                             quantityAshes: quantities.ashes,
+                            quantityNFT: quantities.nft,
                             walletAddress: account?.address,
                           }),
                         })
                           .then((res) => res.json())
                           .then((data) => {
+                            console.log(data)
                             window.open(data.checkoutURL)
                             reset()
                           })

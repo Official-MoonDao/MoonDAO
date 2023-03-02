@@ -13,7 +13,7 @@ export default function Product({
     <div className="w-full backdropBlur flex justify-center items-center">
       <div className="flex flex-col m-4">
         <h1 className="font-GoodTimes mx-4">{label}</h1>
-        <div className="m-2 ease-in-ease-out duration-300">
+        <div className="ease-in-ease-out duration-300">
           <Image
             className="rounded-2xl backdropBlur"
             src={product.images[preview].src}
@@ -21,22 +21,9 @@ export default function Product({
             height={1000}
           />
         </div>
-        <div className="flex justify-center items-center mb-2">
-          {product?.images[0] &&
-            product.images.map((image: any, i: number) => (
-              <button
-                key={'pagination' + i}
-                className={`${
-                  preview === i && 'text-n3blue'
-                } text-3xl hover:scale-[1.025]`}
-                onClick={() => setPreview(i)}
-              >
-                .
-              </button>
-            ))}
-        </div>
+
         <div className="flex justify-center items-center">
-          <div className="flex justify-center items-center gap-[50%] w-1/2">
+          <div className="flex justify-center items-center gap-2 w-1/2">
             <button
               className={`rounded-full btn text-white text-2xl w-1/2 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
                 preview === 0 && 'disabled opacity-[0.3]'
@@ -45,7 +32,20 @@ export default function Product({
             >
               {'<'}
             </button>
-
+            <div className="flex justify-center items-center mb-2 relative bottom-1">
+              {product?.images[0] &&
+                product.images.map((image: any, i: number) => (
+                  <button
+                    key={'pagination' + i}
+                    className={`${
+                      preview === i && 'text-n3blue'
+                    } text-3xl hover:scale-[1.025]`}
+                    onClick={() => setPreview(i)}
+                  >
+                    .
+                  </button>
+                ))}
+            </div>
             <button
               className={`rounded-full btn text-white text-2xl w-1/2 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
                 product?.images[0] &&
@@ -70,9 +70,7 @@ export default function Product({
           <div>
             <p className="text-2xl text-n3blue">
               {'Quantity:'}
-              <span>
-                <p className="text-white">{quantity}</p>
-              </span>
+              <span className="text-white">{quantity}</span>
             </p>
           </div>
           <div>

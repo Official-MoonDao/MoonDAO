@@ -8,12 +8,12 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
-      const { quantityDNA, quantityAshes, walletAddress } = await JSON.parse(
-        req.body
-      )
+      const { quantityDNA, quantityAshes, quantityNFT, walletAddress } =
+        await JSON.parse(req.body)
       const checkoutURL = await checkout(
         quantityDNA,
         quantityAshes,
+        quantityNFT,
         walletAddress
       )
       return res.status(200).json({ checkoutURL })
