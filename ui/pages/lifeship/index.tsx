@@ -37,7 +37,7 @@ function StageContainer({ children }: any) {
   )
 }
 
-export default function Lifeship({ products = [] }) {
+export default function Lifeship({ products = [] }: any) {
   const router = useRouter()
   const { data: account } = useAccount()
   //stages
@@ -86,10 +86,10 @@ export default function Lifeship({ products = [] }) {
     <div className="animate-fadeIn">
       <Scene zoomEnabled />
       <Head title="Lifeship" />
-      <div className="flex flex-col max-w-3xl">
-        <div className="grid xl:grid-cols-1 mt-2 gap-8">
-          <div className="flex flex-col md:flex-row items-center md:gap-4 justify-center ">
-            <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
+      <div className="flex flex-col max-w-3xl justify-center">
+        <div className="flex flex-col justify-center items-center gap-4">
+          <div className="flex flex-col md:flex-row md:gap-4 justify-center mt-8">
+            <h1 className="card-title text-3xl font-semibold font-GoodTimes mb-2">
               {'MoonDAO'}
               <Image src={flag} width={36} height={36} />
             </h1>
@@ -101,17 +101,11 @@ export default function Lifeship({ products = [] }) {
               <Image src={'/LifeShip_Main.png'} width={36} height={36} />
             </h1>
           </div>
-          <MainCard
-            title={
-              state === 0
-                ? 'Join us on our first mission to the Moon!'
-                : state === 1
-                ? 'Send a file to the Moon!'
-                : ''
-            }
-            className="w-full"
-          >
-            <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col justify-center items-center text-center w-full card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%]">
+            <h1 className="font-RobotoMono text-[200%] text-center my-4">
+              Join us on our first mission to the Moon!
+            </h1>
+            <div className="flex flex-col items-center text-left gap-4">
               {state === 0 && (
                 <div className="flex flex-col gap-4">
                   <p className="max-w-2xl font-RobotoMono">
@@ -132,13 +126,24 @@ export default function Lifeship({ products = [] }) {
                       'Connect with an international community dedicated to a permanent settlement on the Moon and learn about participating in Astronaut and Zero G Flights!'
                     }
                   </p>
-                  {notification === 'no-quantity' && (
-                    <p className="text-n3green ease-in duration-300">
-                      Please select a kit!
-                    </p>
-                  )}
+                  <GradientLink
+                    text={'NFT Submission Details'}
+                    href="/lifeship/detail"
+                    internal={false}
+                    textSize={'md'}
+                  ></GradientLink>
                   {products[0] && (
                     <div className="flex flex-col gap-8 w-full">
+                      <hr className="w-full border-n3blue border-2"></hr>
+
+                      <Product
+                        product={products[2]}
+                        label="NFT kit"
+                        linkToStore={() =>
+                          window.open(products[2].onlineStoreUrl)
+                        }
+                      />
+                      <hr className="w-full border-n3blue border-2"></hr>
                       <Product
                         product={products[0]}
                         label="DNA kit"
@@ -157,44 +162,41 @@ export default function Lifeship({ products = [] }) {
                       />
                     </div>
                   )}
+                  {notification === 'no-quantity' && (
+                    <p className="text-n3green ease-in duration-300 backdropBlur">
+                      Please select a kit!
+                    </p>
+                  )}
                   <Button
                     onClick={async () => {
                       if (quantities.dna <= 0 && quantities.ashes <= 0)
                         return setNotification('no-quantity')
-                      if (userSubmittedNFT) {
-                        setState(3)
-                        try {
-                          if (quantities.dna <= 0 && quantities.ashes <= 0)
-                            return setNotification('no-quantity')
-                          await fetch('/api/shopify/lifeship/checkout', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                              quantityDNA: quantities.dna,
-                              quantityAshes: quantities.ashes,
-                              walletAddress: account?.address,
-                            }),
+                      try {
+                        await fetch('/api/shopify/lifeship/checkout', {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            quantityDNA: quantities.dna,
+                            quantityAshes: quantities.ashes,
+                            walletAddress: account?.address,
+                          }),
+                        })
+                          .then((res) => res.json())
+                          .then((data) => {
+                            setTimeout(() => {
+                              window.open(data.checkoutURL)
+                              reset()
+                            }, 3000)
                           })
-                            .then((res) => res.json())
-                            .then((data) => {
-                              setTimeout(() => {
-                                window.open(data.checkoutURL)
-                                reset()
-                              }, 3000)
-                            })
-                        } catch {
-                          console.error('Problem submitting shopify checkout')
-                        }
-                      } else {
-                        setNotification('')
-                        setState(1)
+                      } catch {
+                        console.error('Problem submitting shopify checkout')
                       }
                     }}
                   >
-                    Continue
+                    Checkout
                   </Button>
                 </div>
               )}
-              {state === 1 && (
+              {/* {state === 1 && (
                 <StageContainer>
                   <p className="mb-2 max-w-2xl font-RobotoMono">
                     {
@@ -250,7 +252,11 @@ export default function Lifeship({ products = [] }) {
                       if (userSubmittedNFT) {
                         setState(3)
                       } else {
-                        await uploadFile(userImage, account?.address)
+                        const url = await uploadFile(
+                          userImage,
+                          account?.address
+                        )
+                        console.log(url)
                         setState(2)
                       }
                       try {
@@ -280,8 +286,13 @@ export default function Lifeship({ products = [] }) {
                     className="w-2/3 mt-4 p-1"
                     onClick={async () => {
                       try {
-                        if (quantities.dna <= 0 && quantities.ashes <= 0)
+                        if (
+                          quantities.dna <= 0 &&
+                          quantities.ashes <= 0 &&
+                          quantities.nft <= 0
+                        )
                           return setNotification('no-quantity')
+                        console.log(quantities)
                         await fetch('/api/shopify/lifeship/checkout', {
                           method: 'POST',
                           body: JSON.stringify({
@@ -292,6 +303,7 @@ export default function Lifeship({ products = [] }) {
                         })
                           .then((res) => res.json())
                           .then((data) => {
+                            console.log(data)
                             window.open(data.checkoutURL)
                             reset()
                           })
@@ -313,9 +325,9 @@ export default function Lifeship({ products = [] }) {
                 <MainCard title="Welcome back!">
                   <p className="text-2xl text-n3blue">{`Looks like you've already submitted an file!`}</p>
                 </MainCard>
-              )}
+              )} */}
             </div>
-          </MainCard>
+          </div>
         </div>
       </div>
     </div>

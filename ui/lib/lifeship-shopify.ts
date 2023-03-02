@@ -22,6 +22,7 @@ export async function getKits() {
     return parseShopifyResponse([
       await getProductByHandle('dna-to-moon'),
       await getProductByHandle('ash-on-the-moon'),
+      await getProductByHandle('beam-your-photo-to-the-moon'),
     ])
   } catch (err) {
     console.error(err)
@@ -42,8 +43,6 @@ export async function checkout(
     await client.checkout.updateAttributes(checkout.id, {
       customAttributes: [{ key: 'WalletAddress', value: walletAddress }],
     })
-
-    console.log(kitAshes)
     if (quantityDNA > 0) {
       await client.checkout.addLineItems(checkout.id, [
         {
