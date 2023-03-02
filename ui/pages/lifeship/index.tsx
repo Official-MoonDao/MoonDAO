@@ -167,20 +167,12 @@ export default function Lifeship({ products = [] }) {
                   )}
                   <Button
                     onClick={async () => {
-                      if (
-                        quantities.dna <= 0 &&
-                        quantities.ashes <= 0 &&
-                        quantities.nft <= 0
-                      )
+                      if (quantities.dna <= 0 && quantities.ashes <= 0)
                         return setNotification('no-quantity')
                       if (userSubmittedNFT) {
                         setState(3)
                         try {
-                          if (
-                            quantities.dna <= 0 &&
-                            quantities.ashes <= 0 &&
-                            quantities.nft <= 0
-                          )
+                          if (quantities.dna <= 0 && quantities.ashes <= 0)
                             return setNotification('no-quantity')
                           await fetch('/api/shopify/lifeship/checkout', {
                             method: 'POST',
@@ -302,11 +294,7 @@ export default function Lifeship({ products = [] }) {
                     className="w-2/3 mt-4 p-1"
                     onClick={async () => {
                       try {
-                        if (
-                          quantities.dna <= 0 &&
-                          quantities.ashes <= 0 &&
-                          quantities.nft <= 0
-                        )
+                        if (quantities.dna <= 0 && quantities.ashes <= 0)
                           return setNotification('no-quantity')
                         console.log(quantities)
                         await fetch('/api/shopify/lifeship/checkout', {

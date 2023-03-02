@@ -33,8 +33,7 @@ export async function checkout(
   quantityDNA: number,
   quantityAshes: number,
   quantityNFT: number,
-  walletAddress: string = 'none',
-  file: File
+  walletAddress: string = 'none'
 ) {
   try {
     if (quantityDNA <= 0 && quantityAshes <= 0 && quantityDNA <= 0)
@@ -69,7 +68,6 @@ export async function checkout(
         {
           variantId: kitNFT.variants[0].id,
           quantity: quantityNFT,
-          customAttributes: [{ key: 'Photo', value: `${file}` }],
         },
       ])
     }
