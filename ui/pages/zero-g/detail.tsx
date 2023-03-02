@@ -19,7 +19,7 @@ export default function ZeroGDetail() {
           Book your Zero-G flight now!🚀
         </button>
         <hr className="border-n3blue my-2 w-3/4"></hr>
-        <div className="my-8 flex flex-col gap-4 text-[1vw]">
+        <div className="my-8 flex flex-col gap-4 text-2xl w-3/4">
           <p className="">Are you ready to be a part of space history?</p>
           <hr></hr>
           <p>
