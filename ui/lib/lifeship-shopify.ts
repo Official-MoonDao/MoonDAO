@@ -32,21 +32,17 @@ export async function getKits() {
 export async function checkout(
   quantityDNA: number,
   quantityAshes: number,
-  quantityNFT: number,
   walletAddress: string = 'none'
 ) {
   try {
-    if (quantityDNA <= 0 && quantityAshes <= 0 && quantityDNA <= 0)
+    if (quantityDNA <= 0 && quantityAshes <= 0)
       return Error('Checkout has no quantity')
     const kitDNA = await getProductByHandle('dna-to-moon')
     const kitAshes = await getProductByHandle('ash-on-the-moon')
-    const kitNFT = await getProductByHandle('beam-your-photo-to-the-moon')
     const checkout = await client.checkout.create()
     await client.checkout.updateAttributes(checkout.id, {
       customAttributes: [{ key: 'WalletAddress', value: walletAddress }],
     })
-
-    console.log(kitAshes)
     if (quantityDNA > 0) {
       await client.checkout.addLineItems(checkout.id, [
         {
@@ -60,14 +56,6 @@ export async function checkout(
         {
           variantId: kitAshes.variants[0].id,
           quantity: quantityAshes,
-        },
-      ])
-    }
-    if (quantityNFT > 0) {
-      await client.checkout.addLineItems(checkout.id, [
-        {
-          variantId: kitNFT.variants[0].id,
-          quantity: quantityNFT,
         },
       ])
     }

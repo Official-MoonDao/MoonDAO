@@ -37,7 +37,7 @@ function StageContainer({ children }: any) {
   )
 }
 
-export default function Lifeship({ products = [] }) {
+export default function Lifeship({ products = [] }: any) {
   const router = useRouter()
   const { data: account } = useAccount()
   //stages
@@ -49,7 +49,7 @@ export default function Lifeship({ products = [] }) {
   //NFT submission
   const [userImage, setUserImage]: any = useState({})
 
-  const [quantities, setQuantities] = useState({ dna: 0, ashes: 0, nft: 0 })
+  const [quantities, setQuantities] = useState({ dna: 0, ashes: 0 })
 
   //check if user has already submited a NFT
   const [userSubmittedNFT, setUserSubmittedNFT]: any = useState(false)
@@ -67,7 +67,7 @@ export default function Lifeship({ products = [] }) {
 
   function reset() {
     setState(0)
-    setQuantities({ dna: 0, ashes: 0, nft: 0 })
+    setQuantities({ dna: 0, ashes: 0 })
     setNotification('')
   }
 
@@ -132,21 +132,21 @@ export default function Lifeship({ products = [] }) {
                       'Connect with an international community dedicated to a permanent settlement on the Moon and learn about participating in Astronaut and Zero G Flights!'
                     }
                   </p>
-                  {notification === 'no-quantity' && (
-                    <p className="text-n3green ease-in duration-300">
-                      Please select a kit!
-                    </p>
-                  )}
+                  <GradientLink
+                    text={'NFT Submission Details'}
+                    href="/lifeship/detail"
+                    internal={false}
+                    textSize={'md'}
+                  ></GradientLink>
                   {products[0] && (
                     <div className="flex flex-col gap-8 w-full">
-                      {/* <Product
+                      <Product
                         product={products[2]}
                         label="NFT kit"
-                        quantity={quantities.nft}
-                        setQuantity={(q: number) =>
-                          setQuantities({ ...quantities, nft: q })
+                        linkToStore={() =>
+                          window.open(products[2].onlineStoreUrl)
                         }
-                      /> */}
+                      />
                       <Product
                         product={products[0]}
                         label="DNA kit"
@@ -165,45 +165,41 @@ export default function Lifeship({ products = [] }) {
                       />
                     </div>
                   )}
+                  {notification === 'no-quantity' && (
+                    <p className="text-n3green ease-in duration-300 backdropBlur">
+                      Please select a kit!
+                    </p>
+                  )}
                   <Button
                     onClick={async () => {
                       if (quantities.dna <= 0 && quantities.ashes <= 0)
                         return setNotification('no-quantity')
-                      if (userSubmittedNFT) {
-                        setState(3)
-                        try {
-                          if (quantities.dna <= 0 && quantities.ashes <= 0)
-                            return setNotification('no-quantity')
-                          await fetch('/api/shopify/lifeship/checkout', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                              quantityDNA: quantities.dna,
-                              quantityAshes: quantities.ashes,
-                              quantityNFT: quantities.nft,
-                              walletAddress: account?.address,
-                            }),
+                      try {
+                        await fetch('/api/shopify/lifeship/checkout', {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            quantityDNA: quantities.dna,
+                            quantityAshes: quantities.ashes,
+                            walletAddress: account?.address,
+                          }),
+                        })
+                          .then((res) => res.json())
+                          .then((data) => {
+                            setTimeout(() => {
+                              window.open(data.checkoutURL)
+                              reset()
+                            }, 3000)
                           })
-                            .then((res) => res.json())
-                            .then((data) => {
-                              setTimeout(() => {
-                                window.open(data.checkoutURL)
-                                reset()
-                              }, 3000)
-                            })
-                        } catch {
-                          console.error('Problem submitting shopify checkout')
-                        }
-                      } else {
-                        setNotification('')
-                        setState(1)
+                      } catch {
+                        console.error('Problem submitting shopify checkout')
                       }
                     }}
                   >
-                    Continue
+                    Checkout
                   </Button>
                 </div>
               )}
-              {state === 1 && (
+              {/* {state === 1 && (
                 <StageContainer>
                   <p className="mb-2 max-w-2xl font-RobotoMono">
                     {
@@ -272,7 +268,6 @@ export default function Lifeship({ products = [] }) {
                           body: JSON.stringify({
                             quantityDNA: quantities.dna,
                             quantityAshes: quantities.ashes,
-                            quantityNFT: quantities.nft,
                             walletAddress: account?.address,
                           }),
                         })
@@ -294,7 +289,11 @@ export default function Lifeship({ products = [] }) {
                     className="w-2/3 mt-4 p-1"
                     onClick={async () => {
                       try {
-                        if (quantities.dna <= 0 && quantities.ashes <= 0)
+                        if (
+                          quantities.dna <= 0 &&
+                          quantities.ashes <= 0 &&
+                          quantities.nft <= 0
+                        )
                           return setNotification('no-quantity')
                         console.log(quantities)
                         await fetch('/api/shopify/lifeship/checkout', {
@@ -302,7 +301,6 @@ export default function Lifeship({ products = [] }) {
                           body: JSON.stringify({
                             quantityDNA: quantities.dna,
                             quantityAshes: quantities.ashes,
-                            quantityNFT: quantities.nft,
                             walletAddress: account?.address,
                           }),
                         })
@@ -330,7 +328,7 @@ export default function Lifeship({ products = [] }) {
                 <MainCard title="Welcome back!">
                   <p className="text-2xl text-n3blue">{`Looks like you've already submitted an file!`}</p>
                 </MainCard>
-              )}
+              )} */}
             </div>
           </MainCard>
         </div>
