@@ -5,9 +5,9 @@ import MainCard from '../../components/layout/MainCard'
 export default function ZeroGDetail() {
   const router = useRouter()
   return (
-    <div className="flex flex-col justify-center items-center text-center w-[80%] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%]">
+    <div className="flex flex-col justify-center items-center text-center md:w-[80%] w-screen card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%] relative right-4">
       <h1 className="font-GoodTimes text-3xl my-[5%]">Zero-G Flight Details</h1>
-      <div className="flex flex-col justif-center text-left items-center text-2xl">
+      <div className="flex flex-col justif-center  items-center text-2xl backdropBlur">
         <p className="text-2xl font-GoodTimes text-n3blue">
           June 9th | JSC, Houston, TX{' '}
         </p>
