@@ -167,6 +167,7 @@ export default function Lifeship({ products = [] }: any) {
                       Please select a kit!
                     </p>
                   )}
+
                   <Button
                     onClick={async () => {
                       if (quantities.dna <= 0 && quantities.ashes <= 0)
@@ -182,10 +183,7 @@ export default function Lifeship({ products = [] }: any) {
                         })
                           .then((res) => res.json())
                           .then((data) => {
-                            setTimeout(() => {
-                              window.open(data.checkoutURL)
-                              reset()
-                            }, 3000)
+                            window.open(data.checkoutURL)
                           })
                       } catch {
                         console.error('Problem submitting shopify checkout')
