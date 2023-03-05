@@ -12,7 +12,7 @@ export default function Product({
 
   if (linkToStore)
     return (
-      <div className="md:full backdropBlur flex justify-center items-center">
+      <div className="backdropBlur flex justify-center items-center">
         <div className="flex flex-col m-4">
           <h1 className="font-GoodTimes mx-4">{label}</h1>
           <div className="flex flex-col justify-center items-center">
@@ -126,8 +126,8 @@ export default function Product({
           </div>
         </div>
       </div>
-      <div className="flex flex-col w-full mx-4 justify-center items-center gap-4">
-        <div className="flex flex-col items-left justify-center h-full gap-[15%]">
+      <div className="flex flex-col w-full justify-center items-center gap-4">
+        <div className="flex flex-col items-left justify-center h-full gap-[15%] relative right-4">
           <div>
             <p className="text-2xl text-n3blue">
               {'Quantity:'}

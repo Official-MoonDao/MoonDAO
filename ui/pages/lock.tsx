@@ -88,7 +88,7 @@ export default function Lock() {
   const [hasLock, setHasLock] = useState<boolean>()
   useEffect(() => {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
-  }, [VMOONEYLock])
+  }, [VMOONEYLock, account])
 
   const [hasExpired, setHasExpired] = useState<boolean>()
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function Lock() {
           VMOONEYLock[1] != 0 &&
           ethers.BigNumber.from(+new Date()).gte(VMOONEYLock[1].mul(1000))
       )
-  }, [VMOONEYLock])
+  }, [VMOONEYLock, account])
 
   const [lockAmount, setLockAmount] = useState<string>()
 
@@ -206,11 +206,11 @@ export default function Lock() {
                 <div className="white-text">{t('hasLockMoney1')}</div>
                 <div className="stat-value text-primary">
                   <Balance
-                    balance={VMOONEYBalance.value}
+                    balance={VMOONEYBalance?.value}
                     loading={VMOONEYBalanceLoading}
                     decimals={
                       VMOONEYBalance &&
-                      VMOONEYBalance.value.gt(ethers.utils.parseEther('1'))
+                      VMOONEYBalance?.value.gt(ethers.utils.parseEther('1'))
                         ? 2
                         : 8
                     }
@@ -340,7 +340,7 @@ export default function Lock() {
                     className="input input-bordered w-full black-text"
                     value={lockTime?.formatted || 0}
                     min={
-                      hasLock
+                      hasLock && account
                         ? dateToReadable(bigNumberToDate(VMOONEYLock[1]))
                         : minMaxLockTime.min
                     }
