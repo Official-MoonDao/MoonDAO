@@ -133,7 +133,7 @@ export default function Lock() {
     if (hasLock && VMOONEYLock) {
       setMinMaxLockTime({
         min: dateToReadable(oneWeekOut),
-        max: dateToReadable(dateOut(new Date(), { years: 4 })),
+        max: dateToReadable(dateOut(new Date(Date.now()), { days: 1461 })),
       })
       setCanIncrease({
         amount: (lockAmount &&
@@ -147,7 +147,7 @@ export default function Lock() {
     } else {
       setMinMaxLockTime({
         min: dateToReadable(oneWeekOut),
-        max: dateToReadable(dateOut(new Date(), { years: 4 })),
+        max: dateToReadable(dateOut(new Date(), { days: 1461 })),
       })
     }
   }, [hasLock, lockAmount, lockTime, VMOONEYLock])
