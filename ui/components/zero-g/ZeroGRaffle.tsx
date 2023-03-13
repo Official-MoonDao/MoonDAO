@@ -1,3 +1,4 @@
+import { InformationCircleIcon } from '@heroicons/react/outline'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { discordOauthUrl } from '../../lib/discord'
@@ -63,7 +64,6 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
     if (vMooneyLock && vMooneyLock[1] !== 0) {
       setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
     }
-    console.log(validLock)
     if (state >= 5 || state === 1) return
     if (twitter?.user && account?.address && validLock) {
       userDiscordData.username && userDiscordData.email
@@ -131,7 +131,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         {state === 3 && (
           <StageContainer>
             <h2>Step 2: Verify your Discord account</h2>
-            <AdvanceButton onClick={() => router.push(discordOauthUrl.dev)}>
+            <AdvanceButton onClick={() => router.push(discordOauthUrl.preview)}>
               Verify Discord
             </AdvanceButton>
             <Cancel />
