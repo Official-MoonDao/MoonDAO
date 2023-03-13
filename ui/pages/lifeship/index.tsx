@@ -1,12 +1,11 @@
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import { hasUserSubmittedNFT, uploadFile } from '../../lib/firebase'
-import { getKits, getProductByHandle } from '../../lib/lifeship-shopify'
+import { hasUserSubmittedNFT } from '../../lib/firebase'
+import { getKits } from '../../lib/lifeship-shopify'
 import { useAccount } from '../../lib/use-wagmi'
 import GradientLink from '../../components/layout/GradientLink'
 import Head from '../../components/layout/Head'
-import MainCard from '../../components/layout/MainCard'
 import Product from '../../components/shopify/Product'
 import flag from '../../public/Original.png'
 import { Scene } from '../../r3f/Moon/Scene'
@@ -193,136 +192,6 @@ export default function Lifeship({ products = [] }: any) {
                 </Button>
               </div>
             )}
-            {/* {state === 1 && (
-                <StageContainer>
-                  <p className="mb-2 max-w-2xl font-RobotoMono">
-                    {
-                      'Send a NFT to Space! Submit a file, after you have purchased your kit your image will be transformed, sent to the Moon and then airdropped to you! Please connect your wallet.'
-                    }
-                  </p>
-                  <GradientLink
-                    text={'NFT Submission Details'}
-                    href="/lifeship/detail"
-                    internal={false}
-                    textSize={'md'}
-                  ></GradientLink>
-                  {notification === 'invalid-file-format' && (
-                    <p className="text-n3green ease-in duration-300">
-                      Invalid file format, please only upload images 😄
-                    </p>
-                  )}
-                  {notification === 'no-file' && (
-                    <p className="text-n3green ease-in duration-300">
-                      Please choose a file
-                    </p>
-                  )}
-                  {notification === 'no-wallet' && (
-                    <p className="text-n3green ease-in duration-300">
-                      Please connect your wallet to proceed
-                    </p>
-                  )}
-                  {notification === 'user-already-submitted' && (
-                    <p className="text-n3green ease-in duration-300">
-                      {"You've already submitted a NFT!"}
-                    </p>
-                  )}
-                  {notification === 'no-quantity' && (
-                    <p className="text-n3green ease-in duration-300">
-                      {'Please select a kit'}
-                    </p>
-                  )}
-                  <input
-                    className="pt-[2.5%] border-style btn text-n3blue normal-case font-medium w-full bg-transparent"
-                    type="file"
-                    accept="image/png, image/jpeg, video/mp4"
-                    onChange={(e: any) => {
-                      setNotification('')
-                      if (e.target.files[0]) setUserImage(e.target.files[0])
-                    }}
-                  />
-                  <Button
-                    onClick={async () => {
-                      if (!userImage.type) return setNotification('no-file')
-                      if (!account) return setNotification('no-wallet')
-                      if (quantities.dna <= 0 && quantities.ashes <= 0)
-                        return setNotification('no-quantity')
-                      if (userSubmittedNFT) {
-                        setState(3)
-                      } else {
-                        const url = await uploadFile(
-                          userImage,
-                          account?.address
-                        )
-                        console.log(url)
-                        setState(2)
-                      }
-                      try {
-                        await fetch('/api/shopify/lifeship/checkout', {
-                          method: 'POST',
-                          body: JSON.stringify({
-                            quantityDNA: quantities.dna,
-                            quantityAshes: quantities.ashes,
-                            walletAddress: account?.address,
-                          }),
-                        })
-                          .then((res) => res.json())
-                          .then((data) => {
-                            setTimeout(() => {
-                              window.open(data.checkoutURL)
-                              reset()
-                            }, 3000)
-                          })
-                      } catch {
-                        console.error('Problem submitting shopify checkout')
-                      }
-                    }}
-                  >
-                    Submit Image
-                  </Button>
-                  <Button
-                    className="w-2/3 mt-4 p-1"
-                    onClick={async () => {
-                      try {
-                        if (
-                          quantities.dna <= 0 &&
-                          quantities.ashes <= 0 &&
-                          quantities.nft <= 0
-                        )
-                          return setNotification('no-quantity')
-                        console.log(quantities)
-                        await fetch('/api/shopify/lifeship/checkout', {
-                          method: 'POST',
-                          body: JSON.stringify({
-                            quantityDNA: quantities.dna,
-                            quantityAshes: quantities.ashes,
-                            walletAddress: account?.address,
-                          }),
-                        })
-                          .then((res) => res.json())
-                          .then((data) => {
-                            console.log(data)
-                            window.open(data.checkoutURL)
-                            reset()
-                          })
-                      } catch {
-                        console.error('Problem submitting shopify checkout')
-                      }
-                    }}
-                  >
-                    {'Skip (opt out of NFT submission)'}
-                  </Button>
-                </StageContainer>
-              )}
-              {state === 2 && (
-                <StageContainer>
-                  <p className="text-2xl text-n3blue">{`Your file was successfully uploaded!`}</p>
-                </StageContainer>
-              )}
-              {state === 3 && (
-                <MainCard title="Welcome back!">
-                  <p className="text-2xl text-n3blue">{`Looks like you've already submitted an file!`}</p>
-                </MainCard>
-              )} */}
           </div>
         </div>
       </div>

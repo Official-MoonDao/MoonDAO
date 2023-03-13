@@ -248,7 +248,7 @@ export default function Lock() {
           </>
         )}
 
-        <div className="card bg-base-100 rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white shadow overflow-visible">
+        <div className="card bg-base-100 rounded-[15px] border-[0.5px] border-gray-300 backdropBlur bg-transparent bg-opacity-30 shadow-indigo-40 text-white shadow overflow-visible">
           <div className="card-body">
             <div className="form-control">
               {!hasExpired ? (

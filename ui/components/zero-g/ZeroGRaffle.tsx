@@ -5,19 +5,22 @@ import { checkUserDataRaffle, submitRaffleForm } from '../../lib/google-sheets'
 import { useAccount } from '../../lib/use-wagmi'
 import { useVMOONEYLock } from '../../lib/ve-token'
 import { BigNumber } from 'ethers/lib/ethers'
+import GradientLink from '../layout/GradientLink'
 import MainCard from '../layout/MainCard'
 import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
+import RaffleNFTDetail from './RaffleNFTDetail'
 import StageContainer from './StageContainer'
 
 /*
 STAGES:
-  0) Check if wallet is connected and that it has vMooney
-  1) Verify the user's twitter account
-  2) Verify the user's discord account and email 
-  3) Check if the user has already entered the raffle, submit raffle form
-  4) Raffle submission success
-  5) Error, user has already entered the raffle
+  0. Check if wallet is connected and that it has vMooney
+  1. Alt Entry if no vMooney
+  2. Verify the user's twitter account
+  3. Verify the user's discord account and email 
+  4. Check if the user has already entered the raffle, submit raffle form
+  5. Raffle submission success & nft minting
+  6. Error, user has already entered the raffle
 */
 
 //The member's lock-time must exceed this date =>
@@ -40,7 +43,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
           await signOut()
         }}
       >
-        {'Cancel ✖'}
+        {state >= 5 ? 'Close ✖' : 'Cancel ✖'}
       </button>
     )
   }
@@ -48,7 +51,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
   function AdvanceButton({ onClick, children }: any) {
     return (
       <button
-        className={`border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl`}
+        className={`border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl my-4`}
         onClick={onClick}
       >
         {children}
@@ -74,7 +77,17 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
       <div className="flex flex-col animate-fadeIn justify-center items-center">
         {state === 0 && (
           <StageContainer>
-            <h2 className="text-3xl font-semibold text-center">Raffle</h2>
+            <div className="w-full">
+              <h2 className="text-3xl w-1/2 font-semibold">Raffle</h2>
+              <div className="mb-2">
+                <GradientLink
+                  text={'Rules'}
+                  href="/zero-g/rules"
+                  internal={false}
+                  textSize={'md'}
+                ></GradientLink>
+              </div>
+            </div>
             <EnterRaffleButton
               setState={(stage: any) => setState(stage)}
               account={account}
@@ -84,9 +97,22 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         )}
         {state === 1 && (
           <StageContainer>
-            <h2 className="text-3xl font-semibold font-RobotoMono">
-              Alt Entry
+            <h2 className="text-3xl font-semibold font-RobotoMono mb-1">
+              Alternative Entry
             </h2>
+            <p className="">
+              {`
+              As an alternative means of entry in the Promotion, each
+              prospective entrant may submit a mail-in entry in the form of a
+              handwritten self-addressed, stamped envelope that contains the
+              AMOE Registration Data.`}
+            </p>
+            <GradientLink
+              text={'Alt Entry Details'}
+              href="/zero-g/rules/alt-entry"
+              internal={false}
+              textSize={'md'}
+            ></GradientLink>
           </StageContainer>
         )}
         {state === 2 && (
@@ -105,7 +131,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         {state === 3 && (
           <StageContainer>
             <h2>Step 2: Verify your Discord account</h2>
-            <AdvanceButton onClick={() => router.push(discordOauthUrl.preview)}>
+            <AdvanceButton onClick={() => router.push(discordOauthUrl.dev)}>
               Verify Discord
             </AdvanceButton>
             <Cancel />
@@ -161,7 +187,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
                 </label>
               </InputContainer>
               <button
-                className="m-8 text-n3blue"
+                className="border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl"
                 onClick={async (e) => {
                   e.preventDefault()
                   const userData = {
@@ -172,39 +198,36 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
                   }
                   //check if wallet, twitter, discord or email has already been used
                   if (await checkUserDataRaffle(userData)) {
-                    console.log('user has already entered the raffle')
-                    setState(6)
-                    return setTimeout(async () => {
-                      await signOut()
-                    }, 5000)
+                    //error stage
+                    return setState(6)
                   }
 
                   await submitRaffleForm(userData).then(() => {
+                    //success stage, allow nft minting
                     setState(5)
-                    return setTimeout(async () => {
-                      await signOut()
-                    }, 5000)
                   })
                 }}
               >
                 Submit ✔
               </button>
             </form>
-            <div className="relative bottom-6 text-center">
-              <Cancel />
-            </div>
+            <Cancel />
           </StageContainer>
         )}
         {state === 5 && (
           <StageContainer>
             <h2 className="text-n3blue">Thanks for entering the raffle!</h2>
+            <RaffleNFTDetail />
+            <Cancel />
           </StageContainer>
         )}
         {state === 6 && (
           <StageContainer>
             <h2 className="text-n3green">
-              You've already entered the raffle, you may only enter one time
+              You have already entered the raffle, you may only enter one time
             </h2>
+            <RaffleNFTDetail />
+            <Cancel />
           </StageContainer>
         )}
       </div>

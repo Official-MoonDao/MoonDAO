@@ -3,8 +3,8 @@ export default function StageContainer({ children, opacity75 }: any) {
     <div
       className={
         opacity75
-          ? 'flex flex-col justify-center items-left animate-fadeInSlowTo75 gap-6'
-          : 'flex flex-col justify-center items-left animate-fadeInSlow gap-6'
+          ? 'flex flex-col justify-center items-center w-full animate-fadeInSlowTo75 gap-[2%]'
+          : 'flex flex-col justify-center items-center w-full animate-fadeInSlow gap-1'
       }
     >
       {children}

@@ -11,8 +11,6 @@ import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
 import StageContainer from './StageContainer'
 
-const lockCutoff = +new Date('2023-02-26T00:00:00')
-
 export default function Reservations() {
   const { data: account } = useAccount()
   const [state, setState] = useState(0)
@@ -106,8 +104,8 @@ export default function Reservations() {
                 return setError('invalid-input')
               if (
                 !(await checkUserDataReservation({
-                  fullName,
-                  email,
+                  fullName: fullName.trim(),
+                  email: email.trim(),
                   walletAddress: account?.address,
                 }))
               ) {

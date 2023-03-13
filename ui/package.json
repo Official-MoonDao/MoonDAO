@@ -16,6 +16,7 @@
     "@react-three/drei": "8.11.0",
     "@react-three/fiber": "7.0.26",
     "@shopify/shopify-api": "^6.2.0",
+    "@thirdweb-dev/sdk": "^3.10.3",
     "@types/google-spreadsheet": "^3.3.0",
     "@types/jest": "^27.5.1",
     "@types/next-auth": "^3.15.0",

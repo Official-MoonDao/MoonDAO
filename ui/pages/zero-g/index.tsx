@@ -1,10 +1,10 @@
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { getUserDiscordData } from '../../lib/discord'
 import GradientLink from '../../components/layout/GradientLink'
 import Head from '../../components/layout/Head'
 import MainCard from '../../components/layout/MainCard'
 import Reservations from '../../components/zero-g/Reservations'
+import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
 
 export default function ZeroG({ userDiscordData }: any) {
   const router = useRouter()
@@ -38,16 +38,7 @@ Witness breathtaking views of our planet as you float and soar in a weightless e
           ></GradientLink>
         </div>
         <Reservations />
-        {/* <ZeroGRaffle userDiscordData={userDiscordData} router={router} /> */}
-        {/* <MainCard>
-          <div className="flex alert bg-transparent border border-primary">
-            <div className="flex justify-center items-center">
-              <InformationCircleIcon className="text-primary h-8 w-8" />
-              <p className="italic">Claim your free Zero-G NFT!</p>
-            </div>
-          </div>
-          <ThirdwebEditionDropEmbed />
-  </MainCard>*/}
+        <ZeroGRaffle userDiscordData={userDiscordData} router={router} />
       </MainCard>
     </div>
   )

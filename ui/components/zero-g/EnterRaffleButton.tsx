@@ -37,7 +37,7 @@ export default function EnterRaffleButton({
         <Button
           onClick={() => {
             if (!account?.address) return setError('no-wallet')
-            if (!validLock) return setError('invalid-lock')
+            // if (!validLock) return setError('invalid-lock')
             setState(2)
           }}
         >

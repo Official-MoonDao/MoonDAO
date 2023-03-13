@@ -1,25 +1,22 @@
 import { useRouter } from 'next/router'
-import HomeCard from '../../components/layout/HomeCard'
-import MainCard from '../../components/layout/MainCard'
 
 export default function ZeroGDetail() {
   const router = useRouter()
   return (
     <div className="flex flex-col justify-center items-center text-center md:w-[80%] w-screen card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%] relative right-4">
       <h1 className="font-GoodTimes text-3xl my-[5%]">Zero-G Flight Details</h1>
-      <div className="flex flex-col justif-center  items-center text-2xl backdropBlur">
-        <p className="text-2xl font-GoodTimes text-n3blue">
+      <div className="flex flex-col justif-center  items-center backdropBlur">
+        <p className="text-2xl font-GoodTimes text-n3blue opacity-[0.87]">
           June 9th | JSC, Houston, TX{' '}
         </p>
         <hr className="border-n3blue my-2 w-3/4"></hr>
         <button
-          className="font-GoodTimes text-2xl text-n3blue hover:scale-[1.05] ease-in-ease-out duration-300"
+          className="font-GoodTimes text-2xl text-n3blue hover:scale-[1.05] ease-in-ease-out duration-300 "
           onClick={() => router.push('/zero-g')}
         >
           Book your Zero-G flight now!🚀
         </button>
-        <hr className="border-n3blue my-2 w-3/4"></hr>
-        <div className="my-8 flex flex-col gap-4 text-2xl w-3/4">
+        <div className="my-8 flex flex-col gap-4 w-3/4">
           <p className="">Are you ready to be a part of space history?</p>
           <hr></hr>
           <p>
