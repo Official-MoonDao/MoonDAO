@@ -6,6 +6,7 @@ import {
   useContractRead as _useContractRead,
   useContractWrite as _useContractWrite,
   useSignTypedData as _useSignTypedData,
+  useSigner as _useSigner,
 } from 'wagmi'
 import { useStaticCall as _useStaticCall } from './static-call'
 import { useHandleError } from './use-handle-error'
@@ -21,6 +22,10 @@ export function useStaticCall(params: any) {
 
 export function useAccount(params?: any) {
   return useHandleError(_useAccount(params))
+}
+
+export function useSigner(params?: any) {
+  return useHandleError(_useSigner(params))
 }
 
 export function useNetwork(params: any) {

@@ -12,7 +12,7 @@ export default function ZeroG({ userDiscordData }: any) {
     <div className="animate-fadeIn">
       <Head title="Zero-G Flight" />
       <MainCard className="gap-4" title="Zero-G Flight">
-        <div className="mb-2 max-w-2xl font-RobotoMono">
+        <div className="mb-2 font-RobotoMono">
           <div className="flex">
             <p className="">
               {`In partnership with `}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useBalanceTicketZeroG } from '../../lib/zero-g-raffle'
 
 function Button({ children, onClick }: any) {
   return (
@@ -17,35 +18,33 @@ export default function EnterRaffleButton({
   validLock,
   label = 'Enter Raffle',
 }: any) {
-  const [dropdown, setDropdown] = useState(false)
-  const [error, setError] = useState('')
+  const [dropdown, setDropdown] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
+  const { data: hasTicket } = useBalanceTicketZeroG(account?.address)
 
   if (dropdown) {
     return (
       <div className="flex flex-col justify-center items-center gap-4">
         <p className="font-RobotoMono">Are you a vMooney Holder?</p>
-        {error === 'invalid-lock' && (
-          <p className="text-n3green ease-in duration-300">
-            This wallet doesn't have vMooney
-          </p>
-        )}
-        {error === 'no-wallet' && (
-          <p className="text-n3green ease-in duration-300">
-            Please connect a wallet that has vMooney
-          </p>
+        {error !== '' && (
+          <p className="text-n3green ease-in duration-300">{error}</p>
         )}
         <Button
-          onClick={() => {
-            if (!account?.address) return setError('no-wallet')
-            // if (!validLock) return setError('invalid-lock')
+          onClick={async () => {
+            if (!account?.address)
+              return setError('Please connect a wallet that has vMooney')
+            if (!validLock) return setError('This wallet does not have vMooney')
+            await hasTicket
+            if (+hasTicket.toString() === 1)
+              return setError('You have already entered the raffle!')
             setState(2)
           }}
         >
           Yes
         </Button>
-        <Button onClick={() => setState(1)}>No</Button>
+        <Button onClick={async () => setState(1)}>No</Button>
         <button
-          className="text-n3green hover:scale-[1.05] ease-in duration-150"
+          className="border-n3green border-2 text-n3green hover:scale-[1.05] ease-in duration-150 w-1/2 rounded-2xl text-center py-2"
           onClick={() => setDropdown(false)}
         >
           Cancel ✖
