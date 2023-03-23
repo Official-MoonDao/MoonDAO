@@ -80,42 +80,43 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
     )
   }
 
-  useEffect(() => {
-    if (vMooneyLock && vMooneyLock[1] !== 0) {
-      setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
-    }
-    if (state >= 5 || state === 1) return
-    if (twitter?.user && account?.address) {
-      userDiscordData.username && userDiscordData.email
-        ? setState(4)
-        : setState(3)
-    } else setState(0)
-  }, [twitter, account, vMooneyLock, userDiscordData])
+  // useEffect(() => {
+  //   if (vMooneyLock && vMooneyLock[1] !== 0) {
+  //     setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
+  //   }
+  //   if (state >= 5 || state === 1) return
+  //   if (twitter?.user && account?.address) {
+  //     //validLock
+  //     userDiscordData.username && userDiscordData.email
+  //       ? setState(4)
+  //       : setState(3)
+  //   } else setState(0)
+  // }, [twitter, account, vMooneyLock, userDiscordData])
 
-  useEffect(() => {
-    if (state === 4 && mintData && !mintIsLoading && mintSuccess && hasTicket) {
-      setTimeout(() => {
-        if (+hasTicket.toString() === 1) setState(5)
-        if (+hasTicket.toString() < 1)
-          errorStage(
-            'This wallet does not have vMooney! Please do not switch wallets!'
-          )
-      }, 1000)
-    }
+  // useEffect(() => {
+  //   if (state === 4 && mintData && !mintIsLoading && mintSuccess && hasTicket) {
+  //     setTimeout(() => {
+  //       if (+hasTicket.toString() === 1) setState(5)
+  //       if (+hasTicket.toString() < 1)
+  //         errorStage(
+  //           'This wallet does not have vMooney! Please do not switch wallets!'
+  //         )
+  //     }, 1000)
+  //   }
 
-    if (state === 5) {
-      const userData = {
-        twitterName: twitter?.user?.name,
-        userDiscordData,
-        walletAddress: account.address,
-        email: userDiscordData.email,
-      }
-      ;(async () => {
-        if (!(await checkUserDataRaffle(userData)))
-          await submitRaffleForm(userData)
-      })()
-    }
-  }, [mintIsLoading, mintSuccess, hasTicket, state])
+  //   if (state === 5) {
+  //     const userData = {
+  //       twitterName: twitter?.user?.name,
+  //       userDiscordData,
+  //       walletAddress: account.address,
+  //       email: userDiscordData.email,
+  //     }
+  //     ;(async () => {
+  //       if (!(await checkUserDataRaffle(userData)))
+  //         await submitRaffleForm(userData)
+  //     })()
+  //   }
+  // }, [mintIsLoading, mintSuccess, hasTicket, state])
 
   return (
     <MainCard>
@@ -182,7 +183,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         {state === 3 && (
           <StageContainer>
             <h2>Step 2: Verify your Discord account</h2>
-            <AdvanceButton onClick={() => router.push(discordOauthUrl.preview)}>
+            <AdvanceButton onClick={() => router.push(discordOauthUrl.dev)}>
               Verify Discord
             </AdvanceButton>
             <Cancel />
@@ -287,6 +288,17 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
             <Cancel />
           </StageContainer>
         )}
+        <div className="flex flex-col gap-4 bg-[blue] w-3/4 text-center my-4">
+          <h1>Dev Buttons </h1>
+          <div className="flex gap-[50%]">
+            <button onClick={() => setState(state > 0 ? state - 1 : state)}>
+              previous stage
+            </button>
+            <button onClick={() => setState(state < 6 ? state + 1 : state)}>
+              next stage
+            </button>
+          </div>
+        </div>
       </div>
     </MainCard>
   )
