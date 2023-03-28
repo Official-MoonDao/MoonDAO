@@ -4,7 +4,7 @@ import { useBalanceTicketZeroG } from '../../lib/zero-g-raffle'
 function Button({ children, onClick }: any) {
   return (
     <button
-      className="border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl"
+      className="border-style mt-4 tracking-wide btn text-n3blue normal-case font-medium font-GoodTimes w-full  bg-transparent hover:bg-n3blue hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
       onClick={onClick}
     >
       {children}
@@ -25,7 +25,7 @@ export default function EnterRaffleButton({
   if (dropdown) {
     return (
       <div className="flex flex-col justify-center items-center gap-4">
-        <p className="font-RobotoMono">Are you a vMooney Holder?</p>
+        <p className="font-RobotoMono mt-3 text-lg">Are you a vMooney Holder?</p>
         {error !== '' && (
           <p className="text-n3green ease-in duration-300">{error}</p>
         )}
@@ -44,7 +44,7 @@ export default function EnterRaffleButton({
         </Button>
         <Button onClick={async () => setState(1)}>No</Button>
         <button
-          className="border-n3green border-2 text-n3green hover:scale-[1.05] ease-in duration-150 w-1/2 rounded-2xl text-center py-2"
+          className="mt-4 tracking-wide btn text-gray-100 normal-case font-medium font-GoodTimes w-full bg-red-500 hover:bg-red-600 hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
           onClick={() => setDropdown(false)}
         >
           Cancel ✖
