@@ -15,11 +15,11 @@ export default function Product({
     return (
       <div className="backdropBlur flex justify-center items-center">
         <div className="flex flex-col m-2">
-          <div className="flex items-center">
-            <h1 className="font-GoodTimes mx-4 my-4">{label}</h1>
+          <div className="flex gap-4 w-full my-2">
+            <h1 className="font-GoodTimes">{label}</h1>
             <Link href="/lifeship/detail">
               <a
-                className={` text-center block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
+                className={`block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
               >
                 NFT Submission Details →
               </a>
@@ -72,7 +72,7 @@ export default function Product({
               </button>
             </div>
             <button
-              className="border-style btn text-n3blue normal-case font-medium w-full bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out my-2"
+              className="font-GoodTimes border-style btn text-n3blue normal-case font-medium w-full bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out my-2"
               onClick={() => linkToStore()}
             >
               Send a File to Space!
