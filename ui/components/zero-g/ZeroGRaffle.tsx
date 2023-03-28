@@ -1,5 +1,6 @@
 import { InformationCircleIcon } from '@heroicons/react/outline'
 import { useSession, signIn, signOut } from 'next-auth/react'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useWaitForTransaction } from 'wagmi'
 import { discordOauthUrl } from '../../lib/discord'
@@ -16,6 +17,7 @@ import MainCard from '../layout/MainCard'
 import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
 import RaffleNFTDetail from './RaffleNFTDetail'
+import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
 
 /*
@@ -59,7 +61,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
   function Cancel() {
     return (
       <button
-        className="border-n3green border-2 text-n3green hover:scale-[1.05] ease-in duration-150 w-1/2 rounded-2xl text-center py-2"
+        className="mt-4 tracking-wide btn text-gray-100 normal-case font-medium font-GoodTimes w-full bg-red-500 hover:bg-red-600 hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
         onClick={async () => {
           await signOut()
         }}
@@ -72,7 +74,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
   function AdvanceButton({ onClick, children }: any) {
     return (
       <button
-        className={`border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl my-4`}
+        className="border-style mt-4 tracking-wide btn text-n3blue normal-case font-medium font-GoodTimes w-full  bg-transparent hover:bg-n3blue hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
         onClick={onClick}
       >
         {children}
@@ -119,19 +121,22 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
   // }, [mintIsLoading, mintSuccess, hasTicket, state])
 
   return (
-    <MainCard>
+    <ReservationRaffleLayout>
       <div className="flex flex-col animate-fadeIn justify-center items-center">
         {state === 0 && (
           <StageContainer>
             <div className="w-full">
-              <h2 className="text-3xl w-1/2 font-semibold">Raffle</h2>
-              <div className="my-2">
-                <GradientLink
-                  text={'Rules'}
-                  href="/zero-g/rules"
-                  internal={false}
-                  textSize={'md'}
-                ></GradientLink>
+              <h2 className="card-title text-center font-display tracking-wider text-2xl lg:text-3xl font-semibold text-yellow-50">
+                Raffle
+              </h2>
+              <div className="my-3">
+                <Link href="/zero-g/rules">
+                  <a
+                    className={`mt-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
+                  >
+                    Rules →
+                  </a>
+                </Link>
               </div>
             </div>
             <EnterRaffleButton
@@ -146,30 +151,36 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
             <h2 className="text-3xl font-semibold font-RobotoMono mb-1">
               Alternative Entry
             </h2>
-            <p className="my-4">
+            <p className="my-4 leading-relaxed text-center">
               {`
               As an alternative means of entry in the Promotion, each
               prospective entrant may submit a mail-in entry in the form of a
               handwritten self-addressed, stamped envelope that contains the
               AMOE Registration Data.`}
             </p>
-            <GradientLink
-              text={'Alt Entry Details'}
-              href="/zero-g/rules/alt-entry"
-              internal={false}
-              textSize={'md'}
-            ></GradientLink>
+
+            <Link href="/zero-g/rules/alt-entry">
+              <a
+                className={`mt-5 hover:scale-105 duration-150 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
+              >
+                {' '}
+                Alt Entry Details →
+              </a>
+            </Link>
+
             <button
-              className="text-n3blue hover:scale-[1.05] ease-in duration-150 my-4 relative right-[2%]"
+              className="mt-5 flex items-center bg-indigo-700 text-lg rounded px-2 py-1 text-gray-100 hover:scale-[1.05] hover:text-white hover:bg-indigo-800 ease-in duration-150"
               onClick={() => setState(0)}
             >
-              {'👈 Back'}
+              {'← Back'}
             </button>
           </StageContainer>
         )}
         {state === 2 && (
           <StageContainer>
-            <h2>Step 1: Verify your Twitter account</h2>
+            <h2 className="lg:text-lg text-yellow-50">
+              Step 1: Verify your Twitter account
+            </h2>
             <AdvanceButton
               onClick={async () => {
                 await signIn()
@@ -191,16 +202,16 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         )}
         {state === 4 && (
           <StageContainer opacity75>
-            <h2 className="my-8 px-8">
+            <h2 className="my-8 px-8 text-yellow-50 lg:text-lg tracking-wide">
               {`Step 3: Review your info and mint your Ticket to Zero-G.`}
             </h2>
             <div className="galaxy-bg w-full rounded-2xl absolute h-full z-[-10] left-0 top-0 ease-in duration-[5s] opacity-[0.75]" />
             <form className="flex gap-4 flex-col justify-center items-center p-4 w-full text-center">
               <InputContainer>
-                <label>
+                <label className="text-lg">
                   Twitter Display Name:
                   <input
-                    className="flex flex-col text-black w-full rounded-md p-2 my-2"
+                    className="mt-2 flex flex-col bg-slate-900 text-white w-full rounded-md p-2"
                     type="text"
                     readOnly
                     value={twitter?.user?.name || ''}
@@ -208,10 +219,10 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
                 </label>
               </InputContainer>
               <InputContainer>
-                <label>
+                <label className="text-lg">
                   Wallet Address:
                   <input
-                    className="flex flex-col text-black w-full rounded-md p-2 my-2"
+                    className="mt-2 flex flex-col bg-slate-900 text-white w-full rounded-md p-2"
                     type="text"
                     readOnly
                     value={account?.address}
@@ -219,10 +230,10 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
                 </label>
               </InputContainer>
               <InputContainer>
-                <label>
+                <label className="text-lg">
                   Discord Username:
                   <input
-                    className="flex flex-col text-black w-full rounded-md p-2 my-2"
+                    className="mt-2 flex flex-col bg-slate-900 text-white w-full rounded-md p-2"
                     type="text"
                     readOnly
                     value={userDiscordData.username}
@@ -230,10 +241,10 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
                 </label>
               </InputContainer>
               <InputContainer>
-                <label>
+                <label className="text-lg">
                   Discord Email:
                   <input
-                    className="flex flex-col text-black w-full rounded-md p-2 my-2"
+                    className="mt-2 flex flex-col bg-slate-900 text-white w-full rounded-md p-2"
                     type="text"
                     readOnly
                     value={userDiscordData.email}
@@ -241,7 +252,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
                 </label>
               </InputContainer>
               <button
-                className="border-style btn text-n3blue normal-case font-medium w-full  bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out text-1xl"
+                className="border-style mt-4 tracking-wide btn text-n3blue normal-case font-medium font-GoodTimes w-full  bg-transparent hover:bg-n3blue hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
                 disabled={mintIsLoading}
                 onClick={async (e) => {
                   e.preventDefault()
@@ -272,23 +283,27 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
               >
                 {mintIsLoading ? '...loading' : 'Mint Ticket to Zero-G'}
               </button>
+              <Cancel />
             </form>
-            <Cancel />
           </StageContainer>
         )}
         {state === 5 && (
           <StageContainer>
-            <h2 className="text-n3blue m-4">Thanks for entering the raffle!</h2>
+            <h2 className="text-n3blue m-4 lg:text-lg">
+              Thanks for entering the raffle!
+            </h2>
             <Cancel />
           </StageContainer>
         )}
         {state === 6 && (
           <StageContainer>
-            <h2 className="text-n3green m-4">{error}</h2>
+            <h2 className="text-n3green m-4 lg:text-lg">{error}</h2>
             <Cancel />
           </StageContainer>
         )}
-        <div className="flex flex-col gap-4 bg-[blue] w-3/4 text-center my-4">
+
+        {/*Dev menu
+        <div className="absolute left-[600px] flex flex-col gap-4 bg-[blue] w-3/4 text-center my-4">
           <h1>Dev Buttons </h1>
           <div className="flex gap-[50%]">
             <button onClick={() => setState(state > 0 ? state - 1 : state)}>
@@ -299,7 +314,8 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
             </button>
           </div>
         </div>
+        */}
       </div>
-    </MainCard>
+    </ReservationRaffleLayout>
   )
 }
