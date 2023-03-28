@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { getUserDiscordData } from '../../lib/discord'
 import Head from '../../components/layout/Head'
-import Background from '../../components/zero-g/Background'
 import Reservations from '../../components/zero-g/Reservations'
 import ZeroGLayout from '../../components/zero-g/ZeroGLayout'
 import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
@@ -13,14 +12,12 @@ export default function ZeroG({ userDiscordData }: any) {
     <div className="animate-fadeIn">
       <Head title="Zero-G Flight" />
       <ZeroGLayout className="gap-4 relative" title="Zero-G Flight">
-        <Background />
-
         <div className="mt-3 font-RobotoMono">
           <div className="flex">
             <p className="lg:text-lg">
               {`In partnership with `}
               <button
-                className="text-yellow-200 hover:scale-[1.025] ease-in-ease-out duration-300"
+                className="text-n3blue hover:scale-[1.025] ease-in-ease-out duration-300"
                 onClick={() => window.open('https://spaceforabetterworld.com/')}
               >
                 {'Space for a Better World'}

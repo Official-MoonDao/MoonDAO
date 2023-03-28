@@ -2,7 +2,6 @@ import gsap from 'gsap'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
-import Background from '../../components/zero-g/Background'
 import RuleTitle from '../../components/zero-g/RuleTitle'
 
 export default function ZeroGDetail({ slug }: any) {
@@ -32,10 +31,9 @@ export default function ZeroGDetail({ slug }: any) {
   const router = useRouter()
   return (
     <div
-      className="flex flex-col justify-center items-center text-center w-[80%] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-70 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%] relative right-4"
+      className="flex flex-col justify-center items-center text-center w-[80%] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-70 text-white font-RobotoMono shadow-md overflow-visible p-[5%] relative right-4"
       ref={mainRef}
     >
-      <Background />
       <h1
         className={`mt-5 card-title text-center font-GoodTimes text-3xl lg:text-4xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
       >
@@ -169,7 +167,7 @@ The Promotion is open only to individuals who are eighteen (18) years of age or 
           <p>{`Any attempt by any individual, whether or not an entrant, to damage, destroy, tamper with or vandalize any portion of the Promotion, or otherwise interfere with the operation of the Promotion, is a violation of criminal and civil law and Sponsor will diligently pursue any and all remedies in this regard against any offending individual or entity to the fullest extent permissible by law and in equity.`}</p>
         </div>
         <button
-          className="mt-10 flex items-center bg-indigo-700 text-lg rounded px-2 py-1 text-gray-100 hover:scale-[1.05] hover:text-white hover:bg-indigo-800 ease-in duration-150"
+          className="mt-10 flex items-center bg-[grey] text-lg rounded px-2 py-1 text-gray-100 hover:scale-[1.05] hover:text-white hover:bg-n3blue ease-in duration-150"
           onClick={() => router.push('/zero-g')}
         >
           {'← Back'}

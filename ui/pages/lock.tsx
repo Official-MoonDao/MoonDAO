@@ -181,8 +181,6 @@ export default function Lock() {
           <GradientLink
             text={t('learnMore')}
             href="https://docs.moondao.com/token/#vmooney-characteristics"
-            internal={false}
-            textSize={'md'}
           ></GradientLink>
         </p>
         {!hasLock ? (

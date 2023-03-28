@@ -25,7 +25,9 @@ export default function EnterRaffleButton({
   if (dropdown) {
     return (
       <div className="flex flex-col justify-center items-center gap-4">
-        <p className="font-RobotoMono mt-3 text-lg">Are you a vMooney Holder?</p>
+        <p className="font-RobotoMono mt-3 text-lg">
+          Are you a vMooney Holder?
+        </p>
         {error !== '' && (
           <p className="text-n3green ease-in duration-300">{error}</p>
         )}

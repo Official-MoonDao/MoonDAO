@@ -1,5 +1,4 @@
 import { InformationCircleIcon } from '@heroicons/react/outline'
-import Image from 'next/image'
 
 export default function RaffleNFTDetail() {
   return (

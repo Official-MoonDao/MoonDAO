@@ -63,7 +63,7 @@ export default function Reservations() {
           </p>
         )}
         <button
-          className="mt-4 tracking-wide btn text-gray-100 normal-case font-medium font-GoodTimes w-full bg-yellow-500 hover:bg-amber-400 hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
+          className="mt-4 tracking-wide btn text-gray-100 normal-case font-medium font-GoodTimes hover:bg-[orange] w-full bg-n3blue hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
           onClick={async () => {
             let fullName, email
             if (state === 1) {

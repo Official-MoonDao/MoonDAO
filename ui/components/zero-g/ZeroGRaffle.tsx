@@ -1,22 +1,18 @@
-import { InformationCircleIcon } from '@heroicons/react/outline'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useWaitForTransaction } from 'wagmi'
 import { discordOauthUrl } from '../../lib/discord'
 import { checkUserDataRaffle, submitRaffleForm } from '../../lib/google-sheets'
-import { useAccount, useSigner } from '../../lib/use-wagmi'
+import { useAccount } from '../../lib/use-wagmi'
 import { useVMOONEYLock } from '../../lib/ve-token'
 import {
   useBalanceTicketZeroG,
   useMintTicketZeroG,
 } from '../../lib/zero-g-raffle'
 import { BigNumber } from 'ethers/lib/ethers'
-import GradientLink from '../layout/GradientLink'
-import MainCard from '../layout/MainCard'
 import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
-import RaffleNFTDetail from './RaffleNFTDetail'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
 
@@ -36,12 +32,11 @@ const lockCutoff = +new Date('2023-06-09T00:00:00')
 
 export default function ZeroGRaffle({ userDiscordData, router }: any) {
   const { data: account } = useAccount()
-  const { data: signer } = useSigner()
   const { data: twitter } = useSession()
   const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
-    '0x679d87D8640e66778c3419D164998E720D7495f6'
+    account?.address
   )
-  const [validLock, setValidLock] = useState<boolean>(false)
+  const [validLock, setValidLock] = useState<boolean>()
 
   const [state, setState] = useState<number>(0)
   const [error, setError] = useState<string>('')
@@ -82,43 +77,42 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
     )
   }
 
-  // useEffect(() => {
-  //   if (vMooneyLock && vMooneyLock[1] !== 0) {
-  //     setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
-  //   }
-  //   if (state >= 5 || state === 1) return
-  //   if (twitter?.user && account?.address) {
-  //     //validLock
-  //     userDiscordData.username && userDiscordData.email
-  //       ? setState(4)
-  //       : setState(3)
-  //   } else setState(0)
-  // }, [twitter, account, vMooneyLock, userDiscordData])
+  useEffect(() => {
+    if (vMooneyLock && vMooneyLock[1] !== 0) {
+      setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
+    }
+    if (state >= 5 || state === 1) return
+    if (twitter?.user && account?.address && validLock) {
+      userDiscordData.username && userDiscordData.email
+        ? setState(4)
+        : setState(3)
+    } else setState(0)
+  }, [twitter, account, vMooneyLock, userDiscordData])
 
-  // useEffect(() => {
-  //   if (state === 4 && mintData && !mintIsLoading && mintSuccess && hasTicket) {
-  //     setTimeout(() => {
-  //       if (+hasTicket.toString() === 1) setState(5)
-  //       if (+hasTicket.toString() < 1)
-  //         errorStage(
-  //           'This wallet does not have vMooney! Please do not switch wallets!'
-  //         )
-  //     }, 1000)
-  //   }
+  useEffect(() => {
+    if (state === 4 && mintData && !mintIsLoading && mintSuccess && hasTicket) {
+      setTimeout(() => {
+        if (+hasTicket.toString() === 1) setState(5)
+        if (+hasTicket.toString() < 1)
+          errorStage(
+            'This wallet does not have vMooney! Please do not switch wallets!'
+          )
+      }, 1000)
+    }
 
-  //   if (state === 5) {
-  //     const userData = {
-  //       twitterName: twitter?.user?.name,
-  //       userDiscordData,
-  //       walletAddress: account.address,
-  //       email: userDiscordData.email,
-  //     }
-  //     ;(async () => {
-  //       if (!(await checkUserDataRaffle(userData)))
-  //         await submitRaffleForm(userData)
-  //     })()
-  //   }
-  // }, [mintIsLoading, mintSuccess, hasTicket, state])
+    if (state === 5) {
+      const userData = {
+        twitterName: twitter?.user?.name,
+        userDiscordData,
+        walletAddress: account.address,
+        email: userDiscordData.email,
+      }
+      ;(async () => {
+        if (!(await checkUserDataRaffle(userData)))
+          await submitRaffleForm(userData)
+      })()
+    }
+  }, [mintIsLoading, mintSuccess, hasTicket, state])
 
   return (
     <ReservationRaffleLayout>
@@ -169,7 +163,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
             </Link>
 
             <button
-              className="mt-5 flex items-center bg-indigo-700 text-lg rounded px-2 py-1 text-gray-100 hover:scale-[1.05] hover:text-white hover:bg-indigo-800 ease-in duration-150"
+              className="mt-5 flex items-center bg-[grey] text-lg rounded px-2 py-1 text-gray-100 hover:scale-[1.05] hover:text-white hover:bg-n3blue ease-in duration-150"
               onClick={() => setState(0)}
             >
               {'← Back'}
@@ -178,9 +172,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         )}
         {state === 2 && (
           <StageContainer>
-            <h2 className="lg:text-lg text-yellow-50">
-              Step 1: Verify your Twitter account
-            </h2>
+            <h2 className="text-n3blue">Step 1: Verify your Twitter account</h2>
             <AdvanceButton
               onClick={async () => {
                 await signIn()
@@ -193,8 +185,8 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         )}
         {state === 3 && (
           <StageContainer>
-            <h2>Step 2: Verify your Discord account</h2>
-            <AdvanceButton onClick={() => router.push(discordOauthUrl.dev)}>
+            <h2 className="text-n3blue">Step 2: Verify your Discord account</h2>
+            <AdvanceButton onClick={() => router.push(discordOauthUrl.preview)}>
               Verify Discord
             </AdvanceButton>
             <Cancel />
@@ -302,7 +294,8 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
           </StageContainer>
         )}
 
-        {/*Dev menu
+        {/*
+        DEV BUTTONS FOR STAGES, REMOVE BEFORE DEPLOY
         <div className="absolute left-[600px] flex flex-col gap-4 bg-[blue] w-3/4 text-center my-4">
           <h1>Dev Buttons </h1>
           <div className="flex gap-[50%]">
@@ -313,8 +306,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
               next stage
             </button>
           </div>
-        </div>
-        */}
+        </div> */}
       </div>
     </ReservationRaffleLayout>
   )

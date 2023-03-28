@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { hasUserSubmittedNFT } from '../../lib/firebase'
@@ -87,25 +88,29 @@ export default function Lifeship({ products = [] }: any) {
       <Head title="Lifeship" />
       <div className="flex flex-col max-w-3xl justify-center">
         <div className="flex flex-col justify-center items-center gap-4">
-          <div className="flex flex-col md:flex-row md:gap-4 justify-center mt-8">
-            <h1 className="card-title text-3xl font-semibold font-GoodTimes mb-2">
-              {'MoonDAO'}
-              <Image src={flag} width={36} height={36} />
-            </h1>
-            <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
-              {'  +  '}
-            </h1>
-            <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
-              {'LifeShip'}
-              <Image src={'/LifeShip_Main.png'} width={36} height={36} />
-            </h1>
-          </div>
           <div className="flex flex-col justify-center items-center text-center md:w-[55vw] w-screen card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%] relative right-4">
-            <h1 className="font-RobotoMono text-[200%] text-center my-4">
+            <div className="flex flex-col md:flex-row md:gap-4 justify-center mt-8">
+              <h2
+                className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
+              >
+                MoonDAO
+                <Image src={flag} width={50} height={50} />
+              </h2>
+              <h1 className="text-center text-2xl font-semibold font-GoodTimes pt-4">
+                {'  +  '}
+              </h1>
+              <h2
+                className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
+              >
+                {'LifeShip'}
+                <Image src={'/LifeShip_Main.png'} width={38} height={38} />
+              </h2>
+            </div>
+            <h1 className="font-RobotoMono text-2xl text-center my-4">
               Join us on our first mission to the Moon!
             </h1>
             {state === 0 && (
-              <div className="flex flex-col justify-center items-center text-left gap-4 md:w-full w-3/4">
+              <div className="flex flex-col justify-center items-center text-left gap-4 md:w-full w-full backdropBlur p-4">
                 <p className="font-RobotoMono">
                   {
                     'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through '
@@ -124,16 +129,11 @@ export default function Lifeship({ products = [] }: any) {
                     'Connect with an international community dedicated to a permanent settlement on the Moon and learn about participating in Astronaut and Zero G Flights!'
                   }
                 </p>
-                <GradientLink
-                  text={'NFT Submission Details'}
-                  href="/lifeship/detail"
-                  internal={false}
-                  textSize={'md'}
-                ></GradientLink>
+                <hr className="w-full border-n3blue border-2"></hr>
+
                 {products[0] && (
                   <div className="flex flex-col gap-8 w-full">
-                    <hr className="w-full border-n3blue border-2"></hr>
-
+                  
                     <Product
                       product={products[2]}
                       label="NFT kit"
