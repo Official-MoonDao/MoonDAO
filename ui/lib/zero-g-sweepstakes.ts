@@ -1,9 +1,13 @@
-import vMooneyRaffleABI from '../abis/vMooneyRaffleABI.json'
+/*
+VRF: https://vrf.chain.link/mainnet/691
+CONTRACT: https://etherscan.io/address/0xB255c74F8576f18357cE6184DA033c6d93C71899
+*/
+import vMooneySweepstakesABI from '../abis/vMooneySweepstakes.json'
 import { useContractRead, useContractWrite } from './use-wagmi'
 
 const contractParams = {
-  addressOrName: '0xC0a5B9D608BD0a04F03fACe7c0eD52d197953d3B',
-  contractInterface: vMooneyRaffleABI,
+  addressOrName: '0xB255c74F8576f18357cE6184DA033c6d93C71899', //mainnet
+  contractInterface: vMooneySweepstakesABI,
 }
 
 export function useMintTicketZeroG() {

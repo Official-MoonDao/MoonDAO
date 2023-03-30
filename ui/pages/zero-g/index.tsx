@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { getUserDiscordData } from '../../lib/discord'
 import Head from '../../components/layout/Head'
+import PurchasePortal from '../../components/zero-g/PurchasePortal'
 import Reservations from '../../components/zero-g/Reservations'
 import ZeroGLayout from '../../components/zero-g/ZeroGLayout'
 import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
@@ -38,7 +39,7 @@ Witness breathtaking views of our planet as you float and soar in a weightless e
             </a>
           </Link>
         </div>
-        <Reservations />
+        <PurchasePortal />
         <ZeroGRaffle userDiscordData={userDiscordData} router={router} />
       </ZeroGLayout>
     </div>

@@ -17,7 +17,7 @@ export async function getUserDiscordData(code: any) {
   const previewUri = 'https://deploy-preview-27--moondao-stc.netlify.app/zero-g'
   const productionUri = `https://app.moondao.com/zero-g`
   try {
-    const token = await getToken(code, previewUri)
+    const token = await getToken(code, devUri)
     const admin = await oauth.getUser(token.access_token)
     return {
       id: admin.id,

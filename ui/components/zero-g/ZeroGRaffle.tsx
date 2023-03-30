@@ -1,6 +1,6 @@
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useWaitForTransaction } from 'wagmi'
 import { discordOauthUrl } from '../../lib/discord'
 import { checkUserDataRaffle, submitRaffleForm } from '../../lib/google-sheets'
@@ -9,7 +9,7 @@ import { useVMOONEYLock } from '../../lib/ve-token'
 import {
   useBalanceTicketZeroG,
   useMintTicketZeroG,
-} from '../../lib/zero-g-raffle'
+} from '../../lib/zero-g-sweepstakes'
 import { BigNumber } from 'ethers/lib/ethers'
 import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
@@ -22,13 +22,13 @@ STAGES:
   1. Alt Entry if no vMooney
   2. Verify the user's twitter account
   3. Verify the user's discord account and email 
-  4. Check if the user has already entered the raffle, submit raffle form
-  5. Raffle submission success & nft minting
-  6. Error, user has already entered the raffle
+  4. Review form, mint zero-g ticket
+  5. Raffle submission success
+  6. Error
 */
 
 //The member's lock-time must exceed this date =>
-const lockCutoff = +new Date('2023-06-09T00:00:00')
+const lockCutoff = +new Date('2023-01-09T00:00:00')
 
 export default function ZeroGRaffle({ userDiscordData, router }: any) {
   const { data: account } = useAccount()
@@ -47,6 +47,8 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
       hash: mintData?.hash,
     })
   const { data: hasTicket } = useBalanceTicketZeroG(account?.address)
+
+  const formRef: any = useRef()
 
   function errorStage(message: string) {
     setError(message)
@@ -81,13 +83,16 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
     if (vMooneyLock && vMooneyLock[1] !== 0) {
       setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
     }
+  }, [vMooneyLock])
+
+  useEffect(() => {
     if (state >= 5 || state === 1) return
     if (twitter?.user && account?.address && validLock) {
       userDiscordData.username && userDiscordData.email
         ? setState(4)
         : setState(3)
     } else setState(0)
-  }, [twitter, account, vMooneyLock, userDiscordData])
+  }, [twitter?.user, account, validLock, userDiscordData])
 
   useEffect(() => {
     if (state === 4 && mintData && !mintIsLoading && mintSuccess && hasTicket) {
@@ -112,7 +117,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
           await submitRaffleForm(userData)
       })()
     }
-  }, [mintIsLoading, mintSuccess, hasTicket, state])
+  }, [mintIsLoading, mintSuccess, hasTicket, state, formRef])
 
   return (
     <ReservationRaffleLayout>
@@ -128,11 +133,15 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
                   <a
                     className={`mt-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
                   >
-                    Rules →
+                    Terms & Conditions →
                   </a>
                 </Link>
               </div>
+              <p className="italic text-[75%] opacity-[0.5]">
+                *please read the terms and conditions*
+              </p>
             </div>
+
             <EnterRaffleButton
               setState={(stage: any) => setState(stage)}
               account={account}
@@ -186,14 +195,14 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         {state === 3 && (
           <StageContainer>
             <h2 className="text-n3blue">Step 2: Verify your Discord account</h2>
-            <AdvanceButton onClick={() => router.push(discordOauthUrl.preview)}>
+            <AdvanceButton onClick={() => router.push(discordOauthUrl.dev)}>
               Verify Discord
             </AdvanceButton>
             <Cancel />
           </StageContainer>
         )}
         {state === 4 && (
-          <StageContainer opacity75>
+          <StageContainer opacity75 forwardRef={formRef}>
             <h2 className="my-8 px-8 text-yellow-50 lg:text-lg tracking-wide">
               {`Step 3: Review your info and mint your Ticket to Zero-G.`}
             </h2>
@@ -245,7 +254,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
               </InputContainer>
               <button
                 className="border-style mt-4 tracking-wide btn text-n3blue normal-case font-medium font-GoodTimes w-full  bg-transparent hover:bg-n3blue hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
-                disabled={mintIsLoading}
+                disabled={true || mintIsLoading}
                 onClick={async (e) => {
                   e.preventDefault()
                   const userData = {

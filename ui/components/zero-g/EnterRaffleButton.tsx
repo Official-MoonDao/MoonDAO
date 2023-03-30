@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useBalanceTicketZeroG } from '../../lib/zero-g-raffle'
+import { useEffect, useRef, useState } from 'react'
+import { useBalanceTicketZeroG } from '../../lib/zero-g-sweepstakes'
 
 function Button({ children, onClick }: any) {
   return (
@@ -18,13 +18,18 @@ export default function EnterRaffleButton({
   validLock,
   label = 'Enter Raffle',
 }: any) {
+  const disclaimerRef: any = useRef()
   const [dropdown, setDropdown] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
   const { data: hasTicket } = useBalanceTicketZeroG(account?.address)
 
+  useEffect(() => {
+    console.log(hasTicket)
+  }, [hasTicket])
+
   if (dropdown) {
     return (
-      <div className="flex flex-col justify-center items-center gap-4">
+      <div className="flex flex-col justify-center items-center gap-4 mt-2">
         <p className="font-RobotoMono mt-3 text-lg">
           Are you a vMooney Holder?
         </p>
@@ -51,9 +56,52 @@ export default function EnterRaffleButton({
         >
           Cancel ✖
         </button>
+        <div
+          className="text-[80%] text-center flex flex-col gap-2 border-white rounded-2xl border-[0.5px] p-4"
+          ref={disclaimerRef}
+        >
+          <p>
+            {`NO PURCHASE OF A TICKET TO ZERO-G NFT IS NECESSARY TO ENTER THE SWEEPSTAKES OR WIN A
+                  CHANCE TO FLY TO SPACE.  PURCHASE OF A TICKET TO SPACE NFT WILL NOT INCREASE YOUR ODDS OF
+                  WINNING A PRIZE.
+                  `}
+          </p>
+
+          <hr></hr>
+          <p>
+            {`
+            Sweepstakes are open only to individuals who are 18 years of age or
+            older, or the age of majority if greater than 18 in their respective
+            jurisdictions. Sweepstakes is void in Florida, New York, Puerto Rico
+            and where otherwise prohibited by law. Alternate prize winners are
+            responsible for taxes associated with the prizes. Odds of winning
+            depend on the number of entries received during the contest period
+            (maximum tickets = 162), but can be calculated by dividing the
+            number of prizes by the total number of entries received. Sponsor:
+            LuckDAO Limited d/b/a MoonDAO. Contest ends on June 9, 2023.`}
+          </p>
+          <hr></hr>
+          <p className="italic">
+            For Alternative Method of Entry, select "NO" above.
+          </p>
+        </div>
       </div>
     )
   }
 
-  return <Button onClick={() => setDropdown(true)}>{label}</Button>
+  return (
+    <Button
+      onClick={() => {
+        setDropdown(true)
+        setTimeout(() => {
+          disclaimerRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          })
+        }, 300)
+      }}
+    >
+      {label}
+    </Button>
+  )
 }

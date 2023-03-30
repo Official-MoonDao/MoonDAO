@@ -89,21 +89,21 @@ export default function Lifeship({ products = [] }: any) {
       <div className="flex flex-col max-w-3xl justify-center">
         <div className="flex flex-col justify-center items-center gap-4">
           <div className="flex flex-col justify-center items-center text-center md:w-[55vw] w-screen card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%] relative right-4">
-            <div className="flex flex-col md:flex-row md:gap-4 justify-center mt-8">
+            <div className="flex flex-col md:flex-row md:gap-4 justify-center">
               <h2
                 className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
               >
                 MoonDAO
                 <Image src={flag} width={50} height={50} />
               </h2>
-              <h1 className="text-center text-2xl font-semibold font-GoodTimes pt-4">
-                {'  +  '}
+              <h1 className="text-center text-n3blue text-2xl font-semibold font-GoodTimes pt-[4%]">
+                {'  x  '}
               </h1>
               <h2
                 className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
               >
                 {'LifeShip'}
-                <Image src={'/LifeShip_Main.png'} width={38} height={38} />
+                <Image src={'/LifeShip_Main.png'} width={45} height={45} />
               </h2>
             </div>
             <h1 className="font-RobotoMono text-2xl text-center my-4">
