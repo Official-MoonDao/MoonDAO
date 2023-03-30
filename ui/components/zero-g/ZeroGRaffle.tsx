@@ -195,7 +195,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         {state === 3 && (
           <StageContainer>
             <h2 className="text-n3blue">Step 2: Verify your Discord account</h2>
-            <AdvanceButton onClick={() => router.push(discordOauthUrl.dev)}>
+            <AdvanceButton onClick={() => router.push(discordOauthUrl.preview)}>
               Verify Discord
             </AdvanceButton>
             <Cancel />
