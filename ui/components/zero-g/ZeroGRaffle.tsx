@@ -254,7 +254,7 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
               </InputContainer>
               <button
                 className="border-style mt-4 tracking-wide btn text-n3blue normal-case font-medium font-GoodTimes w-full  bg-transparent hover:bg-n3blue hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
-                disabled={true || mintIsLoading}
+                disabled={mintIsLoading}
                 onClick={async (e) => {
                   e.preventDefault()
                   const userData = {
