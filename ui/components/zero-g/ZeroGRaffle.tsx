@@ -27,16 +27,13 @@ STAGES:
   6. Error
 */
 
-//The member's lock-time must exceed this date =>
-const lockCutoff = +new Date('2023-01-09T00:00:00')
-
-export default function ZeroGRaffle({ userDiscordData, router }: any) {
-  const { data: account } = useAccount()
+export default function ZeroGRaffle({
+  userDiscordData,
+  router,
+  validLock,
+  account,
+}: any) {
   const { data: twitter } = useSession()
-  const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
-    account?.address
-  )
-  const [validLock, setValidLock] = useState<boolean>()
 
   const [state, setState] = useState<number>(0)
   const [error, setError] = useState<string>('')
@@ -78,12 +75,6 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
       </button>
     )
   }
-
-  useEffect(() => {
-    if (vMooneyLock && vMooneyLock[1] !== 0) {
-      setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
-    }
-  }, [vMooneyLock])
 
   useEffect(() => {
     if (state >= 5 || state === 1) return
@@ -195,7 +186,9 @@ export default function ZeroGRaffle({ userDiscordData, router }: any) {
         {state === 3 && (
           <StageContainer>
             <h2 className="text-n3blue">Step 2: Verify your Discord account</h2>
-            <AdvanceButton onClick={() => router.push(discordOauthUrl.preview)}>
+            <AdvanceButton
+              onClick={() => router.push(discordOauthUrl.production)}
+            >
               Verify Discord
             </AdvanceButton>
             <Cancel />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 
 function Button({ children, onClick }: any) {
@@ -12,16 +12,31 @@ function Button({ children, onClick }: any) {
   )
 }
 
-export default function PurchasePortal() {
+export default function PurchasePortal({ validLock }: any) {
   const [state, setState] = useState(0)
+  const [error, setError] = useState(false)
 
   return (
     <ReservationRaffleLayout title="Purchase">
       {state === 0 && (
         <>
-          <Button onClick={() => setState(1)}>buy a ticket</Button>
+          {error && (
+            <p className="text-n3green ease-in-ease-out duration-300">{`Please connect a wallet that has vMooney`}</p>
+          )}
+          <Button
+            onClick={() => {
+              //check if wallet has vMooney
+              if (validLock) {
+                setState(1)
+                setError(false)
+              } else setError(true)
+            }}
+          >
+            buy a ticket
+          </Button>
         </>
       )}
+
       {state === 1 && (
         <>
           <div className="flex flex-col items-center">

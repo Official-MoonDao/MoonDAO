@@ -1,14 +1,31 @@
+import { BigNumber } from 'ethers'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { getUserDiscordData } from '../../lib/discord'
+import { useAccount } from '../../lib/use-wagmi'
+import { useVMOONEYLock } from '../../lib/ve-token'
 import Head from '../../components/layout/Head'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
 import Reservations from '../../components/zero-g/Reservations'
 import ZeroGLayout from '../../components/zero-g/ZeroGLayout'
 import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
 
+const lockCutoff = +new Date('2023-01-09T00:00:00')
+
 export default function ZeroG({ userDiscordData }: any) {
   const router = useRouter()
+  const account = useAccount()
+  const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
+    account?.address
+  )
+  const [validLock, setValidLock] = useState<boolean>()
+
+  useEffect(() => {
+    if (vMooneyLock && vMooneyLock[1] !== 0) {
+      setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
+    }
+  }, [vMooneyLock])
   return (
     <div className="animate-fadeIn">
       <Head title="Zero-G Flight" />
@@ -39,8 +56,13 @@ Witness breathtaking views of our planet as you float and soar in a weightless e
             </a>
           </Link>
         </div>
-        <PurchasePortal />
-        <ZeroGRaffle userDiscordData={userDiscordData} router={router} />
+        {/* <PurchasePortal validLock={validLock} /> */}
+        <ZeroGRaffle
+          userDiscordData={userDiscordData}
+          router={router}
+          validLock={validLock}
+          account={account}
+        />
       </ZeroGLayout>
     </div>
   )

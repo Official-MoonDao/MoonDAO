@@ -78,7 +78,7 @@ export default function EnterRaffleButton({
             depend on the number of entries received during the contest period
             (maximum tickets = 162), but can be calculated by dividing the
             number of prizes by the total number of entries received. Sponsor:
-            MoonDAO Limited d/b/a MoonDAO. Contest ends on April 30th, 2023 at 12:00am PST.`}
+            MoonDAO Limited d/b/a MoonDAO. Contest ends on April 30th, 2023.`}
           </p>
           <hr></hr>
           <p className="italic">
