@@ -15,7 +15,7 @@ const lockCutoff = +new Date('2023-01-09T00:00:00')
 
 export default function ZeroG({ userDiscordData }: any) {
   const router = useRouter()
-  const account = useAccount()
+  const { data: account } = useAccount()
   const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
     account?.address
   )
@@ -57,6 +57,7 @@ Witness breathtaking views of our planet as you float and soar in a weightless e
           </Link>
         </div>
         {/* <PurchasePortal validLock={validLock} /> */}
+
         <ZeroGRaffle
           userDiscordData={userDiscordData}
           router={router}

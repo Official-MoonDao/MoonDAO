@@ -30,8 +30,8 @@ STAGES:
 export default function ZeroGRaffle({
   userDiscordData,
   router,
-  validLock,
   account,
+  validLock,
 }: any) {
   const { data: twitter } = useSession()
 
@@ -43,6 +43,7 @@ export default function ZeroGRaffle({
     useWaitForTransaction({
       hash: mintData?.hash,
     })
+
   const { data: hasTicket } = useBalanceTicketZeroG(account?.address)
 
   const formRef: any = useRef()
