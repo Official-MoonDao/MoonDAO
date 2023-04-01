@@ -118,7 +118,7 @@ export default function ZeroGRaffle({
           <StageContainer>
             <div className="w-full">
               <h2 className="card-title text-center font-display tracking-wider text-2xl lg:text-3xl font-semibold text-yellow-50">
-                Raffle
+                Sweepstakes
               </h2>
               <div className="my-3">
                 <Link href="/zero-g/rules">

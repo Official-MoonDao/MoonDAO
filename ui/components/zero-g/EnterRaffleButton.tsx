@@ -16,7 +16,7 @@ export default function EnterRaffleButton({
   setState,
   account,
   validLock,
-  label = 'Enter Raffle',
+  label = 'Enter Sweepstakes',
 }: any) {
   const disclaimerRef: any = useRef()
   const [dropdown, setDropdown] = useState<boolean>(false)
