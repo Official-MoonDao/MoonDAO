@@ -6,12 +6,10 @@ import {
 } from '../../lib/google-sheets'
 import { useAccount } from '../../lib/use-wagmi'
 import { useVMOONEYLock } from '../../lib/ve-token'
-import MainCard from '../layout/MainCard'
 import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
+import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
-
-const lockCutoff = +new Date('2023-02-26T00:00:00')
 
 export default function Reservations() {
   const { data: account } = useAccount()
@@ -36,7 +34,7 @@ export default function Reservations() {
   function Cancel() {
     return (
       <button
-        className="border-n3green border-2 text-n3green hover:scale-[1.05] ease-in duration-150 w-1/3 rounded-2xl text-center py-2"
+        className="mt-4 tracking-wide btn text-gray-100 normal-case font-medium font-GoodTimes w-full bg-red-500 hover:bg-red-600 hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
         onClick={async () => {
           setState(0)
         }}
@@ -65,7 +63,7 @@ export default function Reservations() {
           </p>
         )}
         <button
-          className="border-n3blue border-2 text-n3blue hover:scale-[1.05] ease-in duration-150 w-1/3 rounded-2xl text-center py-2"
+          className="mt-4 tracking-wide btn text-gray-100 normal-case font-medium font-GoodTimes hover:bg-[orange] w-full bg-n3blue hover:text-white duration-[0.6s] ease-in-ease-out"
           onClick={async () => {
             let fullName, email
             if (state === 1) {
@@ -106,8 +104,8 @@ export default function Reservations() {
                 return setError('invalid-input')
               if (
                 !(await checkUserDataReservation({
-                  fullName,
-                  email,
+                  fullName: fullName.trim(),
+                  email: email.trim(),
                   walletAddress: account?.address,
                 }))
               ) {
@@ -142,7 +140,7 @@ export default function Reservations() {
   }, [vMooneyLock])
 
   return (
-    <MainCard title="Reservations">
+    <ReservationRaffleLayout title="Reservations">
       {state === 0 && (
         <StageContainer>
           <EnterRaffleButton
@@ -156,20 +154,20 @@ export default function Reservations() {
       {state === 1 && (
         <StageContainer>
           <InputContainer>
-            <label>
+            <label className="text-lg">
               {'Full Name:'}
               <input
-                className="flex flex-col text-black w-full rounded-md p-2"
+                className="mt-2 flex flex-col bg-slate-900 text-white w-full rounded-md p-2"
                 placeholder="first and last name"
                 ref={altNameInput}
               />
             </label>
           </InputContainer>
           <InputContainer>
-            <label>
+            <label className="text-lg">
               {'Email:'}
               <input
-                className="flex flex-col text-black w-full rounded-md p-2"
+                className="mt-2 flex flex-col bg-slate-900 text-white w-full rounded-md p-2"
                 placeholder="email address"
                 ref={altEmailInput}
               />
@@ -211,19 +209,19 @@ export default function Reservations() {
       )}
       {state === 3 && (
         <StageContainer>
-          <p className="text-n3blue ease-in duration-300">
+          <p className="mt-1 text-n3blue ease-in duration-300">
             You have succefully made a reservation!
           </p>
         </StageContainer>
       )}
       {state === 4 && (
         <StageContainer>
-          <p className="text-n3green ease-in duration-300">
+          <p className="mt-1 text-n3green ease-in duration-300">
             Oops, looks like you have already reserved a spot!
           </p>
         </StageContainer>
       )}
-    </MainCard>
+    </ReservationRaffleLayout>
   )
 }
 

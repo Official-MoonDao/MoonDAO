@@ -1,5 +1,6 @@
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useState } from 'react'
 
 export default function Product({
   product,
@@ -13,8 +14,17 @@ export default function Product({
   if (linkToStore)
     return (
       <div className="backdropBlur flex justify-center items-center">
-        <div className="flex flex-col m-4">
-          <h1 className="font-GoodTimes mx-4">{label}</h1>
+        <div className="flex flex-col m-2">
+          <div className="flex gap-4 w-full my-2">
+            <h1 className="font-GoodTimes">{label}</h1>
+            <Link href="/lifeship/detail">
+              <a
+                className={`block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
+              >
+                NFT Submission Details →
+              </a>
+            </Link>
+          </div>
           <div className="flex flex-col justify-center items-center">
             <Image
               className="rounded-2xl backdropBlur"
@@ -62,7 +72,7 @@ export default function Product({
               </button>
             </div>
             <button
-              className="border-style btn text-n3blue normal-case font-medium w-full bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out my-4"
+              className="font-GoodTimes border-style btn text-n3blue normal-case font-medium w-full bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out my-2"
               onClick={() => linkToStore()}
             >
               Send a File to Space!

@@ -6,7 +6,7 @@ export default function GradientLink({ text, href, textSize }: any) {
     return (
       <Link href={href}>
         <a
-          className={`text-${textSize} font-medium bg-gradient-to-r from-n3blue to-n3blue text-transparent bg-clip-text`}
+          className={`my-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
         >
           {text} →
         </a>
@@ -14,14 +14,13 @@ export default function GradientLink({ text, href, textSize }: any) {
     )
   } else {
     return (
-      <a
-        className={`text-${textSize} font-medium bg-gradient-to-r from-n3blue to-n3blue text-transparent bg-clip-text`}
-        href={href}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        {text} →
-      </a>
+      <button className="my-5 block">
+        <a
+          className={`text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
+        >
+          {text} →
+        </a>
+      </button>
     )
   }
 }
