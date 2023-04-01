@@ -43,9 +43,7 @@ export default function ZeroG({ userDiscordData }: any) {
             </p>
           </div>
           <p className="mt-5 font-RobotoMono leading-relaxed">
-            {`MoonDAO is organizing a ZeroG event at Johnson Space Center! Join astronauts Doug Hurley and Nicole Stott as we journey beyond the limits of Earth's gravity.
-Witness breathtaking views of our planet as you float and soar in a weightless environment. Start your journey to the Moon and experience the adventure of a lifetime with our ZeroG flight! 
-`}
+            {`Join Astronauts Doug Hurley and Nicole Stott on this one-of-a-kind opportunity to experience true weightlessness. The team’s Boeing 727 flies in parabolic arcs to create a weightless environment, allowing you to float, flip, and soar as if you were in space. Start training for a journey to the Moon and experience the adventure of a lifetime with our Zero-G flight!`}
           </p>
 
           <Link href="/zero-g/detail">
