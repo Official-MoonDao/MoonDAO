@@ -54,8 +54,7 @@ export default function ZeroG({ userDiscordData }: any) {
             </a>
           </Link>
         </div>
-        {/* <PurchasePortal validLock={validLock} /> */}
-
+        <PurchasePortal validLock={validLock} />
         <ZeroGRaffle
           userDiscordData={userDiscordData}
           router={router}
