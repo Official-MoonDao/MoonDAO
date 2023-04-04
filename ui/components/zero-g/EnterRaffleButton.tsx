@@ -22,11 +22,6 @@ export default function EnterRaffleButton({
   const [dropdown, setDropdown] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
   const { data: hasTicket } = useBalanceTicketZeroG(account?.address)
-
-  useEffect(() => {
-    console.log(hasTicket)
-  }, [hasTicket])
-
   if (dropdown) {
     return (
       <div className="flex flex-col justify-center items-center gap-4 mt-2">

@@ -20,12 +20,12 @@ export default function ZeroG({ userDiscordData }: any) {
     account?.address
   )
   const [validLock, setValidLock] = useState<boolean>()
-
   useEffect(() => {
     if (account && vMooneyLock && vMooneyLock[1] !== 0) {
       setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
     }
   }, [vMooneyLock, account])
+
   return (
     <div className="animate-fadeIn">
       <Head title="Zero-G Flight" />

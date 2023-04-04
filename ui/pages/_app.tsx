@@ -45,13 +45,13 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
       {client && (
         <WagmiConfig client={client}>
           <NftProvider fetcher={['ethers', { provider: externalProvider() }]}>
-            <SessionProvider session={session}>
-              <ErrorProvider>
+            <ErrorProvider>
+              <SessionProvider session={session}>
                 <Layout>
                   <Component {...pageProps} />
                 </Layout>
-              </ErrorProvider>
-            </SessionProvider>
+              </SessionProvider>
+            </ErrorProvider>
           </NftProvider>
         </WagmiConfig>
       )}
