@@ -11,7 +11,7 @@ import Reservations from '../../components/zero-g/Reservations'
 import ZeroGLayout from '../../components/zero-g/ZeroGLayout'
 import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
 
-const lockCutoff = +new Date('2023-01-09T00:00:00')
+const lockCutoff = +new Date(Date.now())
 
 export default function ZeroG({ userDiscordData }: any) {
   const router = useRouter()
@@ -21,9 +21,10 @@ export default function ZeroG({ userDiscordData }: any) {
   )
   const [validLock, setValidLock] = useState<boolean>()
   useEffect(() => {
-    if (account && vMooneyLock && vMooneyLock[1] !== 0) {
+    if (account && !vMooneyLockLoading && vMooneyLock && vMooneyLock[1] !== 0) {
       setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
     }
+    console.log(vMooneyLock)
   }, [vMooneyLock, account])
 
   return (
