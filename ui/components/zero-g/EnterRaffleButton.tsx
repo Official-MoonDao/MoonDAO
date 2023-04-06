@@ -37,7 +37,7 @@ export default function EnterRaffleButton({
               return setError('Please connect a wallet that has vMooney')
             if (!validLock) return setError('This wallet does not have vMooney')
             await hasTicket
-            if (+hasTicket.toString() === 1)
+            if (hasTicket && +hasTicket.toString() === 1)
               return setError('You have already entered the raffle!')
             setState(2)
           }}
