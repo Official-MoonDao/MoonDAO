@@ -24,7 +24,6 @@ export default function ZeroG({ userDiscordData }: any) {
     if (account && !vMooneyLockLoading && vMooneyLock && vMooneyLock[1] !== 0) {
       setValidLock(BigNumber.from(lockCutoff).lte(vMooneyLock[1].mul(1000)))
     }
-    console.log(vMooneyLock)
   }, [vMooneyLock, account])
 
   return (
