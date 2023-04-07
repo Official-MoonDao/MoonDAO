@@ -19,10 +19,8 @@ export default function ZeroG({ userDiscordData }: any) {
   )
   const [validLock, setValidLock] = useState<boolean>()
   useEffect(() => {
-    if (account && !vMooneyLockLoading && vMooneyLock && vMooneyLock[1] !== 0) {
-      setValidLock(
-        BigNumber.from(+new Date(Date.now())).lte(vMooneyLock[1].mul(1000))
-      )
+    if (account && !vMooneyLockLoading) {
+      setValidLock(vMooneyLock && vMooneyLock[0] != 0)
     }
   }, [vMooneyLock, account])
 
