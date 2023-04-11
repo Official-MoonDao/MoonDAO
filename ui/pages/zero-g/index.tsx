@@ -1,4 +1,3 @@
-import { BigNumber } from 'ethers'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -7,7 +6,6 @@ import { useAccount } from '../../lib/use-wagmi'
 import { useVMOONEYLock } from '../../lib/ve-token'
 import Head from '../../components/layout/Head'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
-import Reservations from '../../components/zero-g/Reservations'
 import ZeroGLayout from '../../components/zero-g/ZeroGLayout'
 import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
 
@@ -19,7 +17,7 @@ export default function ZeroG({ userDiscordData }: any) {
   )
   const [validLock, setValidLock] = useState<boolean>()
   useEffect(() => {
-    if (account && !vMooneyLockLoading) {
+    if (!vMooneyLockLoading && vMooneyLock) {
       setValidLock(vMooneyLock && vMooneyLock[0] != 0)
     }
   }, [vMooneyLock, account])

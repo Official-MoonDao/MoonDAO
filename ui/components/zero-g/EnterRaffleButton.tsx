@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useBalanceTicketZeroG } from '../../lib/zero-g-sweepstakes'
 
 function Button({ children, onClick }: any) {
@@ -16,12 +16,13 @@ export default function EnterRaffleButton({
   setState,
   account,
   validLock,
+  hasTicket,
   label = 'Enter Sweepstakes',
 }: any) {
   const disclaimerRef: any = useRef()
   const [dropdown, setDropdown] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
-  const { data: hasTicket } = useBalanceTicketZeroG(account?.address)
+
   if (dropdown) {
     return (
       <div className="flex flex-col justify-center items-center gap-4 mt-2">
@@ -36,7 +37,6 @@ export default function EnterRaffleButton({
             if (!account?.address)
               return setError('Please connect a wallet that has vMooney')
             if (!validLock) return setError('This wallet does not have vMooney')
-            await hasTicket
             if (hasTicket && +hasTicket.toString() === 1)
               return setError('You have already entered the raffle!')
             setState(2)

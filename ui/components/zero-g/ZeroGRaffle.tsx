@@ -4,13 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useWaitForTransaction } from 'wagmi'
 import { discordOauthUrl } from '../../lib/discord'
 import { checkUserDataRaffle, submitRaffleForm } from '../../lib/google-sheets'
-import { useAccount } from '../../lib/use-wagmi'
-import { useVMOONEYLock } from '../../lib/ve-token'
 import {
   useBalanceTicketZeroG,
   useMintTicketZeroG,
 } from '../../lib/zero-g-sweepstakes'
-import { BigNumber } from 'ethers/lib/ethers'
 import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
@@ -133,11 +130,11 @@ export default function ZeroGRaffle({
                 *please read the terms and conditions*
               </p>
             </div>
-
             <EnterRaffleButton
               setState={(stage: any) => setState(stage)}
               account={account}
               validLock={validLock}
+              hasTicket={hasTicket}
             />
           </StageContainer>
         )}
@@ -285,8 +282,19 @@ export default function ZeroGRaffle({
         {state === 5 && (
           <StageContainer>
             <h2 className="text-n3blue m-4 lg:text-lg">
-              Thanks for entering the raffle!
+              Thanks for entering the sweepstakes!
             </h2>
+            <button
+              className="my-4 border-2 rounded-2xl btn border-[#1DA1F2] text-[#1DA1F2] normal-case font-medium font-GoodTimes w-full  bg-transparent hover:bg-[#1DA1F2] hover:text-white duration-[0.6s] ease-in-ease-out"
+              onClick={async () => {
+                await signOut()
+                window.open(
+                  'https://twitter.com/intent/tweet?text=Just%20entered%20to%20win%20a%20free%20zero%20gravity%20flight%20with%20%40OfficialMoonDAO%20and%20their%20%23TickettoZeroG%20--%20claim%20yours%20here%20https%3A//app.moondao.com/zero-g%20%22%3EShare'
+                )
+              }}
+            >
+              Share on Twitter
+            </button>
             <Cancel />
           </StageContainer>
         )}
@@ -296,9 +304,7 @@ export default function ZeroGRaffle({
             <Cancel />
           </StageContainer>
         )}
-
-        {/*
-        DEV BUTTONS FOR STAGES, REMOVE BEFORE DEPLOY
+        {/* DEV BUTTONS FOR STAGES, REMOVE BEFORE DEPLOY
         <div className="absolute left-[600px] flex flex-col gap-4 bg-[blue] w-3/4 text-center my-4">
           <h1>Dev Buttons </h1>
           <div className="flex gap-[50%]">
@@ -309,7 +315,7 @@ export default function ZeroGRaffle({
               next stage
             </button>
           </div>
-        </div> */}
+        </div>*/}
       </div>
     </ReservationRaffleLayout>
   )
