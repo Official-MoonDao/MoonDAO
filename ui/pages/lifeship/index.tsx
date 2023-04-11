@@ -111,23 +111,8 @@ export default function Lifeship({ products = [] }: any) {
             </h1>
             {state === 0 && (
               <div className="flex flex-col justify-center items-center text-left gap-4 md:w-full w-full backdropBlur p-4">
-                <p className="font-RobotoMono">
-                  {
-                    'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through '
-                  }
-                  <span>
-                    <button
-                      className="text-n3blue hover:scale-[1.025] ease-in-ease-out duration-300"
-                      onClick={() => window.open('https://lifeship.com/')}
-                    >
-                      {'Lifeship'}
-                    </button>
-                  </span>
-                </p>
                 <p className="max-w-2xl font-RobotoMono">
-                  {
-                    'Connect with an international community dedicated to a permanent settlement on the Moon and learn about participating in Astronaut and Zero G Flights!'
-                  }
+                  {`Send DNA or ashes to the moon, leaving your legacy in the universe! MoonDAO is partnering with Lifeship to send a time capsule of life on Earth to the Moon!`}
                 </p>
                 <hr className="w-full border-n3blue border-2"></hr>
 
@@ -182,6 +167,19 @@ export default function Lifeship({ products = [] }: any) {
                       Checkout
                     </Button>
                     <hr className="w-full border-n3blue border-2"></hr>
+                    <p className="font-RobotoMono">
+                      {
+                        'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through '
+                      }
+                      <span>
+                        <button
+                          className="text-n3blue hover:scale-[1.025] ease-in-ease-out duration-300"
+                          onClick={() => window.open('https://lifeship.com/')}
+                        >
+                          {'Lifeship'}
+                        </button>
+                      </span>
+                    </p>
                     <Product
                       product={products[2]}
                       label="NFT kit"
