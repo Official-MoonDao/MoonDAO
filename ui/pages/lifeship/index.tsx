@@ -134,14 +134,6 @@ export default function Lifeship({ products = [] }: any) {
                 {products[0] && (
                   <div className="flex flex-col gap-8 w-full">
                     <Product
-                      product={products[2]}
-                      label="NFT kit"
-                      linkToStore={() =>
-                        window.open(products[2].onlineStoreUrl)
-                      }
-                    />
-                    <hr className="w-full border-n3blue border-2"></hr>
-                    <Product
                       product={products[0]}
                       label="DNA kit"
                       quantity={quantities.dna}
@@ -157,39 +149,48 @@ export default function Lifeship({ products = [] }: any) {
                         setQuantities({ ...quantities, ashes: q })
                       }
                     />
+
+                    {notification === 'no-quantity' && (
+                      <p className="text-n3green ease-in duration-300 backdropBlur">
+                        Please select a kit!
+                      </p>
+                    )}
+                    <Button
+                      className="font-GoodTimes"
+                      onClick={async () => {
+                        if (quantities.dna <= 0 && quantities.ashes <= 0)
+                          return setNotification('no-quantity')
+                        try {
+                          await fetch('/api/shopify/lifeship/checkout', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              quantityDNA: quantities.dna,
+                              quantityAshes: quantities.ashes,
+                              walletAddress: account?.address,
+                            }),
+                          })
+                            .then((res) => res.json())
+                            .then((data) => {
+                              window.open(data.checkoutURL)
+                              reset()
+                            })
+                        } catch {
+                          console.error('Problem submitting shopify checkout')
+                        }
+                      }}
+                    >
+                      Checkout
+                    </Button>
+                    <hr className="w-full border-n3blue border-2"></hr>
+                    <Product
+                      product={products[2]}
+                      label="NFT kit"
+                      linkToStore={() =>
+                        window.open(products[2].onlineStoreUrl)
+                      }
+                    />
                   </div>
                 )}
-                {notification === 'no-quantity' && (
-                  <p className="text-n3green ease-in duration-300 backdropBlur">
-                    Please select a kit!
-                  </p>
-                )}
-                <Button
-                  className="font-GoodTimes"
-                  onClick={async () => {
-                    if (quantities.dna <= 0 && quantities.ashes <= 0)
-                      return setNotification('no-quantity')
-                    try {
-                      await fetch('/api/shopify/lifeship/checkout', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                          quantityDNA: quantities.dna,
-                          quantityAshes: quantities.ashes,
-                          walletAddress: account?.address,
-                        }),
-                      })
-                        .then((res) => res.json())
-                        .then((data) => {
-                          window.open(data.checkoutURL)
-                          reset()
-                        })
-                    } catch {
-                      console.error('Problem submitting shopify checkout')
-                    }
-                  }}
-                >
-                  Checkout
-                </Button>
               </div>
             )}
           </div>
