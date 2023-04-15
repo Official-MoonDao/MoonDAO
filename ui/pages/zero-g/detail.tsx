@@ -1,9 +1,12 @@
+import Head from 'next/head'
 import { useRouter } from 'next/router'
+import WebsiteHead from '../../components/layout/Head'
 
 export default function ZeroGDetail() {
   const router = useRouter()
   return (
     <div className="flex flex-col justify-center items-center text-center w-[80%] card rounded-[15px] border-[0.5px] border-white bg-black bg-opacity-70 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%] relative right-4">
+      <WebsiteHead title="Zero-G Flight Details" />
       <h1 className="font-GoodTimes text-3xl lg:text-4xl my-4">
         Zero-G Flight Details
       </h1>

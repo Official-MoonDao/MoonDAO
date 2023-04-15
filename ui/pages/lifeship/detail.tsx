@@ -1,10 +1,12 @@
 import { useRouter } from 'next/router'
+import WebsiteHead from '../../components/layout/Head'
 import MainCard from '../../components/layout/MainCard'
 
 export default function LifeshipNFTDetail() {
   const router = useRouter()
   return (
     <div className="animate-fadeIn">
+      <WebsiteHead title="Lifeship NFT Details" />
       <MainCard title="Lifeship NFT Details">
         <p>{`MoonDAO is partnering with lifeship to send NFTs to space! Please upload a file and complete the checkout. You will be emailed instrucitons to claim your NFT.`}</p>
         <div className="w-full flex justify-center">

@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
 import RuleTitle from '../../components/zero-g/RuleTitle'
+import WebsiteHead from '../../components/layout/Head'
+
 
 export default function ZeroGDetail({ slug }: any) {
   const altEntryRef: any = useRef()
@@ -35,6 +37,7 @@ export default function ZeroGDetail({ slug }: any) {
       className="flex flex-col justify-center items-center text-center md:w-[80%] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-70 text-white font-RobotoMono shadow-md overflow-visible p-[5%]"
       ref={mainRef}
     >
+      <WebsiteHead title="Zero-G Sweepstakes" />
       <h1
         className={`mt-5 card-title text-center font-GoodTimes text-3xl lg:text-4xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
       >

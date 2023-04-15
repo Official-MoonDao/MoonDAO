@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { getUserDiscordData } from '../../lib/discord'
 import { useAccount } from '../../lib/use-wagmi'
 import { useVMOONEYLock } from '../../lib/ve-token'
-import Head from '../../components/layout/Head'
+import WebsiteHead from '../../components/layout/Head'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
 import ZeroGLayout from '../../components/zero-g/ZeroGLayout'
 import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
@@ -24,7 +24,7 @@ export default function ZeroG({ userDiscordData }: any) {
 
   return (
     <div className="animate-fadeIn">
-      <Head title="Zero-G Flight" />
+      <WebsiteHead title="Zero-G Flight" />
       <ZeroGLayout className="gap-4 relative" title="Zero-G Flight">
         <div className="mt-3 font-RobotoMono">
           <div className="flex">
