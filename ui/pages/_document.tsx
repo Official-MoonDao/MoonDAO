@@ -24,7 +24,6 @@ class WebsiteDocument extends Document {
 
           <link rel="icon" href="/favicon.ico" />
         </Head>
-
         <body className="overflow-hidden">
           <Main />
           <NextScript />

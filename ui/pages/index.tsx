@@ -19,8 +19,8 @@ export default function Index() {
   const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">
-      <Scene />
       <Head title="Home" />
+      <Scene />
       <div className="flex flex-col max-w-3xl">
         <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
           {t('indexTitle')}

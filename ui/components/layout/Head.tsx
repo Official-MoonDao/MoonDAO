@@ -24,6 +24,12 @@ export default function WebsiteHead({ title }: any) {
       <meta property="og:image" content={image} key="meta-ogimage" />
       <meta property="og:type" content="website" key="meta-ogweb" />
       <meta
+        property="og:url"
+        content="https://app.moondao.com/"
+        key="meta-ogurl"
+      />
+      <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
+      <meta
         name="twitter:title"
         content={`MoonDAO | ${title}`}
         key="meta-twtitle"
