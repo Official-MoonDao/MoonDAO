@@ -1,4 +1,3 @@
-import Head from 'next/head'
 import { useRouter } from 'next/router'
 import WebsiteHead from '../../components/layout/Head'
 

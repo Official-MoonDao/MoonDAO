@@ -3,11 +3,11 @@ import { GetStaticPaths, GetStaticProps } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
-import RuleTitle from '../../components/zero-g/RuleTitle'
 import WebsiteHead from '../../components/layout/Head'
-
+import RuleTitle from '../../components/zero-g/RuleTitle'
 
 export default function ZeroGDetail({ slug }: any) {
+  const router = useRouter()
   const altEntryRef: any = useRef()
   const mainRef: any = useRef()
   useEffect(() => {
@@ -31,7 +31,6 @@ export default function ZeroGDetail({ slug }: any) {
         mainRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [altEntryRef, mainRef])
-  const router = useRouter()
   return (
     <div
       className="flex flex-col justify-center items-center text-center md:w-[80%] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-70 text-white font-RobotoMono shadow-md overflow-visible p-[5%]"
