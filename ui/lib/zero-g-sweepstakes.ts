@@ -5,7 +5,7 @@ CONTRACT: https://etherscan.io/address/0xB255c74F8576f18357cE6184DA033c6d93C7189
 import vMooneySweepstakesABI from '../abis/vMooneySweepstakes.json'
 import { useContractRead, useContractWrite } from './use-wagmi'
 
-const contractParams = {
+export const contractParams = {
   addressOrName: '0xB255c74F8576f18357cE6184DA033c6d93C71899', //mainnet
   contractInterface: vMooneySweepstakesABI,
 }
@@ -25,3 +25,5 @@ export function useBalanceTicketZeroG(address: string) {
     enabled: !!address,
   })
 }
+
+export function getSupply() {}

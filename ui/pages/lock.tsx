@@ -24,6 +24,7 @@ import TimeRange from '../components/TimeRange'
 import GradientLink from '../components/layout/GradientLink'
 import Head from '../components/layout/Head'
 import MainCard from '../components/layout/MainCard'
+import UniswapMooneySwap from '../components/uniswap/UniswapMooneySwap'
 import ActionButton from '../components/wagmi/ActionButton'
 import { AllowanceWarning } from '../components/wagmi/AllowanceWarning'
 import LockPresets from '../components/wagmi/LockPresets'
@@ -174,7 +175,6 @@ export default function Lock() {
   return (
     <div className="animate-fadeIn">
       <Head title="$vMOONEY" />
-
       <MainCard title={t('lockCardTitle')}>
         <p className="mb-4">
           {t('lockTitle')}{' '}
@@ -450,7 +450,8 @@ export default function Lock() {
                         (hasLock &&
                           ((canIncrease.amount && canIncrease.time) ||
                             (!canIncrease.amount && !canIncrease.time))) ||
-                        (lockAmount &&
+                        (account &&
+                          lockAmount &&
                           parseFloat(lockAmount) >
                             parseFloat(
                               ethers.utils.formatEther(

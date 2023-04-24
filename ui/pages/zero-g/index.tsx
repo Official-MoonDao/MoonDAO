@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { getUserDiscordData } from '../../lib/discord'
+import { getSweepstakesSupply } from '../../lib/opensea'
 import { useAccount } from '../../lib/use-wagmi'
 import { useVMOONEYLock } from '../../lib/ve-token'
 import WebsiteHead from '../../components/layout/Head'
@@ -16,11 +17,19 @@ export default function ZeroG({ userDiscordData }: any) {
     account?.address
   )
   const [validLock, setValidLock] = useState<boolean>()
+  const [sweepstakesSupply, setSweepstakesSupply] = useState<string>('')
   useEffect(() => {
     if (!vMooneyLockLoading && vMooneyLock) {
       setValidLock(vMooneyLock && vMooneyLock[0] != 0)
     }
   }, [vMooneyLock, account])
+
+  useEffect(() => {
+    ;(async () => {
+      const supply: any = await getSweepstakesSupply()
+      setSweepstakesSupply(supply)
+    })()
+  }, [])
 
   return (
     <div className="animate-fadeIn">
@@ -56,6 +65,7 @@ export default function ZeroG({ userDiscordData }: any) {
           router={router}
           validLock={validLock}
           account={account}
+          supply={sweepstakesSupply}
         />
       </ZeroGLayout>
     </div>
