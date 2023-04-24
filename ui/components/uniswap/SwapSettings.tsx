@@ -1,5 +1,4 @@
 export default function SwapSettings({
-  onClose,
   slippageAmt,
   setSlippageAmt,
   deadlineMinutes,

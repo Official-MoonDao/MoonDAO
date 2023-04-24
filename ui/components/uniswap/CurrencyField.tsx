@@ -1,4 +1,3 @@
-import { filter } from 'cypress/types/bluebird'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { TOKENS } from '../../lib/uniswap-config'

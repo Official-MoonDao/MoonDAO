@@ -1,6 +1,5 @@
 import { CogIcon } from '@heroicons/react/outline'
-import { ethers } from 'ethers'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useProvider, useSigner } from 'wagmi'
 import { useBalance } from 'wagmi'
 import { getPrice, swapForMooney } from '../../lib/uniswap-alpha-router'
