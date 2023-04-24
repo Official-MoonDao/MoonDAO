@@ -5,7 +5,7 @@ import {
   SwapType,
 } from '@uniswap/smart-order-router'
 import { FeeAmount } from '@uniswap/v3-sdk'
-import { ethers, BigNumber, Contract, Transaction } from 'ethers'
+import { ethers, BigNumber, Contract } from 'ethers'
 import JSBI from 'jsbi'
 import ERC20 from '../abis/ERC20.json'
 import V3_POOL_ABI from '../abis/UniswapPoolV3.json'
@@ -58,7 +58,7 @@ function swapFromETH(
   } catch (err) {
     console.log(err)
   }
-  const transaction: Transaction = {
+  const transaction = {
     chainId: chainId,
     to: V3_SWAP_ROUTER_ADDRESS,
     from: walletAddress,
