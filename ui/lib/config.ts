@@ -11,7 +11,7 @@ interface Config {
   vMOONEYRequiredStake: number
 }
 
-const chain = process.env.NEXT_PUBLIC_CHAIN || 'goerli'
+const chain = process.env.NEXT_PUBLIC_CHAIN || 'sepolia'
 const defaultConfig =
   require(`../../contracts/deployments/${chain}.json`) as DeploymentConfig
 const config: Config = {

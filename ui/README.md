@@ -16,7 +16,7 @@ yarn install
 
 Add variables to your local development environment:
 ```
-cp .env.mainnet .env.local
+cp .env.sepolia .env.local
 ```
 
 Build:
