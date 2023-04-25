@@ -34,11 +34,11 @@ yarn dev
 
 Once you go to http://localhost:42069, you will see the message "uses Sepolia as its preferred network":
 
-> <img width="966" alt="network error" src="https://drive.google.com/file/d/1YL3NPwEewUSA-wQtXcqXrNMZIy-5P-az/preview">
+> <img width="966" alt="network error" src="https://ipfs.io/ipfs/QmeX9d5vk3FhGvRd78UWNGq9UEQExWu7HF6FL3LfhytcL5/">
 
 Solve this by switching to the _Sepolia Test Network_ in MetaMask:
 
-> <img width="328" alt="set network" src="https://drive.google.com/file/d/1qXtHTMXdbeRhEgjKtoVhxYp_HEX74XQg/preview">
+> <img width="328" alt="set network" src="https://ipfs.io/ipfs/QmTR1fPPzr9hr4U8QYpyGxv43YUWVNPb3ANRk6wpbRf23V/">
 
 
 ## Run the smart contracts locally
