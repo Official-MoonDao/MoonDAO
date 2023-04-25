@@ -20,7 +20,7 @@ The code in this repository is structured into two main parts:
 
 See [ui/README.md](ui/README.md)
 
-## Testing against the Goerli Ethereum testnet
+## Testing against the Sepolia Ethereum testnet
 
 Add sepolia testnet variables to your local development environment:
 ```
@@ -34,11 +34,11 @@ yarn dev
 
 Once you go to http://localhost:42069, you will see the message "uses Sepolia as its preferred network":
 
-> <img width="966" alt="network error" src="/ui/public/screenshot-network-error.png">
+> <img width="966" alt="network error" src="https://drive.google.com/file/d/1YL3NPwEewUSA-wQtXcqXrNMZIy-5P-az/preview">
 
 Solve this by switching to the _Sepolia Test Network_ in MetaMask:
 
-> <img width="328" alt="set network" src="/ui/public/screenshot-network-error.png">
+> <img width="328" alt="set network" src="https://drive.google.com/file/d/1qXtHTMXdbeRhEgjKtoVhxYp_HEX74XQg/preview">
 
 
 ## Run the smart contracts locally
