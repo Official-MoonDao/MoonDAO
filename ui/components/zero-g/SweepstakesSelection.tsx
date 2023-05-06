@@ -10,7 +10,7 @@ import {
 } from '../../lib/zero-g-sweepstakes'
 import vMooneySweepstakesABI from '../../abis/vMooneySweepstakes.json'
 
-const requestIds = 30
+const requestIds = 10
 
 const vMooneySweepstakes_Sepolia_totalSupply = 5 //opensea doesn't support sepolia
 
