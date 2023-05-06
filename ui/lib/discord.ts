@@ -18,11 +18,11 @@ export async function getUserDiscordData(code: any) {
   const productionUri = `https://app.moondao.com/zero-g`
   try {
     const token = await getToken(code, productionUri)
-    const admin = await oauth.getUser(token.access_token)
+    const user = await oauth.getUser(token.access_token)
     return {
-      id: admin.id,
-      username: admin.username,
-      email: admin.email,
+      id: user.id,
+      username: user.username,
+      email: user.email,
     }
   } catch (err: any) {
     return err.message

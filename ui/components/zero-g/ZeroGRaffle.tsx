@@ -12,6 +12,7 @@ import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
+import SweepstakesSelection from './SweepstakesSelection'
 import SweepstakesSupply from './SweepstakesSupply'
 
 /*
@@ -133,12 +134,13 @@ export default function ZeroGRaffle({
                 *please read the terms and conditions*
               </p>
             </div>
-            <EnterRaffleButton
+            {/* <EnterRaffleButton
               setState={(stage: any) => setState(stage)}
               account={account}
               validLock={validLock}
               hasTicket={hasTicket}
-            />
+            /> */}
+            <SweepstakesSelection supply={supply} account={account}/>
           </StageContainer>
         )}
         {state === 1 && (

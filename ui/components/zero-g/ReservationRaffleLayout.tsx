@@ -16,7 +16,7 @@ export default function ReservationRaffleLayout({
           <div
             className={`card min-w-80 md:w-full rounded-2xl border-white border-[0.5px] bg-black bg-opacity-50  text-white font-RobotoMono shadow-md overflow-visible lg:px-3`}
           >
-            <div className={`card-body items-stretch ${className}`}>
+            <div className={`card-body items-stretch ${className} p-[5%]`}>
               <h2
                 className={`card-title text-center font-display tracking-wider text-2xl lg:text-3xl font-semibold text-yellow-50`}
               >

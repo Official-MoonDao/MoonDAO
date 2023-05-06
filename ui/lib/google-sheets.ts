@@ -1,6 +1,4 @@
-import { errorMonitor } from 'events'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
-import { walkUpBindingElementsAndPatterns } from 'typescript'
 
 let doc: any
 //Init GoogleSheets
@@ -28,7 +26,7 @@ async function appendSpreadsheet(row: any, sheetId: string) {
     console.error('google-sheets: append spreadsheet', e.message)
   }
 }
-//zero-g raffle
+//zero-g raffle submit raffle form
 export async function submitRaffleForm({
   twitterName,
   userDiscordData,
@@ -43,10 +41,9 @@ export async function submitRaffleForm({
     Email: email,
     Date: new Date(Date.now()).toDateString(),
   }
-  console.log(newRow)
   await appendSpreadsheet(newRow, '0')
 }
-//zero-g raffle
+//zero-g raffle check user data
 export async function checkUserDataRaffle({
   twitterName,
   userDiscordData,
@@ -70,6 +67,29 @@ export async function checkUserDataRaffle({
     console.error('google-sheets: checkUserDataRaffle', err.message)
   }
 }
+//zero-g raffle get user data
+export async function getUserDataRaffle(walletAddress: string) {
+  try {
+    if (!doc) await spreadsheetAuth()
+    await doc.loadInfo()
+    const sheet = await doc.sheetsById['596388473']
+    const rows = await sheet.getRows()
+    const userData = await rows.find(
+      (row: any) => row.WalletAddress === walletAddress
+    )
+    return userData
+  } catch (err: any) {
+    console.error('google-sheets: getUserDataRaffle', err.message)
+    if (
+      err.message.startsWith(
+        "Google API error - [429] Quota exceeded for quota metric 'Read requests' and limit 'Read requests per minute per user' of service 'sheets.googleapis.com' for consumer '"
+      )
+    ) {
+      return 'rate limit'
+    }
+  }
+}
+
 //zero-g reservation
 export async function checkUserDataReservation({
   fullName,

@@ -3,11 +3,13 @@ const zeroAddress = '0x0000000000000000000000000000000000000000'
 interface DeploymentConfig {
   MOONEYToken: string
   vMOONEYToken: string
+  vMooneySweepstakesZeroG_v1: string
 }
 
 interface Config {
   MOONEYToken: string
   vMOONEYToken: string
+  vMooneySweepstakesZeroG: string
   vMOONEYRequiredStake: number
 }
 
@@ -25,8 +27,16 @@ const config: Config = {
     zeroAddress,
   vMOONEYRequiredStake:
     Number(process.env.NEXT_PUBLIC_VMOONEY_REQUIRED_STAKE) || 1,
+  vMooneySweepstakesZeroG:
+    process.env.NEXT_PUBLIC_SWEEPSTAKES_ADDRESS ||
+    defaultConfig.vMooneySweepstakesZeroG_v1,
 }
 
 console.log(config)
 
-export const { MOONEYToken, vMOONEYToken, vMOONEYRequiredStake } = config
+export const {
+  MOONEYToken,
+  vMOONEYToken,
+  vMooneySweepstakesZeroG,
+  vMOONEYRequiredStake,
+} = config
