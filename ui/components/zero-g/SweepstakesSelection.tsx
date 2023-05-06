@@ -103,7 +103,7 @@ export default function SweepstakesSelection({ supply, account }: any) {
         await getWinners()
       })()
     }
-  }, [])
+  }, [selectionData])
 
   useEffect(() => {
     ;(async () => {
