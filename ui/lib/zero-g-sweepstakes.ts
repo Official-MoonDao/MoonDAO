@@ -24,7 +24,7 @@ export function useMintTicketZeroG() {
 export function useRandomSelection() {
   return useContractWrite(contractParams, 'chooseWinner', {
     overrides: {
-      gasLimit: 300000
+      gasLimit: 1000000
     },
   })
 }
