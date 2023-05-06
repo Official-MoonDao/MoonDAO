@@ -44,7 +44,6 @@ export default function SweepstakesSelection({ supply, account }: any) {
     )
     const winnersData: any = []
     const disqualifiedWinners: any = []
-    const duplicateWinners: any = []
     for (let i = 0; i < requestIds; i++) {
       //get random word for id
       try {
@@ -69,9 +68,7 @@ export default function SweepstakesSelection({ supply, account }: any) {
               await getWinners(true)
             }, 5000)
           }
-          if (winnersData.some((w: any) => w.address === winnerAddress)) {
-            duplicateWinners.push(winnerAddress)
-          } else if (
+          if (
             winnerData.DiscUsername !== '' &&
             winnerData.DiscUsername !== '' &&
             winnerData.TwitterDisplayName !== '' &&
@@ -188,13 +185,6 @@ export default function SweepstakesSelection({ supply, account }: any) {
               }
             >{`${currWinner.slice(0, 6)}...${currWinner.slice(-4)}`}</button>
           </div>
-
-          <p className="text-n3green">
-            {disqualifiedWinners.includes(currWinner) &&
-              'The current winner has been disqualified for not authenticating discord & twitter accounts.'}
-            {duplicateWinners.includes(currWinner) &&
-              'The current winner has already been selected'}
-          </p>
         </div>
       )}
       <div className="flex flex-col gap-2 overflow-y-scroll h-[400px]">
