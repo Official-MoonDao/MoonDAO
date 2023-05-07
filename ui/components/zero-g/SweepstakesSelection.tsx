@@ -24,9 +24,6 @@ export default function SweepstakesSelection({ supply, account }: any) {
   const { data: currWinner }: any = useCurrentWinner()
 
   const { data: selectionData, write: randomSelection } = useRandomSelection()
-  const provider = new ethers.providers.JsonRpcProvider(
-    process.env.NEXT_PUBLIC_INFURA_URL
-  )
   useSweepstakesEvent(setEvent)
 
   const totalTokenIds =
@@ -35,6 +32,9 @@ export default function SweepstakesSelection({ supply, account }: any) {
       : vMooneySweepstakes_Mainnet_totalSupply
 
   async function getWinners(loop = false) {
+    const provider = new ethers.providers.JsonRpcProvider(
+      process.env.NEXT_PUBLIC_INFURA_URL
+    )
     setLoading(true)
     const contract = new Contract(
       vMooneySweepstakesZeroG,
@@ -66,7 +66,6 @@ export default function SweepstakesSelection({ supply, account }: any) {
               await getWinners(true)
             }, 5000)
           }
-          console.log(winnerData);
 
           winnersData.push({
             discordUsername: winnerData?.DiscUsername,
@@ -88,6 +87,7 @@ export default function SweepstakesSelection({ supply, account }: any) {
 
   useEffect(() => {
     if (!winners[0]) {
+      console.log(winners)
       ;(async () => {
         await getWinners()
       })()
