@@ -12,7 +12,8 @@ import vMooneySweepstakesABI from '../../abis/vMooneySweepstakes.json'
 
 const requestIds = 10
 
-const vMooneySweepstakes_Sepolia_totalSupply = 5 //opensea doesn't support sepolia
+const vMooneySweepstakes_Sepolia_totalSupply = 5
+const vMooneySweepstakes_Mainnet_totalSupply = 19 //# of holders at time of sweepstakes deadline
 
 export default function SweepstakesSelection({ supply, account }: any) {
   const [winners, setWinners]: any = useState([])
@@ -31,7 +32,7 @@ export default function SweepstakesSelection({ supply, account }: any) {
   const totalTokenIds =
     process.env.NEXT_PUBLIC_CHAIN === 'sepolia'
       ? vMooneySweepstakes_Sepolia_totalSupply
-      : supply
+      : vMooneySweepstakes_Mainnet_totalSupply
 
   async function getWinners(loop = false) {
     setLoading(true)
@@ -41,7 +42,6 @@ export default function SweepstakesSelection({ supply, account }: any) {
       provider
     )
     const winnersData: any = []
-    const disqualifiedWinners: any = []
     for (let i = 0; i < requestIds; i++) {
       //get random word for id
       try {
