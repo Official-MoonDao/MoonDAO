@@ -72,7 +72,8 @@ export async function getUserDataRaffle(walletAddress: string) {
   try {
     if (!doc) await spreadsheetAuth()
     await doc.loadInfo()
-    const sheet = await doc.sheetsById['596388473']
+    const sheet = await doc.sheetsById['0']
+
     const rows = await sheet.getRows()
     const userData = await rows.find(
       (row: any) => row.WalletAddress === walletAddress

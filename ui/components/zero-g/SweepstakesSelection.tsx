@@ -66,6 +66,7 @@ export default function SweepstakesSelection({ supply, account }: any) {
               await getWinners(true)
             }, 5000)
           }
+          console.log(winnerData);
 
           winnersData.push({
             discordUsername: winnerData?.DiscUsername,
