@@ -17,19 +17,14 @@ export default function ZeroG({ userDiscordData }: any) {
     account?.address
   )
   const [validLock, setValidLock] = useState<boolean>()
-  const [sweepstakesSupply, setSweepstakesSupply] = useState<string>('')
+
+  const sweepstakesSupply = 19
+
   useEffect(() => {
     if (!vMooneyLockLoading && vMooneyLock) {
       setValidLock(vMooneyLock && vMooneyLock[0] != 0)
     }
   }, [vMooneyLock, account])
-
-  useEffect(() => {
-    ;(async () => {
-      const supply: any = await getSweepstakesSupply()
-      setSweepstakesSupply(supply)
-    })()
-  }, [])
 
   return (
     <div className="animate-fadeIn">

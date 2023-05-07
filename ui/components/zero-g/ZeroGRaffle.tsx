@@ -8,7 +8,6 @@ import {
   useBalanceTicketZeroG,
   useMintTicketZeroG,
 } from '../../lib/zero-g-sweepstakes'
-import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'

@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { useBalanceTicketZeroG } from '../../lib/zero-g-sweepstakes'
 
 function Button({ children, onClick }: any) {
   return (

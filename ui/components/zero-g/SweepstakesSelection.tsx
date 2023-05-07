@@ -10,14 +10,13 @@ import {
 } from '../../lib/zero-g-sweepstakes'
 import vMooneySweepstakesABI from '../../abis/vMooneySweepstakes.json'
 
-const requestIds = 30
+const requestIds = 10
 
-const vMooneySweepstakes_Sepolia_totalSupply = 5 //opensea doesn't support sepolia
+const vMooneySweepstakes_Sepolia_totalSupply = 5
+const vMooneySweepstakes_Mainnet_totalSupply = 19 //# of holders at time of sweepstakes deadline
 
 export default function SweepstakesSelection({ supply, account }: any) {
   const [winners, setWinners]: any = useState([])
-  const [disqualifiedWinners, setDisqualifiedWinners]: any = useState([])
-  const [duplicateWinners, setDuplicateWinners]: any = useState([])
 
   const [loading, setLoading] = useState(false)
   const [event, setEvent]: any = useState()
@@ -33,7 +32,7 @@ export default function SweepstakesSelection({ supply, account }: any) {
   const totalTokenIds =
     process.env.NEXT_PUBLIC_CHAIN === 'sepolia'
       ? vMooneySweepstakes_Sepolia_totalSupply
-      : supply
+      : vMooneySweepstakes_Mainnet_totalSupply
 
   async function getWinners(loop = false) {
     setLoading(true)
@@ -43,8 +42,6 @@ export default function SweepstakesSelection({ supply, account }: any) {
       provider
     )
     const winnersData: any = []
-    const disqualifiedWinners: any = []
-    const duplicateWinners: any = []
     for (let i = 0; i < requestIds; i++) {
       //get random word for id
       try {
@@ -69,28 +66,20 @@ export default function SweepstakesSelection({ supply, account }: any) {
               await getWinners(true)
             }, 5000)
           }
-          if (winnersData.some((w: any) => w.address === winnerAddress)) {
-            duplicateWinners.push(winnerAddress)
-          } else if (
-            winnerData.DiscUsername !== '' &&
-            winnerData.DiscUsername !== '' &&
-            winnerData.TwitterDisplayName !== '' &&
-            winnerData.Email !== ''
-          ) {
-            winnersData.push({
-              discordUsername: winnerData.DiscUsername,
-              address: winnerAddress,
-              tokenId: winningTokenId,
-              id: i,
-            })
-          } else await disqualifiedWinners.push(winnerAddress)
+          console.log(winnerData);
+
+          winnersData.push({
+            discordUsername: winnerData?.DiscUsername,
+            discordId: winnerData?.DiscID,
+            address: winnerAddress,
+            tokenId: winningTokenId,
+            id: i,
+          })
         }
       } catch (err) {
         // console.log('No matching request id', err)
       }
       await setWinners([...winnersData.sort((a: any, b: any) => a.id - b.id)])
-      setDisqualifiedWinners(disqualifiedWinners)
-      setDuplicateWinners(duplicateWinners)
       setTimeout(() => {
         setLoading(false)
       }, 1000)
@@ -103,7 +92,7 @@ export default function SweepstakesSelection({ supply, account }: any) {
         await getWinners()
       })()
     }
-  }, [])
+  }, [selectionData])
 
   useEffect(() => {
     ;(async () => {
@@ -112,6 +101,44 @@ export default function SweepstakesSelection({ supply, account }: any) {
   }, [event])
 
   function Winner({ winner, i }: any) {
+    if ((winner && !winner.discordUsername) || !winner.discordId) {
+      return (
+        <div
+          className={`flex flex-col rounded-md p-4 bg-gradient-to-tr from-n3green to-red-500 text-black divide-y-2 divide-black`}
+        >
+          {!loading ? (
+            <>
+              <h1 className="text-[125%]">{`Winner #${10 - i}`}</h1>
+              <div className="flex">
+                <strong>Discord Username:</strong> <p>{'none'}</p>
+              </div>
+              <div className="flex">
+                <strong>Token ID:</strong>
+
+                <p>{winner.tokenId}</p>
+              </div>
+              <div className="flex">
+                <strong>Address:</strong>
+
+                <button
+                  onClick={() =>
+                    window.open(
+                      `https://etherscan.io/address/${winner?.address}`
+                    )
+                  }
+                >
+                  {winner.address.slice(0, 6) +
+                    '...' +
+                    winner.address.slice(-4)}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div>loading</div>
+          )}
+        </div>
+      )
+    }
     return (
       <div
         className={`flex flex-col rounded-md p-4 bg-gradient-to-tr from-n3blue to-amber-200 text-black divide-y-2 divide-black ${
@@ -188,13 +215,6 @@ export default function SweepstakesSelection({ supply, account }: any) {
               }
             >{`${currWinner.slice(0, 6)}...${currWinner.slice(-4)}`}</button>
           </div>
-
-          <p className="text-n3green">
-            {disqualifiedWinners.includes(currWinner) &&
-              'The current winner has been disqualified for not authenticating discord & twitter accounts.'}
-            {duplicateWinners.includes(currWinner) &&
-              'The current winner has already been selected'}
-          </p>
         </div>
       )}
       <div className="flex flex-col gap-2 overflow-y-scroll h-[400px]">
