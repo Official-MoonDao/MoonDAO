@@ -192,8 +192,11 @@ export default function Layout({ children }: any) {
         </a>
         {dropdown && (
           <div className="flex flex-col">
-            {dropdownItem.items.map((item: any) => (
-              <div className="flex justify-left w-full">
+            {dropdownItem.items.map((item: any, i: number) => (
+              <div
+                key={'dropdownItem' + i}
+                className="flex justify-left w-full"
+              >
                 <NavLink item={item} dropdown />
               </div>
             ))}
