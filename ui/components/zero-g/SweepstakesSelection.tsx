@@ -115,7 +115,6 @@ export default function SweepstakesSelection({ supply, account }: any) {
               await getWinners(true)
             }, 5000)
           }
-          console.log(winnerData)
 
           winnersData.push({
             discordUsername: winnerData?.DiscUsername,
@@ -133,21 +132,20 @@ export default function SweepstakesSelection({ supply, account }: any) {
         setLoading(false)
       }, 1000)
     }
+    console.log('Zero-G Sweepstake Winners:', winners)
   }
 
-  // useEffect(() => {
-  //   if (!winners[0]) {
-  //     ;(async () => {
-  //       await getWinners()
-  //     })()
-  //   }
-  // }, [selectionData])
+  useEffect(() => {
+    ;(async () => {
+      await getWinners()
+    })()
+  }, [selectionData])
 
-  // useEffect(() => {
-  //   ;(async () => {
-  //     await getWinners()
-  //   })()
-  // }, [event])
+  useEffect(() => {
+    ;(async () => {
+      await getWinners()
+    })()
+  }, [event])
 
   function Winner({ winner, i }: any) {
     if (winner && !winner.discordUsername) {

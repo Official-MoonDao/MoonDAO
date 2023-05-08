@@ -19,7 +19,11 @@ import {
   TicketIcon,
   PhotographIcon,
   MoonIcon,
+  ArrowDownIcon,
+  RssIcon,
+  LinkIcon,
 } from '@heroicons/react/outline'
+import { Icosahedron } from '@react-three/drei'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -40,6 +44,26 @@ import PreferredNetworkWrapper from '../wagmi/PreferredNetworkWrapper'
 import ErrorCard from './ErrorCard'
 import { useErrorContext } from './ErrorProvider'
 
+function RocketLaunchIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className="w-6 h-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"
+      />
+    </svg>
+  )
+}
+
 type Indexable = {
   [key: string]: any
 }
@@ -51,24 +75,31 @@ const navigation = [
     icon: <ViewGridIcon className="h-5 w-5" />,
   },
   {
+    name: 'buyMOONEY',
+    href: `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet`,
+    icon: <PlusIcon className="h-5 w-5" />,
+  },
+  {
     name: 'lockTokens',
     href: '/lock',
     icon: <LockClosedIcon className="h-5 w-5" />,
   },
   {
-    name: 'zero-g',
-    href: '/zero-g',
-    icon: <TicketIcon className="h-5 w-5" />,
-  },
-  {
-    name: 'lifeship',
-    href: '/lifeship',
-    icon: <MoonIcon className="h-5 w-5" />,
-  },
-  {
-    name: 'buyMOONEY',
-    href: `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet`,
-    icon: <PlusIcon className="h-5 w-5" />,
+    name: 'Missions',
+    type: 'dropdown',
+    icon: <RocketLaunchIcon />,
+    items: [
+      {
+        name: 'zero-g',
+        href: '/zero-g',
+        icon: <></>,
+      },
+      {
+        name: 'lifeship',
+        href: '/lifeship',
+        icon: <></>,
+      },
+    ],
   },
   {
     name: 'governance',
@@ -108,6 +139,69 @@ export default function Layout({ children }: any) {
     if (localStorage.getItem('MOONEY_isImported')) setIsTokenImported(true)
   }, [account])
   const { t } = useTranslation('common')
+
+  function NavLink({ item, dropdown }: any) {
+    return (
+      <li
+        className={!dropdown ? `mt-1 relative py-2` : 'w-full'}
+        onClick={() =>
+          // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
+          (document.getElementById('side-drawer').checked = false)
+        }
+        key={item.href}
+      >
+        {item.href.charAt(0) === '/' ? (
+          <Link href={item.href}>
+            <a
+              className={`py-4 ${router.pathname == item.href ? 'active' : ''}`}
+            >
+              {item.icon}
+              {t(item.name)}
+              <ChevronRightIcon className="h-5 w-5 absolute right-4 opacity-50" />
+            </a>
+          </Link>
+        ) : (
+          <a
+            className={`py-4 ${router.pathname == item.href ? 'active' : ''}`}
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {item.icon}
+            {t(item.name)}
+            <ExternalLinkIcon className="h-5 w-5 absolute right-4 opacity-50" />
+          </a>
+        )}
+      </li>
+    )
+  }
+
+  function NavDropdown({ dropdownItem }: any) {
+    const [dropdown, setDropdown] = useState(true)
+
+    return (
+      <li className="mt-1 relative py-2" key={dropdownItem.name}>
+        <a className={`py-4`} onClick={() => setDropdown(!dropdown)}>
+          {dropdownItem.icon}
+          {t(dropdownItem.name)}
+          {dropdown ? (
+            <ChevronDownIcon className="h-5 w-5 absolute right-4 opacity-50" />
+          ) : (
+            <ChevronRightIcon className="h-5 w-5 absolute right-4 opacity-50" />
+          )}
+        </a>
+        {dropdown && (
+          <div className="flex flex-col">
+            {dropdownItem.items.map((item: any) => (
+              <div className="flex justify-left w-full">
+                <NavLink item={item} dropdown />
+              </div>
+            ))}
+          </div>
+        )}
+      </li>
+    )
+  }
 
   const layout = (
     <div className="mx-auto font-display">
@@ -165,41 +259,13 @@ export default function Layout({ children }: any) {
               </div>
               <ul className="menu scrollbar-hide p-4 overflow-y-auto text-base-400 grow font-GoodTimes">
                 {nav.map((item: any) => (
-                  <li
-                    className="mt-1 relative py-2"
-                    onClick={() =>
-                      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-                      (document.getElementById('side-drawer').checked = false)
-                    }
-                    key={item.href}
-                  >
-                    {item.href.charAt(0) === '/' ? (
-                      <Link href={item.href}>
-                        <a
-                          className={`py-4 ${
-                            router.pathname == item.href ? 'active' : ''
-                          }`}
-                        >
-                          {item.icon}
-                          {t(item.name)}
-                          <ChevronRightIcon className="h-5 w-5 absolute right-4 opacity-50" />
-                        </a>
-                      </Link>
+                  <>
+                    {item.type === 'dropdown' ? (
+                      <NavDropdown dropdownItem={item} />
                     ) : (
-                      <a
-                        className={`py-4 ${
-                          router.pathname == item.href ? 'active' : ''
-                        }`}
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {item.icon}
-                        {t(item.name)}
-                        <ExternalLinkIcon className="h-5 w-5 absolute right-4 opacity-50" />
-                      </a>
+                      <NavLink item={item} />
                     )}
-                  </li>
+                  </>
                 ))}
 
                 {/* <li className="relative py-2 px-2">
