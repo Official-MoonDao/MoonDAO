@@ -1,13 +1,10 @@
 import {
   UserAddIcon,
-  SparklesIcon,
-  CurrencyDollarIcon,
   HomeIcon,
   NewspaperIcon,
   KeyIcon,
   UserIcon,
   LogoutIcon,
-  GiftIcon,
   XCircleIcon,
   MenuIcon,
   LockClosedIcon,
@@ -16,14 +13,7 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   ExternalLinkIcon,
-  TicketIcon,
-  PhotographIcon,
-  MoonIcon,
-  ArrowDownIcon,
-  RssIcon,
-  LinkIcon,
 } from '@heroicons/react/outline'
-import { Icosahedron } from '@react-three/drei'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -33,9 +23,7 @@ import React from 'react'
 import { useState, useEffect } from 'react'
 // @ts-expect-error ts-migrate(7016) FIXME: Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import Blockies from 'react-blockies'
-import { isToken } from 'typescript'
 import { useConnect, useEnsName, useDisconnect } from 'wagmi'
-import { MOONEYToken } from '../../lib/config'
 import { connectorIcons } from '../../lib/connectors'
 import { importToken } from '../../lib/import-token'
 import { useAccount } from '../../lib/use-wagmi'
@@ -85,7 +73,7 @@ const navigation = [
     icon: <LockClosedIcon className="h-5 w-5" />,
   },
   {
-    name: 'Missions',
+    name: 'missions',
     type: 'dropdown',
     icon: <RocketLaunchIcon />,
     items: [
@@ -192,14 +180,16 @@ export default function Layout({ children }: any) {
         </a>
         {dropdown && (
           <div className="flex flex-col">
-            {dropdownItem.items.map((item: any, i: number) => (
-              <div
-                key={'dropdownItem' + i}
-                className="flex justify-left w-full"
-              >
-                <NavLink item={item} dropdown />
-              </div>
-            ))}
+            <ul className="w-full">
+              {dropdownItem.items.map((item: any, i: number) => (
+                <div
+                  key={'dropdownItem' + i}
+                  className="flex justify-left w-full"
+                >
+                  <NavLink item={item} dropdown />
+                </div>
+              ))}
+            </ul>
           </div>
         )}
       </li>
@@ -261,14 +251,14 @@ export default function Layout({ children }: any) {
                 </div>
               </div>
               <ul className="menu scrollbar-hide p-4 overflow-y-auto text-base-400 grow font-GoodTimes">
-                {nav.map((item: any) => (
-                  <>
+                {nav.map((item: any, i: number) => (
+                  <div key={'li' + i}>
                     {item.type === 'dropdown' ? (
                       <NavDropdown dropdownItem={item} />
                     ) : (
                       <NavLink item={item} />
                     )}
-                  </>
+                  </div>
                 ))}
 
                 {/* <li className="relative py-2 px-2">

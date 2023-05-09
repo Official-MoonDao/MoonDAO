@@ -4,65 +4,14 @@ import { useEffect, useState } from 'react'
 import { vMooneySweepstakesZeroG } from '../../lib/config'
 import { getUserDataRaffle } from '../../lib/google-sheets'
 import {
+  ZERO_G_V1_TOTAL_TOKENS,
   useCurrentWinner,
   useRandomSelection,
   useSweepstakesEvent,
 } from '../../lib/zero-g-sweepstakes'
 import vMooneySweepstakesABI from '../../abis/vMooneySweepstakes.json'
 
-const requestIds = 10
-
-const vMooneySweepstakes_Sepolia_totalSupply = 5
-const vMooneySweepstakes_Mainnet_totalSupply = 19 //# of holders at time of sweepstakes deadline
-
-const WINNERS = [
-  {
-    discordUsername: 'Foggy',
-    tokenId: 9,
-    address: '0xbaA30D271Baa23E5f4CCA6547F3B248e8DCd8868',
-  },
-  {
-    discordUsername: 'Mitchie',
-    tokenId: 15,
-    address: '0x9fDf876a50EA8f95017dCFC7709356887025B5BB',
-  },
-  {
-    discordUsername: 'phil',
-    tokenId: 3,
-    address: '0x6bFd9e435cF6194c967094959626ddFF4473a836',
-  },
-  {
-    discordUsername: 'pipilu',
-    tokenId: 8,
-    address: '0x4c55C41Bd839B3552fb2AbecaCFdF4a5D2879Cb9',
-  },
-  {
-    discordUsername: '先锋队robin',
-    tokenId: 17,
-    address: '0x11B0105330a85F01bb6567C0a6448740f07D7BFD',
-  },
-  {
-    discordUsername: 'ThetaV',
-    tokenId: 16,
-    address: '0x625c6A3DD00dc44dF53e4ee1C8263574c1E21a3a',
-  },
-  {
-    discordUsername: '先锋队robin',
-    tokenId: 17,
-    address: '0x11B0105330a85F01bb6567C0a6448740f07D7BFD',
-  },
-  { tokenId: 12, address: '0x5b2907B3dC0f7ec146168760e298901C7015e7f6' },
-  {
-    discordUsername: 'ryand2d',
-    tokenId: 18,
-    address: '0x78176eAAbCB3255E898079dC67428e15149cdc99',
-  },
-  {
-    discordUsername: 'justinpark01',
-    tokenId: 14,
-    address: '0x9A1741b58Bd99EBbc4e9742Bd081b887DfC95f53',
-  },
-]
+//Issue w/ getting winners from contract in production, so hardcoding for now. Can read winners from contract in localhost.
 
 export default function SweepstakesSelection({ supply, account }: any) {
   const [winners, setWinners]: any = useState([])
@@ -73,49 +22,43 @@ export default function SweepstakesSelection({ supply, account }: any) {
   const { data: currWinner }: any = useCurrentWinner()
 
   const { data: selectionData, write: randomSelection } = useRandomSelection()
-  const provider = new ethers.providers.JsonRpcProvider(
-    process.env.NEXT_PUBLIC_INFURA_URL
-  )
+
   useSweepstakesEvent(setEvent)
 
-  const totalTokenIds =
-    process.env.NEXT_PUBLIC_CHAIN === 'sepolia'
-      ? vMooneySweepstakes_Sepolia_totalSupply
-      : vMooneySweepstakes_Mainnet_totalSupply
-
   async function getWinners(loop = false) {
-    setLoading(true)
-    const contract = new Contract(
+    const provider = new ethers.providers.JsonRpcProvider(
+      process.env.NEXT_PUBLIC_INFURA_URL
+    )
+    const contract: Contract = new Contract(
       vMooneySweepstakesZeroG,
       vMooneySweepstakesABI,
       provider
     )
+
+    setLoading(true)
     const winnersData: any = []
-    for (let i = 0; i < requestIds; i++) {
+    for (let i = 0; i < 10; i++) {
       //get random word for id
       try {
-        const res = await contract.callStatic.requestIds(i)
-        if (!res) break
-
-        if (res) {
+        const randomWordsId = await contract.callStatic.requestIds(i)
+        if (randomWordsId) {
           const { randomWords } = await contract.callStatic.getRequestStatus(
-            res
+            randomWordsId
           )
-
           const winningTokenId = await randomWords[0]
-            .mod(BigNumber.from(totalTokenIds))
+            .mod(BigNumber.from(ZERO_G_V1_TOTAL_TOKENS))
             .toString()
           const winnerAddress = await contract.callStatic.ownerOf(
             winningTokenId
           )
           const winnerData = await getUserDataRaffle(winnerAddress)
           if (winnerData === 'rate limit' && !loop) {
+            console.log('rate limit')
             setWinners([])
             return setTimeout(async () => {
               await getWinners(true)
             }, 5000)
           }
-
           winnersData.push({
             discordUsername: winnerData?.DiscUsername,
             discordId: winnerData?.DiscID,
@@ -125,27 +68,28 @@ export default function SweepstakesSelection({ supply, account }: any) {
           })
         }
       } catch (err) {
-        // console.log('No matching request id', err)
+        console.log('No matching request id', err)
       }
-      await setWinners([...winnersData.sort((a: any, b: any) => a.id - b.id)])
-      setTimeout(() => {
-        setLoading(false)
-      }, 1000)
     }
-    console.log('Zero-G Sweepstake Winners:', winners)
+    await setWinners(winnersData.sort((a: any, b: any) => a.id - b.id))
+    return setTimeout(() => {
+      setLoading(false)
+    }, 1000)
   }
 
   useEffect(() => {
-    ;(async () => {
-      await getWinners()
-    })()
-  }, [selectionData])
+    if (!winners[0]) {
+      setTimeout(() => {
+        ;(async () => {
+          await getWinners()
+        })()
+      }, 3000)
+    }
+  }, [selectionData, event])
 
   useEffect(() => {
-    ;(async () => {
-      await getWinners()
-    })()
-  }, [event])
+    console.log(winners)
+  }, [winners])
 
   function Winner({ winner, i }: any) {
     if (winner && !winner.discordUsername) {
@@ -240,8 +184,8 @@ export default function SweepstakesSelection({ supply, account }: any) {
         </div>
       )}
       <div className="flex flex-col gap-2 overflow-y-scroll h-[400px]">
-        {!loading ? (
-          WINNERS.map((winner: any, i: number) => (
+        {!loading && winners[0] ? (
+          winners.map((winner: any, i: number) => (
             <Winner key={`winner-${i}`} winner={winner} i={i} />
           ))
         ) : (

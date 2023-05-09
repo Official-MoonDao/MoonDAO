@@ -139,7 +139,7 @@ export default function ZeroGRaffle({
               validLock={validLock}
               hasTicket={hasTicket}
             /> */}
-            <SweepstakesSelection supply={supply} account={account}/>
+            <SweepstakesSelection supply={supply} account={account} />
           </StageContainer>
         )}
         {state === 1 && (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { useErrorContext } from './ErrorProvider'
 
 export default function ErrorCard({ error }: any) {
