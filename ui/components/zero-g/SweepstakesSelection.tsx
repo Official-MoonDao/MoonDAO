@@ -87,10 +87,6 @@ export default function SweepstakesSelection({ supply, account }: any) {
     }
   }, [selectionData, event])
 
-  useEffect(() => {
-    console.log(winners)
-  }, [winners])
-
   function Winner({ winner, i }: any) {
     if (winner && !winner.discordUsername) {
       return (

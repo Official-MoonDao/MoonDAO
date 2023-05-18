@@ -29,8 +29,8 @@ export default function Product({
             <Image
               className="rounded-2xl backdropBlur"
               src={product.images[preview].src}
-              width={1200}
-              height={1000}
+              width={450}
+              height={400}
             />
             <div className="flex justify-center items-center gap-4 w-1/2 my-2">
               <button
@@ -83,21 +83,21 @@ export default function Product({
     )
 
   return (
-    <div className="w-full backdropBlur flex justify-center items-center">
-      <div className="flex flex-col m-4">
+    <div className="w-full backdropBlur flex flex-col md:flex-row justify-center items-center">
+      <div className="flex flex-col m-4 w-2/3 md:w-1/2  ">
         <h1 className="font-GoodTimes mx-4">{label}</h1>
-        <div className="ease-in-ease-out duration-300">
+        <div className="p-[2.5%]">
           <Image
             className="rounded-2xl backdropBlur"
             src={product.images[preview].src}
-            width={1200}
-            height={1000}
+            width={850}
+            height={800}
           />
         </div>
         <div className="flex justify-center items-center">
           <div className="flex justify-center items-center gap-2 w-1/2">
             <button
-              className={`rounded-full btn text-white text-2xl w-1/2 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
+              className={`rounded-full btn text-white text-2xl w-1/3 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
                 preview === 0 && 'disabled opacity-[0.3]'
               }`}
               onClick={() => (preview > 0 ? setPreview(preview - 1) : '')}
@@ -119,7 +119,7 @@ export default function Product({
                 ))}
             </div>
             <button
-              className={`rounded-full btn text-white text-2xl w-1/2 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
+              className={`rounded-full btn text-white text-2xl w-1/3 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
                 product?.images[0] &&
                 preview === product.images.length - 1 &&
                 'disabled opacity-[0.3]'
@@ -136,26 +136,28 @@ export default function Product({
           </div>
         </div>
       </div>
-      <div className="flex flex-col w-full justify-center items-center gap-4">
-        <div className="flex flex-col items-left justify-center h-full gap-[15%] relative right-4">
+      <div className="flex flex-col justify-center items-center gap-4 w-full">
+        <div className="flex flex-col items-left justify-center h-full">
           <div>
             <p className="text-2xl text-n3blue">
               {'Quantity:'}
               <span className="text-white">{quantity}</span>
             </p>
           </div>
-          <div>
-            <p className="text-2xl text-n3blue">Total:</p>
-            <p className="text-2xl ">{`$${
-              product?.variants
-                ? (product.variants[0].price.amount * quantity).toFixed(2)
-                : 0
-            }`}</p>
+          <div className="flex">
+            <p className="text-2xl text-n3blue">
+              {'Total:'}
+              <span className="text-white ">{`$${
+                product?.variants
+                  ? (product.variants[0].price.amount * quantity).toFixed(2)
+                  : 0
+              }`}</span>
+            </p>
           </div>
         </div>
         <div className="my-2 flex justify-center items-center gap-8 w-full">
           <button
-            className={`border-style btn text-n3blue normal-case font-medium w-1/4 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
+            className={`border-style btn text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
               quantity <= 0 && 'disable opacity-[0.5]'
             }`}
             onClick={() => setQuantity(quantity > 0 ? quantity - 1 : 0)}
@@ -163,7 +165,7 @@ export default function Product({
             -
           </button>
           <button
-            className="border-style btn text-n3blue normal-case font-medium w-1/4 bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out"
+            className="border-style btn text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out"
             onClick={() => setQuantity(quantity + 1)}
           >
             +

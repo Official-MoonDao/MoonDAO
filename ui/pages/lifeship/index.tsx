@@ -86,7 +86,7 @@ export default function Lifeship({ products = [] }: any) {
       <Head title="Lifeship" />
       <div className="flex flex-col max-w-3xl justify-center">
         <div className="flex flex-col justify-center items-center gap-4">
-          <div className="flex flex-col justify-center items-center text-center md:w-[55vw] w-screen card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%] relative right-4">
+          <div className="flex flex-col justify-center items-center text-center md:w-[55vw] w-[90vw] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md p-[5%] relative left-2">
             <div className="flex flex-col md:flex-row md:gap-4 justify-center">
               <h2
                 className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
@@ -115,7 +115,7 @@ export default function Lifeship({ products = [] }: any) {
                 <hr className="w-full border-n3blue border-2"></hr>
 
                 {products[0] && (
-                  <div className="flex flex-col gap-8 w-full">
+                  <div className="flex flex-col gap-8 w-full items-center">
                     <Product
                       product={products[0]}
                       label="DNA kit"
@@ -139,7 +139,7 @@ export default function Lifeship({ products = [] }: any) {
                       </p>
                     )}
                     <Button
-                      className="font-GoodTimes"
+                      className="font-GoodTimes w-3/4"
                       onClick={async () => {
                         if (quantities.dna <= 0 && quantities.ashes <= 0)
                           return setNotification('no-quantity')
