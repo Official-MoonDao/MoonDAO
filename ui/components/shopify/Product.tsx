@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function Product({
   product,
@@ -10,6 +10,10 @@ export default function Product({
   linkToStore,
 }: any) {
   const [preview, setPreview] = useState(0)
+
+  useEffect(() => {
+    setPreview(0)
+  }, [product])
 
   if (linkToStore)
     return (
@@ -28,7 +32,7 @@ export default function Product({
           <div className="flex flex-col justify-center items-center">
             <Image
               className="rounded-2xl backdropBlur"
-              src={product.images[preview].src}
+              src={product.images[preview]?.src}
               width={450}
               height={400}
             />
@@ -83,21 +87,23 @@ export default function Product({
     )
 
   return (
-    <div className="w-full backdropBlur flex flex-col md:flex-row justify-center items-center">
-      <div className="flex flex-col m-4 w-2/3 md:w-1/2  ">
+    <div className="w-full bg-[#1c1c1c80] rounded-lg py-2 backdropBlur flex flex-col md:flex-row justify-center items-center">
+      <div className="flex flex-col w-2/3 md:w-1/2">
         <h1 className="font-GoodTimes mx-4">{label}</h1>
-        <div className="p-[2.5%]">
-          <Image
-            className="rounded-2xl backdropBlur"
-            src={product.images[preview].src}
-            width={850}
-            height={800}
-          />
+        <div className="p-2">
+          {product?.images[preview] && (
+            <Image
+              className="rounded-2xl backdropBlur"
+              src={product.images[preview]?.src}
+              width={450}
+              height={400}
+            />
+          )}
         </div>
         <div className="flex justify-center items-center">
           <div className="flex justify-center items-center gap-2 w-1/2">
             <button
-              className={`rounded-full btn text-white text-2xl w-1/3 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
+              className={`rounded-full bg-[#1c1c1c50] btn text-white text-2xl w-1/3 backdropBlur  duration-[0.6s] ease-in-ease-out ${
                 preview === 0 && 'disabled opacity-[0.3]'
               }`}
               onClick={() => (preview > 0 ? setPreview(preview - 1) : '')}
@@ -119,7 +125,7 @@ export default function Product({
                 ))}
             </div>
             <button
-              className={`rounded-full btn text-white text-2xl w-1/3 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
+              className={`rounded-full bg-[#1c1c1c50] btn text-white text-2xl w-1/3 backdropBlur  duration-[0.6s] ease-in-ease-out ${
                 product?.images[0] &&
                 preview === product.images.length - 1 &&
                 'disabled opacity-[0.3]'

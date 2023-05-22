@@ -47,7 +47,7 @@ export default function Lifeship({ products = [] }: any) {
   //NFT submission
   const [userImage, setUserImage]: any = useState({})
 
-  const [quantities, setQuantities] = useState({ dna: 0, ashes: 0 })
+  const [quantities, setQuantities] = useState({ dna: 0, ashes: 0, pet: 0 })
 
   //check if user has already submited a NFT
   const [userSubmittedNFT, setUserSubmittedNFT]: any = useState(false)
@@ -65,7 +65,7 @@ export default function Lifeship({ products = [] }: any) {
 
   function reset() {
     setState(0)
-    setQuantities({ dna: 0, ashes: 0 })
+    setQuantities({ dna: 0, ashes: 0, pet: 0 })
     setNotification('')
   }
 
@@ -83,10 +83,11 @@ export default function Lifeship({ products = [] }: any) {
   return (
     <div className="animate-fadeIn">
       <Scene zoomEnabled />
+
       <Head title="Lifeship" />
-      <div className="flex flex-col max-w-3xl justify-center">
-        <div className="flex flex-col justify-center items-center gap-4">
-          <div className="flex flex-col justify-center items-center text-center md:w-[55vw] w-[90vw] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md p-[5%] relative left-2">
+      <div className="flex flex-col max-w-3xl justify-center w-full">
+        <div className="flex flex-col justify-center items-center gap-4 w-full">
+          <div className="flex flex-col justify-center items-center text-center lg:w-[70vw] w-[90vw] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md p-[5%] relative left-2">
             <div className="flex flex-col md:flex-row md:gap-4 justify-center">
               <h2
                 className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
@@ -104,35 +105,44 @@ export default function Lifeship({ products = [] }: any) {
                 <Image src={'/LifeShip_Main.png'} width={45} height={45} />
               </h2>
             </div>
-            <h1 className="font-RobotoMono text-2xl text-center my-4">
+            <h1 className="font-RobotoMono text-2xl text-n3blue text-center my-4">
               Join us on our first mission to the Moon!
             </h1>
             {state === 0 && (
-              <div className="flex flex-col justify-center items-center text-left gap-4 md:w-full w-full backdropBlur p-4">
+              <div className="flex flex-col justify-center items-center text-left gap-4 md:w-full w-full backdropBlurp-4">
                 <p className="max-w-2xl font-RobotoMono">
                   {`Send DNA or ashes to the moon, leaving your legacy in the universe! MoonDAO is partnering with Lifeship to send a time capsule of life on Earth to the Moon!`}
                 </p>
                 <hr className="w-full border-n3blue border-2"></hr>
 
                 {products[0] && (
-                  <div className="flex flex-col gap-8 w-full items-center">
-                    <Product
-                      product={products[0]}
-                      label="DNA kit"
-                      quantity={quantities.dna}
-                      setQuantity={(q: number) =>
-                        setQuantities({ ...quantities, dna: q })
-                      }
-                    />
-                    <Product
-                      product={products[1]}
-                      label="Ashes kit"
-                      quantity={quantities.ashes}
-                      setQuantity={(q: number) =>
-                        setQuantities({ ...quantities, ashes: q })
-                      }
-                    />
-
+                  <div className="flex flex-col gap-4 w-full items-center">
+                    <div className="md:h-[400px] h-[500px] w-3/4 secondaryScroll overflow-y-scroll flex flex-col gap-2 pr-4">
+                      <Product
+                        product={products[0]}
+                        label="DNA kit"
+                        quantity={quantities.dna}
+                        setQuantity={(q: number) =>
+                          setQuantities({ ...quantities, dna: q })
+                        }
+                      />
+                      <Product
+                        product={products[1]}
+                        label="Pet DNA Kit"
+                        quantity={quantities.pet}
+                        setQuantity={(q: number) =>
+                          setQuantities({ ...quantities, pet: q })
+                        }
+                      />
+                      <Product
+                        product={products[2]}
+                        label="Ashes kit"
+                        quantity={quantities.ashes}
+                        setQuantity={(q: number) =>
+                          setQuantities({ ...quantities, ashes: q })
+                        }
+                      />
+                    </div>
                     {notification === 'no-quantity' && (
                       <p className="text-n3green ease-in duration-300 backdropBlur">
                         Please select a kit!
@@ -141,7 +151,11 @@ export default function Lifeship({ products = [] }: any) {
                     <Button
                       className="font-GoodTimes w-3/4"
                       onClick={async () => {
-                        if (quantities.dna <= 0 && quantities.ashes <= 0)
+                        if (
+                          quantities.dna <= 0 &&
+                          quantities.ashes <= 0 &&
+                          quantities.pet <= 0
+                        )
                           return setNotification('no-quantity')
                         try {
                           await fetch('/api/shopify/lifeship/checkout', {
@@ -149,6 +163,7 @@ export default function Lifeship({ products = [] }: any) {
                             body: JSON.stringify({
                               quantityDNA: quantities.dna,
                               quantityAshes: quantities.ashes,
+                              quantityPet: quantities.pet,
                               walletAddress: account?.address,
                             }),
                           })
@@ -179,10 +194,10 @@ export default function Lifeship({ products = [] }: any) {
                       </span>
                     </p>
                     <Product
-                      product={products[2]}
+                      product={products[3]}
                       label="NFT kit"
                       linkToStore={() =>
-                        window.open(products[2].onlineStoreUrl)
+                        window.open(products[3].onlineStoreUrl)
                       }
                     />
                   </div>

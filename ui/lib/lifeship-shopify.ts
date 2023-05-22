@@ -21,6 +21,7 @@ export async function getKits() {
   try {
     return parseShopifyResponse([
       await getProductByHandle('dna-to-moon'),
+      await getProductByHandle('pet-kit'),
       await getProductByHandle('ash-on-the-moon'),
       await getProductByHandle('beam-your-photo-to-the-moon'),
     ])
@@ -32,13 +33,15 @@ export async function getKits() {
 export async function checkout(
   quantityDNA: number,
   quantityAshes: number,
+  quantityPet: number,
   walletAddress: string = 'none'
 ) {
   try {
-    if (quantityDNA <= 0 && quantityAshes <= 0)
+    if (quantityDNA <= 0 && quantityAshes <= 0 && quantityPet <= 0)
       return Error('Checkout has no quantity')
     const kitDNA = await getProductByHandle('dna-to-moon')
     const kitAshes = await getProductByHandle('ash-on-the-moon')
+    const kitPetDNA = await getProductByHandle('pet-kit')
     const checkout = await client.checkout.create()
     await client.checkout.updateAttributes(checkout.id, {
       customAttributes: [{ key: 'WalletAddress', value: walletAddress }],
@@ -59,7 +62,16 @@ export async function checkout(
         },
       ])
     }
+    if (quantityPet > 0) {
+      await client.checkout.addLineItems(checkout.id, [
+        {
+          variantId: kitPetDNA.variants[0].id,
+          quantity: quantityPet,
+        },
+      ])
+    }
     await client.checkout.addDiscount(checkout.id, 'MOONDAO')
+    console.log(client.checkout)
     const newCheckout = await client.checkout.fetch(checkout.id)
     return newCheckout.webUrl
   } catch (err) {

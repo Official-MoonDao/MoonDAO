@@ -123,7 +123,7 @@ a {
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: #1c1c1cb9;
   border-radius: 30px;
 }
 
