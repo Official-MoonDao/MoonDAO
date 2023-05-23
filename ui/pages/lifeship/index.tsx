@@ -125,8 +125,8 @@ export default function Lifeship({ products = [] }: any) {
                 <hr className="w-full border-n3blue border-2"></hr>
 
                 {products[0] && (
-                  <div className="flex flex-col gap-4 w-full items-center justify-center">
-                    <div className="w-full flex flex-col md:flex-row gap-2">
+                  <div className="flex flex-col gap-[5%] w-full items-center justify-center mt-[5%]">
+                    <div className="w-full lg:min-h-[35vh] h-full flex flex-col md:flex-row gap-[5%]">
                       <Product
                         product={products[0]}
                         label="DNA kit"
@@ -158,7 +158,7 @@ export default function Lifeship({ products = [] }: any) {
                       </p>
                     )}
                     <Button
-                      className="font-GoodTimes w-3/4"
+                      className="font-GoodTimes w-3/4 my-[2.5%]"
                       onClick={async () => {
                         if (
                           quantities.dna <= 0 &&
@@ -189,7 +189,7 @@ export default function Lifeship({ products = [] }: any) {
                       Checkout
                     </Button>
                     <hr className="w-full border-n3blue border-2"></hr>
-                    <p className="font-RobotoMono">
+                    <p className="font-RobotoMono max-w-2xl p-2">
                       {
                         'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through Lifeship'
                       }

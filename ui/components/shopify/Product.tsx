@@ -90,7 +90,7 @@ export default function Product({
     <div className="w-full md:max-w-1/3 md:h-[350px] bg-[#1c1c1c80] rounded-lg backdropBlur flex flex-col justify-center items-center p-6">
       <div className="flex flex-col">
         <h2 className="w-full mt-4 font-GoodTimes mx-4">{label}</h2>
-        <div className="pt-2">
+        <div className="p-2">
           {product?.images[preview] && (
             <Image
               className={`rounded-2xl backdropBlur`}
@@ -142,7 +142,7 @@ export default function Product({
       <div className="flex flex-col justify-center items-center max-w-3/4">
         <div className="my-2 flex justify-center items-center w-full">
           <button
-            className={`absolute left-4 border-style h-10 w-10 text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
+            className={`absolute left-[4%] border-style h-10 w-10 text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
               quantity <= 0 && 'disable opacity-[0.5]'
             }`}
             onClick={() => setQuantity(quantity > 0 ? quantity - 1 : 0)}
@@ -168,7 +168,7 @@ export default function Product({
             </div>
           </div>
           <button
-            className="absolute right-4 border-style h-10 w-10 text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out"
+            className="absolute right-[4%] border-style h-10 w-10 text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out"
             onClick={() => setQuantity(quantity + 1)}
           >
             +
