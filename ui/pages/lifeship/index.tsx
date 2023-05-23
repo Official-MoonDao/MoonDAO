@@ -87,7 +87,7 @@ export default function Lifeship({ products = [] }: any) {
       <Head title="Lifeship" />
       <div className="flex flex-col max-w-3xl justify-center w-full">
         <div className="flex flex-col justify-center items-center gap-4 w-full">
-          <div className="flex flex-col justify-center items-center text-center lg:w-[70vw] w-[90vw] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md p-[5%] relative left-2">
+          <div className="flex flex-col justify-center items-center text-center lg:w-[65vw] w-[90vw] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md p-[5%] relative left-2">
             <div className="flex flex-col md:flex-row md:gap-4 justify-center">
               <h2
                 className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
@@ -111,13 +111,22 @@ export default function Lifeship({ products = [] }: any) {
             {state === 0 && (
               <div className="flex flex-col justify-center items-center text-left gap-4 md:w-full w-full backdropBlurp-4">
                 <p className="max-w-2xl font-RobotoMono">
-                  {`Send DNA or ashes to the moon, leaving your legacy in the universe! MoonDAO is partnering with Lifeship to send a time capsule of life on Earth to the Moon!`}
+                  {`Send DNA or ashes to the moon, leaving your legacy in the universe! MoonDAO is partnering with`}{' '}
+                  <span>
+                    <button
+                      className="text-n3blue hover:scale-[1.025] ease-in-ease-out duration-300"
+                      onClick={() => window.open('https://lifeship.com/')}
+                    >
+                      {'Lifeship'}
+                    </button>
+                  </span>{' '}
+                  {`to send a time capsule of life on Earth to the Moon!`}
                 </p>
                 <hr className="w-full border-n3blue border-2"></hr>
 
                 {products[0] && (
-                  <div className="flex flex-col gap-4 w-full items-center">
-                    <div className="md:h-[400px] h-[500px] w-3/4 secondaryScroll overflow-y-scroll flex flex-col gap-2 pr-4">
+                  <div className="flex flex-col gap-4 w-full items-center justify-center">
+                    <div className="w-full flex flex-col md:flex-row gap-2">
                       <Product
                         product={products[0]}
                         label="DNA kit"
@@ -182,16 +191,8 @@ export default function Lifeship({ products = [] }: any) {
                     <hr className="w-full border-n3blue border-2"></hr>
                     <p className="font-RobotoMono">
                       {
-                        'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through '
+                        'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through Lifeship'
                       }
-                      <span>
-                        <button
-                          className="text-n3blue hover:scale-[1.025] ease-in-ease-out duration-300"
-                          onClick={() => window.open('https://lifeship.com/')}
-                        >
-                          {'Lifeship'}
-                        </button>
-                      </span>
                     </p>
                     <Product
                       product={products[3]}
