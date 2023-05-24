@@ -34,14 +34,16 @@ export default function Product({
               className="rounded-2xl backdropBlur"
               src={product.images[preview]?.src}
               width={450}
-              height={400}
+              height={450}
             />
             <div className="flex justify-center items-center gap-4 w-1/2 my-2">
               <button
-                className={`rounded-full btn text-white text-2xl w-1/2 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
-                  preview === 0 && 'disabled opacity-[0.3]'
-                }`}
-                onClick={() => (preview > 0 ? setPreview(preview - 1) : '')}
+                className={`rounded-full bg-[#1c1c1c] w-8 h-8 text-white text-2xl backdropBlur hover:text-n3blue  duration-[0.6s] ease-in-ease-out`}
+                onClick={() =>
+                  preview > 0
+                    ? setPreview(preview - 1)
+                    : setPreview(product.images.length - 1)
+                }
               >
                 {'<'}
               </button>
@@ -52,7 +54,7 @@ export default function Product({
                       key={'pagination' + i}
                       className={`${
                         preview === i && 'text-n3blue'
-                      } text-3xl hover:scale-[1.025]`}
+                      } text-3xl hover:scale-[1.15]`}
                       onClick={() => setPreview(i)}
                     >
                       .
@@ -60,16 +62,12 @@ export default function Product({
                   ))}
               </div>
               <button
-                className={`rounded-full btn text-white text-2xl w-1/2 backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out ${
-                  product?.images[0] &&
-                  preview === product.images.length - 1 &&
-                  'disabled opacity-[0.3]'
-                }`}
+                className={`rounded-full bg-[#1c1c1c] w-8 h-8 text-white text-2xl backdropBlur hover:text-n3blue  duration-[0.6s] ease-in-ease-out`}
                 onClick={() => {
                   if (!product?.images) return
                   preview < product.images.length - 1
                     ? setPreview(preview + 1)
-                    : ''
+                    : setPreview(0)
                 }}
               >
                 {'>'}
@@ -87,7 +85,7 @@ export default function Product({
     )
 
   return (
-    <div className="w-full md:max-w-1/3 md:h-[350px] bg-[#1c1c1c80] rounded-lg backdropBlur flex flex-col justify-center items-center p-6">
+    <div className="w-full md:max-w-1/3 bg-[#1c1c1c80] rounded-lg backdropBlur flex flex-col justify-center items-center p-4 pb-[2.5%]">
       <div className="flex flex-col">
         <h2 className="w-full mt-4 font-GoodTimes mx-4">{label}</h2>
         <div className="p-2">
@@ -103,21 +101,23 @@ export default function Product({
 
         <div className="w-full flex justify-center items-center">
           <button
-            className={`rounded-full bg-[#1c1c1c50] w-8 h-8 text-white text-2xl backdropBlur  duration-[0.6s] ease-in-ease-out ${
-              preview === 0 && 'disabled opacity-[0.3]'
-            }`}
-            onClick={() => (preview > 0 ? setPreview(preview - 1) : '')}
+            className={`rounded-full bg-[#1c1c1c] w-8 h-8 text-white text-2xl backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out`}
+            onClick={() =>
+              preview > 0
+                ? setPreview(preview - 1)
+                : setPreview(product.images.length - 1)
+            }
           >
             {'<'}
           </button>
-          <div className="flex justify-center items-center relative bottom-1.5">
+          <div className="flex justify-center items-center relative bottom-1.5 ">
             {product?.images[0] &&
               product.images.map((image: any, i: number) => (
                 <button
                   key={'pagination' + i}
                   className={`${
                     preview === i && 'text-n3blue'
-                  } text-[150%] hover:scale-[1.025]`}
+                  } text-[150%] hover:scale-[1.25]`}
                   onClick={() => setPreview(i)}
                 >
                   .
@@ -125,14 +125,12 @@ export default function Product({
               ))}
           </div>
           <button
-            className={`rounded-full bg-[#1c1c1c50] w-8 h-8 text-white text-2xl backdropBlur  duration-[0.6s] ease-in-ease-out ${
-              product?.images[0] &&
-              preview === product.images.length - 1 &&
-              'disabled opacity-[0.3]'
-            }`}
+            className={`rounded-full bg-[#1c1c1c] w-8 h-8 text-white text-2xl backdropBlur hover:text-n3blue  duration-[0.6s] ease-in-ease-out`}
             onClick={() => {
               if (!product?.images) return
-              preview < product.images.length - 1 ? setPreview(preview + 1) : ''
+              preview < product.images.length - 1
+                ? setPreview(preview + 1)
+                : setPreview(0)
             }}
           >
             {'>'}
@@ -140,9 +138,9 @@ export default function Product({
         </div>
       </div>
       <div className="flex flex-col justify-center items-center max-w-3/4">
-        <div className="my-2 flex justify-center items-center w-full">
+        <div className="flex justify-center items-center w-full">
           <button
-            className={`absolute left-[4%] border-style h-10 w-10 text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out ${
+            className={`absolute left-[4%] border-style h-10 w-10 md:h-[3vw] md:w-[3vw] md:max-w-[75px] md:max-h-[75px] text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out rounded-full ${
               quantity <= 0 && 'disable opacity-[0.5]'
             }`}
             onClick={() => setQuantity(quantity > 0 ? quantity - 1 : 0)}
@@ -168,7 +166,7 @@ export default function Product({
             </div>
           </div>
           <button
-            className="absolute right-[4%] border-style h-10 w-10 text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out"
+            className="absolute right-[4%] border-style h-10 w-10 md:h-[3vw] md:w-[3vw] md:max-w-[75px] md:max-h-[75px] text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out rounded-full"
             onClick={() => setQuantity(quantity + 1)}
           >
             +

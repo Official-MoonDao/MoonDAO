@@ -105,7 +105,7 @@ export default function Lifeship({ products = [] }: any) {
                 <Image src={'/LifeShip_Main.png'} width={45} height={45} />
               </h2>
             </div>
-            <h1 className="font-RobotoMono text-2xl text-n3blue text-center my-4">
+            <h1 className="font-RobotoMono text-2xl text-center my-4">
               Join us on our first mission to the Moon!
             </h1>
             {state === 0 && (
@@ -126,7 +126,7 @@ export default function Lifeship({ products = [] }: any) {
 
                 {products[0] && (
                   <div className="flex flex-col gap-[5%] w-full items-center justify-center mt-[5%]">
-                    <div className="w-full lg:min-h-[35vh] h-full flex flex-col md:flex-row gap-[5%]">
+                    <div className="w-full lg:min-h-[35vh] h-full flex flex-col md:flex-row gap-4 md:gap-[2.5%]">
                       <Product
                         product={products[0]}
                         label="DNA kit"
