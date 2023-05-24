@@ -141,7 +141,9 @@ export default function Layout({ children }: any) {
         {item.href.charAt(0) === '/' ? (
           <Link href={item.href}>
             <a
-              className={`py-4 ${router.pathname == item.href ? 'active' : ''}`}
+              className={`py-4 ${
+                router.pathname == item.href ? 'active' : ''
+              } ${dropdown && 'h-10'}`}
             >
               {item.icon}
               {t(item.name)}
@@ -150,7 +152,9 @@ export default function Layout({ children }: any) {
           </Link>
         ) : (
           <a
-            className={`py-4 ${router.pathname == item.href ? 'active' : ''}`}
+            className={`py-4 ${router.pathname == item.href ? 'active' : ''} ${
+              dropdown && 'h-10'
+            }`}
             href={item.href}
             target="_blank"
             rel="noopener noreferrer"
@@ -184,7 +188,7 @@ export default function Layout({ children }: any) {
               {dropdownItem.items.map((item: any, i: number) => (
                 <div
                   key={'dropdownItem' + i}
-                  className="flex justify-left w-full"
+                  className="flex justify-left w-full mb-2"
                 >
                   <NavLink item={item} dropdown />
                 </div>
@@ -250,7 +254,7 @@ export default function Layout({ children }: any) {
                   </Link>
                 </div>
               </div>
-              <ul className="menu scrollbar-hide p-4 overflow-y-auto text-base-400 grow font-GoodTimes">
+              <ul className="menu scrollbar-hide p-4 overflow-y-auto text-base-400 grow font-GoodTimes text-[90%]">
                 {nav.map((item: any, i: number) => (
                   <div key={'li' + i}>
                     {item.type === 'dropdown' ? (
@@ -272,7 +276,7 @@ export default function Layout({ children }: any) {
                   <li>
                     <label htmlFor="web3-modal">
                       <div className="mask mask-circle cursor-pointer">
-                        <Blockies seed={account?.address} size={12} />
+                        <Blockies seed={account?.address} size={10} />
                       </div>
                       {ensName
                         ? ensName
@@ -383,7 +387,7 @@ export default function Layout({ children }: any) {
 
               <p className="p-4">Connected to {account.connector?.name}</p>
 
-              <ul className="menu bg-base-100 p-2 -m-2 rounded-box">
+              <ul className="menu bg-base-100 p-2 rounded-box">
                 <li key="address">
                   <a
                     href={`https://etherscan.io/address/${account.address}`}
