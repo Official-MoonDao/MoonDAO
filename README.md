@@ -32,7 +32,7 @@ Start the development server:
 yarn dev
 ```
 
-Once you go to http://localhost:42069, you will see the message "uses Sepolia as its preferred network":
+Once you go to http://localhost:3000, you will see the message "uses Sepolia as its preferred network":
 
 > <img width="966" alt="network error" src="https://ipfs.io/ipfs/QmeX9d5vk3FhGvRd78UWNGq9UEQExWu7HF6FL3LfhytcL5/">
 
