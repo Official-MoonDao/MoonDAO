@@ -119,7 +119,6 @@ export default function ZeroGRaffle({
               <h2 className="card-title text-center font-display tracking-wider text-2xl lg:text-3xl font-semibold text-yellow-50">
                 Sweepstakes
               </h2>
-              <SweepstakesSupply supply={supply} />
               <div className="my-3">
                 <Link href="/zero-g/rules">
                   <a
