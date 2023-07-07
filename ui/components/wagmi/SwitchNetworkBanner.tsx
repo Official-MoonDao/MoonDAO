@@ -1,4 +1,4 @@
-import { ExclamationCircleIcon } from '@heroicons/react/outline'
+import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import useTranslation from 'next-translate/useTranslation'
 import React from 'react'
 import { useNetwork } from '../../lib/use-wagmi'

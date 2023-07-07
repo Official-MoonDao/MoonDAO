@@ -8,11 +8,15 @@ import { connectors, provider as externalProvider } from '../lib/connectors'
 import { ErrorProvider } from '../components/layout/ErrorProvider'
 import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
+import { useLocalStorage } from 'usehooks-ts'
+
 
 declare let window: any
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
+  
   const [client, setClient] = useState<any>()
-
+  const [lightMode, setLightMode] = useLocalStorage("lightMode", false);
+  
   useEffect(() => {
     let provider = externalProvider
 
@@ -47,7 +51,8 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
           <NftProvider fetcher={['ethers', { provider: externalProvider() }]}>
             <ErrorProvider>
               <SessionProvider session={session}>
-                <Layout>
+                {/**/}
+                <Layout lightMode={lightMode} setLightMode={setLightMode}>
                   <Component {...pageProps} />
                 </Layout>
               </SessionProvider>

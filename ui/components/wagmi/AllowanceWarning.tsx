@@ -1,4 +1,4 @@
-import { ExclamationCircleIcon } from '@heroicons/react/outline'
+import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import { BigNumber } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import { useTokenAllowance, useTokenApproval } from '../../lib/approve'

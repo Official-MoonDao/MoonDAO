@@ -1,9 +1,4 @@
-import {
-  UserAddIcon,
-  CurrencyDollarIcon,
-  LockClosedIcon,
-  PlusIcon,
-} from '@heroicons/react/outline'
+import { LockClosedIcon } from '@heroicons/react/24/outline'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import Link from 'next/link'
