@@ -1,4 +1,4 @@
-import { RefreshIcon } from '@heroicons/react/outline'
+import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { BigNumber, Contract, ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import { vMooneySweepstakesZeroG } from '../../lib/config'
@@ -186,7 +186,7 @@ export default function SweepstakesSelection({ supply, account }: any) {
           ))
         ) : (
           <div className="flex flex-col rounded-md p-4 bg-gradient-to-tr from-n3blue to-amber-200">
-            <RefreshIcon className="animate-spin h-8 w-8" />
+            <ArrowPathIcon className="animate-spin h-8 w-8" />
           </div>
         )}
       </div>

@@ -20,9 +20,9 @@ export default function SwitchNetworkBanner({ newNetwork }: any) {
     network.charAt(0).toUpperCase() + network.slice(1)
 
   const { t } = useTranslation('common')
-
+  
   return (
-    <div className="p-4 px-8 flex flex-col gap-4 md:flex-row justify-between md:items-center z-10">
+    <div className="absolute p-4 px-8 flex flex-col gap-4 md:flex-row justify-between md:items-center z-10">
       <div className="flex flex-col sm:flex-row gap-2 items-center">
         <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
         {t('networkBanner1')} {capitalized(newNetwork)} {t('networkBanner2')}

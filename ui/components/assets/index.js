@@ -11,6 +11,7 @@ import ArrowSide from "./ArrowSide";
 import CopyIcon from "./CopyIcon";
 import GoldPaperArrow from "./GoldPaperArrow";
 import TreasuryAndMobileLogo from "./TreasuryAndMobileLogo";
+import CNAsset from "./CNAsset";
 
 export {
   LogoBlack,
@@ -26,4 +27,5 @@ export {
   CopyIcon,
   GoldPaperArrow,
   TreasuryAndMobileLogo,
+  CNAsset
 };

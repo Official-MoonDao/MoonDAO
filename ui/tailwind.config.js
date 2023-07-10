@@ -10,13 +10,6 @@ module.exports = {
       GoodTimes: ['Good Times', 'sans-serif'],
       RobotoMono: ['Roboto Mono', 'sans-serif'],
     },
-    fontWeight: {
-      light: 200,
-      normal: 300,
-      medium: 400,
-      semibold: 500,
-      bold: 500,
-    },
     extend: {
       animation: {
         fadeIn: 'fadeIn 0.5s ease-in',

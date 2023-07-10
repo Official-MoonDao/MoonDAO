@@ -17,11 +17,6 @@ export const navigation = [
       icon: TableCellsIcon,
     },
     {
-      name: 'buyMOONEY',
-      href: `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet`,
-      icon: PlusIcon
-    },
-    {
       name: 'lockTokens',
       href: '/lock',
       icon: LockClosedIcon
@@ -35,6 +30,11 @@ export const navigation = [
       name: 'lifeship',
       href: '/lifeship',
       icon: RocketLaunchIcon
+    },
+    {
+    name: 'buyMOONEY',
+      href: `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet`,
+      icon: PlusIcon
     },
     {
       name: 'governance',
