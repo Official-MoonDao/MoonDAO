@@ -1,20 +1,35 @@
+import { useAddress, useContract } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { getUserDiscordData } from '../../lib/discord'
-import { getSweepstakesSupply } from '../../lib/opensea'
-import { useAccount } from '../../lib/use-wagmi'
-import { useVMOONEYLock } from '../../lib/ve-token'
+import { useVMOONEYLock } from '../../lib/tokens/ve-token'
+import { getUserDiscordData } from '../../lib/utils/discord'
 import WebsiteHead from '../../components/layout/Head'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
 import ZeroGLayout from '../../components/zero-g/ZeroGLayout'
 import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
+import VotingEscrowABI from '../../const/abis/VotingEscrow.json'
+import vMooneySweepstakesABI from '../../const/abis/vMooneySweepstakes.json'
+import useContractConfig from '../../const/config'
 
 export default function ZeroG({ userDiscordData }: any) {
   const router = useRouter()
-  const { data: account } = useAccount()
+  const address = useAddress()
+
+  const { vMOONEYToken, vMooneySweepstakesZeroG } = useContractConfig()
+
+  const { contract: sweepstakesContract } = useContract(
+    vMooneySweepstakesZeroG,
+    vMooneySweepstakesABI
+  )
+
+  const { contract: vMooneyContract } = useContract(
+    vMOONEYToken,
+    VotingEscrowABI.abi
+  )
   const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
-    account?.address
+    vMooneyContract,
+    address
   )
   const [validLock, setValidLock] = useState<boolean>()
 
@@ -24,7 +39,7 @@ export default function ZeroG({ userDiscordData }: any) {
     if (!vMooneyLockLoading && vMooneyLock) {
       setValidLock(vMooneyLock && vMooneyLock[0] != 0)
     }
-  }, [vMooneyLock, account])
+  }, [vMooneyLock, address])
 
   return (
     <div className="animate-fadeIn">
@@ -56,10 +71,11 @@ export default function ZeroG({ userDiscordData }: any) {
         </div>
         <PurchasePortal validLock={validLock} />
         <ZeroGRaffle
+          sweepstakesContract={sweepstakesContract}
           userDiscordData={userDiscordData}
           router={router}
           validLock={validLock}
-          account={account}
+          address={address}
           supply={sweepstakesSupply}
         />
       </ZeroGLayout>

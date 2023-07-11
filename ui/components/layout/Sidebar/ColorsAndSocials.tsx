@@ -1,5 +1,5 @@
-import { MoonIcon, SunIcon } from "@heroicons/react/24/solid"
-import { DiscordIcon, TwitterIcon } from "../../assets"
+import { MoonIcon, SunIcon } from '@heroicons/react/24/solid'
+import { DiscordIcon, TwitterIcon } from '../../assets'
 
 interface ColorsAndSocials {
   lightMode: boolean
@@ -21,6 +21,7 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
         aria-label="Link to Discord"
         href="https://discord.com/invite/5nAu7K9aES"
         target="_blank"
+        rel="noreferrer"
       >
         <DiscordIcon />
       </a>
@@ -29,6 +30,7 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
         aria-label="Link to Twitter"
         href="https://twitter.com/OfficialMoonDAO"
         target="_blank"
+        rel="noreferrer"
       >
         <TwitterIcon />
       </a>
