@@ -51,7 +51,7 @@ export default function ZeroGRaffle({
 
   const { data: hasTicket } = useBalanceTicketZeroG(
     sweepstakesContract,
-    address
+    address || ''
   )
 
   const formRef: any = useRef()

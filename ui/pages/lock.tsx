@@ -205,7 +205,7 @@ export default function Lock() {
       <Head title="$vMOONEY" />
       <MainCard title={t('lockCardTitle')}>
         <div>
-          <L2Toggle/>
+          <L2Toggle />
         </div>
         <p className="mb-4">
           {t('lockTitle')}{' '}

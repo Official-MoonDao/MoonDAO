@@ -18,10 +18,7 @@ export default function ZeroG({ userDiscordData }: any) {
 
   const { vMOONEYToken, vMooneySweepstakesZeroG } = useContractConfig()
 
-  const { contract: sweepstakesContract } = useContract(
-    vMooneySweepstakesZeroG,
-    vMooneySweepstakesABI
-  )
+  const { contract: sweepstakesContract } = useContract(vMooneySweepstakesZeroG)
 
   const { contract: vMooneyContract } = useContract(
     vMOONEYToken,

@@ -1,5 +1,4 @@
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
-import { useContract } from '@thirdweb-dev/react'
 import { BigNumber, Contract, ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import { getUserDataRaffle } from '../../lib/zero-g/google-sheets'
@@ -30,11 +29,11 @@ export default function SweepstakesSelection({
   const { mutateAsync: randomSelection } =
     useRandomSelection(sweepstakesContract)
 
+  const provider = new ethers.providers.JsonRpcProvider(
+    process.env.NEXT_PUBLIC_INFURA_URL
+  )
   async function getWinners(loop = false) {
-    const provider = new ethers.providers.JsonRpcProvider(
-      process.env.NEXT_PUBLIC_INFURA_URL
-    )
-    const contract: Contract = new Contract(
+    const contract: any = new Contract(
       vMooneySweepstakesZeroG,
       vMooneySweepstakesZeroGABI,
       provider
