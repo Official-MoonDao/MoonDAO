@@ -27,6 +27,7 @@ import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import { navigation } from './Sidebar/Navigation'
 import NavigationLink from './Sidebar/NavigationLink'
+import ExternalLinks from './Sidebar/ExternalLinks'
 
 type Indexable = {
   [key: string]: any
@@ -75,7 +76,7 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
       {/* Static sidebar for desktop */}
       <div className="hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-64">
         {/* Sidebar component*/}
-        <div className="flex flex-grow flex-col overflow-y-auto bg-gradient-to-b from-gray-50 via-zinc-50 to-gray-50 pt-5 dark:from-slate-950 dark:via-gray-950 dark:to-slate-950">
+        <div className="flex flex-grow flex-col overflow-y-auto bg-gradient-to-b from-zinc-50 via-blue-50 to-blue-100 pt-5 dark:from-slate-950 dark:via-gray-950 dark:to-slate-900">
           <a href="https://moondao.com">
             <div className="flex flex-shrink-0 items-center px-4">
               {lightMode ? <LogoBlack /> : <LogoWhite />}
@@ -90,7 +91,7 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
           </div>
 
           {/*User BLOCKY, Connect buttons. Extract as separate component, replace Menu class (that menu class comes from DAISYUI, watch out for those baked-in classes*/}
-          <ul className="menu p-4">
+          <ul className="menu p-4 hidden">
             {/*User Blocky with wallet*/}
             {account?.address ? (
               <li>
@@ -166,13 +167,16 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
 
           {/*Color mode and Social links*/}
           <div className="flex flex-col pb-6 pl-7 lg:pl-9">
-            <div className="pb-14 pl-3">{/*<ExternalLinks />*/}</div>
+            <div className="pt-10 pb-10 pl-3"><ExternalLinks /></div>
             <ColorsAndSocials
               lightMode={lightMode}
               setLightMode={setLightMode}
             />
           </div>
         </div>
+
+
+
       </div>
 
       {/*The content, child rendered here*/}
