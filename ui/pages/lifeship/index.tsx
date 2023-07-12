@@ -1,13 +1,12 @@
+import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import { hasUserSubmittedNFT } from '../../lib/firebase'
-import { getKits } from '../../lib/lifeship-shopify'
-import { useAccount } from '../../lib/use-wagmi'
+import { getKits } from '../../lib/shopify/lifeship-shopify'
+import { hasUserSubmittedNFT } from '../../lib/utils/firebase'
 import Head from '../../components/layout/Head'
 import Product from '../../components/shopify/Product'
 import flag from '../../public/Original.png'
-import { Scene } from '../../r3f/Moon/Scene'
 
 /* STAGES
 0. SELECT KITS
@@ -37,7 +36,7 @@ function StageContainer({ children }: any) {
 
 export default function Lifeship({ products = [] }: any) {
   const router = useRouter()
-  const { data: account } = useAccount()
+  const address = useAddress()
   //stages
   const [state, setState] = useState(0)
 
@@ -71,19 +70,17 @@ export default function Lifeship({ products = [] }: any) {
 
   useEffect(() => {
     if (router && router.query.state === '1') setState(1)
-    if (account?.address) {
+    if (address) {
       //check if current wallet address has already submitted a NFT
       ;(async () => {
-        const res = await hasUserSubmittedNFT(account?.address)
+        const res = await hasUserSubmittedNFT(address)
         setUserSubmittedNFT(res)
       })()
     }
-  }, [state, account, router])
+  }, [state, address, router])
 
   return (
     <div className="animate-fadeIn">
-      <Scene zoomEnabled />
-
       <Head title="Lifeship" />
       <div className="flex flex-col max-w-3xl justify-center w-full">
         <div className="flex flex-col justify-center items-center gap-4 w-full">
@@ -173,7 +170,7 @@ export default function Lifeship({ products = [] }: any) {
                               quantityDNA: quantities.dna,
                               quantityAshes: quantities.ashes,
                               quantityPet: quantities.pet,
-                              walletAddress: account?.address,
+                              walletAddress: address,
                             }),
                           })
                             .then((res) => res.json())

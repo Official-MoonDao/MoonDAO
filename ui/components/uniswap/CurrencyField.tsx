@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
-import { TOKENS } from '../../lib/uniswap-config'
+import { TOKENS } from '../../lib/uniswap/uniswap-config'
 import LoadingSpinner from './LoadingSpinner'
 
 export default function CurrencyField({

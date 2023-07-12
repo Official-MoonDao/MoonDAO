@@ -13,7 +13,7 @@ function Button({ children, onClick }: any) {
 
 export default function EnterRaffleButton({
   setState,
-  account,
+  address,
   validLock,
   hasTicket,
   label = 'Enter Sweepstakes',
@@ -33,7 +33,7 @@ export default function EnterRaffleButton({
         )}
         <Button
           onClick={async () => {
-            if (!account?.address)
+            if (!address)
               return setError('Please connect a wallet that has vMooney')
             if (!validLock) return setError('This wallet does not have vMooney')
             if (hasTicket && +hasTicket.toString() === 1)

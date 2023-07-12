@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { checkout } from '../../../../lib/lifeship-shopify'
+import { checkout } from '../../../../lib/shopify/lifeship-shopify'
 
 //1 Human
 export default async function handler(

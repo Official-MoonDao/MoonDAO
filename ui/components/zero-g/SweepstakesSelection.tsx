@@ -1,37 +1,41 @@
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { BigNumber, Contract, ethers } from 'ethers'
 import { useEffect, useState } from 'react'
-import { vMooneySweepstakesZeroG } from '../../lib/config'
-import { getUserDataRaffle } from '../../lib/google-sheets'
+import { getUserDataRaffle } from '../../lib/zero-g/google-sheets'
 import {
   ZERO_G_V1_TOTAL_TOKENS,
   useCurrentWinner,
   useRandomSelection,
-  useSweepstakesEvent,
-} from '../../lib/zero-g-sweepstakes'
-import vMooneySweepstakesABI from '../../abis/vMooneySweepstakes.json'
+} from '../../lib/zero-g/zero-g-sweepstakes'
+import vMooneySweepstakesZeroGABI from '../../const/abis/vMooneySweepstakes.json'
+import useContractConfig from '../../const/config'
 
 //Issue w/ getting winners from contract in production, so hardcoding for now. Can read winners from contract in localhost.
 
-export default function SweepstakesSelection({ supply, account }: any) {
+export default function SweepstakesSelection({
+  sweepstakesContract,
+  supply,
+  account,
+}: any) {
+  const { vMooneySweepstakesZeroG } = useContractConfig()
+
   const [winners, setWinners]: any = useState([])
 
   const [loading, setLoading] = useState(false)
   const [event, setEvent]: any = useState()
 
-  const { data: currWinner }: any = useCurrentWinner()
+  const { data: currWinner }: any = useCurrentWinner(sweepstakesContract)
 
-  const { data: selectionData, write: randomSelection } = useRandomSelection()
+  const { mutateAsync: randomSelection } =
+    useRandomSelection(sweepstakesContract)
 
-  useSweepstakesEvent(setEvent)
-
+  const provider = new ethers.providers.JsonRpcProvider(
+    process.env.NEXT_PUBLIC_INFURA_URL
+  )
   async function getWinners(loop = false) {
-    const provider = new ethers.providers.JsonRpcProvider(
-      process.env.NEXT_PUBLIC_INFURA_URL
-    )
-    const contract: Contract = new Contract(
+    const contract: any = new Contract(
       vMooneySweepstakesZeroG,
-      vMooneySweepstakesABI,
+      vMooneySweepstakesZeroGABI,
       provider
     )
 
@@ -78,14 +82,8 @@ export default function SweepstakesSelection({ supply, account }: any) {
   }
 
   useEffect(() => {
-    if (!winners[0]) {
-      setTimeout(() => {
-        ;(async () => {
-          await getWinners()
-        })()
-      }, 3000)
-    }
-  }, [selectionData, event])
+    getWinners()
+  }, [])
 
   function Winner({ winner, i }: any) {
     if (winner && !winner.discordUsername) {

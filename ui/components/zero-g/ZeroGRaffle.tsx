@@ -1,18 +1,22 @@
+import { useContract } from '@thirdweb-dev/react'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
-import { useWaitForTransaction } from 'wagmi'
-import { discordOauthUrl } from '../../lib/discord'
-import { checkUserDataRaffle, submitRaffleForm } from '../../lib/google-sheets'
+import { discordOauthUrl } from '../../lib/utils/discord'
+import {
+  checkUserDataRaffle,
+  submitRaffleForm,
+} from '../../lib/zero-g/google-sheets'
 import {
   useBalanceTicketZeroG,
   useMintTicketZeroG,
-} from '../../lib/zero-g-sweepstakes'
+} from '../../lib/zero-g/zero-g-sweepstakes'
+import vMooneySweepstakesABI from '../../const/abis/vMooneySweepstakes.json'
 import InputContainer from './InputContainer'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
 import SweepstakesSelection from './SweepstakesSelection'
-import SweepstakesSupply from './SweepstakesSupply'
 
 /*
 STAGES:
@@ -26,24 +30,29 @@ STAGES:
 */
 
 export default function ZeroGRaffle({
+  sweepstakesContract,
   userDiscordData,
-  router,
-  account,
+  address,
   validLock,
   supply,
 }: any) {
+  const router = useRouter()
+
   const { data: twitter } = useSession()
 
   const [state, setState] = useState<number>(0)
   const [error, setError] = useState<string>('')
 
-  const { data: mintData, write: mint } = useMintTicketZeroG()
-  const { isLoading: mintIsLoading, isSuccess: mintSuccess } =
-    useWaitForTransaction({
-      hash: mintData?.hash,
-    })
+  const {
+    mutateAsync: mint,
+    isLoading: mintIsLoading,
+    error: mintError,
+  } = useMintTicketZeroG(sweepstakesContract)
 
-  const { data: hasTicket } = useBalanceTicketZeroG(account?.address)
+  const { data: hasTicket } = useBalanceTicketZeroG(
+    sweepstakesContract,
+    address || ''
+  )
 
   const formRef: any = useRef()
 
@@ -78,15 +87,15 @@ export default function ZeroGRaffle({
 
   useEffect(() => {
     if (state >= 5 || state === 1) return
-    if (twitter?.user && account?.address && validLock) {
+    if (twitter?.user && address && validLock) {
       userDiscordData.username && userDiscordData.email
         ? setState(4)
         : setState(3)
     } else setState(0)
-  }, [twitter?.user, account, validLock, userDiscordData])
+  }, [twitter?.user, address, validLock, userDiscordData])
 
   useEffect(() => {
-    if (state === 4 && mintData && !mintIsLoading && mintSuccess && hasTicket) {
+    if (state === 4 && !mintIsLoading && !mintError && hasTicket) {
       setTimeout(() => {
         if (+hasTicket.toString() === 1) setState(5)
         if (+hasTicket.toString() < 1)
@@ -100,7 +109,7 @@ export default function ZeroGRaffle({
       const userData = {
         twitterName: twitter?.user?.name,
         userDiscordData,
-        walletAddress: account.address,
+        walletAddress: address,
         email: userDiscordData.email,
       }
       ;(async () => {
@@ -108,7 +117,7 @@ export default function ZeroGRaffle({
           await submitRaffleForm(userData)
       })()
     }
-  }, [mintIsLoading, mintSuccess, hasTicket, state, formRef])
+  }, [mintIsLoading, mintError, hasTicket, state, formRef])
 
   return (
     <ReservationRaffleLayout>
@@ -138,7 +147,11 @@ export default function ZeroGRaffle({
               validLock={validLock}
               hasTicket={hasTicket}
             /> */}
-            <SweepstakesSelection supply={supply} account={account} />
+            <SweepstakesSelection
+              sweepstakesContract={sweepstakesContract}
+              supply={supply}
+              account={address}
+            />
           </StageContainer>
         )}
         {state === 1 && (
@@ -220,7 +233,7 @@ export default function ZeroGRaffle({
                     className="mt-2 flex flex-col bg-slate-900 text-white w-full rounded-md p-2"
                     type="text"
                     readOnly
-                    value={account?.address}
+                    value={address}
                   />
                 </label>
               </InputContainer>
@@ -254,7 +267,7 @@ export default function ZeroGRaffle({
                   const userData = {
                     twitterName: twitter?.user?.name,
                     userDiscordData,
-                    walletAddress: account.address,
+                    walletAddress: address,
                     email: userDiscordData.email,
                   }
                   //check if wallet, twitter, discord or email has already been used

@@ -1,5 +1,5 @@
 import React from 'react'
-import { NumberType, transformNumber } from '../lib/numbers'
+import { NumberType, transformNumber } from '../lib/utils/numbers'
 
 export default function Balance({
   loading = false,
