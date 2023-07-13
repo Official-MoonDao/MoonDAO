@@ -32,7 +32,7 @@ export function useGQLQuery(
     if (gqlClient && query && !data) {
       runQuery()
     }
-  }, [gqlClient, query])
+  }, [gqlClient, query, variables])
 
   return { data, isLoading, error, update: runQuery }
 }

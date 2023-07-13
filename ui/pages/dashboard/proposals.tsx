@@ -1,6 +1,6 @@
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { PROPOSALS_QUERY } from '../../lib/dashboard/gql/proposalsGQL'
 import { useGQLQuery } from '../../lib/utils/hooks/useGQLQuery'
 import ProposalList from '../../components/dashboard/proposals/ProposalList'
@@ -8,10 +8,16 @@ import Head from '../../components/layout/Head'
 import flag from '../../public/Original.png'
 
 export default function Proposals() {
-  const { data, isLoading, error } = useGQLQuery(
+  const [skip, setSkip] = useState(0)
+  const { data, isLoading, update } = useGQLQuery(
     'https://hub.snapshot.org/graphql',
-    PROPOSALS_QUERY
+    PROPOSALS_QUERY,
+    { skip }
   )
+
+  useEffect(() => {
+    console.log(data)
+  }, [data])
 
   const { t } = useTranslation('common')
   return (
@@ -26,7 +32,14 @@ export default function Proposals() {
         <p className="mb-8 font-RobotoMono">{t('proposalsDesc')}</p>
 
         <div className="grid xl:grid-cols-1 mt-2 gap-8">
-          {!isLoading && data && <ProposalList data={data.proposals} />}
+          {!isLoading && data && (
+            <ProposalList
+              data={data.proposals}
+              skip={skip}
+              setSkip={setSkip}
+              update={update}
+            />
+          )}
         </div>
       </div>
     </div>
