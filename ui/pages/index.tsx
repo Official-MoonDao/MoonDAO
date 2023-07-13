@@ -6,7 +6,7 @@ import Head from '../components/layout/Head'
 import HomeCard from '../components/layout/HomeCard'
 import flag from '../public/Original.png'
 
-export default function Index() {
+export default function Home() {
   const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">

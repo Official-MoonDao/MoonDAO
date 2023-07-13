@@ -39,5 +39,16 @@
   "withdraw": "Withdraw",
   "notConnected": "Not connected",
   "wrongNetwork": "Wrong network",
-  "safetyNote": "For safety reasons, we recommend you limit your token allowance for vMOONEY to the amount you plan to deposit in the near future."
+  "safetyNote": "For safety reasons, we recommend you limit your token allowance for vMOONEY to the amount you plan to deposit in the near future.",
+
+  "announcementsTitle": "Announcements",
+  "announcementsDesc": "Here you can find the latest announcements from the MoonDAO team.",
+  "analyticsTitle": "Analytics",
+  "analyticsDesc": "Here you can find the latest analytics for MOONEY and vMOONEY.",
+  "calendarTitle": "Calendar",
+  "calendarDesc": "Here you can find the latest calendar for MoonDAO.",
+  "proposalsTitle": "Proposals",
+  "proposalsDesc": "Here you can find the latest proposals for MoonDAO.",
+  "treasuryTitle": "Treasury",
+  "treasuryDesc": "Here you can find the current status of the MoonDAO treasury."
 }

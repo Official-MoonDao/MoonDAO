@@ -5,6 +5,7 @@ import { useRouter } from 'next/router'
 import Script from 'next/script'
 import React from 'react'
 import { useState, useEffect } from 'react'
+import { Toaster } from 'react-hot-toast'
 import { useImportToken } from '../../lib/utils/import-token'
 import { LogoBlack, LogoWhite, CNAsset } from '../assets'
 import PreferredNetworkWrapper from '../thirdweb/PreferredNetworkWrapper'
@@ -144,6 +145,7 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
           </section>
         </PreferredNetworkWrapper>
       </main>
+      <Toaster />
     </div>
   )
 

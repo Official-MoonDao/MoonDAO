@@ -32,27 +32,27 @@ export const navigation = [
   },
   {
     name: 'Announcements',
-    href: '/announcements',
+    href: '/dashboard/announcements',
     icon: BellIcon,
   },
   {
     name: 'Proposals',
-    href: '/proposals',
+    href: '/dashboard/proposals',
     icon: FolderIcon,
   },
   {
     name: 'Treasury',
-    href: '/treasury',
+    href: '/dashboard/treasury',
     icon: WalletIcon,
   },
   {
     name: 'Analytics',
-    href: '/analytics',
+    href: '/dashboard/analytics',
     icon: ChartPieIcon,
   },
   {
     name: 'Calendar',
-    href: '/calendar',
+    href: '/dashboard/calendar',
     icon: CalendarDaysIcon,
   },
 ]
