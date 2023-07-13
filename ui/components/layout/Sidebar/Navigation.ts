@@ -1,4 +1,6 @@
 import {
+  HomeIcon,
+  HomeModernIcon,
   BellIcon,
   WalletIcon,
   LockClosedIcon,
@@ -13,7 +15,7 @@ export const navigation = [
   {
     name: 'home',
     href: '/',
-    icon: TableCellsIcon,
+    icon: HomeIcon,
   },
   {
     name: 'lockTokens',
@@ -21,38 +23,36 @@ export const navigation = [
     icon: LockClosedIcon,
   },
   {
-    name: 'zero-g',
-    href: '/zero-g',
+    name: 'Missions',
     icon: RocketLaunchIcon,
-  },
-  {
-    name: 'Lifeship',
-    href: '/lifeship',
-    icon: RocketLaunchIcon,
+    children: [
+      { name: 'Zero-g', href: '/zero-g' },
+      { name: 'Lifeship', href: '/lifeship' },
+    ],
   },
   {
     name: 'Announcements',
-    href: '/lifeship',
+    href: '/announcements',
     icon: BellIcon,
   },
   {
     name: 'Proposals',
-    href: '/lifeship',
+    href: '/proposals',
     icon: FolderIcon,
   },
   {
     name: 'Treasury',
-    href: '/lifeship',
+    href: '/treasury',
     icon: WalletIcon,
   },
   {
     name: 'Analytics',
-    href: '/lifeship',
+    href: '/analytics',
     icon: ChartPieIcon,
   },
   {
     name: 'Calendar',
-    href: '/lifeship',
+    href: '/calendar',
     icon: CalendarDaysIcon,
   },
 ]

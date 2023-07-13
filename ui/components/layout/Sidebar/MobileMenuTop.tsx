@@ -13,7 +13,7 @@ const MobileMenuTop = ({
   setLightMode,
 }: MobileMenuTop) => {
   return (
-    <div className="flex flex-1 flex-col lg:pl-64">
+    <div className="relative z-10 flex flex-1 flex-col lg:pl-64">
       <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 justify-between bg-white shadow dark:bg-slate-950 md:hidden">
         <button
           type="button"

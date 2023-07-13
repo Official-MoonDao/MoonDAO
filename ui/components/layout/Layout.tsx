@@ -1,10 +1,3 @@
-import {
-  KeyIcon,
-  UserIcon,
-  ArrowLeftOnRectangleIcon,
-  XCircleIcon,
-  ChevronDownIcon,
-} from '@heroicons/react/24/outline'
 import { ConnectWallet, useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -16,10 +9,10 @@ import { useImportToken } from '../../lib/utils/import-token'
 import { LogoBlack, LogoWhite, CNAsset } from '../assets'
 import PreferredNetworkWrapper from '../thirdweb/PreferredNetworkWrapper'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
+import ExternalLinks from './Sidebar/ExternalLinks'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import { navigation } from './Sidebar/Navigation'
 import NavigationLink from './Sidebar/NavigationLink'
-import ExternalLinks from './Sidebar/ExternalLinks'
 
 type Indexable = {
   [key: string]: any
@@ -53,7 +46,7 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
     <div
       className={`${
         !lightMode ? 'dark stars-dark' : 'stars-light'
-      } min-h-screen relative z-10`}
+      } min-h-screen`}
     >
       <Script src="https://cdn.splitbee.io/sb.js" />
 
@@ -65,7 +58,7 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
       />
 
       {/* Static sidebar for desktop */}
-      <div className="hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-64">
+      <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-64">
         {/* Sidebar component*/}
         <div className="flex flex-grow flex-col overflow-y-auto bg-gradient-to-b from-zinc-50 via-blue-50 to-blue-100 pt-5 dark:from-slate-950 dark:via-gray-950 dark:to-slate-900">
           <a href="https://moondao.com">
@@ -82,13 +75,11 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
           </div>
 
           {/*User BLOCKY, Connect buttons. Extract as separate component, replace Menu class (that menu class comes from DAISYUI, watch out for those baked-in classes*/}
-          <ul className="menu p-4 hidden">
+          <ul className="menu p-4">
             {/*User Blocky with wallet*/}
-
             <>
               <ConnectWallet />
             </>
-
             {/*Language change button*/}
             <li className="mt-1 relative py-2">
               {currentLang === 'en' ? (
@@ -113,7 +104,6 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
                 </Link>
               )}
             </li>
-
             {address && !isTokenImported && (
               <li className="mt-1 relative">
                 <a
@@ -123,11 +113,11 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
                     setIsTokenImported(wasAdded)
                   }}
                 >
-                  <h1 className="mx-auto">
+                  <p className="mx-auto">
                     {currentLang === 'en'
                       ? 'Import $MOONEY Token'
                       : '导入 $MOONEY 代币'}
-                  </h1>
+                  </p>
                 </a>
               </li>
             )}
@@ -135,16 +125,15 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
 
           {/*Color mode and Social links*/}
           <div className="flex flex-col pb-6 pl-7 lg:pl-9">
-            <div className="pt-10 pb-10 pl-3"><ExternalLinks /></div>
+            <div className="pt-10 pb-10 pl-3">
+              <ExternalLinks />
+            </div>
             <ColorsAndSocials
               lightMode={lightMode}
               setLightMode={setLightMode}
             />
           </div>
         </div>
-
-
-
       </div>
 
       {/*The content, child rendered here*/}
@@ -155,118 +144,6 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
           </section>
         </PreferredNetworkWrapper>
       </main>
-
-      {/* Pop up for connect
-      <input type="checkbox" id="web3-modal" className="modal-toggle" />
-      <label htmlFor="web3-modal" className="modal cursor-pointer">
-        <label className="black-text modal-box relative" htmlFor="">
-          <label
-            htmlFor="web3-modal"
-            className="btn btn-sm btn-circle btn-ghost absolute right-6 top-5"
-          >
-            ✕
-          </label>
-          {address ? (
-            <>
-              <h3 className="text-lg font-bold px-4">Account</h3>
-
-              <p className="p-4">Connected to {account.connector?.name}</p>
-
-              <ul className="menu bg-base-100 p-2 rounded-box">
-                <li key="address">
-                  <a
-                    href={`https://etherscan.io/address/${address}`}
-                    rel="noreferrer noopener"
-                    target="_blank"
-                  >
-                    <UserIcon className="h-5 w-5" />
-                    {ensName
-                      ? ensName
-                      : `${((address as string) ?? '').substring(
-                          0,
-                          6
-                        )}...${((address as string) ?? '').slice(-4)}`}
-                  </a>
-                </li>
-
-                <li key="logout">
-                  <a onClick={() => disconnect()}>
-                    <ArrowLeftOnRectangleIcon className="h-5 w-5" />
-                    Log out
-                  </a>
-                </li>
-              </ul>
-            </>
-          ) : (
-            <>
-              <h3 className="text-lg font-bold px-4">
-                Sign in by connecting your account
-              </h3>
-
-              <p className="p-4">You can choose from these providers:</p>
-              {connectError ? (
-                <div className="alert alert-error mb-4">
-                  <div>
-                    <XCircleIcon className="h-5 w-5" />
-                    <span>{connectError?.message || 'Failed to connect'}</span>
-                  </div>
-                </div>
-              ) : (
-                ''
-              )}
-
-              <ul className="menu bg-base-100 p-2 -m-2 rounded-box">
-                {connectors.map((connector: any) => (
-                  <li key={connector.id}>
-                    <button
-                      disabled={!connector.ready}
-                      onClick={() => connect(connector)}
-                    >
-                      {(connectorIcons as Indexable)[connector.name] ? (
-                        <div className="h-5 w-5">
-                          <Image
-                            src={(connectorIcons as Indexable)[connector.name]}
-                          />
-                        </div>
-                      ) : (
-                        <KeyIcon className="h-5 w-5" />
-                      )}
-                      {connector.name}
-                      {!connector.ready && ' (unsupported)'}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-
-              <p className="px-4 mt-4">
-                New to Ethereum?{' '}
-                <a
-                  href="https://ethereum.org/wallets/"
-                  rel="noreferrer noopener"
-                  target="_blank"
-                  className="underline text-n3blue"
-                >
-                  Learn more about wallets
-                </a>
-                .<br />
-                <br />
-                By using this software, you agree to{' '}
-                <a
-                  href="https://github.com/Official-MoonDao/MoonDAO-app/blob/main/LICENSE.md"
-                  rel="noreferrer noopener"
-                  target="_blank"
-                  className="underline text-n3blue"
-                >
-                  its terms of use
-                </a>
-                .
-              </p>
-            </>
-          )}
-        </label>
-      </label> */}
-
-      {/*Error Handling*/}
     </div>
   )
 
