@@ -15,9 +15,10 @@ export default function Proposals() {
     { skip }
   )
 
-  useEffect(() => {
-    console.log(data)
-  }, [data])
+  function handleSkip(value: number) {
+    setSkip(value)
+    update()
+  }
 
   const { t } = useTranslation('common')
   return (
@@ -36,8 +37,7 @@ export default function Proposals() {
             <ProposalList
               data={data.proposals}
               skip={skip}
-              setSkip={setSkip}
-              update={update}
+              setSkip={handleSkip}
             />
           )}
         </div>
