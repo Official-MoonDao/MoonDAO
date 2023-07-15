@@ -1,5 +1,6 @@
 namespace NodeJS {
   interface ProcessEnv {
+    NEXT_PUBLIC_ANNOUNCEMENTS_API_URL: string
     DISCORD_CLIENT_ID: string
     DISCORD_CLIENT_SECRET: string
     NEXT_PUBLIC_VMOONEY_REQUIRED_STAKE: number

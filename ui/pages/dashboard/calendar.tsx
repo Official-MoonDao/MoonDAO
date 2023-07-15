@@ -1,10 +1,14 @@
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import React from 'react'
+import { useCalendarEvents } from '../../lib/dashboard/hooks/useCalendarEvents'
+import { useGQLQuery } from '../../lib/utils/hooks/useGQLQuery'
 import Head from '../../components/layout/Head'
 import flag from '../../public/Original.png'
 
 export default function Calendar() {
+  const calendarEvents = useCalendarEvents()
+
   const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">

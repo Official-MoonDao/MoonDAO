@@ -22,7 +22,6 @@ export function useGQLQuery(
       const result = await gqlClient.query(query, variables).toPromise()
       setData(result.data)
     } catch (err: any) {
-      errorToast(err.message)
       setError(err.message)
     }
     setIsLoading(false)

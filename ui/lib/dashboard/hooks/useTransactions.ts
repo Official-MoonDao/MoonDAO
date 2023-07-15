@@ -6,7 +6,7 @@ export function useTransactions(page: number = 1) {
   const ETHERSCAN_API_BASE = 'https://api.etherscan.io/api'
 
   const [transactions, setTransactions] = useState<any>([])
-  const [isLoaded, setIsLoaded] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<any>()
 
   const url =
@@ -18,18 +18,18 @@ export function useTransactions(page: number = 1) {
     `&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
 
   useEffect(() => {
-    setIsLoaded(false)
+    setIsLoading(true)
     fetch(url)
       .then((res) => res.json())
       .then(
         (result) => {
           console.log(result)
-          setIsLoaded(true)
+          setIsLoading(false)
           setTransactions(result.result)
         },
         (error) => setError(error)
       )
   }, [page])
 
-  return { transactions, isLoaded, error }
+  return { transactions, isLoading, error }
 }

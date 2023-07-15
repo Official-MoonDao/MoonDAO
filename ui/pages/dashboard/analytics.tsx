@@ -1,10 +1,19 @@
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { getVMOONEYData } from '../../lib/tokens/ve-subgraph'
 import Head from '../../components/layout/Head'
 import flag from '../../public/Original.png'
 
 export default function Analytics() {
+  const [analyticsData, setAnalyticsData] = useState<any>()
+
+  useEffect(() => {
+    getVMOONEYData().then((data) => {
+      setAnalyticsData(data)
+    })
+  }, [])
+
   const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">
