@@ -141,10 +141,11 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
       <main className="flex justify-center pb-24 md:ml-48">
         <PreferredNetworkWrapper address={address}>
           <section className="mt-20 flex flex-col lg:w-[80%] lg:px-14 xl:px-16 2xl:px-20">
-            <span>{children}</span>
+            {children}
           </section>
         </PreferredNetworkWrapper>
       </main>
+      
       <Toaster />
     </div>
   )
