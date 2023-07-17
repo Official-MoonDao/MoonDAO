@@ -1,33 +1,34 @@
+import { set } from 'cypress/types/lodash'
 import { useState, useEffect } from 'react'
 
 export const useAnnouncements = () => {
-  const ANNOUNCEMENTS_API_URL = process.env
-    .NEXT_PUBLIC_ANNOUNCEMENTS_API_URL as string
   const [announcements, setAnnouncements] = useState<any>([])
-  const [announcementsError, setAnnouncementsError] = useState<boolean>()
-  const [announcementsLoaded, setAnnouncementsLoaded] = useState<boolean>(false)
+  const [error, setError] = useState<boolean>()
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+
+  async function getAnnouncements(id?: string) {
+    setIsLoading(true)
+    try {
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_ANNOUNCEMENTS_API_URL +
+          (id ? `?before=${id}` : '')
+      )
+      const data = await response.json()
+      setAnnouncements(data)
+    } catch (err: any) {
+      setError(err.message)
+    }
+    setIsLoading(false)
+  }
 
   useEffect(() => {
-    fetch(ANNOUNCEMENTS_API_URL)
-      .then((res) => res.json())
-      .then(
-        (result) => {
-          if (result.message === '401: Unauthorized') {
-            setAnnouncementsError(true)
-            setAnnouncements(result)
-          } else {
-            setAnnouncements(result)
-            setAnnouncementsLoaded(true)
-          }
-        },
-        (error) => setAnnouncementsError(error)
-      )
+    getAnnouncements()
   }, [])
 
   return {
     announcements,
-    announcementsLoaded,
-    announcementsError,
-    setAnnouncements,
+    isLoading,
+    error,
+    update: getAnnouncements,
   }
 }

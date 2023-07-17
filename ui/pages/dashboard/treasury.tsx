@@ -1,10 +1,20 @@
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import React from 'react'
+import { useTransactions } from '../../lib/dashboard/hooks'
+import { errorToast } from '../../lib/utils/errorToast'
+import WalletTransactions from '../../components/dashboard/treasury/Transactions'
 import Head from '../../components/layout/Head'
 import flag from '../../public/Original.png'
 
 export default function Treasury() {
+  const { transactions, isLoading, error } = useTransactions()
+
+  if (error)
+    errorToast(
+      'Connection with Etherscan failed. Contact MoonDAO if the problem persists 🚀'
+    )
+
   const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">
@@ -17,7 +27,11 @@ export default function Treasury() {
 
         <p className="mb-8 font-RobotoMono">{t('treasuryDesc')}</p>
 
-        <div className="grid xl:grid-cols-1 mt-2 gap-8"></div>
+        <div className="grid xl:grid-cols-1 mt-2 gap-8">
+          {!isLoading && transactions && (
+            <WalletTransactions transactions={transactions} />
+          )}
+        </div>
       </div>
     </div>
   )

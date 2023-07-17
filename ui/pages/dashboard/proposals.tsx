@@ -1,6 +1,7 @@
 import useTranslation from 'next-translate/useTranslation'
 import React, { useState } from 'react'
 import { PROPOSALS_QUERY } from '../../lib/dashboard/gql/proposalsGQL'
+import { errorToast } from '../../lib/utils/errorToast'
 import { useGQLQuery } from '../../lib/utils/hooks/useGQLQuery'
 import ProposalList from '../../components/dashboard/proposals/ProposalList'
 import Head from '../../components/layout/Head'
@@ -18,6 +19,11 @@ export default function Proposals() {
     setSkip(value)
     update()
   }
+
+  if (error)
+    errorToast(
+      'Connection failed. Contact MoonDAO discord if the problem persists 🚀'
+    )
 
   const { t } = useTranslation('common')
   return (

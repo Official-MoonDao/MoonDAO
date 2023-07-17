@@ -1,10 +1,44 @@
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
-import React from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { serialize } from 'v8'
+import { useAnnouncements } from '../../lib/dashboard/hooks'
+import { errorToast } from '../../lib/utils/errorToast'
 import Head from '../../components/layout/Head'
 import flag from '../../public/Original.png'
 
 export default function Announcements() {
+  const {
+    announcements,
+    isLoading,
+    error,
+    update: updateAnnouncements,
+  } = useAnnouncements()
+
+  const firstPostId = '916126920339509268'
+  const [lastPostId, setLastPostId] = useState<string>('')
+  const intObserver: any = useRef()
+  const lastPostRef = useCallback(
+    (announcement: any) => {
+      if (isLoading) return
+      if (intObserver.current) intObserver.current.disconnect()
+
+      intObserver.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && lastPostId !== firstPostId) {
+          updateAnnouncements(lastPostId)
+        }
+      })
+
+      if (announcement) intObserver.current.observe(announcement)
+    },
+    [isLoading]
+  )
+
+  if (error)
+    errorToast(
+      'Connection with Discord failed. Contact MoonDAO if the problem persists 🚀'
+    )
+
   const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">
