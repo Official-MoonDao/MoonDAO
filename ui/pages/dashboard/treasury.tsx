@@ -1,16 +1,31 @@
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import React from 'react'
-import { useTransactions } from '../../lib/dashboard/hooks'
+import { useAssets, useTransactions } from '../../lib/dashboard/hooks'
 import { errorToast } from '../../lib/utils/errorToast'
-import WalletTransactions from '../../components/dashboard/treasury/Transactions'
+import AssetSkeletons from '../../components/dashboard/treasury/balance/AssetSkeletons'
+import Assets from '../../components/dashboard/treasury/balance/Assets'
+import TreasuryBalance from '../../components/dashboard/treasury/balance/TreasuryBalance'
+import Transaction from '../../components/dashboard/treasury/transactions/Transaction'
+import TransactionSkeletons from '../../components/dashboard/treasury/transactions/TransactionSkeletons'
 import Head from '../../components/layout/Head'
 import flag from '../../public/Original.png'
 
 export default function Treasury() {
-  const { transactions, isLoading, error } = useTransactions()
+  const {
+    transactions,
+    isLoading: loadingTransactions,
+    error: etherscanError,
+  } = useTransactions()
 
-  if (error)
+  const {
+    tokens,
+    balanceSum,
+    isLoading: loadingAssets,
+    error: assetsError,
+  } = useAssets()
+
+  if (etherscanError)
     errorToast(
       'Connection with Etherscan failed. Contact MoonDAO if the problem persists 🚀'
     )
@@ -28,9 +43,29 @@ export default function Treasury() {
         <p className="mb-8 font-RobotoMono">{t('treasuryDesc')}</p>
 
         <div className="grid xl:grid-cols-1 mt-2 gap-8">
-          {!isLoading && transactions && (
-            <WalletTransactions transactions={transactions} />
-          )}
+          <div>
+            {loadingAssets || !tokens[0] ? (
+              <AssetSkeletons />
+            ) : (
+              <>
+                <TreasuryBalance balance={balanceSum} />
+                <Assets tokens={tokens} />
+              </>
+            )}
+          </div>
+          <div>
+            {loadingTransactions || !transactions[0] ? (
+              <TransactionSkeletons />
+            ) : (
+              transactions.map((transaction: any) => (
+                <Transaction
+                  key={transaction.hash}
+                  data={transaction}
+                  loading={loadingTransactions}
+                />
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

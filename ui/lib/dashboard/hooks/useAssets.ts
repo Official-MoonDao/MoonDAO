@@ -4,10 +4,11 @@ export function useAssets() {
   const ASSETS_URL = process.env.NEXT_PUBLIC_ASSETS_URL as string
   const [tokens, setTokens] = useState<any>([])
   const [balanceSum, setBalanceSum] = useState<any>()
-  const [isLoaded, setIsLoaded] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<any>(null)
 
   useEffect(() => {
+    setIsLoading(true)
     fetch(ASSETS_URL)
       .then((res) => res.json())
       .then(
@@ -21,16 +22,16 @@ export function useAssets() {
 
           setBalanceSum(balanceSum)
           setTokens(tokens)
-          setIsLoaded(true)
+          setIsLoading(false)
         },
         (error) => {
-          setIsLoaded(true)
+          setIsLoading(false)
           setError(error)
         }
       )
   }, [])
 
-  return { tokens, isLoaded, balanceSum, error }
+  return { tokens, isLoading, balanceSum, error }
 }
 
 function transformAssets(result: any) {

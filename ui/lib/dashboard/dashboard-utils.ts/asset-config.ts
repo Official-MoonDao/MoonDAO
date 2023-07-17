@@ -14,7 +14,7 @@ export const allowedAssets = {
   MATIC: true,
   MANA: true,
   ENS: true,
-}
+} as any
 
 /* 
   This affects the TREASURY
@@ -35,7 +35,7 @@ export const assetImageExtension = {
   JBX: 'png',
   MOONEY: 'png',
   SAFE: 'png',
-}
+} as any
 
 /*
 
