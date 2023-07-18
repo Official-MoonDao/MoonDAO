@@ -3,7 +3,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { getKits } from '../../lib/shopify/lifeship-shopify'
-import { hasUserSubmittedNFT } from '../../lib/utils/firebase'
 import Head from '../../components/layout/Head'
 import Product from '../../components/shopify/Product'
 import flag from '../../public/Original.png'
@@ -26,14 +25,6 @@ function Button({ children, onClick, className = '' }: any) {
   )
 }
 
-function StageContainer({ children }: any) {
-  return (
-    <div className="flex flex-col justify-center items-center gap-4 w-full">
-      {children}
-    </div>
-  )
-}
-
 export default function Lifeship({ products = [] }: any) {
   const router = useRouter()
   const address = useAddress()
@@ -43,24 +34,7 @@ export default function Lifeship({ products = [] }: any) {
   //user-feedback
   const [notification, setNotification]: any = useState('')
 
-  //NFT submission
-  const [userImage, setUserImage]: any = useState({})
-
   const [quantities, setQuantities] = useState({ dna: 0, ashes: 0, pet: 0 })
-
-  //check if user has already submited a NFT
-  const [userSubmittedNFT, setUserSubmittedNFT]: any = useState(false)
-
-  function Cancel() {
-    return (
-      <button
-        className="border-n3green border-2 text-n3green hover:scale-[1.05] ease-in duration-150 w-1/3 rounded-2xl text-center py-2"
-        onClick={() => setState(0)}
-      >
-        Cancel ✖
-      </button>
-    )
-  }
 
   function reset() {
     setState(0)
@@ -70,14 +44,7 @@ export default function Lifeship({ products = [] }: any) {
 
   useEffect(() => {
     if (router && router.query.state === '1') setState(1)
-    if (address) {
-      //check if current wallet address has already submitted a NFT
-      ;(async () => {
-        const res = await hasUserSubmittedNFT(address)
-        setUserSubmittedNFT(res)
-      })()
-    }
-  }, [state, address, router])
+  }, [state, router])
 
   return (
     <div className="animate-fadeIn">
@@ -209,7 +176,7 @@ export default function Lifeship({ products = [] }: any) {
   )
 }
 
-export async function getStaticProps({ params }: any) {
+export async function getStaticProps() {
   const products = await getKits()
 
   return {

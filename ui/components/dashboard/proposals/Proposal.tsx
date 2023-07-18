@@ -7,12 +7,12 @@ import LinkHighlighter from '../LinkHighlighter'
 interface Proposal {
   title: string
   loading?: boolean
-  startTime: number
-  endTime: number
-  author: string
+  startTime?: number
+  endTime?: number
+  author: any
   state: string
   idx: number
-  proposalId: string
+  proposalId?: string
   body: string
 }
 
@@ -24,15 +24,18 @@ const Proposal = ({
   author,
   state,
   idx,
-  proposalId,
+  proposalId = '',
   body,
 }: Proposal) => {
   const timeStr =
-    state == 'pending'
+    !startTime || !endTime
+      ? ''
+      : state == 'pending'
       ? getHumanTime((startTime - Math.floor(Date.now() / 1000)) * 1000)
       : state == 'active'
       ? getHumanTime((endTime - Math.floor(Date.now() / 1000)) * 1000)
       : getHumanTime((Math.floor(Date.now() / 1000) - endTime) * 1000)
+
   const link = 'https://snapshot.org/#/tomoondao.eth/proposal/' + proposalId
 
   return (
@@ -65,6 +68,7 @@ const Proposal = ({
                   className={`link text-lg lg:text-xl ${loading && 'hidden'}`}
                   href={link}
                   target="_blank"
+                  rel="noreferrer"
                 >
                   {'read more.'}
                 </a>

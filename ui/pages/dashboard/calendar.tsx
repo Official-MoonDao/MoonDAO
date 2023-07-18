@@ -1,13 +1,21 @@
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
-import React from 'react'
+import React, { useState } from 'react'
 import { useCalendarEvents } from '../../lib/dashboard/hooks/useCalendarEvents'
-import { useGQLQuery } from '../../lib/utils/hooks/useGQLQuery'
+import CalendarHeader from '../../components/dashboard/calendar/CalendarHeader'
+import MonthlyCalendar from '../../components/dashboard/calendar/MonthlyCalendar'
+import WeeklyCalendar from '../../components/dashboard/calendar/WeeklyCalendar'
 import Head from '../../components/layout/Head'
 import flag from '../../public/Original.png'
 
+const calendarLink =
+  'https://sesh.fyi/api/calendar/v2/1NtkbbR6C4pu9nfgPwPGQn.ics'
+
 export default function Calendar() {
-  const calendarEvents = useCalendarEvents()
+  const { events: calendarEvents, getDayEvents } =
+    useCalendarEvents(calendarLink)
+  const [isMonthlyView, setIsMonthlyView] = useState<boolean>(true)
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
   const { t } = useTranslation('common')
   return (
@@ -21,7 +29,30 @@ export default function Calendar() {
 
         <p className="mb-8 font-RobotoMono">{t('calendarDesc')}</p>
 
-        <div className="grid xl:grid-cols-1 mt-2 gap-8"></div>
+        <div className="grid xl:grid-cols-1 mt-2 gap-8">
+          <CalendarHeader
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            isMonthlyView={isMonthlyView}
+            setIsMonthlyView={setIsMonthlyView}
+            calendarLink={calendarLink}
+          />
+          {isMonthlyView ? (
+            <MonthlyCalendar
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              events={calendarEvents}
+              getDayEvents={getDayEvents}
+            />
+          ) : (
+            <WeeklyCalendar
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              events={calendarEvents}
+              getDayEvents={getDayEvents}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
