@@ -26,7 +26,6 @@ const MobileMenuTop = ({
             aria-hidden="true"
           />
         </button>
-        {/*Colors and socials, extract in component*/}
         <ColorsAndSocials lightMode={lightMode} setLightMode={setLightMode} />
       </div>
     </div>

@@ -20,19 +20,18 @@ const externalLinks = [
 const ExternalLinks = () => {
   return (
     <div className="">
-      <h3
-        className="-ml-2 font-medium text-blue-700 dark:text-yellow-200"
-        id="projects-headline"
-      >
+      <h3 className="-ml-2 font-medium text-blue-700 dark:text-yellow-200">
         External links
       </h3>
       <ul
         className="mt-2 px-3 list-disc marker:text-blue-500 dark:marker:text-yellow-100 group"
         role="group"
-        aria-labelledby="projects-headline"
       >
         {externalLinks.map((item, i) => (
-          <li key={i} className=" py-[6px] hover:scale-105 transition-all duration-100">
+          <li
+            key={i}
+            className=" py-[6px] hover:scale-105 transition-all duration-100"
+          >
             <a
               key={item.name}
               href={item.href}

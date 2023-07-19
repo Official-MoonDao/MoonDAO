@@ -1,16 +1,21 @@
 import { ConnectWallet, useAddress } from '@thirdweb-dev/react'
+//Network warning
+import { useChain } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Script from 'next/script'
 import React from 'react'
 import { useState, useEffect } from 'react'
+import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
+import ChainContext from '../../lib/thirdweb/chain-context'
 import { useImportToken } from '../../lib/utils/import-token'
 import { LogoBlack, LogoWhite, CNAsset } from '../assets'
-import PreferredNetworkWrapper from '../thirdweb/PreferredNetworkWrapper'
+import SwitchNetworkBanner from '../thirdweb/SwitchNetworkBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import ExternalLinks from './Sidebar/ExternalLinks'
+import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import { navigation } from './Sidebar/Navigation'
 import NavigationLink from './Sidebar/NavigationLink'
@@ -30,13 +35,12 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
 
   const [nav, setNav] = useState(navigation)
 
+  const chain = useChain()
+  const { selectedChain } = useContext(ChainContext)
+
   const [currentLang, setCurrentLang] = useState(router.locale)
   const [isTokenImported, setIsTokenImported] = useState(false)
-  const changeLang = (e: any, lang: any) => {
-    e.preventDefault()
-    setCurrentLang(lang)
-    router.push(router.pathname, router.pathname, { locale: lang })
-  }
+
 
   useEffect(() => {
     if (localStorage.getItem('MOONEY_isImported')) setIsTokenImported(true)
@@ -59,7 +63,7 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
       />
 
       {/* Static sidebar for desktop */}
-      <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-64">
+      <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
         {/* Sidebar component*/}
         <div className="flex flex-grow flex-col overflow-y-auto bg-gradient-to-b from-zinc-50 via-blue-50 to-blue-100 pt-5 dark:from-slate-950 dark:via-gray-950 dark:to-slate-900">
           <a href="https://moondao.com">
@@ -72,61 +76,33 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
               {navigation.map((item, i) => (
                 <NavigationLink item={item} key={i} />
               ))}
+              {/*Language change, import button*/}
+              <ul className="pt-4 px-3">
+                {/*Language change button*/}
+                <LanguageChange />
+                {/*Import MOONEY, will add to LOCK MOONEY page*/}
+                {address && !isTokenImported && (
+                  <li className="mt-1 hidden bg-red-500">
+                    <button
+                      className="p-2 "
+                      onClick={async () => {
+                        const wasAdded = await importToken()
+                        setIsTokenImported(wasAdded)
+                      }}
+                    >
+                      {currentLang === 'en'
+                        ? 'Import $MOONEY Token'
+                        : '导入 $MOONEY 代币'}
+                    </button>
+                  </li>
+                )}
+              </ul>
             </nav>
           </div>
 
-          {/*User BLOCKY, Connect buttons. Extract as separate component, replace Menu class (that menu class comes from DAISYUI, watch out for those baked-in classes*/}
-          <ul className="menu p-4">
-            {/*User Blocky with wallet*/}
-            <>
-              <ConnectWallet />
-            </>
-            {/*Language change button*/}
-            <li className="mt-1 relative py-2">
-              {currentLang === 'en' ? (
-                <Link href="/" locale="zh">
-                  <a
-                    className="py-2 active text-black text-center"
-                    onClick={(e) => changeLang(e, 'zh')}
-                  >
-                    <CNAsset />
-                    <h1 className="mx-auto">切换到中文</h1>
-                  </a>
-                </Link>
-              ) : (
-                <Link href="/" locale="en">
-                  <a
-                    className="py-2 active text-black text-center"
-                    onClick={(e) => changeLang(e, 'en')}
-                  >
-                    <CNAsset />
-                    <h1 className="mx-auto">Switch to English</h1>
-                  </a>
-                </Link>
-              )}
-            </li>
-            {address && !isTokenImported && (
-              <li className="mt-1 relative">
-                <a
-                  className="active p-2 "
-                  onClick={async () => {
-                    const wasAdded = await importToken()
-                    setIsTokenImported(wasAdded)
-                  }}
-                >
-                  <p className="mx-auto">
-                    {currentLang === 'en'
-                      ? 'Import $MOONEY Token'
-                      : '导入 $MOONEY 代币'}
-                  </p>
-                </a>
-              </li>
-            )}
-          </ul>
-
           {/*Color mode and Social links*/}
           <div className="flex flex-col pb-6 pl-7 lg:pl-9">
-            <div className="pt-10 pb-10 pl-3">
+            <div className="pt-7 pb-10 pl-3">
               <ExternalLinks />
             </div>
             <ColorsAndSocials
@@ -138,14 +114,31 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
       </div>
 
       {/*The content, child rendered here*/}
-      <main className="flex justify-center pb-24 md:ml-48">
-        <PreferredNetworkWrapper address={address}>
-          <section className="mt-20 flex flex-col lg:w-[80%] lg:px-14 xl:px-16 2xl:px-20">
-            {children}
-          </section>
-        </PreferredNetworkWrapper>
+      <main className="flex justify-center pb-24 md:ml-48 relative">
+        <section className="mt-16 md:mt-20 xl:mt-10 flex flex-col lg:w-[80%] lg:px-14 xl:px-16 2xl:px-20">
+          {/*Connect Wallet and Preferred network warning*/}
+          <div
+            className={`max-w-[1080px] mb-4 sm:mb-5 lg:mb-2 xl:mb-5 flex ${
+              address && chain?.name === selectedChain?.name
+                ? 'lg:justify-end'
+                : 'lg:justify-between'
+            } items-center`}
+          >
+            <div
+              className={`${
+                address && chain?.name === selectedChain?.name && 'hidden'
+              } absolute top-1 md:top-5 lg:top-3 xl:static`}
+            >
+              {address && chain?.name !== selectedChain?.name && (
+                <SwitchNetworkBanner newNetwork={selectedChain} />
+              )}
+            </div>
+            <ConnectWallet className="!bg-gradient-to-b !text-slate-800 dark:!text-zinc-50 from-moon-gold to-yellow-300 dark:to-amber-400 !border-yellow-200 !border-opacity-50 !shadow !shadow-gray-200 hover:!scale-105 !transition-all !duration-150" />
+          </div>
+          {children}
+        </section>
       </main>
-      
+
       <Toaster />
     </div>
   )
