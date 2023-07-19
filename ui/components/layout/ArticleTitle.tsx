@@ -15,7 +15,7 @@ const ArticleTitle = ({ text, loading, link }: ArticleTitle) => {
       }`}
     >
       {!loading && link ? (
-        <a target="_blank" href={link}>
+        <a target="_blank" href={link} rel="noreferrer">
           {text}
         </a>
       ) : (

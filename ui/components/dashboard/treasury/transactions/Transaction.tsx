@@ -55,6 +55,7 @@ const Transaction = ({ data, loading }: any) => {
             className={`ml-2 block`}
             href={transactionLink}
             target="_blank"
+            rel="noreferrer"
           >
             <GoldPaperArrow loading={loading} />
           </a>

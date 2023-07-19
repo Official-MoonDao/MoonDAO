@@ -1,14 +1,12 @@
+import { parseISO, isSameDay } from 'date-fns'
 import { useEffect, useState } from 'react'
 
-const CALENDAR_LINK =
-  'https://sesh.fyi/api/calendar/v2/1NtkbbR6C4pu9nfgPwPGQn.ics'
-
-export function useCalendarEvents() {
+export function useCalendarEvents(calendarLink: string) {
   const [events, setEvents] = useState<any>()
 
   function getEventData() {
     let request = new XMLHttpRequest()
-    request.open('GET', CALENDAR_LINK, true)
+    request.open('GET', calendarLink, true)
     request.send(null)
     request.onreadystatechange = function () {
       if (request.readyState === 4 && request.status === 200) {
@@ -34,9 +32,30 @@ export function useCalendarEvents() {
     }
   }
 
+  function getDayEvents(date: any) {
+    /*
+    Gets all events on the specified date.
+    */
+    if (events == null) return date
+
+    date.events = []
+
+    for (var i = 0; i < Object.keys(events).length; i++) {
+      events[i].date = events[i].date.replace(/(\r\n|\n|\r)/gm, '')
+
+      var eventDate = parseISO(events[i].date)
+
+      if (isSameDay(eventDate, date)) {
+        date.events.push(events[i])
+      }
+    }
+
+    return date.events
+  }
+
   useEffect(() => {
     getEventData()
   }, [])
 
-  return events
+  return { events, getDayEvents }
 }
