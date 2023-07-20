@@ -2,7 +2,6 @@ import { ConnectWallet, useAddress } from '@thirdweb-dev/react'
 //Network warning
 import { useChain } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Script from 'next/script'
 import React from 'react'
@@ -17,6 +16,7 @@ import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import ExternalLinks from './Sidebar/ExternalLinks'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
+import MobileSidebar from './Sidebar/MobileSidebar'
 import { navigation } from './Sidebar/Navigation'
 import NavigationLink from './Sidebar/NavigationLink'
 
@@ -41,12 +41,10 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
   const [currentLang, setCurrentLang] = useState(router.locale)
   const [isTokenImported, setIsTokenImported] = useState(false)
 
-
   useEffect(() => {
     if (localStorage.getItem('MOONEY_isImported')) setIsTokenImported(true)
   }, [address])
   const { t } = useTranslation('common')
-  // The relative and z-10 should only apply to the sidebar itself
   const layout = (
     <div
       className={`${
@@ -60,6 +58,12 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
         setSidebarOpen={setSidebarOpen}
         lightMode={lightMode}
         setLightMode={setLightMode}
+      />
+
+      <MobileSidebar
+        lightMode={lightMode}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
       />
 
       {/* Static sidebar for desktop */}

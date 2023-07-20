@@ -1,5 +1,6 @@
-import ColorsAndSocials from './ColorsAndSocials'
-import { Bars3BottomLeftIcon } from '@heroicons/react/24/outline'
+import ColorsAndSocials from './ColorsAndSocials';
+import { Bars3BottomLeftIcon } from '@heroicons/react/24/outline';
+import LanguageChange from './LanguageChange';
 
 interface MobileMenuTop {
   setSidebarOpen: Function
@@ -13,8 +14,8 @@ const MobileMenuTop = ({
   setLightMode,
 }: MobileMenuTop) => {
   return (
-    <div className="relative z-10 flex flex-1 flex-col lg:pl-64">
-      <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 justify-between bg-white shadow dark:bg-slate-950 md:hidden">
+    <div className="relative z-10 flex flex-1 flex-col md:hidden">
+      <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 justify-between bg-white shadow dark:bg-slate-950">
         <button
           type="button"
           className="border-r border-gray-200 px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:border-gray-600 dark:focus:ring-moon-gold  md:hidden"
@@ -26,7 +27,11 @@ const MobileMenuTop = ({
             aria-hidden="true"
           />
         </button>
+        <div className='flex items-center'>
+        <LanguageChange/>
+
         <ColorsAndSocials lightMode={lightMode} setLightMode={setLightMode} />
+        </div>
       </div>
     </div>
   )
