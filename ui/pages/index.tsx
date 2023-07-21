@@ -1,4 +1,5 @@
 import { LockClosedIcon } from '@heroicons/react/24/outline'
+import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import React from 'react'
@@ -7,10 +8,12 @@ import HomeCard from '../components/layout/HomeCard'
 import flag from '../public/Original.png'
 
 export default function Home() {
+  const address = useAddress()
   const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">
       <Head title="Home" />
+
       <div className="flex flex-col max-w-3xl">
         <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
           {t('indexTitle')}
@@ -30,6 +33,7 @@ export default function Home() {
           >
             <p>{t('indexCard')}</p>
           </HomeCard>
+          {address && <h1>{'hello  ' + address}</h1>}
         </div>
       </div>
     </div>

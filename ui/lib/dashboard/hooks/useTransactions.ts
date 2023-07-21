@@ -23,8 +23,10 @@ export function useTransactions(page: number = 1) {
       .then((res) => res.json())
       .then(
         (result) => {
-          console.log(result)
           setIsLoading(false)
+          if (result.status === '0') {
+            return Error(result.result)
+          }
           setTransactions(result.result)
         },
         (error) => setError(error)

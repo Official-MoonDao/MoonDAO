@@ -7,7 +7,7 @@ export default function WebsiteHead({ title }: any) {
 
   return (
     <Head>
-      <title key="meta-title">MoonDAO | {title}</title>
+      <title key="meta-title">{'MoonDAO | ' + title}</title>
       <meta
         name="viewport"
         content="width=device-width, initial-scale=1"

@@ -44,11 +44,11 @@
   "announcementsTitle": "Announcements",
   "announcementsDesc": "Here you can find the latest announcements from the MoonDAO team.",
   "analyticsTitle": "Analytics",
-  "analyticsDesc": "Here you can find the latest analytics for MOONEY and vMOONEY.",
+  "analyticsDesc": "Here you can find the latest analytics for vMOONEY.",
   "calendarTitle": "Calendar",
-  "calendarDesc": "Here you can find the latest calendar for MoonDAO.",
+  "calendarDesc": "Here you can find the event calendar for MoonDAO.",
   "proposalsTitle": "Proposals",
-  "proposalsDesc": "Here you can find the latest proposals for MoonDAO.",
+  "proposalsDesc": "Here you can find the latest proposals at MoonDAO.",
   "treasuryTitle": "Treasury",
-  "treasuryDesc": "Here you can find the current status of the MoonDAO treasury."
+  "treasuryDesc": "Here you can find the current balances and latest transactions of the MoonDAO treasury."
 }

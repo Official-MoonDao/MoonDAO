@@ -11,8 +11,8 @@ const NavigationLink = ({ item }: any) => {
   return (
     <li className={`list-none`} key={item.name}>
       {!item.children ? (
-        <Link href={item.href}>
-          <a
+        <Link href={item.href} legacyBehavior>
+          <div
             className={`${
               router.pathname == item.href
                 ? 'bg-blue-200 text-blue-950 dark:bg-gray-800 dark:text-gray-50 hover:scale-100'
@@ -21,7 +21,7 @@ const NavigationLink = ({ item }: any) => {
           >
             <item.icon className="mr-3 h-6 w-6 flex-shrink-0 text-blue-500 dark:text-moon-gold" />
             {t(item.name)}
-          </a>
+          </div>
         </Link>
       ) : (
         <Dropdown item={item} router={router} />

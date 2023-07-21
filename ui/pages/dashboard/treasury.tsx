@@ -54,12 +54,12 @@ export default function Treasury() {
             )}
           </div>
           <div>
-            {loadingTransactions || !transactions[0] ? (
+            {loadingTransactions || !transactions ? (
               <TransactionSkeletons />
             ) : (
-              transactions.map((transaction: any) => (
+              transactions?.map((transaction: any, i: number) => (
                 <Transaction
-                  key={transaction.hash}
+                  key={transaction.hash + i}
                   data={transaction}
                   loading={loadingTransactions}
                 />

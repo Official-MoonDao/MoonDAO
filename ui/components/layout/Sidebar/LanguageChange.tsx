@@ -22,17 +22,23 @@ const LanguageChange = () => {
         <button className="py-2 bg-blue-400 dark:bg-moon-gold rounded-lg text-white px-2 hover:scale-105 transition-all duration-150 shadow shadow-detail-light dark:shadow-detail-dark">
           {currentLang === 'en' ? (
             <Link href="/" locale="zh">
-              <a className="flex gap-2" onClick={(e) => changeLang(e, 'zh')}>
+              <div className="flex gap-2" onClick={(e) => changeLang(e, 'zh')}>
                 <GlobeAltIcon className="h-6 w-6 text-gray-100 dark:text-stronger-dark" />{' '}
-                <span className='opacity-70 dark:opacity-80'>CN</span>↔<span className='text-title-light dark:text-orange-600 font-semibold'>EN</span>
-              </a>
+                <span className="opacity-70 dark:opacity-80">CN</span>↔
+                <span className="text-title-light dark:text-orange-600 font-semibold">
+                  EN
+                </span>
+              </div>
             </Link>
           ) : (
             <Link href="/" locale="en">
-              <a className="flex gap-2" onClick={(e) => changeLang(e, 'en')}>
+              <div className="flex gap-2" onClick={(e) => changeLang(e, 'en')}>
                 <GlobeAltIcon className="h-6 w-6 text-gray-100 dark:text-stronger-dark" />{' '}
-                <span className='text-title-light dark:text-orange-600 font-semibold'>CN</span>↔<span className='opacity-70 dark:opacity-80'>EN</span>
-              </a>
+                <span className="text-title-light dark:text-orange-600 font-semibold">
+                  CN
+                </span>
+                ↔<span className="opacity-70 dark:opacity-80">EN</span>
+              </div>
             </Link>
           )}
         </button>
@@ -45,18 +51,24 @@ const LanguageChange = () => {
         </p>
         <li className="mt-2 py-2 bg-moon-blue dark:bg-moon-gold rounded-lg text-white pl-3 hover:scale-105 transition-all duration-150 shadow shadow-detail-light dark:shadow-detail-dark">
           {currentLang === 'en' ? (
-            <Link href="/" locale="zh">
-              <a className="flex gap-2 lg:gap-4" onClick={(e) => changeLang(e, 'zh')}>
+            <Link href="/" locale="zh" legacyBehavior>
+              <div
+                className="flex gap-2 lg:gap-4"
+                onClick={(e) => changeLang(e, 'zh')}
+              >
                 <CNAsset />
                 切换到中文
-              </a>
+              </div>
             </Link>
           ) : (
-            <Link href="/" locale="en">
-              <a className="flex gap-2 lg:gap-4" onClick={(e) => changeLang(e, 'en')}>
+            <Link href="/" locale="en" legacyBehavior>
+              <div
+                className="flex gap-2 lg:gap-4"
+                onClick={(e) => changeLang(e, 'en')}
+              >
                 <CNAsset />
                 Switch to English
-              </a>
+              </div>
             </Link>
           )}
         </li>
