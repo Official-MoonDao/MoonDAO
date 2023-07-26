@@ -1,6 +1,6 @@
 name: E2E Tests
-on:[push]
-jobs: 
+on: [push]
+jobs:
   cypress-run:
     runs-on: unbuntu-22.04
     steps:
