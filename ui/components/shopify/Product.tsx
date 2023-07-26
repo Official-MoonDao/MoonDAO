@@ -35,6 +35,7 @@ export default function Product({
               src={product.images[preview]?.src}
               width={450}
               height={450}
+              alt=""
             />
             <div className="flex justify-center items-center gap-4 w-1/2 my-2">
               <button
@@ -95,6 +96,7 @@ export default function Product({
               src={product.images[preview]?.src}
               width={450}
               height={400}
+              alt=""
             />
           )}
         </div>

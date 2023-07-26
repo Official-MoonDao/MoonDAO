@@ -102,7 +102,8 @@
     "lib/get-twitter-account.ts",
     "env.d.ts",
     "r3f/hooks",
-    "lib/shopify/lifeship-shopify.ts"
+    "lib/shopify/lifeship-shopify.ts",
+    "cypress/tsconfig.json"
   ],
   "exclude": ["node_modules"]
 }

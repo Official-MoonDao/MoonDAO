@@ -80,12 +80,15 @@ export default function Lock() {
 
   const { MOONEYToken, vMOONEYToken } = useContractConfig()
 
-  const { contract: vMooneyContract } = useContract(
+  const { contract: vMooneyContract }: any = useContract(
     vMOONEYToken,
     VotingEscrow.abi
   )
 
-  const { contract: mooneyContract } = useContract(MOONEYToken, ERC20ABI.abi)
+  const { contract: mooneyContract }: any = useContract(
+    MOONEYToken,
+    ERC20ABI.abi
+  )
 
   const { data: MOONEYBalance, isLoading: MOONEYBalanceLoading } =
     useMOONEYBalance(mooneyContract, address)
@@ -129,7 +132,7 @@ export default function Lock() {
 
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
-    BigNumber.from(Number(lockAmount || 0).toFixed(0)),
+    ethers.utils?.parseEther(lockAmount || '0'),
     vMOONEYToken
   )
 
@@ -511,14 +514,17 @@ export default function Lock() {
                       action={async () => {
                         //check for token allowance
                         const allowance = Number(formatEther(tokenAllowance))
+
                         const lockedMooney = Number(
                           formatEther(VMOONEYLock?.[0])
                         )
+
                         const increaseAmount =
                           lockedMooney <= 0
                             ? Number(lockAmount)
                             : Number(lockAmount) - lockedMooney
 
+                        console.log(increaseAmount, allowance)
                         if (increaseAmount > allowance) {
                           await approveToken()
                         }

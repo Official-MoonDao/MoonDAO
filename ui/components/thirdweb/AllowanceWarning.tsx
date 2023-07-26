@@ -5,7 +5,7 @@ import useTranslation from 'next-translate/useTranslation'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 
 interface AllowanceWarningProps {
-  tokenContract: SmartContract | undefined
+  tokenContract: any
   spender: string
 }
 

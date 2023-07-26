@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useHandleError } from './useHandleError'
 
 export function useHandleWrite(
-  contract: SmartContract | undefined,
+  contract: any,
   method: string,
   args?: any[],
   overrides?: any
