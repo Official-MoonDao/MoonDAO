@@ -24,11 +24,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
           supportedChains={[Ethereum, Polygon, Goerli, Mumbai]}
           supportedWallets={[metamaskWallet(), coinbaseWallet(), safeWallet()]}
         >
-          <SessionProvider session={session}>
-            <Layout lightMode={lightMode} setLightMode={setLightMode}>
-              <Component {...pageProps} />
-            </Layout>
-          </SessionProvider>
+          <Layout lightMode={lightMode} setLightMode={setLightMode}>
+            <Component {...pageProps} />
+          </Layout>
         </ThirdwebProvider>
       </ChainContext.Provider>
     </>
