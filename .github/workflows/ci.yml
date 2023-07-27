@@ -24,14 +24,18 @@ jobs:
           start: yarn start
           wait-on: "http://localhost:3000"
       # Save screenshots on fail
-      - uses: actions/upload-artifact@v3
+      - name: Upload Cypress screenshots
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
+          working-directory: ui
           name: cypress-screenshots
           path: cypress/screenshots
       # Test run video was always captured, so this action uses "always()" condition
-      - uses: actions/upload-artifact@v3
+      - name: Upload Cypress videos
+        uses: actions/upload-artifact@v3
         if: always()
         with:
+          working-directory: ui
           name: cypress-videos
           path: cypress/videos
