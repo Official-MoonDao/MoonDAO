@@ -16,7 +16,7 @@ jobs:
 
       # Run cypress tests
       - name: Run Cypress
-        uses: cypress-io/github-action@v2.9.7
+        uses: cypress-io/github-action@v4.1.0
         with:
           working-directory: ui
           install-command: yarn install
