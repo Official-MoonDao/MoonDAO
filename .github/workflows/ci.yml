@@ -3,8 +3,23 @@ on: [push]
 jobs:
   cypress-run:
     runs-on: unbuntu-22.04
+    #install all dependencies
+    #run all cypress tests
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Cypress run
         uses: cypress-io/github-action@v5
+    #Generate screenshots if E2E tests fail
+    - uses: actions/upload-artifact@v3
+      if: failur()
+      with:
+        name: cypress-screenshots
+        path: cypress/screenshots
+    #Test run video
+    - uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: cypress-videos
+        path: cypress/videos
+    
