@@ -7,47 +7,45 @@ on:
     branches:
       - main
 jobs:
-  install:
-    runs-on: ubuntu-22.04
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: "16"
 
       - name: Get yarn cache directory path
-        id: yarn-dep-cache-dir-path
+        id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
-      - uses: actions/cache@v1
-          name: Setup Yarn dep cache
-          id: yarn-dep-cache
-          with:
-            path: ${{ steps.yarn-dep-cache-dir-path.outputs.dir }}
-            key: ${{ runner.os }}-yarn-dep-${{ hashFiles('**/yarn.lock') }}
-            restore-keys: |
-            ${{ runner.os }}-yarn-dep-
-      - name: Yarn install deps
-        run: |
-              yarn install --frozen-lockfile
-        if: steps.yarn-dep-cache.outputs.cache-hit != 'true'
+
+      - name: Cache node_modules
+        id: yarn-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Build
+        run: yarn build
+
+      - name: Upload next build
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: .next
 
   cypress-run:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     needs: install
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - uses: actions/cache@v1
-          name: Setup Yarn build cache
-          id: yarn-build-cache
-          with:
-            path: frontend/dist
-            key: ${{ runner.os }}-yarn-build-$  {{ hashFiles('frontend/src/') }}
-            restore-keys: |
-                ${{ runner.os }}-yarn-build-
-      - name: Yarn build
-        run: |
-            yarn build
-        if: steps.yarn-build-cache.outputs.cache-hit != 'true'
 
       - name: Cypress run
         uses: cypress-io/github-action@v5
