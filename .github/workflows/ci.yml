@@ -5,7 +5,7 @@ on:
       - main
 
 jobs:
- install:
+  install:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
