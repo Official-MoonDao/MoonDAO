@@ -43,7 +43,7 @@ jobs:
         with:
           working-directory: ui
           install: false
-          start: yarn start
+          start: false
           wait-on: "http://localhost:3000"
           component: true
 
