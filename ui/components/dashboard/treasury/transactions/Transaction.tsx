@@ -19,7 +19,7 @@ const Transaction = ({ data, loading }: any) => {
     <div
       className={`component-background relative mt-5 flex w-[336px] flex-col items-center rounded-[15px] border-[0.5px] border-detail-light py-2 shadow shadow-detail-light hover:scale-105 dark:border-detail-dark dark:shadow-detail-dark sm:w-[400px] 2xl:w-full 2xl:flex-row 2xl:justify-between 2xl:px-5 2xl:py-3 ${
         loading && 'loading-component'
-      }`}
+      } transition-all duration-150`}
     >
       {/*Sent or receive*/}
       <div className="relative right-3 flex items-center">

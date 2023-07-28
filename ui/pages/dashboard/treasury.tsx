@@ -9,7 +9,8 @@ import TreasuryBalance from '../../components/dashboard/treasury/balance/Treasur
 import Transaction from '../../components/dashboard/treasury/transactions/Transaction'
 import TransactionSkeletons from '../../components/dashboard/treasury/transactions/TransactionSkeletons'
 import Head from '../../components/layout/Head'
-import flag from '../../public/Original.png'
+import Header from '../../components/layout/Header'
+import Line from '../../components/layout/Line'
 
 export default function Treasury() {
   const {
@@ -30,30 +31,42 @@ export default function Treasury() {
       'Connection with Etherscan failed. Contact MoonDAO if the problem persists 🚀'
     )
 
+  // Implement allowed asset functionality or warning when asset wasn't approved
+  // Pagination
+
   const { t } = useTranslation('common')
   return (
-    <div className="animate-fadeIn">
+    <main className="animate-fadeIn">
       <Head title="Treasury" />
-      <div className="flex flex-col max-w-3xl">
-        <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
-          {t('treasuryTitle')}
-          <Image src={flag} width={36} height={36} />
-        </h1>
+      <div className="xl:flex xl:justify-around">
+        {/*Assets Section*/}
+        <section className="xl:w-[40%] xl:max-w-[600px]">
+          {loadingAssets || !tokens[0] ? (
+            <AssetSkeletons />
+          ) : (
+            <>
+              <TreasuryBalance balance={balanceSum} />
+              <Assets tokens={tokens} />
+            </>
+          )}
+          <a
+            className="mt-10 inline-block font-Montserrat text-lg underline text-stronger-light hover:text-title-light dark:text-moon-gold hover:dark:text-stronger-dark"
+            href="https://etherscan.io/address/0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
+            target="_blank"
+            rel="noreferrer"
+          >
+            View MoonDAO on Etherscan
+          </a>
+        </section>
 
-        <p className="mb-8 font-RobotoMono">{t('treasuryDesc')}</p>
-
-        <div className="grid xl:grid-cols-1 mt-2 gap-8">
-          <div>
-            {loadingAssets || !tokens[0] ? (
-              <AssetSkeletons />
-            ) : (
-              <>
-                <TreasuryBalance balance={balanceSum} />
-                <Assets tokens={tokens} />
-              </>
-            )}
+        {/*Transactions Section*/}
+        <section className="mt-12 xl:mt-2 xl:w-[40%] xl:max-w-[700px]">
+          <div className="flex flex-row items-center justify-between">
+            <Header text="Transactions" noStar />
           </div>
-          <div>
+
+          <Line />
+          <div className="mt-10">
             {loadingTransactions || !transactions ? (
               <TransactionSkeletons />
             ) : (
@@ -66,9 +79,11 @@ export default function Treasury() {
               ))
             )}
           </div>
-        </div>
+
+          {/*Pagination Goes Here*/}
+        </section>
       </div>
-    </div>
+    </main>
   )
 }
 

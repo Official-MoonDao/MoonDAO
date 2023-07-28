@@ -13,8 +13,8 @@ export const useAnnouncements = () => {
         process.env.NEXT_PUBLIC_ANNOUNCEMENTS_API_URL +
           (id ? `?before=${id}` : '')
       )
-      const data = await response.json()
-      setAnnouncements(data)
+      const nextAnnouncements = await response.json()
+      setAnnouncements([...announcements,...nextAnnouncements])
     } catch (err: any) {
       setError(err.message)
     }

@@ -24,7 +24,13 @@ type Indexable = {
   [key: string]: any
 }
 
-export default function Layout({ children, lightMode, setLightMode }: any) {
+interface Layout {
+  children: JSX.Element
+  lightMode: boolean
+  setLightMode: Function
+}
+
+export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -119,10 +125,18 @@ export default function Layout({ children, lightMode, setLightMode }: any) {
 
       {/*The content, child rendered here*/}
       <main className="flex justify-center pb-24 md:ml-48 relative">
-        <section className="mt-16 md:mt-20 xl:mt-10 flex flex-col lg:w-[80%] lg:px-14 xl:px-16 2xl:px-20">
+        <section
+          className={`mt-16 md:mt-20 xl:mt-10 flex flex-col ${
+            children.type.name === 'Treasury' ? 'xl:w-[93%]' : 'lg:w-[80%]'
+          } lg:px-14 xl:px-16 2xl:px-20`}
+        >
           {/*Connect Wallet and Preferred network warning*/}
           <div
-            className={`max-w-[1080px] mb-4 sm:mb-5 lg:mb-2 xl:mb-5 flex ${
+            className={`max-w-[1080px] ${
+              children.type.name === 'Treasury'
+                ? 'max-w-[1400px]'
+                : 'max-w-[1080px]'
+            } mb-4 sm:mb-5 lg:mb-2 xl:mb-5 flex ${
               address && chain?.name === selectedChain?.name
                 ? 'lg:justify-end'
                 : 'lg:justify-between'
