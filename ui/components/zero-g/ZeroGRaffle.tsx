@@ -1,18 +1,12 @@
-import { useContract } from '@thirdweb-dev/react'
-import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import { discordOauthUrl } from '../../lib/utils/discord'
-import {
-  checkUserDataRaffle,
-  submitRaffleForm,
-} from '../../lib/zero-g/google-sheets'
+import { checkUserDataRaffle } from '../../lib/zero-g/google-sheets'
 import {
   useBalanceTicketZeroG,
   useMintTicketZeroG,
 } from '../../lib/zero-g/zero-g-sweepstakes'
-import vMooneySweepstakesABI from '../../const/abis/vMooneySweepstakes.json'
 import InputContainer from './InputContainer'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
@@ -38,8 +32,6 @@ export default function ZeroGRaffle({
 }: any) {
   const router = useRouter()
 
-  const { data: twitter } = useSession()
-
   const [state, setState] = useState<number>(0)
   const [error, setError] = useState<string>('')
 
@@ -61,19 +53,6 @@ export default function ZeroGRaffle({
     setState(6)
   }
 
-  function Cancel() {
-    return (
-      <button
-        className="mt-4 tracking-wide btn text-gray-100 normal-case font-medium font-GoodTimes w-full bg-red-500 hover:bg-red-600 hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
-        onClick={async () => {
-          await signOut()
-        }}
-      >
-        {state >= 5 ? 'Close ✖' : 'Cancel ✖'}
-      </button>
-    )
-  }
-
   function AdvanceButton({ onClick, children }: any) {
     return (
       <button
@@ -84,40 +63,6 @@ export default function ZeroGRaffle({
       </button>
     )
   }
-
-  useEffect(() => {
-    if (state >= 5 || state === 1) return
-    if (twitter?.user && address && validLock) {
-      userDiscordData.username && userDiscordData.email
-        ? setState(4)
-        : setState(3)
-    } else setState(0)
-  }, [twitter?.user, address, validLock, userDiscordData])
-
-  useEffect(() => {
-    if (state === 4 && !mintIsLoading && !mintError && hasTicket) {
-      setTimeout(() => {
-        if (+hasTicket.toString() === 1) setState(5)
-        if (+hasTicket.toString() < 1)
-          errorStage(
-            'This wallet does not have vMooney! Please do not switch wallets!'
-          )
-      }, 1000)
-    }
-
-    if (state === 5) {
-      const userData = {
-        twitterName: twitter?.user?.name,
-        userDiscordData,
-        walletAddress: address,
-        email: userDiscordData.email,
-      }
-      ;(async () => {
-        if (!(await checkUserDataRaffle(userData)))
-          await submitRaffleForm(userData)
-      })()
-    }
-  }, [mintIsLoading, mintError, hasTicket, state, formRef])
 
   return (
     <ReservationRaffleLayout>
@@ -130,11 +75,11 @@ export default function ZeroGRaffle({
               </h2>
               <div className="my-3">
                 <Link href="/zero-g/rules">
-                  <a
+                  <p
                     className={`mt-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
                   >
                     Terms & Conditions →
-                  </a>
+                  </p>
                 </Link>
               </div>
               <p className="italic text-[75%] opacity-[0.5]">
@@ -154,7 +99,7 @@ export default function ZeroGRaffle({
             />
           </StageContainer>
         )}
-        {state === 1 && (
+        {/* {state === 1 && (
           <StageContainer>
             <h2 className="text-3xl font-semibold font-RobotoMono mb-1">
               Alternative Entry
@@ -319,7 +264,7 @@ export default function ZeroGRaffle({
             <h2 className="text-n3green m-4 lg:text-lg">{error}</h2>
             <Cancel />
           </StageContainer>
-        )}
+        )} */}
         {/* DEV BUTTONS FOR STAGES, REMOVE BEFORE DEPLOY
         <div className="absolute left-[600px] flex flex-col gap-4 bg-[blue] w-3/4 text-center my-4">
           <h1>Dev Buttons </h1>

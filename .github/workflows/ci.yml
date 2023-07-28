@@ -1,4 +1,4 @@
-name: E2E Testing
+name: Cypress E2E and Integration Testing
 
 on:
   push:
@@ -9,13 +9,26 @@ on:
 jobs:
   cypress-run:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_CHAIN: "goerli"
+      DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+      DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+      NEXT_PUBLIC_INFURA_URL: ${{ secrets.NEXT_PUBLIC_INFURA_URL }}
+      NEXT_PUBLIC_GTAG: ${{ secrets.NEXT_PUBLIC_GTAG }}
+      NEXT_PUBLIC_GOOGLE_SHEETS_EMAIL: ${{ secrets.NEXT_PUBLIC_GOOGLE_SHEETS_EMAIL }}
+      NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID }}
+      NEXT_PUBLIC_GOOGLE_SHEETS_SECRET_1: ${{ secrets.NEXT_PUBLIC_GOOGLE_SHEETS_SECRET_1 }}
+      NEXT_PUBLIC_GOOGLE_SHEETS_SECRET_2: ${{ secrets.NEXT_PUBLIC_GOOGLE_SHEETS_SECRET_2 }}
+      NEXT_PUBLIC_ANNOUNCEMENTS_API_URL: ${{ secrets.NEXT_PUBLIC_ANNOUNCEMENTS_API_URL }}
+      NEXT_PUBLIC_ASSETS_URL: ${{ secrets.NEXT_PUBLIC_ASSETS_URL }}
+      NEXT_PUBLIC_SWEEPSTAKES_OWNER: 0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Run cypress tests
-      - name: Run Cypress
+      # Run cypress E2E tests
+      - name: Run Cypress E2E tests
         uses: cypress-io/github-action@v4.1.0
         with:
           working-directory: ui
@@ -23,6 +36,17 @@ jobs:
           build: yarn build
           start: yarn start
           wait-on: "http://localhost:3000"
+
+      #Run cypress component tests
+      - name: Run Cypress Component Testing
+        uses: cypress-io/github-action@v4.1.0
+        with:
+          working-directory: ui
+          install: false
+          start: yarn start
+          wait-on: "http://localhost:3000"
+          component: true
+
       # Save screenshots on fail
       - name: Upload Cypress screenshots
         uses: actions/upload-artifact@v3
@@ -30,7 +54,8 @@ jobs:
         with:
           name: cypress-screenshots
           path: ui/cypress/screenshots
-      # Test run video was always captured, so this action uses "always()" condition
+
+      # Save test run videos, always
       - name: Upload Cypress videos
         uses: actions/upload-artifact@v3
         if: always()

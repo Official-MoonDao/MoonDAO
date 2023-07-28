@@ -1,4 +1,5 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet'
+import { useEffect, useState } from 'react'
 
 let doc: any
 //Init GoogleSheets
@@ -68,27 +69,43 @@ export async function checkUserDataRaffle({
   }
 }
 //zero-g raffle get user data
-export async function getUserDataRaffle(walletAddress: string) {
-  try {
-    if (!doc) await spreadsheetAuth()
-    await doc.loadInfo()
-    const sheet = await doc.sheetsById['0']
+export function useUserData() {
+  const [rows, setRows]: any = useState()
+  const [isLoading, setIsLoading] = useState(false)
 
-    const rows = await sheet.getRows()
-    const userData = await rows.find(
+  function getUserDataRaffle(walletAddress: string) {
+    const userData = rows?.find(
       (row: any) => row.WalletAddress === walletAddress
     )
     return userData
-  } catch (err: any) {
-    console.error('google-sheets: getUserDataRaffle', err.message)
-    if (
-      err.message.startsWith(
-        "Google API error - [429] Quota exceeded for quota metric 'Read requests' and limit 'Read requests per minute per user' of service 'sheets.googleapis.com' for consumer '"
-      )
-    ) {
-      return 'rate limit'
+  }
+
+  async function loadUserData() {
+    try {
+      if (!doc) await spreadsheetAuth()
+      await doc.loadInfo()
+      const sheet = await doc.sheetsById['0']
+      const rows = await sheet.getRows()
+      return rows
+    } catch (err: any) {
+      console.error('google-sheets: loadUserData', err.message)
+      if (
+        err.message.startsWith(
+          "Google API error - [429] Quota exceeded for quota metric 'Read requests' and limit 'Read requests per minute per user' of service 'sheets.googleapis.com' for consumer '"
+        )
+      ) {
+        setTimeout(async () => {
+          await loadUserData().then((rows) => setRows(rows))
+        }, 1000)
+      }
     }
   }
+
+  useEffect(() => {
+    loadUserData().then((rows) => setRows(rows))
+  }, [])
+
+  return { data: rows, isLoading, getUserDataRaffle }
 }
 
 //zero-g reservation

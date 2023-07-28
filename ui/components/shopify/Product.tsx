@@ -17,25 +17,26 @@ export default function Product({
 
   if (linkToStore)
     return (
-      <div className="backdropBlur flex justify-center items-center">
+      <div className="prod backdropBlur flex justify-center items-center">
         <div className="flex flex-col m-2">
           <div className="flex gap-4 w-full my-2">
-            <h1 className="font-GoodTimes">{label}</h1>
+            <h2 className="font-GoodTimes">{label}</h2>
             <Link href="/lifeship/detail">
-              <a
+              <p
                 className={`block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
               >
                 NFT Submission Details →
-              </a>
+              </p>
             </Link>
           </div>
           <div className="flex flex-col justify-center items-center">
             <Image
+              id="product-image"
               className="rounded-2xl backdropBlur"
               src={product.images[preview]?.src}
               width={450}
               height={450}
-              alt=""
+              alt={`product-${preview}`}
             />
             <div className="flex justify-center items-center gap-4 w-1/2 my-2">
               <button
@@ -75,6 +76,7 @@ export default function Product({
               </button>
             </div>
             <button
+              id="link-to-store"
               className="font-GoodTimes border-style btn text-n3blue normal-case font-medium w-full bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out my-2"
               onClick={() => linkToStore()}
             >
@@ -92,11 +94,12 @@ export default function Product({
         <div className="p-2">
           {product?.images[preview] && (
             <Image
+              id="product-image"
               className={`rounded-2xl backdropBlur`}
               src={product.images[preview]?.src}
               width={450}
               height={400}
-              alt=""
+              alt={`product-${preview}`}
             />
           )}
         </div>

@@ -1,5 +1,11 @@
 {
-  "extends": ["next", "prettier", "plugin:cypress/recommended"],
+  "extends": [
+    "next",
+    "prettier",
+    "eslint:recommended",
+    "plugin:cypress/recommended",
+    "plugin:@next/next/recommended"
+  ],
   "rules": {
     "sort-imports": 0,
     "react/no-unescaped-entities": 0,

@@ -91,7 +91,8 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "types": ["cypress", "cypress-react-selector"]
   },
   "include": [
     "next-env.d.ts",

@@ -201,6 +201,14 @@ export default function Lock() {
     }
   }, [hasLock, lockAmount, lockTime, VMOONEYLock])
 
+  useEffect(() => {
+    //console.log all values so i can
+    console.log('lockAmount', lockAmount)
+    console.log('lockTime', lockTime)
+    console.log('canIncrease', canIncrease)
+    console.log('wantsToIncrease', wantsToIncrease)
+  }, [lockAmount, lockTime, canIncrease, wantsToIncrease])
+
   const { t } = useTranslation('common')
 
   return (
