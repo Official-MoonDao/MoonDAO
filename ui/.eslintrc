@@ -2,7 +2,6 @@
   "extends": [
     "next",
     "prettier",
-    "eslint:recommended",
     "plugin:cypress/recommended",
     "plugin:@next/next/recommended"
   ],
