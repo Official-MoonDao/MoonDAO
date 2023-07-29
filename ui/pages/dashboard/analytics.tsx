@@ -5,8 +5,8 @@ import { useAssets } from '../../lib/dashboard/hooks'
 import { getVMOONEYData } from '../../lib/tokens/ve-subgraph'
 import AnalyticsSkeleton from '../../components/dashboard/analytics/AnalyticsSkeleton'
 import HoldersList from '../../components/dashboard/analytics/HoldersList'
-import Holders from '../../components/dashboard/analytics/charts/Holders'
-import Pie from '../../components/dashboard/analytics/charts/Pie'
+import HoldersChart from '../../components/dashboard/analytics/charts/HoldersChart'
+import Pie from '../../components/dashboard/analytics/charts/PieChart'
 import Head from '../../components/layout/Head'
 import flag from '../../public/Original.png'
 
@@ -34,7 +34,7 @@ function Data({ text, value, mooney, vmooney }: any) {
         <p className="min-h-[6vh]">{text}</p>
         <hr className="relative mt-1 h-1 w-full bg-gradient-to-r from-blue-500 to-blue-900 dark:from-moon-gold dark:to-yellow-100" />
       </div>
-      <div className="text-slate flex flex-col justify-center px-4  text-center font-Montserrat leading-10 hover:text-[#6ca3e6] dark:text-indigo-100  dark:hover:text-[orange] md:items-center lg:my-4 lg:flex-row lg:text-2xl xl:text-3xl">
+      <div className="text-slate flex flex-col justify-center px-4  text-center font-Montserrat leading-10 hover:text-[#6ca3e6] text-black dark:text-indigo-100  dark:hover:text-[orange] md:items-center lg:my-4 lg:flex-row lg:text-2xl xl:text-3xl">
         {value}
 
         {mooney && <></>}
@@ -120,14 +120,13 @@ export default function Analytics() {
             </div>
           </div>
           <Frame>
-            <div className="mt-2 flex flex-col items-center justify-center lg:mt-3">
+            <div className="w-full mt-2 flex flex-col items-center justify-center lg:mt-3">
               <div className="">
                 <Label text="vMOONEY Distribution" />
               </div>
-
-              <Pie data={analyticsData.distribution} lightMode={lightMode} />
             </div>
-            <div className="flex flex-col items-center justify-center">
+            <Pie data={analyticsData.distribution} lightMode={lightMode} />
+            <div className="flex items-center justify-center">
               <HoldersList
                 itemsPerPage={window.innerHeight > 1080 ? 10 : 5}
                 data={analyticsData.holdersByVMooney}
@@ -135,10 +134,13 @@ export default function Analytics() {
             </div>
           </Frame>
           <Frame>
-            <div className="flex flex-col">
+            <div className="w-full h-full flex flex-col">
               <Label text="vMOONEY Holders Over Time" />
 
-              <Holders data={analyticsData.holders} lightMode={lightMode} />
+              <HoldersChart
+                data={analyticsData.holders}
+                lightMode={lightMode}
+              />
             </div>
           </Frame>
         </div>
