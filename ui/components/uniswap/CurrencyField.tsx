@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
-import { TOKENS } from '../../lib/uniswap/uniswap-config'
+// import { TOKENS } from '../../lib/uniswap/uniswap-config'
 import LoadingSpinner from './LoadingSpinner'
 
 export default function CurrencyField({
@@ -14,24 +14,24 @@ export default function CurrencyField({
 }: any) {
   const [dropdown, setDropdown] = useState<boolean>(false)
 
-  function getPrice(value: any) {
-    getSwapPrice(value)
-  }
-  const inputRef: any = useRef()
+  // function getPrice(value: any) {
+  //   getSwapPrice(value)
+  // }
+  // const inputRef: any = useRef()
 
-  const filteredTokens = TOKENS.filter(
-    ({ name }) => name !== currentToken.name && name !== 'MOONEY'
-  )
+  // const filteredTokens = TOKENS.filter(
+  //   ({ name }) => name !== currentToken.name && name !== 'MOONEY'
+  // )
 
-  useEffect(() => {
-    if (field === 'input' && inputRef.current?.value > 0) {
-      getPrice(inputRef.current?.value)
-    }
-  }, [currentToken])
+  // useEffect(() => {
+  //   if (field === 'input' && inputRef.current?.value > 0) {
+  //     getPrice(inputRef.current?.value)
+  //   }
+  // }, [currentToken])
 
   return (
     <div className="flex gap-[2%] bg-[lightgrey] w-full py-2 px-4 items-center rounded-sm text-black">
-      <div className="w-1/2">
+      {/* <div className="w-1/2">
         {loading ? (
           <div>
             <LoadingSpinner />
@@ -95,7 +95,7 @@ export default function CurrencyField({
             <span className="text-n3blue">{Number(balance).toFixed(2)}</span>
           </span>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }

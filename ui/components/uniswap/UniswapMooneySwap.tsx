@@ -1,6 +1,6 @@
 import { useSigner } from '@thirdweb-dev/react'
 import { useState } from 'react'
-import { TOKENS } from '../../lib/uniswap/uniswap-config'
+// import { TOKENS } from '../../lib/uniswap/uniswap-config'
 import CurrencyField from './CurrencyField'
 import LoadingSpinner from './LoadingSpinner'
 import SwapSettings from './SwapSettings'
