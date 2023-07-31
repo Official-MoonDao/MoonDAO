@@ -1,7 +1,6 @@
 import { Chain, Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
 import { ThirdwebProvider } from '@thirdweb-dev/react'
 import { metamaskWallet, coinbaseWallet, safeWallet } from '@thirdweb-dev/react'
-import { SessionProvider } from 'next-auth/react'
 import React, { useState } from 'react'
 import { useLocalStorage } from 'usehooks-ts'
 import ChainContext from '../lib/thirdweb/chain-context'

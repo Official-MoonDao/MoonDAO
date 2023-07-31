@@ -27,6 +27,21 @@ describe('E2E Testing', () => {
       cy.get('h2').contains('LifeShip')
     })
   })
+
+  describe('MoonDAO App | Zero-G', () => {
+    it('should load the zero-g page', () => {
+      cy.visit('/zero-g')
+      cy.get('h2').contains('Zero-G')
+    })
+  })
+
+  describe('MoonDAO App | Analytics', () => {
+    it('should load the analytics page', () => {
+      cy.visit('/dashboard/analytics')
+      cy.get('h1').contains(common.analyticsTitle)
+      cy.get('p').contains(common.analyticsDesc)
+    })
+  })
 })
 
 export {}
