@@ -3,7 +3,7 @@ import { SmartContract } from '@thirdweb-dev/sdk'
 import { useHandleError } from './useHandleError'
 
 export function useHandleRead(
-  contract: SmartContract | undefined,
+  contract: any,
   method: string,
   args?: any[],
   overrides?: any

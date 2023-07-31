@@ -1,7 +1,7 @@
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { BigNumber, Contract, ethers } from 'ethers'
 import { useEffect, useState } from 'react'
-import { getUserDataRaffle } from '../../lib/zero-g/google-sheets'
+import { useUserData } from '../../lib/zero-g/google-sheets'
 import {
   ZERO_G_V1_TOTAL_TOKENS,
   useCurrentWinner,
@@ -26,21 +26,27 @@ export default function SweepstakesSelection({
 
   const { data: currWinner }: any = useCurrentWinner(sweepstakesContract)
 
+  const {
+    data: winnersData,
+    isLoading: isLoadingWinners,
+    getUserDataRaffle,
+  } = useUserData()
+
   const { mutateAsync: randomSelection } =
     useRandomSelection(sweepstakesContract)
 
   const provider = new ethers.providers.JsonRpcProvider(
     process.env.NEXT_PUBLIC_INFURA_URL
   )
+
   async function getWinners(loop = false) {
+    setLoading(true)
+    const winnersData: any = []
     const contract: any = new Contract(
       vMooneySweepstakesZeroG,
       vMooneySweepstakesZeroGABI,
       provider
     )
-
-    setLoading(true)
-    const winnersData: any = []
     for (let i = 0; i < 10; i++) {
       //get random word for id
       try {
@@ -55,14 +61,9 @@ export default function SweepstakesSelection({
           const winnerAddress = await contract.callStatic.ownerOf(
             winningTokenId
           )
-          const winnerData = await getUserDataRaffle(winnerAddress)
-          if (winnerData === 'rate limit' && !loop) {
-            console.log('rate limit')
-            setWinners([])
-            return setTimeout(async () => {
-              await getWinners(true)
-            }, 5000)
-          }
+
+          const winnerData: any = getUserDataRaffle(winnerAddress)
+
           winnersData.push({
             discordUsername: winnerData?.DiscUsername,
             discordId: winnerData?.DiscID,
@@ -76,19 +77,20 @@ export default function SweepstakesSelection({
       }
     }
     await setWinners(winnersData.sort((a: any, b: any) => a.id - b.id))
-    return setTimeout(() => {
-      setLoading(false)
-    }, 1000)
+    setLoading(false)
   }
 
   useEffect(() => {
-    getWinners()
-  }, [])
+    if (winnersData) {
+      getWinners()
+    }
+  }, [winnersData])
 
   function Winner({ winner, i }: any) {
     if (winner && !winner.discordUsername) {
       return (
         <div
+          id={`winner-${i}`}
           className={`flex flex-col rounded-md p-4 bg-gradient-to-tr from-n3green to-red-500 text-black divide-y-2 divide-black`}
         >
           {!loading ? (
@@ -134,7 +136,8 @@ export default function SweepstakesSelection({
           <>
             <h1 className="text-[125%]">{`Winner #${10 - i}`}</h1>
             <div className="flex">
-              <strong>Discord Username:</strong> <p>{winner.discordUsername}</p>
+              <strong>Discord Username:</strong>{' '}
+              <p id="winner-discord-username">{winner.discordUsername}</p>
             </div>
             <div className="flex">
               <strong>Token ID:</strong>
@@ -177,7 +180,10 @@ export default function SweepstakesSelection({
           </div>
         </div>
       )}
-      <div className="flex flex-col gap-2 overflow-y-scroll h-[400px]">
+      <div
+        id="sweepstakes-winners"
+        className="flex flex-col gap-2 overflow-y-scroll h-[400px]"
+      >
         {!loading && winners[0] ? (
           winners.map((winner: any, i: number) => (
             <Winner key={`winner-${i}`} winner={winner} i={i} />

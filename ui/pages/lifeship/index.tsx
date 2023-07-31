@@ -57,7 +57,7 @@ export default function Lifeship({ products = [] }: any) {
                 className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
               >
                 MoonDAO
-                <Image src={flag} width={50} height={50} />
+                <Image src={flag} width={50} height={50} alt="" />
               </h2>
               <h1 className="text-center text-n3blue text-2xl font-semibold font-GoodTimes pt-[4%]">
                 {'  x  '}
@@ -66,7 +66,12 @@ export default function Lifeship({ products = [] }: any) {
                 className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
               >
                 {'LifeShip'}
-                <Image src={'/LifeShip_Main.png'} width={45} height={45} />
+                <Image
+                  src={'/LifeShip_Main.png'}
+                  width={45}
+                  height={45}
+                  alt=""
+                />
               </h2>
             </div>
             <h1 className="font-RobotoMono text-2xl text-center my-4">

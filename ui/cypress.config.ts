@@ -1,8 +1,18 @@
-import { defineConfig } from "cypress";
+import { defineConfig } from 'cypress'
 
 export default defineConfig({
   e2e: {
-    baseUrl: 'https://app.moondao.org',
-    supportFile: false
-  }
-});
+    setupNodeEvents() {},
+    specPattern: 'cypress/e2e/**/*.cy.{js,ts,jsx,tsx}',
+    baseUrl: 'http://localhost:3000',
+    supportFile: false,
+  },
+  component: {
+    setupNodeEvents() {},
+    specPattern: 'cypress/integration/**/*.cy.{js,ts,jsx,tsx}',
+    devServer: {
+      framework: 'next',
+      bundler: 'webpack',
+    },
+  },
+})

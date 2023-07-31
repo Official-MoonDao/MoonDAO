@@ -18,9 +18,11 @@ export default function ZeroG({ userDiscordData }: any) {
 
   const { vMOONEYToken, vMooneySweepstakesZeroG } = useContractConfig()
 
-  const { contract: sweepstakesContract } = useContract(vMooneySweepstakesZeroG)
+  const { contract: sweepstakesContract }: any = useContract(
+    vMooneySweepstakesZeroG
+  )
 
-  const { contract: vMooneyContract } = useContract(
+  const { contract: vMooneyContract }: any = useContract(
     vMOONEYToken,
     VotingEscrowABI.abi
   )
@@ -59,11 +61,11 @@ export default function ZeroG({ userDiscordData }: any) {
           </p>
 
           <Link href="/zero-g/detail">
-            <a
+            <p
               className={`my-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
             >
               Event Details →
-            </a>
+            </p>
           </Link>
         </div>
         <PurchasePortal validLock={validLock} />

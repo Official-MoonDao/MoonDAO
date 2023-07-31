@@ -24,7 +24,7 @@ export default function Calendar() {
       <div className="flex flex-col max-w-3xl">
         <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
           {t('calendarTitle')}
-          <Image src={flag} width={36} height={36} />
+          <Image src={flag} width={36} height={36} alt="" />
         </h1>
 
         <p className="mb-8 font-RobotoMono">{t('calendarDesc')}</p>

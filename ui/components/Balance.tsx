@@ -9,9 +9,9 @@ export default function Balance({
   decimals = 2,
 }: any) {
   return (
-    <>
+    <span className="text-base font-normal text-title-light dark:text-moon-gold tracking-wide">
       {loading ? (
-        <button className="btn btn-square btn-ghost btn-disabled bg-transparent loading"></button>
+        <div className="btn btn-square btn-ghost btn-disabled bg-transparent loading"></div>
       ) : balance ? (
         `${prefix}${transformNumber(
           balance,
@@ -20,7 +20,8 @@ export default function Balance({
         )}${suffix}`
       ) : (
         0
-      )}
-    </>
+      )}{' '}
+      <span className="font-semibold">$MOONEY</span>
+    </span>
   )
 }

@@ -15,6 +15,7 @@ export default function MainCard({
           className={
             !maxWidthClassNames ? 'max-w-md md:max-w-xl' : maxWidthClassNames
           }
+          data-cy="main-card"
         >
           <div
             className={`card min-w-80 md:w-full rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible ${

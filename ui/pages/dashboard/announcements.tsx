@@ -10,7 +10,7 @@ import Header from '../../components/layout/Header'
 import Line from '../../components/layout/Line'
 import AnnouncementSkeletons from '../../components/dashboard/announcements/AnnouncementSkeletons'
 import Announcement from '../../components/dashboard/announcements/Announcement'
-//Got to clean up isLoading / isUpdating stuff, types
+
 export default function Announcements() {
   const {
     announcements,
