@@ -126,7 +126,10 @@ export default function Analytics() {
               </div>
             </div>
             <Pie data={analyticsData.distribution} lightMode={lightMode} />
-            <div className="flex items-center justify-center">
+            <div
+              id="dashboard-analytics-holders-list"
+              className="flex items-center justify-center"
+            >
               <HoldersList
                 itemsPerPage={window.innerHeight > 1080 ? 10 : 5}
                 data={analyticsData.holdersByVMooney}

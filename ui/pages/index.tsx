@@ -65,7 +65,7 @@ export default function Home() {
       <Head title="Home" />
       {/*Features */}
       <div className="component-background py-12 lg:py-20 xl:py-24 mt-3 w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark ">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div id="home-card" className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-base font-semibold leading-7 text-moon-blue dark:text-moon-gold">
               Our base of operations

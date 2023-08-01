@@ -18,9 +18,9 @@ export default function ProposalList({
   isLoading,
 }: ProposalListProps) {
   const pages = [...Array(6)]
-console.log(data)
+  console.log(data)
   return (
-    <>
+    <div id="dashboard-proposals">
       <div className="flex flex-row justify-between items-center lg:max-w-[1080px]">
         <Header text={'Proposals'} />
       </div>
@@ -45,7 +45,7 @@ console.log(data)
             body={e.body}
           />
         ))}
-{/*Pagination not working properly, jumps to wrong numbers, problem with skip*/}
+      {/*Pagination not working properly, jumps to wrong numbers, problem with skip*/}
       <div className="mt-10 flex justify-between max-w-[650px] items-center">
         <CaretButton
           left={true}
@@ -64,13 +64,13 @@ console.log(data)
           />
         ))}
         <CaretButton
-        left={false}
+          left={false}
           skip={skip}
           setSkip={setSkip}
           total={(pages.length - 1) * 10}
           scrollUp
         />
       </div>
-    </>
+    </div>
   )
 }
