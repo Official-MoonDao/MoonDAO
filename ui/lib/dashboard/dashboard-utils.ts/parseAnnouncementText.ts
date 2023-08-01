@@ -1,4 +1,4 @@
-export const parseAnnouncementText = (text: string, regex: string) => {
+export const parseAnnouncementText = (text: string, regex: string | RegExp) => {
   const textToReplace = text.match(regex) || []
   const textArr = []
 

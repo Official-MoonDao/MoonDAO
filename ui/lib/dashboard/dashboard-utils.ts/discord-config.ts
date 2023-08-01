@@ -1,4 +1,6 @@
-export const discordRoleDictionary = {
+type Dictionary = { [key: string]: string[] }
+
+export const discordRoleDictionary: Dictionary = {
   '914973269709447238': ['text-yellow-500', 'Astronauts'],
   '921183824614948874': ['text-rose-700', 'Multi-sig'],
   '914997939905101874': ['text-emerald-400', 'Rocketeers'],
@@ -27,7 +29,7 @@ export const discordRoleDictionary = {
     
     */
 
-export const discordChannelDictionary = {
+export const discordChannelDictionary: Dictionary = {
   '914720248140279871': ['text-emerald-400', 'general'],
   '1038333409166106684': ['text-sky-500', 'general-forum'],
   '914976122855374958': ['text-yellow-500', 'announcements'],

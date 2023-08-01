@@ -22,6 +22,7 @@ import { NumberType, transformNumber } from '../lib/utils/numbers'
 import { formatEther } from 'ethers/lib/utils'
 import Balance from '../components/Balance'
 import TimeRange from '../components/TimeRange'
+import BlurBackground from '../components/layout/BlurBackground'
 import Head from '../components/layout/Head'
 import L2Toggle from '../components/lock/L2Toggle'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
@@ -29,7 +30,6 @@ import LockPresets from '../components/thirdweb/LockPresets'
 import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrow from '../const/abis/VotingEscrow.json'
 import useContractConfig from '../const/config'
-import BlurBackground from '../components/layout/BlurBackground'
 
 const dateToReadable = (date: any) => {
   return date && date.toISOString().substring(0, 10)
@@ -201,14 +201,6 @@ export default function Lock() {
     }
   }, [hasLock, lockAmount, lockTime, VMOONEYLock])
 
-  useEffect(() => {
-    //console.log all values so i can
-    console.log('lockAmount', lockAmount)
-    console.log('lockTime', lockTime)
-    console.log('canIncrease', canIncrease)
-    console.log('wantsToIncrease', wantsToIncrease)
-  }, [lockAmount, lockTime, canIncrease, wantsToIncrease])
-
   const { t } = useTranslation('common')
 
   return (
@@ -234,7 +226,7 @@ export default function Lock() {
           {t('learnMore')}
         </a>
 
-        <section className='xl:w-3/4'>
+        <section className="xl:w-3/4">
           {/*Lock description section*/}
           {!hasLock && (
             <>
@@ -325,7 +317,9 @@ export default function Lock() {
                     {t('lockAmount')}
                   </p>
                   <p
-                    className={`tracking-wider text-sm opacity-80 text-light-text dark:text-dark-text mt-3 ${hasLock && canIncrease.time ? 'animate-highlight' : ''}`}
+                    className={`tracking-wider text-sm opacity-80 text-light-text dark:text-dark-text mt-3 ${
+                      hasLock && canIncrease.time ? 'animate-highlight' : ''
+                    }`}
                   >
                     {t('lockAmountDesc')}
                     {hasLock && canIncrease.time ? t('lockAmountNote') : ''}
@@ -381,17 +375,15 @@ export default function Lock() {
                   </button>
                 </div>
 
-
-
                 {/*Lock Expiration date label*/}
                 <label className="mt-6">
                   <p className="uppercase font-semibold underline text-title-light dark:text-title-dark">
                     {t('lockExpDate')}
                   </p>
-                    <p className="tracking-wider text-sm opacity-80 text-light-text dark:text-dark-text mt-3">
-                      {t('lockDesc2')}
-                      {hasLock && canIncrease.amount ? t('lockAmountNote') : ''}
-                    </p>
+                  <p className="tracking-wider text-sm opacity-80 text-light-text dark:text-dark-text mt-3">
+                    {t('lockDesc2')}
+                    {hasLock && canIncrease.amount ? t('lockAmountNote') : ''}
+                  </p>
                 </label>
 
                 {/*Date input for Lock expiration date*/}
@@ -485,27 +477,27 @@ export default function Lock() {
                 {/*Lock amount*/}
                 {(canIncrease.time || canIncrease.amount) &&
                   wantsToIncrease && (
-                    <p className='mt-4 text-sm uppercase font-semibold'>
+                    <p className="mt-4 text-sm uppercase font-semibold">
                       {t('lockBalance')}{' '}
-                      <span className=' text-title-light dark:text-title-dark font-bold text-base inline-block'>
-                      {calculateVMOONEY({
-                        CurrentMOONEYLock: ethers.utils.formatEther(
-                          VMOONEYLock?.[0] || 0
+                      <span className=" text-title-light dark:text-title-dark font-bold text-base inline-block">
+                        {calculateVMOONEY({
+                          CurrentMOONEYLock: ethers.utils.formatEther(
+                            VMOONEYLock?.[0] || 0
                           ),
-                        MOONEYAmount: lockAmount && +lockAmount,
-                        VMOONEYAmount: transformNumber(
-                          +VMOONEYBalance?.toString() / 10 ** 18 || 0,
-                          NumberType.number
-                        ),
-                        time: Date.parse(lockTime.formatted),
-                        lockTime: Date.parse(
-                          hasLock && lockTime?.orig
-                            ? lockTime.orig.formatted
-                            : new Date()
-                        ),
-                        max: Date.parse(minMaxLockTime.max),
-                      })}{' '}
-                      $vMOONEY
+                          MOONEYAmount: lockAmount && +lockAmount,
+                          VMOONEYAmount: transformNumber(
+                            +VMOONEYBalance?.toString() / 10 ** 18 || 0,
+                            NumberType.number
+                          ),
+                          time: Date.parse(lockTime.formatted),
+                          lockTime: Date.parse(
+                            hasLock && lockTime?.orig
+                              ? lockTime.orig.formatted
+                              : new Date()
+                          ),
+                          max: Date.parse(minMaxLockTime.max),
+                        })}{' '}
+                        $vMOONEY
                       </span>
                     </p>
                   )}

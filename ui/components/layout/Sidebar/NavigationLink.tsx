@@ -3,11 +3,11 @@ import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 
 const NavigationLink = ({ item }: any) => {
   const router = useRouter()
   const { t } = useTranslation('common')
-
   return (
     <li className={`list-none`} key={item.name}>
       {!item.children ? (
@@ -32,7 +32,10 @@ const NavigationLink = ({ item }: any) => {
 
 const Dropdown = ({ item, router }: any) => {
   return (
-    <Disclosure as="div" defaultOpen>
+    <Disclosure
+      as="div"
+      defaultOpen={item?.children?.some((e: any) => e.href === router.pathname)}
+    >
       {({ open }) => (
         <>
           <Disclosure.Button
