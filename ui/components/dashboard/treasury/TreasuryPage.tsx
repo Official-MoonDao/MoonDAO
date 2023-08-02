@@ -1,18 +1,16 @@
 import useTranslation from 'next-translate/useTranslation'
-import Image from 'next/image'
-import React from 'react'
-import { useAssets, useTransactions } from '../../lib/dashboard/hooks'
-import { errorToast } from '../../lib/utils/errorToast'
-import AssetSkeletons from '../../components/dashboard/treasury/balance/AssetSkeletons'
-import Assets from '../../components/dashboard/treasury/balance/Assets'
-import TreasuryBalance from '../../components/dashboard/treasury/balance/TreasuryBalance'
-import Transaction from '../../components/dashboard/treasury/transactions/Transaction'
-import TransactionSkeletons from '../../components/dashboard/treasury/transactions/TransactionSkeletons'
-import Head from '../../components/layout/Head'
-import Header from '../../components/layout/Header'
-import Line from '../../components/layout/Line'
+import { useAssets, useTransactions } from '../../../lib/dashboard/hooks'
+import { errorToast } from '../../../lib/utils/errorToast'
+import Head from '../../layout/Head'
+import Header from '../../layout/Header'
+import Line from '../../layout/Line'
+import AssetSkeletons from './balance/AssetSkeletons'
+import Assets from './balance/Assets'
+import TreasuryBalance from './balance/TreasuryBalance'
+import Transaction from './transactions/Transaction'
+import TransactionSkeletons from './transactions/TransactionSkeletons'
 
-export default function Treasury() {
+export default function TreasuryPage() {
   const {
     transactions,
     isLoading: loadingTransactions,
@@ -35,8 +33,9 @@ export default function Treasury() {
   // Pagination
 
   const { t } = useTranslation('common')
+
   return (
-    <main className="animate-fadeIn">
+    <>
       <Head title="Treasury" />
       <div className="xl:flex xl:justify-around">
         {/*Assets Section*/}
@@ -70,14 +69,14 @@ export default function Treasury() {
             {loadingTransactions || !transactions ? (
               <TransactionSkeletons />
             ) : (
-              <div id="dashboard-treasury-transactions">{
-              transactions?.map((transaction: any, i: number) => (
-                <Transaction
-                  key={transaction.hash + i}
-                  data={transaction}
-                  loading={loadingTransactions}
-                />
-              ))}
+              <div id="dashboard-treasury-transactions">
+                {transactions?.map((transaction: any, i: number) => (
+                  <Transaction
+                    key={transaction.hash + i}
+                    data={transaction}
+                    loading={loadingTransactions}
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -85,8 +84,6 @@ export default function Treasury() {
           {/*Pagination Goes Here*/}
         </section>
       </div>
-    </main>
+    </>
   )
 }
-
-// add locales for Treasury title and desc

@@ -22,7 +22,6 @@ export const navigation = [
     children: [
       { name: 'Annoucements', href: '/dashboard/announcements' },
       { name: 'Proposals', href: '/dashboard/proposals' },
-      { name: 'Treasury', href: '/dashboard/treasury' },
       { name: 'Analytics', href: '/dashboard/analytics' },
       { name: 'Calendar', href: '/dashboard/calendar' },
     ],
