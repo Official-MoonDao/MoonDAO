@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import { useRouter } from 'next/router'
+import React, { useEffect, useState } from 'react'
 import VMooneyPage from '../../components/dashboard/analytics/VMooneyPage'
 import TreasuryPage from '../../components/dashboard/treasury/TreasuryPage'
 
@@ -11,6 +12,7 @@ export default function Analytics() {
       <div className="flex items-center rounded-full gap-2 bg-detail-light dark:bg-stronger-dark py-2 px-5 w-[400px]">
         <p className="font-semibold tracking-wide text-gray-50">Voting Power</p>
         <div
+          id="dashboard-analytics-toggle"
           onClick={() => setIsTreasury(!isTreasury)}
           className="relative w-[100px] h-[28px] rounded-full bg-gray-300 dark:bg-slate-200"
         >

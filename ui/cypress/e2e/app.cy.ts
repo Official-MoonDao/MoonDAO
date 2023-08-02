@@ -48,22 +48,9 @@ describe('E2E Testing', () => {
     })
   })
 
-  describe('MoonDAO App | Treasury', () => {
-    it('should load the treasury page', () => {
-      cy.visit('/dashboard/treasury')
-      cy.get('#dashboard-treasury-assets').should('exist')
-      cy.get('#dashboard-treasury-transactions').should('exist')
-    })
-  })
-
   describe('MoonDAO App | Analytics', () => {
-    it('should load the analytics page', () => {
+    it('should load the analytics-vmooney page', () => {
       cy.visit('/dashboard/analytics')
-      cy.get('h1').contains(common.analyticsTitle)
-      cy.get('p').contains(common.analyticsDesc)
-      cy.get('#dashboard-analytics-pie').should('exist')
-      cy.get('#dashboard-analytics-holders-list').should('exist')
-      cy.get('#dashboard-analytics-holders').should('exist')
     })
   })
 

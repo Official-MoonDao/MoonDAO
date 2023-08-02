@@ -19,33 +19,26 @@ export default function Home() {
     {
       name: 'Get voting power',
       description: 'Lock MOONEY to get voting power within MoonDAO.',
-      href: '#',
+      href: '/dashbooard/lock',
       icon: LockClosedIcon,
     },
     {
       name: 'Announcements',
       description: 'Check the latest announcements.',
-      href: '#',
+      href: '/dashboard/announcements',
       icon: BellIcon,
     },
     {
       name: 'Proposals',
       description: 'Read all the proposals and vote on them.',
-      href: '#',
+      href: '/dashboard/proposals',
       icon: FolderIcon,
-    },
-    {
-      name: 'Treasury',
-      description:
-        'Check the assets owned by MoonDAO and the latest transactions from the treasury.',
-      href: '#',
-      icon: WalletIcon,
     },
     {
       name: 'Analytics',
       description:
         'See information related to the MOONEY holder distribution and staking.',
-      href: '#',
+      href: '/dashboard/analytics',
       icon: ChartBarSquareIcon,
     },
     {
@@ -75,7 +68,10 @@ export default function Home() {
               events.
             </p>
           </div>
-          <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
+          <div
+            id="home-card"
+            className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none"
+          >
             <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2 xl:grid-cols-3">
               {pages.map((page) => (
                 <div
