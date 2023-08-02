@@ -29,7 +29,7 @@ export default function Calendar() {
 
         <p className="mb-8 font-RobotoMono">{t('calendarDesc')}</p>
 
-        <div className="grid xl:grid-cols-1 mt-2 gap-8">
+        <div id="dashboard-calendar" className="grid xl:grid-cols-1 mt-2 gap-8">
           <CalendarHeader
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}

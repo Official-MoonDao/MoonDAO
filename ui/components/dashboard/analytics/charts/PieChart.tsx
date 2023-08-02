@@ -25,7 +25,7 @@ export default function PieChart({ data }: any) {
   }
 
   return (
-    <div className="w-1/2 p-8 min-w-[300px]">
+    <div id="dashboard-analytics-pie" className="w-1/2 p-8 min-w-[300px]">
       <Pie data={chartData} />
     </div>
   )

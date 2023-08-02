@@ -13,10 +13,9 @@ describe('E2E Testing', () => {
   describe('MoonDAO App | Lock', () => {
     it('should load the lock page', () => {
       cy.visit('/lock')
-      cy.get('h2').contains(common.lockCardTitle)
+      cy.get('h1').contains(common.lockCardTitle)
       cy.get('p').contains(common.lockTitle)
       cy.get('p').contains(common.lockDesc)
-      cy.get('#gradient-link').contains(common.learnMore)
     })
   })
 
@@ -35,11 +34,45 @@ describe('E2E Testing', () => {
     })
   })
 
+  describe('MoonDAO App | Announcements', () => {
+    it('should load the announcements page', () => {
+      cy.visit('/dashboard/announcements')
+      cy.get('#dashboard-announcements').should('exist')
+    })
+  })
+
+  describe('MoonDAO App | Proposals', () => {
+    it('should load the proposals page', () => {
+      cy.visit('/dashboard/proposals')
+      cy.get('#dashboard-proposals').should('exist')
+    })
+  })
+
+  describe('MoonDAO App | Treasury', () => {
+    it('should load the treasury page', () => {
+      cy.visit('/dashboard/treasury')
+      cy.get('#dashboard-treasury-assets').should('exist')
+      cy.get('#dashboard-treasury-transactions').should('exist')
+    })
+  })
+
   describe('MoonDAO App | Analytics', () => {
     it('should load the analytics page', () => {
       cy.visit('/dashboard/analytics')
       cy.get('h1').contains(common.analyticsTitle)
       cy.get('p').contains(common.analyticsDesc)
+      cy.get('#dashboard-analytics-pie').should('exist')
+      cy.get('#dashboard-analytics-holders-list').should('exist')
+      cy.get('#dashboard-analytics-holders').should('exist')
+    })
+  })
+
+  describe('MoonDAO App | Calendar', () => {
+    it('should load the calendar page', () => {
+      cy.visit('/dashboard/calendar')
+      cy.get('h1').contains(common.calendarTitle)
+      cy.get('p').contains(common.calendarDesc)
+      cy.get('#dashboard-calendar').should('exist')
     })
   })
 })

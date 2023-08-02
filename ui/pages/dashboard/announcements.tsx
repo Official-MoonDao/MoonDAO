@@ -53,7 +53,7 @@ export default function Announcements() {
         {(isLoading && !announcements.length) || error ? (
           <AnnouncementSkeletons />
         ) : (
-          <>
+          <div id="dashboard-announcements">
             {announcements.length &&
               announcements.map((e: any, i: number) =>
                 i + 1 === announcements.length ? (
@@ -99,7 +99,7 @@ export default function Announcements() {
                 Back to the top →
               </button>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>

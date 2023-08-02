@@ -88,5 +88,11 @@ export default function HoldersChart({ data }: any) {
     ],
   }
 
-  return <Line id="holders-chart" options={options as any} data={chartData} />
+  return (
+    <Line
+      id="dashboard-analytics-holders"
+      options={options as any}
+      data={chartData}
+    />
+  )
 }

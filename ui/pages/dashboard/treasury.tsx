@@ -44,10 +44,10 @@ export default function Treasury() {
           {loadingAssets || !tokens[0] ? (
             <AssetSkeletons />
           ) : (
-            <>
+            <div id="dashboard-treasury-assets">
               <TreasuryBalance balance={balanceSum} />
               <Assets tokens={tokens} />
-            </>
+            </div>
           )}
           <a
             className="mt-10 inline-block font-Montserrat text-lg underline text-stronger-light hover:text-title-light dark:text-moon-gold hover:dark:text-stronger-dark"
@@ -70,13 +70,15 @@ export default function Treasury() {
             {loadingTransactions || !transactions ? (
               <TransactionSkeletons />
             ) : (
+              <div id="dashboard-treasury-transactions">{
               transactions?.map((transaction: any, i: number) => (
                 <Transaction
                   key={transaction.hash + i}
                   data={transaction}
                   loading={loadingTransactions}
                 />
-              ))
+              ))}
+              </div>
             )}
           </div>
 
