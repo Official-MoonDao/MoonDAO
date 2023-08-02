@@ -13,7 +13,8 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Ethereum : Goerli
   )
 
-  const [lightMode, setLightMode] = useLocalStorage('lightMode', false)
+  const [lightMode, setLightMode] = useLocalStorage('lightMode',false)
+
   return (
     <>
       <GTag />

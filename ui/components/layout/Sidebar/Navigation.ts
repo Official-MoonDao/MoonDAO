@@ -1,14 +1,8 @@
 import {
   HomeIcon,
-  HomeModernIcon,
-  BellIcon,
-  WalletIcon,
   LockClosedIcon,
   TableCellsIcon,
-  ChartPieIcon,
   RocketLaunchIcon,
-  CalendarDaysIcon,
-  FolderIcon,
 } from '@heroicons/react/24/outline'
 
 export const navigation = [

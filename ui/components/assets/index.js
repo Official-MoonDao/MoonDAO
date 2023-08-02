@@ -12,6 +12,7 @@ import CopyIcon from "./CopyIcon";
 import GoldPaperArrow from "./GoldPaperArrow";
 import TreasuryAndMobileLogo from "./TreasuryAndMobileLogo";
 import CNAsset from "./CNAsset";
+import LogoSmall from "./LogoSmall";
 
 export {
   LogoBlack,
@@ -27,5 +28,6 @@ export {
   CopyIcon,
   GoldPaperArrow,
   TreasuryAndMobileLogo,
-  CNAsset
+  CNAsset,
+  LogoSmall
 };

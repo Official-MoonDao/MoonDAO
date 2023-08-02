@@ -15,6 +15,7 @@ export const discordRoleDictionary: Dictionary = {
   '1096152084782522448': ['text-indigo-600', 'MoonDAOcrew'],
   '1044672824243138560': ['text-rose-600', 'CN Member'],
   '941227401290067998': ['text-emerald-500', 'MoonDAO World'],
+  '1046539204018045099': ['text-yellow-500',"Member"],
 }
 
 /*
@@ -47,6 +48,8 @@ export const discordChannelDictionary: Dictionary = {
   '945284940721975356': ['text-amber-500', 'verify-roles'],
   '998700058499358810': ['text-orange-500', 'onboarding'],
   '1027658256706961509': ['text-blue-500', 'ideation'],
+  '1120720381943238747': ['text-blue-500', 'Voters-Lounge'],
+  '1108965136074559509': ['text-moon-blue dark:text-detail-dark', 'Official-Links'],
 }
 
 /*

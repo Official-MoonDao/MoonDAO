@@ -15,7 +15,6 @@ export default function Announcements() {
     update: updateAnnouncements,
   } = useAnnouncements()
 
-  console.log(announcements)
   const firstPostId = '916126920339509268'
   const endingId = '916126920339509268'
   const lastPostId = announcements.length

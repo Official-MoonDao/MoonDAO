@@ -72,7 +72,7 @@ const Dropdown = ({ item, router }: any) => {
               {item.children.map((subItem: any) => (
                 <li
                   key={subItem.name}
-                  className="list-disc marker:text-detail-light dark:marker:text-yellow-100 group"
+                  className="list-disc marker:text-detail-light dark:marker:text-yellow-100 group hover:scale-105 transition-all duration-150"
                 >
                   <a
                     href={subItem.href}

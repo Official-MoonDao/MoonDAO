@@ -1,8 +1,9 @@
 import {
-  discordRoleDictionary,
   discordChannelDictionary,
+  discordRoleDictionary,
 } from '../../../lib/dashboard/dashboard-utils.ts/discord-config'
 import { parseAnnouncementText } from '../../../lib/dashboard/dashboard-utils.ts/parseAnnouncementText'
+import { LogoSmall } from '../../assets'
 
 const AnnouncementContent = ({ text, mentions, loading }: any) => {
   const linkRegex =
@@ -38,7 +39,7 @@ const TextContent = ({ sentence, mentions }: any) => {
     sentence,
     mentionsRegex
   )
-
+  // Added a way to add the MoonDAO shield emoticon by detecting the id
   return (
     <>
       {sentenceSeparatedFromMentions.map((e, i) =>
@@ -48,6 +49,12 @@ const TextContent = ({ sentence, mentions }: any) => {
           <ReplaceIdWithChannelName key={i} word={e} />
         ) : e.startsWith('<@') ? (
           <ReplaceIdWithMention key={i} word={e} mentions={mentions} />
+        ) : e.includes('<:MoonDAO:1047902000601383013>') ? (
+          <>
+            {e.slice(0, e.indexOf('<:MoonDAO:1047902000601383013>'))}{' '}
+            <LogoSmall size={{ height: 28, width: 28 }} />
+            {e.slice(e.indexOf('<:MoonDAO:1047902000601383013>') + 30)}
+          </>
         ) : (
           e
         )
@@ -59,12 +66,11 @@ const TextContent = ({ sentence, mentions }: any) => {
 const ReplaceIdWithRoleName = ({ word }: any) => {
   const ending = word.lastIndexOf('>')
   const roleId = word.slice(3, ending)
-
   return (
     <>
       {discordRoleDictionary[roleId] ? (
         <span
-          className={`${discordRoleDictionary[roleId][0]}`}
+          className={` ${discordRoleDictionary[roleId][0]} `}
         >{`@${discordRoleDictionary[roleId][1]}`}</span>
       ) : (
         word
@@ -80,9 +86,11 @@ const ReplaceIdWithChannelName = ({ word }: any) => {
   return (
     <>
       {discordChannelDictionary[channelId] ? (
+        <>
         <span
           className={`${discordChannelDictionary[channelId][0]}`}
-        >{`@${discordChannelDictionary[channelId][1]}`}</span>
+          >{`@${discordChannelDictionary[channelId][1]}`}</span>
+          </>
       ) : (
         word
       )}
