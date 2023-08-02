@@ -74,26 +74,26 @@ export default function MonthlyCalendar({
   return (
     <div className="mt-8 overflow-hidden rounded border border-blue-600 shadow-md shadow-blue-300 dark:border-amber-100 dark:shadow-amber-200 lg:mx-10 lg:max-w-[1200px] ">
       <div className="shadow ring-1 ring-black ring-opacity-5 lg:flex lg:flex-auto lg:flex-col">
-        <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-white text-center text-xs font-semibold leading-6 text-moon-blue dark:border-gray-600 dark:bg-blue-950 dark:text-moon-gold lg:flex-none">
-          <div className="bw-white py-2 dark:bg-blue-950">
+        <div className="grid grid-cols-7 gap-px border-b border-gray-300 bg-white text-center text-xs font-semibold leading-6 text-moon-blue dark:border-gray-600 dark:bg-slate-900 dark:text-moon-gold lg:flex-none font-GoodTimes">
+          <div className="bw-white py-2 dark:bg-slate-900">
             M<span className="sr-only sm:not-sr-only">on</span>
           </div>
-          <div className="bw-white py-2 dark:bg-blue-950">
+          <div className="bw-white py-2 dark:bg-slate-900">
             T<span className="sr-only sm:not-sr-only">ue</span>
           </div>
-          <div className="bw-white py-2 dark:bg-blue-950">
+          <div className="bw-white py-2 dark:bg-slate-900">
             W<span className="sr-only sm:not-sr-only">ed</span>
           </div>
-          <div className="bw-white py-2 dark:bg-blue-950">
+          <div className="bw-white py-2 dark:bg-slate-900">
             T<span className="sr-only sm:not-sr-only">hu</span>
           </div>
-          <div className="bw-white py-2 dark:bg-blue-950">
+          <div className="bw-white py-2 dark:bg-slate-900">
             F<span className="sr-only sm:not-sr-only">ri</span>
           </div>
-          <div className="bw-white py-2 dark:bg-blue-950">
+          <div className="bw-white py-2 dark:bg-slate-900">
             S<span className="sr-only sm:not-sr-only">at</span>
           </div>
-          <div className="bw-white py-2 dark:bg-blue-950">
+          <div className="bw-white py-2 dark:bg-slate-900">
             S<span className="sr-only sm:not-sr-only">un</span>
           </div>
         </div>
@@ -104,8 +104,8 @@ export default function MonthlyCalendar({
                 key={day.toString()}
                 className={classNames(
                   isSameMonth(day, selectedDate)
-                    ? 'bg-white dark:bg-blue-950'
-                    : 'bg-gray-50 dark:bg-stronger-light dark:text-gray-200 ',
+                    ? 'bg-white dark:bg-slate-900'
+                    : 'bg-gray-50 dark:bg-slate-950 dark:text-gray-200 ',
                   'relative px-3 py-2'
                 )}
                 onClick={() => {
@@ -117,20 +117,20 @@ export default function MonthlyCalendar({
                 {hover === day.toString() && day.events.length > 0 && (
                   <div
                     className={`order-b pr-8 fixed right-0 bottom-0 z-10 flex min-h-[50%] min-w-[200px] animate-fadeIn 
-                  flex-col rounded-tl-2xl rounded-bl-2xl bg-gray-50 text-center text-sm font-semibold leading-6 text-moon-blue translate-x-0  drop-shadow-[0_15px_15px_rgba(128,237,235,0.25)] dark:border-gray-600 dark:bg-blue-950 dark:text-moon-gold dark:drop-shadow-[0_15px_15px_rgba(255,242,122,0.25)]`}
+                  flex-col rounded-tl-2xl rounded-bl-2xl bg-gray-50 text-center text-sm font-semibold leading-6 text-moon-blue translate-x-0  drop-shadow-[0_15px_15px_rgba(128,237,235,0.25)] dark:border-gray-600 dark:bg-slate-900 dark:text-moon-gold dark:drop-shadow-[0_15px_15px_rgba(255,242,122,0.25)]`}
                   >
                     {day.events.map((event: any, i: number) => (
                       <div
                         key={event.title + i}
                         className="justify-left flex w-full items-center p-2"
                       >
-                        <div className="dark:dark-glass absolute left-0 top-0 z-10 h-full w-full rounded-2xl " />
-                        <p className="ont-medium group z-20 flex w-full text-left text-black group-hover:text-moon-blue dark:text-gray-400">
+                        <div className="dark:dark-glass absolute left-0 top-0 z-10 h-full w-full rounded-2xl group " />
+                        <p className="ont-medium group z-20 flex w-full text-left text-black group-hover:text-moon-blue dark:group-hover:text-moon-gold dark:text-gray-400">
                           {event.title}
                         </p>
                         <time
                           dateTime={event.date}
-                          className="z-20 ml-3 flex-none text-black group-hover:text-moon-blue dark:text-gray-500 xl:block"
+                          className="z-20 ml-3 flex-none text-black group-hover:text-moon-blue dark:group-hover:text-moon-gold dark:text-gray-500 xl:block"
                         >
                           {format(parseISO(event.date), "hh:mm aaaaa'm'")}
                         </time>
@@ -142,7 +142,7 @@ export default function MonthlyCalendar({
                   dateTime={day.toString()}
                   className={
                     isSameDay(day, selectedDate)
-                      ? 'flex h-6 w-6 items-center justify-center rounded-full bg-moon-blue font-semibold text-white'
+                      ? 'flex h-6 w-6 items-center justify-center rounded-full bg-moon-blue dark:bg-moon-gold font-semibold text-white'
                       : 'text-black dark:text-gray-200'
                   }
                 >
@@ -153,7 +153,7 @@ export default function MonthlyCalendar({
                     {day.events.slice(0, 2).map((event: any) => (
                       <li key={event.date + event.title}>
                         <a href={event.href} className="group flex">
-                          <p className="flex-auto truncate font-medium text-black group-hover:text-moon-blue dark:text-gray-400">
+                          <p className="flex-auto truncate font-medium text-black group-hover:text-moon-blue dark:group-hover:text-moon-gold dark:text-gray-400">
                             {event.title}
                           </p>
                           <time
@@ -184,9 +184,9 @@ export default function MonthlyCalendar({
                 type="button"
                 className={classNames(
                   isSameMonth(day, selectedDate)
-                    ? 'bg-white dark:bg-blue-950'
-                    : 'bg-gray-50 dark:bg-stronger-light',
-                  'flex h-14 flex-col px-3 py-2 text-black focus:z-10 dark:text-gray-200 dark:hover:bg-stronger-light'
+                    ? 'bg-white dark:bg-slate-900'
+                    : 'bg-gray-50 dark:bg-slate-950',
+                  'flex h-14 flex-col px-3 py-2 text-black focus:z-10 dark:text-gray-200 dark:hover:bg-moon-gold'
                 )}
                 onClick={() => {
                   setSelectedDate(day)
@@ -196,7 +196,7 @@ export default function MonthlyCalendar({
                   dateTime={day.toString()}
                   className={classNames(
                     isSameDay(day, selectedDate)
-                      ? 'flex h-6 w-6 items-center justify-center rounded-full bg-moon-blue font-semibold text-white'
+                      ? 'flex h-6 w-6 items-center justify-center rounded-full bg-moon-blue dark:bg-moon-gold font-semibold text-white'
                       : 'flex h-6 w-6 items-center justify-center rounded-full',
                     'ml-auto'
                   )}

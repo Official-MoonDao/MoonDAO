@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Client, TypedDocumentNode, cacheExchange, fetchExchange } from 'urql'
-import { errorToast } from '../errorToast'
 
 export function useGQLQuery(
   apiUrl: string,

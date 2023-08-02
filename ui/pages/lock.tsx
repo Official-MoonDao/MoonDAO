@@ -208,7 +208,7 @@ export default function Lock() {
       <Head title="$vMOONEY" />
       <div className="mt-3 px-5 xl:px-10 py-12 xl:py-24 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
         <h1
-          className={`font-GoodTimes tracking-wide leading-relaxed text-center text-2xl xl:text-4xl font-medium mb-2 text-title-light dark:text-title-dark`}
+          className={`font-GoodTimes tracking-wide leading-relaxed text-center text-2xl xl:text-4xl font-semibold mb-2 text-title-light dark:text-title-dark`}
         >
           {t('lockCardTitle')}
         </h1>

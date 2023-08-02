@@ -9,7 +9,6 @@ import PurchasePortal from '../../components/zero-g/PurchasePortal'
 import ZeroGLayout from '../../components/zero-g/ZeroGLayout'
 import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
 import VotingEscrowABI from '../../const/abis/VotingEscrow.json'
-import vMooneySweepstakesABI from '../../const/abis/vMooneySweepstakes.json'
 import useContractConfig from '../../const/config'
 
 export default function ZeroG({ userDiscordData }: any) {
@@ -81,6 +80,7 @@ export default function ZeroG({ userDiscordData }: any) {
     </div>
   )
 }
+
 
 export async function getServerSideProps(context: any) {
   const code = context?.query?.code

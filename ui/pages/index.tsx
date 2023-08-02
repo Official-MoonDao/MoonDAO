@@ -2,7 +2,7 @@ import {
   BellIcon,
   WalletIcon,
   LockClosedIcon,
-  TableCellsIcon,
+  ChartBarSquareIcon,
   CalendarDaysIcon,
   FolderIcon,
 } from '@heroicons/react/24/outline'
@@ -46,7 +46,7 @@ export default function Home() {
       description:
         'See information related to the MOONEY holder distribution and staking.',
       href: '#',
-      icon: TableCellsIcon,
+      icon: ChartBarSquareIcon,
     },
     {
       name: 'Calendar',

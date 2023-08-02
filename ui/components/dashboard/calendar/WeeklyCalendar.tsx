@@ -68,7 +68,7 @@ export default function WeeklyCalendar({
     <div className="flex flex-col lg:mx-10 lg:max-w-[1200px] mt-8 rounded border border-blue-600 shadow-md shadow-blue-300 dark:border-amber-100 dark:shadow-amber-200">
       <div
         ref={container}
-        className="isolate flex flex-auto flex-col overflow-auto rounded bg-white dark:bg-blue-950"
+        className="isolate flex flex-auto flex-col overflow-auto rounded bg-white dark:bg-slate-900"
       >
         <div
           style={{ width: '165%' }}
@@ -76,7 +76,7 @@ export default function WeeklyCalendar({
         >
           <div
             ref={containerNav}
-            className="sticky top-0 z-30 flex-none bg-white shadow ring-1 ring-black ring-opacity-5 dark:bg-blue-950"
+            className="sticky top-0 z-30 flex-none bg-white shadow ring-1 ring-black ring-opacity-5 dark:bg-slate-900"
           >
             <div className="grid grid-cols-7 text-sm leading-6 text-black dark:text-gray-200 sm:hidden">
               {weekDays.map((day: any) => (
@@ -135,7 +135,7 @@ export default function WeeklyCalendar({
             </div>
           </div>
           <div className="flex flex-auto ">
-            <div className="sticky left-0 z-10 w-14 flex-none bg-white ring-1 ring-gray-100 dark:bg-blue-950" />
+            <div className="sticky left-0 z-10 w-14 flex-none bg-white ring-1 ring-gray-100 dark:bg-slate-900" />
             <div className="grid flex-auto grid-cols-1 grid-rows-1">
               {/* Horizontal lines */}
               <div

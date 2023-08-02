@@ -37,12 +37,14 @@ export default function CalendarHeader({
   }
 
   return (
-    <header className="flex items-center justify-between  py-2 lg:mx-10 lg:max-w-[1200px] lg:flex-none">
-      <h1 className="font-GoodTimes text-lg text-blue-950 underline decoration-blue-400 dark:text-gray-100 dark:decoration-moon-gold lg:text-xl">
+    <header className="flex items-center justify-between  py-2 xl:px-5 xl:max-w-[1200px] lg:flex-none">
+      {/*Date */}
+      <h1 className="font-GoodTimes text-lg text-blue-950 underline decoration-blue-400 dark:text-gray-100 dark:decoration-moon-gold xl:text-xl">
         <time dateTime="2022-01">{format(selectedDate, 'MMMM yyyy')}</time>
       </h1>
       <div className="flex items-center">
-        <div className="flex items-center rounded-md border border-gray-300 bg-white shadow  dark:border-moon-gold dark:bg-slate-700 dark:shadow-yellow-100 lg:items-stretch ">
+        
+        <div className="flex items-center rounded-md border border-gray-300 bg-white shadow  dark:border-moon-gold dark:bg-slate-700 dark:shadow-yellow-100 xl:items-stretch ">
           <button
             type="button"
             className="flex items-center justify-center rounded-md py-2 pl-3 pr-4 text-gray-400 hover:bg-gray-200  hover:text-gray-500 focus:relative dark:hover:bg-slate-600 lg:w-9 lg:px-2"
@@ -58,7 +60,7 @@ export default function CalendarHeader({
           </button>
           <button
             type="button"
-            className="hidden  px-3.5 text-sm font-medium text-gray-700 hover:bg-gray-200 hover:text-gray-900 focus:relative dark:text-gray-100 dark:hover:bg-slate-600 dark:hover:text-white lg:block"
+            className="hidden px-3.5 text-sm font-medium text-gray-700 hover:bg-gray-200 hover:text-gray-900 focus:relative dark:text-gray-100 dark:hover:bg-slate-600 dark:hover:text-white lg:block"
           >
             {isToday(selectedDate)
               ? 'Today'
@@ -80,6 +82,7 @@ export default function CalendarHeader({
           </button>
         </div>
 
+        {/*Menu for Desktop*/}
         <div className="hidden lg:ml-4 lg:flex lg:items-center">
           <Menu as="div" className="relative">
             <Menu.Button
@@ -157,6 +160,7 @@ export default function CalendarHeader({
           </button>
         </div>
 
+        {/*Menu below Desktop or LG*/}
         <Menu as="div" className="relative ml-6 lg:hidden">
           <Menu.Button className="-mx-2 flex items-center rounded-full border border-transparent p-2 text-gray-400 hover:text-gray-500">
             <span className="sr-only">Open menu</span>

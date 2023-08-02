@@ -18,7 +18,7 @@ export default function ProposalList({
   isLoading,
 }: ProposalListProps) {
   const pages = [...Array(6)]
-  console.log(data)
+  
   return (
     <div id="dashboard-proposals">
       <div className="flex flex-row justify-between items-center lg:max-w-[1080px]">

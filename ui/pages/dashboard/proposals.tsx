@@ -4,8 +4,8 @@ import { PROPOSALS_QUERY } from '../../lib/dashboard/gql/proposalsGQL'
 import { errorToast } from '../../lib/utils/errorToast'
 import { useGQLQuery } from '../../lib/utils/hooks/useGQLQuery'
 import ProposalList from '../../components/dashboard/proposals/ProposalList'
-import Head from '../../components/layout/Head'
 import ProposalSkeletons from '../../components/dashboard/proposals/ProposalSkeletons'
+import Head from '../../components/layout/Head'
 
 export default function Proposals() {
   const [skip, setSkip] = useState(0)
@@ -29,15 +29,19 @@ export default function Proposals() {
   return (
     <div className="animate-fadeIn">
       <Head title="Proposals" />
-          {error || isLoading ? <ProposalSkeletons/> : data && (
-            <ProposalList
-              data={data.proposals}
-              skip={skip}
-              setSkip={handleSkip}
-              isLoading={isLoading}
-            />
-          )}
-      </div>
+      {error || isLoading ? (
+        <ProposalSkeletons />
+      ) : (
+        data && (
+          <ProposalList
+            data={data.proposals}
+            skip={skip}
+            setSkip={handleSkip}
+            isLoading={isLoading}
+          />
+        )
+      )}
+    </div>
   )
 }
 
