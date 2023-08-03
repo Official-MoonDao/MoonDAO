@@ -20,6 +20,7 @@
     "@thirdweb-dev/react": "3.14.20",
     "@thirdweb-dev/sdk": "^3.10.41",
     "@thirdweb-dev/wallets": "^1.1.4",
+    "axios": "^1.4.0",
     "chart.js": "^4.3.2",
     "chartjs-adapter-moment": "^1.0.1",
     "daisyui": "^2.13.5",
