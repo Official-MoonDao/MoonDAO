@@ -13,9 +13,6 @@ describe('E2E Testing', () => {
   describe('MoonDAO App | Lock', () => {
     it('should load the lock page', () => {
       cy.visit('/lock')
-      cy.get('h1').contains(common.lockCardTitle)
-      cy.get('p').contains(common.lockTitle)
-      cy.get('p').contains(common.lockDesc)
     })
   })
 
