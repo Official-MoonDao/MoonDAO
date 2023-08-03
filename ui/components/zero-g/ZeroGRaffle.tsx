@@ -66,7 +66,7 @@ export default function ZeroGRaffle({
 
   return (
     <ReservationRaffleLayout>
-      <div className="flex flex-col animate-fadeIn justify-center items-center">
+      <div className="flex flex-col animate-fadeIn justify-center items-center w-full">
         {state === 0 && (
           <StageContainer>
             <div className="w-full">

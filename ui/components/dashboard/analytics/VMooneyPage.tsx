@@ -9,10 +9,11 @@ import HoldersChart from '../../../components/dashboard/analytics/charts/Holders
 import Pie from '../../../components/dashboard/analytics/charts/PieChart'
 import Head from '../../../components/layout/Head'
 import flag from '../../../public/Original.png'
+import Header from '../../layout/Header'
 
 function Frame(props: any) {
   return (
-    <div className="component-background mt-6 flex w-[336px] sm:w-[400px] lg:w-[650px] xl:w-[800px] 2xl:w-[1080px]  min-h-[85vh] 2xl:max-w-[1080px] flex-col justify-center items-center rounded-2xl border-[0.5px] border-blue-500 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold ">
+    <div className="component-background mt-8 flex w-[336px] sm:w-[400px] min-h-[50vh] lg:w-full lg:max-w-[1380px] flex-col justify-center items-center rounded-2xl border-[0.5px] border-blue-500 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold ">
       {props.children}
     </div>
   )
@@ -29,7 +30,7 @@ function LoadingSpinner() {
 
 function Data({ text, value, mooney, vmooney }: any) {
   return (
-    <div className="justify-left flex w-full flex-col rounded-2xl p-4 lg:w-1/2">
+    <div className="justify-left flex w-full flex-col rounded-2xl p-4 lg:w-1/2 text-center">
       <div className=" w-full font-Montserrat font-bold leading-10 text-slate-800 hover:text-black dark:text-indigo-100 dark:hover:text-white lg:text-xl 2xl:text-2xl">
         <p className="min-h-[6vh]">{text}</p>
         <hr className="relative mt-1 h-1 w-full bg-gradient-to-r from-blue-500 to-blue-900 dark:from-moon-gold dark:to-yellow-100" />
@@ -46,7 +47,7 @@ function Data({ text, value, mooney, vmooney }: any) {
 
 function Label({ text }: { text: string }) {
   return (
-    <div className="mt-4 flex w-full flex-col items-center justify-center text-center font-Montserrat font-bold leading-10 text-slate-800 hover:text-black dark:text-indigo-100 dark:hover:text-white lg:text-2xl 2xl:text-3xl">
+    <div className="my-4 flex w-full flex-col items-center justify-center text-center font-Montserrat font-bold tracking-wide text-slate-800 hover:text-black dark:text-indigo-100 dark:hover:text-white text-lg lg:text-2xl 2xl:text-3xl">
       {text}
       <hr className="relative mt-1 h-1.5 w-[90%] bg-gradient-to-r from-blue-600 to-blue-400 dark:from-moon-gold dark:to-yellow-100" />
     </div>
@@ -73,16 +74,12 @@ export default function VMooneyPage() {
   return (
     <>
       <Head title="Analytics" />
-      <div className="flex flex-col max-w-3xl">
-        <h1 className="card-title text-center text-3xl font-semibold font-GoodTimes mb-2">
-          {t('analyticsTitle')}
-          <Image src={flag} width={36} height={36} alt="" />
-        </h1>
+      <div className="">
+        <div className="grid xl:grid-cols-1 mt-2 md:pl-16  lg:mt-10 lg:w-full lg:max-w-[1380px] w-full items-center justify-center ">
+          <Header text={t('analyticsTitle')} />
+          {/*Stats frame*/}
 
-        <p className="mb-8 font-RobotoMono">{t('analyticsDesc')}</p>
-
-        <div className="grid xl:grid-cols-1 mt-2 gap-8">
-          <div className="component-background relative top-10 mb-12 flex w-[336px] flex-col justify-center gap-8 rounded-2xl border-[0.5px] border-blue-500 p-10 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold sm:w-[400px] lg:w-[650px] xl:w-[800px] 2xl:w-[1080px]">
+          <div className="component-background mt-8 relative mb-12 flex w-[336px] flex-col justify-center gap-8 rounded-2xl border-[0.5px] border-blue-500 p-10 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold sm:w-[400px] lg:w-full lg:max-w-[1380px]">
             <Label text="vMooney Key Figures" />
             <div className="flex flex-col justify-around lg:flex-row">
               <Data
@@ -118,13 +115,17 @@ export default function VMooneyPage() {
               />
             </div>
           </div>
+          {/*V-Mooney distribution frame*/}
           <Frame>
             <div className="w-full mt-2 flex flex-col items-center justify-center lg:mt-3">
               <div className="">
                 <Label text="vMOONEY Distribution" />
               </div>
             </div>
+            <div>
+
             <Pie data={analyticsData.distribution} lightMode={lightMode} />
+            </div>
             <div
               id="dashboard-analytics-holders-list"
               className="flex items-center justify-center"
@@ -135,6 +136,7 @@ export default function VMooneyPage() {
               />
             </div>
           </Frame>
+          {/*Holders frame*/}
           <Frame>
             <div className="w-full h-full flex flex-col">
               <Label text="vMOONEY Holders Over Time" />

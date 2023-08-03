@@ -10,11 +10,11 @@ export default function ReservationRaffleLayout({
       {!loading ? (
         <div
           className={
-            !maxWidthClassNames ? 'max-w-md md:max-w-xl' : maxWidthClassNames
+            !maxWidthClassNames ? 'w-full max-w-xl' : maxWidthClassNames
           }
         >
           <div
-            className={`card min-w-80 md:w-full rounded-2xl border-white border-[0.5px] bg-black bg-opacity-50  text-white font-RobotoMono shadow-md overflow-visible lg:px-3`}
+            className={`card min-w-80 lg:w-full rounded-2xl border-white border-[0.5px] bg-gradient-to-br from-blue-400 to-moon-blue dark:from-slate-900 dark:to-black  dark:bg-opacity-50  text-white font-RobotoMono shadow-md overflow-visible lg:px-3`}
           >
             <div className={`card-body items-stretch ${className} p-[5%]`}>
               <h2

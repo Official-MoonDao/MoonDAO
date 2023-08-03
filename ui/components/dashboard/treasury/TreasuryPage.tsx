@@ -1,4 +1,5 @@
 import useTranslation from 'next-translate/useTranslation'
+import {useState} from 'react'
 import { useAssets, useTransactions } from '../../../lib/dashboard/hooks'
 import { errorToast } from '../../../lib/utils/errorToast'
 import Head from '../../layout/Head'
@@ -8,6 +9,8 @@ import AssetSkeletons from './balance/AssetSkeletons'
 import Assets from './balance/Assets'
 import TreasuryBalance from './balance/TreasuryBalance'
 import Transaction from './transactions/Transaction'
+import TransactionCaret from './transactions/TransactionCaret'
+import TransactionPagination from './transactions/TransactionPagination'
 import TransactionSkeletons from './transactions/TransactionSkeletons'
 
 export default function TreasuryPage() {
@@ -16,6 +19,7 @@ export default function TreasuryPage() {
     isLoading: loadingTransactions,
     error: etherscanError,
   } = useTransactions()
+
 
   const {
     tokens,
@@ -29,8 +33,11 @@ export default function TreasuryPage() {
       'Connection with Etherscan failed. Contact MoonDAO if the problem persists 🚀'
     )
 
+    const [page, setPage] = useState(1);
+    const pageMax = 697;
+    console.log(page)
+
   // Implement allowed asset functionality or warning when asset wasn't approved
-  // Pagination
 
   const { t } = useTranslation('common')
 
@@ -81,7 +88,63 @@ export default function TreasuryPage() {
             )}
           </div>
 
-          {/*Pagination Goes Here*/}
+          {/*Pagination*/}
+          <div className="mt-10 flex justify-between max-w-[650px] items-center">
+            <TransactionCaret
+              left
+              page={page}
+              pageMax={pageMax}
+              setPage={setPage}
+              isLoaded={loadingTransactions}
+            />
+            {page <= 3
+              ? [1, 2, 3, 4, 5].map((e, i) => (
+                  <TransactionPagination
+                    key={i}
+                    currentPage={page}
+                    pageNumber={e}
+                    setPage={setPage}
+                    pageMax={pageMax}
+                    isLoaded={loadingTransactions}
+                  />
+                ))
+              : page >= pageMax - 2
+              ? [
+                  pageMax - 4,
+                  pageMax - 3,
+                  pageMax - 2,
+                  pageMax - 1,
+                  pageMax,
+                ].map((e, i) => (
+                  <TransactionPagination
+                    key={i}
+                    currentPage={page}
+                    pageNumber={e}
+                    setPage={setPage}
+                    pageMax={pageMax}
+                    isLoaded={loadingTransactions}
+                  />
+                ))
+              : [page - 2, page - 1, page, page + 1, page + 2].map((e, i) => (
+                  <TransactionPagination
+                    key={i}
+                    currentPage={page}
+                    pageNumber={e}
+                    setPage={setPage}
+                    pageMax={pageMax}
+                    isLoaded={loadingTransactions}
+                  />
+                ))}
+            <TransactionCaret
+              page={page}
+              pageMax={pageMax}
+              setPage={setPage}
+              isLoaded={loadingTransactions}
+            />
+          </div>
+
+
+
         </section>
       </div>
     </>

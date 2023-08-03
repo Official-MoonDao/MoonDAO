@@ -67,7 +67,7 @@ function HoldersList({ data, itemsPerPage = 10 }: any) {
   }
 
   return (
-    <div className="flex h-[80%] w-[300px] sm:[330px] flex-col items-center justify-center lg:w-[25vw]">
+    <div className="flex h-[80%] w-[300px] sm:[330px] md:w-full flex-col items-center justify-center">
       <Holders currentItems={currentItems} />
       <ReactPaginate
         breakLabel=""

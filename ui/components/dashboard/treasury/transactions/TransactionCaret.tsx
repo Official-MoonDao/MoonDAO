@@ -2,7 +2,7 @@ const TransactionCaret = ({ left, page, setPage, pageMax, isLoaded }: any) => {
   return (
     <button
       name={left ? 'Go to previous page' : 'Go to next page'}
-      disabled={(left && page === 1) || page === pageMax || !isLoaded}
+      disabled={(left && page === 1) || page === pageMax || isLoaded}
       onClick={() => {
         left && page !== 1
           ? setPage(page - 1)
