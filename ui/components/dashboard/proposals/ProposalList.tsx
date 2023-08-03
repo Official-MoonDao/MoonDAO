@@ -18,7 +18,7 @@ export default function ProposalList({
   isLoading,
 }: ProposalListProps) {
   const pages = [...Array(6)]
-  
+
   return (
     <div id="dashboard-proposals">
       <div className="flex flex-row justify-between items-center lg:max-w-[1080px]">
@@ -57,7 +57,7 @@ export default function ProposalList({
         {pages.map((e, i) => (
           <PaginationButton
             page={i}
-            key={i}
+            key={'proposals-page-' + i}
             skip={skip}
             setSkip={setSkip}
             scrollUp

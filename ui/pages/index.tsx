@@ -19,7 +19,7 @@ export default function Home() {
     {
       name: 'Get voting power',
       description: 'Lock MOONEY to get voting power within MoonDAO.',
-      href: '/dashbooard/lock',
+      href: '/lock',
       icon: LockClosedIcon,
     },
     {
@@ -36,15 +36,14 @@ export default function Home() {
     },
     {
       name: 'Analytics',
-      description:
-        'See information related to the MOONEY holder distribution and staking.',
+      description: 'See information related to Voting Power and the Treasury.',
       href: '/dashboard/analytics',
       icon: ChartBarSquareIcon,
     },
     {
       name: 'Calendar',
       description: 'See all the scheduled events and meetings.',
-      href: '#',
+      href: '/dashboard/calendar',
       icon: CalendarDaysIcon,
     },
   ]

@@ -51,7 +51,7 @@ export default function Lifeship({ products = [] }: any) {
       <Head title="Lifeship" />
       <div className="flex flex-col max-w-3xl justify-center w-full">
         <div className="flex flex-col justify-center items-center gap-4 w-full">
-          <div className="flex flex-col justify-center items-center text-center lg:w-[65vw] w-[90vw] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md p-[5%] relative left-2">
+          <div className="mt-3 px-5 lg:px-8 xl:px-12 py-12 xl:py-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark lg:flex lg:flex-col lg:items-center">
             <div className="flex flex-col md:flex-row md:gap-4 justify-center">
               <h2
                 className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-200`}
@@ -91,7 +91,9 @@ export default function Lifeship({ products = [] }: any) {
                   </span>{' '}
                   {`to send a time capsule of life on Earth to the Moon!`}
                 </p>
-                <hr className="w-full border-n3blue border-2"></hr>
+                <div className="my-8 xl:mt-5 w-full flex justify-center">
+                  <div className="flex justify-center h-[2px] bg-gradient-to-r from-detail-light to-moon-blue dark:from-detail-dark dark:to-moon-gold lg:mt-7 lg:h-[3px] w-5/6"></div>
+                </div>
 
                 {products[0] && (
                   <div className="flex flex-col gap-[5%] w-full items-center justify-center mt-[5%]">
@@ -157,7 +159,9 @@ export default function Lifeship({ products = [] }: any) {
                     >
                       Checkout
                     </Button>
-                    <hr className="w-full border-n3blue border-2"></hr>
+                    <div className="my-8 xl:mt-5 w-full flex justify-center">
+                      <div className="flex justify-center h-[2px] bg-gradient-to-r from-detail-light to-moon-blue dark:from-detail-dark dark:to-moon-gold lg:mt-7 lg:h-[3px] w-5/6"></div>
+                    </div>
                     <p className="font-RobotoMono max-w-2xl p-2">
                       {
                         'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through Lifeship'

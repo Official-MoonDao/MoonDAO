@@ -1,5 +1,6 @@
 import useTranslation from 'next-translate/useTranslation'
 import React, { useState } from 'react'
+import { Client, Provider, cacheExchange, fetchExchange, useQuery } from 'urql'
 import { PROPOSALS_QUERY } from '../../lib/dashboard/gql/proposalsGQL'
 import { errorToast } from '../../lib/utils/errorToast'
 import { useGQLQuery } from '../../lib/utils/hooks/useGQLQuery'
@@ -14,18 +15,12 @@ export default function Proposals() {
     PROPOSALS_QUERY,
     { skip }
   )
-
   function handleSkip(value: number) {
     setSkip(value)
-    update()
   }
 
-  if (error)
-    errorToast(
-      'Connection failed. Contact MoonDAO discord if the problem persists 🚀'
-    )
-
   const { t } = useTranslation('common')
+
   return (
     <div className="animate-fadeIn">
       <Head title="Proposals" />

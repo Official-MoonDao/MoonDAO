@@ -15,6 +15,10 @@ const externalLinks = [
     name: 'Documentation',
     href: 'https://moondao.com/docs/introduction',
   },
+  {
+    name: 'Newsletter',
+    href: 'https://moondao.ck.page/profile',
+  },
 ]
 
 const ExternalLinks = () => {
@@ -30,7 +34,7 @@ const ExternalLinks = () => {
         {externalLinks.map((item, i) => (
           <li
             key={i}
-            className=" py-[6px] hover:scale-105 transition-all duration-100"
+            className="py-[6px] hover:scale-105 transition-all duration-100"
           >
             <a
               key={item.name}

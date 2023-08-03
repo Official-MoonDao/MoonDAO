@@ -30,7 +30,7 @@ describe('E2E Testing', () => {
   describe('MoonDAO App | Zero-G', () => {
     it('should load the zero-g page', () => {
       cy.visit('/zero-g')
-      cy.get('h2').contains('Zero-G')
+      cy.get('h1').contains('Zero-G Flight')
     })
   })
 

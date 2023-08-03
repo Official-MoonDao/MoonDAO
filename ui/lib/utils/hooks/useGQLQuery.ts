@@ -15,22 +15,26 @@ export function useGQLQuery(
   const [data, setData] = useState<any>()
   const [error, setError] = useState<any>()
 
-  async function runQuery() {
+  function runQuery(vars: any = variables) {
     setIsLoading(true)
-    try {
-      const result = await gqlClient.query(query, variables).toPromise()
-      setData(result.data)
-    } catch (err: any) {
-      setError(err.message)
-    }
-    setIsLoading(false)
+    gqlClient
+      .query(query, vars)
+      .toPromise()
+      .then((result) => {
+        setData(result.data)
+      })
+      .catch((err: any) => {
+        setError(err.message)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
   }
 
   useEffect(() => {
-    if (gqlClient && query && !data) {
-      runQuery()
-    }
-  }, [gqlClient, query, variables])
+    if (variables && !isLoading) runQuery()
+    runQuery()
+  }, [variables.skip])
 
   return { data, isLoading, error, update: runQuery }
 }

@@ -132,7 +132,7 @@ export default function Lock() {
 
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
-    ethers.utils?.parseEther(lockAmount || '0'),
+    ethers.utils?.parseEther((lockAmount as string) || '0'),
     vMOONEYToken
   )
 
@@ -523,18 +523,18 @@ export default function Lock() {
                         ? 'border-disabled btn-disabled bg-transparent'
                         : 'bg-primary'
                     }`}
-                    isDisabled={
-                      (!canIncrease.amount &&
-                        !canIncrease.time &&
-                        Number(lockAmount) <=
-                          Number(VMOONEYLock?.[0].toString() / 10 ** 18)) ||
-                      (!canIncrease.amount &&
-                        !canIncrease.time &&
-                        Date.parse(lockTime.formatted) <
-                          Date.parse(
-                            dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))
-                          ))
-                    }
+                    // isDisabled={
+                    //   (!canIncrease.amount &&
+                    //     !canIncrease.time &&
+                    //     Number(lockAmount) <=
+                    //       Number(VMOONEYLock?.[0].toString() / 10 ** 18)) ||
+                    //   (!canIncrease.amount &&
+                    //     !canIncrease.time &&
+                    //     Date.parse(lockTime.formatted) <
+                    //       Date.parse(
+                    //         dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))
+                    //       ))
+                    // }
                     action={async () => {
                       //check for token allowance
                       const allowance = Number(formatEther(tokenAllowance))
