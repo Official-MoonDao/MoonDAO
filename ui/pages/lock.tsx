@@ -229,11 +229,11 @@ export default function Lock() {
         <section className="xl:w-3/4">
           {/*Lock description section*/}
           {!hasLock && (
-            <>
+            <div>
               <p className="mt-6 font-mono text-base xl:text-lg xl:leading-10 text-center leading-8 text-light-text dark:text-dark-text dark:text-opacity-80">
                 {t('lockDesc')}
               </p>
-            </>
+            </div>
           )}
           {/*Lock Data, not done yet*/}
           {hasLock && (
@@ -288,6 +288,7 @@ export default function Lock() {
             </>
           )}
         </section>
+
         <div className="my-5 xl:mt-8 flex justify-center">
           <L2Toggle />
         </div>
@@ -301,7 +302,7 @@ export default function Lock() {
         <div className="text-light-text dark:text-dark-text xl:w-3/4">
           <div className="flex flex-col">
             {!hasExpired ? (
-              <>
+              <div>
                 {/*Available to Lock*/}
                 <p className="text-sm uppercase font-semibold xl:text-base">
                   {t('lockAvailableMoney')}{' '}
@@ -570,16 +571,16 @@ export default function Lock() {
                         }`}
                   </Web3Button>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
+              <div>
                 <p className="">{t('expDesc')}</p>
                 <div className="card-actions mt-4">
                   <Web3Button contractAddress="" action={() => withdraw()}>
                     {t('withdraw')}
                   </Web3Button>
                 </div>
-              </>
+              </div>
             )}
           </div>
 

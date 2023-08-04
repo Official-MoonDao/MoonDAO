@@ -11,7 +11,7 @@ export default function Balance({
   return (
     <span className="text-base font-normal text-title-light dark:text-moon-gold tracking-wide">
       {loading ? (
-        <div className="btn btn-square btn-ghost btn-disabled bg-transparent loading"></div>
+        <span className="btn btn-square btn-ghost btn-disabled bg-transparent loading"></span>
       ) : balance ? (
         `${prefix}${transformNumber(
           balance,
