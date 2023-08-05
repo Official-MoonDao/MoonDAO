@@ -6,6 +6,7 @@ export function useAnnouncements() {
   const [error, setError] = useState<any>()
 
   async function getAnnouncements(id?: string) {
+    setIsLoading(true)
     try {
       const response = await fetch(
         `/api/discord/announcements${id ? `?before=${id}` : ''}`
@@ -15,6 +16,8 @@ export function useAnnouncements() {
     } catch (error) {
       console.error('Error fetching announcements:', error)
     }
+
+    setIsLoading(false)
   }
   useEffect(() => {
     getAnnouncements().then((announcements) => setAnnouncements(announcements))
