@@ -13,11 +13,14 @@ import TransactionPagination from './transactions/TransactionPagination'
 import TransactionSkeletons from './transactions/TransactionSkeletons'
 
 export default function TreasuryPage() {
+  const [page, setPage] = useState(1)
+  const pageMax = 697
+
   const {
     transactions,
     isLoading: loadingTransactions,
     error: etherscanError,
-  } = useTransactions()
+  } = useTransactions(page)
 
   const {
     tokens,
@@ -31,17 +34,13 @@ export default function TreasuryPage() {
       'Connection with Etherscan failed. Contact MoonDAO if the problem persists 🚀'
     )
 
-  const [page, setPage] = useState(1)
-  const pageMax = 697
-  console.log(page)
-
   // Implement allowed asset functionality or warning when asset wasn't approved
 
   const { t } = useTranslation('common')
 
   return (
     <>
-      <div className="xl:flex xl:justify-around">
+      <div className="lg:flex lg:justify-around gap-12">
         {/*Assets Section*/}
         <section className="xl:w-[40%] xl:max-w-[600px]">
           {loadingAssets || !tokens[0] ? (
@@ -64,11 +63,6 @@ export default function TreasuryPage() {
 
         {/*Transactions Section*/}
         <section className="mt-12 xl:mt-2 xl:w-[40%] xl:max-w-[700px]">
-          <div className="flex flex-row items-center justify-between">
-            <Header text="Transactions" noStar />
-          </div>
-
-          <Line />
           <div className="mt-10">
             {loadingTransactions || !transactions ? (
               <TransactionSkeletons />

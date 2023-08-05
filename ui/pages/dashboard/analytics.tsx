@@ -1,18 +1,28 @@
 import useTranslation from 'next-translate/useTranslation'
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
+import { useShallowQueryRoute } from '../../lib/utils/hooks'
 import VMooneyPage from '../../components/dashboard/analytics/VMooneyPage'
 import TreasuryPage from '../../components/dashboard/treasury/TreasuryPage'
 import Head from '../../components/layout/Head'
+import Header from '../../components/layout/Header'
+import Line from '../../components/layout/Line'
 
 export default function Analytics() {
   const [isTreasury, setIsTreasury] = useState(false)
+  const shallowQueryRoute = useShallowQueryRoute()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (router.query.treasury) setIsTreasury(true)
+  }, [router.query])
 
   const { t } = useTranslation('common')
 
   return (
     <div className="animate-fadeIn relative">
       <Head title={t('analyticsTitle')} description={t('analyticsDesc')} />
+
       {/* Toggle for analytics (vmooney <=> treasury) */}
       <div
         className={`${
@@ -31,7 +41,10 @@ export default function Analytics() {
         {/*Toggle button*/}
         <div
           id="dashboard-analytics-toggle"
-          onClick={() => setIsTreasury(!isTreasury)}
+          onClick={() => {
+            setIsTreasury(!isTreasury)
+            shallowQueryRoute(isTreasury ? {} : { treasury: true })
+          }}
           className="relative w-[100px] h-[28px] rounded-full bg-gray-300 dark:bg-slate-200"
         >
           <div
@@ -50,6 +63,12 @@ export default function Analytics() {
           Treasury
         </p>
       </div>
+
+      <div className="flex flex-row items-center justify-between">
+        <Header text={isTreasury ? 'Treasury' : 'Analytics'} />
+      </div>
+
+      <Line />
 
       {isTreasury ? <TreasuryPage /> : <VMooneyPage />}
     </div>

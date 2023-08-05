@@ -7,7 +7,7 @@ const zeroAddress = '0x0000000000000000000000000000000000000000'
 interface DeploymentConfig {
   MOONEYToken: string
   vMOONEYToken: string
-  vMooneySweepstakesZeroG_v1: string
+  vMooneySweepstakesZeroG: string
 }
 
 interface Config {
@@ -49,7 +49,7 @@ export const VMOONEY_ADDRESSES: Index = {
 }
 
 export const VMOONEY_SWEEPSTAKES: string =
-  defaultConfigL1.vMooneySweepstakesZeroG_v1
+  defaultConfigL1.vMooneySweepstakesZeroG
 
 // export default function useContractConfig() {
 //   const { selectedChain } = useContext(ChainContext)

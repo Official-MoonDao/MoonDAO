@@ -71,8 +71,7 @@ export default function VMooneyPage() {
   return (
     <>
       <div className="">
-        <div className="grid xl:grid-cols-1 mt-2 md:pl-16  lg:mt-10 lg:w-full lg:max-w-[1380px] w-full items-center justify-center ">
-          <Header text={t('analyticsTitle')} />
+        <div className="grid xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] w-full items-center justify-center ">
           {/*Stats frame*/}
 
           <div className="component-background mt-8 relative mb-12 flex w-[336px] flex-col justify-center gap-8 rounded-2xl border-[0.5px] border-blue-500 p-10 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold sm:w-[400px] lg:w-full lg:max-w-[1380px]">
