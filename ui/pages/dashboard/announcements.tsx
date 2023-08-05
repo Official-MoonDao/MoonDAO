@@ -9,12 +9,15 @@ import Header from '../../components/layout/Header'
 import Line from '../../components/layout/Line'
 
 export default function Announcements() {
-  const {
-    announcements,
-    isLoading,
-    error,
-    update: updateAnnouncements,
-  } = useAnnouncements()
+  const { announcements, isLoading, error, updateAnnouncements } =
+    useAnnouncements()
+
+  // const {
+  //   announcements,
+  //   isLoading,
+  //   error,
+  //   update: updateAnnouncements,
+  // } = useAnnouncements()
 
   const firstPostId = '916126920339509268'
   const endingId = '916126920339509268'

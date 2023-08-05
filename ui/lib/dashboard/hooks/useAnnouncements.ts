@@ -1,34 +1,29 @@
-import { set } from 'cypress/types/lodash'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
-export const useAnnouncements = () => {
+export function useAnnouncements() {
   const [announcements, setAnnouncements] = useState<any>([])
-  const [error, setError] = useState<boolean>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [error, setError] = useState<any>()
 
   async function getAnnouncements(id?: string) {
-    setIsLoading(true)
     try {
       const response = await fetch(
-        process.env.NEXT_PUBLIC_ANNOUNCEMENTS_API_URL +
-          (id ? `?before=${id}` : '')
+        `/api/discord/announcements${id ? `?before=${id}` : ''}`
       )
-      const nextAnnouncements = await response.json()
-      setAnnouncements([...announcements,...nextAnnouncements])
-    } catch (err: any) {
-      setError(err.message)
+      const announcements = await response.json()
+      return announcements
+    } catch (error) {
+      console.error('Error fetching announcements:', error)
     }
-    setIsLoading(false)
   }
-
   useEffect(() => {
-    getAnnouncements()
+    getAnnouncements().then((announcements) => setAnnouncements(announcements))
   }, [])
 
   return {
     announcements,
     isLoading,
     error,
-    update: getAnnouncements,
+    updateAnnouncements: getAnnouncements,
   }
 }
