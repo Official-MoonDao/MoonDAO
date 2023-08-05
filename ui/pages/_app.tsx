@@ -1,5 +1,5 @@
 import { Chain, Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
-import { ThirdwebProvider } from '@thirdweb-dev/react'
+import { ThirdwebProvider, walletConnect } from '@thirdweb-dev/react'
 import { metamaskWallet, coinbaseWallet, safeWallet } from '@thirdweb-dev/react'
 import React, { useState } from 'react'
 import { useLocalStorage } from 'usehooks-ts'
@@ -13,7 +13,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Ethereum : Goerli
   )
 
-  const [lightMode, setLightMode] = useLocalStorage('lightMode',false)
+  const [lightMode, setLightMode] = useLocalStorage('lightMode', false)
 
   return (
     <>
@@ -22,7 +22,12 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
         <ThirdwebProvider
           activeChain={selectedChain}
           supportedChains={[Ethereum, Polygon, Goerli, Mumbai]}
-          supportedWallets={[metamaskWallet(), coinbaseWallet(), safeWallet()]}
+          supportedWallets={[
+            metamaskWallet(),
+            coinbaseWallet(),
+            safeWallet(),
+            walletConnect(),
+          ]}
         >
           <Layout lightMode={lightMode} setLightMode={setLightMode}>
             <Component {...pageProps} />

@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { getUserDiscordData } from '../../lib/utils/discord'
-import WebsiteHead from '../../components/layout/Head'
+import Head from '../../components/layout/Head'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
 import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
 import VotingEscrowABI from '../../const/abis/VotingEscrow.json'
@@ -40,7 +40,7 @@ export default function ZeroG({ userDiscordData }: any) {
 
   return (
     <div className="animate-fadeIn">
-      <WebsiteHead title="Zero-G Flight" />
+      <Head title="Zero-G Flight" />
 
       <main className="mt-3 px-5 lg:px-8 xl:px-12 py-12 xl:py-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark lg:flex lg:flex-col lg:items-center">
         <h1

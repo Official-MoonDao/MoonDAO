@@ -4,6 +4,7 @@ import { useAnnouncements } from '../../lib/dashboard/hooks'
 import { errorToast } from '../../lib/utils/errorToast'
 import Announcement from '../../components/dashboard/announcements/Announcement'
 import AnnouncementSkeletons from '../../components/dashboard/announcements/AnnouncementSkeletons'
+import Head from '../../components/layout/Head'
 import Header from '../../components/layout/Header'
 import Line from '../../components/layout/Line'
 
@@ -46,6 +47,10 @@ export default function Announcements() {
   const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">
+      <Head
+        title={t('announcementsTitle')}
+        description={t('announcementsDesc')}
+      />
       <Header text={'Announcements'} />
       <Line />
 

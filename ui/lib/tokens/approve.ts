@@ -13,8 +13,10 @@ export function useTokenAllowance(
 
 export function useTokenApproval(
   tokenContract: SmartContract | undefined,
-  amountNeeded: BigNumber,
+  amountNeeded: any,
   spender: string
 ) {
+  const lockAmount =
+    amountNeeded && amountNeeded !== '' ? amountNeeded : BigNumber.from(0)
   return useHandleWrite(tokenContract, 'approve', [spender, amountNeeded])
 }

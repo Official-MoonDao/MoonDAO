@@ -23,7 +23,7 @@ export default function Proposals() {
 
   return (
     <div className="animate-fadeIn">
-      <Head title="Proposals" />
+      <Head title={t('proposalsTitle')} description={t('proposalsDesc')} />
       {error || isLoading ? (
         <ProposalSkeletons />
       ) : (

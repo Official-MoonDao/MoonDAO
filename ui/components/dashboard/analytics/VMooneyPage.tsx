@@ -1,5 +1,4 @@
 import useTranslation from 'next-translate/useTranslation'
-import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { useAssets } from '../../../lib/dashboard/hooks'
 import { getVMOONEYData } from '../../../lib/tokens/ve-subgraph'
@@ -7,8 +6,6 @@ import AnalyticsSkeleton from '../../../components/dashboard/analytics/Analytics
 import HoldersList from '../../../components/dashboard/analytics/HoldersList'
 import HoldersChart from '../../../components/dashboard/analytics/charts/HoldersChart'
 import Pie from '../../../components/dashboard/analytics/charts/PieChart'
-import Head from '../../../components/layout/Head'
-import flag from '../../../public/Original.png'
 import Header from '../../layout/Header'
 
 function Frame(props: any) {
@@ -73,17 +70,16 @@ export default function VMooneyPage() {
   if (!analyticsData?.holders) return <AnalyticsSkeleton />
   return (
     <>
-      <Head title="Analytics" />
       <div className="">
         <div className="grid xl:grid-cols-1 mt-2 md:pl-16  lg:mt-10 lg:w-full lg:max-w-[1380px] w-full items-center justify-center ">
           <Header text={t('analyticsTitle')} />
           {/*Stats frame*/}
 
           <div className="component-background mt-8 relative mb-12 flex w-[336px] flex-col justify-center gap-8 rounded-2xl border-[0.5px] border-blue-500 p-10 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold sm:w-[400px] lg:w-full lg:max-w-[1380px]">
-            <Label text="vMooney Key Figures" />
+            <Label text="Voting Power Key Figures" />
             <div className="flex flex-col justify-around lg:flex-row">
               <Data
-                text={'vMOONEY Balance'}
+                text={'Voting Power Balance'}
                 value={Math.round(analyticsData.totals.vMooney).toLocaleString(
                   'en-US'
                 )}
@@ -119,12 +115,11 @@ export default function VMooneyPage() {
           <Frame>
             <div className="w-full mt-2 flex flex-col items-center justify-center lg:mt-3">
               <div className="">
-                <Label text="vMOONEY Distribution" />
+                <Label text="Voting Power %" />
               </div>
             </div>
             <div>
-
-            <Pie data={analyticsData.distribution} lightMode={lightMode} />
+              <Pie data={analyticsData.distribution} lightMode={lightMode} />
             </div>
             <div
               id="dashboard-analytics-holders-list"
@@ -139,7 +134,7 @@ export default function VMooneyPage() {
           {/*Holders frame*/}
           <Frame>
             <div className="w-full h-full flex flex-col">
-              <Label text="vMOONEY Holders Over Time" />
+              <Label text="Stakers Over Time" />
 
               <HoldersChart
                 data={analyticsData.holders}

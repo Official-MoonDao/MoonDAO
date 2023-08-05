@@ -1,8 +1,7 @@
 import useTranslation from 'next-translate/useTranslation'
-import {useState} from 'react'
+import { useState } from 'react'
 import { useAssets, useTransactions } from '../../../lib/dashboard/hooks'
 import { errorToast } from '../../../lib/utils/errorToast'
-import Head from '../../layout/Head'
 import Header from '../../layout/Header'
 import Line from '../../layout/Line'
 import AssetSkeletons from './balance/AssetSkeletons'
@@ -20,7 +19,6 @@ export default function TreasuryPage() {
     error: etherscanError,
   } = useTransactions()
 
-
   const {
     tokens,
     balanceSum,
@@ -33,9 +31,9 @@ export default function TreasuryPage() {
       'Connection with Etherscan failed. Contact MoonDAO if the problem persists 🚀'
     )
 
-    const [page, setPage] = useState(1);
-    const pageMax = 697;
-    console.log(page)
+  const [page, setPage] = useState(1)
+  const pageMax = 697
+  console.log(page)
 
   // Implement allowed asset functionality or warning when asset wasn't approved
 
@@ -43,7 +41,6 @@ export default function TreasuryPage() {
 
   return (
     <>
-      <Head title="Treasury" />
       <div className="xl:flex xl:justify-around">
         {/*Assets Section*/}
         <section className="xl:w-[40%] xl:max-w-[600px]">
@@ -142,9 +139,6 @@ export default function TreasuryPage() {
               isLoaded={loadingTransactions}
             />
           </div>
-
-
-
         </section>
       </div>
     </>

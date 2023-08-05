@@ -18,18 +18,22 @@ export default function Calendar() {
   const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">
-      <Head title="Calendar" />
+      <Head title={t('calendarTitle')} description={t('calendarDesc')} />
       <div className="mt-3 px-5 py-12 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
-
-      <h1
+        <h1
           className={`font-GoodTimes font-semibold tracking-wide leading-relaxed text-center text-3xl xl:text-4xl mb-2 text-title-light dark:text-title-dark`}
         >
           {t('calendarTitle')}
         </h1>
 
-        <p className="my-6 xl:my-10 text-lg xl:text-xl leading-8 text-center text-light-text dark:text-dark-text dark:text-opacity-80">{t('calendarDesc')}</p>
+        <p className="my-6 xl:my-10 text-lg xl:text-xl leading-8 text-center text-light-text dark:text-dark-text dark:text-opacity-80">
+          {t('calendarDesc')}
+        </p>
 
-        <div id="dashboard-calendar" className="grid w-full xl:grid-cols-1 mt-2 gap-8">
+        <div
+          id="dashboard-calendar"
+          className="grid w-full xl:grid-cols-1 mt-2 gap-8"
+        >
           <CalendarHeader
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
@@ -54,8 +58,6 @@ export default function Calendar() {
           )}
         </div>
       </div>
-
-
     </div>
   )
 }

@@ -12,7 +12,7 @@ function Box({ text }: any) {
 function Holders({ currentItems }: any) {
   return (
     <div className="relative flex h-[100%] w-[100%] flex-col gap-1 font-Montserrat text-[1.25vw] leading-10 text-slate-800 lg:right-6 lg:w-[140%] lg:text-[1.0vw]">
-      <div className="flex w-full gap-[12%] lg:gap-[2vw] bg-gradient-to-r from-blue-800 to-blue-950 bg-clip-text text-transparent dark:from-yellow-200 dark:to-moon-gold">
+      <div className="flex w-full justify-evenly bg-gradient-to-r from-blue-800 to-blue-950 bg-clip-text text-transparent dark:from-yellow-200 dark:to-moon-gold">
         <p>ADDRESS</p>
         <p>LOCKED MOONEY</p>
         <p>VMOONEY</p>
