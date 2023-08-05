@@ -4,19 +4,19 @@ import { useCallback } from 'react'
 import { useHandleRead } from '../thirdweb/hooks'
 import { useHandleWrite } from '../thirdweb/hooks'
 
-export function useVMOONEYBalance(
-  votingEscrowContract: SmartContract | undefined,
-  address: any
-) {
-  return useHandleRead(votingEscrowContract, 'balanceOf', [address])
-}
-
 let gasLimits = {
   locked: 330000,
   create_lock: 600000,
   increase_amount: 600000,
   increase_unlock_time: 600000,
   withdraw: 400000,
+}
+
+export function useVMOONEYBalance(
+  votingEscrowContract: SmartContract | undefined,
+  address: any
+) {
+  return useHandleRead(votingEscrowContract, 'balanceOf', [address])
 }
 
 export function useVMOONEYLock(

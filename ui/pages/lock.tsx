@@ -5,11 +5,12 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline'
 import { Web3Button, useAddress, useContract } from '@thirdweb-dev/react'
-import { BigNumber, ethers } from 'ethers'
+import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import React from 'react'
 import { toast } from 'react-hot-toast'
+import ChainContext from '../lib/thirdweb/chain-context'
 import { useTokenAllowance, useTokenApproval } from '../lib/tokens/approve'
 import { useMOONEYBalance } from '../lib/tokens/mooney-token'
 import {
@@ -23,14 +24,13 @@ import { NumberType, transformNumber } from '../lib/utils/numbers'
 import { formatEther } from 'ethers/lib/utils'
 import Balance from '../components/Balance'
 import TimeRange from '../components/TimeRange'
-import BlurBackground from '../components/layout/BlurBackground'
 import Head from '../components/layout/Head'
 import L2Toggle from '../components/lock/L2Toggle'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import LockPresets from '../components/thirdweb/LockPresets'
 import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrow from '../const/abis/VotingEscrow.json'
-import useContractConfig from '../const/config'
+import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
 
 const dateToReadable = (date: any) => {
   return date && date.toISOString().substring(0, 10)
@@ -76,21 +76,30 @@ const calculateVestingStart = ({
   return lockTime - (VMOONEYAmount / MOONEYAmount) * fourYears
 }
 
+const mooneyAddresses: any = {
+  ethereum: '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395',
+  polygon: '0x74ac7664abb1c8fa152d41bb60e311a663a41c7e',
+}
+
+const vMooneyAddresses: any = {
+  ethereum: '0xCc71C80d803381FD6Ee984FAff408f8501DB1740',
+  polygon: '0xe2d1BFef0A642B717d294711356b468ccE68BEa6',
+}
+
 export default function Lock() {
   const address = useAddress()
 
-  const { MOONEYToken, vMOONEYToken } = useContractConfig()
-
-  const { contract: vMooneyContract }: any = useContract(
-    vMOONEYToken,
-    VotingEscrow.abi
-  )
+  const { selectedChain }: any = useContext(ChainContext)
 
   const { contract: mooneyContract }: any = useContract(
-    MOONEYToken,
+    MOONEY_ADDRESSES[selectedChain?.slug],
     ERC20ABI.abi
   )
 
+  const { contract: vMooneyContract }: any = useContract(
+    VMOONEY_ADDRESSES[selectedChain?.slug],
+    VotingEscrow.abi
+  )
   const { data: MOONEYBalance, isLoading: MOONEYBalanceLoading } =
     useMOONEYBalance(mooneyContract, address)
 
@@ -105,7 +114,7 @@ export default function Lock() {
   const [hasLock, setHasLock] = useState<boolean>()
   useEffect(() => {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
-  }, [VMOONEYLock, address, vMooneyContract])
+  }, [VMOONEYLock, address])
 
   const [hasExpired, setHasExpired] = useState<boolean>()
   useEffect(() => {
@@ -115,7 +124,7 @@ export default function Lock() {
           VMOONEYLock[1] != 0 &&
           ethers.BigNumber.from(+new Date()).gte(VMOONEYLock[1].mul(1000))
       )
-  }, [VMOONEYLock, address, vMooneyContract])
+  }, [VMOONEYLock, address])
 
   const [lockAmount, setLockAmount] = useState<string>('0')
 
@@ -134,13 +143,13 @@ export default function Lock() {
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
     lockAmount && ethers.utils?.parseEther(lockAmount),
-    vMOONEYToken
+    vMooneyAddresses[selectedChain.slug]
   )
 
   const { data: tokenAllowance } = useTokenAllowance(
     mooneyContract,
     address || '',
-    vMOONEYToken
+    vMooneyAddresses[selectedChain.slug]
   )
 
   const { mutateAsync: createLock } = useVMOONEYCreateLock(
@@ -181,7 +190,7 @@ export default function Lock() {
         formatted: dateToReadable(oneWeekOut),
       })
     }
-  }, [hasLock, VMOONEYLock, vMooneyContract])
+  }, [hasLock, VMOONEYLock])
 
   //Lock time min/max
   useEffect(() => {
@@ -205,7 +214,7 @@ export default function Lock() {
         max: dateToReadable(dateOut(new Date(), { days: 1461 })),
       })
     }
-  }, [hasLock, lockAmount, lockTime, VMOONEYLock, vMooneyContract])
+  }, [hasLock, lockAmount, lockTime, VMOONEYLock])
 
   const { t } = useTranslation('common')
 
@@ -512,7 +521,7 @@ export default function Lock() {
                 {/*Web3 button with actions according context*/}
                 <div className="card-actions mt-4 white-text">
                   <Web3Button
-                    contractAddress={vMOONEYToken}
+                    contractAddress={''}
                     className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark ${
                       (hasLock &&
                         ((canIncrease.amount && canIncrease.time) ||
@@ -601,7 +610,7 @@ export default function Lock() {
           {/*Allowance Warning*/}
           <AllowanceWarning
             tokenContract={mooneyContract}
-            spender={vMOONEYToken}
+            spender={vMooneyAddresses[selectedChain.slug]}
           />
         </div>
       </div>

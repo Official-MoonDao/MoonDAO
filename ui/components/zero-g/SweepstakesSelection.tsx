@@ -8,7 +8,7 @@ import {
   useRandomSelection,
 } from '../../lib/zero-g/zero-g-sweepstakes'
 import vMooneySweepstakesZeroGABI from '../../const/abis/vMooneySweepstakes.json'
-import useContractConfig from '../../const/config'
+import { VMOONEY_SWEEPSTAKES } from '../../const/config'
 
 //Issue w/ getting winners from contract in production, so hardcoding for now. Can read winners from contract in localhost.
 
@@ -17,8 +17,6 @@ export default function SweepstakesSelection({
   supply,
   account,
 }: any) {
-  const { vMooneySweepstakesZeroG } = useContractConfig()
-
   const [winners, setWinners]: any = useState([])
 
   const [loading, setLoading] = useState(false)
@@ -43,7 +41,7 @@ export default function SweepstakesSelection({
     setLoading(true)
     const winnersData: any = []
     const contract: any = new Contract(
-      vMooneySweepstakesZeroG,
+      VMOONEY_SWEEPSTAKES,
       vMooneySweepstakesZeroGABI,
       provider
     )

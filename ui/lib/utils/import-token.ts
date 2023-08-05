@@ -1,4 +1,4 @@
-import useContractConfig from '../../const/config'
+import { MOONEY_ADDRESSES } from '../../const/config'
 
 declare let window: any
 
@@ -8,8 +8,6 @@ const tokenImage =
   'https://static.metaswap.codefi.network/api/v1/tokenIcons/1/0x20d4db1946859e2adb0e5acc2eac58047ad41395.png'
 
 export function useImportToken() {
-  const { MOONEYToken } = useContractConfig()
-
   async function importToken() {
     try {
       const wasAdded = await window.ethereum.request({
@@ -17,13 +15,19 @@ export function useImportToken() {
         params: {
           type: 'ERC20',
           options: {
-            address: MOONEYToken,
+            address:
+              MOONEY_ADDRESSES[
+                process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+                  ? 'ethereum'
+                  : 'goerli'
+              ],
             symbol: tokenSymbol,
             decimals: tokenDecimals,
             image: tokenImage,
           },
         },
       })
+
       if (wasAdded)
         localStorage.setItem(
           'MOONEY_isImported',

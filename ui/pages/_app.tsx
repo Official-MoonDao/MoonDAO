@@ -20,6 +20,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
       <GTag />
       <ChainContext.Provider value={{ selectedChain, setSelectedChain }}>
         <ThirdwebProvider
+          clientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}
           activeChain={selectedChain}
           supportedChains={[Ethereum, Polygon, Goerli, Mumbai]}
           supportedWallets={[
