@@ -67,81 +67,76 @@ export default function VMooneyPage() {
 
   const { t } = useTranslation('common')
 
-  if (!analyticsData?.holders) return <AnalyticsSkeleton />
+  if (!analyticsData) return <AnalyticsSkeleton />
   return (
     <>
-      <div className="">
-        <div className="grid xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] w-full items-center justify-center ">
-          {/*Stats frame*/}
+      <div className="grid xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] w-full items-center justify-center ">
+        {/*Stats frame*/}
 
-          <div className="component-background mt-8 relative mb-12 flex w-[336px] flex-col justify-center gap-8 rounded-2xl border-[0.5px] border-blue-500 p-10 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold sm:w-[400px] lg:w-full lg:max-w-[1380px]">
-            <Label text="Voting Power Key Figures" />
-            <div className="flex flex-col justify-around lg:flex-row">
-              <Data
-                text={'Voting Power Balance'}
-                value={Math.round(analyticsData.totals.vMooney).toLocaleString(
-                  'en-US'
-                )}
-                vmooney
-              />
-              <Data
-                text={'Locked MOONEY'}
-                value={Math.round(analyticsData.totals.Mooney).toLocaleString(
-                  'en-US'
-                )}
-                mooney
-              />
-            </div>
-            <div className="flex flex-col justify-around lg:flex-row">
-              <Data
-                text={'Circulating MOONEY Staked'}
-                value={
-                  tokens[0] &&
-                  (
-                    (analyticsData.totals.Mooney / circulatingSupply) *
-                    100
-                  ).toFixed(2) + '%'
-                }
-              />
-              <Data text={'Holders'} value={analyticsData.holders.length} />
-              <Data
-                text={'Average Staking Period'}
-                value={analyticsData.totals.AvgStakingPeriod}
-              />
+        <div className="component-background mt-8 relative mb-12 flex w-[336px] flex-col justify-center gap-8 rounded-2xl border-[0.5px] border-blue-500 p-10 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold sm:w-[400px] lg:w-full lg:max-w-[1380px]">
+          <Label text="Voting Power Key Figures" />
+          <div className="flex flex-col justify-around lg:flex-row">
+            <Data
+              text={'Voting Power Balance'}
+              value={Math.round(analyticsData.totals.vMooney).toLocaleString(
+                'en-US'
+              )}
+              vmooney
+            />
+            <Data
+              text={'Locked MOONEY'}
+              value={Math.round(analyticsData.totals.Mooney).toLocaleString(
+                'en-US'
+              )}
+              mooney
+            />
+          </div>
+          <div className="flex flex-col justify-around lg:flex-row">
+            <Data
+              text={'Circulating MOONEY Staked'}
+              value={
+                tokens[0] &&
+                (
+                  (analyticsData.totals.Mooney / circulatingSupply) *
+                  100
+                ).toFixed(2) + '%'
+              }
+            />
+            <Data text={'Holders'} value={analyticsData.holders.length} />
+            <Data
+              text={'Average Staking Period'}
+              value={analyticsData.totals.AvgStakingPeriod}
+            />
+          </div>
+        </div>
+        {/*V-Mooney distribution frame*/}
+        <Frame>
+          <div className="w-full mt-2 flex flex-col items-center justify-center lg:mt-3">
+            <div className="">
+              <Label text="Voting Power %" />
             </div>
           </div>
-          {/*V-Mooney distribution frame*/}
-          <Frame>
-            <div className="w-full mt-2 flex flex-col items-center justify-center lg:mt-3">
-              <div className="">
-                <Label text="Voting Power %" />
-              </div>
-            </div>
-            <div>
-              <Pie data={analyticsData.distribution} lightMode={lightMode} />
-            </div>
-            <div
-              id="dashboard-analytics-holders-list"
-              className="flex items-center justify-center"
-            >
-              <HoldersList
-                itemsPerPage={window.innerHeight > 1080 ? 10 : 5}
-                data={analyticsData.holdersByVMooney}
-              />
-            </div>
-          </Frame>
-          {/*Holders frame*/}
-          <Frame>
-            <div className="w-full h-full flex flex-col">
-              <Label text="Stakers Over Time" />
+          <div>
+            <Pie data={analyticsData.distribution} lightMode={lightMode} />
+          </div>
+          <div
+            id="dashboard-analytics-holders-list"
+            className="flex items-center justify-center"
+          >
+            <HoldersList
+              itemsPerPage={window.innerHeight > 1080 ? 10 : 5}
+              data={analyticsData.holdersByVMooney}
+            />
+          </div>
+        </Frame>
+        {/*Holders frame*/}
+        <Frame>
+          <div className="w-full h-full flex flex-col">
+            <Label text="Stakers Over Time" />
 
-              <HoldersChart
-                data={analyticsData.holders}
-                lightMode={lightMode}
-              />
-            </div>
-          </Frame>
-        </div>
+            <HoldersChart data={analyticsData.holders} lightMode={lightMode} />
+          </div>
+        </Frame>
       </div>
     </>
   )
