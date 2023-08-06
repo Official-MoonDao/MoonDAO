@@ -18,10 +18,14 @@ const AnnouncementContent = ({ text, mentions, loading }: any) => {
     >
       {textSeparatedFromLinks.map((str, i) =>
         i % 2 === 0 ? (
-          <TextContent key={i} sentence={str} mentions={mentions} />
+          <TextContent
+            key={'text-content' + i}
+            sentence={str}
+            mentions={mentions}
+          />
         ) : (
           <a
-            key={i}
+            key={'text-content-' + i}
             className="link "
             href={str}
             target="_blank"
@@ -44,15 +48,19 @@ const TextContent = ({ sentence, mentions }: any) => {
     <>
       {sentenceSeparatedFromMentions.map((e, i) =>
         e.startsWith('<@&') ? (
-          <ReplaceIdWithRoleName key={i} word={e} />
+          <ReplaceIdWithRoleName key={'role-name' + i} word={e} />
         ) : e.startsWith('<#') ? (
-          <ReplaceIdWithChannelName key={i} word={e} />
+          <ReplaceIdWithChannelName key={'role-name' + i} word={e} />
         ) : e.startsWith('<@') ? (
-          <ReplaceIdWithMention key={i} word={e} mentions={mentions} />
+          <ReplaceIdWithMention
+            key={'role-name' + i}
+            word={e}
+            mentions={mentions}
+          />
         ) : e.includes('<:MoonDAO:1047902000601383013>') ? (
           <>
             {e.slice(0, e.indexOf('<:MoonDAO:1047902000601383013>'))}{' '}
-            <LogoSmall size={{ height: 28, width: 28 }} />
+            <LogoSmall key={'role-name' + i} size={{ height: 28, width: 28 }} />
             {e.slice(e.indexOf('<:MoonDAO:1047902000601383013>') + 30)}
           </>
         ) : (
@@ -87,10 +95,10 @@ const ReplaceIdWithChannelName = ({ word }: any) => {
     <>
       {discordChannelDictionary[channelId] ? (
         <>
-        <span
-          className={`${discordChannelDictionary[channelId][0]}`}
+          <span
+            className={`${discordChannelDictionary[channelId][0]}`}
           >{`@${discordChannelDictionary[channelId][1]}`}</span>
-          </>
+        </>
       ) : (
         word
       )}
@@ -108,7 +116,7 @@ const ReplaceIdWithMention = ({ word, mentions }: any) => {
         (mention: any, i: number) =>
           mention.id.includes(id) && (
             <span
-              key={i}
+              key={'mention-' + id + i}
               className="font-semibold text-moon-blue dark:text-stronger-dark"
             >{`@${mention.username}`}</span>
           )

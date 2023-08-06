@@ -13,7 +13,7 @@ export default function Announcements() {
     useAnnouncements()
 
   const firstPostId = '916126920339509268'
-  const endingId = '916126920339509268'
+
   const lastPostId = announcements.length
     ? announcements[announcements.length - 1].id
     : ''
@@ -24,9 +24,9 @@ export default function Announcements() {
       if (isLoading) return
       if (intObserver.current) intObserver.current.disconnect()
 
-      intObserver.current = new IntersectionObserver((entries) => {
+      intObserver.current = new IntersectionObserver(async (entries) => {
         if (entries[0].isIntersecting && lastPostId !== firstPostId) {
-          updateAnnouncements(lastPostId)
+          await updateAnnouncements(lastPostId)
         }
       })
 
@@ -81,7 +81,7 @@ export default function Announcements() {
                 )
               )}
 
-            {lastPostId !== endingId ? (
+            {lastPostId !== firstPostId ? (
               <p
                 className={`${
                   isLoading ? 'block' : 'hidden'
