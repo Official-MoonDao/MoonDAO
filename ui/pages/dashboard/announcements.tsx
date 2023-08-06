@@ -12,13 +12,6 @@ export default function Announcements() {
   const { announcements, isLoading, error, updateAnnouncements } =
     useAnnouncements()
 
-  // const {
-  //   announcements,
-  //   isLoading,
-  //   error,
-  //   update: updateAnnouncements,
-  // } = useAnnouncements()
-
   const firstPostId = '916126920339509268'
   const endingId = '916126920339509268'
   const lastPostId = announcements.length
@@ -113,5 +106,3 @@ export default function Announcements() {
     </div>
   )
 }
-
-// add locales for Announcements title and desc

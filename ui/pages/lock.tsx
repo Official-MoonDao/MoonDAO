@@ -76,16 +76,6 @@ const calculateVestingStart = ({
   return lockTime - (VMOONEYAmount / MOONEYAmount) * fourYears
 }
 
-const mooneyAddresses: any = {
-  ethereum: '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395',
-  polygon: '0x74ac7664abb1c8fa152d41bb60e311a663a41c7e',
-}
-
-const vMooneyAddresses: any = {
-  ethereum: '0xCc71C80d803381FD6Ee984FAff408f8501DB1740',
-  polygon: '0xe2d1BFef0A642B717d294711356b468ccE68BEa6',
-}
-
 export default function Lock() {
   const address = useAddress()
 
@@ -143,13 +133,13 @@ export default function Lock() {
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
     lockAmount && ethers.utils?.parseEther(lockAmount),
-    vMooneyAddresses[selectedChain.slug]
+    VMOONEY_ADDRESSES[selectedChain.slug]
   )
 
   const { data: tokenAllowance } = useTokenAllowance(
     mooneyContract,
     address || '',
-    vMooneyAddresses[selectedChain.slug]
+    VMOONEY_ADDRESSES[selectedChain.slug]
   )
 
   const { mutateAsync: createLock } = useVMOONEYCreateLock(
@@ -610,7 +600,7 @@ export default function Lock() {
           {/*Allowance Warning*/}
           <AllowanceWarning
             tokenContract={mooneyContract}
-            spender={vMooneyAddresses[selectedChain.slug]}
+            spender={VMOONEY_ADDRESSES[selectedChain.slug]}
           />
         </div>
       </div>

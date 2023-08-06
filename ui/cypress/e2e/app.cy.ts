@@ -31,26 +31,24 @@ describe('E2E Testing', () => {
     })
   })
 
+  //DASHBOARD
   describe('MoonDAO App | Announcements', () => {
     it('should load the announcements page', () => {
       cy.visit('/dashboard/announcements')
       cy.get('#dashboard-announcements').should('exist')
     })
   })
-
   describe('MoonDAO App | Proposals', () => {
     it('should load the proposals page', () => {
       cy.visit('/dashboard/proposals')
       cy.get('#dashboard-proposals').should('exist')
     })
   })
-
   describe('MoonDAO App | Analytics', () => {
     it('should load the analytics-vmooney page', () => {
       cy.visit('/dashboard/analytics')
     })
   })
-
   describe('MoonDAO App | Calendar', () => {
     it('should load the calendar page', () => {
       cy.visit('/dashboard/calendar')

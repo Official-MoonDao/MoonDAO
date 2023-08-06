@@ -74,7 +74,7 @@ const Dropdown = ({ item, router }: any) => {
                   key={subItem.name}
                   className="list-disc marker:text-detail-light dark:marker:text-yellow-100 group hover:scale-105 transition-all duration-150"
                 >
-                  <a
+                  <Link
                     href={subItem.href}
                     className={`${
                       router.pathname == subItem.href
@@ -83,7 +83,7 @@ const Dropdown = ({ item, router }: any) => {
                     } my-3 flex items-center text-[15px] font-medium dark:text-gray-400 dark:hover:text-white`}
                   >
                     {subItem.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </Disclosure.Panel>

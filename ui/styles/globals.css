@@ -1,5 +1,5 @@
 @import url('/fonts/stylesheet.css');
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Open+Sans:wght@400;500;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Open+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -92,6 +92,20 @@ a {
   border-color: #ffbc5c;
   border-radius: 25px;
   border-width: 2px;
+}
+
+/* Images for Thirdweb Connect Wallet button (the ipfs images are sometimes blocked by antivirus) */
+.css-1309xma ul li:nth-child(1) img {
+  content: url('../public/icons/connectors/metamask.svg');
+}
+.css-1309xma ul li:nth-child(2) img {
+  content: url('../public/icons/connectors/coinbase.svg');
+}
+.css-1309xma ul li:nth-child(3) img {
+  content: url('../public/icons/connectors/gnosis-safe.svg');
+}
+.css-1309xma ul li:nth-child(4) img {
+  content: url('../public/icons/connectors/walletconnect.svg');
 }
 
 ::-webkit-scrollbar {

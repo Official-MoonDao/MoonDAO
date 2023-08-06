@@ -9,7 +9,7 @@ export default async function handler(req: any, res: any) {
       }`,
       {
         headers: {
-          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`, // Remove the colon after "Bearer"
+          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
         },
       }
     )
