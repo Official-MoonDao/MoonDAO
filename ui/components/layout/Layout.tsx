@@ -137,7 +137,9 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           >
             <div
               className={`${
-                address && chain?.name === selectedChain?.name ? 'hidden' : " mb-3"
+                address && chain?.name === selectedChain?.name
+                  ? 'hidden'
+                  : ' mb-3'
               }`}
             >
               {address && chain?.name !== selectedChain?.name && (
@@ -145,7 +147,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
               )}
             </div>
 
-            <ConnectWallet className="connect-wallet !bg-gradient-to-b !text-slate-800 dark:!text-zinc-50 from-moon-gold to-yellow-300 dark:to-amber-400 !border-yellow-200 !border-opacity-50 !shadow !shadow-gray-200 hover:!scale-105 !transition-all !duration-150" />
+            <ConnectWallet className="connect-wallet !rounded-md !min-w-[150px] !bg-gradient-to-b !text-slate-800 from-moon-gold from-moon-blue to-yellow-300 !border-yellow-200 !border-opacity-50 !shadow !shadow-gray-200 hover:!scale-105 !transition-all !duration-150" />
           </div>
           {children}
         </section>

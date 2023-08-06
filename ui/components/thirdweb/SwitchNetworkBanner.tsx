@@ -18,7 +18,7 @@ export default function SwitchNetworkBanner({ newNetwork }: any) {
       </p>
 
       <button
-        className="relative right-1 sm:right-0 sm:mr-3 lg:ml-2 bg-amber-500 border shadow-sm font-medium shadow-yellow-200 border-yellow-200 border-opacity-30 text-white text-sm px-1 py-1 rounded-full transition-all duration-150 hover:scale-[1.03]"
+        className="relative right-1 sm:right-0 sm:mr-3 lg:ml-2 bg-amber-500 border shadow-sm font-medium shadow-yellow-200 border-yellow-200 border-opacity-30 text-white text-sm px-2 py-1 rounded-full transition-all duration-150 hover:scale-[1.03]"
         onClick={() => switchChain(newNetwork?.chainId)}
       >
         {t('networkButton')} {capitalized(newNetwork)}
