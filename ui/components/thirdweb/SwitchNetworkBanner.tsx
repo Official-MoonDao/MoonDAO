@@ -11,7 +11,7 @@ export default function SwitchNetworkBanner({ newNetwork }: any) {
   const { t } = useTranslation('common')
 
   return (
-    <div className="relative right-[7px] w-[350px] justify-between sm:w-[390px] border border-red-500 shadow-sm shadow-red-500 bg-background-light dark:bg-background-dark text-red-600 dark:text-red-300 bg-opacity-70 lg:w-full pl-1 sm:pl-2 lg:pl-3 py-1 lg:py-2 flex items-center z-10 rounded-full">
+    <div className="relative w-[350px] justify-between sm:w-[390px] border border-red-500 shadow-sm shadow-red-500 bg-background-light dark:bg-background-dark text-red-600 dark:text-red-300 bg-opacity-70 lg:w-full pl-1 sm:pl-2 lg:pl-3 py-1 lg:py-2 flex items-center z-10 rounded-full">
       <ExclamationCircleIcon className="h-7 w-7 text-red-600 dark:text-red-300 animate-pulse" />
       <p className="pl-2 text-sm max-w-[190px] font-medium font-mono lg:max-w-none">
         {t('networkBanner1')} {capitalized(newNetwork)} {t('networkBanner2')}

@@ -127,31 +127,24 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       {/*The content, child rendered here*/}
       <main className="flex justify-center pb-24 md:ml-48 relative">
         <section
-          className={`mt-16 md:mt-20 xl:mt-10 flex flex-col ${
+          className={`mt-10 flex flex-col ${
             children.type.name === 'Analytics' ? 'xl:w-[93%]' : 'lg:w-[80%]'
           } lg:px-14 xl:px-16 2xl:px-20`}
         >
           {/*Connect Wallet and Preferred network warning*/}
           <div
-            className={`${
-              children.type.name === 'Analytics'
-                ? 'lg:pl-20 xl:pl-0 max-w-[1400px]'
-                : 'max-w-[1080px]'
-            } mb-4 sm:mb-5 lg:mb-2 xl:mb-5 flex ${
-              address && chain?.name === selectedChain?.name
-                ? 'lg:justify-end'
-                : 'lg:justify-between'
-            } items-center`}
+            className={`max-w-[1400px] mb-4 lg:mb-2 flex flex-col items-end`}
           >
             <div
               className={`${
-                address && chain?.name === selectedChain?.name && 'hidden'
-              } absolute top-1 md:top-5 lg:top-3 xl:static`}
+                address && chain?.name === selectedChain?.name ? 'hidden' : " mb-3"
+              }`}
             >
               {address && chain?.name !== selectedChain?.name && (
                 <SwitchNetworkBanner newNetwork={selectedChain} />
               )}
             </div>
+
             <ConnectWallet className="!bg-gradient-to-b !text-slate-800 dark:!text-zinc-50 from-moon-gold to-yellow-300 dark:to-amber-400 !border-yellow-200 !border-opacity-50 !shadow !shadow-gray-200 hover:!scale-105 !transition-all !duration-150" />
           </div>
           {children}

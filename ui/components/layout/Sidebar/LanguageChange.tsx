@@ -24,7 +24,8 @@ const LanguageChange = () => {
             <Link href="/" locale="zh">
               <div className="flex gap-2" onClick={(e) => changeLang(e, 'zh')}>
                 <GlobeAltIcon className="h-6 w-6 text-gray-100 dark:text-stronger-dark" />{' '}
-                <span className="opacity-70 dark:opacity-80">CN</span>↔
+                <span className="opacity-70 dark:opacity-80">CN</span>
+                {' ↔ '}
                 <span className="text-title-light dark:text-orange-600 font-semibold">
                   EN
                 </span>
@@ -37,7 +38,8 @@ const LanguageChange = () => {
                 <span className="text-title-light dark:text-orange-600 font-semibold">
                   CN
                 </span>
-                ↔<span className="opacity-70 dark:opacity-80">EN</span>
+                {' ↔ '}
+                <span className="opacity-70 dark:opacity-80">EN</span>
               </div>
             </Link>
           )}

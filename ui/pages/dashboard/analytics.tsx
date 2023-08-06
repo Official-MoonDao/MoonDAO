@@ -64,11 +64,15 @@ export default function Analytics() {
         </p>
       </div>
 
-      <div className="flex flex-row items-center justify-between">
+      <div
+        className={`${
+          !isTreasury ? 'md:ml-16' : 'xl:ml-12 2xl:ml-16'
+        }`}
+      >
         <Header text={isTreasury ? 'Treasury' : 'Analytics'} />
+      <Line />
       </div>
 
-      <Line />
 
       {isTreasury ? <TreasuryPage /> : <VMooneyPage />}
     </div>

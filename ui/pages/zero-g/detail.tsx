@@ -4,24 +4,24 @@ import WebsiteHead from '../../components/layout/Head'
 export default function ZeroGDetail() {
   const router = useRouter()
   return (
-    <div className="flex flex-col justify-center items-center text-center w-[80%] card rounded-[15px] border-[0.5px] border-white bg-black bg-opacity-70 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible p-[5%] relative right-4">
+    <div className="flex flex-col justify-center items-center text-center component-background py-12 lg:py-20 mt-3 w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark px-4">
       <WebsiteHead title="Zero-G Flight Details" />
-      <h1 className="font-GoodTimes text-3xl lg:text-4xl my-4">
+      <h1 className="font-GoodTimes text-3xl lg:text-4xl 2xl:text-5xl mt-4 text-title-light dark:text-title-dark">
         Zero-G Flight Details
       </h1>
-      <div className="flex flex-col justif-center items-center backdropBlur">
-        <p className="text-2xl font-GoodTimes text-n3blue opacity-[0.87]">
+      <div className="mt-5 flex flex-col justif-center items-center backdropBlur">
+        <p className="2xl:mt-3 text-xl lg:text-2xl font-GoodTimes text-detail-light dark:text-detail-dark opacity-80">
           June 9th | JSC, Houston, TX{' '}
         </p>
         <hr className="border-n3blue my-2 w-3/4"></hr>
         <button
-          className="mt-2 font-GoodTimes text-2xl text-n3blue hover:scale-[1.05] ease-in-ease-out duration-300 "
+          className="mt-4 font-GoodTimes text-2xl text-n3blue hover:scale-[1.05] ease-in-ease-out duration-300 "
           onClick={() => router.push('/zero-g')}
         >
           Book your Zero-G flight now! 🚀
         </button>
-        <div className="mt-8 leading-relaxed flex flex-col gap-7 w-3/4">
-          <p className="font-semibold font-display text-lg">
+        <div className="mt-8 leading-relaxed flex flex-col gap-7 w-3/4 text-light-text dark:text-dark-text font-mono lg:text-lg lg:leading-loose">
+          <p className="font-semibold font-display text-lg tracking-wide lg:tracking-widest">
             Are you ready to be a part of space history?
           </p>
           <p className="mt-5">
@@ -86,7 +86,7 @@ export default function ZeroGDetail() {
           </p>
         </div>
         <button
-          className="mt-10 flex items-center bg-[grey] text-lg rounded px-2 py-1 text-gray-100 hover:scale-[1.05] hover:text-white hover:bg-n3blue ease-in duration-150"
+          className="mt-10 flex items-center text-xl rounded px-3 py-1 hover:scale-105 ease-in duration-150 bg-moon-blue text-gray-100 hover:text-white dark:bg-stronger-dark"
           onClick={() => router.push('/zero-g')}
         >
           {'← Back'}
