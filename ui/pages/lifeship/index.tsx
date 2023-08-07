@@ -74,11 +74,11 @@ export default function Lifeship({ products = [] }: any) {
                 />
               </h2>
             </div>
-            <h1 className="font-RobotoMono text-2xl text-center my-4">
+            <h1 className="dark:text-black font-RobotoMono text-2xl text-center my-4">
               Join us on our first mission to the Moon!
             </h1>
             {state === 0 && (
-              <div className="flex flex-col justify-center items-center text-left gap-4 md:w-full w-full backdropBlurp-4">
+              <div className="flex flex-col justify-center items-center text-left gap-4 md:w-full w-full backdropBlurp-4 text-light-text dark:text-dark-text">
                 <p className="max-w-2xl font-RobotoMono">
                   {`Send DNA or ashes to the moon, leaving your legacy in the universe! MoonDAO is partnering with`}{' '}
                   <span>
