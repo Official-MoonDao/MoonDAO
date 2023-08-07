@@ -7,7 +7,7 @@ import WeeklyCalendar from '../../components/dashboard/calendar/WeeklyCalendar'
 import Head from '../../components/layout/Head'
 
 const calendarLink =
-  'https://sesh.fyi/api/calendar/v2/1NtkbbR6C4pu9nfgPwPGQn.ics'
+  'https://sesh.fyi/api/calendar/v2/hfwjLhfVoutWs65KegtbP7.ics'
 
 export default function Calendar() {
   const { events: calendarEvents, getDayEvents } =
