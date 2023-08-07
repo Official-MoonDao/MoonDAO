@@ -2,6 +2,8 @@ import useTranslation from 'next-translate/useTranslation'
 import { useState } from 'react'
 import { useAssets, useTransactions } from '../../../lib/dashboard/hooks'
 import { errorToast } from '../../../lib/utils/errorToast'
+import Header from '../../layout/Header'
+import Line from '../../layout/Line'
 import AssetSkeletons from './balance/AssetSkeletons'
 import Assets from './balance/Assets'
 import TreasuryBalance from './balance/TreasuryBalance'
@@ -9,6 +11,7 @@ import Transaction from './transactions/Transaction'
 import TransactionCaret from './transactions/TransactionCaret'
 import TransactionPagination from './transactions/TransactionPagination'
 import TransactionSkeletons from './transactions/TransactionSkeletons'
+import { allowedAssets } from '../../../lib/dashboard/dashboard-utils.ts/asset-config'
 
 export default function TreasuryPage() {
   const [page, setPage] = useState(1)
@@ -38,9 +41,11 @@ export default function TreasuryPage() {
 
   return (
     <>
-      <div className="lg:flex lg:justify-around gap-12">
+      <div className="lg:flex lg:flex-col lg:items-center xl:flex-row xl:items-baseline xl:justify-around gap-12">
         {/*Assets Section*/}
         <section className="xl:w-[40%] xl:max-w-[600px]">
+          <Header text={'Treasury'} />
+          <Line />
           {loadingAssets || !tokens[0] ? (
             <AssetSkeletons />
           ) : (
@@ -61,6 +66,8 @@ export default function TreasuryPage() {
 
         {/*Transactions Section*/}
         <section className="mt-12 xl:mt-2 xl:w-[40%] xl:max-w-[700px]">
+          <Header text={'Transactions'} noStar />
+          <Line />
           <div className="mt-10">
             {loadingTransactions || !transactions ? (
               <TransactionSkeletons />
@@ -73,6 +80,7 @@ export default function TreasuryPage() {
                     loading={loadingTransactions}
                   />
                 ))}
+       
               </div>
             )}
           </div>

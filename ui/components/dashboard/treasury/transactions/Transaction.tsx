@@ -1,3 +1,5 @@
+import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
+import { allowedAssets } from '../../../../lib/dashboard/dashboard-utils.ts/asset-config'
 import { getHumanTime } from '../../../../lib/dashboard/dashboard-utils.ts/getHumanTime'
 import { ArrowDown, ArrowUp, GoldPaperArrow } from '../../../assets'
 
@@ -17,10 +19,24 @@ const Transaction = ({ data, loading }: any) => {
 
   return (
     <div
-      className={`component-background relative mt-5 flex w-[336px] flex-col items-center rounded-[15px] border-[0.5px] border-detail-light py-2 shadow shadow-detail-light hover:scale-105 dark:border-detail-dark dark:shadow-detail-dark sm:w-[400px] 2xl:w-full 2xl:flex-row 2xl:justify-between 2xl:px-5 2xl:py-3 ${
+      className={`${
+        !loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
+          ? 'opacity-80 bg-gray-200 dark:bg-slate-800'
+          : 'border-[0.5px] component-background border-detail-light shadow shadow-detail-light hover:scale-105 dark:border-detail-dark dark:shadow-detail-dark '
+      } rounded-[15px] relative mt-5 flex w-[336px] flex-col items-center sm:w-[400px] 2xl:w-full 2xl:flex-row 2xl:justify-between py-2 2xl:px-5 2xl:py-3 ${
         loading && 'loading-component'
       } transition-all duration-150`}
     >
+      <div
+        className={`${
+          !loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
+            ? 'absolute top-1 right-3 opacity-100 text-red-500 animate-pulse xl:-top-3 xl:-right-3 z-50'
+            : 'hidden'
+        }`}
+      >
+        <ExclamationCircleIcon className="h-8 w-8" />
+      </div>
+
       {/*Sent or receive*/}
       <div className="relative right-3 flex items-center">
         <span className={`${loading && 'loading-line'}`}>

@@ -20,13 +20,13 @@ export default function Analytics() {
   const { t } = useTranslation('common')
 
   return (
-    <div className="animate-fadeIn relative">
+    <div className={`animate-fadeIn relative ${isTreasury && "lg:flex lg:flex-col lg:items-center xl:block"}`}>
       <Head title={t('analyticsTitle')} description={t('analyticsDesc')} />
 
       {/* Toggle for analytics (vmooney <=> treasury) */}
       <div
         className={`${
-          !isTreasury ? 'md:ml-16' : 'xl:ml-12 2xl:ml-16'
+          !isTreasury ? 'md:ml-16' : 'lg:-ml-12 xl:ml-12 2xl:ml-16'
         } my-3 uppercase flex items-center justify-between rounded-full bg-gradient-to-r from-stronger-light to-moon-blue dark:from-amber-500 dark:to-stronger-dark py-2 px-4 w-[340px]`}
       >
         <p
@@ -64,15 +64,10 @@ export default function Analytics() {
         </p>
       </div>
 
-      <div
-        className={`${
-          !isTreasury ? 'md:ml-16' : 'xl:ml-12 2xl:ml-16'
-        }`}
-      >
-        <Header text={isTreasury ? 'Treasury' : 'Analytics'} />
-      <Line />
+      <div className={`md:ml-16 ${isTreasury && 'hidden'}`}>
+        <Header text={'Analytics'} />
+        <Line />
       </div>
-
 
       {isTreasury ? <TreasuryPage /> : <VMooneyPage />}
     </div>
