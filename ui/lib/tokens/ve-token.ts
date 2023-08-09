@@ -14,14 +14,14 @@ let gasLimits = {
 
 export function useVMOONEYBalance(
   votingEscrowContract: SmartContract | undefined,
-  address: any
+  address: string | undefined
 ) {
   return useHandleRead(votingEscrowContract, 'balanceOf', [address])
 }
 
 export function useVMOONEYLock(
   votingEscrowContract: SmartContract | undefined,
-  address: any
+  address: string | undefined
 ) {
   return useHandleRead(votingEscrowContract, 'locked', [address])
 }

@@ -3,7 +3,7 @@ import { useHandleRead } from '../thirdweb/hooks'
 
 export function useMOONEYBalance(
   tokenContract: SmartContract | undefined,
-  address: any
+  address: string | undefined
 ) {
   return useHandleRead(tokenContract, 'balanceOf', [address])
 }

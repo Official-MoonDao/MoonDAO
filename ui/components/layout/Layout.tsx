@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
+import { useLightMode } from '../../lib/utils/hooks/useLightMode'
 import { useImportToken } from '../../lib/utils/import-token'
 import { LogoBlack, LogoWhite, CNAsset } from '../assets'
 import SwitchNetworkBanner from '../thirdweb/SwitchNetworkBanner'
@@ -26,11 +27,9 @@ type Indexable = {
 
 interface Layout {
   children: JSX.Element
-  lightMode: boolean
-  setLightMode: Function
 }
 
-export default function Layout({ children, lightMode, setLightMode }: Layout) {
+export default function Layout({ children }: Layout) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -45,6 +44,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
   const [currentLang, setCurrentLang] = useState(router.locale)
   const [isTokenImported, setIsTokenImported] = useState(false)
+
+  const [lightMode, setLightMode]: any = useLightMode()
 
   useEffect(() => {
     if (localStorage.getItem('MOONEY_isImported')) setIsTokenImported(true)
@@ -126,17 +127,20 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       <main className="flex justify-center pb-24 md:ml-48 relative">
         <section
           className={`mt-10 flex flex-col ${
-            router.route === '/dashboard/analytics' ? 'lg:w-[93%]' : 'lg:w-[80%]'
+            router.route === '/dashboard/analytics'
+              ? 'lg:w-[93%]'
+              : 'lg:w-[80%]'
           } lg:px-14 xl:px-16 2xl:px-20`}
         >
-
           {/*Connect Wallet and Preferred network warning*/}
           <div
             className={`max-w-[1400px] mb-4 lg:mb-2 flex flex-col items-end`}
           >
             <div
               className={`${
-                address && chain?.name === selectedChain?.name ? 'hidden' : " mb-3"
+                address && chain?.name === selectedChain?.name
+                  ? 'hidden'
+                  : ' mb-3'
               }`}
             >
               {address && chain?.name !== selectedChain?.name && (

@@ -138,7 +138,7 @@ export default function Lock() {
 
   const { data: tokenAllowance } = useTokenAllowance(
     mooneyContract,
-    address || '',
+    address,
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
 

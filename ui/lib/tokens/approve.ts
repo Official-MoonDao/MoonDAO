@@ -5,7 +5,7 @@ import { useHandleWrite } from '../thirdweb/hooks'
 
 export function useTokenAllowance(
   tokenContract: SmartContract | undefined,
-  address: string,
+  address: string | undefined,
   spender: string
 ) {
   return useHandleRead(tokenContract, 'allowance', [address, spender])
