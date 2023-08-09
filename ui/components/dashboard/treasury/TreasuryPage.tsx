@@ -1,5 +1,6 @@
 import useTranslation from 'next-translate/useTranslation'
 import { useState } from 'react'
+import { allowedAssets } from '../../../lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets, useTransactions } from '../../../lib/dashboard/hooks'
 import { errorToast } from '../../../lib/utils/errorToast'
 import Header from '../../layout/Header'
@@ -9,9 +10,9 @@ import Assets from './balance/Assets'
 import TreasuryBalance from './balance/TreasuryBalance'
 import Transaction from './transactions/Transaction'
 import TransactionCaret from './transactions/TransactionCaret'
+import TransactionDisclaimer from './transactions/TransactionDisclaimer'
 import TransactionPagination from './transactions/TransactionPagination'
 import TransactionSkeletons from './transactions/TransactionSkeletons'
-import { allowedAssets } from '../../../lib/dashboard/dashboard-utils.ts/asset-config'
 
 export default function TreasuryPage() {
   const [page, setPage] = useState(1)
@@ -80,10 +81,14 @@ export default function TreasuryPage() {
                     loading={loadingTransactions}
                   />
                 ))}
-       
               </div>
             )}
           </div>
+
+          {/*Going through the transactions to check if there is a filtered one, if there is show the explanation for that page*/}
+          {transactions?.filter(
+            (transaction: any) => allowedAssets[transaction.tokenSymbol]
+          ).length < 10 && <TransactionDisclaimer />}
 
           {/*Pagination*/}
           <div className="mt-10 flex justify-between max-w-[650px] items-center">

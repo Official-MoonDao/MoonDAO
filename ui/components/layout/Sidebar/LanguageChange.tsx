@@ -1,4 +1,4 @@
-import { GlobeAltIcon } from '@heroicons/react/24/outline'
+import { GlobeAltIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -25,7 +25,7 @@ const LanguageChange = () => {
               <div className="flex gap-2" onClick={(e) => changeLang(e, 'zh')}>
                 <GlobeAltIcon className="h-6 w-6 text-gray-100 dark:text-stronger-dark" />{' '}
                 <span className="opacity-70 dark:opacity-80">CN</span>
-                {' ↔ '}
+                <ArrowsRightLeftIcon className="h-6 w-6 text-blue-50 dark:text-yellow-50" />
                 <span className="text-title-light dark:text-orange-600 font-semibold">
                   EN
                 </span>
@@ -38,7 +38,7 @@ const LanguageChange = () => {
                 <span className="text-title-light dark:text-orange-600 font-semibold">
                   CN
                 </span>
-                {' ↔ '}
+                <ArrowsRightLeftIcon className="h-6 w-6 text-blue-50 dark:text-yellow-50" />
                 <span className="opacity-70 dark:opacity-80">EN</span>
               </div>
             </Link>

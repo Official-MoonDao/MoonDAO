@@ -1,7 +1,7 @@
 const GoldPaperArrow = ({}: any) => {
   return (
     <svg
-      className={`hover:scale-125 w-5`}
+      className={`hover:scale-105 transition-all duration-150 w-5`}
       viewBox="0 0 15 17"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
