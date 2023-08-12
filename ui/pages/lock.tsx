@@ -511,7 +511,7 @@ export default function Lock() {
                 {/*Web3 button with actions according context*/}
                 <div className="card-actions mt-4 white-text">
                   <Web3Button
-                    contractAddress={''}
+                    contractAddress={VMOONEY_ADDRESSES[selectedChain.slug]}
                     className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark ${
                       (hasLock &&
                         ((canIncrease.amount && canIncrease.time) ||

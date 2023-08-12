@@ -20,7 +20,7 @@ export const navigation = [
     name: 'Dashboard',
     icon: TableCellsIcon,
     children: [
-      { name: 'Annoucements', href: '/dashboard/announcements' },
+      { name: 'Announcements', href: '/dashboard/announcements' },
       { name: 'Proposals', href: '/dashboard/proposals' },
       { name: 'Analytics', href: '/dashboard/analytics' },
       { name: 'Calendar', href: '/dashboard/calendar' },
