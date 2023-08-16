@@ -20,6 +20,7 @@ export const AllowanceWarning = ({
   const { mutateAsync: revokeAllowance } = useTokenApproval(
     tokenContract,
     BigNumber.from('0'),
+    undefined,
     spender
   )
 

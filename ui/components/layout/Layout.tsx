@@ -46,6 +46,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const { t } = useTranslation('common')
   const layout = (
     <div
+    id="app-layout"
       className={`${
         !lightMode ? 'dark stars-dark' : 'stars-light'
       } min-h-screen`}

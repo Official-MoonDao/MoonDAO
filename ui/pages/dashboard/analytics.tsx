@@ -20,7 +20,11 @@ export default function Analytics() {
   const { t } = useTranslation('common')
 
   return (
-    <div className={`animate-fadeIn relative ${isTreasury && "lg:flex lg:flex-col lg:items-center xl:block"}`}>
+    <div
+      className={`animate-fadeIn relative ${
+        isTreasury && 'lg:flex lg:flex-col lg:items-center xl:block'
+      }`}
+    >
       <Head title={t('analyticsTitle')} description={t('analyticsDesc')} />
 
       {/* Toggle for analytics (vmooney <=> treasury) */}

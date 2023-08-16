@@ -144,13 +144,10 @@ export default function Lock() {
   const [canIncrease, setCanIncrease] = useState({ amount: true, time: true })
   const [wantsToIncrease, setWantsToIncrease] = useState(false)
 
-  const [neededAllowance, setNeededAllowance] = useState<BigNumber>(
-    BigNumber.from(0)
-  )
-
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
-    neededAllowance,
+    ethers.utils.parseEther(lockAmount === '' ? '0' : lockAmount),
+    VMOONEYLock?.[0],
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
 
@@ -198,7 +195,7 @@ export default function Lock() {
         formatted: dateToReadable(oneWeekOut),
       })
     }
-  }, [hasLock, VMOONEYLock])
+  }, [hasLock, VMOONEYLock, selectedChain])
 
   //Lock time min/max
   useEffect(() => {
@@ -552,8 +549,6 @@ export default function Lock() {
                       const increaseAmount = VMOONEYLock?.[0]
                         ? lockAmountBigNum.sub(VMOONEYLock?.[0])
                         : lockAmountBigNum
-
-                      setNeededAllowance(increaseAmount)
 
                       if (increaseAmount.gt(tokenAllowance)) {
                         const approvalTx = await approveToken()

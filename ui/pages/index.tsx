@@ -4,6 +4,8 @@ import {
   ChartBarSquareIcon,
   CalendarDaysIcon,
   FolderIcon,
+  WalletIcon,
+  ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -18,6 +20,19 @@ export default function Home() {
       description: 'Lock MOONEY to get voting power within MoonDAO.',
       href: '/lock',
       icon: LockClosedIcon,
+    },
+    {
+      name: 'Buy Mooney',
+      description: 'Lock MOONEY to get voting power within MoonDAO.',
+      href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
+      icon: WalletIcon,
+    },
+    {
+      name: 'Bridge Mooney to L2',
+      description:
+        '(optional) Bridge your MOONEY to polygon using the native bridge for reduced gas fees.',
+      href: 'https://wallet.polygon.technology/',
+      icon: ArrowsRightLeftIcon,
     },
     {
       name: 'Announcements',
@@ -68,8 +83,11 @@ export default function Home() {
             id="home-card"
             className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none"
           >
-            <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2 xl:grid-cols-3">
-              {pages.map((page) => (
+            <dl
+              id={'home-card-pages'}
+              className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2 xl:grid-cols-3"
+            >
+              {pages.map((page, i) => (
                 <div
                   key={page.name}
                   className="flex flex-col items-center text-center lg:text-left lg:justify-start lg:items-start lg:border lg:border-detail-light dark:lg:border-detail-dark lg:pl-4 lg:pr-3 lg:rounded-2xl lg:py-3 lg:bg-gradient-to-b lg:hover:from-blue-500 lg:hover:to-blue-800 dark:lg:hover:from-slate-950 dark:lg:hover:to-black group transition-all duration-150 lg:shadow lg:shadow-detail-light dark:lg:shadow-detail-dark lg:hover:scale-105"
@@ -85,6 +103,7 @@ export default function Home() {
                     <p className="flex-auto">{page.description}</p>
                     <p className="mt-6">
                       <Link
+                        id={'#home-card-link' + i}
                         href={page.href}
                         className="text-sm font-semibold leading-6 text-detail-light dark:text-detail-dark hover:text-moon-blue hover:dark:text-moon-gold inline-block transition-all duration-105 lg:group-hover:text-white dark:lg:group-hover:text-moon-gold lg:group-hover:scale-110"
                       >

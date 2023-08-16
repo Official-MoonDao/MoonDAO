@@ -42,7 +42,7 @@ export default function TreasuryPage() {
 
   return (
     <>
-      <div className="lg:flex lg:flex-col lg:items-center xl:flex-row xl:items-baseline xl:justify-around gap-12">
+      <div id={"dashboard-treasury-page"} className="lg:flex lg:flex-col lg:items-center xl:flex-row xl:items-baseline xl:justify-around gap-12">
         {/*Assets Section*/}
         <section className="xl:w-[40%] xl:max-w-[600px]">
           <Header text={'Treasury'} />
