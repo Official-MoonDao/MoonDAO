@@ -148,10 +148,6 @@ export default function Lock() {
     BigNumber.from(0)
   )
 
-  useEffect(() => {
-    console.log(ethers.utils.formatEther(neededAllowance))
-  }, [neededAllowance])
-
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
     neededAllowance,

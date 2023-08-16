@@ -9,9 +9,8 @@ import { useState, useEffect } from 'react'
 import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
-import { useLightMode } from '../../lib/utils/hooks/useLightMode'
 import { useImportToken } from '../../lib/utils/import-token'
-import { LogoBlack, LogoWhite, CNAsset } from '../assets'
+import { LogoBlack, LogoWhite } from '../assets'
 import SwitchNetworkBanner from '../thirdweb/SwitchNetworkBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import ExternalLinks from './Sidebar/ExternalLinks'
@@ -21,15 +20,13 @@ import MobileSidebar from './Sidebar/MobileSidebar'
 import { navigation } from './Sidebar/Navigation'
 import NavigationLink from './Sidebar/NavigationLink'
 
-type Indexable = {
-  [key: string]: any
-}
-
 interface Layout {
   children: JSX.Element
+  lightMode: boolean
+  setLightMode: Function
 }
 
-export default function Layout({ children }: Layout) {
+export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -37,15 +34,11 @@ export default function Layout({ children }: Layout) {
 
   const importToken = useImportToken()
 
-  const [nav, setNav] = useState(navigation)
-
   const chain = useChain()
   const { selectedChain } = useContext(ChainContext)
 
   const [currentLang, setCurrentLang] = useState(router.locale)
   const [isTokenImported, setIsTokenImported] = useState(false)
-
-  const [lightMode, setLightMode]: any = useLightMode()
 
   useEffect(() => {
     if (localStorage.getItem('MOONEY_isImported')) setIsTokenImported(true)

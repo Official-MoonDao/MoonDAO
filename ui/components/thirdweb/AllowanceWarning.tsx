@@ -1,5 +1,5 @@
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
-import { SmartContract, useAddress } from '@thirdweb-dev/react'
+import { useAddress } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
@@ -15,7 +15,7 @@ export const AllowanceWarning = ({
 }: AllowanceWarningProps) => {
   const address = useAddress()
   const { data: tokenAllowance, isLoading: tokenAllowanceLoading } =
-    useTokenAllowance(tokenContract, address || '', spender)
+    useTokenAllowance(tokenContract, address, spender)
 
   const { mutateAsync: revokeAllowance } = useTokenApproval(
     tokenContract,

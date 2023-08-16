@@ -1,6 +1,4 @@
 import { useContractWrite } from '@thirdweb-dev/react'
-import { SmartContract } from '@thirdweb-dev/sdk'
-import { useEffect, useState } from 'react'
 import { useHandleError } from './useHandleError'
 
 export function useHandleWrite(

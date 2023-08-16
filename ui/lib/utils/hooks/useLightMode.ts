@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 export function useLightMode() {
-  const [lightMode, setLightMode] = useState<boolean | undefined>(undefined)
+  const [lightMode, setLightMode] = useState<any>(undefined)
 
   useEffect(() => {
     if (lightMode === undefined) {

@@ -1,12 +1,10 @@
 import {
   BellIcon,
-  WalletIcon,
   LockClosedIcon,
   ChartBarSquareIcon,
   CalendarDaysIcon,
   FolderIcon,
 } from '@heroicons/react/24/outline'
-import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import Head from '../components/layout/Head'
