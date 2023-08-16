@@ -76,7 +76,7 @@ const Announcement = React.forwardRef(
               attachments.map((attachment: any, i: number) => (
                 <img
                   className="h-auto max-w-[300px] lg:max-w-[400px] 2xl:max-w-[450px]"
-                  key={i}
+                  key={'announcement-attachment' + i}
                   src={attachment.url}
                 />
               ))}
@@ -87,7 +87,7 @@ const Announcement = React.forwardRef(
             {reactions &&
               reactions.map((reaction: any, i: number) => (
                 <Reaction
-                  key={i}
+                  key={'announcement-reaction' + i}
                   reaction={reaction}
                   index={i}
                   loading={loading}

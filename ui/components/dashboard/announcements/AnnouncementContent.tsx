@@ -11,7 +11,7 @@ const AnnouncementContent = ({ text, mentions, loading }: any) => {
   const textSeparatedFromLinks = parseAnnouncementText(text, linkRegex)
 
   return (
-    <p
+    <div
       className={`whitespace-pre-wrap break-words font-mono leading-relaxed text-light-text dark:text-dark-text lg:text-lg 2xl:text-xl ${
         loading && 'loading-line'
       }`}
@@ -33,7 +33,7 @@ const AnnouncementContent = ({ text, mentions, loading }: any) => {
           >{`${str} `}</a>
         )
       )}
-    </p>
+    </div>
   )
 }
 
@@ -48,21 +48,24 @@ const TextContent = ({ sentence, mentions }: any) => {
     <>
       {sentenceSeparatedFromMentions.map((e, i) =>
         e.startsWith('<@&') ? (
-          <ReplaceIdWithRoleName key={'role-name' + i} word={e} />
+          <ReplaceIdWithRoleName key={'sentence-role-name' + i} word={e} />
         ) : e.startsWith('<#') ? (
-          <ReplaceIdWithChannelName key={'role-name' + i} word={e} />
+          <ReplaceIdWithChannelName
+            key={'sentence-channel-name' + i}
+            word={e}
+          />
         ) : e.startsWith('<@') ? (
           <ReplaceIdWithMention
-            key={'role-name' + i}
+            key={'sentence-mention' + i}
             word={e}
             mentions={mentions}
           />
         ) : e.includes('<:MoonDAO:1047902000601383013>') ? (
-          <>
+          <div key={'sentence-logo' + i}>
             {e.slice(0, e.indexOf('<:MoonDAO:1047902000601383013>'))}{' '}
-            <LogoSmall key={'role-name' + i} size={{ height: 28, width: 28 }} />
+            <LogoSmall size={{ height: 28, width: 28 }} />
             {e.slice(e.indexOf('<:MoonDAO:1047902000601383013>') + 30)}
-          </>
+          </div>
         ) : (
           e
         )

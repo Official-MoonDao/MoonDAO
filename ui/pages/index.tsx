@@ -12,7 +12,6 @@ import Link from 'next/link'
 import Head from '../components/layout/Head'
 
 export default function Home() {
-  const address = useAddress()
   const { t } = useTranslation('common')
 
   const pages = [

@@ -4,7 +4,12 @@ import {
   LockClosedIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline'
-import { Web3Button, useAddress, useContract } from '@thirdweb-dev/react'
+import {
+  Web3Button,
+  useAddress,
+  useContract,
+  useSDK,
+} from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import { useContext, useEffect, useState } from 'react'
@@ -81,15 +86,26 @@ export default function Lock() {
 
   const { selectedChain }: any = useContext(ChainContext)
 
-  const { contract: mooneyContract }: any = useContract(
-    MOONEY_ADDRESSES[selectedChain?.slug],
-    ERC20ABI.abi
-  )
+  const sdk = useSDK()
+
+  const [mooneyContract, setMooneyContract] = useState()
+
+  //get mooney contract (useContract assigns wrong abi for proxy)
+  useEffect(() => {
+    if (selectedChain?.slug && sdk) {
+      sdk
+        .getContract(MOONEY_ADDRESSES[selectedChain?.slug], ERC20ABI.abi)
+        .then((contract: any) => {
+          setMooneyContract(contract)
+        })
+    }
+  }, [selectedChain?.slug])
 
   const { contract: vMooneyContract }: any = useContract(
     VMOONEY_ADDRESSES[selectedChain?.slug],
     VotingEscrow.abi
   )
+
   const { data: MOONEYBalance, isLoading: MOONEYBalanceLoading } =
     useMOONEYBalance(mooneyContract, address)
 
@@ -145,7 +161,7 @@ export default function Lock() {
   const { mutateAsync: createLock } = useVMOONEYCreateLock(
     vMooneyContract,
     lockAmount && ethers.utils.parseEther(lockAmount),
-    lockTime.value.div(1000)
+    lockTime?.value.div(1000)
   )
 
   const { mutateAsync: increaseLock } = useVMOONEYIncreaseLock({
@@ -511,24 +527,8 @@ export default function Lock() {
                 {/*Web3 button with actions according context*/}
                 <div className="card-actions mt-4 white-text">
                   <Web3Button
-                    contractAddress={VMOONEY_ADDRESSES[selectedChain.slug]}
-                    className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark ${
-                      (hasLock &&
-                        ((canIncrease.amount && canIncrease.time) ||
-                          (!canIncrease.amount && !canIncrease.time))) ||
-                      (address &&
-                        lockAmount &&
-                        VMOONEYLock?.[0] &&
-                        parseFloat(lockAmount) >
-                          parseFloat(
-                            ethers.utils.formatEther(
-                              VMOONEYLock?.[0]?.add(MOONEYBalance?.toString())
-                            )
-                          )) ||
-                      !lockAmount
-                        ? 'border-disabled btn-disabled bg-transparent'
-                        : 'bg-primary'
-                    }`}
+                    contractAddress={MOONEY_ADDRESSES[selectedChain.slug]}
+                    className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
                     isDisabled={
                       (!canIncrease.amount &&
                         !canIncrease.time &&
@@ -536,7 +536,7 @@ export default function Lock() {
                           Number(VMOONEYLock?.[0].toString() / 10 ** 18)) ||
                       (!canIncrease.amount &&
                         !canIncrease.time &&
-                        Date.parse(lockTime.formatted) <
+                        Date.parse(lockTime?.formatted) <
                           Date.parse(
                             dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))
                           ))

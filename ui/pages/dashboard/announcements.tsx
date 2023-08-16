@@ -60,7 +60,7 @@ export default function Announcements() {
                 i + 1 === announcements.length ? (
                   <Announcement
                     ref={lastPostRef}
-                    key={e.id}
+                    key={'announcement-' + i}
                     content={e.content}
                     mentions={e.mentions}
                     author={e.author}
@@ -70,7 +70,7 @@ export default function Announcements() {
                   />
                 ) : (
                   <Announcement
-                    key={e.id}
+                    key={'announcement-' + i}
                     content={e.content}
                     mentions={e.mentions}
                     author={e.author}

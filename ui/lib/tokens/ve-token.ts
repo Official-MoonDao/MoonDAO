@@ -42,7 +42,6 @@ export function useVMOONEYIncreaseLock({
   currentTime,
   newTime,
 }: any) {
-  const signer: any = useSigner()
   const { mutateAsync: increaseLockAmount } = useVMOONEYIncreaseLockAmount(
     votingEscrowContract,
     newAmount
@@ -50,10 +49,6 @@ export function useVMOONEYIncreaseLock({
   const { mutateAsync: increaseLockTime } = useVMOONEYIncreaseLockTime(
     votingEscrowContract,
     newTime
-  )
-  const { data: lockData } = useVMOONEYLock(
-    votingEscrowContract,
-    signer?.address
   )
 
   const action = useCallback(() => {

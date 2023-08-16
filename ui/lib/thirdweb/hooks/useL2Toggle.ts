@@ -1,9 +1,6 @@
 import { Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
-import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import ChainContext from '../chain-context'
-
-const isMainnet: boolean = process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
 
 export function useL2Toggle() {
   const [isL2, setIsL2] = useState<boolean>(false)
@@ -24,6 +21,5 @@ export function useL2Toggle() {
   return {
     isL2,
     toggleLayer,
-    layers: [isMainnet ? Ethereum : Goerli, isMainnet ? Polygon : Mumbai],
   }
 }
