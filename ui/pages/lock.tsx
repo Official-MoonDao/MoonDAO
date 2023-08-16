@@ -10,7 +10,7 @@ import {
   useContract,
   useSDK,
 } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import { useContext, useEffect, useState } from 'react'
 import React from 'react'
@@ -26,7 +26,6 @@ import {
   useVMOONEYWithdrawLock,
 } from '../lib/tokens/ve-token'
 import { NumberType, transformNumber } from '../lib/utils/numbers'
-import { formatEther } from 'ethers/lib/utils'
 import Balance from '../components/Balance'
 import TimeRange from '../components/TimeRange'
 import Head from '../components/layout/Head'
@@ -90,7 +89,7 @@ export default function Lock() {
 
   const [mooneyContract, setMooneyContract] = useState()
 
-  //get mooney contract (useContract assigns wrong abi for proxy)
+  // get mooney contract (useContract assigns wrong abi for proxy)
   useEffect(() => {
     if (selectedChain?.slug && sdk) {
       sdk
@@ -107,8 +106,7 @@ export default function Lock() {
   )
 
   const { data: MOONEYBalance, isLoading: MOONEYBalanceLoading } =
-    useMOONEYBalance(mooneyContract, address)
-
+    useMOONEYBalance(mooneyContract, address || '')
   const { data: VMOONEYBalance, isLoading: VMOONEYBalanceLoading } =
     useVMOONEYBalance(vMooneyContract, address)
 
@@ -146,9 +144,17 @@ export default function Lock() {
   const [canIncrease, setCanIncrease] = useState({ amount: true, time: true })
   const [wantsToIncrease, setWantsToIncrease] = useState(false)
 
+  const [neededAllowance, setNeededAllowance] = useState<BigNumber>(
+    BigNumber.from(0)
+  )
+
+  useEffect(() => {
+    console.log(ethers.utils.formatEther(neededAllowance))
+  }, [neededAllowance])
+
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
-    lockAmount && ethers.utils?.parseEther(lockAmount),
+    neededAllowance,
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
 
@@ -543,16 +549,17 @@ export default function Lock() {
                     }
                     action={async () => {
                       //check for token allowance
-                      const allowance = Number(formatEther(tokenAllowance))
 
-                      const lockedMooney = Number(formatEther(VMOONEYLock?.[0]))
+                      const lockAmountBigNum =
+                        ethers.utils.parseEther(lockAmount)
 
-                      const increaseAmount =
-                        lockedMooney <= 0
-                          ? Number(lockAmount)
-                          : Number(lockAmount) - lockedMooney
+                      const increaseAmount = VMOONEYLock?.[0]
+                        ? lockAmountBigNum.sub(VMOONEYLock?.[0])
+                        : lockAmountBigNum
 
-                      if (increaseAmount > allowance) {
+                      setNeededAllowance(increaseAmount)
+
+                      if (increaseAmount.gt(tokenAllowance)) {
                         const approvalTx = await approveToken()
                         approvalTx?.receipt &&
                           toast.success('Successfully approved MOONEY for lock')

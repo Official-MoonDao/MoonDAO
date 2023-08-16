@@ -1,4 +1,4 @@
-import { useContractRead } from '@thirdweb-dev/react'
+import { SmartContract, useContractRead } from '@thirdweb-dev/react'
 import { useHandleError } from './useHandleError'
 
 export function useHandleRead(
@@ -14,5 +14,6 @@ export function useHandleRead(
     overrides
   )
   useHandleError(method, error)
+
   return { data, isLoading, error }
 }
