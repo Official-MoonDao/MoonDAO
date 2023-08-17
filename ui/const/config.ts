@@ -1,7 +1,3 @@
-import { useChain, useSDK } from '@thirdweb-dev/react'
-import { useContext, useEffect, useMemo, useState } from 'react'
-import ChainContext from '../lib/thirdweb/chain-context'
-
 const zeroAddress = '0x0000000000000000000000000000000000000000'
 
 interface DeploymentConfig {
@@ -10,16 +6,7 @@ interface DeploymentConfig {
   vMooneySweepstakesZeroG: string
 }
 
-interface Config {
-  MOONEYToken: string
-  vMOONEYToken: string
-  vMooneySweepstakesZeroG: string
-  vMOONEYRequiredStake: number
-}
-
 type Index = { [key: string]: string }
-
-const isMainnet = process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
 const defaultConfigL1 =
@@ -50,26 +37,3 @@ export const VMOONEY_ADDRESSES: Index = {
 
 export const VMOONEY_SWEEPSTAKES: string =
   defaultConfigL1.vMooneySweepstakesZeroG
-
-// export default function useContractConfig() {
-//   const { selectedChain } = useContext(ChainContext)
-
-//   const config = useMemo(() => {
-
-//     return {
-//       MOONEYToken:
-//         process.env.NEXT_PUBLIC_MOONEY_ADDRESS ||
-//         defaultConfig.MOONEYToken ||
-//         zeroAddress,
-//       vMOONEYToken:
-//         process.env.NEXT_PUBLIC_VMOONEY_ADDRESS ||
-//         defaultConfig.vMOONEYToken ||
-//         zeroAddress,
-//       vMOONEYRequiredStake:
-//         Number(process.env.NEXT_PUBLIC_VMOONEY_REQUIRED_STAKE) || 1,
-//       vMooneySweepstakesZeroG: '0xB255c74F8576f18357cE6184DA033c6d93C71899',
-//     }
-//   }, [selectedChain])
-
-//   return config as Config
-// }

@@ -29,6 +29,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
             safeWallet(),
             walletConnect(),
           ]}
+          autoSwitch
         >
           <Layout lightMode={lightMode} setLightMode={setLightMode}>
             <Component {...pageProps} />

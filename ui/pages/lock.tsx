@@ -10,7 +10,7 @@ import {
   useContract,
   useSDK,
 } from '@thirdweb-dev/react'
-import { BigNumber, ethers } from 'ethers'
+import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import { useContext, useEffect, useState } from 'react'
 import React from 'react'
@@ -81,15 +81,13 @@ const calculateVestingStart = ({
 }
 
 export default function Lock() {
-  const address = useAddress()
-
   const { selectedChain }: any = useContext(ChainContext)
 
+  const address = useAddress()
   const sdk = useSDK()
 
-  const [mooneyContract, setMooneyContract] = useState()
-
   // get mooney contract (useContract assigns wrong abi for proxy)
+  const [mooneyContract, setMooneyContract] = useState()
   useEffect(() => {
     if (selectedChain?.slug && sdk) {
       sdk
@@ -98,7 +96,7 @@ export default function Lock() {
           setMooneyContract(contract)
         })
     }
-  }, [selectedChain?.slug])
+  }, [selectedChain?.slug, sdk])
 
   const { contract: vMooneyContract }: any = useContract(
     VMOONEY_ADDRESSES[selectedChain?.slug],
@@ -131,6 +129,10 @@ export default function Lock() {
   }, [VMOONEYLock, address])
 
   const [lockAmount, setLockAmount] = useState<string>('0')
+  //reset lock amount on chain switch
+  useEffect(() => {
+    setLockAmount('0')
+  }, [selectedChain])
 
   const oneWeekOut = dateOut(new Date(), { days: 7 })
 
