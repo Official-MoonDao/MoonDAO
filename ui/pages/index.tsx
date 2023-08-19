@@ -16,47 +16,54 @@ export default function Home() {
 
   const pages = [
     {
-      name: 'Get voting power',
-      description: 'Lock MOONEY to get voting power within MoonDAO.',
-      href: '/lock',
-      icon: LockClosedIcon,
-    },
-    {
       name: 'Buy Mooney',
       description: 'Lock MOONEY to get voting power within MoonDAO.',
       href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
       icon: WalletIcon,
+      externalLink: true,
+    },
+    {
+      name: 'Get voting power',
+      description: 'Lock MOONEY to get voting power within MoonDAO.',
+      href: '/lock',
+      icon: LockClosedIcon,
+      externalLink: false,
     },
     {
       name: 'Bridge Mooney to L2',
       description:
-        '(optional) Bridge your MOONEY to polygon using the native bridge for reduced gas fees.',
+        'Bridge your MOONEY to polygon using the native bridge for reduced gas fees.',
       href: 'https://wallet.polygon.technology/',
       icon: ArrowsRightLeftIcon,
+      externalLink: true,
     },
     {
       name: 'Announcements',
       description: 'Check the latest announcements.',
       href: '/dashboard/announcements',
       icon: BellIcon,
+      externalLink: false,
     },
     {
       name: 'Proposals',
       description: 'Read all the proposals and vote on them.',
       href: '/dashboard/proposals',
       icon: FolderIcon,
+      externalLink: false,
     },
     {
       name: 'Analytics',
       description: 'See information related to Voting Power and the Treasury.',
       href: '/dashboard/analytics',
       icon: ChartBarSquareIcon,
+      externalLink: false,
     },
     {
       name: 'Calendar',
       description: 'See all the scheduled events and meetings.',
       href: '/dashboard/calendar',
       icon: CalendarDaysIcon,
+      externalLink: false,
     },
   ]
 
@@ -88,30 +95,29 @@ export default function Home() {
               className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2 xl:grid-cols-3"
             >
               {pages.map((page, i) => (
-                <div
+                <Link
+                  id={'#home-card-link' + i}
+                  href={page.href}
                   key={page.name}
-                  className="flex flex-col items-center text-center lg:text-left lg:justify-start lg:items-start lg:border lg:border-detail-light dark:lg:border-detail-dark lg:pl-4 lg:pr-3 lg:rounded-2xl lg:py-3 lg:bg-gradient-to-b lg:hover:from-blue-500 lg:hover:to-blue-800 dark:lg:hover:from-slate-950 dark:lg:hover:to-black group transition-all duration-150 lg:shadow lg:shadow-detail-light dark:lg:shadow-detail-dark lg:hover:scale-105"
+                  target={page.externalLink ? '_blank' : ''}
+                  className="flex flex-col items-center text-center lg:text-left lg:justify-start lg:items-start border border-detail-light dark:border-detail-dark pl-3 pr-2 lg:pl-4 lg:pr-3 rounded-2xl py-3 bg-gradient-to-b hover:from-blue-500 hover:to-blue-800 dark:hover:border-orange-500 dark:hover:from-stronger-dark dark:hover:to-orange-600 group transition-all duration-150 shadow shadow-detail-light dark:shadow-detail-dark dark:hover:shadow-orange-300 hover:scale-105"
                 >
-                  <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-title-light dark:text-title-dark lg:tracking-wider lg:group-hover:text-blue-50 dark:lg:group-hover:text-detail-dark">
+                  <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-title-light dark:text-title-dark lg:tracking-wider group-hover:text-blue-50 dark:group-hover:text-white">
                     <page.icon
-                      className="h-5 w-5 flex-none text-moon-blue dark:text-moon-gold lg:group-hover:text-white dark:lg:group-hover:text-moon-gold"
+                      className="h-6 w-6 lg:h-8 lg:w-8 flex-none text-moon-blue dark:text-moon-gold group-hover:text-white dark:group-hover:text-yellow-200"
                       aria-hidden="true"
                     />
                     {page.name}
                   </dt>
-                  <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-light-text dark:text-dark-text lg:group-hover:text-white lg:group-hover:text-opacity-80">
+                  <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-light-text dark:text-dark-text group-hover:text-white group-hover:text-opacity-90">
                     <p className="flex-auto">{page.description}</p>
-                    <p className="mt-6">
-                      <Link
-                        id={'#home-card-link' + i}
-                        href={page.href}
-                        className="text-sm font-semibold leading-6 text-detail-light dark:text-detail-dark hover:text-moon-blue hover:dark:text-moon-gold inline-block transition-all duration-105 lg:group-hover:text-white dark:lg:group-hover:text-moon-gold lg:group-hover:scale-110"
-                      >
+                    <div className="mt-6">
+                      <p className="text-sm font-semibold leading-6 text-detail-light dark:text-detail-dark inline-block transition-all duration-105 group-hover:text-white group-hover:scale-110">
                         Go there <span aria-hidden="true">→</span>
-                      </Link>
-                    </p>
+                      </p>
+                    </div>
                   </dd>
-                </div>
+                </Link>
               ))}
             </dl>
           </div>

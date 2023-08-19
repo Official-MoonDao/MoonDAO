@@ -3,7 +3,6 @@ import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
 
 const NavigationLink = ({ item }: any) => {
   const router = useRouter()

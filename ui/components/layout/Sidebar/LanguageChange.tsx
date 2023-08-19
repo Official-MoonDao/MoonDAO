@@ -15,10 +15,12 @@ const LanguageChange = () => {
     router.push(router.pathname, router.pathname, { locale: lang })
   }
 
+  {/*Currently hidden, refer to the comments to enable them*/}
+
   return (
     <>
-      {/*Mobile Menu Top*/}
-      <div className="md:hidden">
+      {/*Mobile Menu Top, change "hidden" to "md:hidden" on this div to enable it*/}
+      <div className="hidden">
         <button className="py-2 bg-blue-400 dark:bg-moon-gold rounded-lg text-white px-2 hover:scale-105 transition-all duration-150 shadow shadow-detail-light dark:shadow-detail-dark">
           {currentLang === 'en' ? (
             <Link href="/" locale="zh">
@@ -45,8 +47,8 @@ const LanguageChange = () => {
           )}
         </button>
       </div>
-      {/*Desktop Sidebar*/}
-      <div className="hidden md:block">
+      {/*Desktop Sidebar, add the class "md:block" on this div to enable it*/}
+      <div className="hidden">
         <p className="font-medium flex items-center gap-2 text-light-text dark:text-dark-text">
           <GlobeAltIcon className="h-6 w-6 text-blue-700 dark:text-detail-dark" />{' '}
           CN ↔ EN

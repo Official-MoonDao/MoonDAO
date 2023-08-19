@@ -1,8 +1,11 @@
 import {
   HomeIcon,
   LockClosedIcon,
-  TableCellsIcon,
   RocketLaunchIcon,
+  BellIcon,
+  ChartBarSquareIcon,
+  FolderIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 
 export const navigation = [
@@ -17,14 +20,24 @@ export const navigation = [
     icon: LockClosedIcon,
   },
   {
-    name: 'Dashboard',
-    icon: TableCellsIcon,
-    children: [
-      { name: 'Announcements', href: '/dashboard/announcements' },
-      { name: 'Proposals', href: '/dashboard/proposals' },
-      { name: 'Analytics', href: '/dashboard/analytics' },
-      { name: 'Calendar', href: '/dashboard/calendar' },
-    ],
+    name: 'Announcements',
+    href: '/dashboard/announcements',
+    icon: BellIcon,
+  },
+  {
+    name: 'Analytics',
+    href: '/dashboard/analytics',
+    icon: ChartBarSquareIcon,
+  },
+  {
+    name: 'Proposals',
+    href: '/dashboard/proposals',
+    icon: FolderIcon,
+  },
+  {
+    name: 'Calendar',
+    href: '/dashboard/calendar',
+    icon: CalendarDaysIcon,
   },
   {
     name: 'Missions',
