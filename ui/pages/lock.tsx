@@ -228,19 +228,19 @@ export default function Lock() {
   return (
     <main className="animate-fadeIn">
       <Head title="$vMOONEY" />
-      <div className="mt-3 px-5 xl:px-10 py-12 xl:py-24 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
+      <div className="mt-3 px-5 lg:px-10 xl:px-10 py-12 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
         <h1
-          className={`font-GoodTimes tracking-wide leading-relaxed text-center text-2xl xl:text-4xl font-semibold mb-2 text-title-light dark:text-title-dark`}
+          className={`font-GoodTimes tracking-wide leading-relaxed text-center xl:text-left xl:w-3/4 xl:leading-relaxed text-2xl xl:text-4xl font-semibold mb-2 text-title-light dark:text-title-dark`}
         >
           {t('lockCardTitle')}
         </h1>
 
-        <p className="my-6 xl:my-10 text-lg xl:text-xl leading-8 text-center text-light-text dark:text-dark-text dark:text-opacity-80">
+        <p className="mt-6 xl:mt-12 text-lg xl:text-2xl leading-8 text-center lg:tracking-wider xl:text-left xl:w-3/4 text-moon-blue dark:text-moon-gold dark:text-opacity-90">
           {t('lockTitle')}{' '}
         </p>
 
         <a
-          className="my-5 xl:text-lg block text-center text-md font-GoodTimes font-semibold bg-gradient-to-r from-blue-500 to-blue-700 dark:decoration-detail-dark dark:from-moon-gold dark:to-stronger-dark  underline decoration-detail-light hover:scale-105 transition-all duration-150 text-transparent bg-clip-text"
+          className="mt-6 xl:mt-8 xl:text-lg block text-center xl:w-3/4 xl:text-left text-md font-GoodTimes font-semibold bg-gradient-to-r from-blue-500 to-blue-700 dark:decoration-detail-dark dark:from-moon-gold dark:to-stronger-dark  underline decoration-detail-light hover:scale-105 transition-all duration-150 text-transparent bg-clip-text"
           href="https://docs.moondao.com/token/#vmooney-characteristics"
           target="_blank"
           rel="noreferrer"
@@ -248,16 +248,16 @@ export default function Lock() {
           {t('learnMore')}
         </a>
 
-        <section className="xl:w-3/4">
+        <section className="mt-4 xl:mt-6 xl:w-3/4">
           {/*Lock description section*/}
           {!hasLock && (
             <div>
-              <p className="mt-6 font-mono text-base xl:text-lg xl:leading-10 text-center leading-8 text-light-text dark:text-dark-text dark:text-opacity-80">
+              <p className="mt-6 font-mono text-base xl:text-lg xl:text-left xl:leading-10 text-center leading-8 text-light-text dark:text-dark-text dark:text-opacity-80">
                 {t('lockDesc')}
               </p>
             </div>
           )}
-          {/*Lock Data, not done yet*/}
+          {/*Lock Data*/}
           {hasLock && (
             <>
               <div className="card stats-vertical lg:stats-horizontal shadow mb-4">
@@ -311,7 +311,7 @@ export default function Lock() {
           )}
         </section>
 
-        <div className="my-5 xl:mt-8 flex justify-center">
+        <div className="my-5 xl:mt-8 flex justify-center xl:w-3/4 xl:justify-start">
           <L2Toggle />
         </div>
 
@@ -335,7 +335,7 @@ export default function Lock() {
                 </p>
                 {/*Lock Amount label*/}
 
-                <label className="mt-6">
+                <label className="mt-6 xl:mt-10 block">
                   <p className="uppercase font-semibold underline text-title-light dark:text-title-dark">
                     {t('lockAmount')}
                   </p>
@@ -354,7 +354,7 @@ export default function Lock() {
                   <input
                     type="number"
                     placeholder="0"
-                    className="w-full text-title-light dark:text-title-dark bg-gray-200 dark:bg-slate-800 truncate font-semibold tracking-wide"
+                    className="w-full dark:[color-scheme:dark] pl-2 py-1 text-title-light dark:text-title-dark bg-gray-200 dark:bg-slate-800 truncate font-semibold tracking-wide"
                     value={lockAmount || ''}
                     disabled={
                       !MOONEYBalance ||
@@ -399,7 +399,7 @@ export default function Lock() {
                 </div>
 
                 {/*Lock Expiration date label*/}
-                <label className="mt-6">
+                <label className="mt-6 xl:mt-10 block">
                   <p className="uppercase font-semibold underline text-title-light dark:text-title-dark">
                     {t('lockExpDate')}
                   </p>
@@ -413,7 +413,7 @@ export default function Lock() {
                 <input
                   type="date"
                   placeholder={t('lockExpDate')}
-                  className="mt-4 input input-bordered w-full text-title-light dark:text-title-dark bg-gray-200 dark:bg-slate-800 border border-detail-light dark:border-detail-dark"
+                  className="mt-4 input input-bordered w-full  dark:[color-scheme:dark] text-title-light dark:text-title-dark bg-gray-200 dark:bg-slate-800 border border-detail-light dark:border-detail-dark"
                   value={lockTime?.formatted}
                   min={
                     hasLock && address

@@ -27,23 +27,24 @@ export const AllowanceWarning = ({
   const { t } = useTranslation('common')
 
   return (
-    <div className="alert mt-4 mb-4 bg-transparent border border-primary">
+    <div className="mt-8 pt-1 pb-3 lg:px-8 xl:px-4 xl:py-3 flex flex-col xl:flex-row xl:items-center items-center component-background px-4 border border-amber-400 dark:border-detail-dark rounded-xl">
       <div>
-        <ExclamationCircleIcon className="text-primary h-12 w-12" />
-        <div className="flex flex-col gap-0.5 text-xs text-justify">
-          <span>{t('safetyNote')}</span>
-          {!tokenAllowanceLoading && tokenAllowance > 0 && (
-            <div className="flex w-full justify-end">
-              <button
-                className="bg-primary text-black p-1 font-semibold rounded-md w-fit"
-                onClick={() => revokeAllowance()}
-              >
-                Revoke your allowance
-              </button>
-            </div>
-          )}
-        </div>
+        <ExclamationCircleIcon className="h-7 w-7 md:h-9 md:w-9 xl:h-12 xl:w-12 text-red-400" />
       </div>
+
+      <p className=" md:mt-1 text-sm text-center block xl:text-left xl:ml-5">
+        {t('safetyNote')}
+      </p>
+      {!tokenAllowanceLoading && tokenAllowance > 0 && (
+        <div className='mt-3 xl:mt-0 xl:ml-3'>
+          <button
+            className="bg-moon-gold px-2 py-1 xl:w-[160px] text-white transition-all duration-150 hover:scale-105 font-semibold rounded-md"
+            onClick={() => revokeAllowance()}
+          >
+            Revoke allowance
+          </button>
+        </div>
+      )}
     </div>
   )
 }
