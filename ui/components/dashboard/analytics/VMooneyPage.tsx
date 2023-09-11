@@ -10,7 +10,7 @@ import Header from '../../layout/Header'
 
 function Frame(props: any) {
   return (
-    <div className="component-background mt-8 flex w-[336px] sm:w-[400px] min-h-[50vh] lg:w-full lg:max-w-[1380px] flex-col justify-center items-center rounded-2xl border-[0.5px] border-blue-500 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold ">
+    <div className="component-background mt-8 flex w-[336px] sm:w-[400px] py-4 lg:w-full lg:max-w-[1380px] flex-col justify-center items-center rounded-2xl border-[0.5px] border-blue-500 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold ">
       {props.children}
     </div>
   )
@@ -27,16 +27,13 @@ function LoadingSpinner() {
 
 function Data({ text, value, mooney, vmooney }: any) {
   return (
-    <div className="justify-left flex w-full flex-col rounded-2xl p-4 lg:w-1/2 text-center">
+    <div className="justify-left flex w-full flex-col rounded-2xl p-2 lg:w-1/2 text-center">
       <div className=" w-full font-Montserrat font-bold leading-10 text-slate-800 hover:text-black dark:text-indigo-100 dark:hover:text-white lg:text-xl 2xl:text-2xl">
-        <p className="min-h-[6vh]">{text}</p>
+        <p className="py-2">{text}</p>
         <hr className="relative mt-1 h-1 w-full bg-gradient-to-r from-blue-500 to-blue-900 dark:from-moon-gold dark:to-yellow-100" />
       </div>
-      <div className="text-slate flex flex-col justify-center px-4  text-center font-Montserrat leading-10 hover:text-[#6ca3e6] text-black dark:text-indigo-100  dark:hover:text-[orange] md:items-center lg:my-4 lg:flex-row lg:text-2xl xl:text-3xl">
+      <div className="text-slate flex flex-col justify-center px-4  text-center font-Montserrat leading-10 text-black dark:text-indigo-100 md:items-center lg:my-2 lg:flex-row lg:text-2xl xl:text-3xl">
         {value}
-
-        {mooney && <></>}
-        {vmooney && <></>}
       </div>
     </div>
   )
@@ -124,15 +121,12 @@ export default function VMooneyPage() {
           id="dashboard-analytics-holders-list"
           className="flex items-center justify-center"
         >
-          <HoldersList
-            itemsPerPage={window.innerHeight > 1080 ? 10 : 5}
-            data={analyticsData.holdersByVMooney}
-          />
+          <HoldersList itemsPerPage={5} data={analyticsData.holdersByVMooney} />
         </div>
-      </Frame>
-      {/*Holders frame*/}
-      <Frame>
-        <div className="w-full h-full flex flex-col">
+
+        {/*Holders frame*/}
+
+        <div className="w-full h-full flex flex-col px-4">
           <Label text="Stakers Over Time" />
 
           <HoldersChart data={analyticsData.holders} lightMode={lightMode} />
