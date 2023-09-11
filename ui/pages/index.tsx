@@ -6,6 +6,7 @@ import {
   FolderIcon,
   WalletIcon,
   ArrowsRightLeftIcon,
+  BuildingStorefrontIcon,
 } from '@heroicons/react/24/outline'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -40,30 +41,30 @@ export default function Home() {
     {
       name: 'Announcements',
       description: 'Check the latest announcements.',
-      href: '/dashboard/announcements',
+      href: '/announcements',
       icon: BellIcon,
-      externalLink: false,
-    },
-    {
-      name: 'Proposals',
-      description: 'Read all the proposals and vote on them.',
-      href: '/dashboard/proposals',
-      icon: FolderIcon,
       externalLink: false,
     },
     {
       name: 'Analytics',
       description: 'See information related to Voting Power and the Treasury.',
-      href: '/dashboard/analytics',
+      href: '/analytics',
       icon: ChartBarSquareIcon,
       externalLink: false,
     },
     {
       name: 'Calendar',
       description: 'See all the scheduled events and meetings.',
-      href: '/dashboard/calendar',
+      href: '/calendar',
       icon: CalendarDaysIcon,
       externalLink: false,
+    },
+    {
+      name: 'Marketplace',
+      description: 'Buy and sell NFTs on the MoonDAO marketplace.',
+      href: 'https://marketplace.moondao.com',
+      icon: BuildingStorefrontIcon,
+      externalLink: true,
     },
   ]
 
