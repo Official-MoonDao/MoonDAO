@@ -55,7 +55,9 @@ const Transaction = ({ data, loading }: any) => {
         <p
           className={`mt-2 block truncate text-lg font-bold tracking-wide  text-title-light dark:text-dark-highlight xl:hover:text-center 2xl:mt-0 2xl:max-w-[43%] 2xl:tracking-wider 2xl:hover:overflow-visible 2xl:hover:whitespace-pre`}
         >
-          <span className={`${loading && 'loading-line'}`}>{value}</span>
+          <span className={`${loading && 'loading-line'}`}>
+            {value.length > 30 ? value.slice(0, 30) + '...' : value}
+          </span>
         </p>
         {/*Date and Etherscan Link*/}
         <div className="mt-2 flex items-center text-sm 2xl:mt-0">
