@@ -16,6 +16,7 @@ describe('Main E2E Testing', () => {
         'https://snapshot.org/#/tomoondao.eth',
         'https://moondao.com/docs/introduction',
         'https://moondao.ck.page/profile',
+        'https://market.moondao.com',
       ]
 
       Array.from({
@@ -27,23 +28,25 @@ describe('Main E2E Testing', () => {
   })
 
   describe('MoonDAO App | Home', () => {
-    it('should load the index page', () => {
+    it('should load the home page', () => {
       cy.visit('/')
-      const homeCard = cy.get('#home-card')
-      homeCard.should('exist')
+      cy.get('#home-card').should('exist')
+    })
 
+    it('home cards should have the correct internal and external links', () => {
+      cy.visit('/')
       const links = [
         'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
         '/lock',
         'https://wallet.polygon.technology/',
-        '/dashboard/announcements',
-        '/dashboard/proposals',
-        '/dashboard/analytics',
-        '/dashboard/calendar',
+        '/announcements',
+        '/analytics',
+        '/calendar',
+        'https://market.moondao.com',
       ]
 
       Array.from({
-        length: homeCard.get('#home-card-pages').children.length,
+        length: cy.get('#home-card-pages').children.length,
       }).map((page: any, i: number) => {
         page.get('a').should('have.attr', 'href', links[i])
       })
@@ -78,22 +81,14 @@ describe('Missions E2E Testing', () => {
 describe('Dashboard E2E Testing', () => {
   describe('MoonDAO App | Announcements', () => {
     it('should load the announcements page', () => {
-      cy.visit('/dashboard/announcements')
-      cy.wait(2000)
+      cy.visit('/announcements')
       cy.get('#dashboard-announcements').should('exist')
-    })
-  })
-
-  describe('MoonDAO App | Proposals', () => {
-    it('should load the proposals page', () => {
-      cy.visit('/dashboard/proposals')
-      cy.get('#dashboard-proposals').should('exist')
     })
   })
 
   describe('MoonDAO App | Analytics', () => {
     it('should load the analytics page', () => {
-      cy.visit('/dashboard/analytics')
+      cy.visit('/analytics')
 
       it('should toggle to the treasury page', () => {
         cy.get('#dashboard-analytics-toggle').click()
@@ -104,7 +99,6 @@ describe('Dashboard E2E Testing', () => {
       })
 
       it('should load the treasury page', () => {
-        cy.wait(2000)
         cy.get('#dashboard-treasury-page').should('exist')
         cy.get('#dashboard-treasury-assets')
         cy.get('#dashboard-treasury-transactions').should('exist')
@@ -114,7 +108,7 @@ describe('Dashboard E2E Testing', () => {
 
   describe('MoonDAO App | Calendar', () => {
     it('should load the calendar page', () => {
-      cy.visit('/dashboard/calendar')
+      cy.visit('/calendar')
       cy.get('h1').contains(common.calendarTitle)
       cy.get('p').contains(common.calendarDesc)
       cy.get('#dashboard-calendar').should('exist')
