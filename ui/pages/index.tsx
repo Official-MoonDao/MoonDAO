@@ -62,7 +62,7 @@ export default function Home() {
     {
       name: 'Marketplace',
       description: 'Buy and sell NFTs on the MoonDAO marketplace.',
-      href: 'https://marketplace.moondao.com',
+      href: 'https://market.moondao.com',
       icon: BuildingStorefrontIcon,
       externalLink: true,
     },

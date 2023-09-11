@@ -23,7 +23,7 @@ const externalLinks = [
   },
   {
     name: 'Marketplace',
-    href: 'https://marketplace.moondao.com',
+    href: 'https://market.moondao.com',
   },
 ]
 
