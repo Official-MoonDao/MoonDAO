@@ -227,7 +227,7 @@ export default function Lock() {
 
   return (
     <main className="animate-fadeIn">
-      <Head title="$vMOONEY" />
+      <Head title="Voting Power" />
       <div className="mt-3 px-5 lg:px-10 xl:px-10 py-12 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
         <h1
           className={`font-GoodTimes tracking-wide leading-relaxed text-center xl:text-left xl:w-3/4 xl:leading-relaxed text-2xl xl:text-4xl font-semibold mb-2 text-title-light dark:text-title-dark`}
