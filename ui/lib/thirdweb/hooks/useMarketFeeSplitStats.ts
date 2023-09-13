@@ -2,12 +2,7 @@ import { Polygon } from '@thirdweb-dev/chains'
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import ERC20 from '../../../const/abis/ERC20.json'
-import {
-  DEAD_ADDRESS,
-  MARKETPLACE_FEE_SPLIT,
-  MOONDAO_L2_TREASURY,
-  MOONEY_ADDRESSES,
-} from '../../../const/config'
+import { MARKETPLACE_FEE_SPLIT, MOONEY_ADDRESSES } from '../../../const/config'
 import { initSDK } from '../thirdweb'
 
 export function useMarketFeeSplitStats() {
@@ -16,6 +11,7 @@ export function useMarketFeeSplitStats() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
   async function getBalances() {
+    setIsLoading(true)
     const sdk = initSDK(Polygon)
     const mooneyContract = await sdk.getContract(
       MOONEY_ADDRESSES['polygon'],
@@ -40,6 +36,7 @@ export function useMarketFeeSplitStats() {
 
     setSplitMooneyBalance(+ethers.utils.formatEther(splitBalance.toString()))
     setReleasedMooney({ treasury: treasuryReleased, burn: burnReleased })
+    setIsLoading(false)
   }
 
   useEffect(() => {

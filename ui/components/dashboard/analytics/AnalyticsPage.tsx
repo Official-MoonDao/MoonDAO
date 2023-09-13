@@ -1,8 +1,8 @@
 import useTranslation from 'next-translate/useTranslation'
 import React, { useEffect, useState } from 'react'
 import { useAssets } from '../../../lib/dashboard/hooks'
-import { getVMOONEYData } from '../../../lib/subgraph/ve-subgraph'
 import { useMarketFeeSplitStats } from '../../../lib/thirdweb/hooks/useMarketFeeSplitStats'
+import { getVMOONEYData } from '../../../lib/tokens/ve-subgraph'
 import AnalyticsSkeleton from './AnalyticsSkeleton'
 import HoldersList from './HoldersList'
 import HoldersChart from './charts/HoldersChart'
@@ -43,7 +43,11 @@ export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<any>()
   const [lightMode] = useState(false)
   const { tokens } = useAssets()
-  const { balance, released, isLoading } = useMarketFeeSplitStats()
+  const {
+    balance,
+    released,
+    isLoading: isLoadingSplit,
+  } = useMarketFeeSplitStats()
 
   const circulatingSupply = 2618632244 - tokens[0]?.balance
 
@@ -126,9 +130,13 @@ export default function AnalyticsPage() {
       {/* Marketplace Platform Fee Split */}
       <Frame>
         <Label text="Marketplace Platform Fee Split" />
-        <Data text="Current Balance" value={balance} />
-        <Data text="Sent to Treasury" value={released.treasury} />
-        <Data text="Burned" value={released.burn} />
+        {!isLoadingSplit && (
+          <>
+            <Data text="Current Balance" value={balance} />
+            <Data text="Sent to Treasury" value={released.treasury} />
+            <Data text="Burned" value={released.burn} />
+          </>
+        )}
       </Frame>
     </div>
   )
