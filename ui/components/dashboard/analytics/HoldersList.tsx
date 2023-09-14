@@ -27,7 +27,7 @@ function Holders({ currentItems }: any) {
               window.open(`https://etherscan.io/address/${item.address}`)
             }
           >
-            <h4 className="w-[75px] text-blue-600 dark:text-moon-gold">
+            <h4 className="w-1/4 text-blue-600 dark:text-moon-gold">
               {item.id}
             </h4>
             <div className="flex w-full gap-1 divide-x-2 divide-[#ffffff25]">
