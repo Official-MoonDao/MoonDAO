@@ -235,13 +235,13 @@ export default function Lock() {
           {t('lockCardTitle')}
         </h1>
 
-        <p className="mt-6 xl:mt-12 text-2xl leading-8 text-left lg:tracking-wider xl:w-3/4 text-moon-blue dark:text-moon-gold dark:text-opacity-90">
+        <p className="mt-6 xl:mt-12 text-xl lg:text-2xl leading-8 text-center xl:text-left lg:tracking-wider xl:w-3/4 text-moon-blue dark:text-moon-gold dark:text-opacity-80">
           {t('lockTitle')}{' '}
         </p>
 
-        <div className="w-full lg:w-3/4">
+        <div className="w-full xl:w-3/4">
           <a
-            className=" mt-6 xl:mt-8 xl:text-lg lg:w-1/4 block text-center xl:text-left text-md font-GoodTimes font-semibold bg-gradient-to-r from-blue-500 to-blue-700 dark:decoration-detail-dark dark:from-moon-gold dark:to-stronger-dark decoration-detail-light transition-all md:hover:underline duration-150 text-transparent bg-clip-text"
+            className="mt-6 xl:mt-8 xl:text-lg block text-center xl:text-left text-md font-GoodTimes font-semibold bg-gradient-to-r from-blue-500 to-blue-700 dark:decoration-detail-dark dark:from-moon-gold dark:to-stronger-dark decoration-detail-light transition-all md:hover:underline duration-150 text-transparent bg-clip-text"
             href="https://docs.moondao.com/token/#vmooney-characteristics"
             target="_blank"
             rel="noreferrer"
@@ -305,7 +305,7 @@ export default function Lock() {
           )}
         </section>
 
-        <div className="my-5 justify-center xl:mt-8 flex xl:w-3/4">
+        <div className="my-7 lg:my-5 justify-center xl:mt-8 flex xl:w-3/4 xl:justify-normal">
           <L2Toggle />
         </div>
 
