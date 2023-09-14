@@ -6,14 +6,19 @@ Chart.register(ArcElement)
 
 export default function PieChart({ data }: any) {
   data.sort((a: any, b: any) => b.value - a.value)
-  const labels = data.map((item: any) => item.label)
-  const values = data.map((item: any) => item.value * 100)
+  const labels = data.map(
+    (h: any) => h.address.slice(0, 6) + '...' + h.address.slice(-4)
+  )
+  const values = data.map((h: any) => h.totalvMooney)
+
+  const sum = data.map((data) => data.value).reduce((a, b) => a + b)
+  console.log(sum)
 
   const chartData = {
     labels: labels,
     datasets: [
       {
-        label: 'Voting Power %',
+        label: 'Voting Power',
         data: values,
         borderWidth: 1,
         //background Colors from red to light gold, total of 6

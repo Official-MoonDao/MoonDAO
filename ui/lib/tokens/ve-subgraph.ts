@@ -38,7 +38,7 @@ export async function getVMOONEYData() {
   const holders = res.data.holders.map((h: any, i: number, arr: any) => {
     totalHolders++
     const mooney = h.totalLocked / 10 ** 18
-    const vmooney = mooney * ((h.locktime - now) / (4 * 365 * 86400))
+    const vmooney = Math.sqrt(mooney * ((h.locktime - now) / (4 * 365 * 86400)))
     const holder = {
       x: moment.unix(h.initialLock).format('YYYY-MM-DD HH:mm'),
       y: totalHolders,
@@ -55,16 +55,10 @@ export async function getVMOONEYData() {
   const holdersByVMooney = [...holders].sort(
     (a, b) => b.totalvMooney - a.totalvMooney
   )
-  const distribution = holders.map((h: any) => ({
-    id: h.id,
-    label: h.id,
-    value: h.totalvMooney / totalVMooney,
-  }))
   const totalLockedMooney = res.data.supplies[0].supply / 10 ** 18
   return {
     holders,
     holdersByVMooney,
-    distribution,
     totals: {
       vMooney: totalVMooney,
       Mooney: totalLockedMooney,
