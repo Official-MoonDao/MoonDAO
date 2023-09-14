@@ -21,22 +21,17 @@ export const navigation = [
   },
   {
     name: 'Announcements',
-    href: '/dashboard/announcements',
+    href: '/announcements',
     icon: BellIcon,
   },
   {
     name: 'Analytics',
-    href: '/dashboard/analytics',
+    href: '/analytics',
     icon: ChartBarSquareIcon,
   },
   {
-    name: 'Proposals',
-    href: '/dashboard/proposals',
-    icon: FolderIcon,
-  },
-  {
     name: 'Calendar',
-    href: '/dashboard/calendar',
+    href: '/calendar',
     icon: CalendarDaysIcon,
   },
   {

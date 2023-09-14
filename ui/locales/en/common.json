@@ -19,7 +19,7 @@
   "lockCardTitle": "Lock $MOONEY to get voting power",
   "lockTitle": "Voting power enables governance for MoonDAO through Snapshot.",
   "learnMore": "Learn more",
-  "lockDesc": "You will always have the same amount of $MOONEY, regardless of your lock. The amount of voting power decreases over time. To recharge your voting power you can visit this page to increase the time lock or add more $MOONEY to your time lock.",
+  "lockDesc": "You will always have the same amount of $MOONEY, regardless of your lock.",
   "hasLockMoney1": "Your voting power",
   "hasLockMoney2": "Your locked $MOONEY",
   "lockAvailableMoney": "Available to lock: ",
@@ -46,7 +46,7 @@
   "analyticsTitle": "Analytics",
   "analyticsDesc": "Here you can find the latest analytics for Voting Power and the MoonDAO Treasury.",
   "calendarTitle": "Calendar",
-  "calendarDesc": "Here you can find the event calendar for MoonDAO.",
+  "calendarDesc": "Here you can MoonDAO's scheduled discord events.",
   "proposalsTitle": "Proposals",
   "proposalsDesc": "Here you can find the latest proposals at MoonDAO."
 }

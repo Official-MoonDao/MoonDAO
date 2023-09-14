@@ -1,12 +1,12 @@
 import useTranslation from 'next-translate/useTranslation'
 import React, { useCallback, useRef } from 'react'
-import { useAnnouncements } from '../../lib/dashboard/hooks'
-import { errorToast } from '../../lib/utils/errorToast'
-import Announcement from '../../components/dashboard/announcements/Announcement'
-import AnnouncementSkeletons from '../../components/dashboard/announcements/AnnouncementSkeletons'
-import Head from '../../components/layout/Head'
-import Header from '../../components/layout/Header'
-import Line from '../../components/layout/Line'
+import { useAnnouncements } from '../lib/dashboard/hooks'
+import { errorToast } from '../lib/utils/errorToast'
+import Announcement from '../components/dashboard/announcements/Announcement'
+import AnnouncementSkeletons from '../components/dashboard/announcements/AnnouncementSkeletons'
+import Head from '../components/layout/Head'
+import Header from '../components/layout/Header'
+import Line from '../components/layout/Line'
 
 export default function Announcements() {
   const { announcements, isLoading, error, updateAnnouncements } =
@@ -55,7 +55,8 @@ export default function Announcements() {
           <AnnouncementSkeletons />
         ) : (
           <div id="dashboard-announcements">
-            {announcements.length &&
+            {announcements &&
+              announcements.length &&
               announcements.map((e: any, i: number) =>
                 i + 1 === announcements.length ? (
                   <Announcement

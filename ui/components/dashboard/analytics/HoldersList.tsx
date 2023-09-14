@@ -11,8 +11,8 @@ function Box({ text }: any) {
 
 function Holders({ currentItems }: any) {
   return (
-    <div className="relative flex h-[100%] w-[100%] flex-col gap-1 font-Montserrat text-[1.25vw] leading-10 text-slate-800 lg:right-6 lg:w-[140%] lg:text-[1.0vw]">
-      <div className="flex w-full justify-evenly bg-gradient-to-r from-blue-800 to-blue-950 bg-clip-text text-transparent dark:from-yellow-200 dark:to-moon-gold">
+    <div className="relative flex items-center h-full min-w-[300px] lg:min-w-[500px] flex-col gap-1 font-Montserrat text-[1vh] leading-10 text-slate-800 lg:text-[1.0vw]">
+      <div className="flex w-[300px] md:w-full justify-evenly bg-gradient-to-r from-blue-800 to-blue-950 bg-clip-text text-transparent dark:from-yellow-200 dark:to-moon-gold">
         <p>ADDRESS</p>
         <p>LOCKED MOONEY</p>
         <p>VMOONEY</p>
@@ -21,7 +21,7 @@ function Holders({ currentItems }: any) {
       {currentItems &&
         currentItems.map((item: any) => (
           <div
-            className="justify-left component-background flex w-full items-center gap-[10%] rounded-2xl border-2 px-2 hover:scale-[1.05] hover:border-4"
+            className="justify-left component-background flex w-full items-center gap-[10%] rounded-2xl border-2 px-2 hover:scale-x-[1.05] transition-all duration-150"
             key={item.id}
             onClick={() =>
               window.open(`https://etherscan.io/address/${item.address}`)
@@ -67,7 +67,7 @@ function HoldersList({ data, itemsPerPage = 10 }: any) {
   }
 
   return (
-    <div className="flex h-[80%] w-[300px] sm:[330px] md:w-full flex-col items-center justify-center">
+    <div className="flex h-[80%] w-[330px] sm:[330px] md:w-full flex-col items-center justify-center">
       <Holders currentItems={currentItems} />
       <ReactPaginate
         breakLabel=""
@@ -84,7 +84,7 @@ function HoldersList({ data, itemsPerPage = 10 }: any) {
         previousLinkClassName="absolute flex w-[15vw] items-center justify-center rounded-full bg-[skyblue] dark:bg-[orange] lg:h-[2vw] lg:w-[5vw]"
         renderOnZeroPageCount={null}
         containerClassName={
-          'h-[8vh] relative lg:right-6 my-8 flex justify-center space-x-1 lg:space-x-2 items-center text-center w-full select-none'
+          'h-[8vh] relative my-8 flex justify-center space-x-1 lg:space-x-2 items-center text-center w-full select-none'
         }
       />
     </div>

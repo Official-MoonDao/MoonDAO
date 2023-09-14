@@ -9,7 +9,6 @@ import {
   lastDayOfMonth,
   startOfMonth,
   isSameMonth,
-  isToday,
   isSameDay,
   parseISO,
   format,

@@ -21,6 +21,10 @@ const externalLinks = [
     name: 'Newsletter',
     href: 'https://moondao.ck.page/profile',
   },
+  {
+    name: 'Marketplace',
+    href: 'https://market.moondao.com',
+  },
 ]
 
 const ExternalLinks = () => {

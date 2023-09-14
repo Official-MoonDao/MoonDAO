@@ -12,6 +12,7 @@ export default function WebsiteHead({
   return (
     <Head>
       <title key="meta-title">{'MoonDAO | ' + title}</title>
+      <link rel="icon" href="/favicon.ico" key="link-favicon" />
       <meta
         name="viewport"
         content="width=device-width, initial-scale=1"

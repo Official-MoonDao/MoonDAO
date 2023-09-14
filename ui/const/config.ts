@@ -4,6 +4,7 @@ interface DeploymentConfig {
   MOONEYToken: string
   vMOONEYToken: string
   vMooneySweepstakesZeroG: string
+  MarketplaceFeeSplit?: string
 }
 
 type Index = { [key: string]: string }
@@ -37,3 +38,11 @@ export const VMOONEY_ADDRESSES: Index = {
 
 export const VMOONEY_SWEEPSTAKES: string =
   defaultConfigL1.vMooneySweepstakesZeroG
+
+export const MARKETPLACE_FEE_SPLIT: string =
+  defaultConfigL2.MarketplaceFeeSplit || ''
+
+export const MOONDAO_L2_TREASURY: string =
+  '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
+export const DEAD_ADDRESS: string =
+  ' 0x000000000000000000000000000000000000dEaD'
