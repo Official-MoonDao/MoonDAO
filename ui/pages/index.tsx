@@ -7,6 +7,8 @@ import {
   WalletIcon,
   ArrowsRightLeftIcon,
   BuildingStorefrontIcon,
+  UserGroupIcon,
+  PlusCircleIcon
 } from '@heroicons/react/24/outline'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -64,6 +66,20 @@ export default function Home() {
       description: 'Buy and sell NFTs on the MoonDAO marketplace.',
       href: 'https://market.moondao.com',
       icon: BuildingStorefrontIcon,
+      externalLink: true,
+    },
+    {
+      name: 'Discord',
+      description: 'Join our community. Governance forums and social and project communications.',
+      href: 'https://discord.gg/moondao',
+      icon: UserGroupIcon,
+      externalLink: true,
+    },
+    {
+      name: 'X / Twitter',
+      description: 'Stay up to date on MoonDAO by following our main social channel.',
+      href: 'https://twitter.com/OfficialMoonDAO',
+      icon: PlusCircleIcon,
       externalLink: true,
     },
   ]
