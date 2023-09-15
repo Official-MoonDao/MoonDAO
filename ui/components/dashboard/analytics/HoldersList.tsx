@@ -4,7 +4,7 @@ import ReactPaginate from 'react-paginate'
 function Box({ text }: any) {
   return (
     <div className="justify-left flex w-1/3 items-center">
-      <h4 className="text-[slategrey]">{text}</h4>
+      <h4 className="text-[slategrey] px-1">{text}</h4>
     </div>
   )
 }
@@ -21,21 +21,19 @@ function Holders({ currentItems }: any) {
       {currentItems &&
         currentItems.map((item: any) => (
           <div
-            className="justify-left component-background flex w-full items-center gap-[10%] rounded-2xl border-2 px-2 hover:scale-x-[1.05] transition-all duration-150"
+            className="justify-left component-background flex w-full items-center gap-[0%] rounded-2xl border-2 px-2 hover:scale-x-[1.05] transition-all duration-150 divide-x-2"
             key={item.id}
             onClick={() =>
               window.open(`https://etherscan.io/address/${item.address}`)
             }
           >
-            <h4 className="px-0.5text-[1.25vw] text-blue-600 dark:text-moon-gold">
+            <h4 className="w-1/4 text-blue-600 dark:text-moon-gold">
               {item.id}
             </h4>
-            <div className="flex w-full gap-1">
+            <div className="flex w-full gap-1 divide-x-2 divide-[#ffffff25]">
+              <Box text={Number(item.totalLocked).toLocaleString()} />
               <Box
-                text={Math.round(item.totalLocked).toLocaleString('en-US')}
-              />
-              <Box
-                text={Math.round(item.totalvMooney).toLocaleString('en-US')}
+                text={Number(item.totalvMooney).toFixed(2).toLocaleString()}
               />
               <Box text={item.locktime} />
             </div>

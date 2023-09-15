@@ -68,7 +68,7 @@ export default function AnalyticsPage() {
       {/*Stats frame*/}
       <Frame>
         <div className="p-4">
-          <Label text="Voting Power Key Figures" />
+          <Label text="Voting Power Key Figures (L1)" />
           <div className="flex flex-col justify-around lg:flex-row">
             <Data
               text={'Voting Power Balance'}
@@ -106,11 +106,11 @@ export default function AnalyticsPage() {
 
         <div className="w-full mt-2 flex flex-col items-center justify-center lg:mt-3">
           <div className="">
-            <Label text="Voting Power %" />
+            <Label text="Voting Power" />
           </div>
         </div>
         <div>
-          <Pie data={analyticsData.distribution} lightMode={lightMode} />
+          <Pie data={analyticsData.holdersByVMooney} lightMode={lightMode} />
         </div>
         <div
           id="dashboard-analytics-holders-list"
