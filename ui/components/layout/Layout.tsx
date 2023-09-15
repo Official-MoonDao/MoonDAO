@@ -69,14 +69,14 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       {/* Static sidebar for desktop */}
       <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
         {/* Sidebar component*/}
-        <div className="flex flex-grow flex-col overflow-y-auto bg-gradient-to-b from-zinc-50 via-blue-50 to-blue-100 pt-5 dark:from-slate-950 dark:via-gray-950 dark:to-slate-900">
+        <div className="flex flex-grow flex-col overflow-y-auto bg-gradient-to-b from-zinc-50 via-blue-50 to-blue-100 pt-5 dark:from-slate-700 dark:via-gray-800 dark:to-slate-900">
           <a href="https://moondao.com">
             <div className="flex flex-shrink-0 items-center px-4">
               {lightMode ? <LogoBlack /> : <LogoWhite />}
             </div>
           </a>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">
-            <nav className="flex-1 space-y-1 px-4">
+            <nav className="flex-1 open space-y-1 px-4">
               {navigation.map((item, i) => (
                 <NavigationLink item={item} key={i} />
               ))}
