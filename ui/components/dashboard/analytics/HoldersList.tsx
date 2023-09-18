@@ -3,7 +3,7 @@ import ReactPaginate from 'react-paginate'
 
 function Box({ text }: any) {
   return (
-    <div className="justify-left flex w-1/3 items-center">
+    <div className="justify-left flex w-1/2 items-center">
       <h4 className="text-[slategrey] px-1">{text}</h4>
     </div>
   )
@@ -12,11 +12,12 @@ function Box({ text }: any) {
 function Holders({ currentItems }: any) {
   return (
     <div className="relative flex items-center h-full min-w-[300px] lg:min-w-[500px] flex-col gap-1 font-Montserrat text-[1vh] leading-10 text-slate-800 lg:text-[1.0vw]">
-      <div className="flex w-[300px] md:w-full justify-evenly bg-gradient-to-r from-blue-800 to-blue-950 bg-clip-text text-transparent dark:from-yellow-200 dark:to-moon-gold">
-        <p>ADDRESS</p>
-        <p>LOCKED MOONEY</p>
-        <p>VMOONEY</p>
-        <p>UNLOCK DATE</p>
+      <div className="flex w-[300px] md:w-full justify-evenly bg-gradient-to-r from-blue-800 to-blue-950 bg-clip-text text-transparent gap-1 dark:from-yellow-200 dark:to-moon-gold">
+        <div className="flex justify-start w-full">
+          <p className="w-1/4">ADDRESS</p>
+          <p className="w-2/5">LOCKED MOONEY</p>
+          <p className="w-2/5">VOTING POWER</p>
+        </div>
       </div>
       {currentItems &&
         currentItems.map((item: any) => (
@@ -27,7 +28,7 @@ function Holders({ currentItems }: any) {
               window.open(`https://etherscan.io/address/${item.address}`)
             }
           >
-            <h4 className="w-1/4 text-blue-600 dark:text-moon-gold">
+            <h4 className="w-1/3 text-blue-600 dark:text-moon-gold">
               {item.id}
             </h4>
             <div className="flex w-full gap-1 divide-x-2 divide-[#ffffff25]">
@@ -35,7 +36,6 @@ function Holders({ currentItems }: any) {
               <Box
                 text={Number(item.totalvMooney).toFixed(2).toLocaleString()}
               />
-              <Box text={item.locktime} />
             </div>
           </div>
         ))}
