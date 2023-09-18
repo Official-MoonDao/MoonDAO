@@ -67,8 +67,8 @@ export default function AnalyticsPage() {
     >
       {/*Stats frame*/}
       <Frame>
-        <div className="p-4">
-          <Label text="Voting Power Key Figures (L1)" />
+        <div className="flex flex-col gap-4 w-3/4">
+          <Label text="Voting Power Key Figures" />
           <div className="flex flex-col justify-around lg:flex-row">
             <Data
               text={'Voting Power Balance'}
@@ -95,10 +95,6 @@ export default function AnalyticsPage() {
               }
             />
             <Data text={'Holders'} value={analyticsData.holders.length} />
-            <Data
-              text={'Average Staking Period'}
-              value={analyticsData.totals.AvgStakingPeriod}
-            />
           </div>
         </div>
 
@@ -120,12 +116,12 @@ export default function AnalyticsPage() {
         </div>
 
         {/*Holders frame*/}
-
-        <div className="w-full h-full flex flex-col px-4">
+        {/* DISABLED :  avg l1 and l2 locktime ?*/}
+        {/* <div className="w-full h-full flex flex-col px-4">
           <Label text="Stakers Over Time" />
 
           <HoldersChart data={analyticsData.holders} lightMode={lightMode} />
-        </div>
+        </div> */}
       </Frame>
       {/* Marketplace Platform Fee Split */}
       <Frame>
