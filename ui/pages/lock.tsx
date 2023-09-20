@@ -12,6 +12,7 @@ import {
 } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
+import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import React from 'react'
 import { toast } from 'react-hot-toast'
@@ -236,7 +237,15 @@ export default function Lock() {
         </h1>
 
         <p className="mt-6 xl:mt-12 text-xl lg:text-2xl leading-8 text-center xl:text-left lg:tracking-wider xl:w-3/4 text-moon-blue dark:text-moon-gold dark:text-opacity-80">
-          {t('lockTitle')}{' '}
+          {'Lock '}
+          <Link
+            className="text-black dark:text-white"
+            href="https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet"
+          >
+            Mooney
+          </Link>
+          {' for Voting Power. '}
+          {t('lockTitle')}
         </p>
 
         <div className="w-full xl:w-3/4">

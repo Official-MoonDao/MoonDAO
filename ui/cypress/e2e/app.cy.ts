@@ -12,7 +12,6 @@ describe('Main E2E Testing', () => {
       cy.visit('/')
       const externalLinks = [
         'https://moondao.com',
-        'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
         'https://snapshot.org/#/tomoondao.eth',
         'https://moondao.com/docs/introduction',
         'https://moondao.ck.page/profile',
@@ -43,6 +42,8 @@ describe('Main E2E Testing', () => {
         '/analytics',
         '/calendar',
         'https://market.moondao.com',
+        'https://discord.gg/moondao',
+        'https://twitter.com/OfficialMoonDAO',
       ]
 
       Array.from({
