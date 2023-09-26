@@ -44,8 +44,8 @@ export const navigation = [
     name: 'Missions',
     icon: RocketLaunchIcon,
     children: [
-      { name: 'Zero-g', href: '/zero-g' },
-      { name: 'Lifeship', href: '/lifeship' },
+      { name: 'Zero Gravity', href: '/zero-g' },
+      { name: 'Moon Mission', href: '/lifeship' },
     ],
   },
 ]
