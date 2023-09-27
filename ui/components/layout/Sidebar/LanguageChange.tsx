@@ -15,7 +15,9 @@ const LanguageChange = () => {
     router.push(router.pathname, router.pathname, { locale: lang })
   }
 
-  {/*Currently hidden, refer to the comments to enable them*/}
+  {
+    /*Currently hidden, refer to the comments to enable them*/
+  }
 
   return (
     <>
@@ -23,7 +25,7 @@ const LanguageChange = () => {
       <div className="hidden">
         <button className="py-2 bg-blue-400 dark:bg-moon-gold rounded-lg text-white px-2 hover:scale-105 transition-all duration-150 shadow shadow-detail-light dark:shadow-detail-dark">
           {currentLang === 'en' ? (
-            <Link href="/" locale="zh">
+            <Link href="/" locale="zh" passHref>
               <div className="flex gap-2" onClick={(e) => changeLang(e, 'zh')}>
                 <GlobeAltIcon className="h-6 w-6 text-gray-100 dark:text-stronger-dark" />{' '}
                 <span className="opacity-70 dark:opacity-80">CN</span>
@@ -34,7 +36,7 @@ const LanguageChange = () => {
               </div>
             </Link>
           ) : (
-            <Link href="/" locale="en">
+            <Link href="/" locale="en" passHref>
               <div className="flex gap-2" onClick={(e) => changeLang(e, 'en')}>
                 <GlobeAltIcon className="h-6 w-6 text-gray-100 dark:text-stronger-dark" />{' '}
                 <span className="text-title-light dark:text-orange-600 font-semibold">
@@ -55,7 +57,7 @@ const LanguageChange = () => {
         </p>
         <li className="mt-2 py-2 bg-moon-blue dark:bg-moon-gold rounded-lg text-white pl-3 hover:scale-105 transition-all duration-150 shadow shadow-detail-light dark:shadow-detail-dark">
           {currentLang === 'en' ? (
-            <Link href="/" locale="zh" legacyBehavior>
+            <Link href="/" locale="zh" passHref>
               <div
                 className="flex gap-2 lg:gap-4"
                 onClick={(e) => changeLang(e, 'zh')}
@@ -65,7 +67,7 @@ const LanguageChange = () => {
               </div>
             </Link>
           ) : (
-            <Link href="/" locale="en" legacyBehavior>
+            <Link href="/" locale="en" passHref>
               <div
                 className="flex gap-2 lg:gap-4"
                 onClick={(e) => changeLang(e, 'en')}

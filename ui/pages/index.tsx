@@ -118,6 +118,7 @@ export default function Home() {
                   key={page.name}
                   target={page.externalLink ? '_blank' : ''}
                   className="flex flex-col items-center text-center lg:text-left lg:justify-start lg:items-start border border-detail-light dark:border-detail-dark pl-3 pr-2 lg:pl-4 lg:pr-3 rounded-2xl py-3 bg-gradient-to-b hover:from-blue-500 hover:to-blue-800 dark:hover:border-orange-500 dark:hover:from-stronger-dark dark:hover:to-orange-600 group transition-all duration-150 shadow shadow-detail-light dark:shadow-detail-dark dark:hover:shadow-orange-300 hover:scale-105"
+                  passHref
                 >
                   <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-title-light dark:text-title-dark lg:tracking-wider group-hover:text-blue-50 dark:group-hover:text-white">
                     <page.icon
