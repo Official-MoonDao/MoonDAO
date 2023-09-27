@@ -10,10 +10,6 @@ export default function PieChart({ data }: any) {
     (h: any) => h.address.slice(0, 6) + '...' + h.address.slice(-4)
   )
   const values = data.map((h: any) => h.totalvMooney)
-
-  const sum = data.map((data) => data.value).reduce((a, b) => a + b)
-  console.log(sum)
-
   const chartData = {
     labels: labels,
     datasets: [
@@ -29,9 +25,15 @@ export default function PieChart({ data }: any) {
     ],
   }
 
+  const options = {
+    tooltips: {
+      enabled: true,
+    },
+  }
+
   return (
     <div id="dashboard-analytics-pie" className="w-1/2 p-8 min-w-[300px]">
-      <Pie data={chartData} />
+      <Pie data={chartData} options={options} />
     </div>
   )
 }

@@ -10,7 +10,7 @@ import Pie from './charts/PieChart'
 
 function Frame(props: any) {
   return (
-    <div className="component-background mt-8 flex w-[336px] sm:w-[400px] py-4 lg:w-full lg:max-w-[1380px] flex-col justify-center items-center rounded-2xl border-[0.5px] border-blue-500 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold ">
+    <div className="component-background mt-8 flex w-[336px] sm:w-[400px] py-4 lg:w-[550px] lg:max-w-[1380px] flex-col justify-center items-center rounded-2xl border-[0.5px] border-blue-500 shadow-md shadow-blue-500 dark:border-moon-gold dark:shadow-moon-gold ">
       {props.children}
     </div>
   )
@@ -94,13 +94,13 @@ export default function AnalyticsPage() {
                 ).toFixed(2) + '%'
               }
             />
-            <Data text={'Holders'} value={analyticsData.holders.length} />
+            {/* <Data text={'Holders'} value={analyticsData.holders.length} /> */}
           </div>
         </div>
 
         {/*V-Mooney distribution frame*/}
 
-        <div className="w-full mt-2 flex flex-col items-center justify-center lg:mt-3">
+        {/* <div className="w-full mt-2 flex flex-col items-center justify-center lg:mt-3">
           <div className="">
             <Label text="Voting Power" />
           </div>
@@ -113,9 +113,10 @@ export default function AnalyticsPage() {
           className="flex items-center justify-center"
         >
           <HoldersList itemsPerPage={5} data={analyticsData.holdersByVMooney} />
-        </div>
+        </div> */}
 
         {/*Holders frame*/}
+
         {/* DISABLED :  avg l1 and l2 locktime ?*/}
         {/* <div className="w-full h-full flex flex-col px-4">
           <Label text="Stakers Over Time" />
@@ -125,13 +126,13 @@ export default function AnalyticsPage() {
       </Frame>
       {/* Marketplace Platform Fee Split */}
       <Frame>
-        <Label text="Marketplace Platform Fee Split" />
         {!isLoadingSplit && (
-          <>
+          <div className="w-3/4 flex flex-col items-center">
+            <Label text={'Marketplace Platform Fee Split'} />
             <Data text="Current Balance" value={balance} />
             <Data text="Sent to Treasury" value={released.treasury} />
             <Data text="Burned" value={released.burn} />
-          </>
+          </div>
         )}
       </Frame>
     </div>
