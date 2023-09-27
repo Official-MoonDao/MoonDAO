@@ -42,11 +42,11 @@
   "safetyNote": "For safety reasons, we recommend you limit your token allowance to the amount you plan to deposit in the near future.",
 
   "announcementsTitle": "Announcements",
-  "announcementsDesc": "Here you can find the latest announcements from the MoonDAO team.",
+  "announcementsDesc": "View the latest announcements from the MoonDAO team.",
   "analyticsTitle": "Analytics",
-  "analyticsDesc": "Here you can find the latest analytics for Voting Power and the MoonDAO Treasury.",
+  "analyticsDesc": "View the latest analytics for Voting Power and the MoonDAO Treasury.",
   "calendarTitle": "Calendar",
-  "calendarDesc": "Here you can MoonDAO's scheduled discord events.",
+  "calendarDesc": "View MoonDAO's scheduled discord events.",
   "proposalsTitle": "Proposals",
-  "proposalsDesc": "Here you can find the latest proposals at MoonDAO."
+  "proposalsDesc": "View the latest proposals at MoonDAO."
 }
