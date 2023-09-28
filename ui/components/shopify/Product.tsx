@@ -15,20 +15,20 @@ export default function Product({
     setPreview(0)
   }, [product])
 
+  //This return is the link to the store.
   if (linkToStore)
     return (
       <div className="prod backdropBlur flex justify-center items-center">
         <div className="flex flex-col m-2">
-          <div className="flex gap-4 w-full my-2">
-            <h2 className="font-GoodTimes">{label}</h2>
-            <Link href="/lifeship/detail">
-              <p
-                className={`block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
-              >
-                NFT Submission Details →
-              </p>
-            </Link>
+          <div className="flex flex-col items-center justify-center my-3 text-center">
+            <h3 className='text-lg md:text-xl xl:text-2xl font-GoodTimes text-amber-500 dark:text-yellow-200'>Lifeship NFT</h3>
+            <p className='lg:w-3/4 mt-2 md:mt-4 text-sm font-mono leading-relaxed lg:text-base xl:text-lg text-light-text dark:text-dark-text opacity-80'>
+              MoonDAO is partnering with lifeship to send NFTs to space! Please
+              upload a file and complete the checkout. You will be emailed
+              instrucitons to claim your NFT.
+            </p>
           </div>
+
           <div className="flex flex-col justify-center items-center">
             <Image
               id="product-image"
@@ -38,9 +38,9 @@ export default function Product({
               height={450}
               alt={`product-${preview}`}
             />
-            <div className="flex justify-center items-center gap-4 w-1/2 my-2">
+            <div className="flex justify-center items-center gap-4 my-2">
               <button
-                className={`rounded-full bg-[#1c1c1c] w-8 h-8 text-white text-2xl backdropBlur hover:text-n3blue  duration-[0.6s] ease-in-ease-out`}
+                className={`rounded-full bg-slate-800 w-8 h-8 text-white text-xl backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out`}
                 onClick={() =>
                   preview > 0
                     ? setPreview(preview - 1)
@@ -56,7 +56,7 @@ export default function Product({
                       key={'pagination' + i}
                       className={`${
                         preview === i && 'text-n3blue'
-                      } text-3xl hover:scale-[1.15]`}
+                      } text-4xl hover:scale-110 px-2`}
                       onClick={() => setPreview(i)}
                     >
                       .
@@ -64,7 +64,7 @@ export default function Product({
                   ))}
               </div>
               <button
-                className={`rounded-full bg-[#1c1c1c] w-8 h-8 text-white text-2xl backdropBlur hover:text-n3blue  duration-[0.6s] ease-in-ease-out`}
+                className={`rounded-full bg-slate-800 w-8 h-8 text-white text-xl backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out`}
                 onClick={() => {
                   if (!product?.images) return
                   preview < product.images.length - 1
@@ -87,15 +87,18 @@ export default function Product({
       </div>
     )
 
+  //This return is the products.
   return (
-    <div className="w-full md:max-w-1/3 bg-[#1c1c1c80] rounded-lg backdropBlur flex flex-col justify-center items-center p-4 pb-[2.5%]">
-      <div className="flex flex-col">
-        <h2 className="w-full mt-4 font-GoodTimes mx-4">{label}</h2>
-        <div className="p-2">
+    <div className="w-full lg:max-w-1/3 bg-gray-300 dark:bg-[#1c1c1c80] rounded-lg backdropBlur flex flex-col justify-center items-center p-3 lg:p-1 xl:p-3">
+      <div className="flex flex-col items-center lg:gap-5 xl:gap-2">
+        <h2 className="w-full mt-4 font-GoodTimes mx-4 text-center xl:text-left">
+          {label}
+        </h2>
+        <div className="p-2 ">
           {product?.images[preview] && (
             <Image
               id="product-image"
-              className={`rounded-2xl backdropBlur`}
+              className={`rounded-2xl backdropBlur bg-gray-100 dark:bg-slate-900`}
               src={product.images[preview]?.src}
               width={450}
               height={400}
@@ -103,10 +106,10 @@ export default function Product({
             />
           )}
         </div>
-
+        {/*Product pagination*/}
         <div className="w-full flex justify-center items-center">
           <button
-            className={`rounded-full bg-[#1c1c1c] w-8 h-8 text-white text-2xl backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out`}
+            className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 xl:w-8 xl:h-8 text-white text-xl backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out`}
             onClick={() =>
               preview > 0
                 ? setPreview(preview - 1)
@@ -115,14 +118,14 @@ export default function Product({
           >
             {'<'}
           </button>
-          <div className="flex justify-center items-center relative bottom-1.5 ">
+          <div className="flex items-center relative bottom-2">
             {product?.images[0] &&
               product.images.map((image: any, i: number) => (
                 <button
                   key={'pagination' + i}
                   className={`${
                     preview === i && 'text-n3blue'
-                  } text-[150%] hover:scale-[1.25]`}
+                  } text-3xl hover:scale-110 px-1 xl:px-2`}
                   onClick={() => setPreview(i)}
                 >
                   .
@@ -130,7 +133,7 @@ export default function Product({
               ))}
           </div>
           <button
-            className={`rounded-full bg-[#1c1c1c] w-8 h-8 text-white text-2xl backdropBlur hover:text-n3blue  duration-[0.6s] ease-in-ease-out`}
+            className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 xl:w-8 xl:h-8 text-white text-xl backdropBlur hover:text-n3blue  duration-[0.6s] ease-in-ease-out`}
             onClick={() => {
               if (!product?.images) return
               preview < product.images.length - 1
@@ -142,27 +145,31 @@ export default function Product({
           </button>
         </div>
       </div>
-      <div className="flex flex-col justify-center items-center max-w-3/4">
+      {/*Plus, Minus, quantity, total*/}
+      <div className="mt-2 flex flex-col justify-center items-center max-w-3/4">
         <div className="flex justify-center items-center w-full">
           <button
-            className={`absolute left-[4%] border-style h-10 w-10 md:h-[3vw] md:w-[3vw] md:max-w-[75px] md:max-h-[75px] text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out rounded-full ${
-              quantity <= 0 && 'disable opacity-[0.5]'
+            className={`absolute left-[3%]  h-9 w-9 lg:h-6 lg:w-6 xl:h-8 xl:w-8 dark:text-gray-100 text-gray-900  text-xl font-medium bg-white hover:bg-n3blue hover:text-white dark:bg-black dark:hover:bg-moon-gold dark:hover:text-black duration-[0.6s] ease-in-ease-out rounded-full border-gray-300 border ${
+              quantity <= 0 && 'disable opacity-[0.5] pointer-events-none'
             }`}
             onClick={() => setQuantity(quantity > 0 ? quantity - 1 : 0)}
           >
-            -
+            <span className="relative bottom-[2px] lg:bottom-1 xl:bottom-[2px]">
+              -
+            </span>
           </button>
-          <div className="flex flex-col items-left justify-center">
+          {/*Quantity and total */}
+          <div className="flex flex-col justify-center items-center gap-1">
             <div className="w-full">
-              <p className="text-[100%] text-n3blue">
+              <p className="text-title-light dark:text-title-dark lg:text-sm xl:text-base">
                 {'Quantity:'}
-                <span className="text-white">{quantity}</span>
+                <span className="ml-2 text-moon-gold">{quantity}</span>
               </p>
             </div>
             <div className="w-full">
-              <p className="text-[85%] text-n3blue">
+              <p className=" text-title-light dark:text-title-dark lg:text-sm xl:text-base">
                 {'Total:'}
-                <span className="text-white ">{`$${
+                <span className="ml-2 text-moon-gold ">{`$${
                   product?.variants
                     ? (product.variants[0].price.amount * quantity).toFixed(2)
                     : 0
@@ -171,10 +178,12 @@ export default function Product({
             </div>
           </div>
           <button
-            className="absolute right-[4%] border-style h-10 w-10 md:h-[3vw] md:w-[3vw] md:max-w-[75px] md:max-h-[75px] text-n3blue normal-case font-medium bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out rounded-full"
+            className="absolute right-[3%] h-9 w-9 lg:h-6 lg:w-6 xl:h-8 xl:w-8 dark:text-gray-100 text-gray-900 text-xl font-medium bg-white hover:bg-n3blue hover:text-white dark:bg-black dark:hover:bg-moon-gold dark:hover:text-black duration-[0.6s] ease-in-ease-out rounded-full border-gray-300 border"
             onClick={() => setQuantity(quantity + 1)}
           >
-            +
+            <span className="relative bottom-[2px] lg:bottom-1 xl:bottom-[2px]">
+              +
+            </span>
           </button>
         </div>
       </div>

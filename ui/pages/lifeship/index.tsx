@@ -92,7 +92,7 @@ export default function Lifeship({ products = [] }: any) {
 
             {products[0] && (
               <div className="flex flex-col gap-[5%] w-full items-center justify-center mt-3">
-                <div className="w-full lg:min-h-[35vh] h-full flex flex-col lg:flex-row gap-4 lg:gap-[2.5%]">
+                <div className="w-full lg:min-h-[35vh] h-full flex flex-col lg:flex-row gap-4 lg:gap-[1%] xl:gap-4">
                   <Product
                     product={products[0]}
                     label="DNA kit"
