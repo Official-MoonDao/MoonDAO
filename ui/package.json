@@ -12,15 +12,14 @@
     "cy:run-ct": "cypress run --component"
   },
   "dependencies": {
-    "@ensdomains/ensjs": "^3.0.0-alpha.64",
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
     "@react-three/drei": "^9.86.0",
     "@react-three/fiber": "^8.14.3",
     "@shopify/shopify-api": "^6.2.0",
-    "@thirdweb-dev/chains": "^0.1.39",
-    "@thirdweb-dev/react": "^3.14.31",
-    "@thirdweb-dev/sdk": "^3.10.50",
+    "@thirdweb-dev/chains": "^0.1.53",
+    "@thirdweb-dev/react": "3.14.31",
+    "@thirdweb-dev/sdk": "3.10.50",
     "axios": "^1.4.0",
     "chart.js": "^4.4.0",
     "chartjs-adapter-moment": "^1.0.1",
