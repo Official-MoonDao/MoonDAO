@@ -2,20 +2,16 @@ import { useAddress, useContract } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { getUserDiscordData } from '../../lib/utils/discord'
 import Head from '../../components/layout/Head'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
-import ZeroGRaffle from '../../components/zero-g/ZeroGRaffle'
 import VotingEscrowABI from '../../const/abis/VotingEscrow.json'
-import { VMOONEY_ADDRESSES, VMOONEY_SWEEPSTAKES } from '../../const/config'
+import { VMOONEY_ADDRESSES } from '../../const/config'
 
 export default function ZeroG({ userDiscordData }: any) {
-  const router = useRouter()
   const address = useAddress()
-
-  const { contract: sweepstakesContract }: any =
-    useContract(VMOONEY_SWEEPSTAKES)
 
   const { contract: L1vMooneyContract }: any = useContract(
     VMOONEY_ADDRESSES['ethereum'],
@@ -33,15 +29,7 @@ export default function ZeroG({ userDiscordData }: any) {
   const { data: L2vMooneyLock, isLoading: L2vMooneyLockLoading } =
     useVMOONEYLock(L2vMooneyContract, address)
 
-  const [validLock, setValidLock] = useState<boolean>()
-
-  const sweepstakesSupply = 19
-
-  useEffect(() => {
-    if (L1vMooneyLock && L2vMooneyLock) {
-      setValidLock(L1vMooneyLock[0] != 0 || L2vMooneyLock[0] != 0)
-    }
-  }, [L1vMooneyLock, L2vMooneyLock, address])
+  const validLock = useValidVP(address)
 
   return (
     <div className="animate-fadeIn">
@@ -91,14 +79,6 @@ export default function ZeroG({ userDiscordData }: any) {
 
         <section className="w-full flex flex-col items-center gap-5 xl:gap-8">
           <PurchasePortal validLock={validLock} />
-          <ZeroGRaffle
-            sweepstakesContract={sweepstakesContract}
-            userDiscordData={userDiscordData}
-            router={router}
-            validLock={validLock}
-            address={address}
-            supply={sweepstakesSupply}
-          />
         </section>
       </main>
     </div>
