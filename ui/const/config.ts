@@ -1,9 +1,10 @@
-const zeroAddress = '0x0000000000000000000000000000000000000000'
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 interface DeploymentConfig {
   MOONEYToken: string
   vMOONEYToken: string
   vMooneySweepstakesZeroG: string
+  Marketplace?: string
   MarketplaceFeeSplit?: string
 }
 
@@ -29,6 +30,8 @@ export const MOONEY_ADDRESSES: Index = {
   mumbai: devConfigL2.MOONEYToken,
 }
 
+export const MOONEY_DECIMALS = 10 ** 18
+
 export const VMOONEY_ADDRESSES: Index = {
   ethereum: defaultConfigL1.vMOONEYToken,
   polygon: defaultConfigL2.vMOONEYToken,
@@ -41,6 +44,11 @@ export const VMOONEY_SWEEPSTAKES: string =
 
 export const MARKETPLACE_FEE_SPLIT: string =
   defaultConfigL2.MarketplaceFeeSplit || ''
+
+export const MARKETPLACE_ADDRESS: string =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? defaultConfigL2.Marketplace || ''
+    : devConfigL2.Marketplace || ''
 
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'

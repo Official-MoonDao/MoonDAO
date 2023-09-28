@@ -104,7 +104,9 @@
     "env.d.ts",
     "r3f/hooks",
     "lib/shopify/lifeship-shopify.ts",
-    "cypress/tsconfig.json"
+    "cypress/tsconfig.json",
+    "components/marketplace/r3f/Profile/BannerScene.jsx",
+    "components/marketplace/r3f/Profile/BannerScene.jsx"
   ],
   "exclude": ["node_modules"]
 }
