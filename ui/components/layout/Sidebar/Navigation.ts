@@ -25,11 +25,11 @@ export const navigation = [
     href: '/lock',
     icon: LockClosedIcon,
   },
-  {
-    name: 'Announcements',
-    href: '/announcements',
-    icon: BellIcon,
-  },
+  // {
+  //   name: 'Announcements',
+  //   href: '/announcements',
+  //   icon: BellIcon,
+  // },
   {
     name: 'Analytics',
     href: '/analytics',

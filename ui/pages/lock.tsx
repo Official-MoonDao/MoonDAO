@@ -230,34 +230,7 @@ export default function Lock() {
     <main className="animate-fadeIn">
       <Head title="Voting Power" />
       <div className="mt-3 px-5 lg:px-10 xl:px-10 py-12 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
-        <h1
-          className={`font-GoodTimes tracking-wide leading-relaxed text-center xl:text-left xl:w-3/4 xl:leading-relaxed text-2xl xl:text-4xl font-semibold mb-2 text-title-light dark:text-title-dark`}
-        >
-          {t('lockCardTitle')}
-        </h1>
 
-        <p className="mt-6 xl:mt-12 text-xl lg:text-2xl leading-8 text-center xl:text-left lg:tracking-wider xl:w-3/4 text-moon-blue dark:text-moon-gold dark:text-opacity-80">
-          {'Lock '}
-          <Link
-            className="text-black dark:text-white"
-            href="https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet"
-          >
-            Mooney
-          </Link>
-          {' for Voting Power. '}
-          {t('lockTitle')}
-        </p>
-
-        <div className="w-full xl:w-3/4">
-          <a
-            className="mt-6 xl:mt-8 xl:text-lg block text-center xl:text-left text-md font-GoodTimes font-semibold bg-gradient-to-r from-blue-500 to-blue-700 dark:decoration-detail-dark dark:from-moon-gold dark:to-stronger-dark decoration-detail-light transition-all md:hover:underline duration-150 text-transparent bg-clip-text"
-            href="https://docs.moondao.com/token/#vmooney-characteristics"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t('learnMore')}
-          </a>
-        </div>
 
         <section className="mt-4 xl:mt-6 xl:w-3/4">
           {/*Lock Data*/}
@@ -316,11 +289,6 @@ export default function Lock() {
 
         <div className="my-7 lg:my-5 justify-center xl:mt-8 flex xl:w-3/4 xl:justify-normal">
           <L2Toggle />
-        </div>
-
-        {/*Separating line*/}
-        <div className="my-8 xl:mt-5 w-full flex justify-center">
-          <div className="flex justify-center h-[2px] bg-gradient-to-r from-detail-light to-moon-blue dark:from-detail-dark dark:to-moon-gold lg:mt-7 lg:h-[3px] w-5/6"></div>
         </div>
 
         {/*Locking Section*/}

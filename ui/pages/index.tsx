@@ -19,23 +19,23 @@ export default function Home() {
 
   const pages = [
     {
-      name: 'Buy Mooney',
-      description: 'Lock MOONEY to get voting power within MoonDAO.',
+      name: 'Buy $MOONEY',
+      description: 'Acquire our governance token and join the community.',
       href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
       icon: WalletIcon,
       externalLink: true,
     },
     {
-      name: 'Get voting power',
-      description: 'Lock MOONEY to get voting power within MoonDAO.',
+      name: 'Get Voting Power',
+      description: 'Lock $SMOONEY to get voting power within MoonDAO.',
       href: '/lock',
       icon: LockClosedIcon,
       externalLink: false,
     },
     {
-      name: 'Bridge Mooney to L2',
+      name: 'Bridge $MOONEY to L2',
       description:
-        'Bridge your MOONEY to polygon using the native bridge for reduced gas fees.',
+        'Bridge your $MOONEY to polygon using the native bridge for reduced gas fees.',
       href: 'https://wallet.polygon.technology/',
       icon: ArrowsRightLeftIcon,
       externalLink: true,
@@ -91,17 +91,9 @@ export default function Home() {
       <div className="component-background py-12 lg:py-20 mt-3 w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark ">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-base font-semibold leading-7 text-moon-blue dark:text-moon-gold">
-              Our base of operations
-            </h2>
             <h1 className="mt-2 text-3xl font-GoodTimes font-bold tracking-wide leading-relaxed text-title-light dark:text-title-dark sm:text-4xl xl:text-5xl">
               The <br className="md:hidden" /> MoonDAO app
             </h1>
-            <p className="mt-6 text-lg leading-8 text-light-text dark:text-dark-text dark:text-opacity-80">
-              Here you can perform on-chain operations related to the MoonDAO
-              community and get updated about the latest announcements and
-              events.
-            </p>
           </div>
           <div
             id="home-card"
