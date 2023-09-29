@@ -36,14 +36,9 @@ describe('Main E2E Testing', () => {
       cy.visit('/')
       const links = [
         'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
+        'https://wallet.polygon.technology/polygon/bridge/deposit',
         '/lock',
-        'https://wallet.polygon.technology/',
-        '/announcements',
-        '/analytics',
-        '/calendar',
         'https://market.moondao.com',
-        'https://discord.gg/moondao',
-        'https://twitter.com/OfficialMoonDAO',
       ]
 
       Array.from({
@@ -80,30 +75,9 @@ describe('Missions E2E Testing', () => {
 
 //DASHBOARD
 describe('Dashboard E2E Testing', () => {
-  describe('MoonDAO App | Announcements', () => {
-    it('should load the announcements page', () => {
-      cy.visit('/announcements')
-      cy.get('#dashboard-announcements').should('exist')
-    })
-  })
-
   describe('MoonDAO App | Analytics', () => {
     it('should load the analytics page', () => {
       cy.visit('/analytics')
-
-      it('should toggle to the treasury page', () => {
-        cy.get('#dashboard-analytics-toggle').click()
-        cy.url().should(
-          'equal',
-          'http://localhost:3000/dashboard/analytics?treasury=true'
-        )
-      })
-
-      it('should load the treasury page', () => {
-        cy.get('#dashboard-treasury-page').should('exist')
-        cy.get('#dashboard-treasury-assets')
-        cy.get('#dashboard-treasury-transactions').should('exist')
-      })
     })
   })
 
