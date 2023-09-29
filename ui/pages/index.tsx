@@ -27,38 +27,9 @@ export default function Home() {
     },
     {
       name: 'Get Voting Power',
-      description: 'Lock $SMOONEY to get voting power within MoonDAO.',
+      description: 'Stake $MOONEY to get voting power within MoonDAO.',
       href: '/lock',
       icon: LockClosedIcon,
-      externalLink: false,
-    },
-    {
-      name: 'Bridge $MOONEY to L2',
-      description:
-        'Bridge your $MOONEY to polygon using the native bridge for reduced gas fees.',
-      href: 'https://wallet.polygon.technology/',
-      icon: ArrowsRightLeftIcon,
-      externalLink: true,
-    },
-    {
-      name: 'Announcements',
-      description: 'Check the latest announcements.',
-      href: '/announcements',
-      icon: BellIcon,
-      externalLink: false,
-    },
-    {
-      name: 'Analytics',
-      description: 'See information related to Voting Power and the Treasury.',
-      href: '/analytics',
-      icon: ChartBarSquareIcon,
-      externalLink: false,
-    },
-    {
-      name: 'Calendar',
-      description: 'See all the scheduled events and meetings.',
-      href: '/calendar',
-      icon: CalendarDaysIcon,
       externalLink: false,
     },
     {
@@ -66,20 +37,6 @@ export default function Home() {
       description: 'Buy and sell NFTs on the MoonDAO marketplace.',
       href: 'https://market.moondao.com',
       icon: BuildingStorefrontIcon,
-      externalLink: true,
-    },
-    {
-      name: 'Discord',
-      description: 'Join our community. Governance forums and social and project communications.',
-      href: 'https://discord.gg/moondao',
-      icon: UserGroupIcon,
-      externalLink: true,
-    },
-    {
-      name: 'X / Twitter',
-      description: 'Stay up to date on MoonDAO by following our main social channel.',
-      href: 'https://twitter.com/OfficialMoonDAO',
-      icon: PlusCircleIcon,
       externalLink: true,
     },
   ]
