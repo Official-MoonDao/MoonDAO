@@ -19,18 +19,13 @@ export const navigation = [
     name: 'Buy $MOONEY',
     href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
     icon: WalletIcon,
-    external: true
+    external: true,
   },
   {
     name: 'lockTokens',
     href: '/lock',
     icon: LockClosedIcon,
   },
-  // {
-  //   name: 'Announcements',
-  //   href: '/announcements',
-  //   icon: BellIcon,
-  // },
   {
     name: 'Analytics',
     href: '/analytics',
