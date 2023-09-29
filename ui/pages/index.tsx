@@ -8,7 +8,7 @@ import {
   ArrowsRightLeftIcon,
   BuildingStorefrontIcon,
   UserGroupIcon,
-  PlusCircleIcon
+  PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -17,12 +17,19 @@ import Head from '../components/layout/Head'
 export default function Home() {
   const { t } = useTranslation('common')
 
-  const pages = [
+  const pages: any = [
     {
       name: 'Buy $MOONEY',
       description: 'Acquire our governance token and join the community.',
       href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
       icon: WalletIcon,
+      externalLink: true,
+    },
+    {
+      name: 'Bridge $MOONEY',
+      description: 'Bridge $MOONEY from L1 to L2 for reduced gas fees.',
+      href: 'https://wallet.polygon.technology/polygon/bridge/deposit',
+      icon: ArrowsRightLeftIcon,
       externalLink: true,
     },
     {
@@ -58,9 +65,9 @@ export default function Home() {
           >
             <dl
               id={'home-card-pages'}
-              className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2 xl:grid-cols-3"
+              className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2 xl:grid-cols-2"
             >
-              {pages.map((page, i) => (
+              {pages.map((page: any, i: number) => (
                 <Link
                   id={'#home-card-link' + i}
                   href={page.href}
