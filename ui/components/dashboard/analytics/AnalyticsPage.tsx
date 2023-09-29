@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react'
 import { useAssets } from '../../../lib/dashboard/hooks'
 import { useMarketFeeSplitStats } from '../../../lib/thirdweb/hooks/useMarketFeeSplitStats'
 import { getVMOONEYData } from '../../../lib/tokens/ve-subgraph'
+import Header from '../../layout/Header'
+import Line from '../../layout/Line'
 import { AnalyticsProgress } from './AnalyticsProgress'
 import AnalyticsSkeleton from './AnalyticsSkeleton'
 
@@ -62,9 +64,11 @@ export default function AnalyticsPage() {
       id="#dashboard-analytics-page"
       className="grid xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center "
     >
+      <Header text={'Analytics'} />
+      <Line />
       {/*Stats frame*/}
       <Frame>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 w-3/4">
           <Label text="Voting Power Key Figures" />
 
           <Data
@@ -92,7 +96,7 @@ export default function AnalyticsPage() {
       {/* Marketplace Platform Fee Split */}
       <Frame>
         {!isLoadingSplit && (
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center w-3/4">
             <Label text={'Marketplace Platform Fee Split (L2 $MOONEY)'} />
             <Data text="Current Balance" value={balance} />
             <Data text="Sent to Treasury" value={released.treasury} />
