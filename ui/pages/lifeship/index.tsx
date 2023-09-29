@@ -69,7 +69,7 @@ export default function Lifeship({ products = [] }: any) {
             <Image src={'/LifeShip_Main_Black.png'} width={45} height={45} alt="Lifeship Logo" className='dark:hidden' />
           </h2>
         </div>
-        <h3 className="mt-5 lg:mt-8 text-detail-light dark:text-detail-dark font-RobotoMono text-xl lg:text-2xl text-center">
+        <h3 className="mt-5 lg:mt-8 text-moon-blue dark:text-detail-dark font-RobotoMono text-xl lg:text-2xl text-center">
           Join us on our first mission to the Moon!
         </h3>
         {state === 0 && (

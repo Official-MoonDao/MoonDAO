@@ -4,12 +4,26 @@ import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
+//Checks if the navigation object has a property 'external' set to true, if so returns a link that opens another tab, otherwise checks if the navigation object has children. If it does, it returns the dropdown, if it doesn't it returns an internal navigation link.
+
 const NavigationLink = ({ item }: any) => {
   const router = useRouter()
   const { t } = useTranslation('common')
   return (
     <li className={`list-none`} key={item.name}>
-      {!item.children ? (
+      {item.external ? (
+        <Link href={item.href}    target="_blank"
+        rel="noopener noreferrer">
+          <div
+            className={`
+               text-gray-600 hover:bg-blue-100 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-gray-200
+            group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150 cursor-pointer`}
+          >
+            <item.icon className="mr-3 h-6 w-6 flex-shrink-0 text-blue-500 dark:text-moon-gold" />
+            {t(item.name)}
+          </div>
+        </Link>
+      ) : !item.children ? (
         <Link href={item.href} legacyBehavior>
           <div
             className={`${

@@ -30,6 +30,7 @@ import { NumberType, transformNumber } from '../lib/utils/numbers'
 import Balance from '../components/Balance'
 import TimeRange from '../components/TimeRange'
 import Head from '../components/layout/Head'
+import Header from '../components/layout/Header'
 import L2Toggle from '../components/lock/L2Toggle'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import LockPresets from '../components/thirdweb/LockPresets'
@@ -230,9 +231,15 @@ export default function Lock() {
     <main className="animate-fadeIn">
       <Head title="Voting Power" />
       <div className="mt-3 px-5 lg:px-10 xl:px-10 py-12 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
-
-
-        <section className="mt-4 xl:mt-6 xl:w-3/4">
+        <div className="xl:w-3/4 pb-1">
+          <span className="sm:hidden">
+            <Header text="Lock $MOONEY" noStar />
+          </span>
+          <span className="hidden sm:block">
+            <Header text="Lock $MOONEY" />
+          </span>
+        </div>
+        <section className="mt-6 xl:mt-6 xl:w-3/4">
           {/*Lock Data*/}
           {hasLock && (
             <>
@@ -287,7 +294,7 @@ export default function Lock() {
           )}
         </section>
 
-        <div className="my-7 lg:my-5 justify-center xl:mt-8 flex xl:w-3/4 xl:justify-normal">
+        <div className="my-7 lg:my-5 justify-center xl:mt-8 flex xl:w-3/4 lg:justify-normal">
           <L2Toggle />
         </div>
 

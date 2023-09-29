@@ -19,7 +19,7 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
       <a
         className="ml-5"
         aria-label="Link to Discord"
-        href="https://discord.com/invite/5nAu7K9aES"
+        href="https://discord.gg/moondao"
         target="_blank"
         rel="noreferrer"
       >
