@@ -10,7 +10,7 @@ import AnalyticsSkeleton from './AnalyticsSkeleton'
 
 function Frame(props: any) {
   return (
-    <div className="mt-3 px-5 lg:px-10 xl:px-10 py-12 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
+    <div className="mt-3 px-5 lg:px-10 xl:px-10 py-6 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark flex flex-col items-center">
       {props.children}
     </div>
   )
@@ -19,11 +19,11 @@ function Frame(props: any) {
 function Data({ text, value }: any) {
   return (
     <div className="justify-left flex w-full flex-col rounded-2xl p-2 text-center">
-      <div className=" w-full font-Montserrat font-bold leading-10 text-slate-800 hover:text-black dark:text-indigo-100 dark:hover:text-white lg:text-xl 2xl:text-2xl">
-        <p className="py-2">{text}</p>
-        <hr className="relative mt-1 h-1 w-full bg-gradient-to-r from-blue-500 to-blue-900 dark:from-moon-gold dark:to-yellow-100" />
+      <div className="w-full xl:flex xl:flex-col xl:items-center font-Montserrat font-bold tracking-wider leading-10 text-gray-800 dark:text-gray-200  text-lg lg:text-2xl 2xl:text-32xl">
+        <p className="pt-2 uppercase">{text}</p>
+        <hr className="relative mt-1 lg:mt-3 h-1 w-full xl:w-3/4 bg-gradient-to-r from-blue-500 to-blue-900 dark:from-moon-gold dark:to-amber-300" />
       </div>
-      <div className="text-slate flex flex-col justify-center px-4  text-center font-Montserrat leading-10 text-black dark:text-indigo-100 md:items-center lg:my-2 lg:flex-row lg:text-2xl xl:text-3xl">
+      <div className="mt-3 mb-2 tracking-widest text-slate flex flex-col justify-center px-4 font-RobotoMono  text-center  leading-10 text-gray-700 dark:text-gray-300 md:items-center lg:flex-row text-lg lg:text-xl xl:text-2xl">
         {value.toLocaleString()}
       </div>
     </div>
@@ -32,7 +32,7 @@ function Data({ text, value }: any) {
 
 function Label({ text }: { text: string }) {
   return (
-    <div className="my-4 flex w-full flex-col items-center justify-center text-center font-Montserrat font-bold tracking-wide text-slate-800 hover:text-black dark:text-indigo-100 dark:hover:text-white text-lg lg:text-2xl 2xl:text-3xl">
+    <div className="my-4 leading-relaxed flex w-full flex-col items-center justify-center text-center font-Montserrat font-bold tracking-wide text-stronger-light dark:text-yellow-200 text-xl lg:text-2xl 2xl:text-3xl">
       {text}
     </div>
   )
@@ -62,7 +62,7 @@ export default function AnalyticsPage() {
   return (
     <div
       id="#dashboard-analytics-page"
-      className="grid xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center "
+      className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center "
     >
       <Header text={'Analytics'} />
       <Line />

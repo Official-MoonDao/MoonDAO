@@ -31,20 +31,22 @@ export default function TreasuryPage() {
     error: assetsError,
   } = useAssets()
 
-  if (etherscanError)
+  //This one is now misfiring all the time, commenting out for now.
+  /**if (etherscanError)
     errorToast(
       'Connection with Etherscan failed. Contact MoonDAO if the problem persists 🚀'
     )
+    */
 
   // Implement allowed asset functionality or warning when asset wasn't approved
 
   const { t } = useTranslation('common')
-
+  //Some margin left added on md screen size to compensate for change in layout
   return (
     <>
-      <div id={"dashboard-treasury-page"} className="lg:flex lg:flex-col lg:items-center xl:flex-row xl:items-baseline xl:justify-around gap-12">
+      <div id={"dashboard-treasury-page"} className="md:ml-10 lg:flex lg:flex-col lg:items-center xl:flex-row xl:items-baseline xl:justify-around gap-12 xl:gap-16 2xl:gap-24">
         {/*Assets Section*/}
-        <section className="xl:w-[40%] xl:max-w-[600px]">
+        <section className="xl:w-[40%] 2xl:w-[45%] xl:max-w-[600px]">
           <Header text={'Treasury'} />
           <Line />
           {loadingAssets || !tokens[0] ? (
@@ -66,7 +68,7 @@ export default function TreasuryPage() {
         </section>
 
         {/*Transactions Section*/}
-        <section className="mt-12 xl:mt-2 xl:w-[40%] xl:max-w-[700px]">
+        <section className="mt-12 xl:mt-2 xl:w-[40%] 2xl:w-[50%] xl:max-w-[700px]">
           <Header text={'Transactions'} noStar />
           <Line />
           <div className="mt-10">

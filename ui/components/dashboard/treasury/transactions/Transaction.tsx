@@ -18,11 +18,11 @@ const Transaction = ({ data, loading }: any) => {
     .replace(/\B(?=(\d{3})+(?!\d))/g, ',')} ${data.tokenSymbol}`
 
   return (
-    <article className="relative w-[336px] sm:w-[400px] 2xl:w-full">
+    <article className="relative w-[336px] sm:w-[400px] xl:w-full">
       <div
         className={`${
           !loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
-            ? 'absolute top-1 right-3 text-red-500 z-50 xl:-top-3 xl:-right-3'
+            ? 'absolute top-1 right-3 text-red-300 opacity-50 z-50 xl:-top-3 xl:-right-3'
             : 'hidden'
         }`}
       >
@@ -68,7 +68,7 @@ const Transaction = ({ data, loading }: any) => {
           >
             {timeStr} ago
           </p>
-          {!loading && (
+          {!loading  && Object.keys(allowedAssets).includes(data.tokenSymbol) && (
             <a
               aria-label="Link to transaction information on Etherscan"
               className={`ml-2 block`}
