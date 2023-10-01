@@ -1,10 +1,13 @@
+import Header from '../../layout/Header'
+import Line from '../../layout/Line'
+
 const AnalyticsSkeleton = () => {
   return (
-    <div className="mt-8 md:ml-2 lg:mt-12">
-      <div className="flex flex-col items-center lg:items-start mt-4 lg:ml-14">
-        <div className="loading-component mt-6 flex  w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1380px]   min-h-[60vh] animate-pulse"></div>
-        <div className="loading-component mt-6 flex  w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1380px]   min-h-[60vh] animate-pulse"></div>
-      </div>
+    <div className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center">
+      <Header text={'Analytics'} />
+      <Line />
+      <section className="mt-3 px-5 lg:px-10 xl:px-10 py-6 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col items-center loading-component h-[700px] lg:h-[750px] animate-pulse"></section>
+      <section className="mt-3 px-5 lg:px-10 xl:px-10 py-6 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col items-center loading-component h-[700px] lg:h-[750px] animate-pulse"></section>
     </div>
   )
 }

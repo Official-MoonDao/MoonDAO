@@ -10,7 +10,7 @@ import AnalyticsSkeleton from './AnalyticsSkeleton'
 
 function Frame(props: any) {
   return (
-    <div className="mt-3 px-5 lg:px-10 xl:px-10 py-6 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark flex flex-col items-center">
+    <div className="mt-3 px-5 lg:px-10 xl:px-10 py-6 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border shadow-md shadow-detail-light dark:shadow-detail-dark flex flex-col items-center">
       {props.children}
     </div>
   )
@@ -59,10 +59,11 @@ export default function AnalyticsPage() {
   const { t } = useTranslation('common')
 
   if (!analyticsData) return <AnalyticsSkeleton />
+
   return (
     <div
       id="#dashboard-analytics-page"
-      className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center "
+      className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center"
     >
       <Header text={'Analytics'} />
       <Line />

@@ -16,7 +16,7 @@ const Asset = ({ name, amount, usd, address, loading }: AssetProps) => {
 
   return (
     <div
-      className={`component-background mt-5 flex w-[336px] flex-col items-center rounded border-[0.5px] border-detail-light py-1 shadow shadow-detail-light dark:border-detail-dark dark:shadow-detail-dark sm:w-[400px] xl:mt-6 2xl:w-full 2xl:flex-row 2xl:justify-between 2xl:px-7 2xl:py-2  ${
+      className={`component-background mt-5 flex w-[336px] flex-col items-center rounded border-[0.5px] border-detail-light py-1 shadow shadow-detail-light dark:border-detail-dark dark:shadow-detail-dark sm:w-[400px] xl:mt-6 2xl:w-full 2xl:flex-row 2xl:justify-between 2xl:px-3 2xl:py-2  ${
         loading && 'loading-component'
       }`}
     >

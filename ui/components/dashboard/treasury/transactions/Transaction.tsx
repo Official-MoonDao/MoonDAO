@@ -53,7 +53,7 @@ const Transaction = ({ data, loading }: any) => {
         </div>
         {/*Amount*/}
         <p
-          className={`mt-2 block truncate text-lg font-bold tracking-wide  text-title-light dark:text-dark-highlight xl:hover:text-center 2xl:mt-0 2xl:max-w-[43%] 2xl:tracking-wider 2xl:hover:overflow-visible 2xl:hover:whitespace-pre`}
+          className={`mt-2 block truncate text-lg font-bold tracking-wide text-title-light dark:text-dark-highlight xl:hover:text-center 2xl:mt-0 2xl:max-w-[43%] hover:overflow-auto hover:whitespace-pre`}
         >
           <span className={`${loading && 'loading-line'}`}>
             {value.length > 30 ? value.slice(0, 30) + '...' : value}
@@ -68,17 +68,18 @@ const Transaction = ({ data, loading }: any) => {
           >
             {timeStr} ago
           </p>
-          {!loading  && Object.keys(allowedAssets).includes(data.tokenSymbol) && (
-            <a
-              aria-label="Link to transaction information on Etherscan"
-              className={`ml-2 block`}
-              href={transactionLink}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <GoldPaperArrow loading={loading} />
-            </a>
-          )}
+          {!loading &&
+            Object.keys(allowedAssets).includes(data.tokenSymbol) && (
+              <a
+                aria-label="Link to transaction information on Etherscan"
+                className={`ml-2 block`}
+                href={transactionLink}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <GoldPaperArrow loading={loading} />
+              </a>
+            )}
         </div>
       </div>
     </article>
