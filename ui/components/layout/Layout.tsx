@@ -46,7 +46,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const { t } = useTranslation('common')
   const layout = (
     <div
-    id="app-layout"
+      id="app-layout"
       className={`${
         !lightMode ? 'dark stars-dark' : 'stars-light'
       } min-h-screen`}
@@ -120,7 +120,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       {/*The content, child rendered here*/}
       <main className="flex justify-center pb-24 md:ml-48 relative">
         <section
-          className={`mt-10 flex flex-col lg:w-[80%] lg:px-14 xl:px-16 2xl:px-20`}
+          className={`mt-2 flex flex-col lg:w-[80%] lg:px-14 xl:px-16 2xl:px-20`}
         >
           {/*Connect Wallet and Preferred network warning*/}
           <div
