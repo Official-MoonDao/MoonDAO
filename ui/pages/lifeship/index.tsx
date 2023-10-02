@@ -65,8 +65,20 @@ export default function Lifeship({ products = [] }: any) {
             className={`mt-3 card-title text-center font-GoodTimes text-2xl lg:text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-tr from-n3blue to-amber-400`}
           >
             {'LifeShip'}
-            <Image src={'/LifeShip_Main.png'} width={45} height={45} alt="Lifeship Logo" className='hidden dark:block'/>
-            <Image src={'/LifeShip_Main_Black.png'} width={45} height={45} alt="Lifeship Logo" className='dark:hidden' />
+            <Image
+              src={'/LifeShip_Main.png'}
+              width={45}
+              height={45}
+              alt="Lifeship Logo"
+              className="hidden dark:block"
+            />
+            <Image
+              src={'/LifeShip_Main_Black.png'}
+              width={45}
+              height={45}
+              alt="Lifeship Logo"
+              className="dark:hidden"
+            />
           </h2>
         </div>
         <h3 className="mt-5 lg:mt-8 text-moon-blue dark:text-detail-dark font-RobotoMono text-xl lg:text-2xl text-center">

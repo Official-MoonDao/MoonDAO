@@ -21,8 +21,10 @@ export default function Product({
       <div className="prod backdropBlur flex justify-center items-center">
         <div className="flex flex-col m-2">
           <div className="flex flex-col items-center justify-center my-3 text-center">
-            <h3 className='text-lg md:text-xl xl:text-2xl font-GoodTimes text-amber-500 dark:text-yellow-200'>Lifeship NFT</h3>
-            <p className='lg:w-3/4 mt-2 md:mt-4 text-sm font-mono leading-relaxed lg:text-base xl:text-lg text-light-text dark:text-dark-text opacity-80'>
+            <h3 className="text-lg md:text-xl xl:text-2xl font-GoodTimes text-moon-gold">
+              Lifeship NFT
+            </h3>
+            <p className="lg:w-3/4 mt-2 md:mt-4 text-sm font-mono leading-relaxed lg:text-base xl:text-lg text-light-text dark:text-dark-text opacity-80">
               MoonDAO is partnering with lifeship to send NFTs to space! Please
               upload a file and complete the checkout. You will be emailed
               instrucitons to claim your NFT.
@@ -163,7 +165,9 @@ export default function Product({
             <div className="w-full">
               <p className="text-title-light dark:text-title-dark lg:text-sm 2xl:text-base">
                 {'Quantity:'}
-                <span className="ml-2 dark:text-moon-gold text-moon-blue">{quantity}</span>
+                <span className="ml-2 dark:text-moon-gold text-moon-blue">
+                  {quantity}
+                </span>
               </p>
             </div>
             <div className="w-full">
