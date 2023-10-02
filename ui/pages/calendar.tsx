@@ -3,6 +3,8 @@ import React, { useEffect } from 'react'
 import { useCalendarEvents } from '../lib/dashboard/hooks'
 import { SeshEvent } from '../components/dashboard/calendar/SeshEvent'
 import Head from '../components/layout/Head'
+import Header from '../components/layout/Header'
+import Line from '../components/layout/Line'
 
 const SESH_LINK = 'https://sesh.fyi/api/calendar/v2/hfwjLhfVoutWs65KegtbP7.ics'
 
@@ -13,13 +15,11 @@ export default function Calendar() {
   return (
     <div className="animate-fadeIn">
       <Head title={t('calendarTitle')} description={t('calendarDesc')} />
+      <div className="mt-12">
+        <Header text="Calendar" />
+        <Line />
+      </div>
       <div className="mt-3 px-5 py-12 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
-        <h1
-          className={`font-GoodTimes font-semibold tracking-wide leading-relaxed text-center text-3xl xl:text-4xl mb-2 text-title-light dark:text-title-dark`}
-        >
-          {t('calendarTitle')}
-        </h1>
-
         <p className="my-6 xl:my-10 text-lg xl:text-xl leading-8 text-center text-light-text dark:text-dark-text dark:text-opacity-80">
           {t('calendarDesc')}
         </p>
