@@ -32,7 +32,7 @@ function Data({ text, value }: any) {
 
 function Label({ text }: { text: string }) {
   return (
-    <div className="my-4 leading-relaxed flex w-full flex-col items-center justify-center text-center font-Montserrat font-bold tracking-wide text-stronger-light dark:text-yellow-200 text-xl lg:text-2xl 2xl:text-3xl">
+    <div className="my-4 leading-relaxed flex w-full flex-col items-center justify-center text-center font-Montserrat font-bold tracking-wide text-stronger-light dark:text-moon-gold text-xl lg:text-2xl 2xl:text-3xl">
       {text}
     </div>
   )
