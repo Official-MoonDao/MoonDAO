@@ -22,9 +22,9 @@ export function useTransactions(page: number) {
       .then((res) => res.json())
       .then((result) => {
         if (result.status === '0') {
-          console.log(result)
           throw Error(result.result)
         }
+
         setTransactions(result.result)
       })
       .catch((err) => setError(err))

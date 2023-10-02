@@ -5,8 +5,8 @@ const TransactionCaret = ({ left, page, setPage, pageMax, isLoaded }: any) => {
       disabled={(left && page === 1) || page === pageMax || isLoaded}
       onClick={() => {
         left && page !== 1
-          ? setPage(page - 1)
-          : page !== pageMax && setPage(page + 1)
+          ? setPage(--page)
+          : page !== pageMax && setPage(++page)
       }}
       className="border-[50%] margin-auto block h-[36px] w-[36px] rounded-full border border-blue-600 dark:bg-slate-950 disabled:border-blue-400 disabled:opacity-50 bg-slate-50 disabled:hover:scale-100 dark:border-white"
     >

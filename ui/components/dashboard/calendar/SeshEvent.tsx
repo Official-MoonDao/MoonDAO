@@ -19,12 +19,11 @@ export function SeshEvent({ seshEvent }: any) {
       hour12: true,
     })
 
-  console.log(date)
 
   return (
-    <div className="flex flex-col w-full items-center gap-2 py-2">
-      <h1 className="text-indigo-500 dark:text-moon-gold">{seshEvent.title}</h1>
-      <p className="text-black dark:text-white">{date}</p>
+    <div className="flex flex-col w-full items-center gap-2 lg:gap-3 py-2">
+      <h1 className="text-indigo-500 dark:text-moon-gold text-center tracking-wide lg:tracking-wider lg:text-lg">{seshEvent.title}</h1>
+      <p className="text-gray-900 dark:text-gray-200">{date}</p>
     </div>
   )
 }
