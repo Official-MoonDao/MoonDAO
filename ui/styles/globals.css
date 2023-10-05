@@ -115,6 +115,27 @@ a {
   background: #555;
 }
 
+.connect-wallet img {
+  display: none;
+  visibility: hidden;
+}
+
+.tw-connected-wallet img {
+  display: none;
+  visibility: hidden;
+}
+
+.css-tkbtnr img {
+  display: none;
+  visibility: hidden;
+}
+
+.css-1309xma img {
+  display: none;
+  visibility: hidden;
+}
+
+
 /*
 
 Contains Loading Skeleton utilities, link & component background.
