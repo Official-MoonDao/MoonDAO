@@ -1,0 +1,72 @@
+{
+  "product": {
+    "availableForSale": true,
+    "createdAt": "2019-03-05T15:00:00Z",
+    "description": "A great product",
+    "descriptionHtml": "<p>A great product</p>",
+    "handle": "a-great-product",
+    "id": "gid://shopify/Product/123456789",
+    "images": [
+      {
+        "altText": "A great product",
+        "id": "gid://shopify/ProductImage/123456789",
+        "src": "/public/galaxy.jpg"
+      },
+      {
+        "altText": "A great product",
+        "id": "gid://shopify/ProductImage/123456789",
+        "src": "/public/galaxy.jpg"
+      },
+      {
+        "altText": "A great product",
+        "id": "gid://shopify/ProductImage/123456789",
+        "src": "/public/galaxy.jpg"
+      }
+    ],
+    "onlineStoreUrl": "https://moondao.com",
+    "options": [
+      {
+        "id": "gid://shopify/ProductOption/123456789",
+        "name": "Title",
+        "values": ["Default Title"]
+      }
+    ],
+    "priceRange": {
+      "maxVariantPrice": {
+        "amount": "10.00",
+        "currencyCode": "USD"
+      },
+      "minVariantPrice": {
+        "amount": "10.00",
+        "currencyCode": "USD"
+      }
+    },
+    "productType": "Shirts",
+    "publishedAt": "2019-03-05T15:00:00Z",
+    "title": "A great product",
+    "updatedAt": "2019-03-05T15:00:00Z",
+    "variants": [
+      {
+        "id": "gid://shopify/ProductVariant/33336498782294",
+        "title": "1 pet",
+        "price": {
+          "amount": "99.0",
+          "currencyCode": "USD",
+          "type": {
+            "name": "MoneyV2",
+            "kind": "OBJECT",
+            "fieldBaseTypes": {
+              "amount": "Decimal",
+              "currencyCode": "CurrencyCode"
+            },
+            "implementsNode": false
+          }
+        }
+      }
+    ],
+    "vendor": "A great vendor"
+  },
+  "label": "A great product",
+  "quantity": 1,
+  "linkToStore": false
+}

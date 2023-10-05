@@ -1,5 +1,5 @@
 import React from 'react'
-import { NumberType, transformNumber } from '../lib/numbers'
+import { NumberType, transformNumber } from '../lib/utils/numbers'
 
 export default function Balance({
   loading = false,
@@ -9,9 +9,9 @@ export default function Balance({
   decimals = 2,
 }: any) {
   return (
-    <>
+    <span className="text-base font-normal text-title-light dark:text-moon-gold tracking-wide">
       {loading ? (
-        <button className="btn btn-square btn-ghost btn-disabled bg-transparent loading"></button>
+        <span className="btn btn-square btn-ghost btn-disabled bg-transparent loading"></span>
       ) : balance ? (
         `${prefix}${transformNumber(
           balance,
@@ -20,7 +20,8 @@ export default function Balance({
         )}${suffix}`
       ) : (
         0
-      )}
-    </>
+      )}{' '}
+      <span className="font-semibold">$MOONEY</span>
+    </span>
   )
 }

@@ -39,5 +39,16 @@
   "withdraw": "退出",
   "notConnected": "未连接",
   "wrongNetwork": "错误的网络",
-  "safetyNote": "出于安全原因，我们建议您将 vMOONEY 的代币限额限制在您计划在不久的将来存入的金额。"
+  "safetyNote": "出于安全原因，我们建议您将 vMOONEY 的代币限额限制在您计划在不久的将来存入的金额。",
+
+  "announcementsTitle": "Announcements",
+  "announcementsDesc": "Here you can find the latest announcements from the MoonDAO team.",
+  "analyticsTitle": "Analytics",
+  "analyticsDesc": "Here you can find the latest analytics for MOONEY and vMOONEY.",
+  "calendarTitle": "Calendar",
+  "calendarDesc": "Here you can find the latest calendar for MoonDAO.",
+  "proposalsTitle": "Proposals",
+  "proposalsDesc": "Here you can find the latest proposals for MoonDAO.",
+  "treasuryTitle": "Treasury",
+  "treasuryDesc": "Here you can find the current status of the MoonDAO treasury."
 }

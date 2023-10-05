@@ -1,4 +1,5 @@
 @import url('/fonts/stylesheet.css');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Open+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -10,16 +11,12 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-  /* @apply font-body; */
+  overflow: auto;
 }
 
 a {
   color: inherit;
   text-decoration: none;
-}
-
-.active {
-  color: black;
 }
 
 * {
@@ -35,20 +32,6 @@ a {
   font-family: 'Roboto Mono';
   src: url('/fonts/RobotoMono-Regular.ttf') format('truetype');
 }
-
-.stars-bg {
-  background: url('/star-background.png') repeat,
-    linear-gradient(to right, rgb(14, 15, 15), rgb(25, 20, 58), rgb(13, 0, 31));
-}
-
-/* .card {
-  background-color: black;
-  color: white;
-  border-style: solid;
-  border-radius: 20px;
-  border-width: 2px;
-  border-color: #ffbc5c;
-} */
 
 .galaxy-bg {
   background: url('/galaxy.jpg') repeat;
@@ -130,4 +113,48 @@ a {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/*
+
+Contains Loading Skeleton utilities, link & component background.
+
+*DO NOT* expand this list of class utilities using @layer or traditional CSS classes, instead, consider the following:
+
+1) If a class is going to be used just once or twice, prefer writing the classes on that same component.
+
+2) If we expect to use a set of classes more times than that, it's preferable to create a REACT COMPONENT that has those classes.
+
+What we achieve by doing this: the ideal scenario is that the HTML/JSX of a component has all the styling contained in itself using familiar Tailwind Classes, instead of having the component make a reference to other CSS files.
+
+*/
+
+@layer utilities {
+  .loading-component {
+    @apply cursor-wait select-none rounded-2xl bg-gray-100 shadow-none hover:scale-100 dark:bg-slate-800 !important;
+  }
+
+  .loading-line {
+    @apply animate-pulse select-none rounded-lg bg-blue-400 fill-current stroke-current text-blue-400 hover:scale-100 dark:bg-slate-600 dark:text-slate-600 !important;
+  }
+
+  .link {
+    @apply whitespace-pre-wrap text-yellow-500 underline hover:text-yellow-600 dark:text-moon-gold dark:hover:text-amber-300;
+  }
+
+  .component-background {
+    @apply relative bg-gradient-to-br from-white via-gray-50 to-zinc-50 dark:from-black dark:via-slate-950 dark:to-gray-950;
+  }
+}
+
+/* These two classes control the color of the background*/
+
+.stars-dark {
+  background: url('/star-background.png') repeat,
+    linear-gradient(to right, rgb(10, 10, 10), rgb(5, 5, 5), rgb(3, 1, 7));
+}
+
+.stars-light {
+  background: url('/star-background.png') repeat,
+    linear-gradient(to right, rgb(184, 186, 245), #dce3fa, rgb(129, 182, 235));
 }

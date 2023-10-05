@@ -1,29 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
-<svg
-  version="1.1"
-  xmlns="http://www.w3.org/2000/svg"
-  xmlns:xlink="http://www.w3.org/1999/xlink"
-  x="0px" y="0px"
-	viewBox="0 0 150 150"
-  style="enable-background:new 0 0 150 150;"
-  xml:space="preserve"
->
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns:xodm="http://www.corel.com/coreldraw/odm/2003" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 2500 2500" style="enable-background:new 0 0 2500 2500;" xml:space="preserve">
 <style type="text/css">
-	.st0{fill:url(#SVGID_1_);}
-	.st1{fill:#2059EB;}
+	.st0{fill:none;}
+	.st1{fill-rule:evenodd;clip-rule:evenodd;fill:#0052FF;}
+	.st2{fill-rule:evenodd;clip-rule:evenodd;fill:#FFFFFF;}
 </style>
-<g id="Layer_1">
-</g>
-<g id="Layer_5">
-	<g>
-		<linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="75" y1="149" x2="75" y2="1">
-			<stop  offset="0" style="stop-color:#1447EA"/>
-			<stop  offset="1" style="stop-color:#2B65FB"/>
-		</linearGradient>
-		<path className="st0" d="M75,1C34.1,1,1,34.1,1,75s33.1,74,74,74s74-33.1,74-74S115.9,1,75,1z M75,118.3c-23.9,0-43.3-19.4-43.3-43.3
-			S51.1,31.7,75,31.7s43.3,19.4,43.3,43.3S98.9,118.3,75,118.3z"/>
-		<path className="st1" d="M85.5,88.9H64.5c-1.8,0-3.3-1.5-3.3-3.3V64.5c0-1.8,1.5-3.3,3.3-3.3h21.1c1.8,0,3.3,1.5,3.3,3.3v21.1
-			C88.9,87.4,87.4,88.9,85.5,88.9z"/>
-	</g>
+<g id="Layer_x0020_1">
+	<rect y="0" class="st0" width="2500" height="2500"></rect>
+	<path class="st1" d="M520.7,0h1458.5C2266.9,0,2500,250.8,2500,560.2v1379.6c0,309.4-233.1,560.2-520.7,560.2H520.7   C233.1,2500,0,2249.2,0,1939.8V560.2C0,250.8,233.1,0,520.7,0z"></path>
+	<path class="st2" d="M1250,362.1L1250,362.1c490.4,0,887.9,397.5,887.9,887.9v0c0,490.4-397.5,887.9-887.9,887.9h0   c-490.4,0-887.9-397.5-887.9-887.9v0C362.1,759.6,759.6,362.1,1250,362.1z"></path>
+	<path class="st1" d="M1031.3,966.2h437.3c36,0,65.1,31.4,65.1,70v427.5c0,38.7-29.2,70-65.1,70h-437.3c-36,0-65.1-31.4-65.1-70   v-427.5C966.2,997.6,995.4,966.2,1031.3,966.2z"></path>
 </g>
 </svg>

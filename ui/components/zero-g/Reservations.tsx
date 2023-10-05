@@ -1,24 +1,25 @@
+import { useAddress } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
 import { useEffect, useRef, useState } from 'react'
+import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import {
   checkUserDataReservation,
   submitReservation,
-} from '../../lib/google-sheets'
-import { useAccount } from '../../lib/use-wagmi'
-import { useVMOONEYLock } from '../../lib/ve-token'
+} from '../../lib/zero-g/google-sheets'
 import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
 
-export default function Reservations() {
-  const { data: account } = useAccount()
+export default function Reservations({ sweepstakesContract }: any) {
+  const address = useAddress()
   const [state, setState] = useState(0)
   const [error, setError] = useState('')
 
   const [validLock, setValidLock] = useState(false)
   const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
-    account?.address
+    sweepstakesContract,
+    address
   )
   const altEmailInput: any = useRef()
   const altNameInput: any = useRef()
@@ -91,7 +92,7 @@ export default function Reservations() {
             }
             if (state === 2) {
               //check if vMooneyHolder
-              if (!account.address) return setError('no-wallet')
+              if (!address) return setError('no-wallet')
               if (!validLock) return setError('invalid-lock')
               fullName = holderNameInput.current.value
               email = holderEmailInput.current.value
@@ -106,14 +107,14 @@ export default function Reservations() {
                 !(await checkUserDataReservation({
                   fullName: fullName.trim(),
                   email: email.trim(),
-                  walletAddress: account?.address,
+                  walletAddress: address,
                 }))
               ) {
                 await submitReservation({
                   fullName,
                   email,
                   isVMOONEYHolder: true,
-                  walletAddress: account?.address,
+                  walletAddress: address,
                 })
                 setState(3)
                 return reset()
@@ -145,7 +146,7 @@ export default function Reservations() {
         <StageContainer>
           <EnterRaffleButton
             setState={(stage: number) => setState(stage)}
-            account={account}
+            address={address}
             validLock={validLock}
             label="Make a Reservation"
           />

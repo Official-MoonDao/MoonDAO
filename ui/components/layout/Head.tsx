@@ -1,13 +1,18 @@
 import Head from 'next/head'
 
-export default function WebsiteHead({ title }: any) {
-  const description = 'Decentralize space MoonDAO'
+const defaultDescription = "Let's decentralize access to space!"
+
+export default function WebsiteHead({
+  title,
+  description = defaultDescription,
+}: any) {
   const image =
     'https://global-uploads.webflow.com/634742417f9e1c182c6697d4/636290c53f8c0a618be80367_MoonDAO-OG.png'
 
   return (
     <Head>
-      <title key="meta-title">MoonDAO | {title}</title>
+      <title key="meta-title">{'MoonDAO | ' + title}</title>
+      <link rel="icon" href="/favicon.ico" key="link-favicon" />
       <meta
         name="viewport"
         content="width=device-width, initial-scale=1"

@@ -91,7 +91,8 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "types": ["cypress"]
   },
   "include": [
     "next-env.d.ts",
@@ -102,7 +103,10 @@
     "lib/get-twitter-account.ts",
     "env.d.ts",
     "r3f/hooks",
-    "lib/lifeship-shopify.ts"
+    "lib/shopify/lifeship-shopify.ts",
+    "cypress/tsconfig.json",
+    "components/marketplace/r3f/Profile/BannerScene.jsx",
+    "components/marketplace/r3f/Profile/BannerScene.jsx"
   ],
   "exclude": ["node_modules"]
 }

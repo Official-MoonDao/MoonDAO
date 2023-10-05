@@ -1,18 +1,16 @@
-import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
-import { useWaitForTransaction } from 'wagmi'
-import { discordOauthUrl } from '../../lib/discord'
-import { checkUserDataRaffle, submitRaffleForm } from '../../lib/google-sheets'
+import { discordOauthUrl } from '../../lib/utils/discord'
+import { checkUserDataRaffle } from '../../lib/zero-g/google-sheets'
 import {
   useBalanceTicketZeroG,
   useMintTicketZeroG,
-} from '../../lib/zero-g-sweepstakes'
+} from '../../lib/zero-g/zero-g-sweepstakes'
 import InputContainer from './InputContainer'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
 import SweepstakesSelection from './SweepstakesSelection'
-import SweepstakesSupply from './SweepstakesSupply'
 
 /*
 STAGES:
@@ -26,43 +24,33 @@ STAGES:
 */
 
 export default function ZeroGRaffle({
+  sweepstakesContract,
   userDiscordData,
-  router,
-  account,
+  address,
   validLock,
   supply,
 }: any) {
-  const { data: twitter } = useSession()
+  const router = useRouter()
 
   const [state, setState] = useState<number>(0)
   const [error, setError] = useState<string>('')
 
-  const { data: mintData, write: mint } = useMintTicketZeroG()
-  const { isLoading: mintIsLoading, isSuccess: mintSuccess } =
-    useWaitForTransaction({
-      hash: mintData?.hash,
-    })
+  const {
+    mutateAsync: mint,
+    isLoading: mintIsLoading,
+    error: mintError,
+  } = useMintTicketZeroG(sweepstakesContract)
 
-  const { data: hasTicket } = useBalanceTicketZeroG(account?.address)
+  const { data: hasTicket } = useBalanceTicketZeroG(
+    sweepstakesContract,
+    address || ''
+  )
 
   const formRef: any = useRef()
 
   function errorStage(message: string) {
     setError(message)
     setState(6)
-  }
-
-  function Cancel() {
-    return (
-      <button
-        className="mt-4 tracking-wide btn text-gray-100 normal-case font-medium font-GoodTimes w-full bg-red-500 hover:bg-red-600 hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
-        onClick={async () => {
-          await signOut()
-        }}
-      >
-        {state >= 5 ? 'Close ✖' : 'Cancel ✖'}
-      </button>
-    )
   }
 
   function AdvanceButton({ onClick, children }: any) {
@@ -76,43 +64,9 @@ export default function ZeroGRaffle({
     )
   }
 
-  useEffect(() => {
-    if (state >= 5 || state === 1) return
-    if (twitter?.user && account?.address && validLock) {
-      userDiscordData.username && userDiscordData.email
-        ? setState(4)
-        : setState(3)
-    } else setState(0)
-  }, [twitter?.user, account, validLock, userDiscordData])
-
-  useEffect(() => {
-    if (state === 4 && mintData && !mintIsLoading && mintSuccess && hasTicket) {
-      setTimeout(() => {
-        if (+hasTicket.toString() === 1) setState(5)
-        if (+hasTicket.toString() < 1)
-          errorStage(
-            'This wallet does not have vMooney! Please do not switch wallets!'
-          )
-      }, 1000)
-    }
-
-    if (state === 5) {
-      const userData = {
-        twitterName: twitter?.user?.name,
-        userDiscordData,
-        walletAddress: account.address,
-        email: userDiscordData.email,
-      }
-      ;(async () => {
-        if (!(await checkUserDataRaffle(userData)))
-          await submitRaffleForm(userData)
-      })()
-    }
-  }, [mintIsLoading, mintSuccess, hasTicket, state, formRef])
-
   return (
     <ReservationRaffleLayout>
-      <div className="flex flex-col animate-fadeIn justify-center items-center">
+      <div className="flex flex-col animate-fadeIn justify-center items-center w-full">
         {state === 0 && (
           <StageContainer>
             <div className="w-full">
@@ -121,11 +75,11 @@ export default function ZeroGRaffle({
               </h2>
               <div className="my-3">
                 <Link href="/zero-g/rules">
-                  <a
+                  <p
                     className={`mt-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
                   >
                     Terms & Conditions →
-                  </a>
+                  </p>
                 </Link>
               </div>
               <p className="italic text-[75%] opacity-[0.5]">
@@ -138,10 +92,14 @@ export default function ZeroGRaffle({
               validLock={validLock}
               hasTicket={hasTicket}
             /> */}
-            <SweepstakesSelection supply={supply} account={account} />
+            <SweepstakesSelection
+              sweepstakesContract={sweepstakesContract}
+              supply={supply}
+              account={address}
+            />
           </StageContainer>
         )}
-        {state === 1 && (
+        {/* {state === 1 && (
           <StageContainer>
             <h2 className="text-3xl font-semibold font-RobotoMono mb-1">
               Alternative Entry
@@ -220,7 +178,7 @@ export default function ZeroGRaffle({
                     className="mt-2 flex flex-col bg-slate-900 text-white w-full rounded-md p-2"
                     type="text"
                     readOnly
-                    value={account?.address}
+                    value={address}
                   />
                 </label>
               </InputContainer>
@@ -254,7 +212,7 @@ export default function ZeroGRaffle({
                   const userData = {
                     twitterName: twitter?.user?.name,
                     userDiscordData,
-                    walletAddress: account.address,
+                    walletAddress: address,
                     email: userDiscordData.email,
                   }
                   //check if wallet, twitter, discord or email has already been used
@@ -306,7 +264,7 @@ export default function ZeroGRaffle({
             <h2 className="text-n3green m-4 lg:text-lg">{error}</h2>
             <Cancel />
           </StageContainer>
-        )}
+        )} */}
         {/* DEV BUTTONS FOR STAGES, REMOVE BEFORE DEPLOY
         <div className="absolute left-[600px] flex flex-col gap-4 bg-[blue] w-3/4 text-center my-4">
           <h1>Dev Buttons </h1>

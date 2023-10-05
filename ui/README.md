@@ -16,7 +16,7 @@ yarn install
 
 Add variables to your local development environment:
 ```
-cp .env.sepolia .env.local
+cp .env.testnet .env.local
 ```
 
 Build:
@@ -36,14 +36,18 @@ yarn dev
 
 Then open http://localhost:42069 in a browser.
 
-## Integration Testing
+## E2E and Integration Testing
+Start the development server:
+```
+yarn dev
+```
 
-Run the integration tests:
+Run the end-to-end tests headlessly:
 ```
-yarn cypress
+yarn cy:run
 ```
 
-Run the integration tests headlessly:
+Run the integration (component) tests headlessly:
 ```
-yarn cypress:headless
+yarn cy:run-ct
 ```

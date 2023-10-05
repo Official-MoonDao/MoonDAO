@@ -1,42 +1,50 @@
-import { RefreshIcon } from '@heroicons/react/outline'
+import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { BigNumber, Contract, ethers } from 'ethers'
 import { useEffect, useState } from 'react'
-import { vMooneySweepstakesZeroG } from '../../lib/config'
-import { getUserDataRaffle } from '../../lib/google-sheets'
+import { useUserData } from '../../lib/zero-g/google-sheets'
 import {
   ZERO_G_V1_TOTAL_TOKENS,
   useCurrentWinner,
   useRandomSelection,
-  useSweepstakesEvent,
-} from '../../lib/zero-g-sweepstakes'
-import vMooneySweepstakesABI from '../../abis/vMooneySweepstakes.json'
+} from '../../lib/zero-g/zero-g-sweepstakes'
+import vMooneySweepstakesZeroGABI from '../../const/abis/vMooneySweepstakes.json'
+import { VMOONEY_SWEEPSTAKES } from '../../const/config'
 
 //Issue w/ getting winners from contract in production, so hardcoding for now. Can read winners from contract in localhost.
 
-export default function SweepstakesSelection({ supply, account }: any) {
+export default function SweepstakesSelection({
+  sweepstakesContract,
+  supply,
+  account,
+}: any) {
   const [winners, setWinners]: any = useState([])
 
   const [loading, setLoading] = useState(false)
   const [event, setEvent]: any = useState()
 
-  const { data: currWinner }: any = useCurrentWinner()
+  const { data: currWinner }: any = useCurrentWinner(sweepstakesContract)
 
-  const { data: selectionData, write: randomSelection } = useRandomSelection()
+  const {
+    data: winnersData,
+    isLoading: isLoadingWinners,
+    getUserDataRaffle,
+  } = useUserData()
 
-  useSweepstakesEvent(setEvent)
+  const { mutateAsync: randomSelection } =
+    useRandomSelection(sweepstakesContract)
+
+  const provider = new ethers.providers.JsonRpcProvider(
+    process.env.NEXT_PUBLIC_INFURA_URL
+  )
 
   async function getWinners(loop = false) {
-    const provider = new ethers.providers.JsonRpcProvider(
-      process.env.NEXT_PUBLIC_INFURA_URL
-    )
-    const contract: Contract = new Contract(
-      vMooneySweepstakesZeroG,
-      vMooneySweepstakesABI,
-      provider
-    )
-
     setLoading(true)
     const winnersData: any = []
+    const contract: any = new Contract(
+      VMOONEY_SWEEPSTAKES,
+      vMooneySweepstakesZeroGABI,
+      provider
+    )
     for (let i = 0; i < 10; i++) {
       //get random word for id
       try {
@@ -51,14 +59,9 @@ export default function SweepstakesSelection({ supply, account }: any) {
           const winnerAddress = await contract.callStatic.ownerOf(
             winningTokenId
           )
-          const winnerData = await getUserDataRaffle(winnerAddress)
-          if (winnerData === 'rate limit' && !loop) {
-            console.log('rate limit')
-            setWinners([])
-            return setTimeout(async () => {
-              await getWinners(true)
-            }, 5000)
-          }
+
+          const winnerData: any = getUserDataRaffle(winnerAddress)
+
           winnersData.push({
             discordUsername: winnerData?.DiscUsername,
             discordId: winnerData?.DiscID,
@@ -72,25 +75,20 @@ export default function SweepstakesSelection({ supply, account }: any) {
       }
     }
     await setWinners(winnersData.sort((a: any, b: any) => a.id - b.id))
-    return setTimeout(() => {
-      setLoading(false)
-    }, 1000)
+    setLoading(false)
   }
 
   useEffect(() => {
-    if (!winners[0]) {
-      setTimeout(() => {
-        ;(async () => {
-          await getWinners()
-        })()
-      }, 3000)
+    if (winnersData) {
+      getWinners()
     }
-  }, [selectionData, event])
+  }, [winnersData])
 
   function Winner({ winner, i }: any) {
     if (winner && !winner.discordUsername) {
       return (
         <div
+          id={`winner-${i}`}
           className={`flex flex-col rounded-md p-4 bg-gradient-to-tr from-n3green to-red-500 text-black divide-y-2 divide-black`}
         >
           {!loading ? (
@@ -136,7 +134,8 @@ export default function SweepstakesSelection({ supply, account }: any) {
           <>
             <h1 className="text-[125%]">{`Winner #${10 - i}`}</h1>
             <div className="flex">
-              <strong>Discord Username:</strong> <p>{winner.discordUsername}</p>
+              <strong>Discord Username:</strong>{' '}
+              <p id="winner-discord-username">{winner.discordUsername}</p>
             </div>
             <div className="flex">
               <strong>Token ID:</strong>
@@ -179,14 +178,17 @@ export default function SweepstakesSelection({ supply, account }: any) {
           </div>
         </div>
       )}
-      <div className="flex flex-col gap-2 overflow-y-scroll h-[400px]">
+      <div
+        id="sweepstakes-winners"
+        className="flex flex-col gap-2 overflow-y-scroll h-[400px]"
+      >
         {!loading && winners[0] ? (
           winners.map((winner: any, i: number) => (
             <Winner key={`winner-${i}`} winner={winner} i={i} />
           ))
         ) : (
           <div className="flex flex-col rounded-md p-4 bg-gradient-to-tr from-n3blue to-amber-200">
-            <RefreshIcon className="animate-spin h-8 w-8" />
+            <ArrowPathIcon className="animate-spin h-8 w-8" />
           </div>
         )}
       </div>
