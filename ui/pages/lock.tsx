@@ -150,7 +150,7 @@ export default function Lock() {
 
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
-    ethers.utils.parseEther(lockAmount === '' ? '0' : lockAmount),
+    ethers.utils.parseEther(lockAmount || '0'),
     VMOONEYLock?.[0],
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
