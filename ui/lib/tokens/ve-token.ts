@@ -31,9 +31,7 @@ export function useVMOONEYCreateLock(
   amount: any,
   time: any
 ) {
-  return useHandleWrite(votingEscrowContract, 'create_lock', [amount, time], {
-    gasLimit: gasLimits.create_lock,
-  })
+  return useHandleWrite(votingEscrowContract, 'create_lock', [amount, time])
 }
 
 export function useVMOONEYIncreaseLock({
@@ -67,26 +65,20 @@ export function useVMOONEYIncreaseLockAmount(
   votingEscrowContract: SmartContract | undefined,
   amount: any
 ) {
-  return useHandleWrite(votingEscrowContract, 'increase_amount', [amount], {
-    gasLimit: gasLimits.increase_amount,
-  })
+  return useHandleWrite(votingEscrowContract, 'increase_amount', [amount])
 }
 
 export function useVMOONEYIncreaseLockTime(
   votingEscrowContract: SmartContract | undefined,
   time: any
 ) {
-  return useHandleWrite(votingEscrowContract, 'increase_unlock_time', [time], {
-    gasLimit: gasLimits.increase_unlock_time,
-  })
+  return useHandleWrite(votingEscrowContract, 'increase_unlock_time', [time])
 }
 
 export function useVMOONEYWithdrawLock(
   votingEscrowContract: SmartContract | undefined
 ) {
-  return useHandleWrite(votingEscrowContract, 'withdraw', [], {
-    gasLimit: gasLimits.withdraw,
-  })
+  return useHandleWrite(votingEscrowContract, 'withdraw', [])
 }
 
 export function useVMOONEYSupply(
