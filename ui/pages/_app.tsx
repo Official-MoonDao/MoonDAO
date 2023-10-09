@@ -1,7 +1,9 @@
+import { PrivyProvider } from '@privy-io/react-auth'
 import { Chain, Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
 import { ThirdwebProvider, walletConnect } from '@thirdweb-dev/react'
 import { metamaskWallet, coinbaseWallet, safeWallet } from '@thirdweb-dev/react'
 import React, { useState } from 'react'
+import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
 import GTag from '../components/layout/GTag'
@@ -19,22 +21,29 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
     <>
       <GTag />
       <ChainContext.Provider value={{ selectedChain, setSelectedChain }}>
-        <ThirdwebProvider
-          clientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}
-          activeChain={selectedChain}
-          supportedChains={[Ethereum, Polygon, Goerli, Mumbai]}
-          supportedWallets={[
-            metamaskWallet(),
-            coinbaseWallet(),
-            safeWallet(),
-            walletConnect(),
-          ]}
-          autoSwitch
+        <PrivyProvider
+          appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
+          config={{
+            loginMethods: ['wallet', 'email', 'google', 'twitter'],
+            appearance: {
+              theme: 'dark',
+              showWalletLoginFirst: true,
+              logo: 'favicon.ico',
+            },
+            legal: {
+              termsAndConditionsUrl:
+                'https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Terms+and+Conditions',
+              privacyPolicyUrl:
+                'https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy',
+            },
+          }}
         >
-          <Layout lightMode={lightMode} setLightMode={setLightMode}>
-            <Component {...pageProps} />
-          </Layout>
-        </ThirdwebProvider>
+          <PrivyThirdwebSDKProvider selectedChain={selectedChain}>
+            <Layout lightMode={lightMode} setLightMode={setLightMode}>
+              <Component {...pageProps} />
+            </Layout>
+          </PrivyThirdwebSDKProvider>
+        </PrivyProvider>
       </ChainContext.Provider>
     </>
   )

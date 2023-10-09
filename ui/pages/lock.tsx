@@ -32,6 +32,7 @@ import TimeRange from '../components/TimeRange'
 import Head from '../components/layout/Head'
 import Header from '../components/layout/Header'
 import L2Toggle from '../components/lock/L2Toggle'
+import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import LockPresets from '../components/thirdweb/LockPresets'
 import ERC20ABI from '../const/abis/ERC20.json'
@@ -69,8 +70,10 @@ const calculateVMOONEY = ({
     lockTime,
   })
   const percentage = (time - vestingStart) / (max - vestingStart)
-  const finalVMOONEYAmount = MOONEYAmount * percentage
-  return finalVMOONEYAmount.toFixed(finalVMOONEYAmount > 1 ? 2 : 8)
+  const finalVMOONEYAmount = MOONEYAmount * percentage || 0
+  return finalVMOONEYAmount.toFixed(
+    finalVMOONEYAmount > 1 || finalVMOONEYAmount === 0 ? 2 : 8
+  )
 }
 
 const calculateVestingStart = ({
@@ -114,11 +117,6 @@ export default function Lock() {
     vMooneyContract,
     address
   )
-
-  const [hasLock, setHasLock] = useState<boolean>()
-  useEffect(() => {
-    !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
-  }, [VMOONEYLock, address])
 
   const [hasExpired, setHasExpired] = useState<boolean>()
   useEffect(() => {
@@ -166,6 +164,11 @@ export default function Lock() {
     lockAmount && ethers.utils.parseEther(lockAmount),
     lockTime?.value.div(1000)
   )
+
+  const [hasLock, setHasLock] = useState<boolean>()
+  useEffect(() => {
+    !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
+  }, [VMOONEYLock, address, createLock])
 
   const { mutateAsync: increaseLock } = useVMOONEYIncreaseLock({
     votingEscrowContract: vMooneyContract,
@@ -485,7 +488,9 @@ export default function Lock() {
                           CurrentMOONEYLock: ethers.utils.formatEther(
                             VMOONEYLock?.[0] || 0
                           ),
-                          MOONEYAmount: lockAmount && +lockAmount,
+                          MOONEYAmount:
+                            +lockAmount ||
+                            ethers.utils.formatEther(VMOONEYLock?.[0] || 0),
                           VMOONEYAmount: transformNumber(
                             +VMOONEYBalance?.toString() / 10 ** 18 || 0,
                             NumberType.number
@@ -505,20 +510,18 @@ export default function Lock() {
 
                 {/*Web3 button with actions according context*/}
                 <div className="card-actions mt-4 white-text">
-                  <Web3Button
-                    contractAddress={MOONEY_ADDRESSES[selectedChain.slug]}
-                    className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
-                    isDisabled={
-                      (!canIncrease.amount &&
-                        !canIncrease.time &&
-                        Number(lockAmount) <=
-                          Number(VMOONEYLock?.[0].toString() / 10 ** 18)) ||
-                      (!canIncrease.amount &&
-                        !canIncrease.time &&
-                        Date.parse(lockTime?.formatted) <
-                          Date.parse(
-                            dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))
-                          ))
+                  <PrivyWeb3Button
+                    label={
+                      !hasLock
+                        ? t('lock')
+                        : `${t('lockInc')} ${
+                            canIncrease.amount && !canIncrease.time
+                              ? t('amount')
+                              : ''
+                          }  
+                      ${
+                        !canIncrease.amount && canIncrease.time ? t('time') : ''
+                      }`
                     }
                     action={async () => {
                       //check for token allowance
@@ -547,29 +550,29 @@ export default function Lock() {
                             : 'Successfully Created lock'
                         )
                     }}
-                  >
-                    {!hasLock
-                      ? t('lock')
-                      : `${t('lockInc')} ${
-                          canIncrease.amount && !canIncrease.time
-                            ? t('amount')
-                            : ''
-                        }  
-                        ${
-                          !canIncrease.amount && canIncrease.time
-                            ? t('time')
-                            : ''
-                        }`}
-                  </Web3Button>
+                    className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
+                    isDisabled={
+                      (!canIncrease.amount &&
+                        !canIncrease.time &&
+                        Number(lockAmount) <=
+                          Number(VMOONEYLock?.[0].toString() / 10 ** 18)) ||
+                      (!canIncrease.amount &&
+                        !canIncrease.time &&
+                        Date.parse(lockTime?.formatted) <
+                          Date.parse(
+                            dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))
+                          ))
+                    }
+                  />
                 </div>
               </div>
             ) : (
               <div>
                 <p className="">{t('expDesc')}</p>
                 <div className="card-actions mt-4">
-                  <Web3Button contractAddress="" action={() => withdraw()}>
+                  {/* <Web3Button contractAddress="" action={() => withdraw()}>
                     {t('withdraw')}
-                  </Web3Button>
+                  </Web3Button> */}
                 </div>
               </div>
             )}

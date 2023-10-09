@@ -1,4 +1,4 @@
-import { ConnectWallet, useAddress } from '@thirdweb-dev/react'
+import { useAddress } from '@thirdweb-dev/react'
 //Network warning
 import { useChain } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
@@ -11,6 +11,7 @@ import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { useImportToken } from '../../lib/utils/import-token'
 import { LogoBlack, LogoWhite } from '../assets'
+import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import SwitchNetworkBanner from '../thirdweb/SwitchNetworkBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import ExternalLinks from './Sidebar/ExternalLinks'
@@ -120,13 +121,13 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       {/*The content, child rendered here*/}
       <main className="flex justify-center pb-24 md:ml-48 relative">
         <section
-          className={`mt-2 flex flex-col lg:w-[80%] lg:px-14 xl:px-16 2xl:px-20`}
+          className={`mt-4 flex flex-col lg:w-[80%] lg:px-14 xl:px-16 2xl:px-20`}
         >
           {/*Connect Wallet and Preferred network warning*/}
           <div
             className={`max-w-[1400px] mb-4 lg:mb-2 flex flex-col items-end`}
           >
-            <div
+            {/* <div
               className={`${
                 address && chain?.name === selectedChain?.name
                   ? 'hidden'
@@ -136,9 +137,11 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
               {address && chain?.name !== selectedChain?.name && (
                 <SwitchNetworkBanner newNetwork={selectedChain} />
               )}
-            </div>
+            </div> */}
 
-            <ConnectWallet className="!bg-gradient-to-b !text-slate-800 dark:!text-zinc-50 from-moon-gold to-yellow-300 dark:to-amber-400 !border-yellow-200 !border-opacity-50 !shadow !shadow-gray-200 hover:!scale-105 !transition-all !duration-150" />
+            {/* <ConnectWallet className="!bg-gradient-to-b !text-slate-800 dark:!text-zinc-50 from-moon-gold to-yellow-300 dark:to-amber-400 !border-yellow-200 !border-opacity-50 !shadow !shadow-gray-200 hover:!scale-105 !transition-all !duration-150" /> */}
+
+            <PrivyConnectWallet />
           </div>
           {children}
         </section>

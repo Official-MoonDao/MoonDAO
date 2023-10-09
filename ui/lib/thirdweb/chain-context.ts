@@ -1,4 +1,4 @@
-import { Chain, Mumbai, Polygon, Ethereum, Goerli } from '@thirdweb-dev/chains'
+import { Chain, Ethereum, Goerli } from '@thirdweb-dev/chains'
 import { createContext } from 'react'
 
 const ChainContext = createContext({
