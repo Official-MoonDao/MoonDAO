@@ -7,6 +7,7 @@ import {
   FolderIcon,
   CalendarDaysIcon,
   WalletIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline'
 
 export const navigation = [
@@ -14,6 +15,11 @@ export const navigation = [
     name: 'home',
     href: '/',
     icon: HomeIcon,
+  },
+  {
+    name: 'Onboarding',
+    href: '/onboarding',
+    icon: PlusIcon,
   },
   {
     name: 'Buy $MOONEY',

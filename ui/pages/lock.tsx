@@ -569,11 +569,11 @@ export default function Lock() {
             ) : (
               <div>
                 <p className="">{t('expDesc')}</p>
-                <div className="card-actions mt-4">
-                  {/* <Web3Button contractAddress="" action={() => withdraw()}>
+                {/* <div className="card-actions mt-4">
+                  <Web3Button contractAddress="" action={() => withdraw()}>
                     {t('withdraw')}
-                  </Web3Button> */}
-                </div>
+                  </Web3Button>
+                </div> */}
               </div>
             )}
           </div>
