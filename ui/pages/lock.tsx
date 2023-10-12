@@ -32,6 +32,7 @@ import TimeRange from '../components/TimeRange'
 import Head from '../components/layout/Head'
 import Header from '../components/layout/Header'
 import L2Toggle from '../components/lock/L2Toggle'
+import { LockData } from '../components/lock/LockData'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import LockPresets from '../components/thirdweb/LockPresets'
@@ -242,60 +243,13 @@ export default function Lock() {
             <Header text="Lock $MOONEY" />
           </span>
         </div>
-        <section className="mt-6 xl:mt-6 xl:w-3/4">
-          {/*Lock Data*/}
-          {hasLock && (
-            <>
-              <div className="card stats-vertical lg:stats-horizontal shadow mb-4">
-                <div className="stat">
-                  <div className="white-text stat-figure text-primary">
-                    <MoonIcon className="h-8 w-8" />
-                  </div>
-                  <div className="white-text">{t('hasLockMoney1')}</div>
-                  <div className="stat-value text-primary">
-                    <Balance
-                      balance={VMOONEYBalance?.toString() / 10 ** 18}
-                      loading={VMOONEYBalanceLoading}
-                      decimals={
-                        VMOONEYBalance &&
-                        VMOONEYBalance?.gt(ethers.utils.parseEther('1'))
-                          ? 2
-                          : 8
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="stat">
-                  <div className="white-text stat-figure text-secondary">
-                    <LockClosedIcon className="h-8 w-8" />
-                  </div>
-                  <div className="white-text">{t('hasLockMoney2')}</div>
-                  <div className="stat-value text-secondary">
-                    <Balance
-                      balance={VMOONEYLock && VMOONEYLock[0]}
-                      loading={VMOONEYLockLoading}
-                      decimals={2}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="card stats-vertical lg:stats-horizontal shadow mb-4">
-                <div className="stat">
-                  <div className="stat-figure">
-                    <ClockIcon className="h-8 w-8" />
-                  </div>
-                  <div className="white-text">{t('yourlockExpDate')}</div>
-                  <div className="yellow-text stat-value">
-                    {VMOONEYLock &&
-                      dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </section>
+        <LockData
+          hasLock={hasLock}
+          VMOONEYBalance={VMOONEYBalance}
+          VMOONEYBalanceLoading={VMOONEYBalanceLoading}
+          VMOONEYLock={VMOONEYLock}
+          VMOONEYLockLoading={VMOONEYLockLoading}
+        />
 
         <div className="my-7 lg:my-5 justify-center xl:mt-8 flex xl:w-3/4 lg:justify-normal">
           <L2Toggle />
