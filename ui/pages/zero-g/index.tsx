@@ -60,10 +60,10 @@ export default function ZeroG({ userDiscordData }: any) {
           </div>
 
           <p className="mt-6 font-mono text-base xl:text-lg xl:leading-10 text-center leading-8 text-light-text dark:text-dark-text dark:text-opacity-80">
-            {`Join Astronauts Doug Hurley and Nicole Stott on this one-of-a-kind opportunity to experience true weightlessness. The team’s Boeing 727 flies in parabolic arcs to create a weightless environment, allowing you to float, flip, and soar as if you were in space. Start training for a journey to the Moon and experience the adventure of a lifetime with our Zero-G flight!`}
+            {`The team’s Boeing 727 flies in parabolic arcs to create a weightless environment, allowing you to float, flip, and soar as if you were in space. Start training for a journey to the Moon and experience the adventure of a lifetime with our Zero-G flight!`}
           </p>
 
-          <Link href="/zero-g/detail" passHref>
+          <Link href="https://www.moondao.com/zero-g" passHref>
             <p
               className={`mt-10 xl:text-lg block text-center text-md font-GoodTimes font-semibold bg-gradient-to-r from-blue-500 to-blue-700 dark:decoration-detail-dark dark:from-moon-gold dark:to-stronger-dark  underline decoration-detail-light hover:scale-105 transition-all duration-150 text-transparent bg-clip-text`}
             >
