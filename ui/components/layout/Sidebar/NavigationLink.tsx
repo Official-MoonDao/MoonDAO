@@ -67,15 +67,21 @@ const Dropdown = ({ item, router }: any) => {
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150`}
           >
             <item.icon
-              className="mr-2 h-5 w-5 text-blue-500 dark:text-white"
+              className={`mr-2 h-5 w-5 text-blue-500  ${
+                item?.children
+                  ?.map((e: any) => e.href)
+                  ?.includes(router.pathname)
+                  ? 'dark:text-moon-orange'
+                  : 'dark:text-white'
+              }`}
               aria-hidden="true"
             />
             {item.name}
             <span className="ml-4">
               <ChevronRightIcon
                 className={`
-            ${open ? 'rotate-90 text-gray-500' : 'text-gray-400'}
-            'h-5 w-5 translate-all duration-150'
+            ${open && 'rotate-90'}
+            'h-5 w-5 translate-all duration-150 text-white'
             `}
                 aria-hidden="true"
               />
@@ -100,8 +106,8 @@ const Dropdown = ({ item, router }: any) => {
                     className={`${
                       router.pathname == subItem.href
                         ? 'text-moon-blue dark:text-moon-orange font-semibold'
-                        : ' hover:text-gray-700 dark:hover:text-gray-200'
-                    } my-3 flex items-center text-[15px] font-medium dark:text-gray-400`}
+                        : '  dark:text-white'
+                    } my-3 flex items-center`}
                   >
                     {subItem.name}
                   </Link>
