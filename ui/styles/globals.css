@@ -170,12 +170,19 @@ What we achieve by doing this: the ideal scenario is that the HTML/JSX of a comp
 
 /* These two classes control the color of the background*/
 
-.stars-dark {
-  background: url('/star-background.png') repeat,
-    linear-gradient(to right, rgb(10, 10, 10), rgb(5, 5, 5), rgb(3, 1, 7));
+.background-dark {
+  background: linear-gradient(56.41deg, #343A54 29.98%, #080C20 79.58%, #2D121A 97.4%);
+
 }
 
-.stars-light {
+.background-light {
   background: url('/star-background.png') repeat,
     linear-gradient(to right, rgb(184, 186, 245), #dce3fa, rgb(129, 182, 235));
+}
+
+.sidebar-bg-dark{
+  background: linear-gradient(172.32deg, #090D21 70.56%, #46161B 106.43%);
+}
+.sidebar-bg-light{
+  background: linear-gradient(172.32deg, #090D21 70.56%, #46161B 106.43%);
 }

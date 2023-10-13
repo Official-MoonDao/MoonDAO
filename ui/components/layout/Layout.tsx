@@ -10,7 +10,7 @@ import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { useImportToken } from '../../lib/utils/import-token'
-import { LogoBlack, LogoWhite } from '../assets'
+import { LogoBlack, LogoWhite, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import SwitchNetworkBanner from '../thirdweb/SwitchNetworkBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
@@ -44,12 +44,13 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   useEffect(() => {
     if (localStorage.getItem('MOONEY_isImported')) setIsTokenImported(true)
   }, [address])
-  const { t } = useTranslation('common')
+  const { t } = useTranslation('common');
+  //Background is defined in this root div.
   const layout = (
     <div
       id="app-layout"
       className={`${
-        !lightMode ? 'dark stars-dark' : 'stars-light'
+        !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen`}
     >
       <Script src="https://cdn.splitbee.io/sb.js" />
@@ -70,10 +71,10 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       {/* Static sidebar for desktop */}
       <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
         {/* Sidebar component*/}
-        <div className="flex flex-grow flex-col overflow-y-auto bg-gradient-to-b from-zinc-50 via-blue-50 to-blue-100 pt-5 dark:from-slate-700 dark:via-gray-800 dark:to-slate-900">
+        <div className="flex flex-grow flex-col overflow-y-auto pt-5 sidebar-bg-light dark:sidebar-bg-dark">
           <a href="https://moondao.com">
-            <div className="flex flex-shrink-0 items-center px-4">
-              {lightMode ? <LogoBlack /> : <LogoWhite />}
+            <div className="flex flex-shrink-0 items-center px-4 pl-6">
+              {lightMode ? <LogoBlack /> : <LogoSidebar />}
             </div>
           </a>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">
