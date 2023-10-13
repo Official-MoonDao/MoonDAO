@@ -41,7 +41,7 @@ export default function PurchasePortal({ validLock }: any) {
         <>
           <div className="flex flex-col items-center">
             <p className="text-center text-n3blue">
-              {`Use Promo Code "MOONDAO" at checkout to receive $2,500 off your flight!`}
+              {`Use Promo Code "MOONDAO" at checkout to receive $1,000 off your flight!`}
             </p>
             <Button
               onClick={() => {
