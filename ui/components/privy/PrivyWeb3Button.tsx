@@ -13,11 +13,12 @@ Button States:
 type PrivyWeb3BtnProps = {
   label: string
   action: Function
-  isDisabled: boolean
-  className: string
+  isDisabled?: boolean
+  className?: string
 }
 
 export function PrivyWeb3Button({
+  label,
   action,
   isDisabled = false,
   className = '',
@@ -31,7 +32,7 @@ export function PrivyWeb3Button({
 
   const [btnState, setBtnState] = useState(0)
 
-  function Button({ onClick, children, className = '' }: any) {
+  function Button({ onClick, children }: any) {
     return (
       <button
         className={`px-8 py-2 w-[200px] rounded-md bg-white text-black ${className}`}
@@ -52,7 +53,7 @@ export function PrivyWeb3Button({
     } else {
       setBtnState(2)
     }
-  }, [wallets, selectedChain])
+  }, [wallets, selectedChain, selectedWallet])
 
   return (
     <>
@@ -81,7 +82,7 @@ export function PrivyWeb3Button({
           }}
           disabled={isDisabled}
         >
-          {isLoading ? 'Loading...' : 'Action'}
+          {isLoading ? 'Loading...' : label}
         </Button>
       )}
     </>
