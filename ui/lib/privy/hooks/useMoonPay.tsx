@@ -1,7 +1,14 @@
+import { MoonpayConfig, useWallets } from '@privy-io/react-auth'
+import { useContext } from 'react'
+import PrivyWalletContext from '../privy-wallet-context'
+
 export function useMoonPay() {
-  function fund(wallet: any, quoteCurrencyAmount: number) {
-    const fundWalletConfig = {
-      currencyCode: 'ETH_ETHEREUM',
+  const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
+
+  function fund(quoteCurrencyAmount: number) {
+    const fundWalletConfig: MoonpayConfig = {
+      currencyCode: 'MATIC_POLYGON',
       quoteCurrencyAmount,
       paymentMethod: 'credit_debit_card',
       uiConfig: {
@@ -10,7 +17,7 @@ export function useMoonPay() {
       },
     }
 
-    return wallet.fund({ config: fundWalletConfig })
+    return wallets[selectedWallet].fund({ config: fundWalletConfig })
   }
 
   return fund
