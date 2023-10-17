@@ -52,49 +52,49 @@ export default function Home() {
     <div className="animate-fadeIn">
       <Head title="Home" />
       {/*Features */}
-      <div className="component-background py-12 lg:py-20 mt-3 w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark ">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <h1 className="mt-2 text-3xl font-GoodTimes font-bold tracking-wide leading-relaxed text-title-light dark:text-title-dark sm:text-4xl xl:text-5xl">
-              The <br className="md:hidden" /> MoonDAO app
-            </h1>
-          </div>
-          <div
-            id="home-card"
-            className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none"
+      <div className="mt-3 px-5 lg:px-8 xl:px-9 py-12 lg:py-14 border-4 dark:border-[#CBE4F7] dark:bg-[#040C1A] w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] font-RobotoMono">
+        <p className="text-white font-RobotoMono font-semibold text-sm lg:text-base text-center lg:text-left">
+          Our base of operations
+        </p>
+        <h1 className="mt-2 lg:mt-3 leading-relaxed text-white font-GoodTimes text-center text-3xl lg:text-5xl xl:text-[54px] lg:text-left">
+          The <br className="md:hidden" /> MoonDAO app
+        </h1>
+
+        <p className="mt-4 lg:mt-5 text-center lg:text-left font-RobotoMono text-base lg:text-lg text-white opacity-60">
+          Here you can perform onchain operations related to the MoonDAO
+          community.
+        </p>
+
+        <div
+          id="home-card"
+          className="mx-auto mt-8 max-w-2xl lg:mt-12 xl:mt-14 lg:max-w-none"
+        >
+          <dl
+            id={'home-card-pages'}
+            className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2 xl:grid-cols-2"
           >
-            <dl
-              id={'home-card-pages'}
-              className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2 xl:grid-cols-2"
-            >
-              {pages.map((page: any, i: number) => (
-                <Link
-                  id={'#home-card-link' + i}
-                  href={page.href}
-                  key={page.name}
-                  target={page.externalLink ? '_blank' : ''}
-                  className="flex flex-col items-center text-center lg:text-left lg:justify-start lg:items-start border border-detail-light dark:border-detail-dark pl-3 pr-2 lg:pl-4 lg:pr-3 rounded-2xl py-3 bg-gradient-to-b hover:from-blue-500 hover:to-blue-800 dark:hover:border-orange-500 dark:hover:from-stronger-dark dark:hover:to-orange-600 group transition-all duration-150 shadow shadow-detail-light dark:shadow-detail-dark dark:hover:shadow-orange-300 hover:scale-105"
-                  passHref
-                >
-                  <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-title-light dark:text-title-dark lg:tracking-wider group-hover:text-blue-50 dark:group-hover:text-white">
-                    <page.icon
-                      className="h-6 w-6 lg:h-8 lg:w-8 flex-none text-moon-blue dark:text-moon-gold group-hover:text-white dark:group-hover:text-yellow-200"
-                      aria-hidden="true"
-                    />
-                    {page.name}
-                  </dt>
-                  <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-light-text dark:text-dark-text group-hover:text-white group-hover:text-opacity-90">
-                    <p className="flex-auto">{page.description}</p>
-                    <div className="mt-6">
-                      <p className="text-sm font-semibold leading-6 text-detail-light dark:text-detail-dark inline-block transition-all duration-105 group-hover:text-white group-hover:scale-110">
-                        Go there <span aria-hidden="true">→</span>
-                      </p>
-                    </div>
-                  </dd>
-                </Link>
-              ))}
-            </dl>
-          </div>
+            {pages.map((page: any, i: number) => (
+              <Link
+                id={'#home-card-link' + i}
+                href={page.href}
+                key={page.name}
+                target={page.externalLink ? '_blank' : ''}
+                className="flex flex-col items-center text-center bg-[#071732] rounded-[6px] py-4 lg:py-5 hover:scale-105 transition-all duration-150"
+                passHref
+              >
+                <dt className="flex items-center justify-center py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold w-3/4">
+                  <page.icon
+                    className="h-5 w-5 stroke-2 flex-none text-[#1F212B]"
+                    aria-hidden="true"
+                  />
+                  {page.name}
+                </dt>
+                <dd className="mt-4 lg:mt-5 xl:mt-6 text-base leading-7 w-3/4 text-white font-medium lg:text-left">
+                  <p className="">{page.description}</p>
+                </dd>
+              </Link>
+            ))}
+          </dl>
         </div>
       </div>
     </div>

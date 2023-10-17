@@ -3,8 +3,6 @@ import React, { useEffect } from 'react'
 import { useCalendarEvents } from '../lib/dashboard/hooks'
 import { SeshEvent } from '../components/dashboard/calendar/SeshEvent'
 import Head from '../components/layout/Head'
-import Header from '../components/layout/Header'
-import Line from '../components/layout/Line'
 
 const SESH_LINK = 'https://sesh.fyi/api/calendar/v2/hfwjLhfVoutWs65KegtbP7.ics'
 
@@ -15,30 +13,33 @@ export default function Calendar() {
   return (
     <div className="animate-fadeIn">
       <Head title={t('calendarTitle')} description={t('calendarDesc')} />
-      <div className="mt-12">
-        <Header text="Calendar" />
-        <Line />
-      </div>
-      <div className="mt-3 px-5 py-12 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
-        <p className="my-6 xl:my-10 text-lg xl:text-xl leading-8 text-center text-light-text dark:text-dark-text dark:text-opacity-80">
-          {t('calendarDesc')}
-        </p>
-
-        <div>
+      <div className="mt-3 px-5 lg:px-7 xl:px-9 py-12 lg:py-14 border-4 dark:border-[#CBE4F7] dark:bg-[#040C1A] w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px]">
+        {/*Title*/}
+        <h2 className="text-white font-GoodTimes text-center text-4xl lg:text-5xl xl:text-[54px] lg:text-left">
+          Calendar
+        </h2>
+        {/*Section containing the events*/}
+        <section className="mt-6 bg-[#071732] py-5 px-2 lg:px-4 xl:px-6 font-RobotoMono">
+          <p className="text-base lg:text-lg xl:text-[20px] font-medium text-center lg:text-left text-light-text dark:text-white">
+            {t('calendarDesc')}
+          </p>
           <div
             id="dashboard-calendar"
-            className="flex flex-col gap-2 divide-y-2 divide-slate-300 items-center"
+            className="mt-5 flex flex-col gap-4 items-center"
           >
+            {/*Skeleton while loading*/}
             {!events?.[0] ? (
               <>
                 {Array(6)
                   .fill(0)
                   .map((_, i) => (
                     <div
-                      className="flex flex-col text-black dark:text-moon-gold items-center h-12 w-full animate-pulse"
+                      className="flex flex-col w-full items-center gap-2 p-2 py-5 font-RobotoMono border dark:border-white dark:border-opacity-20 text-center lg:text-left lg:items-start lg:px-4 animate-pulse"
                       key={'seshEvent' + i}
                     >
-                      ...loading
+                      <h1 className="text-indigo-500 dark:text-moon-orange lg:text-lg xl:text-[20px] min-h-12">
+                        ...Loading
+                      </h1>
                     </div>
                   ))}
               </>
@@ -50,7 +51,7 @@ export default function Calendar() {
               </>
             )}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   )
