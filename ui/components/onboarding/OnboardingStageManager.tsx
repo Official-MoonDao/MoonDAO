@@ -11,8 +11,10 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ContributionLevels } from './ContributionLevels'
+import { ProofOfHumanity } from './ProofOfHumanity'
 
 function StageContainer({ children }: any) {
   return <div className="flex flex-col gap-4 justify-center">{children}</div>
@@ -27,9 +29,7 @@ export function OnboardingStageManager() {
 
   const fund = useMoonPay()
 
-  const { contract: maticContract } = useContract(
-    '0x0000000000000000000000000000000000001010'
-  )
+  const { generateRoute, executeRoute } = useSwapRouter(selectedLevel)
 
   useEffect(() => {
     if (user && stage === 0) {
@@ -40,7 +40,7 @@ export function OnboardingStageManager() {
   }, [user])
 
   return (
-    <div className="flex pt-8 w-full h-full">
+    <div className="flex flex-col pt-8 w-full h-full">
       {stage === 0 && (
         <StageContainer>
           <h1 className="text-2xl">WELCOME TO MOONDAO</h1>
@@ -70,23 +70,29 @@ export function OnboardingStageManager() {
             label="Purchase"
             action={async () => {
               //check balance of wallet, if not enough matic then fund from moonpay
-              console.log(wallets[selectedWallet])
-              const maticBalance = await maticContract?.call('balanceOf', [
-                wallets[selectedWallet].address,
-              ])
-              const formattedMaticBalance =
-                ethers.utils.formatEther(maticBalance)
+              // const maticBalance = await maticContract?.call('balanceOf', [
+              //   wallets[selectedWallet].address,
+              // ])
+              const provider = await wallets[selectedWallet].getEthersProvider()
+              const nativeBalance = await provider.getBalance(
+                wallets[selectedWallet].address
+              )
 
-              if (+formattedMaticBalance < selectedLevel) {
+              const formattedNativeBalance =
+                ethers.utils.formatEther(nativeBalance)
+
+              if (+formattedNativeBalance < selectedLevel) {
                 toast(
                   "You don't have enough Matic to purchase this level, use Moonpay to fund your wallet"
                 )
                 setTimeout(async () => {
-                  await fund(selectedLevel - +formattedMaticBalance)
+                  await fund(selectedLevel - +formattedNativeBalance)
                 }, 3000)
               }
-              //buy mooney on L2 using uniswap
 
+              //buy mooney on L2 using uniswap
+              const route = await generateRoute()
+              const tx = await executeRoute(route)
               //approve mooney for lock
               //lock mooney
             }}
@@ -94,7 +100,31 @@ export function OnboardingStageManager() {
           />
         </StageContainer>
       )}
-      {stage === 2 && <StageContainer></StageContainer>}
+      {stage === 2 && (
+        <StageContainer>
+          <h1 className="text-2xl">Proof of Humanity</h1>
+          <p>{`To access governance and events at MoonDAO you must complete thtese steps.  No identifying data is stored by MoonDAO in this process.`}</p>
+          <ProofOfHumanity />
+        </StageContainer>
+      )}
+
+      {/* DEV BUTTONS -- REMOVE B4 PUSHING TO PROD */}
+      <div className="p-4 flex gap-2">
+        <button
+          className="p-2 bg-[blue]"
+          onClick={() => setStage(stage - 1)}
+          disabled={stage === 0}
+        >
+          prev stage
+        </button>
+        <button
+          className="p-2 bg-[blue]"
+          onClick={() => setStage(stage + 1)}
+          disabled={stage === 2}
+        >
+          next next
+        </button>
+      </div>
     </div>
   )
 }

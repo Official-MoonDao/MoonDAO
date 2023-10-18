@@ -43,7 +43,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
       <ContributionLevel
         icon=""
         title="Initiate"
-        levelPrice={100}
+        levelPrice={0.001}
         points={[
           'Access to the community',
           'Be part of the DAO Governance',
@@ -55,7 +55,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
       <ContributionLevel
         icon=""
         title="Delegate"
-        levelPrice={1000}
+        levelPrice={0.01}
         points={[
           'Access to the community',
           'Be part of the DAO Governance',
@@ -67,7 +67,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
       <ContributionLevel
         icon=""
         title="Advocate"
-        levelPrice={10000}
+        levelPrice={0.1}
         points={[
           'Access to the community',
           'Be part of the DAO Governance',

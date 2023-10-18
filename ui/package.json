@@ -31,7 +31,6 @@
     "ethers": "5.7",
     "google-spreadsheet": "^3.3.0",
     "gsap": "^3.12.2",
-    "jsbi": "^4.3.0",
     "moment": "^2.29.4",
     "next": "^13.4.10",
     "next-translate": "^1.6.0",

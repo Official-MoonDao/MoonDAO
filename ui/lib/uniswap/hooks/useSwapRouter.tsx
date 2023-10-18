@@ -1,6 +1,7 @@
 //WIP
 import { useWallets } from '@privy-io/react-auth'
-import { Mumbai, Polygon } from '@thirdweb-dev/chains'
+import { Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
+import { ThirdwebSDK, useSDK, useSigner } from '@thirdweb-dev/react'
 import {
   CurrencyAmount,
   Ether,
@@ -15,35 +16,47 @@ import {
   SwapType,
 } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
-import { useContext, useState } from 'react'
+import { useContext } from 'react'
 import ERC20_ABI from '../../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../../const/config'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
-import { initSDK } from '../../thirdweb/thirdweb'
-import { fromReadableAmount } from './conversion'
 
 const V3_SWAP_ROUTER_ADDRESS = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
 
-const ETH: any = Ether.onChain(
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 1 : 5
+enum TransactionState {
+  Failed = 'Failed',
+  New = 'New',
+  Rejected = 'Rejected',
+  Sending = 'Sending',
+  Sent = 'Sent',
+}
+
+const ETH: any = Ether.onChain(1)
+
+const MATIC = new Token(
+  137,
+  '0x0000000000000000000000000000000000001010',
+  18,
+  'MATIC',
+  'MATIC'
 )
 
 const MOONEY = new Token(
   1,
-  MOONEY_ADDRESSES[
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'ethereum' : 'goerli'
-  ],
+  MOONEY_ADDRESSES['ethereum'],
   18,
   'MOONEY',
   'MOONEY'
 )
 
-export function useSwapRouter() {
+export function useSwapRouter(swapAmnt: number) {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
+  const sdk = useSDK()
+
   async function generateRoute() {
-    const provider: any = wallets[selectedWallet].getEthereumProvider()
+    const provider: any = await wallets[selectedWallet].getEthersProvider()
     const router: any = new AlphaRouter({
       chainId: process.env.NEXT_PUBLIC_CHAIN === 'testnet' ? 5 : 1,
       provider,
@@ -57,7 +70,10 @@ export function useSwapRouter() {
     }
 
     const route = await router.route(
-      CurrencyAmount.fromRawAmount(ETH, fromReadableAmount(0.1, 18).toString()),
+      CurrencyAmount.fromRawAmount(
+        ETH,
+        ethers.utils.parseEther(String(swapAmnt)).toString()
+      ),
       MOONEY,
       TradeType.EXACT_INPUT,
       options
@@ -67,36 +83,50 @@ export function useSwapRouter() {
   }
 
   async function executeRoute(route: SwapRoute) {
-    const provider: any = wallets[selectedWallet].getEthereumProvider()
-
     const walletAddress = wallets[selectedWallet].address
+    const provider = await wallets[selectedWallet].getEthersProvider()
+    const signer = provider?.getSigner()
 
-    if (!walletAddress || !provider) {
+    if (!walletAddress || !signer) {
       throw new Error('Cannot execute a trade without a connected wallet')
     }
 
-    const tokenApproval = await getTokenTransferApproval(ETH, 0.1)
+    // const tokenApproval = await getTokenTransferApproval(MATIC, 100)
+
+    // // Fail if transfer approvals do not go through
+    // if (tokenApproval !== TransactionState.Sent) {
+    //   return TransactionState.Failed
+    // }
+
+    const suggestedMaxFeePerGas = (
+      await provider.getFeeData()
+    ).maxFeePerGas?.toString()
+
+    const tx = await signer.sendTransaction({
+      data: route.methodParameters?.calldata,
+      to: V3_SWAP_ROUTER_ADDRESS,
+      value: route?.methodParameters?.value,
+      from: walletAddress,
+      maxFeePerGas: suggestedMaxFeePerGas,
+      maxPriorityFeePerGas: 0,
+    })
+
+    return tx
   }
 
   async function getTokenTransferApproval(token: Token, amount: number) {
-    const provider: any = wallets[selectedWallet].getEthereumProvider()
-
     const walletAddress = wallets[selectedWallet].address
-    if (!provider || !walletAddress) {
+    if (!walletAddress || !sdk) {
       console.log('No Provider Found')
     }
 
     try {
-      const sdk = initSDK(
-        process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
-      )
-
-      const tokenContract = await sdk.getContract(token.address, ERC20_ABI.abi)
-
+      const tokenContract = await sdk?.getContract(token.address, ERC20_ABI.abi)
+      console.log(tokenContract)
       //approve token transfer
-      const tx = await tokenContract.call('approve', [
+      const tx = await tokenContract?.call('approve', [
         V3_SWAP_ROUTER_ADDRESS,
-        fromReadableAmount(amount, token.decimals).toString(),
+        ethers.utils.formatEther(amount).toString(),
       ])
       return tx
     } catch (e) {
