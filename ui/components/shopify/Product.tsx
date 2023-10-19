@@ -18,23 +18,26 @@ export default function Product({
   //This return is the link to the store.
   if (linkToStore)
     return (
-      <div className="prod backdropBlur flex justify-center items-center">
+      <div className="mt-8 flex justify-center items-center">
         <div className="flex flex-col m-2">
           <div className="flex flex-col items-center justify-center my-3 text-center">
-            <h3 className="text-lg md:text-xl xl:text-2xl font-GoodTimes text-moon-gold">
+            <h3 className="text-white font-GoodTimes text-center text-4xl lg:text-left leading-relaxed w-full">
               Lifeship NFT
             </h3>
-            <p className="lg:w-3/4 mt-2 md:mt-4 text-sm font-mono leading-relaxed lg:text-base xl:text-lg text-light-text dark:text-dark-text opacity-80">
+            <p className="lg:w-3/4 mt-2 md:mt-4 text-sm font-mono leading-relaxed lg:text-base lg:text-left lg:self-start xl:text-lg text-white opacity-90">
               MoonDAO is partnering with lifeship to send NFTs to space! Please
               upload a file and complete the checkout. You will be emailed
               instrucitons to claim your NFT.
             </p>
           </div>
-
-          <div className="flex flex-col justify-center items-center">
+          {/*NFT kit */}
+          <div className="p-5 flex flex-col justify-center items-center bg-[#071732] lg:max-w-[700px]">
+            <h3 className="text-white font-GoodTimes text-center text-3xl lg:text-left leading-relaxed w-full">
+              NFT KIT
+            </h3>
             <Image
               id="product-image"
-              className="rounded-2xl backdropBlur"
+              className="mt-5 self-start rounded-2xl"
               src={product.images[preview]?.src}
               width={450}
               height={450}
@@ -77,9 +80,10 @@ export default function Product({
                 {'>'}
               </button>
             </div>
+            {/*Final page button*/}
             <button
               id="link-to-store"
-              className="font-GoodTimes border-style btn text-n3blue normal-case font-medium w-full bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out my-2"
+              className="mt-4 py-3 text-white bg-moon-orange font-RobotoMono w-full duration-[0.6s] ease-in-ease-out text-1xl"
               onClick={() => linkToStore()}
             >
               Send a File to Space!
@@ -91,16 +95,16 @@ export default function Product({
 
   //This return is the products.
   return (
-    <div className="w-full lg:max-w-1/3 bg-gray-300 dark:bg-[#1c1c1c80] rounded-lg backdropBlur flex flex-col justify-center items-center p-3 lg:p-1 xl:p-3">
+    <div className="w-full relative lg:max-w-2/3 xl:max-w-1/3 bg-gray-300 dark:bg-[#071732] rounded-lg flex flex-col justify-center items-center p-3 lg:p-1 xl:p-3 font-RobotoMono">
       <div className="flex flex-col items-center lg:gap-5 xl:gap-2">
-        <h2 className="w-full mt-4 font-GoodTimes mx-4 text-center 2xl:text-left xl:text-lg 2xl:text-xl 2xl:mr-2 bg-gradient-to-b text-transparent bg-clip-text from-moon-blue to-blue-950 dark:from-moon-gold dark:to-amber-600">
+        <h2 className="w-full mt-4 mx-4 text-center xl:text-lg 2xl:mr-2 text-white font-semibold">
           {label}
         </h2>
         <div className="p-2 ">
           {product?.images[preview] && (
             <Image
               id="product-image"
-              className={`rounded-2xl backdropBlur bg-gray-100 dark:bg-slate-900`}
+              className={`rounded-2xl bg-gray-100 dark:bg-slate-800`}
               src={product.images[preview]?.src}
               width={450}
               height={400}
@@ -163,17 +167,15 @@ export default function Product({
           {/*Quantity and total */}
           <div className="flex flex-col justify-center items-center gap-1">
             <div className="w-full">
-              <p className="text-title-light dark:text-title-dark lg:text-sm 2xl:text-base">
+              <p className="text-white text-sm">
                 {'Quantity:'}
-                <span className="ml-2 dark:text-moon-gold text-moon-blue">
-                  {quantity}
-                </span>
+                <span className="ml-2 text-moon-orange">{quantity}</span>
               </p>
             </div>
             <div className="w-full">
-              <p className=" text-title-light dark:text-title-dark lg:text-sm 2xl:text-base">
+              <p className=" text-white text-sm">
                 {'Total:'}
-                <span className="ml-2 dark:text-moon-gold text-moon-blue">{`$${
+                <span className="ml-2 text-moon-orange">{`$${
                   product?.variants
                     ? (product.variants[0].price.amount * quantity).toFixed(2)
                     : 0

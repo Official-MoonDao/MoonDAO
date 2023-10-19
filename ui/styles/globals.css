@@ -140,14 +140,6 @@ a {
 
 Contains Loading Skeleton utilities, link & component background.
 
-*DO NOT* expand this list of class utilities using @layer or traditional CSS classes, instead, consider the following:
-
-1) If a class is going to be used just once or twice, prefer writing the classes on that same component.
-
-2) If we expect to use a set of classes more times than that, it's preferable to create a REACT COMPONENT that has those classes.
-
-What we achieve by doing this: the ideal scenario is that the HTML/JSX of a component has all the styling contained in itself using familiar Tailwind Classes, instead of having the component make a reference to other CSS files.
-
 */
 
 @layer utilities {
@@ -166,9 +158,16 @@ What we achieve by doing this: the ideal scenario is that the HTML/JSX of a comp
   .component-background {
     @apply relative bg-gradient-to-br from-white via-gray-50 to-zinc-50 dark:from-black dark:via-slate-950 dark:to-gray-950;
   }
+
+  .page-title {
+   @apply text-white font-GoodTimes text-center text-4xl lg:text-5xl xl:text-[54px] lg:text-left;
+  }
+
+  .page-border-and-color{
+    @apply border-4 dark:border-[#CBE4F7] dark:bg-[#040C1A] ;
+  }
 }
 
-/* These two classes control the color of the background*/
 
 .background-dark {
   background: linear-gradient(56.41deg, #343A54 29.98%, #080C20 79.58%, #2D121A 97.4%);
@@ -179,6 +178,9 @@ What we achieve by doing this: the ideal scenario is that the HTML/JSX of a comp
   background: url('/star-background.png') repeat,
     linear-gradient(to right, rgb(184, 186, 245), #dce3fa, rgb(129, 182, 235));
 }
+
+
+/* These two classes control the color of the sidebar*/
 
 .sidebar-bg-dark{
   background: linear-gradient(172.32deg, #090D21 70.56%, #46161B 106.43%);

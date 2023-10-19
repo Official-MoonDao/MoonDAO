@@ -52,7 +52,7 @@ export default function Home() {
     <div className="animate-fadeIn">
       <Head title="Home" />
       {/*Features */}
-      <div className="mt-3 px-5 lg:px-8 xl:px-9 py-12 lg:py-14 border-4 dark:border-[#CBE4F7] dark:bg-[#040C1A] w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] font-RobotoMono">
+      <div className="mt-3 px-5 lg:px-8 xl:px-9 py-12 lg:py-14 page-border-and-color w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] font-RobotoMono">
         <p className="text-white font-RobotoMono font-semibold text-sm lg:text-base text-center lg:text-left">
           Our base of operations
         </p>

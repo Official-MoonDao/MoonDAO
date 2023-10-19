@@ -14,11 +14,11 @@ export default function ReservationRaffleLayout({
           }
         >
           <div
-            className={`card min-w-80 lg:w-full rounded-2xl border-white border-[0.5px] bg-gradient-to-br from-blue-400 to-moon-blue dark:from-slate-900 dark:to-black  dark:bg-opacity-50  text-white font-RobotoMono shadow-md overflow-visible lg:px-3`}
+            className={` min-w-80 lg:w-full rounded-2xl text-white bg-[#071732] font-RobotoMono overflow-visible lg:px-3`}
           >
-            <div className={`card-body items-stretch ${className} p-[5%]`}>
+            <div className={` items-stretch ${className} p-[5%]`}>
               <h2
-                className={`card-title text-center font-display tracking-wider text-2xl lg:text-3xl font-semibold text-yellow-50`}
+                className={` text-center text-xl text-white font-GoodTimes lg:text-left`}
               >
                 {title}
               </h2>

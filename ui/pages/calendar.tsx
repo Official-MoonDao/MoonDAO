@@ -13,9 +13,9 @@ export default function Calendar() {
   return (
     <div className="animate-fadeIn">
       <Head title={t('calendarTitle')} description={t('calendarDesc')} />
-      <div className="mt-3 px-5 lg:px-7 xl:px-9 py-12 lg:py-14 border-4 dark:border-[#CBE4F7] dark:bg-[#040C1A] w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px]">
+      <div className="mt-3 px-5 lg:px-7 xl:px-9 py-12 lg:py-14 page-border-and-color w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px]">
         {/*Title*/}
-        <h2 className="text-white font-GoodTimes text-center text-4xl lg:text-5xl xl:text-[54px] lg:text-left">
+        <h2 className="page-title">
           Calendar
         </h2>
         {/*Section containing the events*/}

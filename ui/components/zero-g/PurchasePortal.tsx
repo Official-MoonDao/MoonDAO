@@ -4,7 +4,7 @@ import ReservationRaffleLayout from './ReservationRaffleLayout'
 function Button({ children, onClick }: any) {
   return (
     <button
-      className="border-style mt-4 tracking-wide btn text-n3blue normal-case font-medium font-GoodTimes w-full bg-transparent hover:bg-n3blue hover:text-white duration-[0.6s] ease-in-ease-out text-1xl"
+      className="mt-4 py-3 text-white bg-moon-orange font-RobotoMono w-full duration-[0.6s] ease-in-ease-out text-1xl"
       onClick={onClick}
     >
       {children}
@@ -32,15 +32,15 @@ export default function PurchasePortal({ validLock }: any) {
               } else setState(2)
             }}
           >
-            buy a ticket
+            Buy a ticket
           </Button>
         </>
       )}
 
       {state === 1 && (
         <>
-          <div className="flex flex-col items-center">
-            <p className="text-center text-n3blue">
+          <div className="mt-3">
+            <p className="text-white text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">
               {`Use Promo Code "MOONDAO" at checkout to receive $1,000 off your flight!`}
             </p>
             <Button
@@ -53,14 +53,14 @@ export default function PurchasePortal({ validLock }: any) {
                 }, 1000)
               }}
             >
-              continue
+              Continue
             </Button>
           </div>
         </>
       )}
       {state === 2 && (
-        <div>
-          <p className="text-n3blue ease-in-ease-out duration-300">{`Please connect a wallet that has vMooney to receive a discount code! Otherwise, press continue.`}</p>
+        <div className='mt-3'>
+          <p className="text-white text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">{`Please connect a wallet that has vMooney to receive a discount code, otherwise press continue.`}</p>
           <Button
             onClick={() => {
               window.open(
@@ -71,7 +71,7 @@ export default function PurchasePortal({ validLock }: any) {
               }, 1000)
             }}
           >
-            continue
+            Continue
           </Button>
         </div>
       )}
