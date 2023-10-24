@@ -20,7 +20,7 @@ export default function Analytics() {
     >
       <Head title={t('analyticsTitle')} description={t('analyticsDesc')} />
 
-      <div className="flex flex-col justify-center items-center w-full gap-16">
+      <div className="flex flex-col justify-center items-center w-full gap-16 page-border-and-color">
         <AnalyticsPage />
         <TreasuryPage />
       </div>

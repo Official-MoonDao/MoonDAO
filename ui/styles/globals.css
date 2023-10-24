@@ -160,11 +160,19 @@ Contains Loading Skeleton utilities, link & component background.
   }
 
   .page-title {
-   @apply text-white font-GoodTimes text-center text-4xl lg:text-5xl xl:text-[54px] lg:text-left;
+   @apply text-[#071732] dark:text-white font-GoodTimes text-center text-4xl lg:text-5xl xl:text-[54px] lg:text-left;
   }
 
+  .title-text-colors {
+    @apply text-[#071732] dark:text-white
+  }
+  
   .page-border-and-color{
-    @apply border-4 dark:border-[#CBE4F7] dark:bg-[#040C1A] ;
+    @apply border-4 border-[#071732] border-opacity-[0.06] dark:border-opacity-100 dark:border-[#CBE4F7] bg-white dark:bg-[#040C1A] shadow-[0px_4px_29px_0px_rgba(0,0,0,0.03)] dark:shadow-none ;
+  }
+
+  .inner-container-background{
+    @apply bg-[#869cc2] bg-opacity-10  dark:bg-opacity-100 dark:bg-[#071732];
   }
 }
 
@@ -175,8 +183,7 @@ Contains Loading Skeleton utilities, link & component background.
 }
 
 .background-light {
-  background: url('/star-background.png') repeat,
-    linear-gradient(to right, rgb(184, 186, 245), #dce3fa, rgb(129, 182, 235));
+  background: #FCFAFC
 }
 
 

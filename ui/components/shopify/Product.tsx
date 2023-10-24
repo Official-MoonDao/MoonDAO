@@ -95,23 +95,24 @@ export default function Product({
 
   //This return is the products.
   return (
-    <div className="w-full relative lg:max-w-2/3 xl:max-w-1/3 bg-gray-300 dark:bg-[#071732] rounded-lg flex flex-col justify-center items-center p-3 lg:p-1 xl:p-3 font-RobotoMono">
+    <div className="w-full relative lg:max-w-1/3 bg-gray-300 dark:bg-[#071732] rounded-lg flex flex-col justify-center items-center p-3 lg:p-1 font-RobotoMono">
       <div className="flex flex-col items-center lg:gap-5 xl:gap-2">
         <h2 className="w-full mt-4 mx-4 text-center xl:text-lg 2xl:mr-2 text-white font-semibold">
           {label}
         </h2>
-        <div className="p-2 ">
+        <div className="p-2">
           {product?.images[preview] && (
             <Image
               id="product-image"
               className={`rounded-2xl bg-gray-100 dark:bg-slate-800`}
               src={product.images[preview]?.src}
-              width={450}
+              width={250}
               height={400}
               alt={`product-${preview}`}
             />
           )}
         </div>
+
         {/*Product pagination*/}
         <div className="w-full flex justify-center items-center">
           <button
@@ -130,7 +131,7 @@ export default function Product({
                 <button
                   key={'pagination' + i}
                   className={`${
-                    preview === i && 'text-moon-blue dark:text-moon-gold'
+                    preview === i && 'text-moon-orange'
                   } text-3xl hover:scale-110 px-1 2xl:px-2`}
                   onClick={() => setPreview(i)}
                 >
@@ -139,7 +140,7 @@ export default function Product({
               ))}
           </div>
           <button
-            className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 2xl:w-8 2xl:h-8 text-white text-xl backdropBlur hover:text-n3blue  duration-[0.6s] ease-in-ease-out`}
+            className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 2xl:w-8 2xl:h-8 text-white text-xl backdropBlur hover:text-moon-orange duration-[0.6s] ease-in-ease-out`}
             onClick={() => {
               if (!product?.images) return
               preview < product.images.length - 1
@@ -151,11 +152,12 @@ export default function Product({
           </button>
         </div>
       </div>
+
       {/*Plus, Minus, quantity, total*/}
       <div className="mt-2 flex flex-col justify-center items-center max-w-3/4">
         <div className="flex justify-center items-center w-full">
           <button
-            className={`absolute left-[3%]  h-9 w-9 lg:h-6 lg:w-6 2xl:h-8 2xl:w-8 dark:text-gray-100 text-gray-900  text-xl font-medium bg-white hover:bg-n3blue hover:text-white dark:bg-black dark:hover:bg-moon-gold dark:hover:text-black duration-[0.6s] ease-in-ease-out rounded-full border-gray-300 border ${
+            className={`absolute left-[3%]  h-9 w-9 lg:h-6 lg:w-6 2xl:h-8 2xl:w-8 border border-moon-orange text-moon-orange rounded-full ${
               quantity <= 0 && 'disable opacity-[0.5] pointer-events-none'
             }`}
             onClick={() => setQuantity(quantity > 0 ? quantity - 1 : 0)}
@@ -184,7 +186,7 @@ export default function Product({
             </div>
           </div>
           <button
-            className="absolute right-[3%] h-9 w-9 lg:h-6 lg:w-6 2xl:h-8 2xl:w-8 dark:text-gray-100 text-gray-900 text-xl font-medium bg-white hover:bg-n3blue hover:text-white dark:bg-black dark:hover:bg-moon-gold dark:hover:text-black duration-[0.6s] ease-in-ease-out rounded-full border-gray-300 border"
+            className="absolute right-[3%] h-9 w-9 lg:h-6 lg:w-6 2xl:h-8 2xl:w-8 border border-moon-orange text-moon-orange rounded-full "
             onClick={() => setQuantity(quantity + 1)}
           >
             <span className="relative bottom-[2px] lg:bottom-1 2xl:bottom-[2px]">

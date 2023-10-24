@@ -1,11 +1,12 @@
-import { useEffect } from 'react'
-import { useL2Toggle } from '../../lib/thirdweb/hooks/useL2Toggle'
+import { useL2Toggle } from '../../lib/thirdweb/hooks/useL2Toggle';
+// Fix "toggle Layer" so it selects the layer according to the name instead of toggling between them.
 
+//if is l2 go to polygon, otherwise highlight ethereum
 export default function L2Toggle() {
   const { isL2, toggleLayer } = useL2Toggle()
   return (
     <div
-      className={`flex items-center rounded-full gap-3 bg-detail-light dark:bg-stronger-dark py-2 pl-5 w-[300px] transtion-all ${
+      className={`flex items-center gap-3 bg-slate-900 py-2 pl-5 w-[300px] transtion-all ${
         isL2 && ''
       }`}
     >
