@@ -2,7 +2,8 @@
 Onboarding Stages:
 0. Welcome to MoonDAO
 1. Select Contribution Level
-2. Proof of Humanity
+2. Congrats
+3. Proof of Humanity
 */
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
@@ -14,6 +15,7 @@ import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ContributionLevels } from './ContributionLevels'
+import { OnboardingCongrats } from './OnboardingCongrats'
 import { ProofOfHumanity } from './ProofOfHumanity'
 
 function StageContainer({ children }: any) {
@@ -102,6 +104,11 @@ export function OnboardingStageManager() {
       )}
       {stage === 2 && (
         <StageContainer>
+          <OnboardingCongrats />
+        </StageContainer>
+      )}
+      {stage === 3 && (
+        <StageContainer>
           <h1 className="text-2xl">Proof of Humanity</h1>
           <p>{`To access governance and events at MoonDAO you must complete thtese steps.  No identifying data is stored by MoonDAO in this process.`}</p>
           <ProofOfHumanity />
@@ -118,9 +125,9 @@ export function OnboardingStageManager() {
           prev stage
         </button>
         <button
-          className="p-2 bg-[blue]"
+          className={`p-2 bg-[blue] ${stage === 3 && 'opacity-50'}`}
           onClick={() => setStage(stage + 1)}
-          disabled={stage === 2}
+          disabled={stage === 3}
         >
           next next
         </button>

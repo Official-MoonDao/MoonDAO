@@ -1,11 +1,12 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
+import Image from 'next/image'
 import { useState } from 'react'
 
 export function ProofOfHumanity() {
   function Card({ label, description, children }: any) {
     return (
       <div className="flex flex-col p-4 border-2 border-[#ffffff25] w-[225px]">
-        <InformationCircleIcon width={50} height={50} />
+        <Image src={'/icons/poh-icon.png'} width={40} height={40} alt="" />
         <h1 className="font-bold">{label}</h1>
         <p>{description}</p>
         {children}
