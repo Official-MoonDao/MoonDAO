@@ -176,9 +176,12 @@ Contains Loading Skeleton utilities, link & component background.
   }
 }
 
+.background-dark-mobile{
+  background: #050710;
+}
 
 .background-dark {
-  background: linear-gradient(56.41deg, #343A54 29.98%, #080C20 79.58%, #2D121A 97.4%);
+  background: linear-gradient(56.41deg, #252C4D 29.98%, #080C20 79.58%, #2D121A 97.4%);
 
 }
 
@@ -192,6 +195,7 @@ Contains Loading Skeleton utilities, link & component background.
 .sidebar-bg-dark{
   background: linear-gradient(172.32deg, #090D21 70.56%, #46161B 106.43%);
 }
+/*Have to change this one*/
 .sidebar-bg-light{
   background: linear-gradient(172.32deg, #090D21 70.56%, #46161B 106.43%);
 }

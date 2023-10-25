@@ -1,5 +1,4 @@
-import Image from 'next/image'
-import { useState } from 'react'
+import InitiateLogo from './assets/InitiateLogo'
 
 type ContributionLevelProps = {
   icon: string
@@ -17,29 +16,44 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
   }: ContributionLevelProps) {
     return (
       <div
-        className={`w-[225px] text-black dark:text-white py-8 flex flex-col justify-center items-center gap-8 bg-background-light dark:bg-background-dark ${
-          selectedLevel === levelPrice &&
-          'dark:bg-moon-gold dark:text-black text-black bg-moon-gold'
+        className={`w-[320px] transition-all duration-150 text-black cursor-pointer dark:text-white py-6 px-7 flex flex-col items-center border-[2px] border-white group hover:border-orange-200 border-opacity-20 font-RobotoMono ${
+          selectedLevel === levelPrice
+            ? 'border-orange-600 border-opacity-100 hover:border-orange-600'
+            : ''
         }`}
         onClick={() => setSelectedLevel(levelPrice)}
       >
-        <Image src={icon} width={100} height={100} alt="" />
-        <h1>{title}</h1>
-        <p>{`Price : ${levelPrice.toLocaleString()}`}</p>
-        <div className={`flex flex-col w-3/4 text-[80%]`}>
-          {points.map((point, i) => (
-            <p key={`contribution-level-${title}-desc-point-${i}`}>
-              {'-- ' + point}
-            </p>
-          ))}
-          <button>{'Get Started >'}</button>
+        {/*Logo*/}
+        <div className="mt-10">
+          <InitiateLogo />
         </div>
+        {/*Title*/}
+        <h1 className={`font-GoodTimes mt-[22px] text-2xl transition-all duration-150 ${
+          selectedLevel === levelPrice && "text-moon-orange"}`}>{title}</h1>
+        <p className="mt-[23px]">{`Price : ${levelPrice.toLocaleString()}`}</p>
+        {/*List*/}
+        <ul
+          className={`mt-[38px] flex flex-col gap-6 list-disc w-full pl-4 pr-`}
+        >
+          {points.map((point, i) => (
+            <li
+              key={`contribution-level-${title}-desc-point-${i}`}
+              className="text-sm"
+            >
+              {'' + point}
+            </li>
+          ))}
+        </ul>
+        <button className={`mt-[52px] lg:bg-transparent px-5 py-3 transition-all duration-150 ${
+          selectedLevel === levelPrice && 'lg:bg-moon-orange hover:scale-105'}`}>
+          {'Get Started >'}
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col md:flex-row w-full divide-x-2">
+    <div className="mt-8 lg:mt-12 flex flex-col items-center lg:flex-row gap-[18px] lg:gap-7">
       <ContributionLevel
         icon=""
         title="Initiate"

@@ -50,7 +50,7 @@ export default function Lifeship({ products = [] }: any) {
     <main className="animate-fadeIn">
       <Head title="Lifeship" />
 
-      <div className="mt-3 lg:mt-10 px-5 lg:px-10 xl:px-10 py-10 xl:pt-16 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] page-border-and-color">
+      <div className="mt-3 lg:mt-10 px-5 lg:px-10 xl:px-10 py-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] page-border-and-color">
         {/*Title */}
         <div className="flex flex-col lg:flex-row lg:gap-4 items-center text-center lg:text-left">
           <h2
