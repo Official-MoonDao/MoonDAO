@@ -48,6 +48,7 @@ export const navigation = [
     children: [
       { name: 'Zero Gravity', href: '/zero-g' },
       { name: 'Moon Mission', href: '/lifeship' },
+      { name: 'Ticket to Space', href: '/ticket2space' },
     ],
   },
 ]
