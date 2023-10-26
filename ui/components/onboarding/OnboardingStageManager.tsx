@@ -143,6 +143,7 @@ export function OnboardingStageManager() {
     { component: <StepZero /> },
     { component: <StepOne /> },
     { component: <StepTwo /> },
+    { component: <StepThree /> },
   ];
 
   return (
