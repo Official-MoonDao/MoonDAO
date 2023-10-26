@@ -15,6 +15,7 @@ import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ContributionLevels } from './ContributionLevels'
 import { ProofOfHumanity } from './ProofOfHumanity'
+import { OnboardingCongrats } from './OnboardingCongrats'
 
 function StageContainer({ children }: any) {
   return <div className="flex flex-col gap-4 justify-center">{children}</div>
@@ -66,8 +67,12 @@ export function OnboardingStageManager() {
   };
 
   const StepZero = () => <StageContainer>
-    <h1 className="text-2xl">WELCOME TO MOONDAO</h1>
-    <p>{`Onboarding at MoonDAO takes less than five minutes even if it's your first time in Web3.`}</p>
+    <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-left">Welcome to MoonDAO</h2>
+    <p className='mt-[15px] text-base opacity-60'>{`Onboarding at MoonDAO takes less than five minutes even if it's your first time in Web3.`}</p>
+
+    <div className='mt-10 bg-slate-950 animate-pulse  w-[320px] sm:w-[80%] h-[426px]'></div>
+
+
     <button
       onClick={() => {
         if (!user) {
@@ -76,19 +81,21 @@ export function OnboardingStageManager() {
           setStage(1)
         }
       }}
-      className="px-4 py-2 bg-white text-black"
+      className="mt-6 px-5 py-3 bg-moon-orange"
     >
       Begin Onboarding
     </button>
   </StageContainer>;
 
   const StepOne = () => <StageContainer>
-    <h1 className="text-2xl">Step 1 of 3: Select Contribution Level</h1>
+    <h1 className="text-[#071732] dark:text-white font-GoodTimes text-3xl sm:text-4xl lg:text-5xl text-left">Step 1 of 3: Select Contribution Level</h1>
     <ContributionLevels
       selectedLevel={selectedLevel}
       setSelectedLevel={setSelectedLevel}
     />
+    {/*Hidden it for demo because it's not on the design, how should this one be added? */}
     <PrivyWeb3Button
+      className='hidden'
       label="Purchase"
       action={async () => {
         //check balance of wallet, if not enough matic then fund from moonpay
@@ -123,8 +130,12 @@ export function OnboardingStageManager() {
   </StageContainer>;
 
   const StepTwo = () => <StageContainer>
-    <h1 className="text-2xl">Proof of Humanity</h1>
-    <p>{`To access governance and events at MoonDAO you must complete these steps.  No identifying data is stored by MoonDAO in this process.`}</p>
+    <OnboardingCongrats />
+  </StageContainer>;
+
+  const StepThree = () => <StageContainer>
+    <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-left">Proof of Humanity</h1>
+    <p className='mt-[15px] text-base opacity-60'>{`To access governance and events at MoonDAO you must complete thtese steps.  No identifying data is stored by MoonDAO in this process.`}</p>
     <ProofOfHumanity />
   </StageContainer>;
 
