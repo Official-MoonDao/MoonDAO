@@ -7,7 +7,7 @@ Onboarding Stages:
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState, useRef, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
@@ -17,6 +17,8 @@ import { ContributionLevels } from './ContributionLevels'
 import { ProofOfHumanity } from './ProofOfHumanity'
 import { OnboardingCongrats } from './OnboardingCongrats'
 
+const isDevEnv = process.env.NODE_ENV === 'development';
+
 function StageContainer({ children }: any) {
   return <div className="flex flex-col gap-4 justify-center">{children}</div>
 }
@@ -25,6 +27,7 @@ export function OnboardingStageManager() {
   const { user, login } = usePrivy()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const [stage, setStage] = useState(0)
+  const trackRef = useRef<HTMLDivElement>(null);
   const [selectedLevel, setSelectedLevel] = useState<number>(0)
   const { wallets } = useWallets()
 
@@ -49,83 +52,52 @@ export function OnboardingStageManager() {
       setStage(stage - 1);
     }
 
+    const progressWidth = useMemo(() => {
+      if (stage === 0 || stage === 1 || !trackRef.current) return '0'
+      if (stage === 4) return trackRef.current?.offsetWidth
+
+      const stageWidth = trackRef.current?.offsetWidth / 2
+      const width = stageWidth * (stage - 1)
+
+      return width
+    }, [trackRef.current, stage])
+
+
     return (
       <div>
         <ul
           data-te-stepper-init
-          className="relative m-0 flex list-none justify-between overflow-hidden p-0 transition-[height] duration-200 ease-in-out">
+          className="relative m-0 flex list-none justify-between overflow-hidden p-0 transition-[height] duration-200 ease-in-out"
+          style={{ zIndex: 1 }}
+        >
 
-          <li
-            data-te-stepper-step-ref
-            data-te-stepper-step-active
-            className="w-[4.5rem] flex-auto">
-            <div
-              data-te-stepper-head-ref
-              className="flex cursor-pointer items-center pl-2 leading-[1.3rem] no-underline after:ml-2 after:h-px after:w-full after:flex-1 after:bg-[#e0e0e0] after:content-[''] hover:bg-[#f9f9f9] focus:outline-none dark:after:bg-neutral-600 dark:hover:bg-[#3b3b3b]">
-              <span
-                data-te-stepper-head-icon-ref
-                className={`my-6 mr-2 flex h-[1.938rem] w-[1.938rem] items-center justify-center rounded-full ${stage >= 2 ? 'bg-[#16a34a]' : 'bg-[#ebedef]'} text-sm font-medium text-[#40464f]`}>
-                1
-              </span>
-              {/* <span
-                data-te-stepper-head-text-ref
-                className="font-medium text-neutral-500 after:flex after:text-[0.8rem] after:content-[data-content] dark:text-neutral-300">
-                Step 1
-              </span> */}
-            </div>
-          </li>
-
-          <li data-te-stepper-step-ref className="w-[4.5rem] flex-auto">
-            <div
-              data-te-stepper-head-ref
-              className="flex cursor-pointer items-center leading-[1.3rem] no-underline before:mr-2 before:h-px before:w-full before:flex-1 before:bg-[#e0e0e0] before:content-[''] after:ml-2 after:h-px after:w-full after:flex-1 after:bg-[#e0e0e0] after:content-[''] hover:bg-[#f9f9f9] focus:outline-none dark:before:bg-neutral-600 dark:after:bg-neutral-600 dark:hover:bg-[#3b3b3b]">
-              <span
-                data-te-stepper-head-icon-ref
-                className={`my-6 mr-2 flex h-[1.938rem] w-[1.938rem] items-center justify-center rounded-full ${stage >= 3 ? 'bg-[#16a34a]' : 'bg-[#ebedef]'} text-sm font-medium text-[#40464f]`}>
-                2
-              </span>
-              {/* <span
-                data-te-stepper-head-text-ref
-                className="text-neutral-500 after:flex after:text-[0.8rem] after:content-[data-content] dark:text-neutral-300">
-                Step 2
-              </span> */}
-            </div>
-          </li>
-
-          <li data-te-stepper-step-ref className="w-[4.5rem] flex-auto">
-            <div
-              data-te-stepper-head-ref
-              className="flex cursor-pointer items-center pr-2 leading-[1.3rem] no-underline before:mr-2 before:h-px before:w-full before:flex-1 before:bg-[#e0e0e0] before:content-[''] hover:bg-[#f9f9f9] focus:outline-none dark:before:bg-neutral-600 dark:after:bg-neutral-600 dark:hover:bg-[#3b3b3b]">
-              <span
-                data-te-stepper-head-icon-ref
-                className={`my-6 mr-2 flex h-[1.938rem] w-[1.938rem] items-center justify-center rounded-full ${stage >= 4 ? 'bg-[#16a34a]' : 'bg-[#ebedef]'} text-sm font-medium text-[#40464f]`}>
-                3
-              </span>
-              {/* <span
-                data-te-stepper-head-text-ref
-                className="text-neutral-500 after:flex after:text-[0.8rem] after:content-[data-content] dark:text-neutral-300">
-                Step 3
-              </span> */}
-            </div>
-          </li>
+          <StepCircle stepNumber="1" currentStage={stage} />
+          <StepCircle stepNumber="2" currentStage={stage} />
+          <StepCircle stepNumber="3" currentStage={stage} />
         </ul>
-        <div>
-          <progress value={stage != 0 ? stage + 1 : 0} max={steps.length} style={{ width: '100%' }}></progress>
+        <div className='mb-8'>
+          <div className='bg-light relative h-[10px] w-full rounded-2xl bottom-12'>
+            <div ref={trackRef} className='bg-gray-500 max-w-[1112px] absolute top-0 left-0 h-full w-[100%] rounded-2xl'></div>
+            <div className={`bg-success absolute top-0 left-0 h-full rounded-2xl`} style={{ width: `${progressWidth}px` }}></div>
+          </div>
         </div>
         <br />
         <div>
+          <br />
           {steps[stage].component}
         </div>
         <br />
-        {stage > 0 && (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'start' }}>
-              <button onClick={handlePrev} disabled={stage === 0}>Previous</button>
-            </div><div style={{ display: 'flex', justifyContent: 'end' }}>
-              <button onClick={handleNext} disabled={stage === steps.length - 1}>Next</button>
-            </div>
-          </>
-        )}
+        {
+          isDevEnv && stage > 0 && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'start' }}>
+                <button onClick={handlePrev} disabled={stage === 0}>Previous</button>
+              </div><div style={{ display: 'flex', justifyContent: 'end' }}>
+                <button onClick={handleNext} disabled={stage === steps.length - 1}>Next</button>
+              </div>
+            </>
+          )
+        }
       </div >
     );
   };
@@ -204,6 +176,22 @@ export function OnboardingStageManager() {
   </StageContainer>;
 
   const StepFour = () => <StageContainer />
+
+  const StepCircle = (props: any) => {
+    const { stepNumber, currentStage } = props
+
+    const isActive = currentStage > parseInt(stepNumber)
+    return (
+      <li>
+        <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
+          <span
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'} text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'}`}>
+            {stepNumber}
+          </span>
+        </div>
+      </li>
+    )
+  }
 
   const steps = [
     { component: <StepZero /> },
