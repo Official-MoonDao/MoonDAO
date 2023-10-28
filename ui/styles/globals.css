@@ -160,23 +160,33 @@ Contains Loading Skeleton utilities, link & component background.
   }
 
   .page-title {
-   @apply text-white font-GoodTimes text-center text-4xl lg:text-5xl xl:text-[54px] lg:text-left;
+   @apply text-[#071732] dark:text-white font-GoodTimes text-center text-4xl lg:text-5xl xl:text-[54px] lg:text-left;
   }
 
+  .title-text-colors {
+    @apply text-[#071732] dark:text-white
+  }
+  
   .page-border-and-color{
-    @apply border-4 dark:border-[#CBE4F7] dark:bg-[#040C1A] ;
+    @apply border-4 border-[#071732] border-opacity-[0.06] dark:border-opacity-100 dark:border-[#CBE4F7] bg-white dark:bg-[#040C1A] shadow-[0px_4px_29px_0px_rgba(0,0,0,0.03)] dark:shadow-none ;
+  }
+
+  .inner-container-background{
+    @apply bg-[#869cc2] bg-opacity-10  dark:bg-opacity-100 dark:bg-[#071732];
   }
 }
 
+.background-dark-mobile{
+  background: #050710;
+}
 
 .background-dark {
-  background: linear-gradient(56.41deg, #343A54 29.98%, #080C20 79.58%, #2D121A 97.4%);
+  background: linear-gradient(56.41deg, #252C4D 29.98%, #080C20 79.58%, #2D121A 97.4%);
 
 }
 
 .background-light {
-  background: url('/star-background.png') repeat,
-    linear-gradient(to right, rgb(184, 186, 245), #dce3fa, rgb(129, 182, 235));
+  background: #FCFAFC
 }
 
 
@@ -185,6 +195,7 @@ Contains Loading Skeleton utilities, link & component background.
 .sidebar-bg-dark{
   background: linear-gradient(172.32deg, #090D21 70.56%, #46161B 106.43%);
 }
+/*Have to change this one*/
 .sidebar-bg-light{
   background: linear-gradient(172.32deg, #090D21 70.56%, #46161B 106.43%);
 }

@@ -50,7 +50,7 @@ export default function Lifeship({ products = [] }: any) {
     <main className="animate-fadeIn">
       <Head title="Lifeship" />
 
-      <div className="px-5 lg:px-10 xl:px-10 py-10 xl:pt-16 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] page-border-and-color">
+      <div className="mt-3 lg:mt-10 px-5 lg:px-10 xl:px-10 py-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] page-border-and-color">
         {/*Title */}
         <div className="flex flex-col lg:flex-row lg:gap-4 items-center text-center lg:text-left">
           <h2
@@ -83,9 +83,6 @@ export default function Lifeship({ products = [] }: any) {
           </h2>
         </div>
 
-        <h3 className="mt-5 lg:mt-8 font-RobotoMono text-xl text-center text-moon-orange lg:text-left">
-          Join us on our first mission to the Moon!
-        </h3>
 
         {state === 0 && (
           <div className="mt-5 lg:mt-8 flex flex-col justify-center items-center text-left gap-4 md:w-full w-full text-white">
@@ -107,7 +104,7 @@ export default function Lifeship({ products = [] }: any) {
 
             {products[0] && (
               <div className="flex flex-col gap-[5%] w-full items-center justify-center mt-3 lg:mt-8">
-                <div className="w-full lg:min-h-[35vh] h-full flex flex-col xl:flex-row gap-4">
+                <div className="w-full lg:min-h-[35vh] h-full flex flex-col lg:grid lg:grid-cols-2 2xl:grid-cols-3 gap-2 xl:gap-4">
                   <Product
                     product={products[0]}
                     label="DNA kit"
@@ -134,7 +131,7 @@ export default function Lifeship({ products = [] }: any) {
                   />
                 </div>
                 {notification === 'no-quantity' && (
-                  <p className="text-n3green ease-in duration-300 backdropBlur">
+                  <p className="text-moon-orange ease-in duration-300 backdropBlur">
                     Please select a kit!
                   </p>
                 )}

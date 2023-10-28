@@ -16,10 +16,11 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
   }: ContributionLevelProps) {
     return (
       <div
-        className={`w-[320px] transition-all duration-150 text-black cursor-pointer dark:text-white py-6 px-7 flex flex-col items-center border-[2px] border-white group hover:border-orange-200 border-opacity-20 font-RobotoMono ${selectedLevel === levelPrice
-          ? 'border-orange-600 border-opacity-100 hover:border-orange-600'
-          : ''
-          }`}
+        className={`w-[320px] transition-all duration-150 text-black cursor-pointer dark:text-white py-6 px-7 flex flex-col items-center border-[2px] border-white group hover:border-orange-200 border-opacity-20 font-RobotoMono ${
+          selectedLevel === levelPrice
+            ? 'border-orange-600 border-opacity-100 hover:border-orange-600'
+            : ''
+        }`}
         onClick={() => setSelectedLevel(levelPrice)}
       >
         {/*Logo*/}
@@ -27,7 +28,8 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           <InitiateLogo />
         </div>
         {/*Title*/}
-        <h1 className={`font-GoodTimes mt-[22px] text-2xl transition-all duration-150 ${selectedLevel === levelPrice && "text-moon-orange"}`}>{title}</h1>
+        <h1 className={`font-GoodTimes mt-[22px] text-2xl transition-all duration-150 ${
+          selectedLevel === levelPrice && "text-moon-orange"}`}>{title}</h1>
         <p className="mt-[23px]">{`Price : ${levelPrice.toLocaleString()}`}</p>
         {/*List*/}
         <ul
@@ -42,7 +44,8 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
             </li>
           ))}
         </ul>
-        <button className={`mt-[52px] lg:bg-transparent px-5 py-3 transition-all duration-150 ${selectedLevel === levelPrice && 'lg:bg-moon-orange hover:scale-105'}`}>
+        <button className={`mt-[52px] lg:bg-transparent px-5 py-3 transition-all duration-150 ${
+          selectedLevel === levelPrice && 'lg:bg-moon-orange hover:scale-105'}`}>
           {'Get Started >'}
         </button>
       </div>

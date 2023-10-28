@@ -23,7 +23,7 @@ module.exports = {
       colors: {
         'title-light': '#172554',
         'title-dark': '#fefce8',
-        'light-text': '#374151',
+        'light-text': '#071732',
         'dark-text': '#e5e7eb',
         faded: '#6b7280',
         'moon-gold': '#F9B95C',

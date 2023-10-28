@@ -53,14 +53,14 @@ export default function Home() {
       <Head title="Home" />
       {/*Features */}
       <div className="mt-3 px-5 lg:px-8 xl:px-9 py-12 lg:py-14 page-border-and-color w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] font-RobotoMono">
-        <p className="text-white font-RobotoMono font-semibold text-sm lg:text-base text-center lg:text-left">
+        <p className="text-[#071732] dark:text-white font-RobotoMono font-semibold text-sm lg:text-base text-center lg:text-left">
           Our base of operations
         </p>
-        <h1 className="mt-2 lg:mt-3 leading-relaxed text-white font-GoodTimes text-center text-3xl lg:text-5xl xl:text-[54px] lg:text-left">
+        <h1 className="mt-2 lg:mt-3 leading-relaxed page-title">
           The <br className="md:hidden" /> MoonDAO app
         </h1>
 
-        <p className="mt-4 lg:mt-5 text-center lg:text-left font-RobotoMono text-base lg:text-lg text-white opacity-60">
+        <p className="mt-4 lg:mt-5 text-center lg:text-left font-RobotoMono text-base lg:text-lg dark:text-white text-[#071732] opacity-60">
           Here you can perform onchain operations related to the MoonDAO
           community.
         </p>
@@ -79,7 +79,7 @@ export default function Home() {
                 href={page.href}
                 key={page.name}
                 target={page.externalLink ? '_blank' : ''}
-                className="flex flex-col items-center text-center bg-[#071732] rounded-[6px] py-4 lg:py-5 hover:scale-105 transition-all duration-150"
+                className="flex flex-col items-center text-center inner-container-background rounded-[6px] py-4 lg:py-5 hover:scale-105 transition-all duration-150"
                 passHref
               >
                 <dt className="flex items-center justify-center py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold w-3/4">
@@ -89,7 +89,7 @@ export default function Home() {
                   />
                   {page.name}
                 </dt>
-                <dd className="mt-4 lg:mt-5 xl:mt-6 text-base leading-7 w-3/4 text-white font-medium lg:text-left">
+                <dd className="mt-4 lg:mt-5 xl:mt-6 text-base leading-7 w-3/4 text-light-text dark:text-white font-medium lg:text-left">
                   <p className="">{page.description}</p>
                 </dd>
               </Link>

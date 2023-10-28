@@ -12,6 +12,9 @@
     "cy:run-ct": "cypress run --component"
   },
   "dependencies": {
+    "@alchemy/aa-accounts": "^0.1.1",
+    "@alchemy/aa-alchemy": "^0.1.1",
+    "@alchemy/aa-core": "^0.1.1",
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
     "@privy-io/react-auth": "^1.41.0",

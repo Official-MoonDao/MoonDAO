@@ -30,7 +30,6 @@ import { NumberType, transformNumber } from '../lib/utils/numbers'
 import Balance from '../components/Balance'
 import TimeRange from '../components/TimeRange'
 import Head from '../components/layout/Head'
-import Header from '../components/layout/Header'
 import L2Toggle from '../components/lock/L2Toggle'
 import { LockData } from '../components/lock/LockData'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
@@ -88,7 +87,6 @@ const calculateVestingStart = ({
 
 export default function Lock() {
   const { selectedChain }: any = useContext(ChainContext)
-
   const address = useAddress()
   const sdk = useSDK()
 
@@ -232,17 +230,10 @@ export default function Lock() {
   const { t } = useTranslation('common')
 
   return (
-    <main className="animate-fadeIn">
+    <main className="animate-fadeIn font-RobotoMono">
       <Head title="Voting Power" />
-      <div className="mt-3 px-5 lg:px-10 xl:px-10 py-12 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
-        <div className="xl:w-3/4 pb-1">
-          <span className="sm:hidden">
-            <Header text="Lock $MOONEY" noStar />
-          </span>
-          <span className="hidden sm:block">
-            <Header text="Lock $MOONEY" />
-          </span>
-        </div>
+      <div className="mt-3 px-5 lg:px-7 xl:px-9 py-12 lg:py-14 lg:mt-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] page-border-and-color">
+        <h1 className="page-title">Lock $MOONEY</h1>
         <LockData
           hasLock={hasLock}
           VMOONEYBalance={VMOONEYBalance}
@@ -254,28 +245,28 @@ export default function Lock() {
         <div className="my-7 lg:my-5 justify-center xl:mt-8 flex xl:w-3/4 lg:justify-normal">
           <L2Toggle />
         </div>
-
+        {/*Available to Lock*/}
+        {!hasExpired && (
+          <div className="xl:w-3/4 rounded-md text-xs sm:tracking-wide lg:text-base uppercase font-semibold xl:text-xl inner-container-background px-2 py-3 lg:px-5 lg:py-4 flex items-center">
+            <p>{t('lockAvailableMoney')} </p>
+            <Balance
+              balance={MOONEYBalance?.toString() / 10 ** 18}
+              loading={MOONEYBalanceLoading}
+            />
+          </div>
+        )}
         {/*Locking Section*/}
-        <div className="text-light-text dark:text-dark-text xl:w-3/4">
+        <div className="mt-5 py-5 xl:w-3/4 inner-container-background px-6 rounded-md">
           <div className="flex flex-col">
             {!hasExpired ? (
               <div>
-                {/*Available to Lock*/}
-                <p className="text-sm uppercase font-semibold xl:text-base">
-                  {t('lockAvailableMoney')}{' '}
-                  <Balance
-                    balance={MOONEYBalance?.toString() / 10 ** 18}
-                    loading={MOONEYBalanceLoading}
-                  />
-                </p>
                 {/*Lock Amount label*/}
-
-                <label className="mt-6 xl:mt-10 block">
-                  <p className="uppercase font-semibold underline text-title-light dark:text-title-dark">
+                <label className="block">
+                  <p className="uppercase font-semibold title-text-colors">
                     {t('lockAmount')}
                   </p>
                   <p
-                    className={`tracking-wider text-sm opacity-80 text-light-text dark:text-dark-text mt-3 ${
+                    className={`tracking-wider text-sm text-light-text dark:text-white mt-3 ${
                       hasLock && canIncrease.time ? 'animate-highlight' : ''
                     }`}
                   >
@@ -285,11 +276,11 @@ export default function Lock() {
                 </label>
 
                 {/*Input for Lock amount*/}
-                <div className="mt-4 flex items-center justify-between pl-6 h-[37px] rounded-full overflow-hidden bg-gray-200 dark:bg-slate-800 border border-detail-light dark:border-detail-dark">
+                <div className="mt-4 flex items-center justify-between pl-6 h-[37px] rounded-xl overflow-hidden border border-[#CBE4F7]">
                   <input
                     type="number"
                     placeholder="0"
-                    className="w-full dark:[color-scheme:dark] pl-2 py-1 text-title-light dark:text-title-dark bg-gray-200 dark:bg-slate-800 truncate font-semibold tracking-wide"
+                    className="w-full dark:[color-scheme:dark] pl-2 py-1 text-title-light dark:text-title-dark dark:bg-[#071732] truncate tracking-wide"
                     value={lockAmount || ''}
                     disabled={
                       !MOONEYBalance ||
@@ -310,7 +301,7 @@ export default function Lock() {
                   />
                   {/*MAX button*/}
                   <button
-                    className="w-[80px] bg-moon-blue dark:bg-moon-gold text-white font-semibold uppercase h-full"
+                    className="w-[80px] bg-[#CBE4F7] text-[18px] text-[#1F212B] uppercase h-full"
                     disabled={
                       !MOONEYBalance ||
                       +MOONEYBalance?.toString() === 0 ||
@@ -335,10 +326,10 @@ export default function Lock() {
 
                 {/*Lock Expiration date label*/}
                 <label className="mt-6 xl:mt-10 block">
-                  <p className="uppercase font-semibold underline text-title-light dark:text-title-dark">
+                  <p className="uppercase font-semibold title-text-colors">
                     {t('lockExpDate')}
                   </p>
-                  <p className="tracking-wider text-sm opacity-80 text-light-text dark:text-dark-text mt-3">
+                  <p className="tracking-wider text-sm text-light-text dark:text-white mt-3">
                     {t('lockDesc2')}
                     {hasLock && canIncrease.amount ? t('lockAmountNote') : ''}
                   </p>
@@ -348,7 +339,7 @@ export default function Lock() {
                 <input
                   type="date"
                   placeholder={t('lockExpDate')}
-                  className="mt-4 input input-bordered w-full  dark:[color-scheme:dark] text-title-light dark:text-title-dark bg-gray-200 dark:bg-slate-800 border border-detail-light dark:border-detail-dark"
+                  className="mt-4 input input-bordered w-full  dark:[color-scheme:dark] dark:bg-[#071732] dark:text-white border dark:border-white"
                   value={lockTime?.formatted}
                   min={
                     hasLock && address
@@ -437,7 +428,7 @@ export default function Lock() {
                   wantsToIncrease && (
                     <p className="mt-4 text-sm uppercase font-semibold">
                       {t('lockBalance')}{' '}
-                      <span className=" text-title-light dark:text-title-dark font-bold text-base inline-block">
+                      <span className=" text-white font-bold text-base inline-block">
                         {calculateVMOONEY({
                           CurrentMOONEYLock: ethers.utils.formatEther(
                             VMOONEYLock?.[0] || 0
@@ -523,11 +514,6 @@ export default function Lock() {
             ) : (
               <div>
                 <p className="">{t('expDesc')}</p>
-                {/* <div className="card-actions mt-4">
-                  <Web3Button contractAddress="" action={() => withdraw()}>
-                    {t('withdraw')}
-                  </Web3Button>
-                </div> */}
               </div>
             )}
           </div>

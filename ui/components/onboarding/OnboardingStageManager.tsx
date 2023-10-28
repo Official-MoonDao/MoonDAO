@@ -1,8 +1,16 @@
+import { usePrivy } from '@privy-io/react-auth'
+import { useEffect, useState } from 'react'
+import { ContributionLevels } from './ContributionLevels'
+import { ContributionModal } from './ContributionModal'
+import { OnboardingCongrats } from './OnboardingCongrats'
+import { ProofOfHumanity } from './ProofOfHumanity'
+
 /*
 Onboarding Stages:
 0. Welcome to MoonDAO
 1. Select Contribution Level
-2. Proof of Humanity
+2. Congrats
+3. Proof of Humanity
 */
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
@@ -19,21 +27,20 @@ import { OnboardingCongrats } from './OnboardingCongrats'
 
 const isDevEnv = process.env.NODE_ENV === 'development';
 
+
 function StageContainer({ children }: any) {
-  return <div className="flex flex-col gap-4 justify-center">{children}</div>
+  return (
+    <section className="px-4 lg:px-7 xl:px-9 py-8 lg:py-10 lg:mt-5 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] font-RobotoMono">
+      {children}
+    </section>
+  )
 }
 
 export function OnboardingStageManager() {
   const { user, login } = usePrivy()
-  const { selectedWallet } = useContext(PrivyWalletContext)
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null);
   const [selectedLevel, setSelectedLevel] = useState<number>(0)
-  const { wallets } = useWallets()
-
-  const fund = useMoonPay()
-
-  const { generateRoute, executeRoute } = useSwapRouter(selectedLevel)
 
   useEffect(() => {
     if (user && stage === 0) {
