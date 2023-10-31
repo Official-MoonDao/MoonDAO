@@ -10,9 +10,8 @@ import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { useImportToken } from '../../lib/utils/import-token'
-import { LogoBlack, LogoWhite, LogoSidebar } from '../assets'
+import { LogoSidebarLight, LogoWhite, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
-import SwitchNetworkBanner from '../thirdweb/SwitchNetworkBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import ExternalLinks from './Sidebar/ExternalLinks'
 import LanguageChange from './Sidebar/LanguageChange'
@@ -74,7 +73,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         <div className="flex flex-grow flex-col overflow-y-auto pt-5 sidebar-bg-light dark:sidebar-bg-dark">
           <a href="https://moondao.com">
             <div className="flex flex-shrink-0 items-center px-4 pl-6">
-              {lightMode ? <LogoBlack /> : <LogoSidebar />}
+              {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
             </div>
           </a>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">

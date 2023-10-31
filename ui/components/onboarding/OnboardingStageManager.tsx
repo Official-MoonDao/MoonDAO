@@ -1,7 +1,7 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState } from 'react'
 import { ContributionLevels } from './ContributionLevels'
-import { ContributionModal } from './ContributionModal'
+import {ContributionModal}  from './ContributionModal'
 import { OnboardingCongrats } from './OnboardingCongrats'
 import { ProofOfHumanity } from './ProofOfHumanity'
 
@@ -68,7 +68,7 @@ export function OnboardingStageManager() {
             selectedLevel={selectedLevel}
             setSelectedLevel={setSelectedLevel}
           />
-          {/*Hidden it for demo because it's not on the design, how should this one be added? */}
+          {/*Modal*/}
           <ContributionModal
             selectedLevel={selectedLevel}
             setSelectedLevel={setSelectedLevel}

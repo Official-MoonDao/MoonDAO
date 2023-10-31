@@ -26,12 +26,12 @@ const externalLinks = [
 const ExternalLinks = () => {
   return (
     <div className="font-RobotoMono">
-      <h3 className="-ml-2 text-blue-700 dark:text-white font-medium text-[16px]">
+      <h3 className="-ml-2 text-black dark:text-white font-medium text-sn">
         External links
       </h3>
       <ul
         id="layout-external-links"
-        className="mt-2 px-3 list-disc marker:text-blue-500 dark:marker:text-white group"
+        className="mt-2 px-3 list-disc marker:text-blue-950 dark:marker:text-white group"
         role="group"
       >
         {externalLinks.map((item, i) => (
@@ -45,7 +45,7 @@ const ExternalLinks = () => {
               href={item.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center text-[14px] text-gray-500 hover:text-gray-900 dark:text-gray-100 dark:hover:text-white"
+              className="group flex items-center text-xs text-gray-900 hover:text-black dark:text-gray-100 dark:hover:text-white"
             >
               {item.name}
             </Link>

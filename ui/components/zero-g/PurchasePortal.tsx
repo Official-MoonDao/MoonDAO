@@ -40,7 +40,7 @@ export default function PurchasePortal({ validLock }: any) {
       {state === 1 && (
         <>
           <div className="mt-3">
-            <p className="text-white text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">
+            <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">
               {`Use Promo Code "MOONDAO" at checkout to receive $1,000 off your flight!`}
             </p>
             <Button
@@ -60,7 +60,7 @@ export default function PurchasePortal({ validLock }: any) {
       )}
       {state === 2 && (
         <div className='mt-3'>
-          <p className="text-white text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">{`Please connect a wallet that has vMooney to receive a discount code, otherwise press continue.`}</p>
+          <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">{`Please connect a wallet that has vMooney to receive a discount code, otherwise press continue.`}</p>
           <Button
             onClick={() => {
               window.open(

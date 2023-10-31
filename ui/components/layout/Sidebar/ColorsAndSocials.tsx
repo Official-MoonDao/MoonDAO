@@ -11,7 +11,7 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
     <div className="flex items-center px-4 md:px-0">
       <button
         aria-label="Toggle Light Mode"
-        className="h-6 w-6 fill-current text-blue-900 dark:text-white hover:scale-105"
+        className="h-6 w-6 fill-current text-black dark:text-white hover:scale-105"
         onClick={() => setLightMode(!lightMode)}
       >
         {lightMode ? <MoonIcon /> : <SunIcon />}

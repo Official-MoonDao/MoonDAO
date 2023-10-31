@@ -7,6 +7,7 @@ import DiscordIcon from './DiscordIcon'
 import GoldPaperArrow from './GoldPaperArrow'
 import LogoBlack from './LogoBlack'
 import LogoSidebar from './LogoSidebar'
+import LogoSidebarLight from './LogoSidebarLight'
 import LogoSmall from './LogoSmall'
 import LogoWhite from './LogoWhite'
 import Menu from './Menu'
@@ -20,6 +21,7 @@ export {
   LogoBlack,
   LogoWhite,
   LogoSidebar,
+  LogoSidebarLight,
   DiscordIcon,
   TwitterIcon,
   Menu,

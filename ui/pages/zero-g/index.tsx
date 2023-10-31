@@ -38,7 +38,7 @@ export default function ZeroG({ userDiscordData }: any) {
 
         <div className="mt-3 lg:mt-4 font-RobotoMono">
           {/*Subtitle */}
-          <div className="mt-6 lg:mt-2 text-center lg:text-left dark:text-white lg:text-lg">
+          <div className="mt-6 lg:mt-2 text-center lg:text-left text-black dark:text-white lg:text-lg">
             <p className="">
               {`In partnership with `}
               <br className='lg:hidden' />
@@ -53,7 +53,7 @@ export default function ZeroG({ userDiscordData }: any) {
             </p>
           </div>
 
-          <p className="mt-6 font-mono text-base xl:text-lg lg:text-left text-center leading-8 text-light-text dark:text-white dark:text-opacity-60">
+          <p className="mt-6 font-mono text-base xl:text-lg lg:text-left text-center leading-8 text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
             {`The team’s Boeing 727 flies in parabolic arcs to create a weightless environment, allowing you to float, flip, and soar as if you were in space. Start training for a journey to the Moon and experience the adventure of a lifetime with our Zero-G flight!`}
           </p>
 

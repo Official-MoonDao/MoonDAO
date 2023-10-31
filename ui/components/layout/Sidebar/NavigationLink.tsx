@@ -11,17 +11,17 @@ const NavigationLink = ({ item }: any) => {
   const { t } = useTranslation('common')
   return (
     <li
-      className={`list-none font-RobotoMono font-normal text-[16px] text-gray-600 dark:text-gray-100`}
+      className={`list-none font-RobotoMono font-normal text-[16px] text-black dark:text-gray-100`}
       key={item.name}
     >
       {item.external ? (
         <Link href={item.href} target="_blank" rel="noopener noreferrer">
           <div
             className={`
-               hover:bg-blue-100 hover:text-gray-700  dark:hover:bg-gray-900 dark:hover:text-gray-200
+               hover:bg-blue-100   dark:hover:bg-gray-900 
             group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150 cursor-pointer`}
           >
-            <item.icon className="mr-2 h-5 w-5 flex-shrink-0 text-blue-500 dark:text-white" />
+            <item.icon className="mr-2 h-5 w-5 flex-shrink-0 text-black dark:text-white" />
             {t(item.name)}
           </div>
         </Link>
@@ -31,14 +31,14 @@ const NavigationLink = ({ item }: any) => {
             className={`${
               router.pathname == item.href
                 ? 'bg-blue-200 text-blue-950 dark:bg-slate-950 dark:text-moon-orange font-semibold'
-                : ' hover:bg-blue-100 hover:text-gray-700  dark:hover:bg-gray-900 dark:hover:text-gray-200'
+                : ' hover:bg-blue-100 dark:hover:bg-gray-900 '
             } group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150 cursor-pointer`}
           >
             <item.icon
-              className={`mr-2 h-5 w-5 flex-shrink-0 text-blue-500  ${
+              className={`mr-2 h-5 w-5 flex-shrink-0   ${
                 router.pathname == item.href
-                  ? 'dark:text-moon-orange'
-                  : 'dark:text-white'
+                  ? 'text-blue-950 dark:text-moon-orange'
+                  : 'text-black dark:text-white'
               }`}
             />
             {t(item.name)}
@@ -63,16 +63,16 @@ const Dropdown = ({ item, router }: any) => {
             className={`${
               item?.children?.map((e: any) => e.href)?.includes(router.pathname)
                 ? 'bg-blue-200 text-blue-950 dark:bg-gray-950 dark:text-moon-orange hover:scale-100 font-semibold'
-                : ' hover:bg-blue-100 hover:text-gray-700  dark:hover:bg-gray-900 dark:hover:text-gray-200'
+                : ' hover:bg-blue-100  dark:hover:bg-gray-900'
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150`}
           >
             <item.icon
-              className={`mr-2 h-5 w-5 text-blue-500  ${
+              className={`mr-2 h-5 w-5 text-black  ${
                 item?.children
                   ?.map((e: any) => e.href)
                   ?.includes(router.pathname)
-                  ? 'dark:text-moon-orange'
-                  : 'dark:text-white'
+                  ? 'text-blue-950 dark:text-moon-orange'
+                  : 'text-black dark:text-white'
               }`}
               aria-hidden="true"
             />
@@ -99,13 +99,13 @@ const Dropdown = ({ item, router }: any) => {
               {item.children.map((subItem: any) => (
                 <li
                   key={subItem.name}
-                  className="list-disc marker:text-detail-light dark:marker:text-moon-orange group hover:scale-105 transition-all duration-150"
+                  className="list-disc marker:text-blue-950 dark:marker:text-moon-orange group hover:scale-105 transition-all duration-150"
                 >
                   <Link
                     href={subItem.href}
                     className={`${
                       router.pathname == subItem.href
-                        ? 'text-moon-blue dark:text-moon-orange font-semibold'
+                        ? 'text-blue-950 dark:text-moon-orange font-semibold'
                         : '  dark:text-white'
                     } my-3 flex items-center`}
                   >
