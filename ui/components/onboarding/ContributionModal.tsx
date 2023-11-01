@@ -2,13 +2,20 @@
 import { Dialog, Transition } from '@headlessui/react'
 import { CheckIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
-import { ethers } from 'ethers'
+import { useAddress, useContract } from '@thirdweb-dev/react'
+import { BigNumber, ethers } from 'ethers'
 import { useContext, useEffect, useState, Fragment } from 'react'
 import React from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
+import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
+import { useVMOONEYCreateLock } from '../../lib/tokens/ve-token'
+import {
+  V3_SWAP_ROUTER_ADDRESS,
+  useSwapRouter,
+} from '../../lib/uniswap/hooks/useSwapRouter'
+import { VMOONEY_ADDRESSES, MOONEY_ADDRESSES } from '../../const/config'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type ContributionModalProps = {
@@ -20,13 +27,50 @@ export function ContributionModal({
   selectedLevel,
   setSelectedLevel,
 }: ContributionModalProps) {
+  const address = useAddress()
   const [enabled, setEnabled] = useState<boolean>(false)
   const [paymentMethod, setPaymentMethod] = useState('ethereum')
+
+  //Privy
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
+
+  //MoonPay
   const fund = useMoonPay()
 
+  //Alchemy
+  // const lightAccountProvider = useLightAccount(wallets)
+
+  //Uniswap
+  const [swapRoute, setSwapRoute] = useState<any>()
   const { generateRoute, executeRoute } = useSwapRouter(selectedLevel)
+
+  //Thirdweb
+  const { contract: mooneyContract }: any = useContract(
+    MOONEY_ADDRESSES['ethereum']
+  )
+  const { contract: vMooneyContract }: any = useContract(
+    VMOONEY_ADDRESSES['ethereum']
+  )
+
+  const { data: tokenAllowance } = useTokenAllowance(
+    mooneyContract,
+    address,
+    VMOONEY_ADDRESSES['ethereum']
+  )
+
+  const { mutateAsync: approveToken } = useTokenApproval(
+    mooneyContract,
+    ethers.utils.parseEther(swapRoute?.route[0]?.rawQuote.toString() || '0'),
+    BigNumber.from(0),
+    VMOONEY_ADDRESSES['ethereum']
+  )
+
+  const { mutateAsync: createLock } = useVMOONEYCreateLock(
+    vMooneyContract,
+    ethers.utils.parseEther(selectedLevel.toString()),
+    Date.now() + 1000 * 60 * 60 * 24 * 365 * 2 //2 years
+  )
 
   function exitModal() {
     setEnabled(false)
@@ -35,6 +79,7 @@ export function ContributionModal({
 
   useEffect(() => {
     if (selectedLevel > 0) setEnabled(true)
+    generateRoute().then((swapRoute: any) => setSwapRoute(swapRoute))
   }, [selectedLevel])
 
   return (
@@ -102,38 +147,123 @@ export function ContributionModal({
                   Credit Card
                 </div>
 
-
                 {/*Web3 purchase button */}
                 <PrivyWeb3Button
-          label="Purchase"
-          action={async () => {
-            const provider = await wallets[selectedWallet].getEthersProvider()
-            const nativeBalance = await provider.getBalance(
-              wallets[selectedWallet].address
-            )
+                  label="Purchase"
+                  action={async () => {
+                    const selectedWalletType =
+                      wallets[selectedWallet].walletClientType
+                    const provider: any = await wallets[
+                      selectedWallet
+                    ].getEthersProvider()
 
-            const formattedNativeBalance =
-              ethers.utils.formatEther(nativeBalance)
+                    const nativeBalance = await provider.getBalance(
+                      wallets[selectedWallet].address
+                    )
 
-            // if (
-            //   +formattedNativeBalance < selectedLevel ||
-            //   paymentMethod === 'card'
-            // ) {
-            //   setTimeout(async () => {
-            //     await fund(selectedLevel - +formattedNativeBalance)
-            //   }, 3000)
-            // }
+                    const formattedNativeBalance =
+                      ethers.utils.formatEther(nativeBalance)
 
-            //buy mooney on L2 using uniswap
-            const route = await generateRoute()
+                    if (
+                      +formattedNativeBalance < selectedLevel ||
+                      paymentMethod === 'card'
+                    ) {
+                      paymentMethod !== 'card' &&
+                        toast(
+                          'This wallet does not have enough matic to purchase the tier, please fund your wallet with moonpay or an alternative method.'
+                        )
+                      setTimeout(
+                        async () => {
+                          await fund(selectedLevel - +formattedNativeBalance)
+                        },
+                        paymentMethod === 'card' ? 0 : 3000
+                      )
+                    }
 
-            const tx = await executeRoute(route)
-            //approve mooney for lock
-            //lock mooney
-          }}
-          isDisabled={selectedLevel === 0}
-        />
+                    //if the wallet is a privy embedded wallet, batch the transactions
+                    //if the wallet is an external wallet (metamask, coinbase, etc), execute the transactions one by one
 
+                    if (selectedWalletType === 'privy') {
+                      //swap, approve, lock
+                      const approveMooneyCallData =
+                        mooneyContract.interface.encodeFunctionData('approve', [
+                          VMOONEY_ADDRESSES['ethereum'],
+                          swapRoute.route[0].rawQuote,
+                        ])
+
+                      const createLockCallData =
+                        vMooneyContract.interface.encodeFunctionData(
+                          'createLock',
+                          [
+                            ethers.utils.parseEther(selectedLevel.toString()),
+                            Date.now() + 1000 * 60 * 60 * 24 * 365 * 2,
+                          ]
+                        )
+
+                      const batchTx = await provider.sendTransactions([
+                        {
+                          target: V3_SWAP_ROUTER_ADDRESS,
+                          data: swapRoute?.methodParameters?.calldata,
+                          value: swapRoute?.methodParameters?.value,
+                        },
+                        {
+                          target: MOONEY_ADDRESSES['polygon'],
+                          data: approveMooneyCallData,
+                        },
+                        {
+                          target: VMOONEY_ADDRESSES['polygon'],
+                          data: createLockCallData,
+                        },
+                      ]).hash
+                      console.log(batchTx)
+                    } else {
+                      toast('Swap matic/eth for mooney')
+                      //swap eth for mooney
+                      try {
+                        const swapTx = await executeRoute(swapRoute)
+                        if (!swapTx)
+                          return toast.error(
+                            'Onboarding canceled, user rejected swap'
+                          )
+                        swapTx &&
+                          toast.success('Successfully swapped ETH for Mooney')
+
+                        //check mooney approval & approve swapped mooney if needed
+                        const swappedMooney =
+                          +swapRoute?.route[0].rawQuote.toString()
+                        if (tokenAllowance < swappedMooney) {
+                          const approvalTx = await approveToken()
+                          if (!approvalTx)
+                            return toast.error(
+                              'Onboarding canceled, user rejected approval'
+                            )
+                          approvalTx?.receipt &&
+                            toast.success(
+                              'Successfully approved MOONEY for lock!'
+                            )
+                        }
+
+                        //create lock for mooney
+                        const lockTx = await createLock?.()
+                        if (!lockTx)
+                          return toast.error(
+                            'Onboarding canceled, user rejected lock'
+                          )
+                        lockTx?.receipt &&
+                          toast.success(
+                            'Successfully locked $MOONEY for Voting Power!'
+                          )
+                      } catch (err: any) {
+                        console.log(
+                          'There was an issue onboarding',
+                          err.message
+                        )
+                        toast.error('There was an issue onboarding')
+                      }
+                    }
+                  }}
+                  isDisabled={selectedLevel === 0}
+                />
 
                 {/*Close button */}
                 <button

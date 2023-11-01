@@ -1,4 +1,3 @@
-
 /*
 Onboarding Stages:
 0. Welcome to MoonDAO
@@ -16,11 +15,11 @@ import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ContributionLevels } from './ContributionLevels'
-import { ProofOfHumanity } from './ProofOfHumanity'
+import ContributionModal from './ContributionModal'
 import { OnboardingCongrats } from './OnboardingCongrats'
+import { ProofOfHumanity } from './ProofOfHumanity'
 
-const isDevEnv = process.env.NODE_ENV === 'development';
-
+const isDevEnv = process.env.NODE_ENV === 'development'
 
 function StageContainer({ children }: any) {
   return (
@@ -33,7 +32,7 @@ function StageContainer({ children }: any) {
 export function OnboardingStageManager() {
   const { user, login } = usePrivy()
   const [stage, setStage] = useState(0)
-  const trackRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null)
   const [selectedLevel, setSelectedLevel] = useState<number>(0)
 
   useEffect(() => {
@@ -46,11 +45,11 @@ export function OnboardingStageManager() {
 
   const MultiStepStage = ({ steps }: any) => {
     const handleNext = () => {
-      setStage(stage + 1);
+      setStage(stage + 1)
     }
 
     const handlePrev = () => {
-      setStage(stage - 1);
+      setStage(stage - 1)
     }
 
     const progressWidth = useMemo(() => {
@@ -63,7 +62,6 @@ export function OnboardingStageManager() {
       return width
     }, [trackRef.current, stage])
 
-
     return (
       <div>
         <ul
@@ -71,15 +69,20 @@ export function OnboardingStageManager() {
           className="relative m-0 flex list-none justify-between overflow-hidden p-0 transition-[height] duration-200 ease-in-out"
           style={{ zIndex: 1 }}
         >
-
           <StepCircle stepNumber="1" currentStage={stage} />
           <StepCircle stepNumber="2" currentStage={stage} />
           <StepCircle stepNumber="3" currentStage={stage} />
         </ul>
-        <div className='mb-8'>
-          <div className='bg-light relative h-[10px] w-full rounded-2xl bottom-12'>
-            <div ref={trackRef} className='bg-gray-500 max-w-[1112px] absolute top-0 left-0 h-full w-[100%] rounded-2xl'></div>
-            <div className={`bg-success absolute top-0 left-0 h-full rounded-2xl`} style={{ width: `${progressWidth}px` }}></div>
+        <div className="mb-8">
+          <div className="bg-light relative h-[10px] w-full rounded-2xl bottom-12">
+            <div
+              ref={trackRef}
+              className="bg-gray-500 max-w-[1112px] absolute top-0 left-0 h-full w-[100%] rounded-2xl"
+            ></div>
+            <div
+              className={`bg-success absolute top-0 left-0 h-full rounded-2xl`}
+              style={{ width: `${progressWidth}px` }}
+            ></div>
           </div>
         </div>
         <br />
@@ -88,94 +91,82 @@ export function OnboardingStageManager() {
           {steps[stage].component}
         </div>
         <br />
-        {
-          isDevEnv && stage > 0 && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'start' }}>
-                <button onClick={handlePrev} disabled={stage === 0}>Previous</button>
-              </div><div style={{ display: 'flex', justifyContent: 'end' }}>
-                <button onClick={handleNext} disabled={stage === steps.length - 1}>Next</button>
-              </div>
-            </>
-          )
-        }
-      </div >
-    );
-  };
+        {isDevEnv && stage > 0 && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'start' }}>
+              <button onClick={handlePrev} disabled={stage === 0}>
+                Previous
+              </button>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'end' }}>
+              <button
+                onClick={handleNext}
+                disabled={stage === steps.length - 1}
+              >
+                Next
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
 
-  const StepZero = () => <StageContainer>
-    <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-left">Welcome to MoonDAO</h2>
-    <p className='mt-[15px] text-base opacity-60'>{`Onboarding at MoonDAO takes less than five minutes even if it's your first time in Web3.`}</p>
+  const StepZero = () => (
+    <StageContainer>
+      <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-left">
+        Welcome to MoonDAO
+      </h2>
+      <p className="mt-[15px] text-base opacity-60">{`Onboarding at MoonDAO takes less than five minutes even if it's your first time in Web3.`}</p>
 
-    <div className='mt-10 bg-slate-950 animate-pulse  w-[320px] sm:w-[80%] h-[426px]'></div>
+      <div className="mt-10 bg-slate-950 animate-pulse  w-[320px] sm:w-[80%] h-[426px]"></div>
 
+      <button
+        onClick={() => {
+          if (!user) {
+            login()
+          } else {
+            setStage(1)
+          }
+        }}
+        className="mt-6 px-5 py-3 bg-moon-orange"
+      >
+        Begin Onboarding
+      </button>
+    </StageContainer>
+  )
 
-    <button
-      onClick={() => {
-        if (!user) {
-          login()
-        } else {
-          setStage(1)
-        }
-      }}
-      className="mt-6 px-5 py-3 bg-moon-orange"
-    >
-      Begin Onboarding
-    </button>
-  </StageContainer>;
+  const StepOne = () => (
+    <StageContainer>
+      <h1 className="text-[#071732] dark:text-white font-GoodTimes text-3xl sm:text-4xl lg:text-5xl text-left">
+        Step 1 of 3: Select Contribution Level
+      </h1>
+      <ContributionLevels
+        selectedLevel={selectedLevel}
+        setSelectedLevel={setSelectedLevel}
+      />
+      <ContributionModal
+        selectedLevel={selectedLevel}
+        setSelectedLevel={setSelectedLevel}
+      />
+    </StageContainer>
+  )
 
-  const StepOne = () => <StageContainer>
-    <h1 className="text-[#071732] dark:text-white font-GoodTimes text-3xl sm:text-4xl lg:text-5xl text-left">Step 1 of 3: Select Contribution Level</h1>
-    <ContributionLevels
-      selectedLevel={selectedLevel}
-      setSelectedLevel={setSelectedLevel}
-    />
-    {/*Hidden it for demo because it's not on the design, how should this one be added? 
-    <PrivyWeb3Button
-      className='hidden'
-      label="Purchase"
-      action={async () => {
-        //check balance of wallet, if not enough matic then fund from moonpay
-        // const maticBalance = await maticContract?.call('balanceOf', [
-        //   wallets[selectedWallet].address,
-        // ])
-        const provider = await wallets[selectedWallet].getEthersProvider()
-        const nativeBalance = await provider.getBalance(
-          wallets[selectedWallet].address
-        )
+  const StepTwo = () => (
+    <StageContainer>
+      <OnboardingCongrats />
+    </StageContainer>
+  )
 
-        const formattedNativeBalance =
-          ethers.utils.formatEther(nativeBalance)
-
-        if (+formattedNativeBalance < selectedLevel) {
-          toast(
-            "You don't have enough Matic to purchase this level, use Moonpay to fund your wallet"
-          )
-          setTimeout(async () => {
-            await fund(selectedLevel - +formattedNativeBalance)
-          }, 3000)
-        }
-
-        //buy mooney on L2 using uniswap
-        const route = await generateRoute()
-        const tx = await executeRoute(route)
-        //approve mooney for lock
-        //lock mooney
-      }}
-      isDisabled={selectedLevel === 0}
-    />
-    */}
-  </StageContainer>;
-
-  const StepTwo = () => <StageContainer>
-    <OnboardingCongrats />
-  </StageContainer>;
-
-  const StepThree = () => <StageContainer>
-    <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-left">Proof of Humanity</h1>
-    <p className='mt-[15px] text-base opacity-60'>{`To access governance and events at MoonDAO you must complete thtese steps.  No identifying data is stored by MoonDAO in this process.`}</p>
-    <ProofOfHumanity />
-  </StageContainer>;
+  const StepThree = () => (
+    <StageContainer>
+      <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-left">
+        Proof of Humanity
+      </h1>
+      <p className="mt-[15px] text-base opacity-60">{`To access governance and events at MoonDAO you must complete thtese steps.  No identifying data is stored by MoonDAO in this process.`}</p>
+      <ProofOfHumanity />
+    </StageContainer>
+  )
 
   const StepFour = () => <StageContainer />
 
@@ -187,7 +178,12 @@ export function OnboardingStageManager() {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'} text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'}`}>
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
+              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+            } text-md font-medium ${
+              isActive ? 'text-white' : 'text-[#40464f]'
+            }`}
+          >
             {stepNumber}
           </span>
         </div>
@@ -201,7 +197,7 @@ export function OnboardingStageManager() {
     { component: <StepTwo /> },
     { component: <StepThree /> },
     { component: <StepFour /> },
-  ];
+  ]
 
   return (
     <div className="flex flex-col pt-8 w-full h-full">

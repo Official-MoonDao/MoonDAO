@@ -14,11 +14,12 @@ import {
   SwapType,
 } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 import { MOONEY_ADDRESSES } from '../../../const/config'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
 
-const V3_SWAP_ROUTER_ADDRESS = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
+export const V3_SWAP_ROUTER_ADDRESS =
+  '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
 
 enum TransactionState {
   Failed = 'Failed',
@@ -51,7 +52,6 @@ export function useSwapRouter(swapAmnt: number) {
   const { wallets } = useWallets()
 
   async function generateRoute() {
-    console.log(wallets[selectedWallet])
     try {
       const provider: any = await wallets[selectedWallet].getEthersProvider()
       const router: any = new AlphaRouter({

@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
 import InitiateLogo from './assets/InitiateLogo'
 
 type ContributionLevelProps = {
@@ -14,6 +16,15 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
     levelPrice,
     points,
   }: ContributionLevelProps) {
+    const [quote, setQuote] = useState<number>()
+    const { generateRoute } = useSwapRouter(levelPrice)
+
+    useEffect(() => {
+      ;(async () => {
+        const route = await generateRoute()
+        setQuote(route?.route[0].rawQuote.toString() / 10 ** 18)
+      })()
+    }, [])
     return (
       <div
         className={`w-[320px] transition-all duration-150 text-black cursor-pointer dark:text-white py-6 px-7 flex flex-col items-center border-[2px] border-white group hover:border-orange-200 border-opacity-20 font-RobotoMono ${
@@ -28,8 +39,13 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           <InitiateLogo />
         </div>
         {/*Title*/}
-        <h1 className={`font-GoodTimes mt-[22px] text-2xl transition-all duration-150 ${
-          selectedLevel === levelPrice && "text-moon-orange"}`}>{title}</h1>
+        <h1
+          className={`font-GoodTimes mt-[22px] text-2xl transition-all duration-150 ${
+            selectedLevel === levelPrice && 'text-moon-orange'
+          }`}
+        >
+          {title}
+        </h1>
         <p className="mt-[23px]">{`Price : ${levelPrice.toLocaleString()}`}</p>
         {/*List*/}
         <ul
@@ -43,9 +59,15 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
               {'' + point}
             </li>
           ))}
+          <li>
+            {!quote ? '...loading' : quote?.toLocaleString() + ' $MOONEY'}
+          </li>
         </ul>
-        <button className={`mt-[52px] lg:bg-transparent px-5 py-3 transition-all duration-150 ${
-          selectedLevel === levelPrice && 'lg:bg-moon-orange hover:scale-105'}`}>
+        <button
+          className={`mt-[52px] lg:bg-transparent px-5 py-3 transition-all duration-150 ${
+            selectedLevel === levelPrice && 'lg:bg-moon-orange hover:scale-105'
+          }`}
+        >
           {'Get Started >'}
         </button>
       </div>
@@ -62,7 +84,6 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           'Access to the community',
           'Be part of the DAO Governance',
           'You get to purchase things on the marketplace',
-          '50,000.00 $MOONEY',
           '1000 voting power',
         ]}
       />
@@ -74,7 +95,6 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           'Access to the community',
           'Be part of the DAO Governance',
           'You get to purchase things on the marketplace',
-          '50,000.00 $MOONEY',
           '1000 voting power',
         ]}
       />
@@ -86,7 +106,6 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           'Access to the community',
           'Be part of the DAO Governance',
           'You get to purchase things on the marketplace',
-          '50,000.00 $MOONEY',
           '1000 voting power',
         ]}
       />
