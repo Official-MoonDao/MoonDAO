@@ -9,10 +9,10 @@ export function LinkAccounts({ user }: any) {
 
   function LinkAcctBtn({ onClick, linked, children }: any) {
     return (
-      <button onClick={onClick}>
-        <div className="flex w-full justify- gap-2">
+      <button onClick={onClick} className='pt-1 text-[13px]'>
+        <div className="flex w-full items-center justify-between px-2">
           {children}
-          <p>{linked ? '✔' : ''}</p>
+          <p>{linked ? '✔' : '⨉'}</p>
         </div>
       </button>
     )
@@ -37,7 +37,7 @@ export function LinkAccounts({ user }: any) {
         className="flex justify-between w-3/4"
         onClick={() => setEnabled(!enabled)}
       >
-        <strong>Link Accounts</strong>
+        <strong>Link Accounts:</strong>
         <button
           className={`duration-300 ease-in-out ${enabled && 'rotate-180'}`}
         >
@@ -47,16 +47,16 @@ export function LinkAccounts({ user }: any) {
       {enabled && (
         <div className="flex flex-col justify-center divide-y gap-1">
           <LinkAcctBtn onClick={linkWallet} linked={linkedAccounts?.wallet}>
-            Wallet
+            Wallet:
           </LinkAcctBtn>
           <LinkAcctBtn onClick={linkEmail} linked={linkedAccounts?.email}>
-            Email
+            Email:
           </LinkAcctBtn>
           <LinkAcctBtn onClick={linkPhone} linked={linkedAccounts?.phone}>
-            Phone
+            Phone:
           </LinkAcctBtn>
           <LinkAcctBtn onClick={linkGoogle} linked={linkedAccounts.google}>
-            Google
+            Google:
           </LinkAcctBtn>
           <div />
         </div>
