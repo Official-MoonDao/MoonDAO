@@ -21,8 +21,8 @@ export function SeshEvent({ seshEvent }: any) {
 
 
   return (
-    <div className="flex flex-col w-full items-center gap-2 p-2 font-RobotoMono border dark:border-white dark:border-opacity-20 text-center lg:text-left lg:items-start lg:px-4">
-      <h1 className="text-indigo-500 dark:text-moon-orange lg:text-lg xl:text-[20px]">{seshEvent.title}</h1>
+    <div className="bg-white dark:bg-slate-900 flex flex-col w-full items-center gap-2 p-2 font-RobotoMono border dark:border-white dark:border-opacity-20 text-center lg:text-left lg:items-start lg:px-4">
+      <h1 className="text-orange-500 dark:text-moon-orange lg:text-lg xl:text-[20px]">{seshEvent.title}</h1>
       <p className="text-gray-900 dark:text-white text-sm lg:text-base xl:text-lg">{date}</p>
     </div>
   )

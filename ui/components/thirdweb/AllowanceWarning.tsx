@@ -27,12 +27,12 @@ export const AllowanceWarning = ({
   const { t } = useTranslation('common')
 
   return (
-    <div className="mt-8 pt-1 pb-3 lg:px-8 xl:px-4 xl:py-3 flex flex-col xl:flex-row items-center font-RobotoMono px-4 border dark:border-white  rounded-lg">
+    <div className="mt-8 pt-1 pb-3 lg:px-8 xl:px-4 xl:py-3 flex flex-col xl:flex-row items-center font-RobotoMono px-4 border border-slate-700 dark:border-white  rounded-lg">
       <div>
-        <ExclamationCircleIcon className="h-7 w-7 md:h-9 md:w-9 text-white" />
+        <ExclamationCircleIcon className="h-7 w-7 md:h-9 md:w-9 text-slate-950 dark:text-white" />
       </div>
 
-      <p className="md:mt-1 text-xs text-center block xl:text-left xl:ml-5">
+      <p className="md:mt-1 text-xs text-center block xl:text-left xl:ml-5 dark:text-white text-slate-900">
         {t('safetyNote')}
       </p>
       {!tokenAllowanceLoading && tokenAllowance > 0 && (

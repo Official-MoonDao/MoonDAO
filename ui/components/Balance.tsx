@@ -35,8 +35,8 @@ export default function Balance({
         </p>
       ) : balance ? (
         <p>
-          `${prefix}${transformNumber(balance, NumberType.string, decimals)}$
-          {suffix}`
+          {prefix}{transformNumber(balance, NumberType.string, decimals)}
+          {suffix}
         </p>
       ) : (
         0

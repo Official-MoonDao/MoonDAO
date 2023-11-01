@@ -30,11 +30,11 @@ export default function ZeroG({ userDiscordData }: any) {
   const validLock = useValidVP(address)
 
   return (
-    <div className="animate-fadeIn">
+    <main className="animate-fadeIn">
       <Head title="Zero-G Flight" />
 
-      <main className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 page-border-and-color w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[800px]">
-        <h2 className="page-title ">Zero-G Flight</h2>
+      <div className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 page-border-and-color w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[800px]">
+        <h2 className="page-title">Zero-G Flight</h2>
 
         <div className="mt-3 lg:mt-4 font-RobotoMono">
           {/*Subtitle */}
@@ -70,8 +70,8 @@ export default function ZeroG({ userDiscordData }: any) {
         <section className="mt-6 w-full flex flex-col items-center lg:items-start">
           <PurchasePortal validLock={validLock} />
         </section>
-      </main>
-    </div>
+      </div>
+    </main>
   )
 }
 

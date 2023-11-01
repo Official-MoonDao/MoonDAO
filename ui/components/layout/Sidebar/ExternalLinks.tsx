@@ -26,7 +26,7 @@ const externalLinks = [
 const ExternalLinks = () => {
   return (
     <div className="font-RobotoMono">
-      <h3 className="-ml-2 text-black dark:text-white font-medium text-sn">
+      <h3 className="-ml-2 text-black dark:text-white font-medium text-[15px]">
         External links
       </h3>
       <ul

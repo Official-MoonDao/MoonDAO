@@ -248,7 +248,7 @@ export default function Lock() {
         {/*Available to Lock*/}
         {!hasExpired && (
           <div className="xl:w-3/4 rounded-md text-xs sm:tracking-wide lg:text-base uppercase font-semibold xl:text-xl inner-container-background px-2 py-3 lg:px-5 lg:py-4 flex items-center">
-            <p>{t('lockAvailableMoney')} </p>
+            <p className='text-slate-900 dark:text-white'>{t('lockAvailableMoney')} </p>
             <Balance
               balance={MOONEYBalance?.toString() / 10 ** 18}
               loading={MOONEYBalanceLoading}
@@ -339,7 +339,7 @@ export default function Lock() {
                 <input
                   type="date"
                   placeholder={t('lockExpDate')}
-                  className="mt-4 input input-bordered w-full  dark:[color-scheme:dark] dark:bg-[#071732] dark:text-white border dark:border-white"
+                  className="mt-4 input input-bordered w-full dark:[color-scheme:dark] dark:bg-[#071732] text-black dark:text-white border dark:border-white"
                   value={lockTime?.formatted}
                   min={
                     hasLock && address

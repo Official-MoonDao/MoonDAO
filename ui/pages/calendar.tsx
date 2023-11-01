@@ -19,7 +19,7 @@ export default function Calendar() {
           Calendar
         </h2>
         {/*Section containing the events*/}
-        <section className="mt-6 bg-[#071732] py-5 px-2 lg:px-4 xl:px-6 font-RobotoMono">
+        <section className="mt-6 inner-container-background py-5 px-2 lg:px-4 xl:px-6 font-RobotoMono">
           <p className="text-base lg:text-lg xl:text-[20px] font-medium text-center lg:text-left text-light-text dark:text-white">
             {t('calendarDesc')}
           </p>

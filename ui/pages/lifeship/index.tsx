@@ -50,11 +50,11 @@ export default function Lifeship({ products = [] }: any) {
     <main className="animate-fadeIn">
       <Head title="Lifeship" />
 
-      <div className="mt-3 lg:mt-10 px-5 lg:px-10 xl:px-10 py-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] page-border-and-color">
+      <div className="mt-3 lg:mt-10 px-5 lg:px-10 xl:px-10 py-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] page-border-and-color text-gray-900 dark:text-white">
         {/*Title */}
-        <div className="flex flex-col lg:flex-row lg:gap-4 items-center text-center lg:text-left">
+        <div className="flex flex-col lg:flex-row lg:gap-4 items-center text-center lg:text-left title-text-colors">
           <h2
-            className={`mt-3 flex items-center gap-3 font-GoodTimes text-2xl xl:text-4xl 2xl:text-[40px] text-white`}
+            className={`mt-3 flex items-center gap-3 font-GoodTimes text-2xl xl:text-4xl 2xl:text-[40px] `}
           >
             MoonDAO
             <Image src={flag} width={50} height={50} alt="" />
@@ -63,7 +63,7 @@ export default function Lifeship({ products = [] }: any) {
             {'  x  '}
           </h1>
           <h2
-            className={`mt-3 flex items-center gap-3 font-GoodTimes text-2xl xl:text-4xl 2xl:text-[40px] text-white`}
+            className={`mt-3 flex items-center gap-3 font-GoodTimes text-2xl xl:text-4xl 2xl:text-[40px]`}
           >
             {'LifeShip'}
             <Image
@@ -83,9 +83,8 @@ export default function Lifeship({ products = [] }: any) {
           </h2>
         </div>
 
-
         {state === 0 && (
-          <div className="mt-5 lg:mt-8 flex flex-col justify-center items-center text-left gap-4 md:w-full w-full text-white">
+          <div className="mt-5 lg:mt-8 flex flex-col justify-center items-center text-left gap-4 md:w-full w-full">
             {/*Paragraph text */}
             <p className="max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-lg lg:self-start">
               {`Send DNA or ashes to the moon, leaving your legacy in the universe! MoonDAO is partnering with`}{' '}
@@ -168,7 +167,7 @@ export default function Lifeship({ products = [] }: any) {
                 </Button>
 
                 {/*Section after products*/}
-                <p className="mt-5 font-RobotoMono max-w-2xl lg:max-w-3xl text-center lg:text-left  w-full lg:self-start lg:text-lg">
+                <p className="mt-5 font-RobotoMono max-w-2xl lg:max-w-3xl text-center lg:text-left w-full lg:self-start lg:text-lg">
                   {
                     'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through Lifeship'
                   }

@@ -8,12 +8,12 @@ export default function LockPresets({
   const currTime = new Date()
 
   return (
-    <div className="flex flex-horizontal flex-fill mt-3 space-x-2 text-white font-RobotoMono">
+    <div className="flex flex-horizontal flex-fill mt-3 space-x-2 text-gray-900 dark:text-white font-RobotoMono">
       <button
         onClick={() => {
           onChange(new Date(currTime.setMonth(currTime.getMonth() + 6)))
         }}
-        className={`py-1 flex-auto normal-case rounded-lg text-xs basis-1/5 border border-white ${
+        className={`py-1 flex-auto normal-case rounded-lg text-xs basis-1/5 border border-gray-700 dark:border-white ${
           currTime.getTime() + 15778463000 < expirationTime || disabled
             ? 'opacity-70'
             : ''
@@ -26,7 +26,7 @@ export default function LockPresets({
         onClick={() => {
           onChange(new Date(currTime.setMonth(currTime.getMonth() + 12)))
         }}
-        className={`py-1 flex-auto normal-case rounded-lg text-xs basis-1/5 border border-white ${
+        className={`py-1 flex-auto normal-case rounded-lg text-xs basis-1/5 border border-gray-700 dark:border-white ${
           currTime.getTime() + 31556926000 < expirationTime || disabled
             ? 'opacity-70'
             : ''
@@ -39,7 +39,7 @@ export default function LockPresets({
         onClick={() => {
           onChange(new Date(currTime.setMonth(currTime.getMonth() + 24)))
         }}
-        className={`py-1 flex-auto normal-case rounded-lg text-xs basis-1/5 border border-white ${
+        className={`py-1 flex-auto normal-case rounded-lg text-xs basis-1/5 border border-gray-700 dark:border-white ${
           currTime.getTime() + 63113852000 < expirationTime || disabled
             ? 'opacity-70'
             : ''
@@ -52,7 +52,7 @@ export default function LockPresets({
         onClick={() => {
           onChange(new Date(currTime.setMonth(currTime.getMonth() + 48)))
         }}
-        className={`py-1 flex-auto normal-case rounded-lg text-xs basis-1/5 border border-white ${
+        className={`py-1 flex-auto normal-case rounded-lg text-xs basis-1/5 border border-gray-700 dark:border-white ${
           currTime.getTime() + 126227704000 < expirationTime || disabled
             ? 'opacity-70'
             : ''

@@ -11,7 +11,7 @@ const NavigationLink = ({ item }: any) => {
   const { t } = useTranslation('common')
   return (
     <li
-      className={`list-none font-RobotoMono font-normal text-[16px] text-black dark:text-gray-100`}
+      className={`list-none font-RobotoMono font-normal text-sm md:text-base text-black dark:text-gray-100`}
       key={item.name}
     >
       {item.external ? (
