@@ -8,6 +8,7 @@ import Image from 'next/image'
 import { useContext, useEffect, useState, Fragment } from 'react'
 import React from 'react'
 import toast from 'react-hot-toast'
+import { useLightAccount } from '../../lib/alchemy/useLightAccount'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
@@ -16,6 +17,8 @@ import {
   V3_SWAP_ROUTER_ADDRESS,
   useSwapRouter,
 } from '../../lib/uniswap/hooks/useSwapRouter'
+import ERC20 from '../../const/abis/ERC20.json'
+import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { VMOONEY_ADDRESSES, MOONEY_ADDRESSES } from '../../const/config'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -29,6 +32,7 @@ export function ContributionModal({
   setSelectedLevel,
 }: ContributionModalProps) {
   const address = useAddress()
+  const signer = useSigner()
   const [enabled, setEnabled] = useState<boolean>(false)
   const [paymentMethod, setPaymentMethod] = useState('ethereum')
 
@@ -207,95 +211,103 @@ export function ContributionModal({
                         toast(
                           'This wallet does not have enough matic to purchase the tier, please fund your wallet with moonpay or an alternative method.'
                         )
-                      setTimeout(
-                        async () => {
-                          await fund(selectedLevel - +formattedNativeBalance)
-                        },
-                        paymentMethod === 'card' ? 0 : 3000
-                      )
+                      return setTimeout(async () => {
+                        await fund(selectedLevel - +formattedNativeBalance)
+                      }, 3000)
                     }
 
                     //if the wallet is a privy embedded wallet, batch the transactions
                     //if the wallet is an external wallet (metamask, coinbase, etc), execute the transactions one by one
 
-                    if (selectedWalletType === 'privy') {
-                      //swap, approve, lock
-                      const approveMooneyCallData =
-                        mooneyContract.interface.encodeFunctionData('approve', [
-                          VMOONEY_ADDRESSES['ethereum'],
-                          swapRoute.route[0].rawQuote,
-                        ])
+                    // if (selectedWalletType === 'privy') {
+                    //   //swap, approve, lock
+                    //   const ethersMooneyContract = new Contract(
+                    //     MOONEY_ADDRESSES['ethereum'],
+                    //     ERC20.abi,
+                    //     signer
+                    //   )
 
-                      const createLockCallData =
-                        vMooneyContract.interface.encodeFunctionData(
-                          'createLock',
-                          [
-                            ethers.utils.parseEther(selectedLevel.toString()),
-                            Date.now() + 1000 * 60 * 60 * 24 * 365 * 2,
-                          ]
-                        )
+                    //   const ethersVMooneyContract = new Contract(
+                    //     VMOONEY_ADDRESSES['ethereum'],
+                    //     VotingEscrow.abi,
+                    //     signer
+                    //   )
 
-                      const batchTx = await provider.sendTransactions([
-                        {
-                          target: V3_SWAP_ROUTER_ADDRESS,
-                          data: swapRoute?.methodParameters?.calldata,
-                          value: swapRoute?.methodParameters?.value,
-                        },
-                        {
-                          target: MOONEY_ADDRESSES['polygon'],
-                          data: approveMooneyCallData,
-                        },
-                        {
-                          target: VMOONEY_ADDRESSES['polygon'],
-                          data: createLockCallData,
-                        },
-                      ]).hash
-                      console.log(batchTx)
-                    } else {
+                    //   const approveMooneyCallData =
+                    //     ethersMooneyContract.interface.encodeFunctionData(
+                    //       'approve',
+                    //       [
+                    //         VMOONEY_ADDRESSES['ethereum'],
+                    //         swapRoute.route[0].rawQuote,
+                    //       ]
+                    //     )
+                    //   const createLockCallData =
+                    //     ethersVMooneyContract.interface.encodeFunctionData(
+                    //       'create_lock',
+                    //       [
+                    //         ethers.utils.parseEther(selectedLevel.toString()),
+                    //         Math.floor(
+                    //           Number(
+                    //             Date.now() + 1000 * 60 * 60 * 24 * 365 * 2
+                    //           ) / 1000
+                    //         ),
+                    //       ]
+                    //     )
+
+                    //   const batchTx = await provider.sendTransactions([
+                    //     {
+                    //       to: V3_SWAP_ROUTER_ADDRESS,
+                    //       data: swapRoute?.methodParameters?.calldata,
+                    //       value: swapRoute?.methodParameters?.value,
+                    //     },
+                    //     {
+                    //       to: MOONEY_ADDRESSES['ethereum'],
+                    //       data: approveMooneyCallData,
+                    //     },
+                    //     {
+                    //       to: VMOONEY_ADDRESSES['ethereum'],
+                    //       data: createLockCallData,
+                    //     },
+                    //   ]).hash
+                    // } else {
+                    //swap eth for mooney
+                    try {
+                      const swapTx = await executeRoute(swapRoute)
                       toast('Swap matic/eth for mooney')
-                      //swap eth for mooney
-                      try {
-                        const swapTx = await executeRoute(swapRoute)
-                        if (!swapTx)
-                          return toast.error(
-                            'Onboarding canceled, user rejected swap'
-                          )
-                        swapTx &&
-                          toast.success('Successfully swapped ETH for Mooney')
 
-                        //check mooney approval & approve swapped mooney if needed
-                        const swappedMooney =
-                          +swapRoute?.route[0].rawQuote.toString()
-                        if (tokenAllowance < swappedMooney) {
-                          const approvalTx = await approveToken()
-                          if (!approvalTx)
-                            return toast.error(
-                              'Onboarding canceled, user rejected approval'
-                            )
-                          approvalTx?.receipt &&
-                            toast.success(
-                              'Successfully approved MOONEY for lock!'
-                            )
-                        }
+                      swapTx &&
+                        toast.success('Successfully swapped ETH for Mooney')
 
-                        //create lock for mooney
-                        const lockTx = await createLock?.()
-                        if (!lockTx)
+                      //check mooney approval & approve swapped mooney if needed
+                      const swappedMooney =
+                        +swapRoute?.route[0].rawQuote.toString()
+                      if (tokenAllowance < swappedMooney) {
+                        const approvalTx = await approveToken()
+                        if (!approvalTx)
                           return toast.error(
-                            'Onboarding canceled, user rejected lock'
+                            'Onboarding canceled, user rejected approval'
                           )
-                        lockTx?.receipt &&
+                        approvalTx?.receipt &&
                           toast.success(
-                            'Successfully locked $MOONEY for Voting Power!'
+                            'Successfully approved MOONEY for lock!'
                           )
-                      } catch (err: any) {
-                        console.log(
-                          'There was an issue onboarding',
-                          err.message
-                        )
-                        toast.error('There was an issue onboarding')
                       }
+
+                      //create lock for mooney
+                      const lockTx = await createLock?.()
+                      if (!lockTx)
+                        return toast.error(
+                          'Onboarding canceled, user rejected lock'
+                        )
+                      lockTx?.receipt &&
+                        toast.success(
+                          'Successfully locked $MOONEY for Voting Power!'
+                        )
+                    } catch (err: any) {
+                      console.log('There was an issue onboarding', err.message)
+                      toast.error('There was an issue onboarding')
                     }
+                    // }
                   }}
                   isDisabled={selectedLevel === 0}
                 />
