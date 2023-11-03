@@ -104,7 +104,7 @@ export function useSwapRouter(swapAmnt: number) {
       ).maxFeePerGas?.toString()
 
       const tx = await signer.sendTransaction({
-        data: route.methodParameters?.calldata,
+        data: route?.methodParameters?.calldata,
         to: V3_SWAP_ROUTER_ADDRESS,
         value: route?.methodParameters?.value,
         from: walletAddress,
