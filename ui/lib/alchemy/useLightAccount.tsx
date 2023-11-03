@@ -3,13 +3,13 @@ import { AlchemyProvider } from '@alchemy/aa-alchemy'
 import { WalletClientSigner, type SmartAccountSigner } from '@alchemy/aa-core'
 import { useContext, useEffect, useState } from 'react'
 import { createWalletClient, custom } from 'viem'
-import { polygonMumbai, polygon } from 'viem/chains'
+import { polygonMumbai, polygon, mainnet } from 'viem/chains'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 
 export function useLightAccount(wallets: any) {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const chain =
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? polygon : polygonMumbai
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? mainnet : polygonMumbai
   const [provider, setProvider] = useState()
 
   async function getProvider() {
@@ -38,7 +38,7 @@ export function useLightAccount(wallets: any) {
           entryPointAddress: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
           chain: rpcClient.chain,
           owner: privySigner,
-          factoryAddress: '0x9406cc6185a346906296840746125a0e44976454',
+          factoryAddress: '0x15Ba39375ee2Ab563E8873C8390be6f2E2F50232',
           rpcClient,
         })
     )
