@@ -4,6 +4,7 @@ import { CheckIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
+import Image from 'next/image'
 import { useContext, useEffect, useState, Fragment } from 'react'
 import React from 'react'
 import toast from 'react-hot-toast'
@@ -94,11 +95,11 @@ export function ContributionModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-slate-700 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-slate-800 bg-opacity-75 transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
-          <div className="flex min-h-full  justify-center p-4 text-center items-center sm:p-0">
+          <div className="flex min-h-full justify-center p-4 text-center items-center sm:p-0">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -108,13 +109,13 @@ export function ContributionModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="font-RobotoMono relative transform overflow-hidden rounded-lg bg-[#0A0E22] px-2 pb-4 pt-3 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6">
+              <Dialog.Panel className="font-RobotoMono relative transform overflow-hidden rounded-lg bg-[#0A0E22] px-4 pb-4 text-left shadow-xl transition-all lg:px-5 2xl:px-6 w-[320px] sm:w-[440px] lg:w-[550px] xl:w-[649px]">
                 {/*Title and explanation*/}
                 <div>
-                  <div className="mt-3 text-center lg:text-left sm:mt-5">
+                  <div className="mt-4 text-left sm:mt-5 lg:mt-6 2xl:mt-7">
                     <Dialog.Title
                       as="h3"
-                      className="dark:text-white font-GoodTimes text-xl"
+                      className="dark:text-white font-acme text-3xl lg:text-4xl 2xl:text-5xl"
                     >
                       Payment Method
                     </Dialog.Title>
@@ -126,29 +127,63 @@ export function ContributionModal({
                   </div>
                 </div>
 
-                {/*Payment methods and explanation*/}
+                {/*Payment methods*/}
+                <div className="mt-4 border border-white border-opacity-[0.15] px-2 py-2 xl:px-3 xl:py-3 2xl:px-4 2xl:py-4 flex flex-col gap-2">
+                  <div
+                    className={`border gap-4 flex items-center py-3 px-3 ${
+                      paymentMethod === 'eth'
+                        ? 'text-moon-orange border-moon-orange'
+                        : ' border-opacity-[0.15] border-white'
+                    }`}
+                    onClick={() => setPaymentMethod('eth')}
+                  >
+                    <Image
+                      src={'/ethlogo.png'}
+                      height={26}
+                      width={26}
+                      alt="ETH logo"
+                    />
+                    <p className="inline-block">Ethereum</p>
+                  </div>
 
-                {/* */}
-                <div
-                  className={`py-2 ${
-                    paymentMethod === 'eth' && 'bg-white text-black'
-                  }`}
-                  onClick={() => setPaymentMethod('eth')}
-                >
-                  Ethereum
+                  <div
+                    className={`border gap-4 flex items-center py-3 px-3 ${
+                      paymentMethod === 'card'
+                        ? 'text-moon-orange border-moon-orange'
+                        : ' border-opacity-[0.15] border-white'
+                    }`}
+                    onClick={() => setPaymentMethod('card')}
+                  >
+                    <Image
+                      src={'/creditcardlogo.png'}
+                      height={26}
+                      width={26}
+                      alt="ETH logo"
+                    />
+
+                    <p className="inline-block">Credit Card</p>
+                  </div>
+
+                  <div className={` ${paymentMethod === 'card' ? 'block' : 'hidden' } grid grid-cols-1 gap-2 `}>
+
+                    <div className='flex flex-col items-center text-center p-3 border border-white border-opacity-[0.18]'>
+                      <p className='bg-moon-orange px-3 py-1 text-xl font-bold rounded-[9999px]'>1</p>
+                    <p className='mt-[15px]'>Create or login to an existing MoonPay account</p>
+                    </div>
+                    <div className='flex flex-col items-center text-center p-3 border border-white border-opacity-[0.18]'>
+                      <p className='bg-moon-orange px-3 py-1 text-xl font-bold rounded-[9999px]'>2</p>
+                    <p className='mt-[15px]'>Use your credit or debit card to complete a single transaction</p>
+                    </div>
+
+                  </div>
+
+
+
                 </div>
 
-                <div
-                  className={`py-2 ${
-                    paymentMethod === 'card' && 'bg-white text-black'
-                  }`}
-                  onClick={() => setPaymentMethod('card')}
-                >
-                  Credit Card
-                </div>
-
-                {/*Web3 purchase button */}
+                {/*Web3 purchase button, hidden because it wasn't in the figma*/}
                 <PrivyWeb3Button
+                  className="hidden"
                   label="Purchase"
                   action={async () => {
                     const selectedWalletType =
@@ -268,7 +303,7 @@ export function ContributionModal({
                 {/*Close button */}
                 <button
                   type="button"
-                  className="absolute right-1 top-1 bg-indigo-600 px-1 py-1 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                  className="absolute right-2 top-1 px-1 py-1 text-xl font-semibold text-white"
                   onClick={() => setEnabled(false)}
                 >
                   x
