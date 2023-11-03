@@ -117,7 +117,7 @@ export function OnboardingStageManager() {
       <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-left">
         Welcome to MoonDAO
       </h2>
-      <p className="mt-[15px] text-base opacity-60">{`Onboarding at MoonDAO takes less than five minutes even if it's your first time in Web3.`}</p>
+      <p className="mt-[15px] text-base opacity-60">{`Onboarding at MoonDAO takes less than ten minutes even if it's your first time in Web3.`}</p>
 
       <div className="mt-10 bg-slate-950 animate-pulse  w-[320px] sm:w-[80%] h-[426px]"></div>
 
