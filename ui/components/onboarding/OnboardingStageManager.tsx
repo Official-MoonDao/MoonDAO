@@ -6,18 +6,23 @@ Onboarding Stages:
 3. Proof of Humanity
 */
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { useContract } from '@thirdweb-dev/react'
+import { useAddress, useContract } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState, useRef, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import ChainContext from '../../lib/thirdweb/chain-context'
+import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
+import VotingEscrow from '../../const/abis/VotingEscrow.json'
+import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ContributionLevels } from './ContributionLevels'
 import ContributionModal from './ContributionModal'
-import { OnboardingCongrats } from './OnboardingCongrats'
 import { InvolvementOptions } from './InvolvementOptions'
+import { OnboardingCongrats } from './OnboardingCongrats'
+import { OnboardingTransactions } from './OnboardingTransactions'
 
 const isDevEnv = process.env.NODE_ENV === 'development'
 
@@ -30,18 +35,26 @@ function StageContainer({ children }: any) {
 }
 
 export function OnboardingStageManager() {
+  const address = useAddress()
+  const { selectedChain } = useContext(ChainContext)
   const { user, login } = usePrivy()
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
   const [selectedLevel, setSelectedLevel] = useState<number>(0)
 
+  const { contract: mooneyContract } = useContract(MOONEY_ADDRESSES['ethereum'])
+  const { contract: vMooneyContract } = useContract(
+    VMOONEY_ADDRESSES[selectedChain.slug]
+  )
+
+  useEffect(() => {}, [user])
+
+  //stage 2
   useEffect(() => {
-    if (user && stage === 0) {
-      setStage(1)
-    } else if (!user) {
-      setStage(0)
+    if (selectedLevel > 0) {
+      setStage(2)
     }
-  }, [user])
+  }, [selectedLevel])
 
   const MultiStepStage = ({ steps }: any) => {
     const handleNext = () => {
@@ -129,7 +142,7 @@ export function OnboardingStageManager() {
         />
 
         <button
-          onClick={() => {
+          onClick={async () => {
             if (!user) {
               login()
             } else {
@@ -162,33 +175,12 @@ export function OnboardingStageManager() {
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
         />
-        <ContributionModal
-          selectedLevel={selectedLevel}
-          setSelectedLevel={setSelectedLevel}
-        />
       </div>
     </StageContainer>
   )
 
   {
     /* Checkout Transaction steps */
-  }
-  const Step = ({ stepNum, title, explanation }: any) => {
-    return (
-      <div className="mt-5">
-        <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-white border-opacity-[0.18]">
-          <p className="block bg-moon-orange px-3 py-1 text-xl font-bold rounded-[9999px]">
-            {stepNum}
-          </p>
-          <p className="mt-[15px] block lg:mt-0 xl:text-xl lg:max-w-[190px]">
-            {title}
-          </p>
-          <p className="mt-1 opacity-60 block lg:mt-0 text-sm xl:text-base">
-            {explanation}
-          </p>
-        </div>
-      </div>
-    )
   }
 
   const StepTwo = () => (
@@ -197,44 +189,19 @@ export function OnboardingStageManager() {
         <h1 className="font-acme text-[#071732] dark:text-white text-5xl sm:text-6xl lg:text-5xl xl:text-6xl text-center lg:text-left">
           Check out
         </h1>
-        {/*Steps*/}
-        <div className="mt-2 lg:mt-5">
-          <Step
-            stepNum={1}
-            title={'Purchase ETH'}
-            explanation={
-              'You need ETH to swap it for our governance token MOONEY.'
-            }
-          />
-          <Step
-            stepNum={2}
-            title={'Purchase MOONEY on Uniswap'}
-            explanation={
-              'MoonDAO routes the order to the best price on a Decentralized Exchange using the low gas fees provided by Polygon.'
-            }
-          />
-          <Step
-            stepNum={3}
-            title={'Token Approval'}
-            explanation={
-              'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
-            }
-          />
-          <Step
-            stepNum={4}
-            title={'Stake MOONEY'}
-            explanation={
-              'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
-            }
-          />
-        </div>
+        <OnboardingTransactions
+          setStage={setStage}
+          selectedLevel={selectedLevel}
+          vMooneyContract={vMooneyContract}
+          mooneyContract={mooneyContract}
+        />
       </div>
     </StageContainer>
   )
 
   const StepThree = () => (
     <StageContainer>
-      <OnboardingCongrats />
+      <OnboardingCongrats progress={() => setStage(stage + 1)} />
     </StageContainer>
   )
 
@@ -246,12 +213,18 @@ export function OnboardingStageManager() {
         </h1>
         <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left">{`Step 1: Tell your friends about MoonDAO. Top referrals get extra bonuses, like extra entries into our Sweepstakes with Blue Origin!`}</p>
 
-        <button className="mt-8 px-6 py-3 lg:px-8 xl:px-10 2xl:px-14 2xl:py-4 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange">Share referral</button>
-        <p className='mt-12 xl:mt-14 text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-center lg:text-left'>Step 2: Choose how you want to be involved.</p>
+        <button className="mt-8 px-6 py-3 lg:px-8 xl:px-10 2xl:px-14 2xl:py-4 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange">
+          Share referral
+        </button>
+        <p className="mt-12 xl:mt-14 text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-center lg:text-left">
+          Step 2: Choose how you want to be involved.
+        </p>
 
         <InvolvementOptions />
         {/*Ticket submission button*/}
-        <button className='mt-10 rounded-[20px] py-3 px-4 font-bold lg:absolute bg-white hover:scale-105 hover:text-moon-orange transition-all duration-105 text-black lg:-bottom-24 lg:left-6 2xl:left-auto 2xl:right-10 text-xl'>Questions? Submit a ticket</button>
+        <button className="mt-10 rounded-[20px] py-3 px-4 font-bold lg:absolute bg-white hover:scale-105 hover:text-moon-orange transition-all duration-105 text-black lg:-bottom-24 lg:left-6 2xl:left-auto 2xl:right-10 text-xl">
+          Questions? Submit a ticket
+        </button>
       </div>
     </StageContainer>
   )
