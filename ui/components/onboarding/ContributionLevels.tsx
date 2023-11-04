@@ -1,6 +1,8 @@
+import { Ether, Token } from '@uniswap/sdk-core'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
+import { MOONEY_ADDRESSES } from '../../const/config'
 
 type ContributionLevelProps = {
   icon: string
@@ -10,6 +12,24 @@ type ContributionLevelProps = {
   intro: string
   points: string[]
 }
+
+const ETH: any = Ether.onChain(1)
+
+const MATIC = new Token(
+  137,
+  '0x0000000000000000000000000000000000001010',
+  18,
+  'MATIC',
+  'MATIC'
+)
+
+const MOONEY = new Token(
+  1,
+  MOONEY_ADDRESSES['ethereum'],
+  18,
+  'MOONEY',
+  'MOONEY'
+)
 
 export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
   {
@@ -24,7 +44,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
     points,
   }: ContributionLevelProps) {
     const [quote, setQuote] = useState<number>()
-    const { generateRoute } = useSwapRouter(levelPrice)
+    const { generateRoute } = useSwapRouter(levelPrice, ETH, MOONEY)
 
     useEffect(() => {
       ;(async () => {

@@ -47,7 +47,11 @@ const MOONEY = new Token(
   'MOONEY'
 )
 
-export function useSwapRouter(swapAmnt: number) {
+export function useSwapRouter(
+  swapAmnt: number,
+  tokenIn: Token,
+  tokenOut: Token
+) {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
@@ -68,10 +72,10 @@ export function useSwapRouter(swapAmnt: number) {
 
       const route = await router.route(
         CurrencyAmount.fromRawAmount(
-          ETH,
+          tokenIn,
           ethers.utils.parseEther(String(swapAmnt)).toString()
         ),
-        MOONEY,
+        tokenOut,
         TradeType.EXACT_INPUT,
         options
       )
