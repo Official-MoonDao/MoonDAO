@@ -1,6 +1,6 @@
 //Subscribe an email to the convert kit newsletter
 
-const NEWSLETTER_FORM_ID = '1111'
+const NEWSLETTER_FORM_ID = '3715552 '
 
 export function useNewsletterSub() {
   const convertKitEndpoint = `https://api.convertkit.com/v3/forms/${NEWSLETTER_FORM_ID}/subscribe`
