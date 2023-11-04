@@ -13,12 +13,8 @@ import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 import { useVMOONEYCreateLock } from '../../lib/tokens/ve-token'
-import {
-  V3_SWAP_ROUTER_ADDRESS,
-  useSwapRouter,
-} from '../../lib/uniswap/hooks/useSwapRouter'
-import ERC20 from '../../const/abis/ERC20.json'
-import VotingEscrow from '../../const/abis/VotingEscrow.json'
+import { ETH, MOONEY } from '../../lib/uniswap/UniswapTokens'
+import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
 import { VMOONEY_ADDRESSES, MOONEY_ADDRESSES } from '../../const/config'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -32,7 +28,6 @@ export function ContributionModal({
   setSelectedLevel,
 }: ContributionModalProps) {
   const address = useAddress()
-  const signer = useSigner()
   const [enabled, setEnabled] = useState<boolean>(false)
   const [paymentMethod, setPaymentMethod] = useState('ethereum')
 
@@ -48,7 +43,11 @@ export function ContributionModal({
 
   //Uniswap
   const [swapRoute, setSwapRoute] = useState<any>()
-  const { generateRoute, executeRoute } = useSwapRouter(selectedLevel)
+  const { generateRoute, executeRoute } = useSwapRouter(
+    selectedLevel,
+    ETH,
+    MOONEY
+  )
 
   //Thirdweb
   const { contract: mooneyContract }: any = useContract(
@@ -168,21 +167,29 @@ export function ContributionModal({
                     <p className="inline-block">Credit Card</p>
                   </div>
 
-                  <div className={` ${paymentMethod === 'card' ? 'block' : 'hidden' } grid grid-cols-1 gap-2 `}>
-
-                    <div className='flex flex-col items-center text-center p-3 border border-white border-opacity-[0.18]'>
-                      <p className='bg-moon-orange px-3 py-1 text-xl font-bold rounded-[9999px]'>1</p>
-                    <p className='mt-[15px]'>Create or login to an existing MoonPay account</p>
+                  <div
+                    className={` ${
+                      paymentMethod === 'card' ? 'block' : 'hidden'
+                    } grid grid-cols-1 gap-2 `}
+                  >
+                    <div className="flex flex-col items-center text-center p-3 border border-white border-opacity-[0.18]">
+                      <p className="bg-moon-orange px-3 py-1 text-xl font-bold rounded-[9999px]">
+                        1
+                      </p>
+                      <p className="mt-[15px]">
+                        Create or login to an existing MoonPay account
+                      </p>
                     </div>
-                    <div className='flex flex-col items-center text-center p-3 border border-white border-opacity-[0.18]'>
-                      <p className='bg-moon-orange px-3 py-1 text-xl font-bold rounded-[9999px]'>2</p>
-                    <p className='mt-[15px]'>Use your credit or debit card to complete a single transaction</p>
+                    <div className="flex flex-col items-center text-center p-3 border border-white border-opacity-[0.18]">
+                      <p className="bg-moon-orange px-3 py-1 text-xl font-bold rounded-[9999px]">
+                        2
+                      </p>
+                      <p className="mt-[15px]">
+                        Use your credit or debit card to complete a single
+                        transaction
+                      </p>
                     </div>
-
                   </div>
-
-
-
                 </div>
 
                 {/*Web3 purchase button, hidden because it wasn't in the figma*/}
