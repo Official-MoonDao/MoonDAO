@@ -1,20 +1,45 @@
+import { Mumbai } from '@thirdweb-dev/chains'
+import {
+  useClaimedNFTSupply,
+  useContract,
+  useMintNFTSupply,
+  useTotalCirculatingSupply,
+  useUnclaimedNFTSupply,
+} from '@thirdweb-dev/react'
+import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import ChainContext from '../../lib/thirdweb/chain-context'
+import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
 import Head from '../../components/layout/Head'
 import {
   collectionMetadata,
   nft,
 } from '../../components/marketplace/assets/seed'
+import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
 
+const TICKET_TO_SPACE_ADDRESS = '0x34359AA7E7e1dE8e8AF98822e7dA286b8104DdB6' //mumbai
+
 export default function Ticket2Space() {
+  const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const router = useRouter()
   //stages
   const [state, setState] = useState(0)
   const [time, setTime] = useState<string>()
 
+  const { contract: ttsContract } = useContract(TICKET_TO_SPACE_ADDRESS)
+  const { mutateAsync: mint } = useHandleWrite(ttsContract, 'mint', [])
+  const { mutateAsync: claimFree } = useHandleWrite(
+    ttsContract,
+    'claimFree',
+    []
+  )
+  const { data: unclaimedNFTs } = useUnclaimedNFTSupply(ttsContract)
+
   useEffect(() => {
+    setSelectedChain(Mumbai)
     setTime(
       new Date().toLocaleDateString() + ' @ ' + new Date().toLocaleTimeString()
     )
@@ -55,23 +80,34 @@ export default function Ticket2Space() {
                 {nft.type === 'ERC1155' && (
                   <div>
                     <p className="opacity-70 lg:text-xl">Quantity left</p>
-                    <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">{198}</p>
+                    <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
+                      {198}
+                    </p>
                   </div>
                 )}
                 {/* Pricing information */}
                 <div>
                   <p className="opacity-70 lg:text-xl">Price</p>
-                  <p className='mt-1 lg:mt-2 font-semibold lg:text-lg'>100 MOONEY</p>
+                  <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
+                    100 MOONEY
+                  </p>
                 </div>
                 {/*Expiration*/}
                 <div>
                   <p className="opacity-70 lg:text-xl">Expiration</p>
-                  <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">{time}</p>
+                  <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
+                    {time}
+                  </p>
                 </div>
               </div>
               {/*Not definitive, this one is being used on another page*/}
-              <div className='mt-4'>
-              <PurchasePortal></PurchasePortal>
+              <div className="mt-4 flex flex-col gap-8">
+                <PrivyWeb3Button label="Mint" action={mint} />
+                <PrivyWeb3Button label="Claim Free" action={claimFree} />
+                <p>
+                  If you've entered the previous ticket to space sweepstakes,
+                  claim a ticket for free!
+                </p>
               </div>
             </div>
           )}
