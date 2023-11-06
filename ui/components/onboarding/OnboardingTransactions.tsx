@@ -1,18 +1,16 @@
 import { useWallets } from '@privy-io/react-auth'
-import { Ethereum } from '@thirdweb-dev/chains'
-import { ThirdwebSDK, useContract, useSigner } from '@thirdweb-dev/react'
-import { set } from 'cypress/types/lodash'
-import { BigNumber, ethers } from 'ethers'
+import { useAddress } from '@thirdweb-dev/react'
+import { ethers } from 'ethers'
+import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
+import { useTokenAllowance } from '../../lib/tokens/approve'
 import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
-import { useVMOONEYCreateLock, useVMOONEYLock } from '../../lib/tokens/ve-token'
+import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { ETH, MOONEY } from '../../lib/uniswap/UniswapTokens'
 import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
-import { actionAsyncStorage } from 'next/dist/client/components/action-async-storage'
-import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
+import { VMOONEY_ADDRESSES } from '../../const/config'
 
 /*
 Step 1: Purchase ETH -- Check for eth balance > selected level
@@ -39,8 +37,10 @@ export function OnboardingTransactions({
   vMooneyContract,
   setStage,
 }: any) {
+  const address = useAddress()
+  const router = useRouter()
   const [currStep, setCurrStep] = useState(1)
-  const [isLoadingTx, setIsLoadingTx] = useState(false)
+
   //Privy
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -48,7 +48,6 @@ export function OnboardingTransactions({
 
   //MoonPay
   const fund = useMoonPay()
-  //Alchemy
 
   //Uniswap
   const [swapRoute, setSwapRoute] = useState<any>()
@@ -75,7 +74,7 @@ export function OnboardingTransactions({
 
   useEffect(() => {
     generateRoute().then((swapRoute: any) => setSwapRoute(swapRoute))
-  }, [selectedLevel])
+  }, [])
 
   function Step({
     stepNum,
@@ -85,34 +84,41 @@ export function OnboardingTransactions({
     check,
     deps = [],
   }: StepProps) {
-    const [isLoading, setIsLoading] = useState(false)
+    const [isLoadingCheck, setIsLoadingCheck] = useState(false)
+    const [checkResult, setCheckResult] = useState(true)
+    const [sentTx, setSentTx] = useState(false)
     useEffect(() => {
-      ;(async () => {
-        if (currStep === stepNum) {
-          setIsLoading(true)
+      if (currStep === stepNum && !isLoadingCheck) {
+        setIsLoadingCheck(true)
+        ;(async () => {
           const checkRes = await check()
+          setCheckResult(checkRes)
           if (checkRes) {
-            setIsLoading(false)
             setCurrStep(stepNum + 1)
-          } else if (!isLoading) {
-            setIsLoading(true)
-            action().then(() => setIsLoading(false))
           }
-        }
-      })()
-    }, [selectedLevel, wallet.address, ...deps])
+          setIsLoadingCheck(false)
+        })()
+      }
+    }, [currStep, selectedLevel, address, ...deps])
+
+    useEffect(() => {
+      if (!checkResult && !isLoadingCheck && !sentTx) {
+        setSentTx(true)
+        action()
+      }
+    }, [checkResult, sentTx])
 
     return (
       <div className="mt-5">
         <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-white border-opacity-[0.18]">
           <p
             className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
-              isLoading
-                ? 'bg-[grey]'
+              isLoadingCheck
+                ? 'bg-[grey] animate-pulse'
                 : currStep > stepNum
                 ? 'bg-[lightgreen]'
                 : 'bg-moon-orange'
-            } ${isLoading && 'animate-pulse'}`}
+            }`}
           >
             {stepNum}
           </p>
@@ -122,6 +128,14 @@ export function OnboardingTransactions({
           <p className="mt-1 opacity-60 block lg:mt-0 text-sm xl:text-base">
             {explanation}
           </p>
+          {currStep === stepNum && (
+            <button
+              className="border-2 border-white px-8 py-2"
+              onClick={action}
+            >
+              Run
+            </button>
+          )}
         </div>
       </div>
     )
@@ -141,8 +155,23 @@ export function OnboardingTransactions({
     }
   }, [swapRoute, vMooneyContract, wallet, selectedLevel])
 
+  useEffect(() => {
+    if (!address) {
+      setCurrStep(0)
+      setStage(0)
+    }
+  }, [address])
+
   return (
-    <div className="mt-2 lg:mt-5">
+    <div className="mt-2 lg:mt-5 flex flex-col items-center">
+      <div className="w-full flex gap-8 justify-center">
+        <button
+          className="py-4 px-8 border border-white"
+          onClick={() => setStage(1)}
+        >
+          Back ↩
+        </button>
+      </div>
       <Step
         stepNum={1}
         title={'Purchase ETH'}
@@ -170,7 +199,53 @@ export function OnboardingTransactions({
         explanation={
           'MoonDAO routes the order to the best price on a Decentralized Exchange using the low gas fees provided by Polygon.'
         }
-        action={async () => await executeRoute(swapRoute)}
+        action={async () => {
+          // Check if wallet is an embedded walelt, run batch tx, skip to congrats, else proceed
+          // if (wallet.walletClientType === 'privy') {
+          //   const ethersMooneyContract = new Contract(
+          //     MOONEY_ADDRESSES['ethereum'],
+          //     ERC20.abi
+          //   )
+          //   const ethersVMooneyContract = new Contract(
+          //     VMOONEY_ADDRESSES['ethereum'],
+          //     VotingEscrow.abi
+          //   )
+
+          //   const approveMooneyCallData =
+          //     ethersMooneyContract.interface.encodeFunctionData('approve', [
+          //       VMOONEY_ADDRESSES['ethereum'],
+          //       swapRoute.route[0].rawQuote,
+          //     ])
+
+          //   const createLockCallData =
+          //     ethersVMooneyContract.interface.encodeFunctionData(
+          //       'create_lock',
+          //       [
+          //         ethers.utils.parseEther(selectedLevel.toString()),
+          //         Math.floor(
+          //           Number(Date.now() + 1000 * 60 * 60 * 24 * 365 * 2) / 1000
+          //         ),
+          //       ]
+          //     )
+
+          //   const batchTx = await lightAccountProvider.sendTransactions([
+          //     {
+          //       to: V3_SWAP_ROUTER_ADDRESS,
+          //       data: swapRoute?.methodParameters?.calldata,
+          //       value: swapRoute?.methodParameters?.value,
+          //     },
+          //     {
+          //       to: MOONEY_ADDRESSES['ethereum'],
+          //       data: approveMooneyCallData,
+          //     },
+          //     {
+          //       to: VMOONEY_ADDRESSES['ethereum'],
+          //       data: createLockCallData,
+          //     },
+          //   ]).hash
+          // } else
+          await executeRoute(swapRoute)
+        }}
         check={async () => {
           const selectedLevelMooneyAmt = swapRoute?.route[0].rawQuote.toString()
           if (mooneyBalance?.toString() >= selectedLevelMooneyAmt) {
@@ -179,7 +254,7 @@ export function OnboardingTransactions({
             return false
           }
         }}
-        deps={[]}
+        deps={[mooneyBalance]}
       />
       <Step
         stepNum={3}
