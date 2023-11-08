@@ -24,7 +24,7 @@ import { devWhitelist } from '../../const/tts/whitelist'
 
 const TICKET_TO_SPACE_ADDRESS = '0xFB8f14dE03A8edA036783F0b81992Ea7ce7ce8B5' //mumbai
 
-export default function Ticket2Space({ sweepstakesSupply }: any) {
+export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const router = useRouter()
 
@@ -42,7 +42,6 @@ export default function Ticket2Space({ sweepstakesSupply }: any) {
     ttsSweepstakesV2.abi
   )
 
-  const { data: nft } = useNFT(ttsContract, 1)
   const { contract: mooneyContract } = useContract(
     '0x3818f3273D1f46259b737342Ad30e576A7A74f09',
     ERC20.abi
@@ -111,7 +110,7 @@ export default function Ticket2Space({ sweepstakesSupply }: any) {
                 {'Ticket to Space NFT 2'}
               </h1>
               <div className="my-2 p-2 flex justify-center">
-                <MediaRenderer src={nft?.metadata.image} width={'300px'} />
+                <MediaRenderer src={nftMetadata.image} width={'300px'} />
               </div>
               {/*Quantity, price, expiration */}
               <div className="mt-4 lg:mt-5 flex flex-col gap-2 lg:gap-4">
@@ -218,9 +217,12 @@ export async function getServerSideProps() {
   )
   const sweepstakesSupply = await ticketToSpaceContract?.call('getSupply')
 
+  const nftMetadata = await ticketToSpaceContract?.erc721.getTokenMetadata(1)
+
   return {
     props: {
       sweepstakesSupply: sweepstakesSupply.toString(),
+      nftMetadata,
     },
   }
 }
