@@ -129,7 +129,7 @@ export function OnboardingStageManager() {
   const StepZero = () => (
     <StageContainer>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
-        <h2 className="text-[#071732] dark:text-white font-acme text-5xl sm:text-6xl lg:text-5xl xl:text-6xl text-center lg:text-left">
+        <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
           Welcome to MoonDAO
         </h2>
         <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 opacity-60 max-w-[698px] text-center lg:text-left">{`MoonDAO is accelerating humanity’s development of a lunar base through better coordination. Want to help? This flow will onboard you into our in less than 5 minutes, even if you’re new to Web3.
@@ -160,7 +160,7 @@ export function OnboardingStageManager() {
   const StepOne = () => (
     <StageContainer>
       <div className="flex flex-col font-RobotoMono items-center">
-        <h1 className="text-[#071732] dark:text-white font-acme text-5xl lg:text-5xl xl:text-6xl text-center">
+        <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
           SELECT MEMBERSHIP LEVEL
         </h1>
 
@@ -186,7 +186,7 @@ export function OnboardingStageManager() {
   const StepTwo = () => (
     <StageContainer>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
-        <h1 className="font-acme text-[#071732] dark:text-white text-5xl sm:text-6xl lg:text-5xl xl:text-6xl text-center lg:text-left">
+        <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
           Check out
         </h1>
         <OnboardingTransactions

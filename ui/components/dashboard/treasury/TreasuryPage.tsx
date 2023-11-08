@@ -44,22 +44,22 @@ export default function TreasuryPage() {
     <>
       <div
         id={'dashboard-treasury-page'}
-        className="md:ml-10 lg:flex lg:flex-col lg:items-center xl:flex-row xl:items-baseline xl:justify-around gap-12 xl:gap-16 2xl:gap-24"
+        className="px-3 md:ml-10 lg:flex lg:flex-col lg:items-center 2xl:flex-row 2xl:items-baseline 2xl:justify-around gap-12 2xl:gap-24"
       >
         {/*Assets Section*/}
-        <section className="xl:w-[40%] 2xl:w-[45%] xl:max-w-[600px]">
-          <Header text={'Treasury'} />
-          <Line />
+        <section className="2xl:w-[45%] 2xl:max-w-[600px]">
+          <h2 className='title-text-colors text-4xl font-GoodTimes text-center'>Treasury</h2>
+          <div className='mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full'></div>
           {loadingAssets || !tokens[0] ? (
             <AssetSkeletons />
           ) : (
-            <div id="dashboard-treasury-assets">
+            <div className='mt-4 xl:mt-7' id="dashboard-treasury-assets">
               <TreasuryBalance balance={balanceSum} />
               <Assets tokens={tokens} />
             </div>
           )}
           <a
-            className="mt-10 inline-block font-Montserrat text-lg underline text-stronger-light hover:text-title-light dark:text-moon-gold hover:dark:text-stronger-dark"
+            className="mt-10 inline-block w-full text-lg text-center underline dark:text-white text-gray-900"
             href="https://etherscan.io/address/0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
             target="_blank"
             rel="noreferrer"
@@ -70,8 +70,10 @@ export default function TreasuryPage() {
 
         {/*Transactions Section*/}
         <section className="mt-12 xl:mt-2 xl:w-[40%] 2xl:w-[50%] xl:max-w-[700px]">
-          <Header text={'Transactions'} noStar />
-          <Line />
+        <h2 className='title-text-colors text-3xl sm:text-4xl font-GoodTimes text-center'>Transactions</h2>
+
+        <div className='mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full'></div>
+
           <div className="mt-10">
             {loadingTransactions || !transactions ? (
               <TransactionSkeletons />

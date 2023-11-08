@@ -1,6 +1,7 @@
 import {
   HomeIcon,
   LockClosedIcon,
+  BuildingLibraryIcon,
   RocketLaunchIcon,
   BellIcon,
   ChartBarSquareIcon,
@@ -20,6 +21,11 @@ export const navigation = [
     name: 'Onboarding',
     href: '/onboarding',
     icon: PlusIcon,
+  },
+  {
+    name: 'Governance',
+    href: '/governance',
+    icon: BuildingLibraryIcon,
   },
   {
     name: 'Buy $MOONEY',

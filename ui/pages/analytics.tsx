@@ -15,7 +15,7 @@ export default function Analytics() {
 
   return (
     <div
-      className={`animate-fadeIn relative lg:flex lg:flex-col lg:items-center xl:block
+      className={`mt-3 lg:mt-10 animate-fadeIn relative lg:flex lg:flex-col lg:items-center xl:block
       `}
     >
       <Head title={t('analyticsTitle')} description={t('analyticsDesc')} />

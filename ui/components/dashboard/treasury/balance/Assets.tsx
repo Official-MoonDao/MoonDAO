@@ -4,8 +4,8 @@ import Asset from './Asset'
 
 const Assets = ({ tokens }: any) => {
   return (
-    <section className="mt-3 xl:mt-5 flex flex-col">
-      <ArticleTitle link="" text={'DAO Assets'} />
+    <section className="mt-8 flex flex-col">
+      <h3 className='title-text-colors text-2xl font-RobotoMono text-center'>DAO Assets</h3>
 
       {tokens
         .filter((token: any) => allowedAssets[token.symbol])
