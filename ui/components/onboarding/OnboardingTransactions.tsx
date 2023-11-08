@@ -1,16 +1,23 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
+import { SwapRoute } from '@uniswap/smart-order-router'
+import { Contract, ethers } from 'ethers'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
+import { useLightAccount } from '../../lib/alchemy/useLightAccount'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useTokenAllowance } from '../../lib/tokens/approve'
 import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { ETH, MOONEY } from '../../lib/uniswap/UniswapTokens'
-import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
-import { VMOONEY_ADDRESSES } from '../../const/config'
+import {
+  V3_SWAP_ROUTER_ADDRESS,
+  useSwapRouter,
+} from '../../lib/uniswap/hooks/useSwapRouter'
+import ERC20 from '../../const/abis/ERC20.json'
+import VotingEscrow from '../../const/abis/VotingEscrow.json'
+import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
 
 /*
 Step 1: Purchase ETH -- Check for eth balance > selected level
@@ -57,8 +64,10 @@ export function OnboardingTransactions({
     MOONEY
   )
 
-  //Thirdweb
+  //Alchemy
+  const lightAccountProvider: any = useLightAccount(wallets)
 
+  //Thirdweb
   const { data: mooneyBalance } = useMOONEYBalance(
     mooneyContract,
     wallet.address
@@ -101,12 +110,12 @@ export function OnboardingTransactions({
       }
     }, [currStep, selectedLevel, address, ...deps])
 
-    useEffect(() => {
-      if (!checkResult && !isLoadingCheck && !sentTx) {
-        setSentTx(true)
-        action()
-      }
-    }, [checkResult, sentTx])
+    // useEffect(() => {
+    //   if (!checkResult && !isLoadingCheck && !sentTx) {
+    //     setSentTx(true)
+    //     action()
+    //   }
+    // }, [checkResult, sentTx])
 
     return (
       <div className="mt-5">
@@ -130,10 +139,10 @@ export function OnboardingTransactions({
           </p>
           {currStep === stepNum && (
             <button
-              className="border-2 border-white px-8 py-2"
+              className="my-2 border-2 hover:border-4 duration-300 ease-in-out border-white px-8 py-2"
               onClick={action}
             >
-              Run
+              Complete this Step
             </button>
           )}
         </div>
@@ -200,7 +209,7 @@ export function OnboardingTransactions({
           'MoonDAO routes the order to the best price on a Decentralized Exchange using the low gas fees provided by Polygon.'
         }
         action={async () => {
-          // Check if wallet is an embedded walelt, run batch tx, skip to congrats, else proceed
+          //Check if wallet is an embedded walelt, run batch tx, skip to congrats, else proceed
           // if (wallet.walletClientType === 'privy') {
           //   const ethersMooneyContract = new Contract(
           //     MOONEY_ADDRESSES['ethereum'],
@@ -210,11 +219,11 @@ export function OnboardingTransactions({
           //     VMOONEY_ADDRESSES['ethereum'],
           //     VotingEscrow.abi
           //   )
-
+          //   const route: SwapRoute = await generateRoute()
           //   const approveMooneyCallData =
           //     ethersMooneyContract.interface.encodeFunctionData('approve', [
           //       VMOONEY_ADDRESSES['ethereum'],
-          //       swapRoute.route[0].rawQuote,
+          //       route.route[0].rawQuote.toString(),
           //     ])
 
           //   const createLockCallData =
@@ -228,19 +237,10 @@ export function OnboardingTransactions({
           //       ]
           //     )
 
-          //   const batchTx = await lightAccountProvider.sendTransactions([
+          //   const batchTx = await lightAccountProvider.sendUserOperation([
           //     {
-          //       to: V3_SWAP_ROUTER_ADDRESS,
-          //       data: swapRoute?.methodParameters?.calldata,
-          //       value: swapRoute?.methodParameters?.value,
-          //     },
-          //     {
-          //       to: MOONEY_ADDRESSES['ethereum'],
-          //       data: approveMooneyCallData,
-          //     },
-          //     {
-          //       to: VMOONEY_ADDRESSES['ethereum'],
-          //       data: createLockCallData,
+          //       target: V3_SWAP_ROUTER_ADDRESS,
+          //       data: route?.methodParameters?.calldata,
           //     },
           //   ]).hash
           // } else
