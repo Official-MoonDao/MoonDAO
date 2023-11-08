@@ -222,7 +222,14 @@ export function OnboardingStageManager() {
 
         <InvolvementOptions />
         {/*Ticket submission button*/}
-        <button className="mt-10 rounded-[20px] py-3 px-4 font-bold lg:absolute bg-white hover:scale-105 hover:text-moon-orange transition-all duration-105 text-black lg:-bottom-24 lg:left-6 2xl:left-auto 2xl:right-10 text-xl">
+        <button
+          onClick={() =>
+            window.open(
+              'https://circles.spect.network/r/8e96f155-c255-4567-bca3-8bec6a0b7867'
+            )
+          }
+          className="mt-10 rounded-[20px] py-3 px-4 font-bold lg:absolute bg-white hover:scale-105 hover:text-moon-orange transition-all duration-105 text-black lg:-bottom-24 lg:left-6 2xl:left-auto 2xl:right-10 text-xl"
+        >
           Questions? Submit a ticket
         </button>
       </div>

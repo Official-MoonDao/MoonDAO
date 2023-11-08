@@ -81,7 +81,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
       ;(async () => {
         const nativeRoute = await generateNativeRoute()
         setNativeQuote(
-          (nativeRoute?.route[0].rawQuote.toString() / 10 ** 18).toFixed(3)
+          (nativeRoute?.route[0].rawQuote.toString() / 10 ** 18).toFixed(2)
         )
       })()
     }, [])
@@ -129,7 +129,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
         <p className="mt-5 lg:mt-[23px] text-center">
           {`$${demoPriceProp.toLocaleString()}/month (${
-            nativeQuote ? nativeQuote + ' ETH' : '...loading'
+            nativeQuote ? '~' + nativeQuote + ' ETH' : '...loading'
           })`}
           <br />
           Billed Annually
