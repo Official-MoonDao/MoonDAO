@@ -15,6 +15,8 @@ type PrivyWeb3BtnProps = {
   action: Function
   isDisabled?: boolean
   className?: string
+  onSuccess?: Function
+  onError?: Function
 }
 
 export function PrivyWeb3Button({
@@ -22,6 +24,8 @@ export function PrivyWeb3Button({
   action,
   isDisabled = false,
   className = '',
+  onSuccess,
+  onError,
 }: PrivyWeb3BtnProps) {
   const { selectedChain } = useContext(ChainContext)
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -74,15 +78,19 @@ export function PrivyWeb3Button({
       {btnState === 2 && (
         <Button
           onClick={async () => {
+            setIsLoading(true)
             try {
               await action()
+              onSuccess && onSuccess()
             } catch (err: any) {
               console.log(err.message)
+              onError && onError()
             }
+            setIsLoading(false)
           }}
           disabled={isDisabled}
         >
-          {isLoading ? 'Loading...' : label}
+          {isLoading ? 'loading...' : label}
         </Button>
       )}
     </>
