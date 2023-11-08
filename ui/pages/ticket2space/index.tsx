@@ -80,6 +80,7 @@ export default function Ticket2Space({ sweepstakesSupply }: any) {
       ttsContract
         .call('getSupply')
         .then((supply: any) => setSupply(supply.toString()))
+        .catch((err: any) => console.log(err))
       console.log(supply)
     }
   }, [ttsContract])
@@ -106,7 +107,7 @@ export default function Ticket2Space({ sweepstakesSupply }: any) {
         <div className="mt-6 inner-container-background relative w-full xl:w-2/3">
           {collectionMetadata && (
             <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]">
-              <h1 className="font-GoodTimes text-2xl lg:text-3xl xl:text- text-moon-orange dark:text-white">
+              <h1 className="text-center font-GoodTimes text-2xl lg:text-3xl xl:text- text-moon-orange dark:text-white">
                 {'Ticket to Space NFT 2'}
               </h1>
               <div className="my-2 p-2 flex justify-center">
@@ -142,7 +143,6 @@ export default function Ticket2Space({ sweepstakesSupply }: any) {
                   <PrivyWeb3Button
                     label="Mint"
                     action={async () => {
-                      console.log(tokenAllowance)
                       if (tokenAllowance.toString() < 100 * 10 ** 18)
                         await approveToken()
                       toast.success('Approved Mooney to be spent')
@@ -151,23 +151,54 @@ export default function Ticket2Space({ sweepstakesSupply }: any) {
                     onSuccess={() => {
                       toast.success('Minted Ticket to Space NFT(s)')
                     }}
+                    onError={() => {
+                      toast.error('The transaction was rejected')
+                    }}
                   />
                   <input
-                    className="w-1/4 text-center text-black"
+                    className="w-1/4 text-center text-black rounded-md"
                     type="number"
                     step={1}
                     placeholder={'0'}
-                    onChange={(e: any) => setQuantity(e.target.value)}
+                    onChange={(e: any) => {
+                      if (quantity > 9060 - supply) {
+                        toast.error('Cannot mint more than the supply')
+                        return setQuantity(9060 - supply)
+                      }
+
+                      setQuantity(e.target.value)
+                    }}
+                    value={quantity}
                   />
                 </div>
                 {whitelist.includes(address || '') && (
-                  <div>
-                    <PrivyWeb3Button label="Claim Free" action={claimFree} />
-                    <p>
-                      If you've entered the previous ticket to space
-                      sweepstakes, claim a ticket for free!
-                    </p>
-                  </div>
+                  <>
+                    <div className="w-full border-2 opacity-50" />
+                    <div className="flex flex-col items-center gap-4">
+                      <PrivyWeb3Button
+                        label="Claim Free"
+                        action={claimFree}
+                        onSuccess={() => {
+                          toast.success(
+                            'Congrats! You have successfully claimed a Ticket to Space NFT🚀'
+                          )
+                        }}
+                        onError={() => {
+                          toast.error('The transaction was rejected')
+                        }}
+                      />
+                      <div className="flex flex-col gap-2">
+                        <p className="text-[90%]">
+                          {'Claim your free Ticket to Space NFT!'}
+                        </p>
+                        <p className="text-[80%] opacity-50">
+                          {
+                            '(One is available per address that entered the previous sweepstakes)'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
