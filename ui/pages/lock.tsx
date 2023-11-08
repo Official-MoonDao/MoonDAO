@@ -452,12 +452,12 @@ export default function Lock() {
                         : lockAmountBigNum
 
                       if (increaseAmount.gt(tokenAllowance)) {
-                        const approvalTx = await approveToken()
+                        const approvalTx: any = await approveToken()
                         approvalTx?.receipt &&
                           toast.success('Successfully approved MOONEY for lock')
                       }
 
-                      const lockTx = hasLock
+                      const lockTx: any = hasLock
                         ? await increaseLock?.()
                         : await createLock?.()
 
