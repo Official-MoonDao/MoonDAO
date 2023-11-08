@@ -1,3 +1,13 @@
+import { usePrivy } from '@privy-io/react-auth'
+import { useAddress, useContract } from '@thirdweb-dev/react'
+import { useContext, useEffect, useState, useRef, useMemo } from 'react'
+import ChainContext from '../../lib/thirdweb/chain-context'
+import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
+import { ContributionLevels } from './ContributionLevels'
+import { InvolvementOptions } from './InvolvementOptions'
+import { OnboardingCongrats } from './OnboardingCongrats'
+import { OnboardingTransactions } from './OnboardingTransactions'
+
 /*
 Onboarding Stages:
 0. Welcome to MoonDAO
@@ -5,24 +15,6 @@ Onboarding Stages:
 2. Congrats
 3. Proof of Humanity
 */
-import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { useAddress, useContract } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
-import { useContext, useEffect, useState, useRef, useMemo } from 'react'
-import toast from 'react-hot-toast'
-import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
-import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import ChainContext from '../../lib/thirdweb/chain-context'
-import { useVMOONEYLock } from '../../lib/tokens/ve-token'
-import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
-import VotingEscrow from '../../const/abis/VotingEscrow.json'
-import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
-import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import { ContributionLevels } from './ContributionLevels'
-import ContributionModal from './ContributionModal'
-import { InvolvementOptions } from './InvolvementOptions'
-import { OnboardingCongrats } from './OnboardingCongrats'
-import { OnboardingTransactions } from './OnboardingTransactions'
 
 const isDevEnv = process.env.NODE_ENV === 'development'
 
