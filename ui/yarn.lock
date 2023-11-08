@@ -50,30 +50,31 @@
   resolved "https://registry.yarnpkg.com/@adraffy/ens-normalize/-/ens-normalize-1.9.4.tgz#aae21cb858bbb0411949d5b7b3051f4209043f62"
   integrity sha512-UK0bHA7hh9cR39V+4gl2/NnBBjoXIxkuWAPCaY4X7fbH4L/azIi7ilWOCjMUYfpJgraLUAqkRi2BqrjME8Rynw==
 
-"@alchemy/aa-accounts@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@alchemy/aa-accounts/-/aa-accounts-0.1.1.tgz#7527e25fe2825eb91d80f6e4cb85d188606587a4"
-  integrity sha512-nHHnJuIHXGdvH5i+7DlTeSPa3RJtNLt4NpJP+G+T8G3QP/k6mxHNWFTybOhqxuCC798DACxKc4thOL2Lj8phgA==
+"@alchemy/aa-accounts@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@alchemy/aa-accounts/-/aa-accounts-0.2.0.tgz#e27cc74b9ff5ddde72613636dd88dae33e2d208f"
+  integrity sha512-QszM3DYMpMTKe30b42tD/oLp/paPJkQj5OVJ4X2WN5Ed40CEDZrRhzRvHzxHmQ72lqpn7LqBf24vWsTUupA8oA==
   dependencies:
-    "@alchemy/aa-core" "^0.1.1"
+    "@alchemy/aa-core" "^0.2.0"
     viem "^1.16.2"
 
-"@alchemy/aa-alchemy@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@alchemy/aa-alchemy/-/aa-alchemy-0.1.1.tgz#f7f989b2aaae127a49a61e1dde6d6f52d40d0018"
-  integrity sha512-rVQZNb1QmfQoxDyaXuinB0pfrKENLydwH57TWXJn4wFW+3c+iM6xM/tsfx6zxzA7HTwodcRw8//wMvdF+5KQmg==
+"@alchemy/aa-alchemy@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@alchemy/aa-alchemy/-/aa-alchemy-0.2.0.tgz#ea11d4bb3f9c4bb515b72f29e3099199f20ad634"
+  integrity sha512-5UvzqWY06VCkG45GiygbK9bkT1qGBb4DQs3/AV1ymp5xN9FJRpSsJn6voy8vedseDeUeXmjNmTRp5hYNVTK0dA==
   dependencies:
-    "@alchemy/aa-core" "^0.1.1"
+    "@alchemy/aa-core" "^0.2.0"
     viem "^1.16.2"
 
-"@alchemy/aa-core@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@alchemy/aa-core/-/aa-core-0.1.1.tgz#2c81e34c0ca939897004c68d80250f1b4b423ff2"
-  integrity sha512-vEfCx9MJMTCMpmB3cY+TcM65znP8zcMTaiYE7By3+krhd7ViflWdEILe5HGGzCALGqdr6pUaBI7n08eVoyo6KQ==
+"@alchemy/aa-core@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@alchemy/aa-core/-/aa-core-0.2.0.tgz#ede9d2b107fd6c55c71eca9f03d6c22e4530a300"
+  integrity sha512-qBkY3qFAbWGfqhghyv6kRw+wGsVOtlBjsoSOG24bW3fp/I5TiUZlQrOIKnJiZOj+QW2EuBCu6Kwj10OA/jzKig==
   dependencies:
     abitype "^0.8.3"
     eventemitter3 "^5.0.1"
     viem "^1.16.2"
+    zod "^3.22.4"
 
 "@alloc/quick-lru@^5.2.0":
   version "5.2.0"
@@ -4261,6 +4262,11 @@ abitype@0.9.8:
   version "0.9.8"
   resolved "https://registry.yarnpkg.com/abitype/-/abitype-0.9.8.tgz#1f120b6b717459deafd213dfbf3a3dd1bf10ae8c"
   integrity sha512-puLifILdm+8sjyss4S+fsUN09obiT1g2YW6CtcQF+QDzxR0euzgEB29MZujC6zMk2a6SVmtttq1fc6+YFA7WYQ==
+
+abitype@^0.10.2:
+  version "0.10.2"
+  resolved "https://registry.yarnpkg.com/abitype/-/abitype-0.10.2.tgz#4354fc60939fa7cccb6a9ec6ae389141b5a34a47"
+  integrity sha512-1XndI+RKFWK4+TXCNv1683MRyX5NGmlHXCvqzjOqhSS3PQrxT2QYRZq1bMPPRNjn89B3eVaM2w7y3jVj/OIUzA==
 
 abitype@^0.2.5:
   version "0.2.5"
@@ -12289,6 +12295,11 @@ zod@3.21.4, zod@^3.20.2:
   version "3.21.4"
   resolved "https://registry.yarnpkg.com/zod/-/zod-3.21.4.tgz#10882231d992519f0a10b5dd58a38c9dabbb64db"
   integrity sha512-m46AKbrzKVzOzs/DZgVnG5H55N1sv1M8qZU3A8RIKbs3mrACDNeIOeilDymVb2HdmP8uwshOCF4uJ8uM9rCqJw==
+
+zod@^3.22.4:
+  version "3.22.4"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-3.22.4.tgz#f31c3a9386f61b1f228af56faa9255e845cf3fff"
+  integrity sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==
 
 zstddec@^0.0.2:
   version "0.0.2"
