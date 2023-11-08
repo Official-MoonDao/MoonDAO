@@ -4,19 +4,31 @@ import { MerkleTree } from 'merkletreejs'
 import { useEffect, useState } from 'react'
 import { keccak256 } from 'ethers/lib/utils'
 
-export function useMerkleProof(whitelist: string[]) {
+const bufferToHex = (x: any) => `0x${x.toString('hex')}`
+
+export function useMerkleProof(whitelist: string[] | undefined) {
   const address = useAddress()
   const [merkleProof, setMerkleProof] = useState<any>()
 
-  useEffect(() => {
-    if (address && whitelist[0]) {
-      const { keccak256 } = ethers.utils
-      const leaves = whitelist.map((address) => keccak256(address))
-      const tree = new MerkleTree(leaves, keccak256, { sort: true })
+  function generateMerkleProof() {
+    if (!whitelist?.[0] || !address) return
+    const cleanAddresses = whitelist
+      .filter((address) => address !== '')
+      .map((a) => a.trim())
+    cleanAddresses.push(address)
 
-      setMerkleProof(tree.getHexProof(keccak256(address)))
-    }
-  }, [whitelist])
+    const leaves = cleanAddresses.map((x) => keccak256(x))
+    const tree = new MerkleTree(leaves, keccak256, { sortPairs: true })
+
+    const leaf = keccak256(address)
+    const proof = tree.getProof(leaf).map((x) => bufferToHex(x.data))
+    setMerkleProof(proof)
+    console.log(proof)
+  }
+
+  useEffect(() => {
+    generateMerkleProof()
+  }, [address])
 
   return merkleProof
 }

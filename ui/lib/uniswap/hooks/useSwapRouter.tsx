@@ -114,6 +114,7 @@ export function useSwapRouter(
         from: walletAddress,
         maxFeePerGas: suggestedMaxFeePerGas,
         maxPriorityFeePerGas: 0,
+        gasLimit: 188343,
       })
 
       return tx

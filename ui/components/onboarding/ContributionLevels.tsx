@@ -1,6 +1,9 @@
+import { useAddress } from '@thirdweb-dev/react'
 import { Ether, Token } from '@uniswap/sdk-core'
+import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { calculateVMOONEY } from '../../lib/tokens/ve-token'
 import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
 import { MOONEY_ADDRESSES } from '../../const/config'
 
@@ -11,6 +14,7 @@ type ContributionLevelProps = {
   demoPriceProp: number
   intro: string
   points: string[]
+  hasVotingPower?: boolean
 }
 
 const ETH: any = Ether.onChain(1)
@@ -31,6 +35,14 @@ const MOONEY = new Token(
   'MOONEY'
 )
 
+const DAI = new Token(
+  1,
+  '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+  18,
+  'DAI',
+  'DAI Stablecoin'
+)
+
 export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
   {
     /*Card component */
@@ -42,16 +54,52 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
     demoPriceProp,
     intro,
     points,
+    hasVotingPower,
   }: ContributionLevelProps) {
-    const [quote, setQuote] = useState<number>()
-    const { generateRoute } = useSwapRouter(levelPrice, ETH, MOONEY)
+    const [mooneyQuote, setMooneyQuote] = useState<string | number>()
+    const [nativeQuote, setNativeQuote] = useState<string | number>()
+    const [levelVotingPower, setLevelVotingPower] = useState<any>()
+    const { generateRoute: generateMooneyRoute } = useSwapRouter(
+      levelPrice,
+      ETH,
+      MOONEY
+    )
+    const { generateRoute: generateNativeRoute } = useSwapRouter(
+      demoPriceProp * 12,
+      DAI,
+      ETH
+    )
 
     useEffect(() => {
       ;(async () => {
-        const route = await generateRoute()
-        setQuote(route?.route[0].rawQuote.toString() / 10 ** 18)
+        const mooneyRoute = await generateMooneyRoute()
+        setMooneyQuote(mooneyRoute?.route[0].rawQuote.toString() / 10 ** 18)
       })()
     }, [])
+
+    useEffect(() => {
+      ;(async () => {
+        const nativeRoute = await generateNativeRoute()
+        setNativeQuote(
+          (nativeRoute?.route[0].rawQuote.toString() / 10 ** 18).toFixed(2)
+        )
+      })()
+    }, [])
+
+    useEffect(() => {
+      if (hasVotingPower) {
+        setLevelVotingPower(
+          calculateVMOONEY({
+            MOONEYAmount: mooneyQuote,
+            VMOONEYAmount: 0,
+            time: Date.now() * 1000 * 60 * 60 * 24 * 365 * 2,
+            lockTime: new Date(),
+            max: Date.now() * 1000 * 60 * 60 * 24 * 365 * 4,
+          })
+        )
+      }
+    }, [mooneyQuote])
+
     return (
       <div
         className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
@@ -80,7 +128,9 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         </h1>
         {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
         <p className="mt-5 lg:mt-[23px] text-center">
-          {`$${demoPriceProp.toLocaleString()}/month`}
+          {`$${demoPriceProp.toLocaleString()}/month (${
+            nativeQuote ? '~' + nativeQuote + ' ETH' : '...loading'
+          })`}
           <br />
           Billed Annually
         </p>
@@ -101,8 +151,15 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
                   {'' + point}
                 </li>
               ))}
+              {hasVotingPower && (
+                <li>{`Voting Power : ${
+                  levelVotingPower ? levelVotingPower : '...loading'
+                }`}</li>
+              )}
               <li>
-                {!quote ? '...loading' : quote?.toLocaleString() + ' $MOONEY'}
+                {`$MOONEY : ${
+                  mooneyQuote ? mooneyQuote?.toLocaleString() : '...loading'
+                }`}
               </li>
             </ul>
           </div>
@@ -142,8 +199,8 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           'Proposal Submission Power.',
           'Co-governance of the MoonDAO Treasury.',
           'Exclusive industry-focused networking opportunities.',
-          '250,000 Voting Power.',
         ]}
+        hasVotingPower
       />
       <ContributionLevel
         icon="/industry.png"
@@ -155,8 +212,8 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           'Everything in the Citizen Tier.',
           'Exclusive promotion opportunities.',
           'Access to talent to help design, build, test your space hardware.',
-          '1,000,000 Voting Power',
         ]}
+        hasVotingPower
       />
     </div>
   )
