@@ -61,7 +61,7 @@ export function PrivyWeb3Button({
 
   return (
     <>
-      {btnState === 0 && <Button onClick={login}>Sign In</Button>}
+      {btnState === 0 && <Button onClick={login}>Connect Wallet</Button>}
       {btnState === 1 && (
         <Button
           onClick={async () => {
