@@ -25,6 +25,7 @@ import {
   useVMOONEYCreateLock,
   useVMOONEYIncreaseLock,
   useVMOONEYWithdrawLock,
+  calculateVMOONEY,
 } from '../lib/tokens/ve-token'
 import { NumberType, transformNumber } from '../lib/utils/numbers'
 import Balance from '../components/Balance'
@@ -53,36 +54,6 @@ const dateOut = (date: any, { days, years }: any) => {
   days && dateOut.setDate(date.getDate() + days)
   years && dateOut.setFullYear(date.getFullYear() + years)
   return dateOut
-}
-
-const calculateVMOONEY = ({
-  MOONEYAmount,
-  VMOONEYAmount,
-  time,
-  lockTime,
-  max,
-}: any) => {
-  if (!MOONEYAmount) return 0
-
-  const vestingStart = calculateVestingStart({
-    MOONEYAmount,
-    VMOONEYAmount,
-    lockTime,
-  })
-  const percentage = (time - vestingStart) / (max - vestingStart)
-  const finalVMOONEYAmount = MOONEYAmount * percentage || 0
-  return finalVMOONEYAmount.toFixed(
-    finalVMOONEYAmount > 1 || finalVMOONEYAmount === 0 ? 2 : 8
-  )
-}
-
-const calculateVestingStart = ({
-  MOONEYAmount,
-  VMOONEYAmount,
-  lockTime,
-}: any) => {
-  const fourYears = 31556926000 * 4
-  return lockTime - (VMOONEYAmount / MOONEYAmount) * fourYears
 }
 
 export default function Lock() {
@@ -248,7 +219,9 @@ export default function Lock() {
         {/*Available to Lock*/}
         {!hasExpired && (
           <div className="xl:w-3/4 rounded-md text-xs sm:tracking-wide lg:text-base uppercase font-semibold xl:text-xl inner-container-background px-2 py-3 lg:px-5 lg:py-4 flex items-center">
-            <p className='text-slate-900 dark:text-white'>{t('lockAvailableMoney')} </p>
+            <p className="text-slate-900 dark:text-white">
+              {t('lockAvailableMoney')}{' '}
+            </p>
             <Balance
               balance={MOONEYBalance?.toString() / 10 ** 18}
               loading={MOONEYBalanceLoading}
