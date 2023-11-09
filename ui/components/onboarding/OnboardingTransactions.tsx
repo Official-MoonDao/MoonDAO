@@ -43,6 +43,7 @@ export function OnboardingTransactions({
   mooneyContract,
   vMooneyContract,
   setStage,
+  setSelectedLevel,
 }: any) {
   const address = useAddress()
   const router = useRouter()
@@ -99,14 +100,14 @@ export function OnboardingTransactions({
     useEffect(() => {
       if (currStep === stepNum && !isLoadingCheck) {
         setIsLoadingCheck(true)
-        ;(async () => {
-          const checkRes = await check()
-          setCheckResult(checkRes)
-          if (checkRes) {
-            setCurrStep(stepNum + 1)
-          }
-          setIsLoadingCheck(false)
-        })()
+          ; (async () => {
+            const checkRes = await check()
+            setCheckResult(checkRes)
+            if (checkRes) {
+              setCurrStep(stepNum + 1)
+            }
+            setIsLoadingCheck(false)
+          })()
       }
     }, [currStep, selectedLevel, address, ...deps])
 
@@ -121,13 +122,12 @@ export function OnboardingTransactions({
       <div className="mt-5">
         <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-white border-opacity-[0.18]">
           <p
-            className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
-              isLoadingCheck
-                ? 'bg-[grey] animate-pulse'
-                : currStep > stepNum
+            className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${isLoadingCheck
+              ? 'bg-[grey] animate-pulse'
+              : currStep > stepNum
                 ? 'bg-[lightgreen]'
                 : 'bg-moon-orange'
-            }`}
+              }`}
           >
             {stepNum}
           </p>
@@ -176,7 +176,10 @@ export function OnboardingTransactions({
       <div className="w-full flex gap-8 justify-center">
         <button
           className="py-4 px-8 border border-white"
-          onClick={() => setStage(1)}
+          onClick={() => {
+            setStage(1)
+            setSelectedLevel(0)
+          }}
         >
           Back ↩
         </button>
