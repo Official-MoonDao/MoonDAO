@@ -18,10 +18,5 @@ const UserSchema: Schema = new Schema(
   }
 )
 
-let returnModel
-if (mongoose.models && mongoose.models.User) {
-  returnModel = mongoose.models.User
-} else {
-  returnModel = mongoose.model<UserModel>('User', UserSchema)
-}
-export default returnModel
+export default mongoose.models.User ||
+  mongoose.model<UserModel>('User', UserSchema)

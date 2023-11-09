@@ -22,10 +22,4 @@ const NftSchema: Schema = new Schema(
   }
 )
 
-let returnModel
-if (mongoose.models && mongoose.models.Nft) {
-  returnModel = mongoose.models.Nft
-} else {
-  returnModel = mongoose.model<NftModel>('Nft', NftSchema)
-}
-export default returnModel
+export default mongoose.models.Nft || mongoose.model<NftModel>('Nft', NftSchema)
