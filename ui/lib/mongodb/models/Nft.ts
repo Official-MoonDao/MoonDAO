@@ -1,10 +1,10 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose'
 
 export interface Nft {
-  userId: string;
-  address: string;
-  instanceNumber: number;
-  url: string;
+  userId: string
+  tokenId: string
+  name: string
+  email: string
 }
 
 export interface NftModel extends Nft, Document {}
@@ -12,14 +12,20 @@ export interface NftModel extends Nft, Document {}
 const NftSchema: Schema = new Schema(
   {
     userId: { type: String, required: true },
-    address: { type: String, required: true },
-    instanceNumber: { type: Number, required: true },
-    url: { type: String, required: true },
+    tokenId: { type: String, required: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
   },
   {
     versionKey: false,
     timestamps: true,
   }
-);
+)
 
-export default mongoose.model<NftModel>("Nft", NftSchema);
+let returnModel
+if (mongoose.models && mongoose.models.Nft) {
+  returnModel = mongoose.models.Nft
+} else {
+  returnModel = mongoose.model<NftModel>('Nft', NftSchema)
+}
+export default returnModel
