@@ -3,16 +3,14 @@ import {
   MediaRenderer,
   useAddress,
   useContract,
-  useNFT,
   useOwnedNFTs,
 } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
-import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
+import { useHandleWrite } from '../../lib/thirdweb/hooks'
 import { initSDK } from '../../lib/thirdweb/thirdweb'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
@@ -33,7 +31,8 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(sweepstakesSupply)
-  const [enableSubmitInfoModal, setEnableSubmitInfoModal] = useState(false)
+  const [enableMintInfoModal, setEnableMintInfoModal] = useState(false)
+  const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
 
   const address = useAddress()
 
@@ -145,7 +144,7 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                 <div className="flex gap-4">
                   <PrivyWeb3Button
                     label="Mint"
-                    action={() => setEnableSubmitInfoModal(true)}
+                    action={() => setEnableMintInfoModal(true)}
                   />
                   <input
                     className="w-1/4 text-center text-black rounded-md"
@@ -162,7 +161,8 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                     }}
                     value={quantity}
                   />
-                  {enableSubmitInfoModal && (
+
+                  {enableFreeMintInfoModal && (
                     <SubmitTTSInfoModal
                       quantity={quantity}
                       supply={supply}
@@ -177,7 +177,7 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                           toast.error('The transaction was rejected')
                         }
                       }}
-                      setEnableSubmitInfoModal={setEnableSubmitInfoModal}
+                      setEnabled={setEnableMintInfoModal}
                       ttsContract={ttsContract}
                     />
                   )}
@@ -190,14 +190,28 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                         label="Claim Free"
                         action={claimFree}
                         onSuccess={() => {
-                          toast.success(
-                            'Congrats! You have successfully claimed a Ticket to Space NFT🚀'
-                          )
+                          setEnableFreeMintInfoModal(true)
                         }}
                         onError={() => {
                           toast.error('The transaction was rejected')
                         }}
                       />
+                      {enableFreeMintInfoModal && (
+                        <SubmitTTSInfoModal
+                          quantity={quantity}
+                          supply={supply}
+                          action={async () => {
+                            try {
+                              claimFree()
+                              return true
+                            } catch (err) {
+                              toast.error('The transaction was rejected')
+                            }
+                          }}
+                          setEnabled={setEnableFreeMintInfoModal}
+                          ttsContract={ttsContract}
+                        />
+                      )}
                       <div className="flex flex-col gap-2">
                         <p className="text-[90%]">
                           {'Claim your free Ticket to Space NFT!'}

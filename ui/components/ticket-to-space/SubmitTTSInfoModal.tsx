@@ -5,7 +5,7 @@ type SubmitInfoModalProps = {
   action: Function
   quantity: number | string
   supply: number | string
-  setEnableSubmitInfoModal: Function
+  setEnabled: Function
   ttsContract: any
 }
 
@@ -13,7 +13,7 @@ export function SubmitTTSInfoModal({
   action,
   quantity,
   supply,
-  setEnableSubmitInfoModal,
+  setEnabled,
   ttsContract,
 }: SubmitInfoModalProps) {
   const [email, setEmail] = useState<string>('')
@@ -43,15 +43,14 @@ export function SubmitTTSInfoModal({
   return (
     <div
       onClick={(e: any) => {
-        if (e.target.id === 'submit-tts-info-modal-backdrop')
-          setEnableSubmitInfoModal(false)
+        if (e.target.id === 'submit-tts-info-modal-backdrop') setEnabled(false)
       }}
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#ffffff25] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="flex flex-col gap-2 items-start justify-center w-[300px] md:w-[400px] p-8 bg-background-light dark:bg-background-dark">
         <div className="w-full text-right">
-          <button onClick={() => setEnableSubmitInfoModal(false)}>✖</button>
+          <button onClick={() => setEnabled(false)}>✖</button>
         </div>
         <h1 className="text-2xl">Submit Info</h1>
         <p className="opacity-50">
