@@ -18,6 +18,7 @@ import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
 import Head from '../../components/layout/Head'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
 import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
+import { SubmitTTSInfoModal } from '../../components/ticket-to-space/SubmitTTSInfoModal'
 import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
@@ -28,10 +29,10 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const router = useRouter()
 
-  const [state, setState] = useState(0)
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(sweepstakesSupply)
+  const [enableSubmitInfoModal, setEnableSubmitInfoModal] = useState(false)
 
   const address = useAddress()
 
@@ -93,14 +94,13 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
         <h3 className="mt-5 lg:mt-8 font-bold text-center lg:text-left text-lg lg:text-xl xl:text-2xl">
           Take the leap, for the chance to win a trip to space!
         </h3>
-        {state === 0 && (
-          <div className="">
-            <p className="mt-5 text-sm lg:mt-6 opacity-70 max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-base xl:text-lg">
-              Purchase this NFT and follow us on our journey to randomly select
-              an owner to win a trip to space!
-            </p>
-          </div>
-        )}
+
+        <div className="">
+          <p className="mt-5 text-sm lg:mt-6 opacity-70 max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-base xl:text-lg">
+            Purchase this NFT and follow us on our journey to randomly select an
+            owner to win a trip to space!
+          </p>
+        </div>
 
         {/*Collection title, image and description*/}
         <div className="mt-6 inner-container-background relative w-full xl:w-2/3">
@@ -141,18 +141,7 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                 <div className="flex gap-4">
                   <PrivyWeb3Button
                     label="Mint"
-                    action={async () => {
-                      if (tokenAllowance.toString() < 100 * 10 ** 18)
-                        await approveToken()
-                      toast.success('Approved Mooney to be spent')
-                      await mint()
-                    }}
-                    onSuccess={() => {
-                      toast.success('Minted Ticket to Space NFT(s)')
-                    }}
-                    onError={() => {
-                      toast.error('The transaction was rejected')
-                    }}
+                    action={() => setEnableSubmitInfoModal(true)}
                   />
                   <input
                     className="w-1/4 text-center text-black rounded-md"
@@ -169,6 +158,24 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                     }}
                     value={quantity}
                   />
+                  {enableSubmitInfoModal && (
+                    <SubmitTTSInfoModal
+                      quantity={quantity}
+                      supply={supply}
+                      action={async () => {
+                        try {
+                          if (tokenAllowance.toString() < 100 * 10 ** 18)
+                            await approveToken()
+                          toast.success('Approved Mooney to be spent')
+                          await mint()
+                          return true
+                        } catch (err) {
+                          toast.error('The transaction was rejected')
+                        }
+                      }}
+                      setEnableSubmitInfoModal={setEnableSubmitInfoModal}
+                    />
+                  )}
                 </div>
                 {whitelist.includes(address || '') && (
                   <>

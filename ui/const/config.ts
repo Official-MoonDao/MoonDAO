@@ -54,3 +54,12 @@ export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
 export const DEAD_ADDRESS: string =
   ' 0x000000000000000000000000000000000000dEaD'
+
+// DB Config
+const MONGO_USERNAME = process.env.MONGO_USERNAME || ''
+const MONGO_PASSWORD = process.env.MONGO_PASSWORD || ''
+const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@cluster0.i05bxut.mongodb.net`
+
+export const mongoConfig = {
+  url: MONGO_URL,
+}

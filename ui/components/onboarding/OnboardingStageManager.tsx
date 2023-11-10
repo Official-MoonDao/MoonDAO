@@ -1,3 +1,13 @@
+import { usePrivy } from '@privy-io/react-auth'
+import { useAddress, useContract } from '@thirdweb-dev/react'
+import { useContext, useEffect, useState, useRef, useMemo } from 'react'
+import ChainContext from '../../lib/thirdweb/chain-context'
+import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
+import { ContributionLevels } from './ContributionLevels'
+import { InvolvementOptions } from './InvolvementOptions'
+import { OnboardingCongrats } from './OnboardingCongrats'
+import { OnboardingTransactions } from './OnboardingTransactions'
+
 /*
 Onboarding Stages:
 0. Welcome to MoonDAO
@@ -5,24 +15,6 @@ Onboarding Stages:
 2. Congrats
 3. Proof of Humanity
 */
-import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { useAddress, useContract } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
-import { useContext, useEffect, useState, useRef, useMemo } from 'react'
-import toast from 'react-hot-toast'
-import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
-import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import ChainContext from '../../lib/thirdweb/chain-context'
-import { useVMOONEYLock } from '../../lib/tokens/ve-token'
-import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
-import VotingEscrow from '../../const/abis/VotingEscrow.json'
-import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
-import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import { ContributionLevels } from './ContributionLevels'
-import ContributionModal from './ContributionModal'
-import { InvolvementOptions } from './InvolvementOptions'
-import { OnboardingCongrats } from './OnboardingCongrats'
-import { OnboardingTransactions } from './OnboardingTransactions'
 
 const isDevEnv = process.env.NODE_ENV === 'development'
 
@@ -47,7 +39,7 @@ export function OnboardingStageManager() {
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
 
-  useEffect(() => {}, [user])
+  useEffect(() => { }, [user])
 
   //stage 2
   useEffect(() => {
@@ -62,6 +54,9 @@ export function OnboardingStageManager() {
     }
 
     const handlePrev = () => {
+      if (stage === 2) {
+        setSelectedLevel(0)
+      }
       setStage(stage - 1)
     }
 
@@ -191,6 +186,7 @@ export function OnboardingStageManager() {
         </h1>
         <OnboardingTransactions
           setStage={setStage}
+          setSelectedLevel={setSelectedLevel}
           selectedLevel={selectedLevel}
           vMooneyContract={vMooneyContract}
           mooneyContract={mooneyContract}
@@ -244,11 +240,9 @@ export function OnboardingStageManager() {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
-              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-            } text-md font-medium ${
-              isActive ? 'text-white' : 'text-[#40464f]'
-            }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
+              }`}
           >
             {stepNumber}
           </span>

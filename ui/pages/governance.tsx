@@ -1,8 +1,58 @@
-import { BuildingLibraryIcon, DocumentCheckIcon ,LightBulbIcon, ArchiveBoxArrowDownIcon } from '@heroicons/react/24/solid'
+import {
+  BuildingLibraryIcon,
+  DocumentCheckIcon,
+  LightBulbIcon,
+  ArchiveBoxArrowDownIcon,
+} from '@heroicons/react/24/solid'
+import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
+import { useState } from 'react'
+import toast from 'react-hot-toast'
+import { useDelegateVotingPower } from '../lib/privy/hooks/useDelegateVotingPower'
 import Head from '../components/layout/Head'
 
+type InvolvementCardProps = {
+  properties: {
+    title: string
+    description: string
+    CTA: string
+    icon: React.ForwardRefExoticComponent<
+      Omit<React.SVGProps<SVGSVGElement>, 'ref'>
+    >
+    onClick: any
+  }
+  children?: any
+}
+
+const InvolvementCard = ({ properties, children }: InvolvementCardProps) => {
+  return (
+    <div className="text-gray-900 dark:text-white flex flex-col items-center lg:flex-row w-[327px] lg:w-full inner-container-background lg:justify-around lg:items-start py-8 px-5 border-white border-opacity-20 border font-RobotoMono">
+      <properties.icon
+        className={'h-[60px] w-[60px] text-slate-900 dark:text-white'}
+      />
+      <div className="mt-7 lg:mt-0 flex flex-col items-center lg:w-2/3 lg:items-start">
+        <h1 className="font-bold text-[20px]">{properties.title}</h1>
+        <p className="mt-3 opacity-60 text-center lg:text-left text-base xl:min-h-[170px]">
+          {properties.description}
+        </p>
+        <button
+          onClick={properties?.onClick}
+          className="mt-10 px-5 py-3 text-base text-white bg-moon-orange transition-all duration-150 hover:bg-white hover:text-moon-orange"
+        >
+          {properties.CTA}
+        </button>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function Governance() {
+  const address = useAddress()
+  const [delegateAddress, setDelegateAddress] = useState<string>('')
+  const { mutateAsync: delegateVotingPower } =
+    useDelegateVotingPower(delegateAddress)
+
   return (
     <div className="animate-fadeIn">
       <Head title="Governance" description="MoonDAO Governance introduction." />
@@ -29,8 +79,31 @@ export default function Governance() {
                 "You can delegate your voting power to another wallet if you'd like. If you have a Gitcoin Passport with another wallet you can delegate here.",
               CTA: 'Delegate',
               icon: BuildingLibraryIcon,
+              onClick: () => {
+                if (!address) return toast.error('Please connect your wallet')
+                if (
+                  delegateAddress.trim().length !== 42 ||
+                  !delegateAddress.startsWith('0x')
+                )
+                  return toast.error('Please enter a valid address')
+
+                delegateVotingPower()
+              },
             }}
-          />
+          >
+            {address && (
+              <div className="py-2">
+                <label>Delegate Address :</label>
+                <input
+                  className="text-black px-2"
+                  type="text"
+                  onChange={(e) => {
+                    setDelegateAddress(e.target.value)
+                  }}
+                />
+              </div>
+            )}
+          </InvolvementCard>
           <InvolvementCard
             properties={{
               title: 'Get Gitcoin Passport',
@@ -38,6 +111,7 @@ export default function Governance() {
                 'We require a score of 15 or above for voting. This is to make sure you are a unique human.',
               CTA: 'Get Passport',
               icon: DocumentCheckIcon,
+              onClick: () => window.open('https://passport.gitcoin.co/'),
             }}
           />
           <InvolvementCard
@@ -47,6 +121,10 @@ export default function Governance() {
                 'Proposals start in our “Ideation” channel in the Discord. Post your idea there to get feedback and start the submission process!',
               CTA: 'Discord Ideation',
               icon: LightBulbIcon,
+              onClick: () =>
+                window.open(
+                  'https://discord.com/channels/914720248140279868/1027658256706961509'
+                ),
             }}
           />
           <InvolvementCard
@@ -56,26 +134,11 @@ export default function Governance() {
                 'Our community uses Snapshot to vote. Click here to navigate and view active proposals.',
               CTA: 'Snapshot',
               icon: ArchiveBoxArrowDownIcon,
+              onClick: () =>
+                window.open('https://snapshot.org/#/tomoondao.eth'),
             }}
           />
         </section>
-      </div>
-    </div>
-  )
-}
-
-const InvolvementCard = ({ properties }: any) => {
-  return (
-    <div className="text-gray-900 dark:text-white flex flex-col items-center lg:flex-row w-[327px] lg:w-full inner-container-background lg:justify-around lg:items-start py-8 px-5 border-white border-opacity-20 border font-RobotoMono">
-      <properties.icon className={'h-[60px] w-[60px] text-slate-900 dark:text-white'} />
-      <div className="mt-7 lg:mt-0 flex flex-col items-center lg:w-2/3 lg:items-start">
-        <h1 className="font-bold text-[20px]">{properties.title}</h1>
-        <p className="mt-3 opacity-60 text-center lg:text-left text-base xl:min-h-[170px]">
-          {properties.description}
-        </p>
-        <button className="mt-10 px-5 py-3 text-base text-white bg-moon-orange transition-all duration-150 hover:bg-white hover:text-moon-orange">
-          {properties.CTA}
-        </button>
       </div>
     </div>
   )

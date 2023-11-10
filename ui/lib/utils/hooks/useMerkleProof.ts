@@ -1,10 +1,8 @@
 import { useAddress } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
 import { MerkleTree } from 'merkletreejs'
 import { useEffect, useState } from 'react'
 import { keccak256 } from 'ethers/lib/utils'
-
-const bufferToHex = (x: any) => `0x${x.toString('hex')}`
+import { bufferToHex } from '../strings'
 
 export function useMerkleProof(whitelist: string[] | undefined) {
   const address = useAddress()
