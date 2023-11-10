@@ -6,6 +6,7 @@ type SubmitInfoModalProps = {
   quantity: number | string
   supply: number | string
   setEnableSubmitInfoModal: Function
+  ttsContract: any
 }
 
 export function SubmitTTSInfoModal({
@@ -13,12 +14,12 @@ export function SubmitTTSInfoModal({
   quantity,
   supply,
   setEnableSubmitInfoModal,
+  ttsContract,
 }: SubmitInfoModalProps) {
   const [email, setEmail] = useState<string>('')
   const [fullName, setFullName] = useState<string>('')
 
   async function submitInfoToDB(tokenId: number | string) {
-    console.log('info:', tokenId, email, fullName)
     try {
       const res = await fetch('/api/db/nft', {
         method: 'POST',
@@ -75,8 +76,6 @@ export function SubmitTTSInfoModal({
             if (!email || !fullName || !email.includes('@'))
               return toast.error('Please fill in all fields')
 
-            const nextTokenId = supply
-
             const tx = await action()
 
             if (tx) {
@@ -85,8 +84,22 @@ export function SubmitTTSInfoModal({
                   quantity === 1 ? 'NFT' : 'NFTs'
                 }!`
               )
-              for (let i = 0; i < +quantity; i++) {
-                await submitInfoToDB(+nextTokenId + i)
+
+              //find owned tokenIds that aren't in the database yet
+              const verifiedNftsRes = await fetch('/api/db/nft')
+              const { data: verifiedNfts } = await verifiedNftsRes.json()
+
+              const ownedNfts = await ttsContract.erc721.getOwned()
+
+              const nftsNotInDatabase = ownedNfts.filter(
+                (nft: any) =>
+                  !verifiedNfts.find(
+                    (vNft: any) => vNft.tokenId === nft.metadata.id
+                  )
+              )
+
+              for (let i = 0; i < nftsNotInDatabase.length; i++) {
+                await submitInfoToDB(nftsNotInDatabase[i].metadata.id)
               }
 
               toast.success('Your info has been added to the database!')

@@ -4,6 +4,7 @@ import {
   useAddress,
   useContract,
   useNFT,
+  useOwnedNFTs,
 } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
 import Image from 'next/image'
@@ -61,9 +62,12 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
     TICKET_TO_SPACE_ADDRESS
   )
 
+  const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
+
   const { mutateAsync: mint } = useHandleWrite(ttsContract, 'mint', [
     BigNumber.from(quantity || 0),
   ])
+
   const { mutateAsync: claimFree } = useHandleWrite(ttsContract, 'claimFree', [
     merkleProof,
   ])
@@ -174,6 +178,7 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                         }
                       }}
                       setEnableSubmitInfoModal={setEnableSubmitInfoModal}
+                      ttsContract={ttsContract}
                     />
                   )}
                 </div>
