@@ -24,14 +24,14 @@ export function AnalyticsProgress({ value }: any) {
       <p className="absolute font-bold text-2xl text-black dark:text-white">
         {progress.toFixed(1) + '%'}
       </p>
-      <div className="w-1/3">
+      <div className="w-[120px]">
         <Circle
           className=""
           percent={progress}
-          strokeWidth={6}
-          strokeColor={'#F9B95C'}
-          trailColor={'#F9B95C50'}
-          trailWidth={6}
+          strokeWidth={13}
+          strokeColor={'#D7594F'}
+          trailColor={'#D7594F2B'}
+          trailWidth={13}
         />
       </div>
     </div>

@@ -5,9 +5,9 @@ import Line from '../../../layout/Line'
 const TreasuryBalance = ({ balance, loading }: any) => {
   return (
     <>
-      <div className="flex flex-col font-RobotoMono text-center">
+      <div className="flex flex-col font-RobotoMono text-center 2xl:text-left">
         <h2
-          className={`truncate dark:text-white text-4xl text-black ${
+          className={`truncate dark:text-white text-4xl xl:text-5xl font-bold text-black ${
             loading && 'loading-line'
           }`}
         >

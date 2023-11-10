@@ -10,7 +10,7 @@ import AnalyticsSkeleton from './AnalyticsSkeleton'
 
 function Frame(props: any) {
   return (
-    <div className="mt-3 px-5 lg:px-10 xl:px-10 py-6 xl:pt-16 inner-container-background w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col items-center">
+    <div className="mt-3 px-5 lg:px-10 xl:px-10 py-5 inner-container-background w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col items-center">
       {props.children}
     </div>
   )
@@ -18,12 +18,12 @@ function Frame(props: any) {
 
 function Data({ text, value }: any) {
   return (
-    <div className="justify-left flex w-full flex-col p-2 text-center border border-white border-opacity-20">
-      <p className=" w-full font-bold tracking-wider leading-10  text-lg lg:text-2xl pt-2 uppercase font-RobotoMono opacity-60 title-text-colors block ">
+    <div className="justify-left flex w-full flex-col p-2 text-center border border-slate-950 dark:border-white border-opacity-20">
+      <p className=" w-full tracking-wider leading-10  text-lg lg:text-2xl pt-2 uppercase font-RobotoMono opacity-60 title-text-colors block ">
         {text}
       </p>
 
-      <div className="mt-3 mb-2 tracking-widest text-slate flex flex-col justify-center px-4 font-RobotoMono  text-center font-bold leading-10 title-text-colors md:items-center lg:flex-row text-xl lg:text-3xl xl:text-4xl">
+      <div className="mt-3 mb-2 tracking-widest text-slate flex flex-col justify-center px-4 font-RobotoMono  text-center font-bold leading-10 title-text-colors md:items-center lg:flex-row text-xl lg:text-3xl xl:text-4xl 2xl:text-5xl">
         {value.toLocaleString()}
       </div>
     </div>
@@ -63,13 +63,14 @@ export default function AnalyticsPage() {
   return (
     <div
       id="#dashboard-analytics-page"
-      className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-2 md:pl-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center"
+      className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-6 lg:px-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center"
     >
       <h1 className="page-title">Analytics</h1>
       {/*Stats frame*/}
       <Frame>
-        <div className="flex flex-col gap-4 w-3/4">
-          <Label text="Voting Power Key Figures" />
+        <Label text="Voting Power Key Figures" />
+        <div className="flex flex-col  tems-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10'>
+">
 
           <Data
             text={'Total Voting Power'}
@@ -84,10 +85,9 @@ export default function AnalyticsPage() {
             )}
           />
           {/*Pie chart*/}
-
-          <div className="justify-left flex w-full flex-col p-2 text-center border border-white border-opacity-20">
-            <p className=" w-full font-bold tracking-wider leading-10  text-lg lg:text-2xl pt-2 uppercase font-RobotoMono opacity-60 title-text-colors block ">
-              "Circulating MOONEY Staked"
+          <div className="justify-left flex w-full flex-col p-2 pb-4 text-center border border-slate-950 dark:border-white border-opacity-20">
+            <p className=" w-full tracking-wider leading-10  text-lg lg:text-2xl pt-2 uppercase font-RobotoMono opacity-60 title-text-colors block ">
+              Circulating MOONEY Staked
             </p>
             <div className='mt-3'>
 
@@ -106,11 +106,14 @@ export default function AnalyticsPage() {
       {/* Marketplace Platform Fee Split */}
       <Frame>
         {!isLoadingSplit && (
-          <div className="flex flex-col items-center w-3/4">
+          <div className="w-3/4 2xl:w-full">
             <Label text={'Marketplace Platform Fee Split (L2 $MOONEY)'} />
+            <div className='flex flex-col items-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10'>
+
             <Data text="Current Balance" value={balance} />
             <Data text="Sent to Treasury" value={released.treasury} />
             <Data text="Burned" value={released.burn} />
+            </div>
           </div>
         )}
       </Frame>

@@ -2,12 +2,11 @@ import { useL2Toggle } from '../../lib/thirdweb/hooks/useL2Toggle'
 
 // Fix "toggle Layer" so it selects the layer according to the name instead of toggling between them.
 
-//if is l2 highlight polygon, otherwise highlight ethereum
 export default function L2Toggle() {
   const { isL2, toggleLayer } = useL2Toggle()
   return (
     <div
-      className={`flex items-center rounded justify-around bg-white bg-opacity-[0.08] py-2 w-[235px] transtion-all ${
+      className={`flex items-center rounded justify-around bg-white bg-opacity-[0.08] py-2 w-[235px] transition-all duration-150 ${
         isL2 && ''
       }`}
     >

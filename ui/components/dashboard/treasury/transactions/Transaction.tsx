@@ -41,7 +41,7 @@ const Transaction = ({ data, loading }: any) => {
           !loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
             ? 'opacity-80 bg-gray-200 dark:bg-slate-800'
             : 'hover:scale-105'
-        } inner-container-background relative mt-5 flex items-center w-[336px] sm:w-[400px] py-[10px] px-3 ${
+        } inner-container-background relative mt-5 flex items-center w-[336px] sm:w-[400px] xl:w-full py-[10px] px-3 ${
           loading && 'loading-component'
         } transition-all duration-150`}
       >
@@ -49,7 +49,7 @@ const Transaction = ({ data, loading }: any) => {
         <img className="h-[60px] w-[60px] " src={image} alt="Asset Logo." />
 
         {/*All the information */}
-        <div className='ml-[17px] flex flex-col'>
+        <div className="ml-5 2xl:ml-7 flex flex-col">
           {/*Sent or receive*/}
           <div className="relative right-3 flex items-center">
             <span className={`${loading && 'loading-line'}`}>
@@ -63,9 +63,9 @@ const Transaction = ({ data, loading }: any) => {
               {sent ? 'Sent' : 'Received'}
             </p>
           </div>
-          {/*Amount*/}
+          {/*Amount & asset name*/}
           <p
-            className={`mt-2 block truncate font-bold tracking-wide title-text-colors text-2xl hover:overflow-auto hover:whitespace-pre`}
+            className={`mt-2 block truncate font-bold tracking-wide title-text-colors text-xl xl:text-2xl hover:overflow-auto hover:whitespace-pre`}
           >
             <span className={`${loading && 'loading-line'}`}>
               {value.length > 30 ? value.slice(0, 30) + '...' : value}

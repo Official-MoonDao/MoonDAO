@@ -44,11 +44,11 @@ export default function TreasuryPage() {
     <>
       <div
         id={'dashboard-treasury-page'}
-        className="px-3 md:ml-10 lg:flex lg:flex-col lg:items-center 2xl:flex-row 2xl:items-baseline 2xl:justify-around gap-12 2xl:gap-24"
+        className="px-3 2xl:flex 2xl:items-baseline 2xl:justify-around gap-12 2xl:gap-20"
       >
         {/*Assets Section*/}
-        <section className="2xl:w-[45%] 2xl:max-w-[600px]">
-          <h2 className='title-text-colors text-4xl font-GoodTimes text-center'>Treasury</h2>
+        <section className="2xl:w-[50%] 2xl:max-w-[700px]">
+          <h2 className='title-text-colors text-4xl font-GoodTimes text-center 2xl:text-left'>Treasury</h2>
           <div className='mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full'></div>
           {loadingAssets || !tokens[0] ? (
             <AssetSkeletons />
@@ -69,8 +69,8 @@ export default function TreasuryPage() {
         </section>
 
         {/*Transactions Section*/}
-        <section className="mt-12 xl:mt-2 xl:w-[40%] 2xl:w-[50%] xl:max-w-[700px]">
-        <h2 className='title-text-colors text-3xl sm:text-4xl font-GoodTimes text-center'>Transactions</h2>
+        <section className="mt-12 xl:mt-2 2xl:w-[50%] 2xl:max-w-[700px]">
+        <h2 className='title-text-colors text-3xl sm:text-4xl font-GoodTimes text-center 2xl:text-left'>Transactions</h2>
 
         <div className='mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full'></div>
 
@@ -96,7 +96,7 @@ export default function TreasuryPage() {
           ).length < 10 && <TransactionDisclaimer />}
 
           {/*Pagination*/}
-          <div className="mt-10 flex justify-between max-w-[650px] items-center">
+          <div className="mt-10 flex justify-between 2xl:w-full items-center">
             {/*Left Caret*/}
             <TransactionCaret
               left
