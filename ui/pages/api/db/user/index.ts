@@ -1,11 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import User from '../../../../lib/mongodb/models/User'
+import apiKeyMiddleware from '../../../../lib/mongodb/models/middleware'
 import dbConnect from '../../../../lib/mongodb/mongo'
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  apiKeyMiddleware(req, res)
+
   await dbConnect()
 
   const { method } = req
