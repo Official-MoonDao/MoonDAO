@@ -21,7 +21,6 @@ export function useMerkleProof(whitelist: string[] | undefined) {
     const leaf = keccak256(address)
     const proof = tree.getProof(leaf).map((x) => bufferToHex(x.data))
     setMerkleProof(proof)
-    console.log(proof)
   }
 
   useEffect(() => {

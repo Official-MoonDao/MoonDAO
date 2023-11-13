@@ -26,3 +26,11 @@ export const L2_MOONEY = new Token(
   'MOONEY',
   'MOONEY'
 )
+
+export const DAI = new Token(
+  1,
+  '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+  18,
+  'DAI',
+  'DAI Stablecoin'
+)

@@ -59,7 +59,7 @@ export function useSwapRouter(
     try {
       const provider: any = await wallets[selectedWallet].getEthersProvider()
       const router: any = new AlphaRouter({
-        chainId: process.env.NEXT_PUBLIC_CHAIN === 'testnet' ? 5 : 1,
+        chainId: 1,
         provider,
       })
 

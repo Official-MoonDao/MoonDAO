@@ -1,7 +1,8 @@
 import { usePrivy } from '@privy-io/react-auth'
-import { useAddress, useContract } from '@thirdweb-dev/react'
-import { useContext, useEffect, useState, useRef, useMemo } from 'react'
-import ChainContext from '../../lib/thirdweb/chain-context'
+import { useContract } from '@thirdweb-dev/react'
+import { useEffect, useState, useRef, useMemo } from 'react'
+import ERC20 from '../../const/abis/ERC20.json'
+import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
 import { ContributionLevels } from './ContributionLevels'
 import { InvolvementOptions } from './InvolvementOptions'
@@ -26,20 +27,20 @@ function StageContainer({ children }: any) {
   )
 }
 
-export function OnboardingStageManager() {
-  const address = useAddress()
-  const { selectedChain } = useContext(ChainContext)
+export function OnboardingStageManager({ selectedChain }: any) {
   const { user, login } = usePrivy()
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
   const [selectedLevel, setSelectedLevel] = useState<number>(0)
 
-  const { contract: mooneyContract } = useContract(MOONEY_ADDRESSES['ethereum'])
-  const { contract: vMooneyContract } = useContract(
-    VMOONEY_ADDRESSES[selectedChain.slug]
+  const { contract: mooneyContract } = useContract(
+    MOONEY_ADDRESSES[selectedChain.slug],
+    ERC20.abi
   )
-
-  useEffect(() => { }, [user])
+  const { contract: vMooneyContract } = useContract(
+    VMOONEY_ADDRESSES[selectedChain.slug],
+    VotingEscrow.abi
+  )
 
   //stage 2
   useEffect(() => {
@@ -190,6 +191,7 @@ export function OnboardingStageManager() {
           selectedLevel={selectedLevel}
           vMooneyContract={vMooneyContract}
           mooneyContract={mooneyContract}
+          selectedChain={selectedChain}
         />
       </div>
     </StageContainer>
@@ -240,9 +242,11 @@ export function OnboardingStageManager() {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
-              }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
+              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+            } text-md font-medium ${
+              isActive ? 'text-white' : 'text-[#40464f]'
+            }`}
           >
             {stepNumber}
           </span>
