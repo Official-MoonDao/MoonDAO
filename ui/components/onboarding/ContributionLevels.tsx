@@ -89,7 +89,9 @@ export function ContributionLevels({
         </h1>
         {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
         <p className="mt-5 lg:mt-[23px] text-center">
-          {`$${price.toLocaleString()}/month (~ ${nativeQuote.toFixed(2)} ETH)`}
+          {`$${price.toLocaleString()}/month (~ ${nativeQuote?.toFixed(
+            2
+          )} ETH)`}
           <br />
           Billed Annually
         </p>
