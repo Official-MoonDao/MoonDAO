@@ -17,6 +17,8 @@ import { ethers } from 'ethers'
 import { useContext, useState } from 'react'
 import { MOONEY_ADDRESSES } from '../../../const/config'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
+import ChainContext from '../../thirdweb/chain-context'
+import { initSDK } from '../../thirdweb/thirdweb'
 
 export const V3_SWAP_ROUTER_ADDRESS =
   '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
@@ -53,18 +55,21 @@ export function useSwapRouter(
   tokenOut: Token
 ) {
   const { selectedWallet } = useContext(PrivyWalletContext)
+  const { selectedChain } = useContext(ChainContext)
   const { wallets } = useWallets()
 
   async function generateRoute() {
     try {
-      const provider: any = await wallets[selectedWallet].getEthersProvider()
+      const provider: any =
+        (await wallets[selectedWallet]?.getEthersProvider()) ||
+        initSDK(selectedChain).getProvider()
       const router: any = new AlphaRouter({
         chainId: 1,
         provider,
       })
 
       const options: SwapOptionsSwapRouter02 = {
-        recipient: wallets[selectedWallet].address,
+        recipient: wallets[selectedWallet].address || '',
         slippageTolerance: new Percent(50, 10_000),
         deadline: Math.floor(Date.now() / 1000 + 1800),
         type: SwapType.SWAP_ROUTER_02,
