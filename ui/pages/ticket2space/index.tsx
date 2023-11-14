@@ -162,7 +162,7 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                     value={quantity}
                   />
 
-                  {enableFreeMintInfoModal && (
+                  {enableMintInfoModal && (
                     <SubmitTTSInfoModal
                       quantity={quantity}
                       supply={supply}
