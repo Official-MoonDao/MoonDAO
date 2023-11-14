@@ -60,9 +60,7 @@ export function useSwapRouter(
 
   async function generateRoute() {
     try {
-      const provider: any =
-        (await wallets[selectedWallet]?.getEthersProvider()) ||
-        initSDK(selectedChain).getProvider()
+      const provider: any = await wallets[selectedWallet]?.getEthersProvider()
       const router: any = new AlphaRouter({
         chainId: 1,
         provider,
