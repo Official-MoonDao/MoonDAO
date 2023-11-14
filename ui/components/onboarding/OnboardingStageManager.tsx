@@ -31,7 +31,10 @@ export function OnboardingStageManager({ selectedChain }: any) {
   const { user, login } = usePrivy()
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
-  const [selectedLevel, setSelectedLevel] = useState<number>(0)
+  const [selectedLevel, setSelectedLevel] = useState<any>({
+    price: 0,
+    hasVotingPower: false,
+  })
 
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug],
@@ -44,7 +47,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   //stage 2
   useEffect(() => {
-    if (selectedLevel > 0) {
+    if (selectedLevel.price > 0) {
       setStage(2)
     }
   }, [selectedLevel])
@@ -56,7 +59,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
     const handlePrev = () => {
       if (stage === 2) {
-        setSelectedLevel(0)
+        setSelectedLevel({ price: 0, hasVotingPower: false })
       }
       setStage(stage - 1)
     }
@@ -141,6 +144,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
           onClick={async () => {
             if (!user) {
               login()
+              setStage(1)
             } else {
               setStage(1)
             }

@@ -34,6 +34,7 @@ type StepProps = {
   check: () => Promise<boolean>
   deps?: any[]
   isDisabled?: boolean
+  txExplanation?: string
 }
 
 export function OnboardingTransactions({
@@ -59,7 +60,7 @@ export function OnboardingTransactions({
   //Uniswap
   const [swapRoute, setSwapRoute] = useState<any>()
   const { generateRoute, executeRoute } = useSwapRouter(
-    selectedLevel,
+    selectedLevel.price,
     ETH,
     MOONEY
   )
@@ -93,6 +94,7 @@ export function OnboardingTransactions({
     check,
     deps = [],
     isDisabled,
+    txExplanation,
   }: StepProps) {
     const [isLoadingCheck, setIsLoadingCheck] = useState(false)
     const [checkResult, setCheckResult] = useState(true)
@@ -119,7 +121,7 @@ export function OnboardingTransactions({
     // }, [checkResult, sentTx])
 
     return (
-      <div className="mt-5">
+      <div className="mt-5 w-full">
         <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-white border-opacity-[0.18]">
           <p
             className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
@@ -138,21 +140,24 @@ export function OnboardingTransactions({
           <p className="mt-1 opacity-60 block lg:mt-0 text-sm xl:text-base">
             {explanation}
           </p>
-          {currStep === stepNum && (
-            <button
-              className="my-2 border-2 hover:border-4 duration-300 ease-in-out border-white px-8 py-2"
-              onClick={async () => {
-                try {
-                  await action()
-                } catch (err: any) {
-                  toast.error(err.message.slice(0, 150))
-                }
-              }}
-              disabled={isDisabled}
-            >
-              {isDisabled ? '...loading' : 'Complete this Step'}
-            </button>
-          )}
+          {currStep === stepNum && txExplanation && <p>{txExplanation}</p>}
+          <div>
+            {currStep === stepNum && (
+              <button
+                className="w-full my-2 border-2 hover:border-4 duration-300 ease-in-out border-white px-8 py-2"
+                onClick={async () => {
+                  try {
+                    await action()
+                  } catch (err: any) {
+                    toast.error(err.message.slice(0, 150))
+                  }
+                }}
+                disabled={isDisabled}
+              >
+                {isDisabled ? '...loading' : 'Complete this Step'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     )
@@ -172,13 +177,6 @@ export function OnboardingTransactions({
     }
   }, [swapRoute, vMooneyContract, wallet, selectedLevel])
 
-  useEffect(() => {
-    if (!address) {
-      setCurrStep(0)
-      setStage(0)
-    }
-  }, [address])
-
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center">
       <div className="w-full flex gap-8 justify-center">
@@ -186,7 +184,7 @@ export function OnboardingTransactions({
           className="py-4 px-8 border border-white"
           onClick={() => {
             setStage(1)
-            setSelectedLevel(0)
+            setSelectedLevel({ price: 0, hasVotingPower: false })
           }}
         >
           Back ↩
@@ -200,13 +198,13 @@ export function OnboardingTransactions({
           const provider = await wallet.getEthersProvider()
           const nativeBalance = await provider.getBalance(wallet.address)
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-          await fund(selectedLevel - +formattedNativeBalance)
+          await fund(selectedLevel.price - +formattedNativeBalance)
         }}
         check={async () => {
           const provider = await wallet.getEthersProvider()
           const nativeBalance = await provider.getBalance(wallet.address)
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-          if (formattedNativeBalance > selectedLevel || TESTING) {
+          if (formattedNativeBalance > selectedLevel.price) {
             return true
           } else {
             return false
@@ -230,51 +228,74 @@ export function OnboardingTransactions({
         }}
         deps={[mooneyBalance]}
         isDisabled={!swapRoute}
+        txExplanation={`Swap ${selectedLevel.price} ETH for ${
+          swapRoute ? swapRoute?.route[0].rawQuote.toString() / 10 ** 18 : '...'
+        } $MOONEY`}
       />
-      <Step
-        stepNum={3}
-        title={'Token Approval'}
-        explanation={
-          'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
-        }
-        action={async () => {
-          const selectedLevelMooneyAmt = swapRoute?.route[0].rawQuote.toString()
-          await mooneyContract.call('approve', [
-            VMOONEY_ADDRESSES[selectedChain.slug],
-            selectedLevelMooneyAmt,
-          ])
-        }}
-        check={async () => {
-          const selectedLevelMooneyAmt = swapRoute?.route[0].rawQuote.toString()
-          if (tokenAllowance?.toString() >= selectedLevelMooneyAmt) {
-            return true
-          } else return false
-        }}
-        deps={[tokenAllowance]}
-        isDisabled={!swapRoute}
-      />
-      <Step
-        stepNum={4}
-        title={'Stake MOONEY'}
-        explanation={
-          'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
-        }
-        action={async () =>
-          await vMooneyContract.call('create_lock', [
-            swapRoute?.route[0].rawQuote.toString(),
-            Date.now() * 1000 * 60 * 60 * 24 * 365 * 2,
-          ])
-        }
-        check={async () => {
-          const selectedLevelMooneyAmt = swapRoute?.route[0].rawQuote.toString()
-          if (vMooneyLock?.[0].toString() >= selectedLevelMooneyAmt) {
-            return true
-          } else {
-            return false
-          }
-        }}
-        deps={[vMooneyLock]}
-      />
+      {selectedLevel.hasVotingPower && (
+        <>
+          <Step
+            stepNum={3}
+            title={'Token Approval'}
+            explanation={
+              'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
+            }
+            action={async () => {
+              const selectedLevelMooneyAmt =
+                swapRoute?.route[0].rawQuote.toString()
+              await mooneyContract.call('approve', [
+                VMOONEY_ADDRESSES[selectedChain.slug],
+                selectedLevelMooneyAmt,
+              ])
+            }}
+            check={async () => {
+              const selectedLevelMooneyAmt =
+                swapRoute?.route[0].rawQuote.toString()
+              if (
+                tokenAllowance?.toString() >= selectedLevelMooneyAmt ||
+                TESTING
+              ) {
+                return true
+              } else return false
+            }}
+            deps={[tokenAllowance]}
+            isDisabled={!swapRoute}
+            txExplanation={`Approve ${
+              swapRoute
+                ? swapRoute?.route[0].rawQuote.toString() / 10 ** 18
+                : '...'
+            } $MOONEY for staking`}
+          />
+          <Step
+            stepNum={4}
+            title={'Stake MOONEY'}
+            explanation={
+              'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
+            }
+            action={async () =>
+              await vMooneyContract.call('create_lock', [
+                swapRoute?.route[0].rawQuote.toString(),
+                Date.now() * 1000 * 60 * 60 * 24 * 365 * 2,
+              ])
+            }
+            check={async () => {
+              const selectedLevelMooneyAmt =
+                swapRoute?.route[0].rawQuote.toString()
+              if (vMooneyLock?.[0].toString() >= selectedLevelMooneyAmt) {
+                return true
+              } else {
+                return false
+              }
+            }}
+            deps={[vMooneyLock]}
+            txExplanation={`Stake ${
+              swapRoute
+                ? swapRoute?.route[0].rawQuote.toString() / 10 ** 18 / 2
+                : '...'
+            } $MOONEY for 2 years`}
+          />
+        </>
+      )}
     </div>
   )
 }

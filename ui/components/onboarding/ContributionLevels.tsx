@@ -1,5 +1,7 @@
+import { usePrivy } from '@privy-io/react-auth'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
 import { ETH, MOONEY, DAI } from '../../lib/uniswap/UniswapTokens'
 import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
@@ -25,6 +27,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
     points,
     hasVotingPower,
   }: ContributionLevelProps) {
+    const { user } = usePrivy()
     const [mooneyQuote, setMooneyQuote] = useState<any>()
     const [nativeQuote, setNativeQuote] = useState<any>(0)
     const [levelVotingPower, setLevelVotingPower] = useState<any>()
@@ -74,11 +77,16 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
     return (
       <div
         className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
-          selectedLevel === nativeQuote
+          selectedLevel?.price === nativeQuote
             ? 'border-moon-orange border-opacity-100'
             : 'border-opacity-20'
         }`}
-        onClick={() => setSelectedLevel(nativeQuote)}
+        onClick={() => {
+          if (!user) toast.error('Please connect a wallet to continue')
+          else if (!nativeQuote)
+            toast.error('Please wait for swap data to load.')
+          else setSelectedLevel({ price: nativeQuote, hasVotingPower })
+        }}
       >
         {/*Logo*/}
         <div className="mt-8">
@@ -92,7 +100,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         {/*Title*/}
         <h1
           className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${
-            selectedLevel === nativeQuote && 'text-moon-orange'
+            selectedLevel.price === nativeQuote && 'text-moon-orange'
           }`}
         >
           {title}
@@ -141,7 +149,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         </div>
         <button
           className={`mt-10 bg-moon-orange group-hover:scale-105 px-5 py-3 transition-all duration-150 ${
-            selectedLevel === nativeQuote && ''
+            selectedLevel.price === nativeQuote && ''
           }`}
         >
           {'Get Started >'}
