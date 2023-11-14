@@ -20,7 +20,6 @@ export function PrivyConnectWallet() {
   const { wallets } = useWallets()
 
   const [enabled, setEnabled] = useState(false)
-  const [embeddedWallet, setEmbeddedWallet] = useState(false)
 
   return (
     <>
