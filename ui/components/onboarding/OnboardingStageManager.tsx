@@ -28,7 +28,7 @@ function StageContainer({ children }: any) {
 }
 
 export function OnboardingStageManager({ selectedChain }: any) {
-  const { user, login } = usePrivy()
+  const { user, login, authenticated } = usePrivy()
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
   const [selectedLevel, setSelectedLevel] = useState<number>(0)
@@ -41,6 +41,14 @@ export function OnboardingStageManager({ selectedChain }: any) {
     VMOONEY_ADDRESSES[selectedChain.slug],
     VotingEscrow.abi
   )
+
+  // Check is user has wallet connected, if so move to next stage,
+  // else stay on stage 0 to connect wallet
+  useEffect(() => {
+    if (authenticated) {
+      setStage(1)
+    }
+  }, [authenticated])
 
   //stage 2
   useEffect(() => {
@@ -142,12 +150,12 @@ export function OnboardingStageManager({ selectedChain }: any) {
             if (!user) {
               login()
             } else {
-              setStage(1)
+              setStage(stage + 1)
             }
           }}
           className="mt-8 px-5 py-3 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
         >
-          Join MoonDAO
+          {user ? 'Continue' : 'Join MoonDAO'}
         </button>
       </div>
     </StageContainer>
@@ -242,11 +250,9 @@ export function OnboardingStageManager({ selectedChain }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
-              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-            } text-md font-medium ${
-              isActive ? 'text-white' : 'text-[#40464f]'
-            }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
+              }`}
           >
             {stepNumber}
           </span>

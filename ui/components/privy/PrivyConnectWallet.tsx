@@ -32,15 +32,13 @@ export function PrivyConnectWallet() {
               -4
             )}`}</p>
             <div
-              className={`ml-2 ease-in px-2 hover:scale-105 duration-150 transition-all border border-white ${
-                enabled && ''
-              }`}
+              className={`ml-2 ease-in px-2 hover:scale-105 duration-150 transition-all border border-white ${enabled && ''
+                }`}
               onClick={() => setEnabled(!enabled)}
             >
               <button
-                className={`duration-300 ease-in-out text-white ${
-                  enabled && 'rotate-180'
-                }`}
+                className={`duration-300 ease-in-out text-white ${enabled && 'rotate-180'
+                  }`}
               >
                 {enabled ? '▼' : '▽'}
               </button>
