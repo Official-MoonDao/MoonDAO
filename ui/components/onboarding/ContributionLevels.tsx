@@ -124,9 +124,9 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
         mooneyValue={50000}
         points={[
-          'Participate in sweepstakes like Blue Origin Launch and Zero Gravity Flights.',
-          'Access to the Special Channels in the Community Discord.',
-          'Access to the MoonDAO Marketplace.',
+          'Can purchase two Ticket to Space Sweepstakes Entries',
+          'Community Discord Access',
+          'MoonDAO Marketplace Access',
         ]}
       />
       <ContributionLevel
@@ -135,9 +135,12 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
         mooneyValue={500000}
         points={[
-          'Proposal Submission Power.',
-          'Co-governance of the MoonDAO Treasury.',
-          'Exclusive industry-focused networking opportunities.',
+          'Can purhcase up to 12 Ticket To Space Entries',
+          'Exclusive Discord Access',
+          'MoonDAO Marketplace Access',
+          'Co-governance of the MoonDAO Treasury',
+          'Submit Proposals for Projects',
+          'Free-Events Access',
         ]}
         hasVotingPower
       />
@@ -147,9 +150,9 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
         mooneyValue={2000000}
         points={[
-          'Everything in the Citizen Tier.',
-          'Exclusive promotion opportunities.',
-          'Access to talent to help design, build, test your space hardware.',
+          'Everything in the Citizen Tier',
+          'Exclusive promotion opportunities',
+          'Access to talent to help design, build, test your space hardware',
         ]}
         hasVotingPower
       />
