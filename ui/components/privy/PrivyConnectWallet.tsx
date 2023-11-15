@@ -103,7 +103,10 @@ export function PrivyConnectWallet() {
                 <LinkAccounts user={user} />
                 <button
                   className="w-full mt-4 p-1 border border-white text-white hover:scale-105 transition-all duration-150 hover:bg-orange-700"
-                  onClick={logout}
+                  onClick={async () => {
+                    wallets.forEach((wallet) => wallet.disconnect())
+                    logout()
+                  }}
                 >
                   <strong>Logout →</strong>
                 </button>
