@@ -24,7 +24,7 @@ export function PrivyConnectWallet() {
   return (
     <>
       {user && address ? (
-        <div className="w-[225px] relative flex flex-col items-center justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[500]">
+        <div className="w-[225px] relative flex flex-col items-center justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[10]">
           {/*Address and Toggle open/close button*/}
           <div className="flex items-center w-full justify-between">
             <p className="text-sm">{`${address?.slice(0, 6)}...${address?.slice(
