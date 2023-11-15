@@ -30,7 +30,7 @@ export default function Ticket2Space({ nftMetadata }: any) {
 
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
-  const [supply, setSupply] = useState()
+  const [supply, setSupply] = useState(0)
   const [enableMintInfoModal, setEnableMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
 
