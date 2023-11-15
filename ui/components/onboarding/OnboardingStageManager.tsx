@@ -1,6 +1,8 @@
 import { usePrivy } from '@privy-io/react-auth'
-import { useContract } from '@thirdweb-dev/react'
+import { useAddress, useContract } from '@thirdweb-dev/react'
 import { useEffect, useState, useRef, useMemo } from 'react'
+import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
+import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
@@ -27,7 +29,8 @@ function StageContainer({ children }: any) {
   )
 }
 
-export function OnboardingStageManager({ selectedChain}: any) {
+export function OnboardingStageManager({ selectedChain }: any) {
+  const address = useAddress()
   const { user, login } = usePrivy()
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -45,12 +48,31 @@ export function OnboardingStageManager({ selectedChain}: any) {
     VotingEscrow.abi
   )
 
-  //stage 2
+  const { data: vMooneyLock } = useVMOONEYLock(vMooneyContract, address)
+
+  const { data: mooneyBalance } = useMOONEYBalance(mooneyContract, address)
+
   useEffect(() => {
     if (selectedLevel.price > 0) {
       setStage(2)
     }
   }, [selectedLevel])
+
+  //skip tx stage if user already has a mooney lock greate than the selected level
+  useEffect(() => {
+    if (selectedLevel.price > 0 && vMooneyLock && mooneyBalance) {
+      if (selectedLevel.hasVotingPower) {
+        if (selectedLevel.price / 2 <= vMooneyLock[0].toString() / 10 ** 18) {
+          setStage(4)
+        }
+      } else {
+        console.log(selectedLevel.price, mooneyBalance.toString() / 10 ** 18)
+        if (selectedLevel.price <= mooneyBalance.toString() / 10 ** 18) {
+          setStage(4)
+        }
+      }
+    }
+  }, [selectedLevel, vMooneyLock, mooneyBalance, address])
 
   const MultiStepStage = ({ steps }: any) => {
     const handleNext = () => {

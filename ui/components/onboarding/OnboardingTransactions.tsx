@@ -179,33 +179,18 @@ export function OnboardingTransactions({
     )
   }
 
-  useEffect(() => {
-    //check if user has already completed steps (vmooney > selectedLevel)
-    if (vMooneyLock) {
-      const completed =
-        vMooneyLock?.[0].toString() / 10 ** 18 >= selectedLevel.price
-      if (completed) {
-        setCurrStep(4)
-        setTimeout(() => {
-          setStage(3)
-        }, 3000)
-      }
-    }
-  }, [vMooneyLock])
-
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
-        <button
-          className="mt-3 py-2 px-4 lg:py-3 lg:px-5 border border-slate-950 dark:border-white lg:self-start transition-all duration-105 hover:scale-105"
-          onClick={() => {
-            setStage(1)
-            setSelectedLevel({ price: 0, hasVotingPower: false })
-          }}
-        >
-          Back ↩
-        </button>
-      <div className="w-full flex gap-8 justify-center">
-      </div>
+      <button
+        className="mt-3 py-2 px-4 lg:py-3 lg:px-5 border border-slate-950 dark:border-white lg:self-start transition-all duration-105 hover:scale-105"
+        onClick={() => {
+          setStage(1)
+          setSelectedLevel({ price: 0, hasVotingPower: false })
+        }}
+      >
+        Back ↩
+      </button>
+      <div className="w-full flex gap-8 justify-center"></div>
       <Step
         stepNum={1}
         title={'Purchase ETH'}
@@ -222,7 +207,7 @@ export function OnboardingTransactions({
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
           if (
             +formattedNativeBalance >
-              nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+            nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
           ) {
             return true
           } else {
