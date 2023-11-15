@@ -45,8 +45,8 @@
   "announcementsDesc": "View the latest announcements from the MoonDAO team.",
   "analyticsTitle": "Analytics",
   "analyticsDesc": "View the latest analytics for Voting Power and the MoonDAO Treasury.",
-  "calendarTitle": "Calendar",
-  "calendarDesc": "View MoonDAO's scheduled discord events.",
+  "eventsTitle": "Events",
+  "eventsDesc": "Here you can find the latest discord events for MoonDAO.",
   "proposalsTitle": "Proposals",
   "proposalsDesc": "View the latest proposals at MoonDAO."
 }
