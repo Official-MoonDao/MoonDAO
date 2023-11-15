@@ -8,7 +8,7 @@ export function OnboardingCongrats({ progress }: any) {
         <h1 className="font-GoodTimes text-2xl title-text-colors lg:text-5xl">
           CONGRATULATIONS!
         </h1>
-        <p className="mt-[18px] lg:mt-4 text-[20px] lg:text-[24px] 2xl:text-3xl text-center">
+        <p className="mt-[18px] lg:mt-4 text-[20px] lg:text-[24px] 2xl:text-3xl text-center text-slate-800 dark:text-gray-200">
           You are successfully onboarded into MoonDAO
         </p>
         <button

@@ -136,10 +136,10 @@ export function OnboardingTransactions({
     // }, [checkResult, sentTx])
 
     return (
-      <div className="mt-5 w-full">
-        <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-white border-opacity-[0.18]">
+      <div className="mt-5 w-full text-black dark:text-white">
+        <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
           <p
-            className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
+            className={`block px-3 text-white py-1 text-xl font-bold rounded-[9999px] ${
               isLoadingCheck
                 ? 'bg-[grey] animate-pulse'
                 : currStep > stepNum
@@ -156,10 +156,11 @@ export function OnboardingTransactions({
             {explanation}
           </p>
           {currStep === stepNum && txExplanation && <p>{txExplanation}</p>}
+          {/*Previously was a border-4 class on hover for this button but changed it for scale, as increasing border expands the whole container on hover*/}
           <div>
             {currStep === stepNum && (
               <button
-                className="w-full my-2 border-2 hover:border-4 duration-300 ease-in-out border-white px-8 py-2"
+                className="w-full my-2 border-2 hover:scale-105 duration-300 ease-in-out border-gray-900 dark:border-white px-8 py-2"
                 onClick={async () => {
                   try {
                     await action()
@@ -193,10 +194,9 @@ export function OnboardingTransactions({
   }, [vMooneyLock])
 
   return (
-    <div className="mt-2 lg:mt-5 flex flex-col items-center">
-      <div className="w-full flex gap-8 justify-center">
+    <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
         <button
-          className="py-4 px-8 border border-white"
+          className="mt-3 py-2 px-4 lg:py-3 lg:px-5 border border-slate-950 dark:border-white lg:self-start transition-all duration-105 hover:scale-105"
           onClick={() => {
             setStage(1)
             setSelectedLevel({ price: 0, hasVotingPower: false })
@@ -204,6 +204,7 @@ export function OnboardingTransactions({
         >
           Back ↩
         </button>
+      <div className="w-full flex gap-8 justify-center">
       </div>
       <Step
         stepNum={1}

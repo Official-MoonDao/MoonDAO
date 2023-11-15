@@ -47,10 +47,15 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
 
     return (
       <div
+<<<<<<< HEAD
         className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
           selectedLevel?.price === mooneyValue
+=======
+        className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
+          selectedLevel?.price === nativeQuote
+>>>>>>> e2acb9b82f2d5f30f80b27027a20f0eb60081bc4
             ? 'border-moon-orange border-opacity-100'
-            : 'border-opacity-20'
+            : 'border-opacity-60 dark:border-opacity-20'
         }`}
         onClick={() => {
           if (!user) toast.error('Please connect a wallet to continue')
@@ -108,7 +113,13 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           </div>
         </div>
         <button
+<<<<<<< HEAD
           className={`mt-10 bg-moon-orange group-hover:scale-105 px-5 py-3 transition-all duration-150`}
+=======
+          className={`mt-10 bg-moon-orange group-hover:scale-105 px-5 py-3 transition-all duration-150 text-white ${
+            selectedLevel.price === nativeQuote && ''
+          }`}
+>>>>>>> e2acb9b82f2d5f30f80b27027a20f0eb60081bc4
         >
           {'Get Started >'}
         </button>
