@@ -4,23 +4,14 @@ import {
   DocumentIcon,
   HandRaisedIcon,
 } from '@heroicons/react/24/outline'
-import {
-  BuildingLibraryIcon,
-  DocumentCheckIcon,
-  LightBulbIcon,
-  ArchiveBoxArrowDownIcon,
-} from '@heroicons/react/24/solid'
-import { useAddress } from '@thirdweb-dev/react'
-import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
-import toast from 'react-hot-toast'
-import { useDelegateVotingPower } from '../lib/privy/hooks/useDelegateVotingPower'
-import { useExportPrivyWallet } from '../lib/privy/hooks/useExportPrivyWallet'
 import Head from '../components/layout/Head'
 import { PageCards } from '../components/layout/PageCards'
 import { ExportPrivyWalletModal } from '../components/privy/ExportPrivyWalletModal'
 
 export default function Governance() {
+  const router = useRouter()
   const [enableExportModal, setEnableExportModal] = useState(false)
 
   const pages: any = [
@@ -68,9 +59,29 @@ export default function Governance() {
         id="gov-cards"
         pages={pages}
         title="Governance"
-        description={` MoonDAO’s Treasury is governed by all the token holders. If you have
-          voting power, follow these steps to get setup for voting.\n\nYou can read MoonDAO’s Constitution to understand more about how our
-          governance works.`}
+        description={
+          <>
+            {`MoonDAO's Treasury is governed by its Citizens. If you don't have voting power, become a Citizen by `}
+            <button
+              className="hover:scale-[1.05] duration-300 ease-in-out font-bold"
+              onClick={() => router.push('/onboarding')}
+            >
+              onboarding
+            </button>
+            {` into our community. You can read MoonDAO's `}
+            <button
+              className="hover:scale-[1.05] duration-300 ease-in-out font-bold"
+              onClick={() =>
+                window.open(
+                  'https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution'
+                )
+              }
+            >
+              Constitution
+            </button>
+            {` to understand more about how our governance works.`}
+          </>
+        }
       />
       {enableExportModal && (
         <ExportPrivyWalletModal setEnabled={setEnableExportModal} />
