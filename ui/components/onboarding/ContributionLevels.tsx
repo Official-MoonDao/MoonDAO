@@ -58,10 +58,10 @@ export function ContributionLevels({
 
     return (
       <div
-        className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
+        className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
           selectedLevel?.price === nativeQuote
             ? 'border-moon-orange border-opacity-100'
-            : 'border-opacity-20'
+            : 'border-opacity-60 dark:border-opacity-20'
         }`}
         onClick={() => {
           if (!user) toast.error('Please connect a wallet to continue')
@@ -130,7 +130,7 @@ export function ContributionLevels({
           </div>
         </div>
         <button
-          className={`mt-10 bg-moon-orange group-hover:scale-105 px-5 py-3 transition-all duration-150 ${
+          className={`mt-10 bg-moon-orange group-hover:scale-105 px-5 py-3 transition-all duration-150 text-white ${
             selectedLevel.price === nativeQuote && ''
           }`}
         >

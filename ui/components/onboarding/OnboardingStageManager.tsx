@@ -131,7 +131,7 @@ export function OnboardingStageManager({ selectedChain, pregenSwapRoutes }: any)
         <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
           Welcome to MoonDAO
         </h2>
-        <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 opacity-60 max-w-[698px] text-center lg:text-left">{`MoonDAO is accelerating humanity’s development of a lunar base through better coordination. Want to help? This flow will onboard you into our in less than 5 minutes, even if you’re new to Web3.
+        <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">{`MoonDAO is accelerating humanity’s development of a lunar base through better coordination. Want to help? This flow will onboard you into our in less than 5 minutes, even if you’re new to Web3.
 `}</p>
 
         <img
@@ -164,7 +164,7 @@ export function OnboardingStageManager({ selectedChain, pregenSwapRoutes }: any)
           SELECT MEMBERSHIP LEVEL
         </h1>
 
-        <p className="mt-5 max-w-xs lg:max-w-sm xl:max-w-lg bg-[#D7594F36] px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
+        <p className="mt-5 max-w-xs lg:max-w-sm xl:max-w-lg bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
           You must be a member to participate in our space ticket giveaway.
           <br />
           <br className="2xl:hidden" />
@@ -214,12 +214,12 @@ export function OnboardingStageManager({ selectedChain, pregenSwapRoutes }: any)
         <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl text-center lg:text-left">
           Next Steps
         </h1>
-        <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left">{`Step 1: Tell your friends about MoonDAO. Top referrals get extra bonuses, like extra entries into our Sweepstakes with Blue Origin!`}</p>
+        <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-900 dark:text-gray-100">{`Step 1: Tell your friends about MoonDAO. Top referrals get extra bonuses, like extra entries into our Sweepstakes with Blue Origin!`}</p>
 
         <button className="mt-8 px-6 py-3 lg:px-8 xl:px-10 2xl:px-14 2xl:py-4 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange">
           Share referral
         </button>
-        <p className="mt-12 xl:mt-14 text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-center lg:text-left">
+        <p className="mt-12 xl:mt-14 text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-center lg:text-left text-gray-900 dark:text-gray-100">
           Step 2: Choose how you want to be involved.
         </p>
 
@@ -231,7 +231,7 @@ export function OnboardingStageManager({ selectedChain, pregenSwapRoutes }: any)
               'https://circles.spect.network/r/8e96f155-c255-4567-bca3-8bec6a0b7867'
             )
           }
-          className="mt-10 rounded-[20px] py-3 px-4 font-bold lg:absolute bg-white hover:scale-105 hover:text-moon-orange transition-all duration-105 text-black lg:-bottom-24 lg:left-6 2xl:left-auto 2xl:right-10 text-xl"
+          className="mt-10 rounded-[20px] py-3 px-4 font-bold lg:absolute dark:bg-white bg-gray-800 text-gray-100 hover:scale-105 dark:text-gray-900 hover:text-moon-orange dark:hover:text-moon-orange transition-all duration-105 lg:-bottom-24 lg:left-6 2xl:left-auto 2xl:right-10 text-xl"
         >
           Questions? Submit a ticket
         </button>
