@@ -27,7 +27,7 @@ function StageContainer({ children }: any) {
   )
 }
 
-export function OnboardingStageManager({ selectedChain, pregenSwapRoutes }: any) {
+export function OnboardingStageManager({ selectedChain}: any) {
   const { user, login } = usePrivy()
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -174,7 +174,6 @@ export function OnboardingStageManager({ selectedChain, pregenSwapRoutes }: any)
         <ContributionLevels
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
-          pregenSwapRoutes={pregenSwapRoutes}
         />
       </div>
     </StageContainer>

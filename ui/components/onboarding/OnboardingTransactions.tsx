@@ -58,12 +58,17 @@ export function OnboardingTransactions({
   const fund = useMoonPay()
 
   //Uniswap
-  const [swapRoute, setSwapRoute] = useState<any>()
-  const { generateRoute, executeRoute } = useSwapRouter(
+  const [nativeSwapRoute, setNativeSwapRoute] = useState<any>()
+  const [mooneySwapRoute, setMooneySwapRoute] = useState<any>()
+  const { generateRoute: generateNativeRoute } = useSwapRouter(
     selectedLevel.price,
-    ETH,
-    MOONEY
+    MOONEY,
+    ETH
   )
+  const {
+    generateRoute: generateMooneyRoute,
+    executeRoute: executeMooneySwapRoute,
+  } = useSwapRouter(nativeSwapRoute?.route[0].rawQuote.toString(), ETH, MOONEY)
 
   //Alchemy
   const lightAccountProvider: any = useLightAccount(wallets)
@@ -83,8 +88,18 @@ export function OnboardingTransactions({
   )
 
   useEffect(() => {
-    generateRoute().then((swapRoute: any) => setSwapRoute(swapRoute))
+    generateNativeRoute().then((swapRoute: any) =>
+      setNativeSwapRoute(swapRoute)
+    )
   }, [])
+
+  useEffect(() => {
+    if (nativeSwapRoute?.route[0]) {
+      generateMooneyRoute().then((swapRoute: any) =>
+        setMooneySwapRoute(swapRoute)
+      )
+    }
+  }, [nativeSwapRoute])
 
   function Step({
     stepNum,
@@ -165,9 +180,9 @@ export function OnboardingTransactions({
 
   useEffect(() => {
     //check if user has already completed steps (vmooney > selectedLevel)
-    if (swapRoute && vMooneyLock) {
+    if (vMooneyLock) {
       const completed =
-        vMooneyLock?.[0].toString() >= swapRoute.route[0].rawQuote.toString()
+        vMooneyLock?.[0].toString() / 10 ** 18 >= selectedLevel.price
       if (completed) {
         setCurrStep(4)
         setTimeout(() => {
@@ -175,7 +190,7 @@ export function OnboardingTransactions({
         }, 3000)
       }
     }
-  }, [swapRoute, vMooneyContract, wallet, selectedLevel])
+  }, [vMooneyLock])
 
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center">
@@ -204,12 +219,22 @@ export function OnboardingTransactions({
           const provider = await wallet.getEthersProvider()
           const nativeBalance = await provider.getBalance(wallet.address)
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-          if (formattedNativeBalance > selectedLevel.price) {
+          if (
+            +formattedNativeBalance >
+              nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+          ) {
             return true
           } else {
             return false
           }
         }}
+        isDisabled={!nativeSwapRoute?.route[0]}
+        deps={[nativeSwapRoute]}
+        txExplanation={`Fund wallet with ${
+          nativeSwapRoute?.route[0]
+            ? nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+            : '...'
+        } ETH`}
       />
       <Step
         stepNum={2}
@@ -217,20 +242,21 @@ export function OnboardingTransactions({
         explanation={
           'MoonDAO routes the order to the best price on a Decentralized Exchange using the low gas fees provided by Polygon.'
         }
-        action={async () => await executeRoute(swapRoute)}
+        action={async () => await executeMooneySwapRoute(mooneySwapRoute)}
         check={async () => {
-          const selectedLevelMooneyAmt = swapRoute?.route[0].rawQuote.toString()
-          if (mooneyBalance?.toString() >= selectedLevelMooneyAmt) {
+          if (mooneyBalance?.toString() >= selectedLevel.price) {
             return true
           } else {
             return false
           }
         }}
         deps={[mooneyBalance]}
-        isDisabled={!swapRoute}
-        txExplanation={`Swap ${selectedLevel.price} ETH for ${
-          swapRoute ? swapRoute?.route[0].rawQuote.toString() / 10 ** 18 : '...'
-        } $MOONEY`}
+        isDisabled={!mooneySwapRoute}
+        txExplanation={`Swap ${
+          nativeSwapRoute
+            ? nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+            : '...'
+        } ETH for ${selectedLevel.price.toLocaleString()} $MOONEY`}
       />
       {selectedLevel.hasVotingPower && (
         <>
@@ -241,30 +267,24 @@ export function OnboardingTransactions({
               'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
             }
             action={async () => {
-              const selectedLevelMooneyAmt =
-                swapRoute?.route[0].rawQuote.toString()
               await mooneyContract.call('approve', [
                 VMOONEY_ADDRESSES[selectedChain.slug],
-                selectedLevelMooneyAmt,
+                selectedLevel.price,
               ])
             }}
             check={async () => {
-              const selectedLevelMooneyAmt =
-                swapRoute?.route[0].rawQuote.toString()
               if (
-                tokenAllowance?.toString() >= selectedLevelMooneyAmt ||
-                TESTING
+                tokenAllowance?.toString() / 10 ** 18 >=
+                selectedLevel.price / 2
               ) {
                 return true
               } else return false
             }}
             deps={[tokenAllowance]}
-            isDisabled={!swapRoute}
-            txExplanation={`Approve ${
-              swapRoute
-                ? swapRoute?.route[0].rawQuote.toString() / 10 ** 18
-                : '...'
-            } $MOONEY for staking`}
+            isDisabled={!mooneySwapRoute}
+            txExplanation={`Approve ${(
+              selectedLevel.price / 2
+            ).toLocaleString()} $MOONEY for staking`}
           />
           <Step
             stepNum={4}
@@ -274,14 +294,12 @@ export function OnboardingTransactions({
             }
             action={async () =>
               await vMooneyContract.call('create_lock', [
-                swapRoute?.route[0].rawQuote.toString(),
+                selectedLevel.price / 2,
                 Date.now() * 1000 * 60 * 60 * 24 * 365 * 2,
               ])
             }
             check={async () => {
-              const selectedLevelMooneyAmt =
-                swapRoute?.route[0].rawQuote.toString()
-              if (vMooneyLock?.[0].toString() >= selectedLevelMooneyAmt) {
+              if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
                 return true
               } else {
                 return false
@@ -289,9 +307,7 @@ export function OnboardingTransactions({
             }}
             deps={[vMooneyLock]}
             txExplanation={`Stake ${
-              swapRoute
-                ? swapRoute?.route[0].rawQuote.toString() / 10 ** 18 / 2
-                : '...'
+              selectedLevel.price / 2
             } $MOONEY for 2 years`}
           />
         </>
