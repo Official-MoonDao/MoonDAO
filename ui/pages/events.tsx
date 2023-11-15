@@ -6,7 +6,7 @@ import Head from '../components/layout/Head'
 
 const SESH_LINK = 'https://sesh.fyi/api/calendar/v2/hfwjLhfVoutWs65KegtbP7.ics'
 
-export default function Calendar() {
+export default function Events() {
   const { events } = useCalendarEvents(SESH_LINK)
 
   const { t } = useTranslation('common')
@@ -15,9 +15,7 @@ export default function Calendar() {
       <Head title={t('calendarTitle')} description={t('calendarDesc')} />
       <div className="mt-3 px-5 lg:px-7 xl:px-9 py-12 lg:py-14 lg:mt-10 page-border-and-color w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px]">
         {/*Title*/}
-        <h2 className="page-title">
-          Calendar
-        </h2>
+        <h2 className="page-title">Calendar</h2>
         {/*Section containing the events*/}
         <section className="mt-6 inner-container-background py-5 px-2 lg:px-4 xl:px-6 font-RobotoMono">
           <p className="text-base lg:text-lg xl:text-[20px] font-medium text-center lg:text-left text-light-text dark:text-white">

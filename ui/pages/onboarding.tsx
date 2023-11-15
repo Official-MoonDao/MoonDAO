@@ -21,7 +21,7 @@ export default function Onboarding({ pregenSwapRoutes }: any) {
   )
 }
 
-export async function getStaticProps() {
+export async function getServerSideProps() {
   // USD to Native uniswap quotes
   const explorerNativeRoute = await pregenSwapRoute(
     CONTRIBUTION_LEVEL_PRICES[0] * 12,
@@ -71,6 +71,5 @@ export async function getStaticProps() {
         },
       ],
     },
-    revalidate: 60,
   }
 }
