@@ -68,6 +68,7 @@ export default function Governance() {
 
       {/*Section containing cards with links*/}
       <PageCards
+        id="gov-cards"
         pages={pages}
         title="Governance"
         description={` MoonDAO’s Treasury is governed by all the token holders. If you have

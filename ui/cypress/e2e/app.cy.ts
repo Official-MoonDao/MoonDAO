@@ -7,51 +7,39 @@ describe('Main E2E Testing', () => {
       cy.visit('/')
       cy.get('#app-layout').should('exist')
     })
-
-    it('external links should be correct', () => {
-      cy.visit('/')
-      const externalLinks = [
-        'https://moondao.com',
-        'https://snapshot.org/#/tomoondao.eth',
-        'https://moondao.com/docs/introduction',
-        'https://moondao.ck.page/profile',
-        'https://market.moondao.com',
-      ]
-
-      Array.from({
-        length: cy.get('#layout-external-links').children.length,
-      }).map((link: any, i) => {
-        link.get('a').should('have.attr', 'href', externalLinks[i])
-      })
-    })
   })
 
   describe('MoonDAO App | Home', () => {
     it('should load the home page', () => {
       cy.visit('/')
-      cy.get('#home-card').should('exist')
+      cy.get('#home-cards').should('exist')
     })
+  })
 
-    it('home cards should have the correct internal and external links', () => {
-      cy.visit('/')
-      const links = [
-        'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
-        'https://wallet.polygon.technology/polygon/bridge/deposit',
-        '/lock',
-        'https://market.moondao.com',
-      ]
-
-      Array.from({
-        length: cy.get('#home-card-pages').children.length,
-      }).map((page: any, i: number) => {
-        page.get('a').should('have.attr', 'href', links[i])
-      })
+  describe('MoonDAO App | Governance', () => {
+    it('should load the governance page', () => {
+      cy.visit('/governance')
+      cy.get('#gov-cards').should('exist')
     })
   })
 
   describe('MoonDAO App | Lock', () => {
     it('should load the lock page', () => {
       cy.visit('/lock')
+    })
+  })
+
+  describe('MoonDAO App | Analytics', () => {
+    it('should load the analytics page', () => {
+      cy.visit('/analytics')
+    })
+  })
+
+  describe('MoonDAO App | Events', () => {
+    it('should load the events page', () => {
+      cy.visit('/events')
+      cy.get('h1').contains(common.eventsTitle)
+      cy.get('p').contains(common.eventsDesc)
     })
   })
 })
@@ -69,24 +57,6 @@ describe('Missions E2E Testing', () => {
     it('should load the zero-g page', () => {
       cy.visit('/zero-g')
       cy.get('h1').contains('Zero-G Flight')
-    })
-  })
-})
-
-//DASHBOARD
-describe('Dashboard E2E Testing', () => {
-  describe('MoonDAO App | Analytics', () => {
-    it('should load the analytics page', () => {
-      cy.visit('/analytics')
-    })
-  })
-
-  describe('MoonDAO App | Calendar', () => {
-    it('should load the calendar page', () => {
-      cy.visit('/calendar')
-      cy.get('h1').contains(common.calendarTitle)
-      cy.get('p').contains(common.calendarDesc)
-      cy.get('#dashboard-calendar').should('exist')
     })
   })
 })

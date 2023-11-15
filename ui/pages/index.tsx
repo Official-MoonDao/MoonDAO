@@ -65,7 +65,7 @@ export default function Home() {
       {/*Features */}
 
       <PageCards
-        id={'home-card'}
+        id={'home-cards'}
         pages={pages}
         header={'Our base of operations'}
         title={'The MoonDAO app'}
