@@ -32,13 +32,12 @@ export default function Governance() {
         setEnableExportModal(true)
       },
       icon: ArrowRightIcon,
-      externalLink: true,
     },
     {
       name: 'Get Gitcoin Passport',
       description:
         'We require a score of 15 or above for voting. This is to make sure you are a unique human.',
-      href: 'We require a score of 15 or above for voting. This is to make sure you are a unique human.',
+      href: 'https://passport.gitcoin.co/',
       icon: ArrowsRightLeftIcon,
       externalLink: true,
     },
@@ -48,7 +47,7 @@ export default function Governance() {
         'Proposals start in our “Ideation” channel in the Discord. Post your idea there to get feedback and start the submission process!',
       href: 'https://discord.com/channels/914720248140279868/1027658256706961509',
       icon: DocumentIcon,
-      externalLink: false,
+      externalLink: true,
     },
     {
       name: 'Vote on Snapshot',
@@ -59,9 +58,6 @@ export default function Governance() {
       externalLink: true,
     },
   ]
-
-  const [delegateAddress, setDelegateAddress] = useState('')
-  const exportPrivyWallet = useExportPrivyWallet(delegateAddress)
 
   return (
     <div className="animate-fadeIn">
