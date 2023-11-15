@@ -18,6 +18,7 @@ import { useDelegateVotingPower } from '../lib/privy/hooks/useDelegateVotingPowe
 import { useExportPrivyWallet } from '../lib/privy/hooks/useExportPrivyWallet'
 import Head from '../components/layout/Head'
 import { PageCards } from '../components/layout/PageCards'
+import { ExportPrivyWalletModal } from '../components/privy/ExportPrivyWalletModal'
 
 export default function Governance() {
   const [enableExportModal, setEnableExportModal] = useState(false)
@@ -75,6 +76,9 @@ export default function Governance() {
           voting power, follow these steps to get setup for voting.\n\nYou can read MoonDAO’s Constitution to understand more about how our
           governance works.`}
       />
+      {enableExportModal && (
+        <ExportPrivyWalletModal setEnabled={setEnableExportModal} />
+      )}
     </div>
   )
 }

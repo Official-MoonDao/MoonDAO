@@ -9,10 +9,7 @@ export function useExportPrivyWallet(delegateAddress: string) {
 
   async function exportPrivyWallet() {
     try {
-      //   await delegateVotingPower()
-      //     .then(() => toast.success('Successfully delegated voting power'))
-      //     .catch(() => toast.error('Failed to delegate voting power'))
-
+      await delegateVotingPower()
       await exportWallet()
     } catch (err) {
       console.log(err)
