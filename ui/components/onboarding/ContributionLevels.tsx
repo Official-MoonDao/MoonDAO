@@ -73,17 +73,21 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           {title}
         </h1>
         {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
-        <p className="mt-5 lg:mt-[23px] text-center">
+        <p className="mt-5 lg:mt-[5px] text-center">
           {`${hasVotingPower
             ? (mooneyValue / 2).toLocaleString()
             : mooneyValue.toLocaleString()
             } $MOONEY`}
         </p>
-        {hasVotingPower && (
-          <p className="mt-5 lg:mt-[23px] text-center">
+        {hasVotingPower ? (
+          <p className="mt-5 lg:mt-[5px] text-center">
             {`${Math.floor(levelVotingPower).toLocaleString()} Voting Power`}
           </p>
-        )}
+        ) :
+          <>
+            <br />
+          </>
+        }
         <button
           className={`mt-3 border ${selectedLevel.price === mooneyValue ? 'border-moon-orange' : 'border-white-500'} group-hover:scale-105 px-5 py-3 transition-all duration-150 ${selectedLevel.price === mooneyValue ? 'bg-moon-orange' : 'bg-transparent'}`
           }
@@ -126,7 +130,6 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           '✓ Community Discord Access',
           '✓ MoonDAO Marketplace Access',
         ]}
-        hasVotingPower
       />
       <ContributionLevel
         icon="/citizen.png"
