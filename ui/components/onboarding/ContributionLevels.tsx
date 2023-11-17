@@ -3,7 +3,6 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
-import checkMarkIcon from './checkmark.svg';
 
 
 
@@ -100,7 +99,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           <p className="2xl:h-[120px] leading-[18.46px] font-normal">{intro}</p>
           {/*Perk List*/}
           <div className="mt-[8px] pr-2 2xl:h-[210px]">
-            <ul className={`mt-1 ml-6 flex flex-col list-disc w-full gap-1`}>
+            <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
 
               {points.map((point, i) => (
                 <div
