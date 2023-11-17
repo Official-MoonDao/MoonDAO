@@ -168,12 +168,12 @@ export function OnboardingStageManager({ selectedChain }: any) {
               login()
               setStage(1)
             } else {
-              setStage(stage + 1)
+              setStage(1)
             }
           }}
           className="mt-8 px-5 py-3 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
         >
-          {user ? 'Continue' : 'Join MoonDAO'}
+          Join MoonDAO
         </button>
       </div>
     </StageContainer>
