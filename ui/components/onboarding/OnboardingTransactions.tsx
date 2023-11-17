@@ -4,7 +4,7 @@ import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useLightAccount } from '../../lib/alchemy/useLightAccount'
+// import { useLightAccount } from '../../lib/alchemy/useLightAccount'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useTokenAllowance } from '../../lib/tokens/approve'
@@ -65,7 +65,7 @@ export function OnboardingTransactions({
   )
 
   //Alchemy
-  const lightAccountProvider: any = useLightAccount(wallets)
+  // const lightAccountProvider: any = useLightAccount(wallets)
 
   //Thirdweb
   const { data: mooneyBalance } = useMOONEYBalance(
@@ -100,14 +100,14 @@ export function OnboardingTransactions({
     useEffect(() => {
       if (currStep === stepNum && !isLoadingCheck) {
         setIsLoadingCheck(true)
-        ;(async () => {
-          const checkRes = await check()
-          setCheckResult(checkRes)
-          if (checkRes) {
-            setCurrStep(stepNum + 1)
-          }
-          setIsLoadingCheck(false)
-        })()
+          ; (async () => {
+            const checkRes = await check()
+            setCheckResult(checkRes)
+            if (checkRes) {
+              setCurrStep(stepNum + 1)
+            }
+            setIsLoadingCheck(false)
+          })()
       }
     }, [currStep, selectedLevel, address, ...deps])
 
@@ -122,13 +122,12 @@ export function OnboardingTransactions({
       <div className="mt-5">
         <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-white border-opacity-[0.18]">
           <p
-            className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
-              isLoadingCheck
-                ? 'bg-[grey] animate-pulse'
-                : currStep > stepNum
+            className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${isLoadingCheck
+              ? 'bg-[grey] animate-pulse'
+              : currStep > stepNum
                 ? 'bg-[lightgreen]'
                 : 'bg-moon-orange'
-            }`}
+              }`}
           >
             {stepNum}
           </p>
