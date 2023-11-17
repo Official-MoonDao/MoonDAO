@@ -47,11 +47,10 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
 
     return (
       <div
-        className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
-          selectedLevel?.price === mooneyValue
-            ? 'border-moon-orange border-opacity-100'
-            : 'border-opacity-60 dark:border-opacity-20'
-        }`}
+        className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${selectedLevel?.price === mooneyValue
+          ? 'border-moon-orange border-opacity-100'
+          : 'border-opacity-60 dark:border-opacity-20'
+          }`}
         onClick={() => {
           if (!user) toast.error('Please connect a wallet to continue')
           else setSelectedLevel({ price: mooneyValue, hasVotingPower })
@@ -68,50 +67,49 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         </div>
         {/*Title*/}
         <h1
-          className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${
-            selectedLevel.price === mooneyValue && 'text-moon-orange'
-          }`}
+          className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${selectedLevel.price === mooneyValue && 'text-moon-orange'
+            }`}
         >
           {title}
         </h1>
         {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
         <p className="mt-5 lg:mt-[23px] text-center">
-          {`${
-            hasVotingPower
-              ? (mooneyValue / 2).toLocaleString()
-              : mooneyValue.toLocaleString()
-          } $MOONEY`}
+          {`${hasVotingPower
+            ? (mooneyValue / 2).toLocaleString()
+            : mooneyValue.toLocaleString()
+            } $MOONEY`}
         </p>
         {hasVotingPower && (
           <p className="mt-5 lg:mt-[23px] text-center">
             {`${Math.floor(levelVotingPower).toLocaleString()} Voting Power`}
           </p>
         )}
-        {/*Line*/}
-        <div className="mt-[17px] bg-white opacity-[0.13] w-11/12 h-[1px]"></div>
-        <div className="mt-4 text-left text-sm">
+        <button
+          className={`mt-3 border ${selectedLevel.price === mooneyValue ? 'border-moon-orange' : 'border-white-500'} group-hover:scale-105 px-5 py-3 transition-all duration-150 ${selectedLevel.price === mooneyValue ? 'bg-moon-orange' : 'bg-transparent'}`
+          }
+          style={{ width: '261px', height: '44px', padding: '12px, 20px, 12px, 20px', textAlign: 'center' }}
+        >
+          {'Get Started >'}
+        </button>
+
+        <div className="mt-4 text-left text-sm" style={{ marginBottom: '20px' }}>
           {/*Intro*/}
-          <p className="2xl:h-[120px]">{intro}</p>
+          <p className="2xl:h-[120px] leading-[18.46px] font-normal">{intro}</p>
           {/*Perk List*/}
-          <div className="mt-[38px] pr-2 2xl:h-[210px]">
-            <p>Perks:</p>
-            <ul className={`mt-1 ml-6 flex flex-col list-disc w-full gap-1`}>
+          <div className="mt-[8px] pr-2 2xl:h-[210px]">
+            <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
+
               {points.map((point, i) => (
-                <li
+                <div
                   key={`contribution-level-${title}-desc-point-${i}`}
                   className="text-sm"
                 >
                   {'' + point}
-                </li>
+                </div>
               ))}
             </ul>
           </div>
         </div>
-        <button
-          className={`mt-10 bg-moon-orange group-hover:scale-105 px-5 py-3 transition-all duration-150`}
-        >
-          {'Get Started >'}
-        </button>
       </div>
     )
   }
@@ -124,10 +122,11 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
         mooneyValue={50000}
         points={[
-          'Can purchase two Ticket to Space Sweepstakes Entries',
-          'Community Discord Access',
-          'MoonDAO Marketplace Access',
+          '✓ Can purchase two Ticket to Space Sweepstakes Entries',
+          '✓ Community Discord Access',
+          '✓ MoonDAO Marketplace Access',
         ]}
+        hasVotingPower
       />
       <ContributionLevel
         icon="/citizen.png"
@@ -135,12 +134,12 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
         mooneyValue={500000}
         points={[
-          'Can purhcase up to 12 Ticket To Space Entries',
-          'Exclusive Discord Access',
-          'MoonDAO Marketplace Access',
-          'Co-governance of the MoonDAO Treasury',
-          'Submit Proposals for Projects',
-          'Free-Events Access',
+          '✓ Can purhcase up to 12 Ticket To Space Entries',
+          '✓ Exclusive Discord Access',
+          '✓ MoonDAO Marketplace Access',
+          '✓ Co-governance of the MoonDAO Treasury',
+          '✓ Submit Proposals for Projects',
+          '✓ Free-Events Access',
         ]}
         hasVotingPower
       />
@@ -150,9 +149,9 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
         mooneyValue={2000000}
         points={[
-          'Everything in the Citizen Tier',
-          'Exclusive promotion opportunities',
-          'Access to talent to help design, build, test your space hardware',
+          '✓ Everything in the Citizen Tier',
+          '✓ Exclusive promotion opportunities',
+          '✓ Access to talent to help design, build, test your space hardware',
         ]}
         hasVotingPower
       />

@@ -4,7 +4,7 @@ import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useLightAccount } from '../../lib/alchemy/useLightAccount'
+// import { useLightAccount } from '../../lib/alchemy/useLightAccount'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useTokenAllowance } from '../../lib/tokens/approve'
@@ -71,7 +71,7 @@ export function OnboardingTransactions({
   } = useSwapRouter(nativeSwapRoute?.route[0].rawQuote.toString(), ETH, MOONEY)
 
   //Alchemy
-  const lightAccountProvider: any = useLightAccount(wallets)
+  // const lightAccountProvider: any = useLightAccount(wallets)
 
   //Thirdweb
   const { data: mooneyBalance } = useMOONEYBalance(
@@ -117,14 +117,14 @@ export function OnboardingTransactions({
     useEffect(() => {
       if (currStep === stepNum && !isLoadingCheck) {
         setIsLoadingCheck(true)
-        ;(async () => {
-          const checkRes = await check()
-          setCheckResult(checkRes)
-          if (checkRes) {
-            setCurrStep(stepNum + 1)
-          }
-          setIsLoadingCheck(false)
-        })()
+          ; (async () => {
+            const checkRes = await check()
+            setCheckResult(checkRes)
+            if (checkRes) {
+              setCurrStep(stepNum + 1)
+            }
+            setIsLoadingCheck(false)
+          })()
       }
     }, [currStep, selectedLevel, address, ...deps])
 
@@ -145,7 +145,7 @@ export function OnboardingTransactions({
                 : currStep > stepNum
                 ? 'bg-[lightgreen]'
                 : 'bg-moon-orange'
-            }`}
+              }`}
           >
             {stepNum}
           </p>
