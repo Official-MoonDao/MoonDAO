@@ -8,7 +8,7 @@ import PurchasePortal from '../../components/zero-g/PurchasePortal'
 import VotingEscrowABI from '../../const/abis/VotingEscrow.json'
 import { VMOONEY_ADDRESSES } from '../../const/config'
 
-export default function ZeroG({ userDiscordData }: any) {
+export default function ZeroG() {
   const address = useAddress()
 
   const { contract: L1vMooneyContract }: any = useContract(
@@ -20,12 +20,6 @@ export default function ZeroG({ userDiscordData }: any) {
     VMOONEY_ADDRESSES['polygon'],
     VotingEscrowABI.abi
   )
-
-  const { data: L1vMooneyLock, isLoading: L1vMooneyLockLoading } =
-    useVMOONEYLock(L1vMooneyContract, address)
-
-  const { data: L2vMooneyLock, isLoading: L2vMooneyLockLoading } =
-    useVMOONEYLock(L2vMooneyContract, address)
 
   const validLock = useValidVP(address)
 
@@ -41,7 +35,7 @@ export default function ZeroG({ userDiscordData }: any) {
           <div className="mt-6 lg:mt-2 text-center lg:text-left text-black dark:text-white lg:text-lg">
             <p className="">
               {`In partnership with `}
-              <br className='lg:hidden' />
+              <br className="lg:hidden" />
               <a
                 target="_blank"
                 rel="noreferrer"
@@ -73,15 +67,4 @@ export default function ZeroG({ userDiscordData }: any) {
       </div>
     </main>
   )
-}
-
-export async function getServerSideProps(context: any) {
-  const code = context?.query?.code
-  let userDiscordData = {}
-  if (code) userDiscordData = (await getUserDiscordData(code)) || {}
-  return {
-    props: {
-      userDiscordData,
-    },
-  }
 }

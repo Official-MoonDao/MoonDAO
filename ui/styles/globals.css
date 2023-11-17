@@ -18,7 +18,7 @@ body {
   font-family: 'Acme', sans-serif;
 }
 
-.font-abel{
+.font-abel {
   font-family: 'Abel', sans-serif;
 }
 
@@ -166,7 +166,7 @@ Contains Loading Skeleton utilities, link & component background.
   }
 
   .page-title {
-    @apply text-[#071732] dark:text-white font-GoodTimes text-center text-4xl lg:text-5xl xl:text-[54px] lg:text-left;
+    @apply text-[#071732] dark:text-white font-GoodTimes text-center text-3xl lg:text-5xl xl:text-[54px] lg:text-left;
   }
 
   .title-text-colors {

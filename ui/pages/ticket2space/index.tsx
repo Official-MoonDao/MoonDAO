@@ -24,13 +24,13 @@ import { devWhitelist } from '../../const/tts/whitelist'
 
 const TICKET_TO_SPACE_ADDRESS = '0xFB8f14dE03A8edA036783F0b81992Ea7ce7ce8B5' //mumbai
 
-export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
+export default function Ticket2Space({ nftMetadata }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const router = useRouter()
 
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
-  const [supply, setSupply] = useState(sweepstakesSupply)
+  const [supply, setSupply] = useState(0)
   const [enableMintInfoModal, setEnableMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
 
@@ -120,7 +120,7 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                 <div>
                   <p className="opacity-70 lg:text-xl">Quantity left</p>
                   <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
-                    {sweepstakesSupply ? 9060 - +supply : '...loading'}
+                    {supply ? 9060 - +supply : '...loading'}
                   </p>
                 </div>
 
@@ -162,7 +162,7 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
                     value={quantity}
                   />
 
-                  {enableFreeMintInfoModal && (
+                  {enableMintInfoModal && (
                     <SubmitTTSInfoModal
                       quantity={quantity}
                       supply={supply}
@@ -234,20 +234,18 @@ export default function Ticket2Space({ sweepstakesSupply, nftMetadata }: any) {
   )
 }
 
-export async function getServerSideProps() {
+export async function getStaticProps() {
   const sdk = initSDK(Mumbai)
 
   const ticketToSpaceContract = await sdk.getContract(
     TICKET_TO_SPACE_ADDRESS,
     ttsSweepstakesV2.abi
   )
-  const sweepstakesSupply = await ticketToSpaceContract?.call('getSupply')
 
   const nftMetadata = await ticketToSpaceContract?.erc721.getTokenMetadata(1)
 
   return {
     props: {
-      sweepstakesSupply: sweepstakesSupply.toString(),
       nftMetadata,
     },
   }

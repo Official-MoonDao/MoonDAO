@@ -27,7 +27,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
             loginMethods: ['wallet', 'email', 'google', 'twitter'],
             appearance: {
               theme: 'dark',
-              showWalletLoginFirst: true,
+              showWalletLoginFirst: false,
               logo: 'favicon.ico',
             },
             legal: {

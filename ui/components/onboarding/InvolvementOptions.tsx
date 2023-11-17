@@ -1,42 +1,67 @@
-'use client'
-import { PopupButton } from "react-calendly";
-import { useEffect, useState } from "react";
-import Image from 'next/image'
+import {
+  BellAlertIcon,
+  HandRaisedIcon,
+  PhoneArrowUpRightIcon,
+} from '@heroicons/react/24/outline'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { PopupButton } from 'react-calendly'
+import { NewsletterSubModal } from './NewsletterSubModal'
 
 export function InvolvementOptions() {
+  const router = useRouter()
+  const [enableNewsletterSubModal, setEnableNewsletterSubModal] =
+    useState(false)
   function Calendly() {
-    const [rootElement, setRootElement] = useState<HTMLElement | null>(null);
-
+    const [rootElement, setRootElement] = useState<HTMLElement | null>(null)
 
     useEffect(() => {
       // Wait for the component to be mounted before setting the rootElement
-      if (typeof window !== "undefined") {
-        setRootElement(document.getElementById("__next"));
+      if (typeof window !== 'undefined') {
+        setRootElement(document.getElementById('__next'))
       }
-    }, []);
+    }, [])
 
     return (
       <div className="cal_div">
         <PopupButton
-          className="mt-10 px-[10px] py-[10px] border border-white border-opacity-[0.16] font-bold text-[20px]"
+          className="w-full mt-10 px-[10px] py-[10px] border border-slate-600 dark:border-white dark:border-opacity-[0.16] font-bold text-[20px]"
           url="https://calendly.com/moondao-onboarding/30min"
           rootElement={rootElement!}
           text="Join Discord"
         />
       </div>
-    );
+    )
   }
 
-  function Card({ label, description, CTA, logo, children, isOnboardingCall }: any) {
+  function Card({
+    label,
+    description,
+    CTA,
+    icon,
+    onClick,
+    children,
+    isOnboardingCall,
+  }: any) {
     return (
-      <div className="flex flex-col w-[327px] py-8 px-5 border-white border-opacity-20 border font-RobotoMono">
-        <Image src={logo} width={40} height={40} alt={`${label} logo`} />
-        <div className="mt-7">
-          <h1 className="font-bold text-[20px]">{label}</h1>
-          <p className="mt-3 opacity-60">{description}</p>
-          {!isOnboardingCall ? (<button className="mt-10 px-[10px] py-[10px] border border-white border-opacity-[0.16] font-bold text-[20px]">
-            {CTA}
-          </button>) : (<Calendly />)}
+      <div className="flex flex-col w-[327px] py-8 px-5 border-slate-700 dark:border-white dark:border-opacity-20 border font-RobotoMono text-slate-950 dark:text-gray-50">
+        {icon}
+
+        <div className="mt-7 pb-12 flex flex-col h-full justify-between">
+          <div>
+            <h1 className="font-bold text-[20px]">{label}</h1>
+            <p className="mt-3 opacity-60">{description}</p>
+          </div>
+          {!isOnboardingCall ? (
+            <button
+              className="mt-10 px-[10px] py-[10px] border border-slate-600 dark:border-white dark:border-opacity-[0.16] font-bold text-[20px] w-full"
+              onClick={onClick}
+            >
+              {CTA}
+            </button>
+          ) : (
+            <Calendly />
+          )}
         </div>
       </div>
     )
@@ -49,18 +74,33 @@ export function InvolvementOptions() {
         description={
           'Get email updates on MoonDAO milestones, sweepstakes alerts and upcoming events.'
         }
-        logo="/onboardingbell.png"
+        icon={<BellAlertIcon width={50} />}
         CTA="Get email updates"
-      ></Card>
+        onClick={() => {
+          setEnableNewsletterSubModal(true)
+        }}
+      />
+      {enableNewsletterSubModal && (
+        <NewsletterSubModal setEnabled={setEnableNewsletterSubModal} />
+      )}
       <Card
         label={'Join Community'}
-        logo="/onboardingphone.png"
+        icon={<PhoneArrowUpRightIcon width={50} />}
         description={
           'Join our community and say hello! Join our welcome calls where you can learn what we are about and how you can get involved!'
         }
         CTA="Join Discord"
         isOnboardingCall={true}
-      ></Card>
+      />
+      <Card
+        label={'Get Involved'}
+        icon={<HandRaisedIcon width={50} />}
+        description={
+          'Vote on MoonDAO proposals, participate in MoonDAO events, and more!'
+        }
+        CTA="Governance"
+        onClick={() => router.push('/governance')}
+      />
     </div>
   )
 }

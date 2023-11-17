@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
 
-
-
 type ContributionLevelProps = {
   icon: string
   title: string

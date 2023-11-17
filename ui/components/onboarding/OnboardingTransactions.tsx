@@ -34,6 +34,7 @@ type StepProps = {
   check: () => Promise<boolean>
   deps?: any[]
   isDisabled?: boolean
+  txExplanation?: string
 }
 
 export function OnboardingTransactions({
@@ -57,12 +58,17 @@ export function OnboardingTransactions({
   const fund = useMoonPay()
 
   //Uniswap
-  const [swapRoute, setSwapRoute] = useState<any>()
-  const { generateRoute, executeRoute } = useSwapRouter(
-    selectedLevel,
-    ETH,
-    MOONEY
+  const [nativeSwapRoute, setNativeSwapRoute] = useState<any>()
+  const [mooneySwapRoute, setMooneySwapRoute] = useState<any>()
+  const { generateRoute: generateNativeRoute } = useSwapRouter(
+    selectedLevel.price,
+    MOONEY,
+    ETH
   )
+  const {
+    generateRoute: generateMooneyRoute,
+    executeRoute: executeMooneySwapRoute,
+  } = useSwapRouter(nativeSwapRoute?.route[0].rawQuote.toString(), ETH, MOONEY)
 
   //Alchemy
   // const lightAccountProvider: any = useLightAccount(wallets)
@@ -82,8 +88,18 @@ export function OnboardingTransactions({
   )
 
   useEffect(() => {
-    generateRoute().then((swapRoute: any) => setSwapRoute(swapRoute))
+    generateNativeRoute().then((swapRoute: any) =>
+      setNativeSwapRoute(swapRoute)
+    )
   }, [])
+
+  useEffect(() => {
+    if (nativeSwapRoute?.route[0]) {
+      generateMooneyRoute().then((swapRoute: any) =>
+        setMooneySwapRoute(swapRoute)
+      )
+    }
+  }, [nativeSwapRoute])
 
   function Step({
     stepNum,
@@ -93,6 +109,7 @@ export function OnboardingTransactions({
     check,
     deps = [],
     isDisabled,
+    txExplanation,
   }: StepProps) {
     const [isLoadingCheck, setIsLoadingCheck] = useState(false)
     const [checkResult, setCheckResult] = useState(true)
@@ -119,12 +136,13 @@ export function OnboardingTransactions({
     // }, [checkResult, sentTx])
 
     return (
-      <div className="mt-5">
-        <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-white border-opacity-[0.18]">
+      <div className="mt-5 w-full text-black dark:text-white">
+        <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
           <p
-            className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${isLoadingCheck
-              ? 'bg-[grey] animate-pulse'
-              : currStep > stepNum
+            className={`block px-3 text-white py-1 text-xl font-bold rounded-[9999px] ${
+              isLoadingCheck
+                ? 'bg-[grey] animate-pulse'
+                : currStep > stepNum
                 ? 'bg-[lightgreen]'
                 : 'bg-moon-orange'
               }`}
@@ -137,60 +155,42 @@ export function OnboardingTransactions({
           <p className="mt-1 opacity-60 block lg:mt-0 text-sm xl:text-base">
             {explanation}
           </p>
-          {currStep === stepNum && (
-            <button
-              className="my-2 border-2 hover:border-4 duration-300 ease-in-out border-white px-8 py-2"
-              onClick={async () => {
-                try {
-                  await action()
-                } catch (err: any) {
-                  toast.error(err.message.slice(0, 150))
-                }
-              }}
-              disabled={isDisabled}
-            >
-              {isDisabled ? '...loading' : 'Complete this Step'}
-            </button>
-          )}
+          {currStep === stepNum && txExplanation && <p>{txExplanation}</p>}
+          {/*Previously was a border-4 class on hover for this button but changed it for scale, as increasing border expands the whole container on hover*/}
+          <div>
+            {currStep === stepNum && (
+              <button
+                className="w-full my-2 border-2 hover:scale-105 duration-300 ease-in-out border-gray-900 dark:border-white px-8 py-2"
+                onClick={async () => {
+                  try {
+                    await action()
+                  } catch (err: any) {
+                    toast.error(err.message.slice(0, 150))
+                  }
+                }}
+                disabled={isDisabled}
+              >
+                {isDisabled ? '...loading' : 'Complete this Step'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     )
   }
 
-  useEffect(() => {
-    //check if user has already completed steps (vmooney > selectedLevel)
-    if (swapRoute && vMooneyLock) {
-      const completed =
-        vMooneyLock?.[0].toString() >= swapRoute.route[0].rawQuote.toString()
-      if (completed) {
-        setCurrStep(4)
-        setTimeout(() => {
-          setStage(3)
-        }, 3000)
-      }
-    }
-  }, [swapRoute, vMooneyContract, wallet, selectedLevel])
-
-  useEffect(() => {
-    if (!address) {
-      setCurrStep(0)
-      setStage(0)
-    }
-  }, [address])
-
   return (
-    <div className="mt-2 lg:mt-5 flex flex-col items-center">
-      <div className="w-full flex gap-8 justify-center">
-        <button
-          className="py-4 px-8 border border-white"
-          onClick={() => {
-            setStage(1)
-            setSelectedLevel(0)
-          }}
-        >
-          Back ↩
-        </button>
-      </div>
+    <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
+      <button
+        className="mt-3 py-2 px-4 lg:py-3 lg:px-5 border border-slate-950 dark:border-white lg:self-start transition-all duration-105 hover:scale-105"
+        onClick={() => {
+          setStage(1)
+          setSelectedLevel({ price: 0, hasVotingPower: false })
+        }}
+      >
+        Back ↩
+      </button>
+      <div className="w-full flex gap-8 justify-center"></div>
       <Step
         stepNum={1}
         title={'Purchase ETH'}
@@ -199,18 +199,28 @@ export function OnboardingTransactions({
           const provider = await wallet.getEthersProvider()
           const nativeBalance = await provider.getBalance(wallet.address)
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-          await fund(selectedLevel - +formattedNativeBalance)
+          await fund(selectedLevel.price - +formattedNativeBalance)
         }}
         check={async () => {
           const provider = await wallet.getEthersProvider()
           const nativeBalance = await provider.getBalance(wallet.address)
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-          if (formattedNativeBalance > selectedLevel || TESTING) {
+          if (
+            +formattedNativeBalance >
+            nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+          ) {
             return true
           } else {
             return false
           }
         }}
+        isDisabled={!nativeSwapRoute?.route[0]}
+        deps={[nativeSwapRoute]}
+        txExplanation={`Fund wallet with ${
+          nativeSwapRoute?.route[0]
+            ? nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+            : '...'
+        } ETH`}
       />
       <Step
         stepNum={2}
@@ -218,62 +228,76 @@ export function OnboardingTransactions({
         explanation={
           'MoonDAO routes the order to the best price on a Decentralized Exchange using the low gas fees provided by Polygon.'
         }
-        action={async () => await executeRoute(swapRoute)}
+        action={async () => await executeMooneySwapRoute(mooneySwapRoute)}
         check={async () => {
-          const selectedLevelMooneyAmt = swapRoute?.route[0].rawQuote.toString()
-          if (mooneyBalance?.toString() >= selectedLevelMooneyAmt) {
+          if (mooneyBalance?.toString() >= selectedLevel.price) {
             return true
           } else {
             return false
           }
         }}
         deps={[mooneyBalance]}
-        isDisabled={!swapRoute}
+        isDisabled={!mooneySwapRoute}
+        txExplanation={`Swap ${
+          nativeSwapRoute
+            ? nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+            : '...'
+        } ETH for ${selectedLevel.price.toLocaleString()} $MOONEY`}
       />
-      <Step
-        stepNum={3}
-        title={'Token Approval'}
-        explanation={
-          'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
-        }
-        action={async () => {
-          const selectedLevelMooneyAmt = swapRoute?.route[0].rawQuote.toString()
-          await mooneyContract.call('approve', [
-            VMOONEY_ADDRESSES[selectedChain.slug],
-            selectedLevelMooneyAmt,
-          ])
-        }}
-        check={async () => {
-          const selectedLevelMooneyAmt = swapRoute?.route[0].rawQuote.toString()
-          if (tokenAllowance?.toString() >= selectedLevelMooneyAmt) {
-            return true
-          } else return false
-        }}
-        deps={[tokenAllowance]}
-        isDisabled={!swapRoute}
-      />
-      <Step
-        stepNum={4}
-        title={'Stake MOONEY'}
-        explanation={
-          'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
-        }
-        action={async () =>
-          await vMooneyContract.call('create_lock', [
-            swapRoute?.route[0].rawQuote.toString(),
-            Date.now() * 1000 * 60 * 60 * 24 * 365 * 2,
-          ])
-        }
-        check={async () => {
-          const selectedLevelMooneyAmt = swapRoute?.route[0].rawQuote.toString()
-          if (vMooneyLock?.[0].toString() >= selectedLevelMooneyAmt) {
-            return true
-          } else {
-            return false
-          }
-        }}
-        deps={[vMooneyLock]}
-      />
+      {selectedLevel.hasVotingPower && (
+        <>
+          <Step
+            stepNum={3}
+            title={'Token Approval'}
+            explanation={
+              'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
+            }
+            action={async () => {
+              await mooneyContract.call('approve', [
+                VMOONEY_ADDRESSES[selectedChain.slug],
+                selectedLevel.price,
+              ])
+            }}
+            check={async () => {
+              if (
+                tokenAllowance?.toString() / 10 ** 18 >=
+                selectedLevel.price / 2
+              ) {
+                return true
+              } else return false
+            }}
+            deps={[tokenAllowance]}
+            isDisabled={!mooneySwapRoute}
+            txExplanation={`Approve ${(
+              selectedLevel.price / 2
+            ).toLocaleString()} $MOONEY for staking`}
+          />
+          <Step
+            stepNum={4}
+            title={'Stake MOONEY'}
+            explanation={
+              'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
+            }
+            action={async () =>
+              await vMooneyContract.call('create_lock', [
+                selectedLevel.price / 2,
+                Date.now() * 1000 * 60 * 60 * 24 * 365 * 2,
+              ])
+            }
+            check={async () => {
+              if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
+                return true
+              } else {
+                return false
+              }
+            }}
+            deps={[vMooneyLock]}
+            txExplanation={`Stake ${
+              selectedLevel.price / 2
+            } $MOONEY for 2 years`}
+          />
+        </>
+      )}
     </div>
   )
 }
