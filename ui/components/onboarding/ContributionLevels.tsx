@@ -86,7 +86,6 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         ) :
           <>
             <br />
-            <br />
           </>
         }
         <button
