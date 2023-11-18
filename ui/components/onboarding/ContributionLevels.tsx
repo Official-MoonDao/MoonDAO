@@ -85,7 +85,9 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           </p>
         ) :
           <>
-            <br />
+            <div className="mt-5 lg:mt-[5px] text-center">
+              <br />
+            </div>
           </>
         }
         <button

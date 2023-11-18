@@ -136,43 +136,45 @@ export function OnboardingTransactions({
     // }, [checkResult, sentTx])
 
     return (
-      <div className="mt-5 w-full text-black dark:text-white">
-        <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
+      <div className="mt-5 w-full h-full text-black dark:text-white">
+        <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
           <p
-            className={`block px-3 text-white py-1 text-xl font-bold rounded-[9999px] ${
-              isLoadingCheck
-                ? 'bg-[grey] animate-pulse'
-                : currStep > stepNum
+            className={`block px-3 text-white py-1 text-xl font-bold rounded-[9999px] ${isLoadingCheck
+              ? 'bg-[grey] animate-pulse'
+              : currStep > stepNum
                 ? 'bg-[lightgreen]'
                 : 'bg-moon-orange'
               }`}
           >
             {stepNum}
           </p>
-          <p className="mt-[15px] block lg:mt-0 xl:text-xl lg:max-w-[190px]">
-            {title}
-          </p>
-          <p className="mt-1 opacity-60 block lg:mt-0 text-sm xl:text-base">
-            {explanation}
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', gap: '50px' }}>
+            <p className="mt-[15px] text-left block lg:mt-0 xl:text-xl lg:max-w-[190px]">
+              {title}
+            </p>
+
+            <p className="mt-1 opacity-60 block lg:mt-0 text-sm xl:text-base">
+              {explanation}
+            </p>
+          </div>
+
           {currStep === stepNum && txExplanation && <p>{txExplanation}</p>}
           {/*Previously was a border-4 class on hover for this button but changed it for scale, as increasing border expands the whole container on hover*/}
           <div>
-            {currStep === stepNum && (
-              <button
-                className="w-full my-2 border-2 hover:scale-105 duration-300 ease-in-out border-gray-900 dark:border-white px-8 py-2"
-                onClick={async () => {
-                  try {
-                    await action()
-                  } catch (err: any) {
-                    toast.error(err.message.slice(0, 150))
-                  }
-                }}
-                disabled={isDisabled}
-              >
-                {isDisabled ? '...loading' : 'Complete this Step'}
-              </button>
-            )}
+            <button
+              className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2"
+              style={{ backgroundColor: '#FFFFFF14' }}
+              onClick={async () => {
+                try {
+                  await action()
+                } catch (err: any) {
+                  toast.error(err.message.slice(0, 150))
+                }
+              }}
+              disabled={isDisabled}
+            >
+              {isDisabled ? '...loading' : 'Start'}
+            </button>
           </div>
         </div>
       </div>
@@ -214,13 +216,12 @@ export function OnboardingTransactions({
             return false
           }
         }}
-        isDisabled={!nativeSwapRoute?.route[0]}
+        // isDisabled={!nativeSwapRoute?.route[0]}
         deps={[nativeSwapRoute]}
-        txExplanation={`Fund wallet with ${
-          nativeSwapRoute?.route[0]
-            ? nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
-            : '...'
-        } ETH`}
+        txExplanation={`Fund wallet with ${nativeSwapRoute?.route[0]
+          ? nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+          : '...'
+          } ETH`}
       />
       <Step
         stepNum={2}
@@ -238,11 +239,10 @@ export function OnboardingTransactions({
         }}
         deps={[mooneyBalance]}
         isDisabled={!mooneySwapRoute}
-        txExplanation={`Swap ${
-          nativeSwapRoute
-            ? nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
-            : '...'
-        } ETH for ${selectedLevel.price.toLocaleString()} $MOONEY`}
+        txExplanation={`Swap ${nativeSwapRoute
+          ? nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+          : '...'
+          } ETH for ${selectedLevel.price.toLocaleString()} $MOONEY`}
       />
       {selectedLevel.hasVotingPower && (
         <>
@@ -292,9 +292,8 @@ export function OnboardingTransactions({
               }
             }}
             deps={[vMooneyLock]}
-            txExplanation={`Stake ${
-              selectedLevel.price / 2
-            } $MOONEY for 2 years`}
+            txExplanation={`Stake ${selectedLevel.price / 2
+              } $MOONEY for 2 years`}
           />
         </>
       )}
