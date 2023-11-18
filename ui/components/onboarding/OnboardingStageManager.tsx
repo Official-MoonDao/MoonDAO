@@ -207,6 +207,17 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   const StepTwo = () => (
     <StageContainer>
+      <button
+        className="mt-3 py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
+        style={{ marginBottom: '68px' }}
+        onClick={() => {
+          setStage(1)
+          setSelectedLevel({ price: 0, hasVotingPower: false })
+        }}
+      >
+        <input type="image" src="/backIcon.png" />
+        <span>Back</span>
+      </button>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
         <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
           Check out

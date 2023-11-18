@@ -148,21 +148,16 @@ export function OnboardingTransactions({
           >
             {stepNum}
           </p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', gap: '50px' }}>
-            <p className="mt-[15px] text-left block lg:mt-0 xl:text-xl lg:max-w-[190px]">
-              {title}
-            </p>
-
-            <p className="mt-1 opacity-60 block lg:mt-0 text-sm xl:text-base">
-              {explanation}
-            </p>
+          <div className="flex-col justify-start items-start gap-4 inline-flex">
+            <div className="mt-[15px] text-left block lg:mt-0 xl:text-xl lg:max-w-[190px]">{title}</div>
           </div>
+          <div className="mt-1 opacity-60 text-white text-base font-normal lg:mt-0 xl:text-base">{explanation}</div>
 
           {currStep === stepNum && txExplanation && <p>{txExplanation}</p>}
           {/*Previously was a border-4 class on hover for this button but changed it for scale, as increasing border expands the whole container on hover*/}
           <div>
             <button
-              className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2"
+              className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-white text-base font-normal font-['Roboto Mono']"
               style={{ backgroundColor: '#FFFFFF14' }}
               onClick={async () => {
                 try {
@@ -177,21 +172,13 @@ export function OnboardingTransactions({
             </button>
           </div>
         </div>
-      </div>
+      </div >
+
     )
   }
 
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
-      <button
-        className="mt-3 py-2 px-4 lg:py-3 lg:px-5 border border-slate-950 dark:border-white lg:self-start transition-all duration-105 hover:scale-105"
-        onClick={() => {
-          setStage(1)
-          setSelectedLevel({ price: 0, hasVotingPower: false })
-        }}
-      >
-        Back ↩
-      </button>
       <div className="w-full flex gap-8 justify-center"></div>
       <Step
         stepNum={1}
