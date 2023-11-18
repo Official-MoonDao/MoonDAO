@@ -1,8 +1,8 @@
 import {
-  BuildingLibraryIcon,
-  PencilSquareIcon,
-  IdentificationIcon,
-  ArchiveBoxArrowDownIcon,
+  ArrowRightIcon,
+  ArrowsRightLeftIcon,
+  DocumentIcon,
+  HandRaisedIcon,
 } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -22,36 +22,31 @@ export default function Governance() {
       onClick: () => {
         setEnableExportModal(true)
       },
-
-      icon: <BuildingLibraryIcon width={50} />,
-      buttonText: 'Delegate',
+      icon: ArrowRightIcon,
     },
     {
       name: 'Get Gitcoin Passport',
       description:
         'We require a score of 15 or above for voting. This is to make sure you are a unique human.',
       href: 'https://passport.gitcoin.co/',
-      icon: <IdentificationIcon width={50} />,
+      icon: ArrowsRightLeftIcon,
       externalLink: true,
-      buttonText: 'Get Passport',
     },
     {
       name: 'Submit a Proposal',
       description:
         'Proposals start in our “Ideation” channel in the Discord. Post your idea there to get feedback and start the submission process!',
       href: 'https://discord.com/channels/914720248140279868/1027658256706961509',
-      icon: <PencilSquareIcon width={50} />,
+      icon: DocumentIcon,
       externalLink: true,
-      buttonText: 'Discord "Ideation"',
     },
     {
       name: 'Vote on Snapshot',
       description:
         'Our community uses Snapshot to vote. Click here to navigate and view active proposals.',
       href: 'https://snapshot.org/#/tomoondao.eth',
-      icon: <ArchiveBoxArrowDownIcon width={50} />,
+      icon: HandRaisedIcon,
       externalLink: true,
-      buttonText: 'Snapshot',
     },
   ]
 
@@ -66,15 +61,25 @@ export default function Governance() {
         title="Governance"
         description={
           <>
-            {/* {`MoonDAO's Treasury is governed by its Citizens. If you don't have voting power, become a Citizen by `} */}
-            <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 text-left text-sm xl:text-base">
-              MoonDAO’s Treasury is governed by all the token holders. If you
-              have voting power, follow these steps to get setup for voting.
-              <br />
-              <br className="2xl:hidden" />
-              You can read MoonDAO’s Constitution to understand more about how
-              our governance works.
-            </p>
+            {`MoonDAO's Treasury is governed by its Citizens. If you don't have voting power, become a Citizen by `}
+            <button
+              className="hover:scale-[1.05] duration-300 ease-in-out font-bold"
+              onClick={() => router.push('/onboarding')}
+            >
+              onboarding
+            </button>
+            {` into our community. You can read MoonDAO's `}
+            <button
+              className="hover:scale-[1.05] duration-300 ease-in-out font-bold"
+              onClick={() =>
+                window.open(
+                  'https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution'
+                )
+              }
+            >
+              Constitution
+            </button>
+            {` to understand more about how our governance works.`}
           </>
         }
       />
