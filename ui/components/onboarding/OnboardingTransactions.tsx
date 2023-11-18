@@ -203,7 +203,7 @@ export function OnboardingTransactions({
             return false
           }
         }}
-        // isDisabled={!nativeSwapRoute?.route[0]}
+        isDisabled={!nativeSwapRoute?.route[0]}
         deps={[nativeSwapRoute]}
         txExplanation={`Fund wallet with ${nativeSwapRoute?.route[0]
           ? nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
