@@ -19,7 +19,7 @@ export default function Events() {
         {/*Section containing the events*/}
         <section className="mt-6 inner-container-background py-5 px-2 lg:px-4 xl:px-6 font-RobotoMono">
           <p className="text-base lg:text-lg xl:text-[20px] font-medium text-center lg:text-left text-light-text dark:text-white">
-            {t('calendarDesc')}
+            {t('eventsDesc')}
           </p>
           <div
             id="dashboard-calendar"
