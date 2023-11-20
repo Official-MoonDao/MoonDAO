@@ -39,7 +39,8 @@ export function PrivyWeb3Button({
   function Button({ onClick, children }: any) {
     return (
       <button
-        className={`px-8 py-2 w-[200px] rounded-md bg-white text-black ${className}`}
+        // className={`px-8 py-2 w-[200px] rounded-md text-black ${className}`}
+        className={`p-2 rounded-md text-black ${className}`}
         onClick={onClick}
         disabled={isDisabled}
       >
