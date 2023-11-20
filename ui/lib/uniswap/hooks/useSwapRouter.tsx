@@ -1,5 +1,6 @@
 //WIP
 import { useWallets } from '@privy-io/react-auth'
+import { useSigner } from '@thirdweb-dev/react'
 import {
   CurrencyAmount,
   Ether,
@@ -67,7 +68,7 @@ export function useSwapRouter(
       })
 
       const options: SwapOptionsSwapRouter02 = {
-        recipient: wallets[selectedWallet].address || '',
+        recipient: wallets[selectedWallet].address,
         slippageTolerance: new Percent(50, 10_000),
         deadline: Math.floor(Date.now() / 1000 + 1800),
         type: SwapType.SWAP_ROUTER_02,

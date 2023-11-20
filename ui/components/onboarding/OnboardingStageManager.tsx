@@ -1,8 +1,11 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { useEffect, useState, useRef, useMemo } from 'react'
+import { useTokenAllowance } from '../../lib/tokens/approve'
 import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
+import { ETH, MOONEY } from '../../lib/uniswap/UniswapTokens'
+import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
@@ -37,6 +40,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
   const [selectedLevel, setSelectedLevel] = useState<any>({
     price: 0,
     hasVotingPower: false,
+    nativeSwapRoute: null,
   })
 
   const { contract: mooneyContract } = useContract(
@@ -52,11 +56,23 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   const { data: mooneyBalance } = useMOONEYBalance(mooneyContract, address)
 
+  const { data: tokenAllowance } = useTokenAllowance(
+    mooneyContract,
+    address,
+    VMOONEY_ADDRESSES[selectedChain.slug]
+  )
+
+  const { generateRoute: generateNativeRoute } = useSwapRouter(
+    selectedLevel.price,
+    MOONEY,
+    ETH
+  )
+
   useEffect(() => {
     if (selectedLevel.price > 0) {
       setStage(2)
     }
-  }, [selectedLevel])
+  }, [selectedLevel.price])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
@@ -66,13 +82,23 @@ export function OnboardingStageManager({ selectedChain }: any) {
           setStage(4)
         }
       } else {
-        console.log(selectedLevel.price, mooneyBalance.toString() / 10 ** 18)
         if (selectedLevel.price <= mooneyBalance.toString() / 10 ** 18) {
           setStage(4)
         }
       }
     }
-  }, [selectedLevel, vMooneyLock, mooneyBalance, address])
+  }, [selectedLevel.price, vMooneyLock, mooneyBalance, address])
+
+  useEffect(() => {
+    if (selectedLevel.price != 0) {
+      generateNativeRoute().then((swapRoute: any) => {
+        setSelectedLevel((prev: any) => ({
+          ...prev,
+          nativeSwapRoute: swapRoute,
+        }))
+      })
+    }
+  }, [selectedLevel.price])
 
   const MultiStepStage = ({ steps }: any) => {
     const handleNext = () => {
@@ -226,9 +252,23 @@ export function OnboardingStageManager({ selectedChain }: any) {
           setStage={setStage}
           setSelectedLevel={setSelectedLevel}
           selectedLevel={selectedLevel}
-          vMooneyContract={vMooneyContract}
-          mooneyContract={mooneyContract}
-          selectedChain={selectedChain}
+          mooneyBalance={mooneyBalance}
+          vMooneyLock={vMooneyLock}
+          tokenAllowance={tokenAllowance}
+          approveMooney={async () =>
+            mooneyContract &&
+            (await mooneyContract.call('approve', [
+              VMOONEY_ADDRESSES[selectedChain.slug],
+              selectedLevel.price,
+            ]))
+          }
+          createLock={async () =>
+            vMooneyContract &&
+            (await vMooneyContract.call('create_lock', [
+              selectedLevel.price,
+              Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 2,
+            ]))
+          }
         />
       </div>
     </StageContainer>
@@ -279,9 +319,11 @@ export function OnboardingStageManager({ selectedChain }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
-              }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
+              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+            } text-md font-medium ${
+              isActive ? 'text-white' : 'text-[#40464f]'
+            }`}
           >
             {stepNumber}
           </span>
