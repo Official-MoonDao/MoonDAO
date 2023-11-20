@@ -1,16 +1,9 @@
 import useTranslation from 'next-translate/useTranslation'
-import { useRouter } from 'next/router'
-import React, { useEffect, useState } from 'react'
-import { useShallowQueryRoute } from '../lib/utils/hooks'
 import AnalyticsPage from '../components/dashboard/analytics/AnalyticsPage'
 import TreasuryPage from '../components/dashboard/treasury/TreasuryPage'
 import Head from '../components/layout/Head'
-import Header from '../components/layout/Header'
-import Line from '../components/layout/Line'
 
 export default function Analytics() {
-  const router = useRouter()
-
   const { t } = useTranslation('common')
 
   return (

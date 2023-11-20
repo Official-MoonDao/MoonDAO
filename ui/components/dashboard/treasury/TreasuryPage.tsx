@@ -2,9 +2,6 @@ import useTranslation from 'next-translate/useTranslation'
 import { useState } from 'react'
 import { allowedAssets } from '../../../lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets, useTransactions } from '../../../lib/dashboard/hooks'
-import { errorToast } from '../../../lib/utils/errorToast'
-import Header from '../../layout/Header'
-import Line from '../../layout/Line'
 import AssetSkeletons from './balance/AssetSkeletons'
 import Assets from './balance/Assets'
 import TreasuryBalance from './balance/TreasuryBalance'
@@ -43,17 +40,19 @@ export default function TreasuryPage() {
   return (
     <>
       <div
-        id={'dashboard-treasury-page'}
+        id={'treasury-page'}
         className="px-3 2xl:flex 2xl:items-baseline 2xl:justify-around gap-12 2xl:gap-20"
       >
         {/*Assets Section*/}
         <section className="2xl:w-[50%] 2xl:max-w-[700px]">
-          <h2 className='title-text-colors text-4xl font-GoodTimes text-center 2xl:text-left'>Treasury</h2>
-          <div className='mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full'></div>
+          <h2 className="title-text-colors text-4xl font-GoodTimes text-center 2xl:text-left">
+            Treasury
+          </h2>
+          <div className="mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full"></div>
           {loadingAssets || !tokens[0] ? (
             <AssetSkeletons />
           ) : (
-            <div className='mt-4 xl:mt-7' id="dashboard-treasury-assets">
+            <div className="mt-4 xl:mt-7" id="dashboard-treasury-assets">
               <TreasuryBalance balance={balanceSum} />
               <Assets tokens={tokens} />
             </div>
@@ -70,9 +69,11 @@ export default function TreasuryPage() {
 
         {/*Transactions Section*/}
         <section className="mt-12 xl:mt-2 2xl:w-[50%] 2xl:max-w-[700px]">
-        <h2 className='title-text-colors text-3xl sm:text-4xl font-GoodTimes text-center 2xl:text-left'>Transactions</h2>
+          <h2 className="title-text-colors text-3xl sm:text-4xl font-GoodTimes text-center 2xl:text-left">
+            Transactions
+          </h2>
 
-        <div className='mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full'></div>
+          <div className="mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full"></div>
 
           <div className="mt-10">
             {loadingTransactions || !transactions ? (

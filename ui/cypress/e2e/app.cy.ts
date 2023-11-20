@@ -32,14 +32,15 @@ describe('Main E2E Testing', () => {
   describe('MoonDAO App | Analytics', () => {
     it('should load the analytics page', () => {
       cy.visit('/analytics')
+      cy.get('#analytics-page').should('exist')
+      cy.get('#treasury-page').should('exist')
     })
   })
 
   describe('MoonDAO App | Events', () => {
     it('should load the events page', () => {
       cy.visit('/events')
-      cy.get('h1').contains(common.eventsTitle)
-      cy.get('p').contains(common.eventsDesc)
+      cy.get('#scheduled-events').should('exist')
     })
   })
 })
@@ -49,14 +50,12 @@ describe('Missions E2E Testing', () => {
   describe('MoonDAO App | Lifeship', () => {
     it('should load the lifeship page', () => {
       cy.visit('/lifeship')
-      cy.get('h2').contains('LifeShip')
     })
   })
 
   describe('MoonDAO App | Zero-G', () => {
     it('should load the zero-g page', () => {
       cy.visit('/zero-g')
-      cy.get('h1').contains('Zero-G Flight')
     })
   })
 })

@@ -3,8 +3,6 @@ import React, { useEffect, useState } from 'react'
 import { useAssets } from '../../../lib/dashboard/hooks'
 import { useMarketFeeSplitStats } from '../../../lib/thirdweb/hooks/useMarketFeeSplitStats'
 import { getVMOONEYData } from '../../../lib/tokens/ve-subgraph'
-import Header from '../../layout/Header'
-import Line from '../../layout/Line'
 import { AnalyticsProgress } from './AnalyticsProgress'
 import AnalyticsSkeleton from './AnalyticsSkeleton'
 
@@ -62,16 +60,17 @@ export default function AnalyticsPage() {
 
   return (
     <div
-      id="#dashboard-analytics-page"
+      id="analytics-page"
       className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-6 lg:px-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center"
     >
       <h1 className="page-title">Analytics</h1>
       {/*Stats frame*/}
       <Frame>
         <Label text="Voting Power Key Figures" />
-        <div className="flex flex-col  tems-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10'>
-">
-
+        <div
+          className="flex flex-col  tems-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10'>
+"
+        >
           <Data
             text={'Total Voting Power'}
             value={Math.round(analyticsData.totals.vMooney).toLocaleString(
@@ -89,18 +88,15 @@ export default function AnalyticsPage() {
             <p className=" w-full tracking-wider leading-10  text-lg lg:text-2xl pt-2 uppercase font-RobotoMono opacity-60 title-text-colors block ">
               Circulating MOONEY Staked
             </p>
-            <div className='mt-3'>
-
-            <AnalyticsProgress
-              value={(
-                (analyticsData.totals.Mooney / circulatingSupply) *
-                100
+            <div className="mt-3">
+              <AnalyticsProgress
+                value={(
+                  (analyticsData.totals.Mooney / circulatingSupply) *
+                  100
                 ).toFixed(1)}
-                />
-                </div>
+              />
+            </div>
           </div>
-
-
         </div>
       </Frame>
       {/* Marketplace Platform Fee Split */}
@@ -108,11 +104,10 @@ export default function AnalyticsPage() {
         {!isLoadingSplit && (
           <div className="w-3/4 2xl:w-full">
             <Label text={'Marketplace Platform Fee Split (L2 $MOONEY)'} />
-            <div className='flex flex-col items-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10'>
-
-            <Data text="Current Balance" value={balance} />
-            <Data text="Sent to Treasury" value={released.treasury} />
-            <Data text="Burned" value={released.burn} />
+            <div className="flex flex-col items-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10">
+              <Data text="Current Balance" value={balance} />
+              <Data text="Sent to Treasury" value={released.treasury} />
+              <Data text="Burned" value={released.burn} />
             </div>
           </div>
         )}

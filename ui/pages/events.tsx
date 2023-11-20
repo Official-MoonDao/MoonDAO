@@ -22,7 +22,7 @@ export default function Events() {
             {t('eventsDesc')}
           </p>
           <div
-            id="dashboard-calendar"
+            id="scheduled-events"
             className="mt-5 flex flex-col gap-4 items-center"
           >
             {/*Skeleton while loading*/}
