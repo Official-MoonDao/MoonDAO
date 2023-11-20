@@ -72,6 +72,15 @@ export function OnboardingStageManager({ selectedChain }: any) {
     if (selectedLevel.price > 0) {
       setStage(2)
     }
+
+    if (selectedLevel.price != 0) {
+      generateNativeRoute().then((swapRoute: any) => {
+        setSelectedLevel((prev: any) => ({
+          ...prev,
+          nativeSwapRoute: swapRoute,
+        }))
+      })
+    }
   }, [selectedLevel.price])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
@@ -90,15 +99,10 @@ export function OnboardingStageManager({ selectedChain }: any) {
   }, [selectedLevel.price, vMooneyLock, mooneyBalance, address])
 
   useEffect(() => {
-    if (selectedLevel.price != 0) {
-      generateNativeRoute().then((swapRoute: any) => {
-        setSelectedLevel((prev: any) => ({
-          ...prev,
-          nativeSwapRoute: swapRoute,
-        }))
-      })
+    if (stage > 1) {
+      setStage(0)
     }
-  }, [selectedLevel.price])
+  }, [address])
 
   const MultiStepStage = ({ steps }: any) => {
     const handleNext = () => {
