@@ -1,13 +1,7 @@
 //WIP
 import { useWallets } from '@privy-io/react-auth'
-import { useSigner } from '@thirdweb-dev/react'
-import {
-  CurrencyAmount,
-  Ether,
-  Percent,
-  Token,
-  TradeType,
-} from '@uniswap/sdk-core'
+import { useSDK } from '@thirdweb-dev/react'
+import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import {
   AlphaRouter,
   SwapOptionsSwapRouter02,
@@ -15,11 +9,10 @@ import {
   SwapType,
 } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
-import { useContext, useState } from 'react'
-import { MOONEY_ADDRESSES } from '../../../const/config'
+import { useContext } from 'react'
+import ERC20 from '../../../const/abis/ERC20.json'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
-import ChainContext from '../../thirdweb/chain-context'
-import { initSDK } from '../../thirdweb/thirdweb'
+import { MATIC } from '../UniswapTokens'
 
 export const V3_SWAP_ROUTER_ADDRESS =
   '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'
@@ -32,38 +25,20 @@ enum TransactionState {
   Sent = 'Sent',
 }
 
-const ETH: any = Ether.onChain(1)
-
-const MATIC = new Token(
-  137,
-  '0x0000000000000000000000000000000000001010',
-  18,
-  'MATIC',
-  'MATIC'
-)
-
-const MOONEY = new Token(
-  1,
-  MOONEY_ADDRESSES['ethereum'],
-  18,
-  'MOONEY',
-  'MOONEY'
-)
-
 export function useSwapRouter(
   swapAmnt: number,
   tokenIn: Token,
   tokenOut: Token
 ) {
+  const sdk = useSDK()
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain } = useContext(ChainContext)
   const { wallets } = useWallets()
 
   async function generateRoute() {
     try {
       const provider: any = await wallets[selectedWallet]?.getEthersProvider()
       const router: any = new AlphaRouter({
-        chainId: 1,
+        chainId: 137,
         provider,
       })
 
@@ -100,8 +75,6 @@ export function useSwapRouter(
         throw new Error('Cannot execute a trade without a connected wallet')
       }
 
-      // const tokenApproval = await getTokenTransferApproval(MATIC, 100)
-
       // // Fail if transfer approvals do not go through
       // if (tokenApproval !== TransactionState.Sent) {
       //   return TransactionState.Failed
@@ -127,25 +100,25 @@ export function useSwapRouter(
     }
   }
 
-  // async function getTokenTransferApproval(token: Token, amount: number) {
-  //   const walletAddress = wallets[selectedWallet].address
-  //   if (!walletAddress || !sdk) {
-  //     console.log('No Provider Found')
-  //   }
+  async function getTokenTransferApproval(token: Token, amount: number) {
+    const walletAddress = wallets[selectedWallet].address
+    if (!walletAddress || !sdk) {
+      console.log('No Provider Found')
+    }
 
-  //   try {
-  //     const tokenContract = await sdk?.getContract(token.address, ERC20_ABI.abi)
-  //     console.log(tokenContract)
-  //     //approve token transfer
-  //     const tx = await tokenContract?.call('approve', [
-  //       V3_SWAP_ROUTER_ADDRESS,
-  //       ethers.utils.formatEther(amount).toString(),
-  //     ])
-  //     return tx
-  //   } catch (e) {
-  //     console.error(e)
-  //   }
-  // }
+    try {
+      const tokenContract = await sdk?.getContract(token.address, ERC20.abi)
 
-  return { generateRoute, executeRoute }
+      //approve token transfer
+      const tx = await tokenContract?.call('approve', [
+        V3_SWAP_ROUTER_ADDRESS,
+        amount,
+      ])
+      return tx
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  return { generateRoute, executeRoute, getTokenTransferApproval }
 }

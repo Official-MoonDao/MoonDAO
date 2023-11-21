@@ -1,15 +1,10 @@
-import { Ether, Token } from '@uniswap/sdk-core'
+import { Ether, Token, NativeCurrency } from '@uniswap/sdk-core'
+import { WMATIC_POLYGON } from '@uniswap/smart-order-router'
 import { MOONEY_ADDRESSES } from '../../const/config'
 
 export const ETH: any = Ether.onChain(1)
 
-export const MATIC = new Token(
-  137,
-  '0x0000000000000000000000000000000000001010',
-  18,
-  'MATIC',
-  'MATIC'
-)
+export const MATIC = WMATIC_POLYGON
 
 export const MOONEY = new Token(
   1,
@@ -24,7 +19,7 @@ export const L2_MOONEY = new Token(
   MOONEY_ADDRESSES['polygon'],
   18,
   'MOONEY',
-  'MOONEY'
+  'MOONEY (PoS)'
 )
 
 export const DAI = new Token(

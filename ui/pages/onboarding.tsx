@@ -1,12 +1,15 @@
-import { useContext } from 'react'
+import { Polygon } from '@thirdweb-dev/chains'
+import { useContext, useEffect } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
-import { DAI, ETH, MOONEY } from '../lib/uniswap/UniswapTokens'
-import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
 import Head from '../components/layout/Head'
 import { OnboardingStageManager } from '../components/onboarding/OnboardingStageManager'
 
 export default function Onboarding() {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
+
+  useEffect(() => {
+    setSelectedChain(Polygon)
+  }, [])
 
   return (
     <div className="animate-fadeIn">

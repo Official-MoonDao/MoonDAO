@@ -16,7 +16,7 @@ export async function pregenSwapRoute(
   try {
     const provider: any = initSDK(Ethereum).getProvider()
     const router: any = new AlphaRouter({
-      chainId: 1,
+      chainId: 137,
       provider,
     })
 

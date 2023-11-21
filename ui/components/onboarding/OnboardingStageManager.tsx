@@ -1,10 +1,11 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
+import Image from 'next/image'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useTokenAllowance } from '../../lib/tokens/approve'
 import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
-import { ETH, MOONEY } from '../../lib/uniswap/UniswapTokens'
+import { ETH, L2_MOONEY, MATIC, MOONEY } from '../../lib/uniswap/UniswapTokens'
 import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
@@ -64,8 +65,8 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   const { generateRoute: generateNativeRoute } = useSwapRouter(
     selectedLevel.price,
-    MOONEY,
-    ETH
+    L2_MOONEY,
+    MATIC
   )
 
   useEffect(() => {
@@ -186,9 +187,8 @@ export function OnboardingStageManager({ selectedChain }: any) {
         <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">{`MoonDAO is accelerating humanity’s development of a lunar base through better coordination. Want to help? This flow will onboard you into our in less than 5 minutes, even if you’re new to Web3.
 `}</p>
 
-        <img
-          src="demovideothumbnail.png"
-          alt=""
+        <iframe
+          src="https://www.youtube.com/embed/Vs_vAtRgaBA"
           className="mt-10 lg:mt-4 xl:mt-6 w-full xl:w-5/6 aspect-video object-cover"
         />
 
