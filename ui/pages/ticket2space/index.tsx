@@ -3,6 +3,7 @@ import {
   MediaRenderer,
   useAddress,
   useContract,
+  useContractRead,
   useOwnedNFTs,
 } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
@@ -10,7 +11,7 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
-import { useHandleWrite } from '../../lib/thirdweb/hooks'
+import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
 import { initSDK } from '../../lib/thirdweb/thirdweb'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
@@ -22,7 +23,7 @@ import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
 
-const TICKET_TO_SPACE_ADDRESS = '0xFB8f14dE03A8edA036783F0b81992Ea7ce7ce8B5' //mumbai
+const TICKET_TO_SPACE_ADDRESS = '0x8Af8763090813cdcd31AE39fD651F0d9d6bc29D7' //mumbai
 
 export default function Ticket2Space({ nftMetadata }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
@@ -44,13 +45,13 @@ export default function Ticket2Space({ nftMetadata }: any) {
   )
 
   const { contract: mooneyContract } = useContract(
-    '0x3818f3273D1f46259b737342Ad30e576A7A74f09',
+    '0x34f81E4f880d166C60925f2A8A1DCfc80f8D6494',
     ERC20.abi
   ) //mumbai mooney
 
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
-    ethers.utils.parseEther(String(100 * quantity)),
+    ethers.utils.parseEther(String(20000 * quantity)),
     BigNumber.from(0),
     TICKET_TO_SPACE_ADDRESS
   )
@@ -63,6 +64,8 @@ export default function Ticket2Space({ nftMetadata }: any) {
 
   const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
 
+  const { data: balance } = useContractRead(ttsContract, 'balanceOf', [address])
+
   const { mutateAsync: mint } = useHandleWrite(ttsContract, 'mint', [
     BigNumber.from(quantity || 0),
   ])
@@ -70,6 +73,15 @@ export default function Ticket2Space({ nftMetadata }: any) {
   const { mutateAsync: claimFree } = useHandleWrite(ttsContract, 'claimFree', [
     merkleProof,
   ])
+
+  const { data: canClaimFree } = useHandleRead(ttsContract, 'canClaimFree', [
+    merkleProof,
+    address,
+  ])
+
+  useEffect(() => {
+    console.log('Can Claim Free', canClaimFree)
+  }, [canClaimFree])
 
   useEffect(() => {
     setSelectedChain(Mumbai)
@@ -132,7 +144,7 @@ export default function Ticket2Space({ nftMetadata }: any) {
                   <div>
                     <p className="opacity-70 lg:text-xl">Price</p>
                     <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
-                      100 MOONEY
+                      20,000 MOONEY
                     </p>
                   </div>
                   {/*Expiration*/}
@@ -178,54 +190,26 @@ export default function Ticket2Space({ nftMetadata }: any) {
                   </div>
                   {enableMintInfoModal && (
                     <SubmitTTSInfoModal
+                      balance={balance}
                       quantity={quantity}
                       supply={supply}
-                      action={async () => {
-                        try {
-                          if (tokenAllowance.toString() < 100 * 10 ** 18)
-                            await approveToken()
-                          toast.success('Approved Mooney to be spent')
-                          await mint()
-                          return true
-                        } catch (err) {
-                          toast.error('The transaction was rejected')
-                        }
-                      }}
+                      approveToken={approveToken}
+                      mint={mint}
                       setEnabled={setEnableMintInfoModal}
                       ttsContract={ttsContract}
+                      mooneyContract={mooneyContract}
                     />
                   )}
                 </div>
                 {whitelist.includes(address || '') && (
                   <>
                     <div className="w-full border-2 opacity-50" />
-                    <div className="flex flex-col items-center gap-4">
+                    <div className="flex gap-8">
                       <PrivyWeb3Button
+                        className="text-white rounded-none bg-moon-orange w-[100px]"
                         label="Claim Free"
-                        action={claimFree}
-                        onSuccess={() => {
-                          setEnableFreeMintInfoModal(true)
-                        }}
-                        onError={() => {
-                          toast.error('The transaction was rejected')
-                        }}
+                        action={() => setEnableFreeMintInfoModal(true)}
                       />
-                      {enableFreeMintInfoModal && (
-                        <SubmitTTSInfoModal
-                          quantity={quantity}
-                          supply={supply}
-                          action={async () => {
-                            try {
-                              claimFree()
-                              return true
-                            } catch (err) {
-                              toast.error('The transaction was rejected')
-                            }
-                          }}
-                          setEnabled={setEnableFreeMintInfoModal}
-                          ttsContract={ttsContract}
-                        />
-                      )}
                       <div className="flex flex-col gap-2">
                         <p className="text-[90%]">
                           {'Claim your free Ticket to Space NFT!'}
@@ -236,6 +220,19 @@ export default function Ticket2Space({ nftMetadata }: any) {
                           }
                         </p>
                       </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-4">
+                      {enableFreeMintInfoModal && (
+                        <SubmitTTSInfoModal
+                          quantity={quantity}
+                          balance={balance}
+                          supply={supply}
+                          claimFree={claimFree}
+                          setEnabled={setEnableFreeMintInfoModal}
+                          ttsContract={ttsContract}
+                          mooneyContract={mooneyContract}
+                        />
+                      )}
                     </div>
                   </>
                 )}
