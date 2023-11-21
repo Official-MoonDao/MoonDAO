@@ -48,22 +48,23 @@ export function SubmitTTSInfoModal({
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] h-[450px] p-8 bg-background-light dark:bg-background-dark rounded-md">
+      <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl">Submit Info</h1>
-        <p className="opacity-50">
-          {
-            'Please enter your fullname (as displayed on your id) and your email to enter the sweepstakes.'
-          }
+        <p className="opacity-50 mb-4">
+          Please enter your full legal name (as displayed on a government issued
+          photo ID) and the best email for us to contact you if you win a prize
+          the Sweepstakes. By submitting your information, you agree to our
+          Privacy Policy.
         </p>
-        <label>Full Name :</label>
+        <label>Full Name</label>
         <input
-          className="w-full text-lg rounded-sm px-2 bg-[#4E4E4E50]"
+          className="h-[50px] w-full text-lg rounded-sm px-2 bg-white bg-opacity-5 border-[1px] border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40 focus:outline-none"
           onChange={(e) => setFullName(e.target.value)}
         />
-        <label>Email :</label>
+        <label>Email</label>
         <input
-          className="w-full text-lg rounded-sm px-2 bg-[#4E4E4E50]"
-          onChange={(e) => setEmail(e.target.value)}
+          className="h-[50px] w-full text-lg rounded-sm px-2 bg-white bg-opacity-5 border-[1px] border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40 focus:outline-none"
+          onChange={(e) => setFullName(e.target.value)}
         />
         <div className="flex w-full justify-between pt-8">
           <button
