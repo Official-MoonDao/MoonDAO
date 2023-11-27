@@ -14,7 +14,7 @@ type SubmitInfoModalProps = {
   mint?: Function
 }
 
-const TICKET_TO_SPACE_ADDRESS = '0xFB8f14dE03A8edA036783F0b81992Ea7ce7ce8B5' //mumbai
+const TICKET_TO_SPACE_ADDRESS = '0x8Af8763090813cdcd31AE39fD651F0d9d6bc29D7' //mumbai address
 
 export function SubmitTTSInfoModal({
   balance,
@@ -64,12 +64,12 @@ export function SubmitTTSInfoModal({
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
-        <h1 className="text-2xl">Submit Info</h1>
+        <h1 className="text-2xl">Win a Prize in the Sweepstakes</h1>
         <p className="opacity-50 mb-4">
           Please enter your full legal name (as displayed on a government issued
           photo ID) and the best email for us to contact you if you win a prize
           the Sweepstakes. By submitting your information, you agree to our
-          Privacy Policy.
+          <a className='text-moon-gold' href='https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy'> Privacy Policy</a>.
         </p>
         <label>Full Name</label>
         <input
@@ -82,6 +82,12 @@ export function SubmitTTSInfoModal({
           onChange={(e) => setEmail(e.target.value)}
         />
         <div className="flex w-full justify-between pt-8">
+        <button
+            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
+            onClick={() => setEnabled(false)}
+          >
+            Back
+          </button>
           <button
             type="button"
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
@@ -149,6 +155,7 @@ export function SubmitTTSInfoModal({
                       const mintTx = await mint()
                       setStatus('')
                     } else {
+                      console.log(newTokenAllowance.toString())
                       setStatus('')
                       toast.error('Token approval failed')
                       return setIsLoading(false)
@@ -202,12 +209,6 @@ export function SubmitTTSInfoModal({
             }}
           >
             Submit
-          </button>
-          <button
-            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
-            onClick={() => setEnabled(false)}
-          >
-            Back
           </button>
         </div>
         <p>{status}</p>

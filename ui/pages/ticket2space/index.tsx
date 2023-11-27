@@ -37,7 +37,7 @@ export default function Ticket2Space({ nftMetadata }: any) {
 
   const address = useAddress()
 
-  const whitelist = devWhitelist.split('\n')
+  const whitelist = devWhitelist
   const merkleProof = useMerkleProof(whitelist)
   const { contract: ttsContract } = useContract(
     TICKET_TO_SPACE_ADDRESS,
@@ -85,9 +85,12 @@ export default function Ticket2Space({ nftMetadata }: any) {
 
   useEffect(() => {
     setSelectedChain(Mumbai)
-    setTime(
-      new Date().toLocaleDateString() + ' @ ' + new Date().toLocaleTimeString()
-    )
+    const ts = Math.floor(1704067200 - (new Date().valueOf() / 1000))
+    if (ts > 86400) setTime('T-' + Math.floor(ts / 86400) + ' Days')
+    else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
+    else if (ts > 60) setTime('T-' + Math.floor(ts / 60) + ' Minutes')
+    else if (ts > 0) setTime('T-' + (ts) + ' Seconds')
+    else ('Expired')
   }, [])
 
   useEffect(() => {
@@ -96,7 +99,6 @@ export default function Ticket2Space({ nftMetadata }: any) {
         .call('getSupply')
         .then((supply: any) => setSupply(supply.toString()))
         .catch((err: any) => console.log(err))
-      console.log(supply)
     }
   }, [ttsContract])
 
@@ -124,19 +126,16 @@ export default function Ticket2Space({ nftMetadata }: any) {
         <div className="mt-6 inner-container-background relative w-full">
           {collectionMetadata && (
             <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]">
-              <h1 className="font-GoodTimes text-2xl lg:text-3xl xl:text- text-moon-orange dark:text-white">
-                {'Ticket to Space NFT 2'}
-              </h1>
               <div className="md:flex">
                 <div className="m-auto my-2 p-2 flex justify-center">
                   <MediaRenderer src={nftMetadata.image} width={'300px'} />
                 </div>
-                {/*Quantity, price, expiration */}
-                <div className="flex flex-col justify-center m-auto mt-4 lg:mt-12 gap-2 lg:gap-4">
+                {/*Quantity, price, expiration, balance */}
+                <div className="flex flex-col justify-center m-auto mt-4 lg:mt-4 gap-2 lg:gap-4">
                   <div>
-                    <p className="opacity-70 lg:text-xl">Quantity left</p>
+                    <p className="opacity-70 lg:text-xl">Total Minted</p>
                     <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
-                      {supply ? 9060 - +supply : '...loading'}
+                      {supply ? supply + (supply > 1 ? ' Tickets' : ' Ticket'): '...loading'}
                     </p>
                   </div>
 
@@ -154,6 +153,14 @@ export default function Ticket2Space({ nftMetadata }: any) {
                       {time}
                     </p>
                   </div>
+
+                  {/* Wallet Balance */}
+                  <div>
+                    <p className="opacity-70 lg:text-xl">Your Balance</p>
+                    <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
+                      {balance ? balance.toString() + (balance > 1 ? ' Tickets' : ' Ticket') : '...'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -169,12 +176,13 @@ export default function Ticket2Space({ nftMetadata }: any) {
                         className="ml-2 w-1/2 text-white bg-transparent focus:outline-none"
                         type="number"
                         step={1}
-                        max={supply ? 9060 - +supply : 0}
-                        placeholder={'0'}
+                        max={balance ? 50 - +balance : 0}
+                        min={0}
+                        placeholder={'1'}
                         onChange={(e: any) => {
-                          if (quantity > 9060 - supply) {
-                            toast.error('Cannot mint more than the supply')
-                            return setQuantity(9060 - supply)
+                          if (quantity > 50 - balance) {
+                            toast.error('Cannot mint more than 50')
+                            return setQuantity(50 - balance)
                           }
 
                           setQuantity(e.target.value)
@@ -182,7 +190,7 @@ export default function Ticket2Space({ nftMetadata }: any) {
                         value={quantity}
                       />
                       <PrivyWeb3Button
-                        className="text-white rounded-none bg-moon-orange w-[100px]"
+                        className="text-white rounded-none bg-moon-orange w-[160px]"
                         label="Mint"
                         action={() => setEnableMintInfoModal(true)}
                       />
@@ -201,12 +209,12 @@ export default function Ticket2Space({ nftMetadata }: any) {
                     />
                   )}
                 </div>
-                {whitelist.includes(address || '') && (
+                {whitelist.includes(address || '') && canClaimFree ? (
                   <>
                     <div className="w-full border-2 opacity-50" />
                     <div className="flex gap-8">
                       <PrivyWeb3Button
-                        className="text-white rounded-none bg-moon-orange w-[100px]"
+                        className="text-white rounded-none bg-moon-orange w-[160px]"
                         label="Claim Free"
                         action={() => setEnableFreeMintInfoModal(true)}
                       />
@@ -235,7 +243,7 @@ export default function Ticket2Space({ nftMetadata }: any) {
                       )}
                     </div>
                   </>
-                )}
+                ) : (<></>)}
               </div>
             </div>
           )}
@@ -254,7 +262,7 @@ export default function Ticket2Space({ nftMetadata }: any) {
           but can be calculated by dividing the number of prizes by the total
           number of entries received. Sponsor: LuckDAO Limited d/b/a MoonDAO.
           Contest ends on January 15th 2024. For Alternative Method of Entry,
-          click here.
+          <a className='text-moon-gold' href='https://publish.obsidian.md/moondao/MoonDAO/docs/Ticket+to+Space+NFT/Ticket+to+Space+Sweepstakes+Rules'> click here</a>.
         </p>
       </div>
     </main>
