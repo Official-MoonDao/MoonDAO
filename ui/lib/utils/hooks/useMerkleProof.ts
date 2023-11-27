@@ -13,7 +13,6 @@ export function useMerkleProof(whitelist: string[] | undefined) {
     const cleanAddresses = whitelist
       .filter((address) => address !== '')
       .map((a) => a.trim())
-    cleanAddresses.push(address)
 
     const leaves = cleanAddresses.map((x) => keccak256(x))
     const tree = new MerkleTree(leaves, keccak256, { sortPairs: true })
