@@ -1,10 +1,17 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
+enum EntryType {
+  REGULAR = 'REGULAR',
+  MAIL = 'MAIL',
+  REFERRAL = 'REFERRAL',
+}
+
 export interface Nft {
   userId: string
   tokenId: string
   name: string
   email: string
+  entryType?: EntryType
 }
 
 export interface NftModel extends Nft, Document {}
@@ -15,6 +22,12 @@ const NftSchema: Schema = new Schema(
     tokenId: { type: String, required: true },
     name: { type: String, required: true },
     email: { type: String, required: true },
+    entryType: {
+      type: String,
+      enum: ['REGULAR', 'MAIL', 'REFERRAL'],
+      default: 'REGULAR',
+      required: false,
+    },
   },
   {
     versionKey: false,
