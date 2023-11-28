@@ -13,7 +13,6 @@ import { useImportToken } from '../../lib/utils/import-token'
 import { LogoSidebarLight, LogoWhite, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
-import ExternalLinks from './Sidebar/ExternalLinks'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
@@ -107,9 +106,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
           {/*Color mode and Social links*/}
           <div className="flex flex-col pb-6 pl-7 lg:pl-9">
-            <div className="pt-7 pb-10 pl-3">
-              <ExternalLinks />
-            </div>
             <ColorsAndSocials
               lightMode={lightMode}
               setLightMode={setLightMode}

@@ -18,7 +18,7 @@ export const navigation = [
     icon: HomeIcon,
   },
   {
-    name: 'Onboarding',
+    name: 'Join MoonDAO',
     href: '/onboarding',
     icon: PlusIcon,
   },
@@ -28,12 +28,26 @@ export const navigation = [
     icon: BuildingLibraryIcon,
   },
   {
-    name: 'Missions',
+    name: 'Marketplace',
     icon: RocketLaunchIcon,
     children: [
-      { name: 'Zero Gravity', href: '/zero-g' },
-      { name: 'Moon Mission', href: '/lifeship' },
-      { name: 'Ticket to Space', href: '/ticket2space' },
+      { name: 'ZeroG', href: '/zero-g' },
+      { name: 'Lifeship', href: '/lifeship' },
+      { name: 'Sweepstakes', href: '/ticket2space' },
     ],
   },
+  {
+    name: 'Links',
+    icon: FolderIcon,
+    children: [
+      { name: 'Homepage', href: 'https://moondao.com/' },
+      { name: 'Snapshot', href: 'https://snapshot.org/#/tomoondao.eth' },
+      { name: 'Documentation', href: 'https://moondao.com/docs/introduction' },
+      { name: 'Newsletter', href: 'https://moondao.ck.page/profile' },
+      { name: 'Marketplace', href: 'https://market.moondao.com' },
+      { name: 'Events', href: '/events' },
+      { name: 'Analytics', href: '/analytics' },
+    ],
+  },
+
 ]
