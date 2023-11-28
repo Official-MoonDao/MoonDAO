@@ -37,7 +37,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
             +calculateVMOONEY({
               MOONEYAmount: mooneyValue / 2,
               VMOONEYAmount: 0,
-              time: Date.now() * 1000 * 60 * 60 * 24 * 365 * 2,
+              time: Date.now() * 1000 * 60 * 60 * 24 * 365 * 1,
               lockTime: new Date(),
               max: Date.now() * 1000 * 60 * 60 * 24 * 365 * 4,
             })
@@ -48,7 +48,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
 
     return (
       <div
-        className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
+        className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
           selectedLevel?.price === mooneyValue
             ? 'border-moon-orange border-opacity-100'
             : 'border-opacity-60 dark:border-opacity-20'
@@ -83,23 +83,13 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
               : mooneyValue.toLocaleString()
           } $MOONEY`}
         </p>
-        {hasVotingPower ? (
-          <p className="mt-5 lg:mt-[5px] text-center">
-            {`${Math.floor(levelVotingPower).toLocaleString()} Voting Power`}
-          </p>
-        ) : (
-          <>
-            <div className="mt-5 lg:mt-[5px] text-center">
-              <br />
-            </div>
-          </>
-        )}
+
         <button
           className={`mt-3 border flex justify-center items-center gap-3 ${
             selectedLevel.price === mooneyValue
               ? 'border-moon-orange'
               : 'border-white-500'
-          } group-hover:scale-105 px-5 py-3 transition-all duration-150 ${
+          } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
             selectedLevel.price === mooneyValue
               ? 'bg-moon-orange'
               : 'bg-transparent'
@@ -113,13 +103,14 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         >
           {'Get Started'} <ArrowSide/>
         </button>
+        <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
+          {intro}
+        </p>
 
         <div
           className="mt-4 text-left text-sm"
           style={{ marginBottom: '20px' }}
         >
-          {/*Intro*/}
-          <p className="2xl:h-[120px] leading-[18.46px] font-normal">{intro}</p>
           {/*Perk List*/}
           <div className="mt-[8px] pr-2 2xl:h-[210px]">
             <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
@@ -128,9 +119,16 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
                   key={`contribution-level-${title}-desc-point-${i}`}
                   className="text-sm"
                 >
-                  {'' + point}
+                  {'✓ ' + point}
                 </div>
               ))}
+              {hasVotingPower && (
+                <div className="text-sm">
+                  {`✓ ${Math.floor(
+                    levelVotingPower
+                  ).toLocaleString()} Voting Power`}
+                </div>
+              )}
             </ul>
           </div>
         </div>
@@ -139,16 +137,16 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
   }
   // ;('Everything in the Citizen Tier.Exclusive promotion opportunities. Access to talent to help design, build, test your space hardware. 1,000,000 Voting Power 1,000,000 MOONEY')
   return (
-    <div className="flex flex-col md:flex-row justify-evenly mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
+    <div className="flex flex-col xl:flex-row justify-evenly mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
       <ContributionLevel
         icon="/explorer.png"
         title="Explorer"
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
         mooneyValue={40}
         points={[
-          '✓ Can purchase two Ticket to Space Sweepstakes Entries',
-          '✓ Community Discord Access',
-          '✓ MoonDAO Marketplace Access',
+          'Can purchase two Ticket to Space Sweepstakes Entries',
+          'Community Discord Access',
+          'MoonDAO Marketplace Access',
         ]}
       />
       <ContributionLevel
@@ -157,12 +155,12 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
         mooneyValue={500000}
         points={[
-          '✓ Can purhcase up to 12 Ticket To Space Entries',
-          '✓ Exclusive Discord Access',
-          '✓ MoonDAO Marketplace Access',
-          '✓ Co-governance of the MoonDAO Treasury',
-          '✓ Submit Proposals for Projects',
-          '✓ Free-Events Access',
+          'Can purhcase up to 12 Ticket To Space Entries',
+          'Exclusive Discord Access',
+          'MoonDAO Marketplace Access',
+          'Co-governance of the MoonDAO Treasury',
+          'Submit Proposals for Projects',
+          'Free-Events Access',
         ]}
         hasVotingPower
       />
@@ -172,9 +170,9 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
         mooneyValue={2000000}
         points={[
-          '✓ Everything in the Citizen Tier',
-          '✓ Exclusive promotion opportunities',
-          '✓ Access to talent to help design, build, test your space hardware',
+          'Everything in the Citizen Tier',
+          'Exclusive promotion opportunities',
+          'Access to talent to help design, build, test your space hardware',
         ]}
         hasVotingPower
       />

@@ -1,10 +1,12 @@
 import { useWallets } from '@privy-io/react-auth'
+import { Polygon } from '@thirdweb-dev/chains'
 import { nativeOnChain } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import ChainContext from '../../lib/thirdweb/chain-context'
 import { L2_MOONEY } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 
@@ -41,6 +43,8 @@ export function OnboardingTransactions({
 }: any) {
   const [currStep, setCurrStep] = useState(1)
 
+  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+
   //Privy
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -58,9 +62,6 @@ export function OnboardingTransactions({
     nativeOnChain(137) as any,
     L2_MOONEY
   )
-
-  //Alchemy
-  // const lightAccountProvider: any = useLightAccount(wallets)
 
   useEffect(() => {
     if (selectedLevel.nativeSwapRoute) {
@@ -81,6 +82,7 @@ export function OnboardingTransactions({
     txExplanation,
   }: StepProps) {
     const [isLoadingCheck, setIsLoadingCheck] = useState(false)
+    const [networkMismatch, setNetworkMismatch] = useState(false)
 
     useEffect(() => {
       if (currStep === stepNum && !isLoadingCheck && !isDisabled) {

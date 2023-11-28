@@ -3,6 +3,8 @@ import { useAddress, useContract } from '@thirdweb-dev/react'
 import { nativeOnChain } from '@uniswap/smart-order-router'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useTokenAllowance } from '../../lib/tokens/approve'
+import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
+import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { L2_MOONEY } from '../../lib/uniswap/UniswapTokens'
@@ -57,6 +59,9 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   const { data: mooneyBalance } = useMOONEYBalance(mooneyContract, address)
 
+  const totalMooneyBalance = useTotalMooneyBalance(address)
+  const { totalLocked } = useValidVP(address)
+
   const { data: tokenAllowance } = useTokenAllowance(
     mooneyContract,
     address,
@@ -82,22 +87,23 @@ export function OnboardingStageManager({ selectedChain }: any) {
         }))
       })
     }
-  }, [selectedLevel.price])
+  }, [selectedLevel.price, address])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
-    if (selectedLevel.price > 0 && vMooneyLock && mooneyBalance) {
+    console.log('totalLocked', totalLocked)
+    if (selectedLevel.price > 0 && totalLocked && totalMooneyBalance) {
       if (selectedLevel.hasVotingPower) {
-        if (selectedLevel.price / 2 <= vMooneyLock[0].toString() / 10 ** 18) {
+        if (selectedLevel.price / 2 <= totalLocked) {
           setStage(4)
         }
       } else {
-        if (selectedLevel.price <= mooneyBalance.toString() / 10 ** 18) {
+        if (selectedLevel.price <= totalMooneyBalance) {
           setStage(4)
         }
       }
     }
-  }, [selectedLevel.price, vMooneyLock, mooneyBalance, address])
+  }, [selectedLevel.price, totalLocked, totalMooneyBalance])
 
   useEffect(() => {
     if (stage > 1) {
@@ -184,7 +190,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
         <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
           Welcome to MoonDAO
         </h2>
-        <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">{`MoonDAO is accelerating humanity’s development of a lunar base through better coordination. Want to help? This flow will onboard you into our organization in less than 5 minutes, even if you’re new to Web3.
+        <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">{`MoonDAO is accelerating humanity’s development of a lunar base through better coordination. Want to help? This flow will onboard you into our in less than 5 minutes, even if you’re new to Web3.
 `}</p>
 
         <iframe
@@ -269,7 +275,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
             vMooneyContract &&
             (await vMooneyContract.call('create_lock', [
               selectedLevel.price,
-              Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 2,
+              Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 1,
             ]))
           }
         />
