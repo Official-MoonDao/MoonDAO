@@ -216,12 +216,11 @@ export function OnboardingStageManager({ selectedChain }: any) {
           SELECT MEMBERSHIP LEVEL
         </h1>
 
-        <p className="mt-5 max-w-xs lg:max-w-sm xl:max-w-lg bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
-          You must be a member to participate in our space ticket giveaway.
-          <br />
-          <br className="2xl:hidden" />
+        <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
+          Disclaimer: You must be a member to participate in our space ticket giveaway.
           Entries into the Ticket To Space Sweepstakes are 20,000 $MOONEY each.
-          🚀
+          There is no expectation of profit with $MOONEY, read more about $MOONEY 
+          <a className="text-moon-gold" href='https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens'> here</a>.
         </p>
         <ContributionLevels
           selectedLevel={selectedLevel}

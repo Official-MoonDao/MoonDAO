@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
+import { ArrowSide } from '../assets'
 
 type ContributionLevelProps = {
   icon: string
@@ -94,7 +95,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           </>
         )}
         <button
-          className={`mt-3 border ${
+          className={`mt-3 border flex justify-center items-center gap-3 ${
             selectedLevel.price === mooneyValue
               ? 'border-moon-orange'
               : 'border-white-500'
@@ -105,12 +106,12 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
           }`}
           style={{
             width: '261px',
-            height: '44px',
+            height: '50px',
             padding: '12px, 20px, 12px, 20px',
             textAlign: 'center',
           }}
         >
-          {'Get Started >'}
+          {'Get Started'} <ArrowSide/>
         </button>
 
         <div
