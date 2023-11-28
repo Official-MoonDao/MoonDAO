@@ -12,7 +12,7 @@ import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const [selectedChain, setSelectedChain]: any = useState<Chain>(
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Ethereum : Goerli
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
   )
 
   const [lightMode, setLightMode] = useLightMode()
