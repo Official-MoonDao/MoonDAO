@@ -7,11 +7,12 @@ import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBala
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
-import { L2_MOONEY } from '../../lib/uniswap/UniswapTokens'
+import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
+import L2Toggle from '../lock/L2Toggle'
 import { ContributionLevels } from './ContributionLevels'
 import { InvolvementOptions } from './InvolvementOptions'
 import { OnboardingCongrats } from './OnboardingCongrats'
@@ -68,10 +69,12 @@ export function OnboardingStageManager({ selectedChain }: any) {
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
 
+  const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
+
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price,
-    L2_MOONEY,
-    nativeOnChain(137) as any
+    MOONEY,
+    NATIVE_TOKEN
   )
 
   useEffect(() => {
@@ -87,23 +90,29 @@ export function OnboardingStageManager({ selectedChain }: any) {
         }))
       })
     }
-  }, [selectedLevel.price, address])
+  }, [selectedLevel.price, address, selectedChain])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
-    console.log('totalLocked', totalLocked)
-    if (selectedLevel.price > 0 && totalLocked && totalMooneyBalance) {
+    console.log(totalLocked, totalMooneyBalance)
+    if (
+      selectedLevel.price > 0 &&
+      totalLocked >= 0 &&
+      totalMooneyBalance >= 0
+    ) {
+      console.log(selectedLevel.hasVotingPower)
       if (selectedLevel.hasVotingPower) {
         if (selectedLevel.price / 2 <= totalLocked) {
           setStage(4)
         }
       } else {
+        console.log(selectedLevel.price)
         if (selectedLevel.price <= totalMooneyBalance) {
           setStage(4)
         }
       }
     }
-  }, [selectedLevel.price, totalLocked, totalMooneyBalance])
+  }, [selectedLevel.price, totalLocked, totalMooneyBalance, selectedChain])
 
   useEffect(() => {
     if (stage > 1) {
@@ -229,7 +238,11 @@ export function OnboardingStageManager({ selectedChain }: any) {
           Entries into the Ticket To Space Sweepstakes are 20,000 $MOONEY each.
           🚀
         </p>
+        <div className="py-4">
+          <L2Toggle />
+        </div>
         <ContributionLevels
+          selectedChain={selectedChain}
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
         />
@@ -243,25 +256,28 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   const StepTwo = () => (
     <StageContainer>
-      <button
-        className="mt-3 py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
-        style={{ marginBottom: '68px' }}
-        onClick={() => {
-          setStage(1)
-          setSelectedLevel({ price: 0, hasVotingPower: false })
-        }}
-      >
-        <input type="image" src="/backIcon.png" />
-        <span>Back</span>
-      </button>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
-        <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
-          Check out
-        </h1>
+        <div className="flex w-full justify-between">
+          <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
+            Check out
+          </h1>
+          <button
+            className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
+            style={{ marginBottom: '68px' }}
+            onClick={() => {
+              setStage(1)
+              setSelectedLevel({ price: 0, hasVotingPower: false })
+            }}
+          >
+            <input type="image" src="/backIcon.png" />
+            <span>Back</span>
+          </button>
+        </div>
         <OnboardingTransactions
           setStage={setStage}
           setSelectedLevel={setSelectedLevel}
           selectedLevel={selectedLevel}
+          selectedChain={selectedChain}
           mooneyBalance={mooneyBalance}
           vMooneyLock={vMooneyLock}
           tokenAllowance={tokenAllowance}

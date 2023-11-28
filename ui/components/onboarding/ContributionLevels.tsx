@@ -1,7 +1,8 @@
-import { usePrivy } from '@privy-io/react-auth'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
 
 type ContributionLevelProps = {
@@ -13,7 +14,11 @@ type ContributionLevelProps = {
   hasVotingPower?: boolean
 }
 
-export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
+export function ContributionLevels({
+  selectedLevel,
+  setSelectedLevel,
+  selectedChain,
+}: any) {
   {
     /*Card component */
   }
@@ -26,6 +31,8 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
     hasVotingPower,
   }: ContributionLevelProps) {
     const { user } = usePrivy()
+    const { selectedWallet } = useContext(PrivyWalletContext)
+    const { wallets } = useWallets()
 
     const [levelVotingPower, setLevelVotingPower] = useState<any>()
 
@@ -53,8 +60,14 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
             : 'border-opacity-60 dark:border-opacity-20'
         }`}
         onClick={() => {
-          if (!user) toast.error('Please connect a wallet to continue')
-          else setSelectedLevel({ price: mooneyValue, hasVotingPower })
+          if (!user) return toast.error('Please connect a wallet to continue')
+
+          const walletChain = wallets[selectedWallet]?.chainId.split(':')[1]
+
+          if (+walletChain !== selectedChain.chainId)
+            return toast.error(`Switch to ${selectedChain.name} to continue `)
+
+          setSelectedLevel({ price: mooneyValue, hasVotingPower })
         }}
       >
         <div className="h-full flex flex-col justify-between">
@@ -172,7 +185,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         icon="/industry.png"
         title="Industry"
         intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
-        mooneyValue={2000000}
+        mooneyValue={200}
         points={[
           'Everything in the Citizen Tier',
           'Exclusive promotion opportunities',

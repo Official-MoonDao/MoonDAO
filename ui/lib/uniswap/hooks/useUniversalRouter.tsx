@@ -1,5 +1,6 @@
 //WIP
 import { useWallets } from '@privy-io/react-auth'
+import { Ethereum } from '@thirdweb-dev/chains'
 import { useSDK } from '@thirdweb-dev/react'
 import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import {
@@ -10,11 +11,10 @@ import {
 } from '@uniswap/smart-order-router'
 import { SwapRouter, UniswapTrade } from '@uniswap/universal-router-sdk'
 import { ethers } from 'ethers'
-import { useContext } from 'react'
+import { useContext, useMemo } from 'react'
 import ERC20 from '../../../const/abis/ERC20.json'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
-
-const UNIVERSAL_ROUTER_ADDRESS = '0x643770E279d5D0733F21d6DC03A8efbABf3255B4'
+import ChainContext from '../../thirdweb/chain-context'
 
 export function useUniversalRouter(
   swapAmnt: number,
@@ -23,13 +23,20 @@ export function useUniversalRouter(
 ) {
   const sdk = useSDK()
   const { selectedWallet } = useContext(PrivyWalletContext)
+  const { selectedChain } = useContext(ChainContext)
   const { wallets } = useWallets()
+
+  const UNIVERSAL_ROUTER_ADDRESS = useMemo(() => {
+    return +selectedChain.chainId === 1
+      ? '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD'
+      : '0x643770E279d5D0733F21d6DC03A8efbABf3255B4'
+  }, [selectedChain])
 
   async function generateRoute() {
     try {
-      const provider: any = await wallets[selectedWallet]?.getEthersProvider()
+      const provider: any = sdk?.getProvider()
       const router: any = new AlphaRouter({
-        chainId: 137,
+        chainId: selectedChain.chainId,
         provider,
       })
 
@@ -69,12 +76,19 @@ export function useUniversalRouter(
       options
     )
 
+    const gasLimit = await signer.estimateGas({
+      data: params.calldata,
+      to: UNIVERSAL_ROUTER_ADDRESS,
+      value: params.value,
+      from: wallets[selectedWallet].address,
+    })
+
     const tx = await signer.sendTransaction({
       data: params.calldata,
       to: UNIVERSAL_ROUTER_ADDRESS,
       value: params.value,
       from: wallets[selectedWallet].address,
-      gasLimit: 1000000,
+      gasLimit: gasLimit,
     })
 
     return tx
