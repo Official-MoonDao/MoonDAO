@@ -4,6 +4,7 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
+import { ArrowSide } from '../assets'
 
 type ContributionLevelProps = {
   icon: string
@@ -130,24 +131,24 @@ export function ContributionLevels({
             </div>
           </div>
           <button
-            className={`mt-3 border ${
-              selectedLevel.price === mooneyValue
-                ? 'border-moon-orange'
-                : 'border-white-500'
-            } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
-              selectedLevel.price === mooneyValue
-                ? 'bg-moon-orange'
-                : 'bg-transparent'
-            }`}
-            style={{
-              width: '261px',
-              height: '44px',
-              padding: '12px, 20px, 12px, 20px',
-              textAlign: 'center',
-            }}
-          >
-            {'Get Started '}
-          </button>
+          className={`mt-3 border flex justify-center items-center gap-3 ${
+            selectedLevel.price === mooneyValue
+              ? 'border-moon-orange'
+              : 'border-white-500'
+          } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
+            selectedLevel.price === mooneyValue
+              ? 'bg-moon-orange'
+              : 'bg-transparent'
+          }`}
+          style={{
+            width: '261px',
+            height: '50px',
+            padding: '12px, 20px, 12px, 20px',
+            textAlign: 'center',
+          }}
+        >
+          {'Get Started'} <ArrowSide/>
+        </button>
         </div>
       </div>
     )
@@ -159,7 +160,7 @@ export function ContributionLevels({
         icon="/explorer.png"
         title="Explorer"
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
-        mooneyValue={40}
+        mooneyValue={40000}
         points={[
           'Can purchase two Ticket to Space Sweepstakes Entries',
           'Community Discord Access',

@@ -11,16 +11,16 @@ import { L2_MOONEY, useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 
 /*
-Step 1: Purchase ETH -- Check for eth balance > selected level
+Step 1: Purchase MATIC -- Check for MATIC balance > selected level
 
-Step 2: Swap ETh for Mooney -- Check for Mooney balance > selected level
+Step 2: Swap MATIC for Mooney -- Check for Mooney balance > selected level
 
 Step 3: Approve Mooney -- Check for Mooney approval > selected level
 
 Step 4: Lock Mooney -- Check for Mooney Lock amnt > selected level
 */
 
-const TESTING = true
+const TESTING = false
 
 type StepProps = {
   stepNum: number
@@ -149,8 +149,8 @@ export function OnboardingTransactions({
       <div className="w-full flex gap-8 justify-center"></div>
       <Step
         stepNum={1}
-        title={'Purchase ETH'}
-        explanation={'You need ETH to swap it for our governance token MOONEY.'}
+        title={'Purchase MATIC'}
+        explanation={'You need MATIC to swap it for our governance token MOONEY.'}
         action={async () => {
           const wallet = wallets[selectedWallet]
           if (!wallet) return
