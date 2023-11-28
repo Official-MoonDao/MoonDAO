@@ -1,13 +1,12 @@
 import { useWallets } from '@privy-io/react-auth'
-import { BigNumber, ethers } from 'ethers'
+import { nativeOnChain } from '@uniswap/smart-order-router'
+import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { useVMOONEYLock } from '../../lib/tokens/ve-token'
-import { ETH, L2_MOONEY, MATIC, MOONEY } from '../../lib/uniswap/UniswapTokens'
-import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
-import { VMOONEY_ADDRESSES } from '../../const/config'
+import { L2_MOONEY } from '../../lib/uniswap/UniswapTokens'
+import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 
 /*
 Step 1: Purchase ETH -- Check for eth balance > selected level
@@ -54,10 +53,9 @@ export function OnboardingTransactions({
   const {
     generateRoute: generateMooneyRoute,
     executeRoute: executeMooneySwapRoute,
-    getTokenTransferApproval,
-  } = useSwapRouter(
+  } = useUniversalRouter(
     selectedLevel?.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18,
-    MATIC,
+    nativeOnChain(137),
     L2_MOONEY
   )
 
@@ -193,16 +191,7 @@ export function OnboardingTransactions({
           'MoonDAO routes the order to the best price on a Decentralized Exchange using the low gas fees provided by Polygon.'
         }
         action={async () => {
-          console.log(
-            selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-              10 ** 18
-          )
-
-          await getTokenTransferApproval(
-            MATIC,
-            selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString()
-          )
-          await executeMooneySwapRoute(mooneySwapRoute)
+          executeMooneySwapRoute(mooneySwapRoute)
         }}
         check={async () => {
           if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price) {

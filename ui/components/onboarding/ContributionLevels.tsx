@@ -47,10 +47,11 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
 
     return (
       <div
-        className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${selectedLevel?.price === mooneyValue
-          ? 'border-moon-orange border-opacity-100'
-          : 'border-opacity-60 dark:border-opacity-20'
-          }`}
+        className={`w-[320px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-4 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
+          selectedLevel?.price === mooneyValue
+            ? 'border-moon-orange border-opacity-100'
+            : 'border-opacity-60 dark:border-opacity-20'
+        }`}
         onClick={() => {
           if (!user) toast.error('Please connect a wallet to continue')
           else setSelectedLevel({ price: mooneyValue, hasVotingPower })
@@ -67,44 +68,60 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         </div>
         {/*Title*/}
         <h1
-          className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${selectedLevel.price === mooneyValue && 'text-moon-orange'
-            }`}
+          className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${
+            selectedLevel.price === mooneyValue && 'text-moon-orange'
+          }`}
         >
           {title}
         </h1>
         {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
         <p className="mt-5 lg:mt-[5px] text-center">
-          {`${hasVotingPower
-            ? (mooneyValue / 2).toLocaleString()
-            : mooneyValue.toLocaleString()
-            } $MOONEY`}
+          {`${
+            hasVotingPower
+              ? (mooneyValue / 2).toLocaleString()
+              : mooneyValue.toLocaleString()
+          } $MOONEY`}
         </p>
         {hasVotingPower ? (
           <p className="mt-5 lg:mt-[5px] text-center">
             {`${Math.floor(levelVotingPower).toLocaleString()} Voting Power`}
           </p>
-        ) :
+        ) : (
           <>
             <div className="mt-5 lg:mt-[5px] text-center">
               <br />
             </div>
           </>
-        }
+        )}
         <button
-          className={`mt-3 border ${selectedLevel.price === mooneyValue ? 'border-moon-orange' : 'border-white-500'} group-hover:scale-105 px-5 py-3 transition-all duration-150 ${selectedLevel.price === mooneyValue ? 'bg-moon-orange' : 'bg-transparent'}`
-          }
-          style={{ width: '261px', height: '44px', padding: '12px, 20px, 12px, 20px', textAlign: 'center' }}
+          className={`mt-3 border ${
+            selectedLevel.price === mooneyValue
+              ? 'border-moon-orange'
+              : 'border-white-500'
+          } group-hover:scale-105 px-5 py-3 transition-all duration-150 ${
+            selectedLevel.price === mooneyValue
+              ? 'bg-moon-orange'
+              : 'bg-transparent'
+          }`}
+          style={{
+            width: '261px',
+            height: '44px',
+            padding: '12px, 20px, 12px, 20px',
+            textAlign: 'center',
+          }}
         >
           {'Get Started >'}
         </button>
 
-        <div className="mt-4 text-left text-sm" style={{ marginBottom: '20px' }}>
+        <div
+          className="mt-4 text-left text-sm"
+          style={{ marginBottom: '20px' }}
+        >
           {/*Intro*/}
           <p className="2xl:h-[120px] leading-[18.46px] font-normal">{intro}</p>
           {/*Perk List*/}
           <div className="mt-[8px] pr-2 2xl:h-[210px]">
             <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
-
               {points.map((point, i) => (
                 <div
                   key={`contribution-level-${title}-desc-point-${i}`}
@@ -126,7 +143,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         icon="/explorer.png"
         title="Explorer"
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
-        mooneyValue={50000}
+        mooneyValue={40}
         points={[
           '✓ Can purchase two Ticket to Space Sweepstakes Entries',
           '✓ Community Discord Access',

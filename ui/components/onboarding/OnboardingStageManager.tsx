@@ -1,12 +1,12 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import Image from 'next/image'
+import { nativeOnChain } from '@uniswap/smart-order-router'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useTokenAllowance } from '../../lib/tokens/approve'
 import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
-import { ETH, L2_MOONEY, MATIC, MOONEY } from '../../lib/uniswap/UniswapTokens'
-import { useSwapRouter } from '../../lib/uniswap/hooks/useSwapRouter'
+import { L2_MOONEY } from '../../lib/uniswap/UniswapTokens'
+import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
@@ -63,10 +63,10 @@ export function OnboardingStageManager({ selectedChain }: any) {
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
 
-  const { generateRoute: generateNativeRoute } = useSwapRouter(
+  const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price,
     L2_MOONEY,
-    MATIC
+    nativeOnChain(137)
   )
 
   useEffect(() => {

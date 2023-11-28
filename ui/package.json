@@ -12,9 +12,6 @@
     "cy:run-ct": "cypress run --component"
   },
   "dependencies": {
-    "@alchemy/aa-accounts": "^0.2.0",
-    "@alchemy/aa-alchemy": "^0.2.0",
-    "@alchemy/aa-core": "^0.2.0",
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
     "@privy-io/react-auth": "^1.41.0",
@@ -26,7 +23,7 @@
     "@thirdweb-dev/sdk": "3.10.50",
     "@uniswap/sdk-core": "^4.0.7",
     "@uniswap/smart-order-router": "^3.17.0",
-    "@uniswap/v3-sdk": "^3.10.0",
+    "@uniswap/universal-router-sdk": "^2.0.2",
     "abitype": "^0.10.2",
     "axios": "^1.4.0",
     "daisyui": "^2.13.5",
@@ -35,6 +32,7 @@
     "ethers": "5.7",
     "google-spreadsheet": "^3.3.0",
     "gsap": "^3.12.2",
+    "jsbi": "3.2.5",
     "merkletreejs": "^0.3.11",
     "moment": "^2.29.4",
     "mongoose": "^8.0.0",
