@@ -147,7 +147,7 @@ export function ContributionLevels({ selectedLevel, setSelectedLevel }: any) {
         icon="/explorer.png"
         title="Explorer"
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
-        mooneyValue={40}
+        mooneyValue={40000}
         points={[
           'Can purchase two Ticket to Space Sweepstakes Entries',
           'Community Discord Access',
