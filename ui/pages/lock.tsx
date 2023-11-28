@@ -487,6 +487,14 @@ export default function Lock() {
             ) : (
               <div>
                 <p className="">{t('expDesc')}</p>
+                <div className="card-actions mt-4">
+                  <Web3Button
+                    contractAddress={VMOONEY_ADDRESSES[selectedChain.slug]}
+                    action={withdraw}
+                  >
+                    {t('withdraw')}
+                  </Web3Button>
+                </div>
               </div>
             )}
           </div>
