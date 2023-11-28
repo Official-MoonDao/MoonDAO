@@ -66,7 +66,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price,
     L2_MOONEY,
-    nativeOnChain(137)
+    nativeOnChain(137) as any
   )
 
   useEffect(() => {

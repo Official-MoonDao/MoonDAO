@@ -55,7 +55,7 @@ export function OnboardingTransactions({
     executeRoute: executeMooneySwapRoute,
   } = useUniversalRouter(
     selectedLevel?.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18,
-    nativeOnChain(137),
+    nativeOnChain(137) as any,
     L2_MOONEY
   )
 
