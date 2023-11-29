@@ -1,6 +1,5 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import { nativeOnChain } from '@uniswap/smart-order-router'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useTokenAllowance } from '../../lib/tokens/approve'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'

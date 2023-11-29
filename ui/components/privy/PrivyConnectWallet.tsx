@@ -5,8 +5,7 @@ import {
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { allChains } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
-import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { CopyIcon } from '../assets'
@@ -31,13 +30,15 @@ export function PrivyConnectWallet() {
               -4
             )}`}</p>
             <div
-              className={`ml-2 ease-in px-2 hover:scale-105 duration-150 transition-all border border-white ${enabled && ''
-                }`}
+              className={`ml-2 ease-in px-2 hover:scale-105 duration-150 transition-all border border-white ${
+                enabled && ''
+              }`}
               onClick={() => setEnabled(!enabled)}
             >
               <button
-                className={`duration-300 ease-in-out text-white ${enabled && 'rotate-180'
-                  }`}
+                className={`duration-300 ease-in-out text-white ${
+                  enabled && 'rotate-180'
+                }`}
               >
                 {enabled ? '▼' : '▽'}
               </button>

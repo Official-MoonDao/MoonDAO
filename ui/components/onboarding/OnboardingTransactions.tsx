@@ -1,13 +1,10 @@
 import { useWallets } from '@privy-io/react-auth'
-import { Polygon } from '@thirdweb-dev/chains'
-import { nativeOnChain } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import ChainContext from '../../lib/thirdweb/chain-context'
-import { L2_MOONEY, useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
+import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 
 /*
@@ -150,7 +147,9 @@ export function OnboardingTransactions({
       <Step
         stepNum={1}
         title={'Purchase MATIC'}
-        explanation={'You need MATIC to swap it for our governance token MOONEY.'}
+        explanation={
+          'You need MATIC to swap it for our governance token MOONEY.'
+        }
         action={async () => {
           const wallet = wallets[selectedWallet]
           if (!wallet) return

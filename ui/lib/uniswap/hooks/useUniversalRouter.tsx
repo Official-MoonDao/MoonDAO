@@ -1,6 +1,5 @@
 //WIP
 import { useWallets } from '@privy-io/react-auth'
-import { Ethereum } from '@thirdweb-dev/chains'
 import { useSDK } from '@thirdweb-dev/react'
 import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import {
@@ -12,7 +11,6 @@ import {
 import { SwapRouter, UniswapTrade } from '@uniswap/universal-router-sdk'
 import { ethers } from 'ethers'
 import { useContext, useMemo } from 'react'
-import ERC20 from '../../../const/abis/ERC20.json'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
 import ChainContext from '../../thirdweb/chain-context'
 
