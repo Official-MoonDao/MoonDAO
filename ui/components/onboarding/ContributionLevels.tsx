@@ -131,24 +131,24 @@ export function ContributionLevels({
             </div>
           </div>
           <button
-          className={`mt-3 border flex justify-center items-center gap-3 ${
-            selectedLevel.price === mooneyValue
-              ? 'border-moon-orange'
-              : 'border-white-500'
-          } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
-            selectedLevel.price === mooneyValue
-              ? 'bg-moon-orange'
-              : 'bg-transparent'
-          }`}
-          style={{
-            width: '261px',
-            height: '50px',
-            padding: '12px, 20px, 12px, 20px',
-            textAlign: 'center',
-          }}
-        >
-          {'Get Started'} <ArrowSide/>
-        </button>
+            className={`mt-3 border flex justify-center items-center gap-3 ${
+              selectedLevel.price === mooneyValue
+                ? 'border-moon-orange'
+                : 'border-white-500'
+            } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
+              selectedLevel.price === mooneyValue
+                ? 'bg-moon-orange'
+                : 'bg-transparent'
+            }`}
+            style={{
+              width: '261px',
+              height: '50px',
+              padding: '12px, 20px, 12px, 20px',
+              textAlign: 'center',
+            }}
+          >
+            {'Get Started'} <ArrowSide />
+          </button>
         </div>
       </div>
     )
@@ -186,7 +186,7 @@ export function ContributionLevels({
         icon="/industry.png"
         title="Industry"
         intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
-        mooneyValue={200}
+        mooneyValue={2000000}
         points={[
           'Everything in the Citizen Tier',
           'Exclusive promotion opportunities',
