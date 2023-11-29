@@ -44,7 +44,7 @@ export function InvolvementOptions() {
     isOnboardingCall,
   }: any) {
     return (
-      <div className="flex flex-col w-[327px] py-8 px-5 border-slate-700 dark:border-white dark:border-opacity-20 border font-RobotoMono text-slate-950 dark:text-gray-50">
+      <div className="flex flex-col w-[300px] py-8 px-5 border-slate-700 dark:border-white dark:border-opacity-20 border font-RobotoMono text-slate-950 dark:text-gray-50">
         {icon}
 
         <div className="mt-7 pb-12 flex flex-col h-full justify-between">
@@ -68,7 +68,7 @@ export function InvolvementOptions() {
   }
 
   return (
-    <div className="mt-5 flex flex-col lg:flex-row gap-7 xl:gap-8 2xl:gap-10">
+    <div className="mt-5 flex flex-col xl:flex-row gap-2 xl:gap-3 2xl:gap-10">
       <Card
         label={'Stay Informed'}
         description={

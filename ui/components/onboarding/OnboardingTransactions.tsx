@@ -98,7 +98,7 @@ export function OnboardingTransactions({
       <div className="mt-5 w-full h-full text-black dark:text-white">
         <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
           <p
-            className={`block px-3 text-white py-1 text-xl font-bold rounded-[9999px] ${
+            className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
               isLoadingCheck
                 ? 'bg-[grey] animate-pulse'
                 : currStep > stepNum
@@ -113,7 +113,7 @@ export function OnboardingTransactions({
               {title}
             </div>
           </div>
-          <div className="mt-1 opacity-60 text-white text-base font-normal lg:mt-0 xl:text-base">
+          <div className="mt-1 opacity-60 text-base font-normal lg:mt-0 xl:text-base">
             {explanation}
           </div>
 
@@ -122,8 +122,7 @@ export function OnboardingTransactions({
         </div>
         {currStep === stepNum && (
           <button
-            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-white text-base font-normal font-['Roboto Mono']"
-            style={{ backgroundColor: '#FFFFFF14' }}
+            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
             onClick={async () => {
               setIsLoadingAction(true)
               try {
