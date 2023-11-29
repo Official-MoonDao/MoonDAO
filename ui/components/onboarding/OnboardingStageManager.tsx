@@ -76,7 +76,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   useEffect(() => {
     if (selectedLevel.price > 0) {
-      setStage(2)
+      setStage(1)
     }
 
     if (selectedLevel.price != 0) {
@@ -106,7 +106,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
   }, [selectedLevel.price, totalLocked, totalMooneyBalance])
 
   useEffect(() => {
-    if (stage > 1) {
+    if (stage > 0) {
       setStage(0)
     }
   }, [address])
@@ -184,37 +184,6 @@ export function OnboardingStageManager({ selectedChain }: any) {
     )
   }
 
-  const StepZero = () => (
-    <StageContainer>
-      <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
-        <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
-          Welcome to MoonDAO
-        </h2>
-        <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">{`MoonDAO is accelerating humanity’s development of a lunar base through better coordination. Want to help? This flow will onboard you into our in less than 5 minutes, even if you’re new to Web3.
-`}</p>
-
-        <iframe
-          src="https://www.youtube.com/embed/Vs_vAtRgaBA"
-          className="mt-10 lg:mt-4 xl:mt-6 w-full xl:w-5/6 aspect-video object-cover"
-        />
-
-        <button
-          onClick={async () => {
-            if (!user) {
-              login()
-              setStage(1)
-            } else {
-              setStage(1)
-            }
-          }}
-          className="mt-8 px-5 py-3 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
-        >
-          Join MoonDAO
-        </button>
-      </div>
-    </StageContainer>
-  )
-
   const StepOne = () => (
     <StageContainer>
       <div className="flex flex-col font-RobotoMono items-center">
@@ -246,7 +215,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
         className="mt-3 py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
         style={{ marginBottom: '68px' }}
         onClick={() => {
-          setStage(1)
+          setStage(0)
           setSelectedLevel({ price: 0, hasVotingPower: false })
         }}
       >
