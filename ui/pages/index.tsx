@@ -52,7 +52,7 @@ export default function Home() {
 
         <div className="px-4 py-16 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="mx-auto text-start">
-            <h2 className="text-3xl text-[#071732] dark:text-white font-GoodTimes sm:text-4xl lg:text-4xl xl:text-5xl text-center lg:text-left">Why Join MoonDAO?</h2>
+            <h2 className="text-2xl text-[#071732] dark:text-white font-GoodTimes sm:text-4xl lg:text-4xl xl:text-4xl text-center lg:text-left">Why Join MoonDAO?</h2>
           </div>
           <dl className="mt-12 space-y-10 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-x-6 sm:gap-y-12 lg:grid-cols-2 lg:gap-x-8">
             <div className="flex">
