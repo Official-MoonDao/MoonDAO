@@ -33,6 +33,7 @@ export const MOONEY_ADDRESSES: Index = {
 export const DAI_ADDRESSES: Index = {
   ethereum: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
   polygon: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063',
+  mumbai: '0xd393b1E02dA9831Ff419e22eA105aAe4c47E1253'
 }
 
 export const MOONEY_DECIMALS = 10 ** 18
