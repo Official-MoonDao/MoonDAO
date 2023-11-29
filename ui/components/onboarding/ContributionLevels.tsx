@@ -155,9 +155,9 @@ export function ContributionLevels({
   }
   // ;('Everything in the Citizen Tier.Exclusive promotion opportunities. Access to talent to help design, build, test your space hardware. 1,000,000 Voting Power 1,000,000 MOONEY')
   return (
-    <div className="flex flex-col xl:flex-row justify-evenly mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
+    <div className="flex flex-col min-[1400px]:flex-row justify-evenly mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
       <ContributionLevel
-        icon="/explorer.png"
+        icon="/explorer.svg"
         title="Explorer"
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
         mooneyValue={40000}
@@ -165,10 +165,11 @@ export function ContributionLevels({
           'Can purchase two Ticket to Space Sweepstakes Entries',
           'Community Discord Access',
           'MoonDAO Marketplace Access',
+          'MoonDAO Newsletter Updates',
         ]}
       />
       <ContributionLevel
-        icon="/citizen.png"
+        icon="/citizen.svg"
         title="Citizen"
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
         mooneyValue={500000}
@@ -183,7 +184,7 @@ export function ContributionLevels({
         hasVotingPower
       />
       <ContributionLevel
-        icon="/industry.png"
+        icon="/industry.svg"
         title="Industry"
         intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
         mooneyValue={2000000}
