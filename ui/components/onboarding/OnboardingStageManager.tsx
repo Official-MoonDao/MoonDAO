@@ -225,7 +225,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
           Disclaimer: You must be a member to participate in our space ticket giveaway.
           Entries into the Ticket To Space Sweepstakes are 20,000 $MOONEY each.
-          There is no expectation of profit with $MOONEY, read more about $MOONEY 
+          There is no expectation of profit with $MOONEY, read more about $MOONEY
           <a className="text-moon-gold" href='https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens'> here</a>.
         </p>
         <ContributionLevels
@@ -328,11 +328,9 @@ export function OnboardingStageManager({ selectedChain }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
-              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-            } text-md font-medium ${
-              isActive ? 'text-white' : 'text-[#40464f]'
-            }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
+              }`}
           >
             {stepNumber}
           </span>
@@ -342,7 +340,6 @@ export function OnboardingStageManager({ selectedChain }: any) {
   }
 
   const steps = [
-    { component: <StepZero /> },
     { component: <StepOne /> },
     { component: <StepTwo /> },
     { component: <StepThree /> },
