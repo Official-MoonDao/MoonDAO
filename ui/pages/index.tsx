@@ -2,6 +2,9 @@ import {
   BuildingStorefrontIcon,
   ChartBarIcon,
   CalendarIcon,
+  WalletIcon,
+  ArrowsRightLeftIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -16,7 +19,6 @@ export default function Home() {
   const { t } = useTranslation('common')
   const router = useRouter();
   const [lightMode] = useLightMode()
-
 
   return (
     <div className="animate-fadeIn">

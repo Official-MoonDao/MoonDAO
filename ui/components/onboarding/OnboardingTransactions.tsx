@@ -1,13 +1,10 @@
 import { useWallets } from '@privy-io/react-auth'
-import { Polygon } from '@thirdweb-dev/chains'
-import { nativeOnChain } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import ChainContext from '../../lib/thirdweb/chain-context'
-import { L2_MOONEY } from '../../lib/uniswap/UniswapTokens'
+import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 
 /*
@@ -34,6 +31,7 @@ type StepProps = {
 }
 
 export function OnboardingTransactions({
+  selectedChain,
   selectedLevel,
   mooneyBalance,
   vMooneyLock,
@@ -43,8 +41,6 @@ export function OnboardingTransactions({
 }: any) {
   const [currStep, setCurrStep] = useState(1)
 
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
-
   //Privy
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -53,14 +49,15 @@ export function OnboardingTransactions({
   const fund = useMoonPay()
 
   //Uniswap
+  const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
   const [mooneySwapRoute, setMooneySwapRoute] = useState<any>()
   const {
     generateRoute: generateMooneyRoute,
     executeRoute: executeMooneySwapRoute,
   } = useUniversalRouter(
     selectedLevel?.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18,
-    nativeOnChain(137) as any,
-    L2_MOONEY
+    NATIVE_TOKEN,
+    MOONEY
   )
 
   useEffect(() => {
@@ -82,10 +79,10 @@ export function OnboardingTransactions({
     txExplanation,
   }: StepProps) {
     const [isLoadingCheck, setIsLoadingCheck] = useState(false)
-    const [networkMismatch, setNetworkMismatch] = useState(false)
+    const [isLoadingAction, setIsLoadingAction] = useState(false)
 
     useEffect(() => {
-      if (currStep === stepNum && !isLoadingCheck && !isDisabled) {
+      if (currStep === stepNum && !isLoadingCheck) {
         setIsLoadingCheck(true)
         check()
           .then((checkRes) => {
@@ -122,23 +119,24 @@ export function OnboardingTransactions({
 
           {currStep === stepNum && txExplanation && <p>{txExplanation}</p>}
           {/*Previously was a border-4 class on hover for this button but changed it for scale, as increasing border expands the whole container on hover*/}
-          {currStep === stepNum && (
-            <button
-              className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-white text-base font-normal font-['Roboto Mono']"
-              style={{ backgroundColor: '#FFFFFF14' }}
-              onClick={async () => {
-                try {
-                  await action()
-                } catch (err: any) {
-                  toast.error(err.message.slice(0, 150))
-                }
-              }}
-              disabled={isDisabled}
-            >
-              {isDisabled ? '...loading' : 'Start'}
-            </button>
-          )}
         </div>
+        {currStep === stepNum && (
+          <button
+            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-white text-base font-normal font-['Roboto Mono']"
+            style={{ backgroundColor: '#FFFFFF14' }}
+            onClick={async () => {
+              setIsLoadingAction(true)
+              try {
+                await action()
+              } catch (err: any) {
+                toast.error(err.message.slice(0, 150))
+              }
+            }}
+            disabled={isDisabled || isLoadingAction}
+          >
+            {isDisabled || isLoadingAction ? '...loading' : 'Start'}
+          </button>
+        )}
       </div>
     )
   }
@@ -149,14 +147,20 @@ export function OnboardingTransactions({
       <Step
         stepNum={1}
         title={'Purchase MATIC'}
-        explanation={'You need MATIC to swap it for our governance token MOONEY.'}
+        explanation={
+          'You need MATIC to swap it for our governance token MOONEY.'
+        }
         action={async () => {
           const wallet = wallets[selectedWallet]
           if (!wallet) return
           const provider = await wallet.getEthersProvider()
           const nativeBalance = await provider.getBalance(wallet.address)
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-          await fund(selectedLevel.price - +formattedNativeBalance)
+          const levelPrice =
+            selectedLevel.nativeSwapRoute.route[0].rawQuote.toString() /
+            10 ** 18
+          const fundTX = await fund(levelPrice - +formattedNativeBalance)
+          console.log(fundTX)
         }}
         check={async () => {
           const wallet = wallets[selectedWallet]
@@ -166,9 +170,8 @@ export function OnboardingTransactions({
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
           if (
             +formattedNativeBalance >
-              selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                10 ** 18 ||
-            TESTING
+            selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+              10 ** 18
           ) {
             return true
           } else {
@@ -184,7 +187,7 @@ export function OnboardingTransactions({
                 10 ** 18
               ).toFixed(3)
             : '...'
-        } MATIC`}
+        } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
       />
       <Step
         stepNum={2}
@@ -209,9 +212,17 @@ export function OnboardingTransactions({
             ? (
                 selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
                 10 ** 18
-              ).toFixed(3)
+              ).toFixed(
+                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                  10 ** 18 >=
+                  0.1
+                  ? 2
+                  : 5
+              )
             : '...'
-        } MATIC for ${selectedLevel.price.toLocaleString()} $MOONEY`}
+        } ${
+          selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+        } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
       />
       {selectedLevel.hasVotingPower && (
         <>
