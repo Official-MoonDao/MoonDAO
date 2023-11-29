@@ -34,6 +34,7 @@ export const navigation = [
       { name: 'ZeroG', href: '/zero-g' },
       { name: 'Lifeship', href: '/lifeship' },
       { name: 'Sweepstakes', href: '/ticket2space' },
+      { name: 'Digital Assets', href: 'https://market.moondao.com' },
     ],
   },
   {
@@ -44,7 +45,6 @@ export const navigation = [
       { name: 'Snapshot', href: 'https://snapshot.org/#/tomoondao.eth' },
       { name: 'Documentation', href: 'https://moondao.com/docs/introduction' },
       { name: 'Newsletter', href: 'https://moondao.ck.page/profile' },
-      { name: 'Marketplace', href: 'https://market.moondao.com' },
       { name: 'Events', href: '/events' },
       { name: 'Analytics', href: '/analytics' },
     ],
