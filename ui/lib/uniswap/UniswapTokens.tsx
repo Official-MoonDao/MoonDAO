@@ -1,20 +1,32 @@
+import { TokenERC20History } from '@thirdweb-dev/sdk'
 import { Ether, Token } from '@uniswap/sdk-core'
-import { MOONEY_ADDRESSES } from '../../const/config'
+import { nativeOnChain } from '@uniswap/smart-order-router'
+import { useContext, useMemo } from 'react'
+import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../../const/config'
+import ChainContext from '../thirdweb/chain-context'
 
-export const ETH: any = Ether.onChain(1)
+export function useUniswapTokens() {
+  const { selectedChain } = useContext(ChainContext)
 
-export const MOONEY = new Token(
-  1,
-  MOONEY_ADDRESSES['ethereum'],
-  18,
-  'MOONEY',
-  'MOONEY'
-)
+  const NATIVE_TOKEN: any = nativeOnChain(selectedChain.chainId)
+  const MOONEY = useMemo(() => {
+    return new Token(
+      selectedChain.chainId,
+      MOONEY_ADDRESSES[selectedChain.slug],
+      18,
+      'MOONEY',
+      'MOONEY'
+    )
+  }, [selectedChain])
+  const DAI = useMemo(() => {
+    return new Token(
+      selectedChain.chainId,
+      DAI_ADDRESSES[selectedChain.slug],
+      18,
+      'DAI',
+      'DAI Stablecoin'
+    )
+  }, [selectedChain])
 
-export const L2_MOONEY = new Token(
-  137,
-  MOONEY_ADDRESSES['polygon'],
-  18,
-  'MOONEY',
-  'MOONEY (PoS)'
-)
+  return { MOONEY, NATIVE_TOKEN, DAI }
+}

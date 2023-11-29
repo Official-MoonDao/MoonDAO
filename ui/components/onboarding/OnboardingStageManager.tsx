@@ -1,17 +1,18 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import { nativeOnChain } from '@uniswap/smart-order-router'
+import { ethers } from 'ethers'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useTokenAllowance } from '../../lib/tokens/approve'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
-import { L2_MOONEY } from '../../lib/uniswap/UniswapTokens'
+import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
+import L2Toggle from '../lock/L2Toggle'
 import { ContributionLevels } from './ContributionLevels'
 import { InvolvementOptions } from './InvolvementOptions'
 import { OnboardingCongrats } from './OnboardingCongrats'
@@ -68,10 +69,12 @@ export function OnboardingStageManager({ selectedChain }: any) {
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
 
+  const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
+
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price,
-    L2_MOONEY,
-    nativeOnChain(137) as any
+    MOONEY,
+    NATIVE_TOKEN
   )
 
   useEffect(() => {
@@ -87,23 +90,29 @@ export function OnboardingStageManager({ selectedChain }: any) {
         }))
       })
     }
-  }, [selectedLevel.price, address])
+  }, [selectedLevel.price, address, selectedChain])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
-    console.log('totalLocked', totalLocked)
-    if (selectedLevel.price > 0 && totalLocked && totalMooneyBalance) {
+    console.log(totalLocked, totalMooneyBalance)
+    if (
+      selectedLevel.price > 0 &&
+      totalLocked >= 0 &&
+      totalMooneyBalance >= 0
+    ) {
+      console.log(selectedLevel.hasVotingPower)
       if (selectedLevel.hasVotingPower) {
         if (selectedLevel.price / 2 <= totalLocked) {
           setStage(4)
         }
       } else {
+        console.log(selectedLevel.price)
         if (selectedLevel.price <= totalMooneyBalance) {
           setStage(4)
         }
       }
     }
-  }, [selectedLevel.price, totalLocked, totalMooneyBalance])
+  }, [selectedLevel.price, totalLocked, totalMooneyBalance, selectedChain])
 
   useEffect(() => {
     if (stage > 0) {
@@ -183,7 +192,6 @@ export function OnboardingStageManager({ selectedChain }: any) {
       </>
     )
   }
-
   const StepOne = () => (
     <StageContainer>
       <div className="flex flex-col font-RobotoMono items-center">
@@ -197,7 +205,11 @@ export function OnboardingStageManager({ selectedChain }: any) {
           There is no expectation of profit with $MOONEY, read more about $MOONEY
           <a className="text-moon-gold" href='https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens'> here</a>.
         </p>
+        <div className="py-4">
+          <L2Toggle />
+        </div>
         <ContributionLevels
+          selectedChain={selectedChain}
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
         />
@@ -221,29 +233,44 @@ export function OnboardingStageManager({ selectedChain }: any) {
       >
         <input type="image" src="/backIcon.png" />
         <span>Back</span>
-      </button>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
-        <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
-          Check out
-        </h1>
+        <div className="flex w-full justify-between">
+          <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
+            Check out
+          </h1>
+          <button
+            className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
+            style={{ marginBottom: '68px' }}
+            onClick={() => {
+              setStage(1)
+              setSelectedLevel({ price: 0, hasVotingPower: false })
+            }}
+          >
+            <input type="image" src="/backIcon.png" />
+            <span>Back</span>
+          </button>
+        </div>
         <OnboardingTransactions
           setStage={setStage}
           setSelectedLevel={setSelectedLevel}
           selectedLevel={selectedLevel}
+          selectedChain={selectedChain}
           mooneyBalance={mooneyBalance}
           vMooneyLock={vMooneyLock}
           tokenAllowance={tokenAllowance}
           approveMooney={async () =>
+            // approve half of the selected level price
             mooneyContract &&
             (await mooneyContract.call('approve', [
               VMOONEY_ADDRESSES[selectedChain.slug],
-              selectedLevel.price,
+              ethers.utils.parseEther(String(selectedLevel.price / 2)),
             ]))
           }
           createLock={async () =>
+            //lock half of the selected level price for 1 year
             vMooneyContract &&
             (await vMooneyContract.call('create_lock', [
-              selectedLevel.price,
+              ethers.utils.parseEther(String(selectedLevel.price / 2)),
               Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 1,
             ]))
           }

@@ -3,8 +3,8 @@ import { useContext, useState } from 'react'
 import ChainContext from '../chain-context'
 
 export function useL2Toggle() {
-  const [isL2, setIsL2] = useState<boolean>(false)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
+  const [isL2, setIsL2] = useState<boolean>(selectedChain === Polygon)
 
   function toggleLayer() {
     let newNetwork

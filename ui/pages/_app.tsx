@@ -24,12 +24,12 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
         <PrivyProvider
           appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
           config={{
-            loginMethods: ['wallet', 'email', 'sms', 'google', 'twitter'],
+            loginMethods: ['wallet', 'email', 'google', 'twitter'],
             appearance: {
               theme: '#252c4d',
               showWalletLoginFirst: false,
-              logo: "Original_White.png",
-              accentColor: "#d85c4c",
+              logo: 'Original_White.png',
+              accentColor: '#d85c4c',
             },
             legal: {
               termsAndConditionsUrl:
