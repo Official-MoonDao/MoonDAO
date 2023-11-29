@@ -1,5 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
+import { ethers } from 'ethers'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useTokenAllowance } from '../../lib/tokens/approve'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
@@ -231,10 +232,18 @@ export function OnboardingStageManager({ selectedChain }: any) {
         </h1>
 
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
-          Disclaimer: You must be a member to participate in our space ticket giveaway.
-          Entries into the Ticket To Space Sweepstakes are 20,000 $MOONEY each.
-          There is no expectation of profit with $MOONEY, read more about $MOONEY 
-          <a className="text-moon-gold" href='https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens'> here</a>.
+          Disclaimer: You must be a member to participate in our space ticket
+          giveaway. Entries into the Ticket To Space Sweepstakes are 20,000
+          $MOONEY each. There is no expectation of profit with $MOONEY, read
+          more about $MOONEY
+          <a
+            className="text-moon-gold"
+            href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
+          >
+            {' '}
+            here
+          </a>
+          .
         </p>
         <div className="py-4">
           <L2Toggle />
@@ -280,16 +289,18 @@ export function OnboardingStageManager({ selectedChain }: any) {
           vMooneyLock={vMooneyLock}
           tokenAllowance={tokenAllowance}
           approveMooney={async () =>
+            // approve half of the selected level price
             mooneyContract &&
             (await mooneyContract.call('approve', [
               VMOONEY_ADDRESSES[selectedChain.slug],
-              selectedLevel.price,
+              ethers.utils.parseEther(String(selectedLevel.price / 2)),
             ]))
           }
           createLock={async () =>
+            //lock half of the selected level price for 1 year
             vMooneyContract &&
             (await vMooneyContract.call('create_lock', [
-              selectedLevel.price,
+              ethers.utils.parseEther(String(selectedLevel.price / 2)),
               Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 1,
             ]))
           }
