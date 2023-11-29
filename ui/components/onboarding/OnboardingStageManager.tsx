@@ -203,6 +203,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
           Disclaimer: You must be a member to participate in our space ticket giveaway.
           Entries into the Ticket To Space Sweepstakes are 20,000 $MOONEY each.
           There is no expectation of profit with $MOONEY, read more about $MOONEY
+          <a className="text-moon-gold" href='https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens'> here</a>.
         </p>
         <div className="py-4">
           <L2Toggle />
