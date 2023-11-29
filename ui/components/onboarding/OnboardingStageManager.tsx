@@ -79,7 +79,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   useEffect(() => {
     if (selectedLevel.price > 0) {
-      setStage(2)
+      setStage(1)
     }
 
     if (selectedLevel.price != 0) {
@@ -115,7 +115,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
   }, [selectedLevel.price, totalLocked, totalMooneyBalance, selectedChain])
 
   useEffect(() => {
-    if (stage > 1) {
+    if (stage > 0) {
       setStage(0)
     }
   }, [address])
@@ -192,38 +192,6 @@ export function OnboardingStageManager({ selectedChain }: any) {
       </>
     )
   }
-
-  const StepZero = () => (
-    <StageContainer>
-      <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
-        <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
-          Welcome to MoonDAO
-        </h2>
-        <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">{`MoonDAO is accelerating humanity’s multiplanetary future through better coordination. Want to build this future together? Get started by joining our community, and you’ll be onboarded in less than 5 minutes, even if you’re new to Web3.
-`}</p>
-
-        <iframe
-          src="https://www.youtube.com/embed/Vs_vAtRgaBA"
-          className="mt-10 lg:mt-4 xl:mt-6 w-full xl:w-5/6 aspect-video object-cover"
-        />
-
-        <button
-          onClick={async () => {
-            if (!user) {
-              login()
-              setStage(1)
-            } else {
-              setStage(1)
-            }
-          }}
-          className="mt-8 px-5 py-3 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
-        >
-          Join MoonDAO
-        </button>
-      </div>
-    </StageContainer>
-  )
-
   const StepOne = () => (
     <StageContainer>
       <div className="flex flex-col font-RobotoMono items-center">
@@ -232,18 +200,10 @@ export function OnboardingStageManager({ selectedChain }: any) {
         </h1>
 
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
-          Disclaimer: You must be a member to participate in our space ticket
-          giveaway. Entries into the Ticket To Space Sweepstakes are 20,000
-          $MOONEY each. There is no expectation of profit with $MOONEY, read
-          more about $MOONEY
-          <a
-            className="text-moon-gold"
-            href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
-          >
-            {' '}
-            here
-          </a>
-          .
+          Disclaimer: You must be a member to participate in our space ticket giveaway.
+          Entries into the Ticket To Space Sweepstakes are 20,000 $MOONEY each.
+          There is no expectation of profit with $MOONEY, read more about $MOONEY
+          <a className="text-moon-gold" href='https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens'> here</a>.
         </p>
         <div className="py-4">
           <L2Toggle />
@@ -263,6 +223,16 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   const StepTwo = () => (
     <StageContainer>
+      <button
+        className="mt-3 py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
+        style={{ marginBottom: '68px' }}
+        onClick={() => {
+          setStage(0)
+          setSelectedLevel({ price: 0, hasVotingPower: false })
+        }}
+      >
+        <input type="image" src="/backIcon.png" />
+        <span>Back</span>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
         <div className="flex w-full justify-between">
           <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
@@ -354,11 +324,9 @@ export function OnboardingStageManager({ selectedChain }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
-              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-            } text-md font-medium ${
-              isActive ? 'text-white' : 'text-[#40464f]'
-            }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
+              }`}
           >
             {stepNumber}
           </span>
@@ -368,7 +336,6 @@ export function OnboardingStageManager({ selectedChain }: any) {
   }
 
   const steps = [
-    { component: <StepZero /> },
     { component: <StepOne /> },
     { component: <StepTwo /> },
     { component: <StepThree /> },
