@@ -13,7 +13,7 @@ import {
 
 export const navigation = [
   {
-    name: 'home',
+    name: 'Welcome',
     href: '/',
     icon: HomeIcon,
   },
@@ -41,7 +41,6 @@ export const navigation = [
     name: 'Links',
     icon: FolderIcon,
     children: [
-      { name: 'Homepage', href: 'https://moondao.com/' },
       { name: 'Snapshot', href: 'https://snapshot.org/#/tomoondao.eth' },
       { name: 'Documentation', href: 'https://moondao.com/docs/introduction' },
       { name: 'Newsletter', href: 'https://moondao.ck.page/profile' },

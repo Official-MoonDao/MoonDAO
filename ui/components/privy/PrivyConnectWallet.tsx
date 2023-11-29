@@ -1,7 +1,3 @@
-import {
-  ArrowUpTrayIcon,
-  ArrowsPointingOutIcon,
-} from '@heroicons/react/24/outline'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { allChains } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
@@ -101,7 +97,7 @@ export function PrivyConnectWallet() {
               <div className="pt-1">
                 <LinkAccounts user={user} />
                 <button
-                  className="w-full mt-4 p-1 border border-white text-white hover:scale-105 transition-all duration-150 hover:bg-orange-700"
+                  className="w-full mt-4 p-1 border border-white text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
                   onClick={async () => {
                     wallets.forEach((wallet) => wallet.disconnect())
                     logout()
@@ -116,7 +112,7 @@ export function PrivyConnectWallet() {
       ) : (
         <button
           onClick={login}
-          className="w-[200px] px-5 py-3 bg-moon-orange font-RobotoMono"
+          className="w-[200px] px-5 py-3 bg-moon-orange font-RobotoMono hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
         >
           Connect
         </button>
