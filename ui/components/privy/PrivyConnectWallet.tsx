@@ -118,7 +118,7 @@ export function PrivyConnectWallet() {
           onClick={login}
           className="w-[200px] px-5 py-3 bg-moon-orange font-RobotoMono"
         >
-          Connect Wallet
+          Connect
         </button>
       )}
     </>
