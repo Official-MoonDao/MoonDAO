@@ -1,4 +1,5 @@
 import { MoonpayConfig, useWallets } from '@privy-io/react-auth'
+import { TradeType } from '@uniswap/sdk-core'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import ChainContext from '../../thirdweb/chain-context'
@@ -11,23 +12,23 @@ export function useMoonPay() {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { selectedChain } = useContext(ChainContext)
   const { DAI, NATIVE_TOKEN } = useUniswapTokens()
-  const {
-    generateRoute: generateNativeRoute,
-    executeRoute: executeNativeSwapRoute,
-  } = useUniversalRouter(30, DAI, NATIVE_TOKEN)
+  const { generateRoute: generateNativeRoute } = useUniversalRouter(
+    30,
+    DAI,
+    NATIVE_TOKEN
+  )
 
   async function fund(amount: number) {
-    const gasFunds = +selectedChain.chainId === 1 ? 0.01 : 1
-    const roundedCurrencyAmount = Math.round(amount * 100000) / 100000
+    const roundedCurrencyAmount = Math.round(amount * 1000) / 1000
 
-    const nativeRoute = await generateNativeRoute()
+    const nativeRoute = await generateNativeRoute(TradeType.EXACT_INPUT)
     const nativeQuote = nativeRoute.route[0].rawQuote.toString() / 10 ** 18
 
     const quoteCurrencyAmount =
       +roundedCurrencyAmount > nativeQuote
-        ? +roundedCurrencyAmount + gasFunds
+        ? +roundedCurrencyAmount
         : nativeQuote
-    console.log(quoteCurrencyAmount)
+
     const fundWalletConfig: MoonpayConfig = {
       currencyCode:
         +selectedChain.chainId === 1 ? 'ETH_ETHEREUM' : 'MATIC_POLYGON',
