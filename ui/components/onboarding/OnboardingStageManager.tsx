@@ -1,5 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
+import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useTokenAllowance } from '../../lib/tokens/approve'
@@ -83,7 +84,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
     }
 
     if (selectedLevel.price != 0) {
-      generateNativeRoute().then((swapRoute: any) => {
+      generateNativeRoute(TradeType.EXACT_OUTPUT).then((swapRoute: any) => {
         setSelectedLevel((prev: any) => ({
           ...prev,
           nativeSwapRoute: swapRoute,
@@ -94,7 +95,6 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
-    console.log(totalLocked, totalMooneyBalance)
     if (
       selectedLevel.price > 0 &&
       totalLocked >= 0 &&
@@ -255,7 +255,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
             className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
             style={{ marginBottom: '68px' }}
             onClick={() => {
-              setStage(1)
+              setStage(0)
               setSelectedLevel({ price: 0, hasVotingPower: false })
             }}
           >

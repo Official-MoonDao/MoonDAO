@@ -1,6 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
+import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
@@ -17,7 +18,7 @@ Step 3: Approve Mooney -- Check for Mooney approval > selected level
 Step 4: Lock Mooney -- Check for Mooney Lock amnt > selected level
 */
 
-const TESTING = false
+const TESTING = true
 
 type StepProps = {
   stepNum: number
@@ -47,6 +48,9 @@ export function OnboardingTransactions({
 
   //MoonPay
   const fund = useMoonPay()
+  const extraFundsForGas = useMemo(() => {
+    return +selectedChain.chainId === 1 ? 0.01 : 1
+  }, [selectedChain])
 
   //Uniswap
   const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
@@ -55,18 +59,23 @@ export function OnboardingTransactions({
     generateRoute: generateMooneyRoute,
     executeRoute: executeMooneySwapRoute,
   } = useUniversalRouter(
-    selectedLevel?.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18,
+    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18,
     NATIVE_TOKEN,
     MOONEY
   )
 
   useEffect(() => {
     if (selectedLevel.nativeSwapRoute) {
-      generateMooneyRoute().then((swapRoute: any) =>
+      generateMooneyRoute(TradeType.EXACT_INPUT).then((swapRoute: any) =>
         setMooneySwapRoute(swapRoute)
       )
     }
   }, [selectedLevel?.nativeSwapRoute])
+
+  useEffect(() => {
+    if (mooneySwapRoute?.route[0])
+      console.log(mooneySwapRoute.route[0].rawQuote.toString() / 10 ** 18)
+  }, [mooneySwapRoute])
 
   function Step({
     stepNum,
@@ -158,8 +167,10 @@ export function OnboardingTransactions({
           const levelPrice =
             selectedLevel.nativeSwapRoute.route[0].rawQuote.toString() /
             10 ** 18
-          const fundTX = await fund(levelPrice - +formattedNativeBalance)
-          console.log(fundTX)
+
+          const fundTX = await fund(
+            levelPrice - +formattedNativeBalance + extraFundsForGas
+          )
         }}
         check={async () => {
           const wallet = wallets[selectedWallet]
@@ -169,8 +180,9 @@ export function OnboardingTransactions({
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
           if (
             +formattedNativeBalance >
-            selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-              10 ** 18
+              selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                10 ** 18 ||
+            TESTING
           ) {
             return true
           } else {
@@ -183,8 +195,9 @@ export function OnboardingTransactions({
           selectedLevel.nativeSwapRoute?.route[0]
             ? (
                 selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                10 ** 18
-              ).toFixed(3)
+                  10 ** 18 +
+                extraFundsForGas
+              ).toFixed(5)
             : '...'
         } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
       />
@@ -195,7 +208,7 @@ export function OnboardingTransactions({
           'MoonDAO routes the order to the best price on a Decentralized Exchange using the low gas fees provided by Polygon.'
         }
         action={async () => {
-          executeMooneySwapRoute(mooneySwapRoute)
+          await executeMooneySwapRoute(mooneySwapRoute)
         }}
         check={async () => {
           if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price) {
@@ -265,7 +278,7 @@ export function OnboardingTransactions({
             deps={[vMooneyLock]}
             txExplanation={`Stake ${
               selectedLevel.price / 2
-            } $MOONEY for 2 years`}
+            } $MOONEY for 1 year`}
           />
         </>
       )}
