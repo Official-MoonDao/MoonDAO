@@ -30,7 +30,7 @@ export function useUniversalRouter(
       : '0x643770E279d5D0733F21d6DC03A8efbABf3255B4'
   }, [selectedChain])
 
-  async function generateRoute() {
+  async function generateRoute(tradeType: TradeType) {
     try {
       const provider: any = sdk?.getProvider()
       const router: any = new AlphaRouter({
@@ -50,7 +50,7 @@ export function useUniversalRouter(
           ethers.utils.parseEther(String(swapAmnt)).toString()
         ),
         tokenOut,
-        TradeType.EXACT_INPUT,
+        tradeType,
         options
       )
 
