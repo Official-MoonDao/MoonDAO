@@ -18,7 +18,7 @@ Step 3: Approve Mooney -- Check for Mooney approval > selected level
 Step 4: Lock Mooney -- Check for Mooney Lock amnt > selected level
 */
 
-const TESTING = true
+const TESTING = false
 
 type StepProps = {
   stepNum: number
@@ -71,11 +71,6 @@ export function OnboardingTransactions({
       )
     }
   }, [selectedLevel?.nativeSwapRoute])
-
-  useEffect(() => {
-    if (mooneySwapRoute?.route[0])
-      console.log(mooneySwapRoute.route[0].rawQuote.toString() / 10 ** 18)
-  }, [mooneySwapRoute])
 
   function Step({
     stepNum,
@@ -156,7 +151,7 @@ export function OnboardingTransactions({
         stepNum={1}
         title={'Purchase MATIC'}
         explanation={
-          'You need MATIC to swap it for our governance token MOONEY.'
+          'You need MATIC to swap it for our governance token $MOONEY.'
         }
         action={async () => {
           const wallet = wallets[selectedWallet]
@@ -203,9 +198,9 @@ export function OnboardingTransactions({
       />
       <Step
         stepNum={2}
-        title={'Purchase MOONEY on Uniswap'}
+        title={'Purchase $MOONEY on Uniswap'}
         explanation={
-          'MoonDAO routes the order to the best price on a Decentralized Exchange using the low gas fees provided by Polygon.'
+          'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
         }
         action={async () => {
           await executeMooneySwapRoute(mooneySwapRoute)
@@ -263,7 +258,7 @@ export function OnboardingTransactions({
           />
           <Step
             stepNum={4}
-            title={'Stake MOONEY'}
+            title={'Stake $MOONEY'}
             explanation={
               'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
             }
