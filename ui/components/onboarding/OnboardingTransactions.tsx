@@ -49,7 +49,7 @@ export function OnboardingTransactions({
   //MoonPay
   const fund = useMoonPay()
   const extraFundsForGas = useMemo(() => {
-    return +selectedChain.chainId === 1 ? 0.01 : 1
+    return +selectedChain.chainId === 1 ? 0.05 : 1
   }, [selectedChain])
 
   //Uniswap
