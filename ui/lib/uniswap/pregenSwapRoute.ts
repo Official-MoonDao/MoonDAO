@@ -1,30 +1,30 @@
-import { Ethereum } from '@thirdweb-dev/chains'
+import { Chain } from '@thirdweb-dev/chains'
 import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import {
   AlphaRouter,
-  SwapOptionsSwapRouter02,
+  SwapOptionsUniversalRouter,
   SwapType,
 } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
 import { initSDK } from '../thirdweb/thirdweb'
 
 export async function pregenSwapRoute(
+  selectedChain: Chain,
   swapAmnt: number | string,
   tokenIn: Token,
   tokenOut: Token
 ) {
   try {
-    const provider: any = initSDK(Ethereum).getProvider()
+    const provider: any = initSDK(selectedChain).getProvider()
     const router: any = new AlphaRouter({
-      chainId: 137,
+      chainId: selectedChain.chainId,
       provider,
     })
 
-    const options: SwapOptionsSwapRouter02 = {
+    const options: SwapOptionsUniversalRouter = {
       recipient: '0x0000000000000000000000000000000000000000',
       slippageTolerance: new Percent(50, 10_000),
-      deadline: Math.floor(Date.now() / 1000 + 1800),
-      type: SwapType.SWAP_ROUTER_02,
+      type: SwapType.UNIVERSAL_ROUTER,
     }
 
     const route = await router.route(

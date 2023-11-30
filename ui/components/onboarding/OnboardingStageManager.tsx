@@ -100,13 +100,11 @@ export function OnboardingStageManager({ selectedChain }: any) {
       totalLocked >= 0 &&
       totalMooneyBalance >= 0
     ) {
-      console.log(selectedLevel.hasVotingPower)
       if (selectedLevel.hasVotingPower) {
         if (selectedLevel.price / 2 <= totalLocked) {
           setStage(3)
         }
       } else {
-        console.log(selectedLevel.price)
         if (selectedLevel.price <= totalMooneyBalance) {
           setStage(3)
         }
