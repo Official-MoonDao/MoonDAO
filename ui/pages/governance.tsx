@@ -20,43 +20,6 @@ export default function Governance() {
 
   const pages: any = [
     {
-      name: 'Vote on Snapshot',
-      description:
-        'Our community uses Snapshot to vote. Click here to navigate and view active proposals.',
-      href: 'https://snapshot.org/#/tomoondao.eth',
-      icon: HandRaisedIcon,
-      externalLink: true,
-    },
-    {
-      name: 'Prove Humanity',
-      description:
-        'In addition to being a stakeholder, we require voters to utilize Gitcoin Passport with a score of 15 or above for voting. This is to make sure you are a unique human.',
-      href: 'https://passport.gitcoin.co/',
-      icon: IdentificationIcon,
-      externalLink: true,
-    },
-    {
-      name: 'Get $MOONEY',
-      description: 'Join the MoonDAO community by acquiring our governance token $MOONEY on UniSwap.',
-      href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
-      icon: WalletIcon,
-      externalLink: true,
-    },
-    {
-      name: 'Get Voting Power',
-      description: 'Voting power is granted to stakeholders, stake $MOONEY to fully participate in co-governance and co-creation.',
-      href: '/lock',
-      icon: LockClosedIcon,
-      externalLink: false,
-    },
-    {
-      name: 'Bridge $MOONEY',
-      description: 'Reduce onchain gas fees by bridging $MOONEY from L1 to L2.',
-      href: 'https://wallet.polygon.technology/polygon/bridge/deposit',
-      icon: ArrowsRightLeftIcon,
-      externalLink: true,
-    },
-    {
       name: 'Export Wallet',
       description:
         'Export your embedded wallet to an external wallet. All tokens and voting power will be sent to the specified wallet address.',
@@ -71,6 +34,43 @@ export default function Governance() {
         'Connect your Discord and wallet to Guild.xyz to unlock new roles and permissions based on your holdings to see everything that is happening with projects and governance.',
       href: 'https://discord.com/channels/914720248140279868/945284940721975356',
       icon: ShieldCheckIcon,
+      externalLink: true,
+    },
+    {
+      name: 'Get $MOONEY',
+      description: 'Join the MoonDAO community by acquiring our governance token $MOONEY on UniSwap.',
+      href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
+      icon: WalletIcon,
+      externalLink: true,
+    },
+    {
+      name: 'Bridge $MOONEY',
+      description: 'Reduce onchain gas fees by bridging $MOONEY from L1 to L2.',
+      href: 'https://wallet.polygon.technology/polygon/bridge/deposit',
+      icon: ArrowsRightLeftIcon,
+      externalLink: true,
+    },
+    {
+      name: 'Get Voting Power',
+      description: 'Voting power is granted to stakeholders, stake $MOONEY to fully participate in co-governance and co-creation.',
+      href: '/lock',
+      icon: LockClosedIcon,
+      externalLink: false,
+    },
+    {
+      name: 'Prove Humanity',
+      description:
+        'In addition to being a stakeholder, we require voters to utilize Gitcoin Passport with a score of 15 or above for voting. This is to make sure you are a unique human.',
+      href: 'https://passport.gitcoin.co/',
+      icon: IdentificationIcon,
+      externalLink: true,
+    },
+    {
+      name: 'Vote on Snapshot',
+      description:
+        'Our community uses Snapshot to vote. Click here to navigate and view active proposals.',
+      href: 'https://snapshot.org/#/tomoondao.eth',
+      icon: HandRaisedIcon,
       externalLink: true,
     },
     {

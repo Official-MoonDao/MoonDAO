@@ -58,7 +58,8 @@ export default function Home() {
             <div className="flex">
               <div className="ml-3">
                 <dt className="text-lg font-medium text-center lg:text-left">Help Decentralize Access to Space</dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">Ensure our multi-planetary future isn’t the exclusive domain of a few governments and billionaires, by working together to support a borderless, decentralized future that's open to all dedicated to building off-world, irrespective of national borders or geopolitics, by coordinating engineers, scientists, researchers, artists, devs, and space enthusiasts from all over the world.
+                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                  Ensure our multi-planetary future isn’t the exclusive domain of a few governments and billionaires. By working together to support a borderless, decentralized future that's open to all dedicated to building off-world, irrespective of national borders or geopolitics. MoonDAO is coordinating engineers, scientists, researchers, artists, devs, and space enthusiasts from all over the world to accelerate progress.
                 </dd>
               </div>
             </div>
