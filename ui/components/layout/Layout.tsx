@@ -9,8 +9,7 @@ import { useState, useEffect } from 'react'
 import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
-import { useImportToken } from '../../lib/utils/import-token'
-import { LogoSidebarLight, LogoWhite, LogoSidebar } from '../assets'
+import { LogoSidebarLight, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
@@ -31,18 +30,11 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const router = useRouter()
   const address = useAddress()
 
-  const importToken = useImportToken()
-
   const chain = useChain()
   const { selectedChain } = useContext(ChainContext)
 
   const [currentLang, setCurrentLang] = useState(router.locale)
-  const [isTokenImported, setIsTokenImported] = useState(false)
-
-  useEffect(() => {
-    if (localStorage.getItem('MOONEY_isImported')) setIsTokenImported(true)
-  }, [address])
-  const { t } = useTranslation('common');
+  const { t } = useTranslation('common')
   //Background is defined in this root div.
   const layout = (
     <div
@@ -84,22 +76,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
               <ul className="pt-4 px-3">
                 {/*Language change button*/}
                 <LanguageChange />
-                {/*Import MOONEY, will add to LOCK MOONEY page*/}
-                {address && !isTokenImported && (
-                  <li className="mt-1 hidden bg-red-500">
-                    <button
-                      className="p-2 "
-                      onClick={async () => {
-                        const wasAdded = await importToken()
-                        setIsTokenImported(wasAdded)
-                      }}
-                    >
-                      {currentLang === 'en'
-                        ? 'Import $MOONEY Token'
-                        : '导入 $MOONEY 代币'}
-                    </button>
-                  </li>
-                )}
               </ul>
             </nav>
           </div>

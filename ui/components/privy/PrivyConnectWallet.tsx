@@ -3,7 +3,7 @@ import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { allChains } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import Image from 'next/image'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -67,9 +67,8 @@ export function PrivyConnectWallet() {
 
   async function getNativeBalance() {
     const provider = await wallets[selectedWallet].getEthersProvider()
-    const nB = await provider.getBalance(wallets[selectedWallet].address)
-    console.log(nB)
-    setNativeBalance((nB.toString() / 10 ** 18).toFixed(5))
+    const nB: any = await provider.getBalance(wallets[selectedWallet].address)
+    setNativeBalance(+(nB.toString() / 10 ** 18).toFixed(5))
   }
 
   useEffect(() => {

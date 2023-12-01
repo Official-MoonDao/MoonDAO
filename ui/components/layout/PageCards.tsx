@@ -23,8 +23,9 @@ export function PageCards({ sections, id, header, title, description }: any) {
           <dl
             id={'home-card-pages'}
             className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-4 lg:max-w-none mb-8"
+            key={id + 'page-cards' + i}
           >
-            <p className='text-2xl text-center lg:text-left'>
+            <p className="text-2xl text-center lg:text-left">
               {section.sectionName}
             </p>
             {section.pages.map((page: any, i: number) => (
@@ -53,7 +54,6 @@ export function PageCards({ sections, id, header, title, description }: any) {
             ))}
           </dl>
         ))}
-        
       </div>
     </div>
   )
