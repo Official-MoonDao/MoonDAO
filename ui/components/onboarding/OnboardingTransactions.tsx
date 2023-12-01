@@ -128,6 +128,16 @@ export function OnboardingTransactions({
           <button
             className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
             onClick={async () => {
+              //check network
+              if (
+                +wallets[selectedWallet].chainId.split(':')[1] !==
+                +selectedChain.chainId
+              ) {
+                return toast.error(
+                  `Please switch wallet to ${selectedChain.name}`
+                )
+              }
+
               setIsLoadingAction(true)
               try {
                 await action()
