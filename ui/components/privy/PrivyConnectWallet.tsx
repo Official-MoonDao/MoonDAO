@@ -96,14 +96,13 @@ export function PrivyConnectWallet() {
         <div
           id="privy-connect-wallet"
           className={`w-[225px] relative flex flex-col items-right justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[10]`}
+          onClick={(e: any) => {
+            !e.target.closest('#privy-connect-wallet-dropdown') &&
+              setEnabled(!enabled)
+          }}
         >
           {/*Address and Toggle open/close button*/}
-          <div
-            onClick={(e) => {
-              setEnabled(!enabled)
-            }}
-            className="flex items-center w-full justify-between"
-          >
+          <div className="flex items-center w-full h-full justify-between">
             <p className="text-sm">{`${wallets?.[selectedWallet].address?.slice(
               0,
               6
@@ -154,7 +153,12 @@ export function PrivyConnectWallet() {
               </div>
               <div className="w-full flex flex-col gap-2 py-2">
                 <div className=" w-full flex justify-left items-center gap-4">
-                  <Image src="/favicon.ico" width={45} height={45} alt="" />
+                  <Image
+                    src="/coins/MOONEY.png"
+                    width={45}
+                    height={45}
+                    alt=""
+                  />
                   <p>
                     {mooneyBalance
                       ? (mooneyBalance?.toString() / 10 ** 18).toFixed(2)

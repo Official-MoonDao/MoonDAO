@@ -49,8 +49,8 @@ export function LinkAccounts({ user }: any) {
           <LinkAcctBtn onClick={linkWallet} linked={linkedAccounts?.wallet}>
             Wallet:
           </LinkAcctBtn>
-          <LinkAcctBtn onClick={linkEmail} linked={linkedAccounts?.email}>
-            Email:
+          <LinkAcctBtn onClick={linkPhone} linked={linkedAccounts?.phone}>
+            SMS:
           </LinkAcctBtn>
           <LinkAcctBtn onClick={linkGoogle} linked={linkedAccounts.google}>
             Google:
