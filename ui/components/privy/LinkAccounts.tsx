@@ -1,4 +1,4 @@
-import { FolderPlusIcon } from '@heroicons/react/24/solid'
+import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState } from 'react'
 
@@ -9,7 +9,7 @@ export function LinkAccounts({ user }: any) {
 
   function LinkAcctBtn({ onClick, linked, children }: any) {
     return (
-      <button onClick={onClick} className='pt-1 text-[13px]'>
+      <button onClick={onClick} className="pt-1 text-[13px]">
         <div className="flex w-full items-center justify-between px-2">
           {children}
           <p>{linked ? '✔' : '⨉'}</p>
@@ -41,7 +41,7 @@ export function LinkAccounts({ user }: any) {
         <button
           className={`duration-300 ease-in-out ${enabled && 'rotate-180'}`}
         >
-          ▼
+          <ChevronDownIcon height={20} width={20} />
         </button>
       </button>
       {enabled && (
@@ -51,9 +51,6 @@ export function LinkAccounts({ user }: any) {
           </LinkAcctBtn>
           <LinkAcctBtn onClick={linkEmail} linked={linkedAccounts?.email}>
             Email:
-          </LinkAcctBtn>
-          <LinkAcctBtn onClick={linkPhone} linked={linkedAccounts?.phone}>
-            Phone:
           </LinkAcctBtn>
           <LinkAcctBtn onClick={linkGoogle} linked={linkedAccounts.google}>
             Google:

@@ -29,7 +29,10 @@ export default function Governance() {
       description:
         'Export your embedded wallet to an external wallet. All tokens and voting power will be sent to the specified wallet address.',
       onClick: () => {
-        setEnableExportModal(true)
+        if (wallets?.[selectedWallet]?.walletClientType !== 'privy') {
+          return toast.error('Please select a Privy wallet to export.')
+        }
+        exportWallet()
       },
       icon: ArrowRightIcon,
     },
@@ -58,7 +61,8 @@ export default function Governance() {
     },
     {
       name: 'Get Voting Power',
-      description: 'Voting power is granted to stakeholders, stake $MOONEY to fully participate in co-governance and co-creation.',
+      description:
+        'Voting power is granted to stakeholders, stake $MOONEY to fully participate in co-governance and co-creation.',
       href: '/lock',
       icon: LockClosedIcon,
       externalLink: false,
