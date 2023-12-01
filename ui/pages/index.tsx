@@ -23,7 +23,7 @@ export default function Home() {
     <div className="animate-fadeIn">
       <Head title="Home" />
 
-      <div className="flex flex-col pt-10 w-full">
+      <div id="home-hero" className="flex flex-col pt-10 w-full">
         <div className="flex flex-col items-left px-4 lg:px-7 xl:px-9">
           <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
             Welcome to MoonDAO

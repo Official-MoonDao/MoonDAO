@@ -12,7 +12,7 @@ describe('Main E2E Testing', () => {
   describe('MoonDAO App | Home', () => {
     it('should load the home page', () => {
       cy.visit('/')
-      cy.get('#home-cards').should('exist')
+      cy.get('#home-hero').should('exist')
     })
   })
 
