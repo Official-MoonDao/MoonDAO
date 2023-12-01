@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 
-export function PageCards({ pages, id, header, title, description }: any) {
+export function PageCards({ sections, id, header, title, description }: any) {
   const router = useRouter()
 
   return (
@@ -19,35 +19,41 @@ export function PageCards({ pages, id, header, title, description }: any) {
         id={id}
         className="mx-auto mt-8 max-w-2xl lg:mt-12 xl:mt-14 lg:max-w-none"
       >
-        <dl
-          id={'home-card-pages'}
-          className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-4 lg:max-w-none"
-        >
-          {pages.map((page: any, i: number) => (
-            <button
-              onClick={
-                page?.href && page.externalLink
-                  ? () => window.open(page.href)
-                  : page?.href && !page.externalLink
-                  ? () => router.push(page.href)
-                  : page?.onClick
-              }
-              key={page.name}
-              className="flex flex-row items-center text-center inner-container-background rounded-[6px] p-4 gap-x-4 hover:scale-105 transition-all duration-150"
-            >
-              <dt className="flex grow-0 min-w-16 items-center justify-center py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold w-3/4">
-                <page.icon
-                  className="h-5 w-5 stroke-2 flex-none text-[#1F212B]"
-                  aria-hidden="true"
-                />
-                {page.name}
-              </dt>
-              <dd className="shrink-0 text-sm leading-7 w-3/4 text-light-text dark:text-white font-medium lg:text-left">
-                <p className="">{page.description}</p>
-              </dd>
-            </button>
-          ))}
-        </dl>
+        {sections.map((section: any, i: number) => (
+          <dl
+            id={'home-card-pages'}
+            className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-4 lg:max-w-none mb-8"
+          >
+            <p className='text-2xl text-center lg:text-left'>
+              {section.sectionName}
+            </p>
+            {section.pages.map((page: any, i: number) => (
+              <button
+                onClick={
+                  page?.href && page.externalLink
+                    ? () => window.open(page.href)
+                    : page?.href && !page.externalLink
+                    ? () => router.push(page.href)
+                    : page?.onClick
+                }
+                key={page.name}
+                className="flex flex-col lg:flex-row items-center text-center inner-container-background rounded-[6px] lg:p-4 gap-x-4 hover:scale-105 transition-all duration-150"
+              >
+                <dt className="flex min-w-max items-center justify-center mt-3 lg:mt-0 py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold lg:w-1/3">
+                  <page.icon
+                    className="h-5 w-5 stroke-2 flex-none text-[#1F212B]"
+                    aria-hidden="true"
+                  />
+                  {page.name}
+                </dt>
+                <dd className="text-sm leading-7 lg:w-2/3 mb-3 lg:mb-0 mt-1 lg:mt-0 px-3 lg:px-1 text-light-text dark:text-white font-medium lg:text-left">
+                  <p className="">{page.description}</p>
+                </dd>
+              </button>
+            ))}
+          </dl>
+        ))}
+        
       </div>
     </div>
   )
