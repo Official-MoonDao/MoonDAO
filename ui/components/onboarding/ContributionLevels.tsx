@@ -1,4 +1,4 @@
-import { useConnectWallet, usePrivy, useWallets } from '@privy-io/react-auth'
+import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import Image from 'next/image'
 import { Dispatch, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -30,8 +30,8 @@ function ContributionLevel({
   selectedChain,
 }: ContributionLevelProps) {
   const { user } = usePrivy()
-  const { connectWallet } = useConnectWallet({
-    onSuccess: () => {
+  const { login } = useLogin({
+    onComplete: () => {
       const walletChain = wallets[selectedWallet]?.chainId.split(':')[1]
 
       if (+walletChain !== selectedChain.chainId)
@@ -73,7 +73,7 @@ function ContributionLevel({
           : 'border-opacity-60 dark:border-opacity-20'
       }`}
       onClick={() => {
-        if (!user) connectWallet()
+        if (!user) login()
         else {
           const walletChain = wallets[selectedWallet]?.chainId.split(':')[1]
 
