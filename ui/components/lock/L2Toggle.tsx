@@ -6,13 +6,13 @@ export default function L2Toggle() {
   const { isL2, toggleLayer } = useL2Toggle()
   return (
     <div
-      className={`flex items-center rounded justify-around bg-white bg-opacity-[0.08] py-2 w-[235px] transition-all duration-150 ${
+      className={`flex items-center rounded justify-around bg-[#00000050] dark:bg-[#ffffff50] py-2 w-[235px] transition-all duration-150 ${
         isL2 && ''
       }`}
     >
       <button
         onClick={toggleLayer}
-        className={`rounded px-3 py-[10px] w-[101px] transition-all duration-150 ${
+        className={`rounded px-3 py-[10px] w-[101px] text-black transition-all duration-150 ${
           !isL2 && 'bg-[#CBE4F7] text-black font-semibold '
         }`}
       >
@@ -20,7 +20,7 @@ export default function L2Toggle() {
       </button>
       <button
         onClick={toggleLayer}
-        className={` rounded px-3 py-[10px]  w-[101px] transition-all duration-150 ${
+        className={` rounded px-3 py-[10px]  w-[101px] text-black transition-all duration-150 ${
           isL2 && 'bg-[#CBE4F7] text-black font-semibold'
         }`}
       >

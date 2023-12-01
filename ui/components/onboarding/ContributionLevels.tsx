@@ -4,10 +4,12 @@ import { Dispatch, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
+import { useLightMode } from '../../lib/utils/hooks'
 import { ArrowSide } from '../assets'
 
 type ContributionLevelProps = {
-  icon: string
+  lightIcon: string
+  darkIcon: string
   title: string
   mooneyValue: number
   intro: string
@@ -19,7 +21,8 @@ type ContributionLevelProps = {
 }
 
 function ContributionLevel({
-  icon,
+  lightIcon,
+  darkIcon,
   title,
   mooneyValue,
   intro,
@@ -43,6 +46,8 @@ function ContributionLevel({
       console.log(error)
     },
   })
+
+  const [lightMode] = useLightMode()
 
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -75,11 +80,6 @@ function ContributionLevel({
       onClick={() => {
         if (!user) login()
         else {
-          const walletChain = wallets[selectedWallet]?.chainId.split(':')[1]
-
-          if (+walletChain !== selectedChain.chainId)
-            return toast.error(`Switch to ${selectedChain.name} to continue `)
-
           setSelectedLevel({ price: mooneyValue, hasVotingPower })
         }
       }}
@@ -90,7 +90,7 @@ function ContributionLevel({
           <div className="mt-8">
             <Image
               alt={`Icon image for ${title}`}
-              src={icon}
+              src={lightMode ? darkIcon : lightIcon}
               width={71}
               height={81.885}
             />
@@ -179,7 +179,8 @@ export function ContributionLevels({
   return (
     <div className="flex flex-col min-[1400px]:flex-row justify-evenly mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
       <ContributionLevel
-        icon="/explorer.svg"
+        lightIcon="/onboarding-icons/explorer-white.svg"
+        darkIcon="/onboarding-icons/explorer-black.svg"
         title="Explorer"
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
         mooneyValue={100}
@@ -193,7 +194,8 @@ export function ContributionLevels({
         selectedChain={selectedChain}
       />
       <ContributionLevel
-        icon="/citizen.svg"
+        lightIcon="/onboarding-icons/citizen-white.svg"
+        darkIcon="/onboarding-icons/citizen-black.svg"
         title="Citizen"
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
         mooneyValue={2500}
@@ -211,7 +213,8 @@ export function ContributionLevels({
         selectedChain={selectedChain}
       />
       <ContributionLevel
-        icon="/industry.svg"
+        lightIcon="/onboarding-icons/industry-white.svg"
+        darkIcon="/onboarding-icons/industry-black.svg"
         title="Industry"
         intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
         mooneyValue={2000000}
