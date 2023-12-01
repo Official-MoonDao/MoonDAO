@@ -1,5 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
+import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useTokenAllowance } from '../../lib/tokens/approve'
@@ -83,7 +84,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
     }
 
     if (selectedLevel.price != 0) {
-      generateNativeRoute().then((swapRoute: any) => {
+      generateNativeRoute(TradeType.EXACT_OUTPUT).then((swapRoute: any) => {
         setSelectedLevel((prev: any) => ({
           ...prev,
           nativeSwapRoute: swapRoute,
@@ -94,21 +95,18 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
-    console.log(totalLocked, totalMooneyBalance)
     if (
       selectedLevel.price > 0 &&
       totalLocked >= 0 &&
       totalMooneyBalance >= 0
     ) {
-      console.log(selectedLevel.hasVotingPower)
       if (selectedLevel.hasVotingPower) {
         if (selectedLevel.price / 2 <= totalLocked) {
-          setStage(4)
+          setStage(3)
         }
       } else {
-        console.log(selectedLevel.price)
-        if (selectedLevel.price <= totalMooneyBalance) {
-          setStage(4)
+        if (selectedLevel.price - 1 <= totalMooneyBalance) {
+          setStage(3)
         }
       }
     }
@@ -194,17 +192,40 @@ export function OnboardingStageManager({ selectedChain }: any) {
   }
   const StepOne = () => (
     <StageContainer>
-      <div className="flex flex-col font-RobotoMono items-center">
+      <div className="flex flex-col font-RobotoMono items-center pl-[10%]">
         <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
           SELECT MEMBERSHIP LEVEL
         </h1>
 
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
-          Disclaimer: You must be a member to participate in our space ticket giveaway.
-          Entries into the Ticket To Space Sweepstakes are 20,000 $MOONEY each.
-          There is no expectation of profit with $MOONEY, read more about $MOONEY
-          <a className="text-moon-gold" href='https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens'> here</a>.
+          Disclaimer: You must be a member to participate in our space ticket
+          giveaway. Entries into the Ticket To Space Sweepstakes are 20,000
+          $MOONEY each. There is no expectation of profit with $MOONEY, read
+          more about $MOONEY
+          <a
+            className="text-moon-gold"
+            href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
+          >
+            {' '}
+            here
+          </a>
+          .
         </p>
+        {+selectedChain.chainId === 1 && (
+          <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
+            Warning: The Ticket to Space Sweepstakes is on Polygon. If you
+            continue with Ethereum you must bridge your $MOONEY to Polygon to
+            participate. Learn how to bridge your $MOONEY
+            <a
+              className="text-moon-gold"
+              href="https://youtu.be/oQtHjbcbAio?feature=shared"
+            >
+              {' '}
+              here
+            </a>
+            .
+          </p>
+        )}
         <div className="py-4">
           <L2Toggle />
         </div>
@@ -223,17 +244,6 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   const StepTwo = () => (
     <StageContainer>
-      <button
-        className="mt-3 py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
-        style={{ marginBottom: '68px' }}
-        onClick={() => {
-          setStage(0)
-          setSelectedLevel({ price: 0, hasVotingPower: false })
-        }}
-      >
-        <input type="image" src="/backIcon.png" />
-        <span>Back</span>
-      </button>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
         <div className="flex w-full justify-between">
           <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
@@ -243,7 +253,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
             className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
             style={{ marginBottom: '68px' }}
             onClick={() => {
-              setStage(1)
+              setStage(0)
               setSelectedLevel({ price: 0, hasVotingPower: false })
             }}
           >
@@ -288,7 +298,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   const StepFour = () => (
     <StageContainer>
-      <div className="relative flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
+      <div className="flex flex-col items-center lg:items-start">
         <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl text-center lg:text-left">
           Next Steps
         </h1>
@@ -325,9 +335,11 @@ export function OnboardingStageManager({ selectedChain }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
-              }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
+              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+            } text-md font-medium ${
+              isActive ? 'text-white' : 'text-[#40464f]'
+            }`}
           >
             {stepNumber}
           </span>

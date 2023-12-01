@@ -160,19 +160,18 @@ export function ContributionLevels({
         icon="/explorer.svg"
         title="Explorer"
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
-        mooneyValue={40000}
+        mooneyValue={100}
         points={[
           'Can purchase two Ticket to Space Sweepstakes Entries',
           'Community Discord Access',
           'MoonDAO Marketplace Access',
-          'MoonDAO Newsletter Updates',
         ]}
       />
       <ContributionLevel
         icon="/citizen.svg"
         title="Citizen"
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
-        mooneyValue={500000}
+        mooneyValue={2500}
         points={[
           'Can purhcase up to 12 Ticket To Space Entries',
           'Exclusive Discord Access',

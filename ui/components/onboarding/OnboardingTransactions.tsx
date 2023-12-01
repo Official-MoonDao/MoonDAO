@@ -1,6 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
+import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
@@ -47,6 +48,9 @@ export function OnboardingTransactions({
 
   //MoonPay
   const fund = useMoonPay()
+  const extraFundsForGas = useMemo(() => {
+    return +selectedChain.chainId === 1 ? 0.05 : 1
+  }, [selectedChain])
 
   //Uniswap
   const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
@@ -55,14 +59,14 @@ export function OnboardingTransactions({
     generateRoute: generateMooneyRoute,
     executeRoute: executeMooneySwapRoute,
   } = useUniversalRouter(
-    selectedLevel?.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18,
+    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18,
     NATIVE_TOKEN,
     MOONEY
   )
 
   useEffect(() => {
     if (selectedLevel.nativeSwapRoute) {
-      generateMooneyRoute().then((swapRoute: any) =>
+      generateMooneyRoute(TradeType.EXACT_INPUT).then((swapRoute: any) =>
         setMooneySwapRoute(swapRoute)
       )
     }
@@ -98,7 +102,7 @@ export function OnboardingTransactions({
       <div className="mt-5 w-full h-full text-black dark:text-white">
         <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
           <p
-            className={`block px-3 text-white py-1 text-xl font-bold rounded-[9999px] ${
+            className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
               isLoadingCheck
                 ? 'bg-[grey] animate-pulse'
                 : currStep > stepNum
@@ -113,7 +117,7 @@ export function OnboardingTransactions({
               {title}
             </div>
           </div>
-          <div className="mt-1 opacity-60 text-white text-base font-normal lg:mt-0 xl:text-base">
+          <div className="mt-1 opacity-60 text-base font-normal lg:mt-0 xl:text-base">
             {explanation}
           </div>
 
@@ -122,8 +126,7 @@ export function OnboardingTransactions({
         </div>
         {currStep === stepNum && (
           <button
-            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-white text-base font-normal font-['Roboto Mono']"
-            style={{ backgroundColor: '#FFFFFF14' }}
+            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
             onClick={async () => {
               setIsLoadingAction(true)
               try {
@@ -148,7 +151,7 @@ export function OnboardingTransactions({
         stepNum={1}
         title={'Purchase MATIC'}
         explanation={
-          'You need MATIC to swap it for our governance token MOONEY.'
+          'You need MATIC to swap it for our governance token $MOONEY.'
         }
         action={async () => {
           const wallet = wallets[selectedWallet]
@@ -159,8 +162,10 @@ export function OnboardingTransactions({
           const levelPrice =
             selectedLevel.nativeSwapRoute.route[0].rawQuote.toString() /
             10 ** 18
-          const fundTX = await fund(levelPrice - +formattedNativeBalance)
-          console.log(fundTX)
+
+          const fundTX = await fund(
+            levelPrice - +formattedNativeBalance + extraFundsForGas
+          )
         }}
         check={async () => {
           const wallet = wallets[selectedWallet]
@@ -170,8 +175,9 @@ export function OnboardingTransactions({
           const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
           if (
             +formattedNativeBalance >
-            selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-              10 ** 18
+              selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                10 ** 18 ||
+            TESTING
           ) {
             return true
           } else {
@@ -184,22 +190,23 @@ export function OnboardingTransactions({
           selectedLevel.nativeSwapRoute?.route[0]
             ? (
                 selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                10 ** 18
-              ).toFixed(3)
+                  10 ** 18 +
+                extraFundsForGas
+              ).toFixed(5)
             : '...'
         } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
       />
       <Step
         stepNum={2}
-        title={'Purchase MOONEY on Uniswap'}
+        title={'Purchase $MOONEY on Uniswap'}
         explanation={
-          'MoonDAO routes the order to the best price on a Decentralized Exchange using the low gas fees provided by Polygon.'
+          'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
         }
         action={async () => {
-          executeMooneySwapRoute(mooneySwapRoute)
+          await executeMooneySwapRoute(mooneySwapRoute)
         }}
         check={async () => {
-          if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price) {
+          if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1) {
             return true
           } else {
             return false
@@ -251,7 +258,7 @@ export function OnboardingTransactions({
           />
           <Step
             stepNum={4}
-            title={'Stake MOONEY'}
+            title={'Stake $MOONEY'}
             explanation={
               'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
             }
@@ -266,7 +273,7 @@ export function OnboardingTransactions({
             deps={[vMooneyLock]}
             txExplanation={`Stake ${
               selectedLevel.price / 2
-            } $MOONEY for 2 years`}
+            } $MOONEY for 1 year`}
           />
         </>
       )}

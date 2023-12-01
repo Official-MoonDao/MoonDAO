@@ -6,17 +6,22 @@ import {
   LockClosedIcon,
   WalletIcon,
   IdentificationIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
+import toast from 'react-hot-toast'
+import PrivyWalletContext from '../lib/privy/privy-wallet-context'
 import Head from '../components/layout/Head'
 import { PageCards } from '../components/layout/PageCards'
-import { ExportPrivyWalletModal } from '../components/privy/ExportPrivyWalletModal'
 
 export default function Governance() {
   const router = useRouter()
-  const [enableExportModal, setEnableExportModal] = useState(false)
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const { wallets } = useWallets()
+
+  const { exportWallet } = usePrivy()
 
   const pages: any = [
     {
@@ -38,7 +43,8 @@ export default function Governance() {
     },
     {
       name: 'Get $MOONEY',
-      description: 'Join the MoonDAO community by acquiring our governance token $MOONEY on UniSwap.',
+      description:
+        'Join the MoonDAO community by acquiring our governance token $MOONEY on UniSwap.',
       href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
       icon: WalletIcon,
       externalLink: true,
@@ -116,9 +122,6 @@ export default function Governance() {
           </>
         }
       />
-      {enableExportModal && (
-        <ExportPrivyWalletModal setEnabled={setEnableExportModal} />
-      )}
     </div>
   )
 }

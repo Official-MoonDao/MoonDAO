@@ -25,7 +25,7 @@ import { devWhitelist } from '../../const/tts/whitelist'
 
 const TICKET_TO_SPACE_ADDRESS = '0x8Af8763090813cdcd31AE39fD651F0d9d6bc29D7' //mumbai
 
-export default function Ticket2Space({ nftMetadata }: any) {
+export default function Sweepstakes({ nftMetadata }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const router = useRouter()
 
@@ -113,6 +113,19 @@ export default function Ticket2Space({ nftMetadata }: any) {
         </h3> */}
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
           Take the leap, for the chance to win a trip to space!
+        </p>
+
+        <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
+          The Ticket to Space Sweepstakes is on Polygon. Learn how to bridge
+          your $MOONEY
+          <a
+            className="text-moon-gold"
+            href="https://youtu.be/oQtHjbcbAio?feature=shared"
+          >
+            {' '}
+            here
+          </a>
+          .
         </p>
 
         <div className="">
