@@ -165,7 +165,6 @@ export function ContributionLevels({
           'Can purchase two Ticket to Space Sweepstakes Entries',
           'Community Discord Access',
           'MoonDAO Marketplace Access',
-          'MoonDAO Newsletter Updates',
         ]}
       />
       <ContributionLevel
