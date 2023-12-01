@@ -7,7 +7,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  apiKeyMiddleware(req, res)
+  const auth = apiKeyMiddleware(req, res)
+  if (!auth) return
 
   const {
     query: { id },
