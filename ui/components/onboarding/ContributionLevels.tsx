@@ -1,6 +1,6 @@
-import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { useConnectWallet, usePrivy, useWallets } from '@privy-io/react-auth'
 import Image from 'next/image'
-import { useContext, useEffect, useState } from 'react'
+import { Dispatch, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
@@ -13,6 +13,158 @@ type ContributionLevelProps = {
   intro: string
   points: string[]
   hasVotingPower?: boolean
+  selectedLevel: any
+  setSelectedLevel: Dispatch<any>
+  selectedChain: any
+}
+
+function ContributionLevel({
+  icon,
+  title,
+  mooneyValue,
+  intro,
+  points,
+  hasVotingPower,
+  selectedLevel,
+  setSelectedLevel,
+  selectedChain,
+}: ContributionLevelProps) {
+  const { user } = usePrivy()
+  const { connectWallet } = useConnectWallet({
+    onSuccess: () => {
+      const walletChain = wallets[selectedWallet]?.chainId.split(':')[1]
+
+      if (+walletChain !== selectedChain.chainId)
+        return toast.error(`Switch to ${selectedChain.name} to continue `)
+
+      setSelectedLevel({ price: mooneyValue, hasVotingPower })
+    },
+    onError: (error) => {
+      console.log(error)
+    },
+  })
+
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const { wallets } = useWallets()
+
+  const [levelVotingPower, setLevelVotingPower] = useState<any>()
+
+  useEffect(() => {
+    if (hasVotingPower) {
+      setLevelVotingPower(
+        Math.sqrt(
+          +calculateVMOONEY({
+            MOONEYAmount: mooneyValue / 2,
+            VMOONEYAmount: 0,
+            time: Date.now() * 1000 * 60 * 60 * 24 * 365 * 1,
+            lockTime: new Date(),
+            max: Date.now() * 1000 * 60 * 60 * 24 * 365 * 4,
+          })
+        )
+      )
+    }
+  }, [hasVotingPower, mooneyValue])
+
+  return (
+    <div
+      className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
+        selectedLevel?.price === mooneyValue
+          ? 'border-moon-orange border-opacity-100'
+          : 'border-opacity-60 dark:border-opacity-20'
+      }`}
+      onClick={() => {
+        if (!user) connectWallet()
+        else {
+          const walletChain = wallets[selectedWallet]?.chainId.split(':')[1]
+
+          if (+walletChain !== selectedChain.chainId)
+            return toast.error(`Switch to ${selectedChain.name} to continue `)
+
+          setSelectedLevel({ price: mooneyValue, hasVotingPower })
+        }
+      }}
+    >
+      <div className="h-full flex flex-col justify-between">
+        <div className="flex flex-col justify-center items-center">
+          {/*Logo*/}
+          <div className="mt-8">
+            <Image
+              alt={`Icon image for ${title}`}
+              src={icon}
+              width={71}
+              height={81.885}
+            />
+          </div>
+          {/*Title*/}
+          <h1
+            className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${
+              selectedLevel.price === mooneyValue && 'text-moon-orange'
+            }`}
+          >
+            {title}
+          </h1>
+          {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
+          <p className="mt-5 lg:mt-[5px] text-center">
+            {`${
+              hasVotingPower
+                ? (mooneyValue / 2).toLocaleString()
+                : mooneyValue.toLocaleString()
+            } $MOONEY`}
+          </p>
+
+          <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
+            {intro}
+          </p>
+
+          <div
+            className="mt-4 text-left text-sm"
+            style={{ marginBottom: '20px' }}
+          >
+            {/*Perk List*/}
+
+            <div className="mt-[8px] pr-2 2xl:h-[210px]">
+              <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
+                {points.map((point, i) => (
+                  <div
+                    key={`contribution-level-${title}-desc-point-${i}`}
+                    className="text-sm"
+                  >
+                    {'✓ ' + point}
+                  </div>
+                ))}
+                {hasVotingPower && (
+                  <div className="text-sm">
+                    {`✓ ${Math.floor(
+                      levelVotingPower
+                    ).toLocaleString()} Voting Power`}
+                  </div>
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+        <button
+          className={`mt-3 border flex justify-center items-center gap-3 ${
+            selectedLevel.price === mooneyValue
+              ? 'border-moon-orange'
+              : 'border-white-500'
+          } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
+            selectedLevel.price === mooneyValue
+              ? 'bg-moon-orange'
+              : 'bg-transparent'
+          }`}
+          style={{
+            width: '261px',
+            height: '50px',
+            padding: '12px, 20px, 12px, 20px',
+            textAlign: 'center',
+          }}
+        >
+          {'Get Started'} <ArrowSide />
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export function ContributionLevels({
@@ -22,136 +174,6 @@ export function ContributionLevels({
 }: any) {
   {
     /*Card component */
-  }
-  function ContributionLevel({
-    icon,
-    title,
-    mooneyValue,
-    intro,
-    points,
-    hasVotingPower,
-  }: ContributionLevelProps) {
-    const { user } = usePrivy()
-    const { selectedWallet } = useContext(PrivyWalletContext)
-    const { wallets } = useWallets()
-
-    const [levelVotingPower, setLevelVotingPower] = useState<any>()
-
-    useEffect(() => {
-      if (hasVotingPower) {
-        setLevelVotingPower(
-          Math.sqrt(
-            +calculateVMOONEY({
-              MOONEYAmount: mooneyValue / 2,
-              VMOONEYAmount: 0,
-              time: Date.now() * 1000 * 60 * 60 * 24 * 365 * 1,
-              lockTime: new Date(),
-              max: Date.now() * 1000 * 60 * 60 * 24 * 365 * 4,
-            })
-          )
-        )
-      }
-    }, [])
-
-    return (
-      <div
-        className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
-          selectedLevel?.price === mooneyValue
-            ? 'border-moon-orange border-opacity-100'
-            : 'border-opacity-60 dark:border-opacity-20'
-        }`}
-        onClick={() => {
-          if (!user) return toast.error('Please connect a wallet to continue')
-
-          const walletChain = wallets[selectedWallet]?.chainId.split(':')[1]
-
-          if (+walletChain !== selectedChain.chainId)
-            return toast.error(`Switch to ${selectedChain.name} to continue `)
-
-          setSelectedLevel({ price: mooneyValue, hasVotingPower })
-        }}
-      >
-        <div className="h-full flex flex-col justify-between">
-          <div className="flex flex-col justify-center items-center">
-            {/*Logo*/}
-            <div className="mt-8">
-              <Image
-                alt={`Icon image for ${title}`}
-                src={icon}
-                width={71}
-                height={81.885}
-              />
-            </div>
-            {/*Title*/}
-            <h1
-              className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${
-                selectedLevel.price === mooneyValue && 'text-moon-orange'
-              }`}
-            >
-              {title}
-            </h1>
-            {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
-            <p className="mt-5 lg:mt-[5px] text-center">
-              {`${
-                hasVotingPower
-                  ? (mooneyValue / 2).toLocaleString()
-                  : mooneyValue.toLocaleString()
-              } $MOONEY`}
-            </p>
-
-            <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
-              {intro}
-            </p>
-
-            <div
-              className="mt-4 text-left text-sm"
-              style={{ marginBottom: '20px' }}
-            >
-              {/*Perk List*/}
-
-              <div className="mt-[8px] pr-2 2xl:h-[210px]">
-                <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
-                  {points.map((point, i) => (
-                    <div
-                      key={`contribution-level-${title}-desc-point-${i}`}
-                      className="text-sm"
-                    >
-                      {'✓ ' + point}
-                    </div>
-                  ))}
-                  {hasVotingPower && (
-                    <div className="text-sm">
-                      {`✓ ${Math.floor(
-                        levelVotingPower
-                      ).toLocaleString()} Voting Power`}
-                    </div>
-                  )}
-                </ul>
-              </div>
-            </div>
-          </div>
-          <button
-            className={`mt-3 border flex justify-center items-center gap-3 ${
-              selectedLevel.price === mooneyValue
-                ? 'border-moon-orange'
-                : 'border-white-500'
-            } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
-              selectedLevel.price === mooneyValue
-                ? 'bg-moon-orange'
-                : 'bg-transparent'
-            }`}
-            style={{
-              width: '261px',
-              height: '50px',
-              padding: '12px, 20px, 12px, 20px',
-              textAlign: 'center',
-            }}
-          >
-            {'Get Started'} <ArrowSide />
-          </button>
-        </div>
-      </div>
-    )
   }
   // ;('Everything in the Citizen Tier.Exclusive promotion opportunities. Access to talent to help design, build, test your space hardware. 1,000,000 Voting Power 1,000,000 MOONEY')
   return (
@@ -167,6 +189,9 @@ export function ContributionLevels({
           'MoonDAO Marketplace Access',
           'MoonDAO Newsletter Updates',
         ]}
+        selectedLevel={selectedLevel}
+        setSelectedLevel={setSelectedLevel}
+        selectedChain={selectedChain}
       />
       <ContributionLevel
         icon="/citizen.svg"
@@ -182,6 +207,9 @@ export function ContributionLevels({
           'Free-Events Access',
         ]}
         hasVotingPower
+        selectedLevel={selectedLevel}
+        setSelectedLevel={setSelectedLevel}
+        selectedChain={selectedChain}
       />
       <ContributionLevel
         icon="/industry.svg"
@@ -194,6 +222,9 @@ export function ContributionLevels({
           'Access to talent to help design, build, test your space hardware',
         ]}
         hasVotingPower
+        selectedLevel={selectedLevel}
+        setSelectedLevel={setSelectedLevel}
+        selectedChain={selectedChain}
       />
     </div>
   )
