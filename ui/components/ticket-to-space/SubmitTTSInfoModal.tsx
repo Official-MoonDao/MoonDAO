@@ -69,7 +69,14 @@ export function SubmitTTSInfoModal({
           Please enter your full legal name (as displayed on a government issued
           photo ID) and the best email for us to contact you if you win a prize
           the Sweepstakes. By submitting your information, you agree to our
-          <a className='text-moon-gold' href='https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy'> Privacy Policy</a>.
+          <a
+            className="text-moon-gold"
+            href="https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy"
+          >
+            {' '}
+            Privacy Policy
+          </a>
+          .
         </p>
         <label>Full Name</label>
         <input
@@ -82,7 +89,7 @@ export function SubmitTTSInfoModal({
           onChange={(e) => setEmail(e.target.value)}
         />
         <div className="flex w-full justify-between pt-8">
-        <button
+          <button
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
             onClick={() => setEnabled(false)}
           >

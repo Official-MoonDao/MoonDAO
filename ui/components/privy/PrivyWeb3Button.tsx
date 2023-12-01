@@ -29,7 +29,7 @@ export function PrivyWeb3Button({
 }: PrivyWeb3BtnProps) {
   const { selectedChain } = useContext(ChainContext)
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { user, login, connectWallet } = usePrivy()
+  const { user, login } = usePrivy()
   const { wallets } = useWallets()
 
   const [isLoading, setIsLoading] = useState(false)
