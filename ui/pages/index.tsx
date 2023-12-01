@@ -1,18 +1,7 @@
-import {
-  BuildingStorefrontIcon,
-  ChartBarIcon,
-  CalendarIcon,
-  WalletIcon,
-  ArrowsRightLeftIcon,
-  LockClosedIcon,
-} from '@heroicons/react/24/outline'
 import useTranslation from 'next-translate/useTranslation'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
-import { LogoSidebarLight, LogoSidebar } from '../components/assets'
 import Head from '../components/layout/Head'
-import { PageCards } from '../components/layout/PageCards'
 
 export default function Home() {
   const { t } = useTranslation('common')
