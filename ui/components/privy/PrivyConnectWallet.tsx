@@ -153,7 +153,12 @@ export function PrivyConnectWallet() {
               </div>
               <div className="w-full flex flex-col gap-2 py-2">
                 <div className=" w-full flex justify-left items-center gap-4">
-                  <Image src="/favicon.ico" width={45} height={45} alt="" />
+                  <Image
+                    src="/coins/MOONEY.png"
+                    width={45}
+                    height={45}
+                    alt=""
+                  />
                   <p>
                     {mooneyBalance
                       ? (mooneyBalance?.toString() / 10 ** 18).toFixed(2)
