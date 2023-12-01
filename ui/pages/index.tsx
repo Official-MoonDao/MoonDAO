@@ -1,12 +1,8 @@
-import useTranslation from 'next-translate/useTranslation'
 import { useRouter } from 'next/router'
-import { useLightMode } from '../lib/utils/hooks/useLightMode'
 import Head from '../components/layout/Head'
 
 export default function Home() {
-  const { t } = useTranslation('common')
   const router = useRouter()
-  const [lightMode] = useLightMode()
 
   return (
     <div className="animate-fadeIn">
@@ -26,7 +22,7 @@ export default function Home() {
             allowFullScreen
           />
           <button
-            className="mt-10 px-8 py-4 lg:w-[600px] font-RobotoMono font-bold w-full bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
+            className="mt-10 px-8 py-4 lg:w-[300px] font-RobotoMono font-bold w-full bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
             onClick={() => {
               router.push('/onboarding')
             }}
@@ -155,7 +151,7 @@ export default function Home() {
           </dl>
           <div className="flex justify-left">
             <button
-              className="mt-10 px-8 py-4 lg:w-[600px] w-full bg-moon-orange text-white font-RobotoMono font-bold hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
+              className="mt-10 px-8 py-4 lg:w-[300px] w-full bg-moon-orange text-white font-RobotoMono font-bold hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
               onClick={() => {
                 router.push('/onboarding')
               }}
