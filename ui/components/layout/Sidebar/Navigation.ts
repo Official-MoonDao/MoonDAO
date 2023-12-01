@@ -1,14 +1,9 @@
 import {
-  HomeIcon,
-  LockClosedIcon,
   BuildingLibraryIcon,
-  RocketLaunchIcon,
-  BellIcon,
-  ChartBarSquareIcon,
   FolderIcon,
-  CalendarDaysIcon,
-  WalletIcon,
+  HomeIcon,
   PlusIcon,
+  RocketLaunchIcon,
 } from '@heroicons/react/24/outline'
 
 export const navigation = [
@@ -48,5 +43,4 @@ export const navigation = [
       { name: 'Analytics', href: '/analytics' },
     ],
   },
-
 ]
