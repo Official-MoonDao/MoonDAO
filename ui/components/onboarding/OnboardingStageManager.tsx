@@ -105,7 +105,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
           setStage(3)
         }
       } else {
-        if (selectedLevel.price <= totalMooneyBalance) {
+        if (selectedLevel.price - 1 <= totalMooneyBalance) {
           setStage(3)
         }
       }

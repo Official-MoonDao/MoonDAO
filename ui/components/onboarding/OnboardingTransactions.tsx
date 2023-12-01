@@ -206,7 +206,7 @@ export function OnboardingTransactions({
           await executeMooneySwapRoute(mooneySwapRoute)
         }}
         check={async () => {
-          if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price) {
+          if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1) {
             return true
           } else {
             return false
