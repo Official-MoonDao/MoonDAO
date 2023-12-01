@@ -29,7 +29,6 @@ export default function Sweepstakes({ nftMetadata, mongoMoondaoApiKey }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const router = useRouter()
 
-  console.log('key', mongoMoondaoApiKey)
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(0)
