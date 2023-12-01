@@ -21,7 +21,7 @@ export function PageCards({ pages, id, header, title, description }: any) {
       >
         <dl
           id={'home-card-pages'}
-          className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2 xl:grid-cols-2"
+          className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-4 lg:max-w-none"
         >
           {pages.map((page: any, i: number) => (
             <button
@@ -33,16 +33,16 @@ export function PageCards({ pages, id, header, title, description }: any) {
                   : page?.onClick
               }
               key={page.name}
-              className="flex flex-col items-center text-center inner-container-background rounded-[6px] py-4 lg:py-5 hover:scale-105 transition-all duration-150"
+              className="flex flex-row items-center text-center inner-container-background rounded-[6px] p-4 gap-x-4 hover:scale-105 transition-all duration-150"
             >
-              <dt className="flex items-center justify-center py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold w-3/4">
+              <dt className="flex grow-0 min-w-16 items-center justify-center py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold w-3/4">
                 <page.icon
                   className="h-5 w-5 stroke-2 flex-none text-[#1F212B]"
                   aria-hidden="true"
                 />
                 {page.name}
               </dt>
-              <dd className="mt-4 lg:mt-5 xl:mt-6 text-base leading-7 w-3/4 text-light-text dark:text-white font-medium lg:text-left">
+              <dd className="shrink-0 text-sm leading-7 w-3/4 text-light-text dark:text-white font-medium lg:text-left">
                 <p className="">{page.description}</p>
               </dd>
             </button>

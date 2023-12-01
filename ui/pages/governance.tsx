@@ -7,6 +7,7 @@ import {
   WalletIcon,
   IdentificationIcon,
   ShieldCheckIcon,
+  BuildingLibraryIcon,
 } from '@heroicons/react/24/outline'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
@@ -77,8 +78,16 @@ export default function Governance() {
       name: 'Guild.xyz',
       description:
         'Connect your Discord and wallet to Guild.xyz to unlock new roles and permissions based on your holdings to see everything that is happening with projects and governance.',
-      href: 'https://discord.com/channels/914720248140279868/945284940721975356',
+      href: 'https://guild.xyz/moondao',
       icon: ShieldCheckIcon,
+      externalLink: true,
+    },
+    {
+      name: 'City Hall',
+      description:
+        'City Hall channels are home to MoonDAO\'s governance processes, where decisions regarding proposals and our internal operations are addressed.',
+      href: 'https://guild.xyz/moondao',
+      icon: BuildingLibraryIcon,
       externalLink: true,
     },
     {
