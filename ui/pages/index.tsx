@@ -62,10 +62,10 @@ export default function Home() {
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-medium text-center lg:text-left">
+                <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left">
                   Shape Our Community’s Destiny
                 </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   Be an integral part of MoonDAO's vibrant community by actively
                   participating in discussions, governance, voting, and
                   initiatives. Shape the community's direction, voice your
@@ -77,85 +77,43 @@ export default function Home() {
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-medium text-center lg:text-left">
-                  Co-Create a Lunar Settlement
-                </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
-                  Participate in shaping MoonDAO's direction through
-                  governance—guide the allocation of resources in our treasury,
-                  influence organizational decisions, and participate in direct
-                  governance as well as leadership elections.
+                <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left">Co-Create a Lunar Settlement</dt>
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">Participate in shaping MoonDAO's direction through governance—guide the allocation of resources in our treasury, influence organizational decisions, and participate in direct governance as well as leadership elections.</dd>
+              </div>
+            </div>
+            <div className="flex">
+              <div className="ml-3">
+                <dt className="text-lg font-medium font-RobotoMono text-center lg:text-left">Get Funding for R&D</dt>
+                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm font-RobotoMono sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">MoonDAO helps fund research and development projects from all over the world that are helping to decentralize access to space. Have a revolutionary idea? Pitch it to our community to get your project funded. Want to join a cutting edge team? Join a MoonDAO project.</dd>
+              </div>
+            </div>
+            <div className="flex">
+              <div className="ml-3">
+                <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left">Network with Space Professionals</dt>
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">Connect and collaborate with a global network of like-minded visionaries, builders, and thought leaders, fostering innovation toward an open-source and open-space policy framework, including gaining access to funding opportunities or builders that can bring things to fruition.</dd>
+              </div>
+            </div>
+            <div className="flex">
+              <div className="ml-3">
+                <dt className="text-lg font-medium font-RobotoMono text-center lg:text-left">Savings on Space Ventures</dt>
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                  Use your $MOONEY to access discounts on space-related products and services through the MoonDAO marketplace, including our DNA Mission to the Moon, digital assets, and more. Stay up to date as we take steps to make it available for community members to list their own offerings for $MOONEY!
                 </dd>
               </div>
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-medium text-center lg:text-left">
-                  Get Funding for R&D
-                </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
-                  MoonDAO helps fund research and development projects from all
-                  over the world that are helping to decentralize access to
-                  space. Have a revolutionary idea? Pitch it to our community to
-                  get your project funded. Want to join a cutting edge team?
-                  Join a MoonDAO project.
-                </dd>
-              </div >
-            </div >
-            <div className="flex">
-              <div className="ml-3">
-                <dt className="text-lg font-medium text-center lg:text-left">
-                  Network with Space Professionals
-                </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
-                  Connect and collaborate with a global network of like-minded
-                  visionaries, builders, and thought leaders, fostering
-                  innovation toward an open-source and open-space policy
-                  framework, including gaining access to funding opportunities
-                  or builders that can bring things to fruition.
-                </dd>
+                <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left">Access to Extraordinary Events</dt>
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">Enjoy access to exclusive events like our Ticket to Space sweepstakes, Zero Gravity training with NASA astronauts, and other and other unforgettable experiences.</dd>
               </div>
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-medium text-center lg:text-left">
-                  Savings on Space Ventures
-                </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
-                  Use your $MOONEY to access discounts on space-related products
-                  and services through the MoonDAO marketplace, including our
-                  DNA Mission to the Moon, digital assets, and more. Stay up to
-                  date as we take steps to make it available for community
-                  members to list their own offerings for $MOONEY!
-                </dd>
+                <dt className="text-lg font-medium font-RobotoMono text-center lg:text-left">Let’s Build Together</dt>
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">MoonDAO is only getting started with everything it plans to achieve and you can help shape the directions and achievements of the world’s largest Space Network State as humanity moves off-world.</dd>
               </div>
             </div>
-            <div className="flex">
-              <div className="ml-3">
-                <dt className="text-lg font-medium text-center lg:text-left">
-                  Access to Extraordinary Events
-                </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
-                  Enjoy access to exclusive events like our Ticket to Space
-                  sweepstakes, Zero Gravity training with NASA astronauts, and
-                  other and other unforgettable experiences.
-                </dd>
-              </div>
-            </div>
-            <div className="flex">
-              <div className="ml-3">
-                <dt className="text-lg font-medium text-center lg:text-left">
-                  Let’s Build Together
-                </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
-                  MoonDAO is only getting started with everything it plans to
-                  achieve and you can help shape the directions and achievements
-                  of the world’s largest Space Network State as humanity moves
-                  off-world.
-                </dd>
-              </div >
-            </div >
-          </dl >
+          </dl>
           <div className="flex justify-left">
             <button
               className="mt-10 px-8 py-4 lg:w-[600px] w-full bg-moon-orange text-white font-RobotoMono font-bold hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
@@ -166,8 +124,8 @@ export default function Home() {
               Join MoonDAO
             </button>
           </div>
-        </div >
-      </div >
-    </div >
+        </div>
+      </div>
+    </div>
   )
 }
