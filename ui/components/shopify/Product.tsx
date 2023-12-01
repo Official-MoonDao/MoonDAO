@@ -35,7 +35,7 @@ export default function Product({
             <h3 className="title-text-colors font-GoodTimes text-center text-3xl lg:text-left leading-relaxed w-full">
               NFT KIT
             </h3>
-            <section className='flex flex-col items-center'>
+            <section className="flex flex-col items-center">
               <Image
                 id="product-image"
                 className="mt-5 rounded-2xl block"
@@ -110,7 +110,7 @@ export default function Product({
               className={`rounded-2xl bg-gray-100 dark:bg-slate-800`}
               src={product.images[preview]?.src}
               width={250}
-              height={400}
+              height={250}
               alt={`product-${preview}`}
             />
           )}
@@ -135,7 +135,7 @@ export default function Product({
                   key={'pagination' + i}
                   className={`${
                     preview === i && 'text-moon-orange'
-                  } text-3xl hover:scale-110 px-1 2xl:px-2`}
+                  } text-3xl hover:scale-110 px-1`}
                   onClick={() => setPreview(i)}
                 >
                   .
@@ -165,9 +165,7 @@ export default function Product({
             }`}
             onClick={() => setQuantity(quantity > 0 ? quantity - 1 : 0)}
           >
-            <span className="">
-              -
-            </span>
+            <span className="">-</span>
           </button>
           {/*Quantity and total */}
           <div className="flex flex-col justify-center items-center gap-1">
@@ -192,9 +190,7 @@ export default function Product({
             className="absolute right-[4%] text-xl border border-black dark:border-white rounded-full px-2 hover:scale-105 transition-all duration-150"
             onClick={() => setQuantity(quantity + 1)}
           >
-            <span className="">
-              +
-            </span>
+            <span className="">+</span>
           </button>
         </div>
       </div>
