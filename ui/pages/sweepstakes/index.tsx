@@ -25,7 +25,7 @@ import { devWhitelist } from '../../const/tts/whitelist'
 
 const TICKET_TO_SPACE_ADDRESS = '0x8Af8763090813cdcd31AE39fD651F0d9d6bc29D7' //mumbai
 
-export default function Sweepstakes({ nftMetadata }: any) {
+export default function Sweepstakes({ nftMetadata, mongoMoondaoApiKey }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const router = useRouter()
 
@@ -105,7 +105,6 @@ export default function Sweepstakes({ nftMetadata }: any) {
   return (
     <main className="animate-fadeIn">
       <Head title="Ticket to Space" />
-
       <div className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 page-border-and-color font-RobotoMono w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] text-slate-950 dark:text-white">
         <h1 className={`page-title`}>Ticket to Space</h1>
         {/* <h3 className="mt-5 lg:mt-8 font-bold text-center lg:text-left text-lg lg:text-xl xl:text-2xl">
@@ -305,10 +304,12 @@ export async function getStaticProps() {
   )
 
   const nftMetadata = await ticketToSpaceContract?.erc721.getTokenMetadata(1)
+  const mongoMoondaoApiKey = process.env.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY
 
   return {
     props: {
       nftMetadata,
+      mongoMoondaoApiKey,
     },
   }
 }

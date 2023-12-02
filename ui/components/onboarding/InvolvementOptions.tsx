@@ -26,7 +26,7 @@ export function InvolvementOptions() {
       <div className="cal_div">
         <PopupButton
           className="w-full mt-10 px-[10px] py-[10px] border border-slate-600 dark:border-white dark:border-opacity-[0.16] font-bold text-[20px]"
-          url="https://calendly.com/moondao/30min"
+          url="https://calendly.com/moondao-onboarding/welcome"
           rootElement={rootElement!}
           text="Join Discord"
         />

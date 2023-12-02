@@ -10,14 +10,14 @@ import {
   BuildingLibraryIcon,
 } from '@heroicons/react/24/outline'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { any } from 'cypress/types/bluebird'
+import { concat } from 'cypress/types/lodash'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../lib/privy/privy-wallet-context'
 import Head from '../components/layout/Head'
 import { PageCards } from '../components/layout/PageCards'
-import { any } from 'cypress/types/bluebird'
-import { concat } from 'cypress/types/lodash'
 
 export default function Governance() {
   const router = useRouter()
@@ -25,7 +25,6 @@ export default function Governance() {
   const { wallets } = useWallets()
 
   const { exportWallet } = usePrivy()
-  
 
   const sections: any = [
     {
@@ -36,10 +35,9 @@ export default function Governance() {
           description:
             'Export your embedded wallet to an external wallet. All tokens and voting power will be sent to the specified wallet address.',
           onClick: () => {
-            exportWallet().catch(((reason: any) => (
-              toast.error(
-              'Please select a privy wallet to export.'
-            ))))
+            exportWallet().catch((reason: any) =>
+              toast.error('Please select a privy wallet to export.')
+            )
           },
           icon: ArrowRightIcon,
         },
@@ -53,22 +51,24 @@ export default function Governance() {
         },
         {
           name: 'Get Voting Power',
-          description: 'Voting power is granted to stakeholders, stake $MOONEY to fully participate in co-governance and co-creation.',
+          description:
+            'Voting power is granted to stakeholders, stake $MOONEY to fully participate in co-governance and co-creation.',
           href: '/lock',
           icon: LockClosedIcon,
           externalLink: false,
         },
         {
           name: 'Bridge $MOONEY',
-          description: 'Reduce onchain gas fees by bridging $MOONEY from L1 to L2.',
+          description:
+            'Reduce onchain gas fees by bridging $MOONEY from L1 to L2.',
           href: 'https://wallet.polygon.technology/polygon/bridge/deposit',
           icon: ArrowsRightLeftIcon,
           externalLink: true,
         },
-      ]
+      ],
     },
     {
-      sectionName: "Proof of Personhood",
+      sectionName: 'Proof of Personhood',
       pages: [
         {
           name: 'Prove Humanity',
@@ -86,10 +86,10 @@ export default function Governance() {
           icon: ShieldCheckIcon,
           externalLink: true,
         },
-      ]
+      ],
     },
     {
-      sectionName: "Participate",
+      sectionName: 'Participate',
       pages: [
         {
           name: 'Vote on Snapshot',
@@ -102,7 +102,7 @@ export default function Governance() {
         {
           name: 'City Hall',
           description:
-            'City Hall channels are home to MoonDAO\'s governance processes, where decisions regarding proposals and our internal operations are addressed.',
+            "City Hall channels are home to MoonDAO's governance processes, where decisions regarding proposals and our internal operations are addressed.",
           href: 'https://discord.com/channels/914720248140279868/1175882517149130892',
           icon: BuildingLibraryIcon,
           externalLink: true,
@@ -115,8 +115,8 @@ export default function Governance() {
           icon: DocumentIcon,
           externalLink: true,
         },
-      ]
-    }
+      ],
+    },
   ]
   return (
     <div className="animate-fadeIn">

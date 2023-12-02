@@ -3,7 +3,6 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Fragment } from 'react'
 import { useEffect } from 'react'
 import { TreasuryAndMobileLogo } from '../../assets'
-import ExternalLinks from './ExternalLinks'
 import { navigation } from './Navigation'
 import NavigationLink from './NavigationLink'
 import {LogoSidebar, LogoSidebarLight} from '../../assets'
@@ -82,9 +81,6 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
                   {navigation.map((item, i) => (
                     <NavigationLink item={item} key={i} />
                   ))}
-                  <div className="ml-5 pt-6">
-                    <ExternalLinks />
-                  </div>
                 </nav>
               </div>
             </Dialog.Panel>
