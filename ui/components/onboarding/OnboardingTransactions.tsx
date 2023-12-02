@@ -7,6 +7,7 @@ import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 /*
 Step 1: Purchase MATIC -- Check for MATIC balance > selected level
@@ -43,7 +44,7 @@ function Step({
   txExplanation,
   selectedChain,
   selectedWallet,
-  wallets
+  wallets,
 }: StepProps) {
   const [isLoadingAction, setIsLoadingAction] = useState(false)
   const [isProcessingTx, setIsProcessingTx] = useState(false)
@@ -100,7 +101,13 @@ function Step({
           }}
           disabled={isDisabled || isLoadingAction || isProcessingTx}
         >
-          {isProcessingTx ? '...processing' : isDisabled || isLoadingAction ? '...loading' : 'Start'}
+          {isProcessingTx ? (
+            <LoadingSpinner>{'...processing'}</LoadingSpinner>
+          ) : isDisabled || isLoadingAction ? (
+            <LoadingSpinner>{'...loading'}</LoadingSpinner>
+          ) : (
+            'Start'
+          )}
         </button>
       )}
     </div>
@@ -115,7 +122,7 @@ export function OnboardingTransactions({
   tokenAllowance,
   approveMooney,
   createLock,
-  setStage
+  setStage,
 }: any) {
   const [currStep, setCurrStep] = useState(1)
 
@@ -155,22 +162,17 @@ export function OnboardingTransactions({
         console.log("moving to step 5")
         setCurrStep(5)
         setStage(2)
-      }
-      else if (
+      } else if (
         mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1 &&
         tokenAllowance?.toString() / 10 ** 18 >=
         selectedLevel.price / 2
       ) {
         console.log("moving to step 4")
         setCurrStep(4)
-      } 
-      else if (
-        mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1
-      ) {
+      } else if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1) {
         console.log("moving to step 3")
         setCurrStep(3)
-      }
-      else {
+      } else {
         const wallet = wallets[selectedWallet]
         if (!wallet) return
         const provider = await wallet.getEthersProvider()

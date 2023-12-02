@@ -35,11 +35,6 @@ function ContributionLevel({
   const { user } = usePrivy()
   const { login } = useLogin({
     onComplete: () => {
-      const walletChain = wallets[selectedWallet]?.chainId.split(':')[1]
-
-      if (+walletChain !== selectedChain.chainId)
-        return toast.error(`Switch to ${selectedChain.name} to continue `)
-
       // setSelectedLevel({ price: mooneyValue, hasVotingPower })
     },
     onError: (error) => {

@@ -73,7 +73,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
   const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
 
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
-    selectedLevel.price,
+    selectedLevel.price + 1,
     MOONEY,
     NATIVE_TOKEN
   )
