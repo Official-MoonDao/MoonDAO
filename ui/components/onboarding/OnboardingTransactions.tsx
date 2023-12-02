@@ -21,14 +21,88 @@ Step 4: Lock Mooney -- Check for Mooney Lock amnt > selected level
 const TESTING = false
 
 type StepProps = {
+  realStep: number
   stepNum: number
   title: string
   explanation: string
   action: () => Promise<any>
-  check: () => Promise<boolean>
-  deps?: any[]
   isDisabled?: boolean
   txExplanation?: string
+  selectedChain: any
+  selectedWallet: any
+  wallets: any[]
+}
+
+function Step({
+  realStep,
+  stepNum,
+  title,
+  explanation,
+  action,
+  isDisabled,
+  txExplanation,
+  selectedChain,
+  selectedWallet,
+  wallets
+}: StepProps) {
+  const [isLoadingAction, setIsLoadingAction] = useState(false)
+  const [isProcessingTx, setIsProcessingTx] = useState(false)
+
+  return (
+    <div className="mt-5 w-full h-full text-black dark:text-white">
+      <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
+        <p
+          className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
+            realStep === stepNum
+              ? 'bg-[grey] animate-pulse'
+              : realStep > stepNum
+              ? 'bg-[lightgreen]'
+              : 'bg-moon-orange'
+          }`}
+        >
+          {stepNum}
+        </p>
+        <div className="flex-col justify-start items-start gap-4 inline-flex">
+          <div className="mt-[15px] text-left block lg:mt-0 xl:text-xl lg:max-w-[190px]">
+            {title}
+          </div>
+        </div>
+        <div className="mt-1 opacity-60 text-base font-normal lg:mt-0 xl:text-base">
+          {explanation}
+        </div>
+
+        {realStep === stepNum && txExplanation && <p>{txExplanation}</p>}
+        {/*Previously was a border-4 class on hover for this button but changed it for scale, as increasing border expands the whole container on hover*/}
+      </div>
+      {realStep === stepNum && (
+        <button
+          className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
+          onClick={async () => {
+            //check network
+            if (
+              +wallets[selectedWallet].chainId.split(':')[1] !==
+              +selectedChain.chainId
+            ) {
+              return toast.error(
+                `Please switch wallet to ${selectedChain.name}`
+              )
+            }
+
+            setIsLoadingAction(true)
+            setIsProcessingTx(true)
+            try {
+              await action()
+            } catch (err: any) {
+              toast.error(err.message.slice(0, 150))
+            }
+          }}
+          disabled={isDisabled || isLoadingAction || isProcessingTx}
+        >
+          {isProcessingTx ? '...processing' : isDisabled || isLoadingAction ? '...loading' : 'Start'}
+        </button>
+      )}
+    </div>
+  )
 }
 
 export function OnboardingTransactions({
@@ -72,92 +146,62 @@ export function OnboardingTransactions({
     }
   }, [selectedLevel?.nativeSwapRoute])
 
-  function Step({
-    stepNum,
-    title,
-    explanation,
-    action,
-    check,
-    deps = [],
-    isDisabled,
-    txExplanation,
-  }: StepProps) {
-    const [isLoadingCheck, setIsLoadingCheck] = useState(false)
-    const [isLoadingAction, setIsLoadingAction] = useState(false)
-
-    useEffect(() => {
-      if (currStep === stepNum && !isLoadingCheck) {
-        setIsLoadingCheck(true)
-        check()
-          .then((checkRes) => {
-            if (checkRes) {
-              setCurrStep(currStep + 1)
-            }
-          })
-          .finally(() => setIsLoadingCheck(false))
+  useEffect(() => {
+    const checkStepOne = async () => {
+      const wallet = wallets[selectedWallet]
+      if (!wallet) return
+      const provider = await wallet.getEthersProvider()
+      const nativeBalance = await provider.getBalance(wallet.address)
+      const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
+      if (
+        +formattedNativeBalance >
+          selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+            10 ** 18 ||
+        TESTING
+      ) {
+        console.log("moving to step 2")
+        setCurrStep(2)
       }
-    }, [currStep, ...deps])
+    }
 
-    return (
-      <div className="mt-5 w-full h-full text-black dark:text-white">
-        <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
-          <p
-            className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
-              isLoadingCheck
-                ? 'bg-[grey] animate-pulse'
-                : currStep > stepNum
-                ? 'bg-[lightgreen]'
-                : 'bg-moon-orange'
-            }`}
-          >
-            {stepNum}
-          </p>
-          <div className="flex-col justify-start items-start gap-4 inline-flex">
-            <div className="mt-[15px] text-left block lg:mt-0 xl:text-xl lg:max-w-[190px]">
-              {title}
-            </div>
-          </div>
-          <div className="mt-1 opacity-60 text-base font-normal lg:mt-0 xl:text-base">
-            {explanation}
-          </div>
+    const checkStepTwo = async () => {
+      if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1) {
+        console.log("moving to step 3")
+        setCurrStep(3)
+      }
+      else if (vMooneyLock?.[0].toString() > 0) {
+        setCurrStep(5)
+      }
+    }
 
-          {currStep === stepNum && txExplanation && <p>{txExplanation}</p>}
-          {/*Previously was a border-4 class on hover for this button but changed it for scale, as increasing border expands the whole container on hover*/}
-        </div>
-        {currStep === stepNum && (
-          <button
-            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
-            onClick={async () => {
-              //check network
-              if (
-                +wallets[selectedWallet].chainId.split(':')[1] !==
-                +selectedChain.chainId
-              ) {
-                return toast.error(
-                  `Please switch wallet to ${selectedChain.name}`
-                )
-              }
+    const checkStepThree = async () => {
+      if (
+        tokenAllowance?.toString() / 10 ** 18 >=
+        selectedLevel.price / 2
+      ) {
+        console.log("moving to step 4")
+        setCurrStep(4)
+      } 
+    }
 
-              setIsLoadingAction(true)
-              try {
-                await action()
-              } catch (err: any) {
-                toast.error(err.message.slice(0, 150))
-              }
-            }}
-            disabled={isDisabled || isLoadingAction}
-          >
-            {isDisabled || isLoadingAction ? '...loading' : 'Start'}
-          </button>
-        )}
-      </div>
-    )
-  }
+    const checkStepFour = async () => {
+      if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
+        console.log("moving to step 5")
+        setCurrStep(5)
+      }
+    }
+    
+    if (currStep == 1) checkStepOne()
+    else if (currStep == 2) checkStepTwo()
+    else if (currStep == 3) checkStepThree()
+    else if (currStep == 4) checkStepFour()
+  })
 
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
       <div className="w-full flex gap-8 justify-center"></div>
       <Step
+        realStep={currStep}
         stepNum={1}
         title={'Purchase MATIC'}
         explanation={
@@ -177,25 +221,7 @@ export function OnboardingTransactions({
             levelPrice - +formattedNativeBalance + extraFundsForGas
           )
         }}
-        check={async () => {
-          const wallet = wallets[selectedWallet]
-          if (!wallet) return false
-          const provider = await wallet.getEthersProvider()
-          const nativeBalance = await provider.getBalance(wallet.address)
-          const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-          if (
-            +formattedNativeBalance >
-              selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                10 ** 18 ||
-            TESTING
-          ) {
-            return true
-          } else {
-            return false
-          }
-        }}
         isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
-        deps={[]}
         txExplanation={`Fund wallet with ${
           selectedLevel.nativeSwapRoute?.route[0]
             ? (
@@ -205,8 +231,12 @@ export function OnboardingTransactions({
               ).toFixed(5)
             : '...'
         } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
+        selectedChain={selectedChain}
+        selectedWallet={selectedWallet}
+        wallets={wallets}
       />
       <Step
+        realStep={currStep}
         stepNum={2}
         title={'Purchase $MOONEY on Uniswap'}
         explanation={
@@ -215,14 +245,6 @@ export function OnboardingTransactions({
         action={async () => {
           await executeMooneySwapRoute(mooneySwapRoute)
         }}
-        check={async () => {
-          if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1) {
-            return true
-          } else {
-            return false
-          }
-        }}
-        deps={[mooneyBalance]}
         isDisabled={!mooneySwapRoute}
         txExplanation={`Swap ${
           selectedLevel.nativeSwapRoute
@@ -240,10 +262,14 @@ export function OnboardingTransactions({
         } ${
           selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
         } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
+        selectedChain={selectedChain}
+        selectedWallet={selectedWallet}
+        wallets={wallets}
       />
       {selectedLevel.hasVotingPower && (
         <>
           <Step
+            realStep={currStep}
             stepNum={3}
             title={'Token Approval'}
             explanation={
@@ -252,38 +278,28 @@ export function OnboardingTransactions({
             action={async () => {
               await approveMooney()
             }}
-            check={async () => {
-              if (
-                tokenAllowance?.toString() / 10 ** 18 >=
-                selectedLevel.price / 2
-              ) {
-                return true
-              } else return false
-            }}
-            deps={[tokenAllowance]}
             isDisabled={!mooneySwapRoute}
             txExplanation={`Approve ${(
               selectedLevel.price / 2
             ).toLocaleString()} $MOONEY for staking`}
+            selectedChain={selectedChain}
+            selectedWallet={selectedWallet}
+            wallets={wallets}
           />
           <Step
+            realStep={currStep}
             stepNum={4}
             title={'Stake $MOONEY'}
             explanation={
               'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
             }
             action={async () => await createLock()}
-            check={async () => {
-              if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
-                return true
-              } else {
-                return false
-              }
-            }}
-            deps={[vMooneyLock]}
             txExplanation={`Stake ${
               selectedLevel.price / 2
             } $MOONEY for 1 year`}
+            selectedChain={selectedChain}
+            selectedWallet={selectedWallet}
+            wallets={wallets}
           />
         </>
       )}

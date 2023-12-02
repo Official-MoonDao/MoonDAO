@@ -198,7 +198,7 @@ export function ContributionLevels({
         darkIcon="/onboarding-icons/citizen-black.svg"
         title="Citizen"
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
-        mooneyValue={2500}
+        mooneyValue={50}
         points={[
           'Can purhcase up to 12 Ticket To Space Entries',
           'Exclusive Discord Access',
