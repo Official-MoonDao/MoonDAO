@@ -23,30 +23,30 @@ const Transaction = ({ data, loading }: any) => {
     ? `/coins/${name}.${assetImageExtension[name]}`
     : '/coins/DEFAULT.png'
 
+  console.log(value)
+
   return (
     <article className="relative w-[336px] sm:w-[400px] xl:w-full font-RobotoMono">
       {/*Warning circle*/}
       <div
-        className={`${
-          !loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
-            ? 'absolute top-1 right-3 text-red-300 opacity-50 z-50 xl:-top-3 xl:-right-3'
-            : 'hidden'
-        }`}
+        className={`${!loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
+          ? 'absolute top-1 right-3 text-red-300 opacity-50 z-50'
+          : 'hidden'
+          }`}
       >
         <ExclamationCircleIcon className="h-8 w-8" />
       </div>
       {/*Main container*/}
       <div
-        className={`${
-          !loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
-            ? 'opacity-80 bg-gray-200 dark:bg-slate-800'
-            : 'hover:scale-105'
-        } inner-container-background relative mt-5 flex items-center w-[336px] sm:w-[400px] xl:w-full py-[10px] px-3 ${
-          loading && 'loading-component'
-        } transition-all duration-150`}
+        className={`${!loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
+          ? 'opacity-80 bg-gray-200 dark:bg-slate-800'
+          : 'hover:scale-105'
+          } inner-container-background relative mt-5 flex items-center w-[336px] sm:w-[400px] xl:w-full py-[10px] px-3 ${loading && 'loading-component'
+          } transition-all duration-150`}
       >
         {/*Logo*/}
         <img className="h-[60px] w-[60px] " src={image} alt="Asset Logo." />
+
 
         {/*All the information */}
         <div className="ml-5 2xl:ml-7 flex flex-col">
@@ -56,27 +56,25 @@ const Transaction = ({ data, loading }: any) => {
               {loading ? '' : sent ? <ArrowUp /> : <ArrowDown />}
             </span>
             <p
-              className={`text ml-3 text-xl text-moon-orange ${
-                loading && 'loading-line'
-              }`}
+              className={`text ml-3 text-xl text-moon-orange ${loading && 'loading-line'
+                }`}
             >
               {sent ? 'Sent' : 'Received'}
             </p>
           </div>
           {/*Amount & asset name*/}
           <p
-            className={`mt-2 block truncate font-bold tracking-wide title-text-colors text-xl xl:text-2xl hover:overflow-auto hover:whitespace-pre`}
+            className={`mt-2 block truncate font-bold tracking-wide title-text-colors text-xl xl:text-2xl hover:overflow-hidden hover:whitespace-nowrap hover:overflow-ellipsis`}
           >
             <span className={`${loading && 'loading-line'}`}>
-              {value.length > 30 ? value.slice(0, 30) + '...' : value}
+              {value.length > 16 ? value.slice(0, 16) + '...' : value}
             </span>
           </p>
           {/*Date and Etherscan Link*/}
           <div className="mt-2 flex items-center text-sm">
             <p
-              className={`text-gray-900 opacity-70 dark:text-white ${
-                loading && 'loading-line'
-              }`}
+              className={`text-gray-900 opacity-70 dark:text-white ${loading && 'loading-line'
+                }`}
             >
               {timeStr} ago
             </p>
