@@ -113,6 +113,7 @@ export function OnboardingTransactions({
   tokenAllowance,
   approveMooney,
   createLock,
+  setStage
 }: any) {
   const [currStep, setCurrStep] = useState(1)
 
@@ -171,6 +172,7 @@ export function OnboardingTransactions({
       }
       else if (vMooneyLock?.[0].toString() > 0) {
         setCurrStep(5)
+        setStage(3)
       }
     }
 
@@ -188,6 +190,7 @@ export function OnboardingTransactions({
       if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
         console.log("moving to step 5")
         setCurrStep(5)
+        setStage(3)
       }
     }
     
