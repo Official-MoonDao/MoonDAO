@@ -47,9 +47,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const layout = (
     <div
       id="app-layout"
-      className={`${
-        !lightMode ? 'dark background-dark' : 'background-light'
-      } min-h-screen`}
+      className={`${!lightMode ? 'dark background-dark' : 'background-light'
+        } min-h-screen`}
     >
       <Script src="https://cdn.splitbee.io/sb.js" />
 
