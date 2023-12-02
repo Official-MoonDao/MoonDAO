@@ -7,6 +7,7 @@ import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 /*
 Step 1: Purchase MATIC -- Check for MATIC balance > selected level
@@ -43,7 +44,7 @@ function Step({
   txExplanation,
   selectedChain,
   selectedWallet,
-  wallets
+  wallets,
 }: StepProps) {
   const [isLoadingAction, setIsLoadingAction] = useState(false)
   const [isProcessingTx, setIsProcessingTx] = useState(false)
@@ -98,7 +99,13 @@ function Step({
           }}
           disabled={isDisabled || isLoadingAction || isProcessingTx}
         >
-          {isProcessingTx ? '...processing' : isDisabled || isLoadingAction ? '...loading' : 'Start'}
+          {isProcessingTx ? (
+            <LoadingSpinner>{'...processing'}</LoadingSpinner>
+          ) : isDisabled || isLoadingAction ? (
+            <LoadingSpinner>{'...loading'}</LoadingSpinner>
+          ) : (
+            'Start'
+          )}
         </button>
       )}
     </div>
@@ -113,7 +120,7 @@ export function OnboardingTransactions({
   tokenAllowance,
   approveMooney,
   createLock,
-  setStage
+  setStage,
 }: any) {
   const [currStep, setCurrStep] = useState(1)
 
@@ -160,40 +167,36 @@ export function OnboardingTransactions({
             10 ** 18 ||
         TESTING
       ) {
-        console.log("moving to step 2")
+        console.log('moving to step 2')
         setCurrStep(2)
       }
     }
 
     const checkStepTwo = async () => {
       if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1) {
-        console.log("moving to step 3")
+        console.log('moving to step 3')
         setCurrStep(3)
-      }
-      else if (vMooneyLock?.[0].toString() > 0) {
+      } else if (vMooneyLock?.[0].toString() > 0) {
         setCurrStep(5)
         setStage(3)
       }
     }
 
     const checkStepThree = async () => {
-      if (
-        tokenAllowance?.toString() / 10 ** 18 >=
-        selectedLevel.price / 2
-      ) {
-        console.log("moving to step 4")
+      if (tokenAllowance?.toString() / 10 ** 18 >= selectedLevel.price / 2) {
+        console.log('moving to step 4')
         setCurrStep(4)
-      } 
+      }
     }
 
     const checkStepFour = async () => {
       if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
-        console.log("moving to step 5")
+        console.log('moving to step 5')
         setCurrStep(5)
         setStage(3)
       }
     }
-    
+
     if (currStep == 1) checkStepOne()
     else if (currStep == 2) checkStepTwo()
     else if (currStep == 3) checkStepThree()
