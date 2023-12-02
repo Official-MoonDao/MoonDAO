@@ -89,7 +89,9 @@ export function useUniversalRouter(
       gasLimit: gasLimit,
     })
 
-    return tx
+    const receipt = await provider.waitForTransaction(tx.hash, 1, 150000)
+
+    return receipt
   }
 
   return { generateRoute, executeRoute }

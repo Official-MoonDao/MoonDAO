@@ -1,4 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
+import { Transaction } from '@thirdweb-dev/sdk'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
@@ -90,7 +91,7 @@ function Step({
             }
 
             setIsLoadingAction(true)
-            
+
             try {
               setIsProcessingTx(true)
               await action()
@@ -156,39 +157,42 @@ export function OnboardingTransactions({
     }
   }, [selectedLevel?.nativeSwapRoute])
 
-  useEffect(() => {
-    const checkStep = async () => {
-      if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
-        console.log("moving to step 5")
-        setCurrStep(5)
-        setStage(2)
-      } else if (
-        mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1 &&
-        tokenAllowance?.toString() / 10 ** 18 >=
-        selectedLevel.price / 2
+  async function checkStep() {
+    if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
+      console.log('moving to step 5')
+      setCurrStep(5)
+      setStage(2)
+    } else if (
+      mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1 &&
+      tokenAllowance?.toString() / 10 ** 18 >= selectedLevel.price / 2
+    ) {
+      console.log('moving to step 4')
+      setCurrStep(4)
+    } else if (
+      mooneyBalance?.toString() / 10 ** 18 >=
+      selectedLevel.price - 1
+    ) {
+      console.log('moving to step 3')
+      setCurrStep(3)
+    } else {
+      const wallet = wallets[selectedWallet]
+      if (!wallet) return
+      const provider = await wallet.getEthersProvider()
+      const nativeBalance = await provider.getBalance(wallet.address)
+      const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
+      if (
+        +formattedNativeBalance >
+          selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+            10 ** 18 ||
+        TESTING
       ) {
-        console.log("moving to step 4")
-        setCurrStep(4)
-      } else if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1) {
-        console.log("moving to step 3")
-        setCurrStep(3)
-      } else {
-        const wallet = wallets[selectedWallet]
-        if (!wallet) return
-        const provider = await wallet.getEthersProvider()
-        const nativeBalance = await provider.getBalance(wallet.address)
-        const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-        if (
-          +formattedNativeBalance >
-            selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-              10 ** 18 ||
-          TESTING
-        ) {
-          console.log("moving to step 2")
-          setCurrStep(2)
-        }
+        console.log('moving to step 2')
+        setCurrStep(2)
       }
     }
+  }
+
+  useEffect(() => {
     checkStep()
   })
 
@@ -211,10 +215,9 @@ export function OnboardingTransactions({
           const levelPrice =
             selectedLevel.nativeSwapRoute.route[0].rawQuote.toString() /
             10 ** 18
-          
-          const fundTX = await fund(
-            levelPrice - +formattedNativeBalance + extraFundsForGas
-          )
+
+          await fund(levelPrice - +formattedNativeBalance + extraFundsForGas)
+          await checkStep()
         }}
         isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
         txExplanation={`Fund wallet with ${
@@ -239,6 +242,7 @@ export function OnboardingTransactions({
         }
         action={async () => {
           await executeMooneySwapRoute(mooneySwapRoute)
+          await checkStep()
         }}
         isDisabled={!mooneySwapRoute}
         txExplanation={`Swap ${
@@ -271,7 +275,8 @@ export function OnboardingTransactions({
               'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
             }
             action={async () => {
-              await approveMooney()
+              const tx = await approveMooney()
+              await checkStep()
             }}
             isDisabled={!mooneySwapRoute}
             txExplanation={`Approve ${(
@@ -288,7 +293,10 @@ export function OnboardingTransactions({
             explanation={
               'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
             }
-            action={async () => await createLock()}
+            action={async () => {
+              const tx = await createLock()
+              await checkStep()
+            }}
             txExplanation={`Stake ${
               selectedLevel.price / 2
             } $MOONEY for 1 year`}

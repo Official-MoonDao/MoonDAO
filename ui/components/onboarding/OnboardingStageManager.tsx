@@ -230,7 +230,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
   const StepTwo = () => (
     <StageContainer>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
-        <div className="flex flex-col">
+        <div className="flex flex-col w-full">
           <div className="flex w-full justify-between">
             <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
               Check out
@@ -276,22 +276,29 @@ export function OnboardingStageManager({ selectedChain }: any) {
           mooneyBalance={mooneyBalance}
           vMooneyLock={vMooneyLock}
           tokenAllowance={tokenAllowance}
-          approveMooney={async () =>
+          approveMooney={async () => {
             // approve half of the selected level price
-            mooneyContract &&
-            (await mooneyContract.call('approve', [
-              VMOONEY_ADDRESSES[selectedChain.slug],
-              ethers.utils.parseEther(String(selectedLevel.price / 2)),
-            ]))
-          }
-          createLock={async () =>
+            if (mooneyContract) {
+              const tx = mooneyContract.prepare('approve', [
+                VMOONEY_ADDRESSES[selectedChain.slug],
+                ethers.utils.parseEther(String(selectedLevel.price / 2)),
+              ])
+              const txRes = await tx.execute()
+              return txRes.receipt
+            }
+          }}
+          createLock={async () => {
             //lock half of the selected level price for 1 year
-            vMooneyContract &&
-            (await vMooneyContract.call('create_lock', [
-              ethers.utils.parseEther(String(selectedLevel.price / 2)),
-              Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 1,
-            ]))
-          }
+
+            if (vMooneyContract) {
+              const tx = vMooneyContract.prepare('create_lock', [
+                ethers.utils.parseEther(String(selectedLevel.price / 2)),
+                Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 1,
+              ])
+              const txRes = await tx.execute()
+              return txRes.receipt
+            }
+          }}
         />
       </div>
     </StageContainer>
