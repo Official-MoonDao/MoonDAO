@@ -80,6 +80,8 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   useEffect(() => {
     if (selectedLevel.price > 0) {
+      console.log(1)
+      console.log(selectedLevel.price)
       setStage(1)
     }
 

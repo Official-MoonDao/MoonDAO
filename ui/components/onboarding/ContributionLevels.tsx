@@ -40,7 +40,7 @@ function ContributionLevel({
       if (+walletChain !== selectedChain.chainId)
         return toast.error(`Switch to ${selectedChain.name} to continue `)
 
-      setSelectedLevel({ price: mooneyValue, hasVotingPower })
+      // setSelectedLevel({ price: mooneyValue, hasVotingPower })
     },
     onError: (error) => {
       console.log(error)
@@ -80,6 +80,8 @@ function ContributionLevel({
       onClick={() => {
         if (!user) login()
         else {
+          console.log(2)
+          console.log(mooneyValue)
           setSelectedLevel({ price: mooneyValue, hasVotingPower })
         }
       }}

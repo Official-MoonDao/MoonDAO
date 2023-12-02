@@ -89,11 +89,13 @@ function Step({
             }
 
             setIsLoadingAction(true)
-            setIsProcessingTx(true)
+            
             try {
+              setIsProcessingTx(true)
               await action()
             } catch (err: any) {
               toast.error(err.message.slice(0, 150))
+              setIsProcessingTx(false)
             }
           }}
           disabled={isDisabled || isLoadingAction || isProcessingTx}
@@ -148,56 +150,44 @@ export function OnboardingTransactions({
   }, [selectedLevel?.nativeSwapRoute])
 
   useEffect(() => {
-    const checkStepOne = async () => {
-      const wallet = wallets[selectedWallet]
-      if (!wallet) return
-      const provider = await wallet.getEthersProvider()
-      const nativeBalance = await provider.getBalance(wallet.address)
-      const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-      if (
-        +formattedNativeBalance >
-          selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-            10 ** 18 ||
-        TESTING
-      ) {
-        console.log("moving to step 2")
-        setCurrStep(2)
-      }
-    }
-
-    const checkStepTwo = async () => {
-      if (mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1) {
-        console.log("moving to step 3")
-        setCurrStep(3)
-      }
-      else if (vMooneyLock?.[0].toString() > 0) {
+    const checkStep = async () => {
+      if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
+        console.log("moving to step 5")
         setCurrStep(5)
-        setStage(3)
+        setStage(2)
       }
-    }
-
-    const checkStepThree = async () => {
-      if (
+      else if (
+        mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1 &&
         tokenAllowance?.toString() / 10 ** 18 >=
         selectedLevel.price / 2
       ) {
         console.log("moving to step 4")
         setCurrStep(4)
       } 
-    }
-
-    const checkStepFour = async () => {
-      if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
-        console.log("moving to step 5")
-        setCurrStep(5)
-        setStage(3)
+      else if (
+        mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1
+      ) {
+        console.log("moving to step 3")
+        setCurrStep(3)
+      }
+      else {
+        const wallet = wallets[selectedWallet]
+        if (!wallet) return
+        const provider = await wallet.getEthersProvider()
+        const nativeBalance = await provider.getBalance(wallet.address)
+        const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
+        if (
+          +formattedNativeBalance >
+            selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+              10 ** 18 ||
+          TESTING
+        ) {
+          console.log("moving to step 2")
+          setCurrStep(2)
+        }
       }
     }
-    
-    if (currStep == 1) checkStepOne()
-    else if (currStep == 2) checkStepTwo()
-    else if (currStep == 3) checkStepThree()
-    else if (currStep == 4) checkStepFour()
+    checkStep()
   })
 
   return (
@@ -219,7 +209,7 @@ export function OnboardingTransactions({
           const levelPrice =
             selectedLevel.nativeSwapRoute.route[0].rawQuote.toString() /
             10 ** 18
-
+          
           const fundTX = await fund(
             levelPrice - +formattedNativeBalance + extraFundsForGas
           )
