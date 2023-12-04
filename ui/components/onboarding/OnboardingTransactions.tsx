@@ -1,4 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
+import { useAddress } from '@thirdweb-dev/react'
 import { Transaction } from '@thirdweb-dev/sdk'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
@@ -6,8 +7,13 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { useHandleWrite } from '../../lib/thirdweb/hooks'
+import { useTokenAllowance } from '../../lib/tokens/approve'
+import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
+import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
+import { VMOONEY_ADDRESSES } from '../../const/config'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 /*
@@ -118,13 +124,11 @@ function Step({
 export function OnboardingTransactions({
   selectedChain,
   selectedLevel,
-  mooneyBalance,
-  vMooneyLock,
-  tokenAllowance,
-  approveMooney,
-  createLock,
+  mooneyContract,
+  vMooneyContract,
   setStage,
 }: any) {
+  const address = useAddress()
   const [currStep, setCurrStep] = useState(1)
 
   //Privy
@@ -149,6 +153,18 @@ export function OnboardingTransactions({
     MOONEY
   )
 
+  const { mutateAsync: createLock, isLoading: isLoadingCreateLock } =
+    useHandleWrite(vMooneyContract, 'create_lock', [
+      ethers.utils.parseEther(String(selectedLevel.price / 2)),
+      Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 1,
+    ])
+
+  const { mutateAsync: approveMooney, isLoading: isLoadingApproveMooney } =
+    useHandleWrite(mooneyContract, 'approve', [
+      VMOONEY_ADDRESSES[selectedChain.slug],
+      ethers.utils.parseEther(String(selectedLevel.price / 2)),
+    ])
+
   useEffect(() => {
     if (selectedLevel.nativeSwapRoute) {
       generateMooneyRoute(TradeType.EXACT_INPUT).then((swapRoute: any) =>
@@ -158,6 +174,13 @@ export function OnboardingTransactions({
   }, [selectedLevel?.nativeSwapRoute])
 
   async function checkStep() {
+    const vMooneyLock = await vMooneyContract.call('locked', [address])
+    const mooneyBalance = await mooneyContract.call('balanceOf', [address])
+    const tokenAllowance = await mooneyContract.call('allowance', [
+      address,
+      VMOONEY_ADDRESSES[selectedChain.slug],
+    ])
+
     if (vMooneyLock?.[0].toString() >= selectedLevel.price) {
       console.log('moving to step 5')
       setCurrStep(5)
@@ -193,8 +216,13 @@ export function OnboardingTransactions({
   }
 
   useEffect(() => {
-    checkStep()
-  })
+    const check = setInterval(() => {
+      console.log('checking step')
+      checkStep()
+    }, 5000)
+
+    return () => clearInterval(check)
+  }, [])
 
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">

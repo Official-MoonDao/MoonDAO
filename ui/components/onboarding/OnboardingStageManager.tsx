@@ -3,11 +3,8 @@ import { useAddress, useContract } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { useTokenAllowance } from '../../lib/tokens/approve'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
-import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
-import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import ERC20 from '../../const/abis/ERC20.json'
@@ -57,18 +54,8 @@ export function OnboardingStageManager({ selectedChain }: any) {
     VotingEscrow.abi
   )
 
-  const { data: vMooneyLock } = useVMOONEYLock(vMooneyContract, address)
-
-  const { data: mooneyBalance } = useMOONEYBalance(mooneyContract, address)
-
   const totalMooneyBalance = useTotalMooneyBalance(address)
   const { totalLocked } = useValidVP(address)
-
-  const { data: tokenAllowance } = useTokenAllowance(
-    mooneyContract,
-    address,
-    VMOONEY_ADDRESSES[selectedChain.slug]
-  )
 
   const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
 
@@ -80,8 +67,6 @@ export function OnboardingStageManager({ selectedChain }: any) {
 
   useEffect(() => {
     if (selectedLevel.price > 0) {
-      console.log(1)
-      console.log(selectedLevel.price)
       setStage(1)
     }
 
@@ -273,32 +258,8 @@ export function OnboardingStageManager({ selectedChain }: any) {
           setSelectedLevel={setSelectedLevel}
           selectedLevel={selectedLevel}
           selectedChain={selectedChain}
-          mooneyBalance={mooneyBalance}
-          vMooneyLock={vMooneyLock}
-          tokenAllowance={tokenAllowance}
-          approveMooney={async () => {
-            // approve half of the selected level price
-            if (mooneyContract) {
-              const tx = mooneyContract.prepare('approve', [
-                VMOONEY_ADDRESSES[selectedChain.slug],
-                ethers.utils.parseEther(String(selectedLevel.price / 2)),
-              ])
-              const txRes = await tx.execute()
-              return txRes.receipt
-            }
-          }}
-          createLock={async () => {
-            //lock half of the selected level price for 1 year
-
-            if (vMooneyContract) {
-              const tx = vMooneyContract.prepare('create_lock', [
-                ethers.utils.parseEther(String(selectedLevel.price / 2)),
-                Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 1,
-              ])
-              const txRes = await tx.execute()
-              return txRes.receipt
-            }
-          }}
+          mooneyContract={mooneyContract}
+          vMooneyContract={vMooneyContract}
         />
       </div>
     </StageContainer>
