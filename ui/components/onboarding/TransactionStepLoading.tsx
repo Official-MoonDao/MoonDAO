@@ -20,7 +20,7 @@ export function StepLoading({
             {stepNum}
           </p>
           <div className="flex-col justify-start items-start gap-4 inline-flex">
-            <div className="mt-[15px] text-left block lg:mt-0 xl:text-xl lg:max-w-[190px]">
+            <div className="mt-[15px] text-left block lg:mt-0 xl:text-xl w-[150px]">
               {title}
             </div>
           </div>

@@ -124,8 +124,7 @@ export function OnboardingTransactions({
   useEffect(() => {
     checkStep()
     const check = setInterval(() => {
-      console.log('checking step')
-      checkStep()
+      checkStep().then(() => setChecksLoaded(true))
     }, 3000)
 
     return () => clearInterval(check)
