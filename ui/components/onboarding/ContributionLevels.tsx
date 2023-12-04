@@ -75,8 +75,6 @@ function ContributionLevel({
       onClick={() => {
         if (!user) login()
         else {
-          console.log(2)
-          console.log(mooneyValue)
           setSelectedLevel({ price: mooneyValue, hasVotingPower })
         }
       }}
