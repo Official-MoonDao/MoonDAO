@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
 import { useMemo } from 'react'
+import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 
 export function PurhcaseNativeTokenModal({
