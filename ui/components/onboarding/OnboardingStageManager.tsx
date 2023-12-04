@@ -216,22 +216,10 @@ export function OnboardingStageManager({ selectedChain }: any) {
     <StageContainer>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
         <div className="flex flex-col w-full">
-          <div className="flex w-full justify-between">
-            <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
-              Check out
-            </h1>
-            <button
-              className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
-              // style={{ marginBottom: '68px' }}
-              onClick={() => {
-                setStage(0)
-                setSelectedLevel({ price: 0, hasVotingPower: false })
-              }}
-            >
-              <input type="image" src="/backIcon.png" />
-              <span>Back</span>
-            </button>
-          </div>
+          <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
+            Check out
+          </h1>
+
           {+selectedChain.chainId === 1 ? (
             <p className="absolut  mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
               Warning: The Ticket to Space Sweepstakes is on Polygon. If you
@@ -250,7 +238,18 @@ export function OnboardingStageManager({ selectedChain }: any) {
             <div></div>
           )}
         </div>
-        <div className="py-4">
+        <div className="py-4 flex w-full">
+          <button
+            className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
+            // style={{ marginBottom: '68px' }}
+            onClick={() => {
+              setStage(0)
+              setSelectedLevel({ price: 0, hasVotingPower: false })
+            }}
+          >
+            <input type="image" src="/backIcon.png" />
+            <span>Back</span>
+          </button>
           <L2Toggle />
         </div>
         <OnboardingTransactions
