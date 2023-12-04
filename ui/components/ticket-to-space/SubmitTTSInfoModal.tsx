@@ -40,14 +40,14 @@ export function SubmitTTSInfoModal({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        },
+          'moondao-api-key': process.env.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY,
+        } as any,
         body: JSON.stringify({
           tokenId,
           email,
           name: fullName,
         }),
       })
-      console.log(res)
     } catch (err) {
       toast.error(
         'There was an issue adding your info to the database. Please contact a moondao member.'
