@@ -179,7 +179,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
   }
   const StepOne = () => (
     <StageContainer>
-      <div className="flex flex-col font-RobotoMono items-center pl-[10%]">
+      <div className="flex flex-col font-RobotoMono items-center">
         <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
           SELECT MEMBERSHIP LEVEL
         </h1>
