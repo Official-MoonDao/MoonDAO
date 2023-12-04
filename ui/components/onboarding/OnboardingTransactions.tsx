@@ -28,7 +28,6 @@ Step 4: Lock Mooney -- Check for Mooney Lock amnt > selected level
 */
 
 const TESTING = false
-
 export function OnboardingTransactions({
   selectedChain,
   selectedLevel,
@@ -123,9 +122,11 @@ export function OnboardingTransactions({
   }
 
   useEffect(() => {
+    checkStep()
     const check = setInterval(() => {
-      checkStep().then(() => setChecksLoaded(true))
-    }, 5000)
+      console.log('checking step')
+      checkStep()
+    }, 3000)
 
     return () => clearInterval(check)
   }, [])

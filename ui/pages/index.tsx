@@ -8,13 +8,16 @@ export default function Home() {
     <div className="animate-fadeIn">
       <Head title="Home" />
 
-      <div id="home-hero" className="flex flex-col pt-10 mt-3 px-5 lg:px-7 xl:px-9 py-12 lg:py-14 lg:mt-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px]">
+      <div
+        id="home-hero"
+        className="flex flex-col pt-10 mt-3 px-5 lg:px-7 xl:px-9 py-12 lg:py-14 lg:mt-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px]"
+      >
         <div className="flex flex-col items-left">
           <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
             Welcome to MoonDAO
           </h2>
           <p className="mt-6 sm:mt-6 lg:mt-8 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
-            {`MoonDAO is accelerating humanity’s development of a lunar base through better coordination. Want to help? This flow will onboard you into our in less than 5 minutes, even if you’re new to Web3.`}
+            {`MoonDAO is accelerating the development of a lunar base through better coordination. Want to help? This flow will onboard you into our community in less than 5 minutes, even if you’re new to Web3.`}
           </p>
           <iframe
             className="mt-10 w-full xl:w-5/6 aspect-video object-cover"
