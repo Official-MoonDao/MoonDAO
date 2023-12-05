@@ -92,8 +92,6 @@ export function OnboardingTransactions({
     ])
 
     if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
-      console.log(vMooneyLock?.[0].toString())
-      console.log(selectedLevel.price)
       setCurrStep(5)
       setStage(2)
     } else if (
@@ -183,8 +181,9 @@ export function OnboardingTransactions({
               'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
             }
             action={async () => {
-              await executeMooneySwapRoute(mooneySwapRoute)
-              await checkStep()
+              await executeMooneySwapRoute(mooneySwapRoute).then(() => {
+                checkStep()
+              })
             }}
             isDisabled={!mooneySwapRoute}
             txExplanation={`Swap ${
@@ -217,8 +216,11 @@ export function OnboardingTransactions({
                   'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
                 }
                 action={async () => {
-                  const tx = await approveMooney()
-                  await checkStep()
+                  await approveMooney().then(() => {
+                    checkStep()
+                  }).catch((err) => {
+                    throw(err)
+                  })
                 }}
                 isDisabled={!mooneySwapRoute}
                 txExplanation={`Approve ${(
@@ -236,8 +238,12 @@ export function OnboardingTransactions({
                   'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
                 }
                 action={async () => {
-                  const tx = await createLock()
-                  await checkStep()
+                  await createLock().then(() => {
+                    setChecksLoaded(false)
+                    checkStep()
+                  }).catch((err) => {
+                    throw(err)
+                  })
                 }}
                 txExplanation={`Stake ${
                   selectedLevel.price / 2

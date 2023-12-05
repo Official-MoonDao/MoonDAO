@@ -17,6 +17,7 @@ export function useHandleWrite(
         await mutateAsync({ args, overrides })
       } catch (err: any) {
         console.log(err.message)
+        throw(err)
       }
     },
     isLoading,
