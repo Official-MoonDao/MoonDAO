@@ -29,7 +29,6 @@ export function Step({
   wallets,
   noTxns,
 }: StepProps) {
-  const [isLoadingAction, setIsLoadingAction] = useState(false)
   const [isProcessingTx, setIsProcessingTx] = useState(false)
 
   return (
@@ -72,13 +71,10 @@ export function Step({
               )
             }
 
-            setIsLoadingAction(true)
-
             try {
               setIsProcessingTx(true)
               await action()
               if (noTxns) {
-                setIsLoadingAction(false)
                 setIsProcessingTx(false)
               }
             } catch (err: any) {
@@ -86,11 +82,11 @@ export function Step({
               setIsProcessingTx(false)
             }
           }}
-          disabled={isDisabled || isLoadingAction || isProcessingTx}
+          disabled={isDisabled || isProcessingTx}
         >
           {isProcessingTx ? (
             <LoadingSpinner></LoadingSpinner>
-          ) : isDisabled || isLoadingAction ? (
+          ) : isDisabled ? (
             <LoadingSpinner>{'...loading'}</LoadingSpinner>
           ) : (
             'Start'
