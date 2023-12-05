@@ -1,16 +1,10 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
-import { Transaction } from '@thirdweb-dev/sdk'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
-import toast from 'react-hot-toast'
-import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useHandleWrite } from '../../lib/thirdweb/hooks'
-import { useTokenAllowance } from '../../lib/tokens/approve'
-import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
-import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { VMOONEY_ADDRESSES } from '../../const/config'
@@ -28,7 +22,6 @@ Step 3: Approve Mooney -- Check for Mooney approval > selected level
 Step 4: Lock Mooney -- Check for Mooney Lock amnt > selected level
 */
 
-const TESTING = false
 export function OnboardingTransactions({
   selectedChain,
   selectedLevel,
@@ -92,8 +85,6 @@ export function OnboardingTransactions({
     ])
 
     if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
-      console.log(vMooneyLock?.[0].toString())
-      console.log(selectedLevel.price)
       setCurrStep(5)
       setStage(2)
     } else if (
@@ -114,10 +105,8 @@ export function OnboardingTransactions({
       const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
       if (
         +formattedNativeBalance >
-          selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-            10 ** 18 +
-            extraFundsForGas ||
-        TESTING
+        selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18 +
+          extraFundsForGas
       ) {
         setCurrStep(2)
       }
