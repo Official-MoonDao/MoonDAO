@@ -1,15 +1,9 @@
 import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
-import { TradeType } from '@uniswap/sdk-core'
 import Image from 'next/image'
-import { Dispatch, useContext, useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
-import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { Dispatch, useEffect, useState } from 'react'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
-import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
-import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { useLightMode } from '../../lib/utils/hooks'
 import { ArrowSide } from '../assets'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type ContributionLevelProps = {
   lightIcon: string
@@ -103,9 +97,9 @@ function ContributionLevel({
           </h1>
           {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
 
-          <p className="mt-5 lg:mt-[5px] text-center">{`~ ${usdQuote.toFixed(
-            2
-          )} USD`}</p>
+          <p className="mt-5 lg:mt-[5px] text-center">{`~ ${
+            usdQuote?.toFixed(2) || ''
+          } USD`}</p>
 
           <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
             {intro}
@@ -126,9 +120,11 @@ function ContributionLevel({
                 } $MOONEY`}</div>
                 {hasVotingPower && (
                   <div className="text-sm">
-                    {`✓ ${Math.floor(
+                    {`✓ ${
                       levelVotingPower
-                    ).toLocaleString()} Voting Power`}
+                        ? Math.floor(levelVotingPower)?.toLocaleString()
+                        : '...'
+                    } Voting Power`}
                   </div>
                 )}
                 {points.map((point, i) => (
