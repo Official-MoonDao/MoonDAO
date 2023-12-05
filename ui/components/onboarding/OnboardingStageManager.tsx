@@ -34,7 +34,7 @@ function StageContainer({ children }: any) {
   )
 }
 
-export function OnboardingStageManager({ selectedChain }: any) {
+export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
   const address = useAddress()
   const { user, login } = usePrivy()
   const [stage, setStage] = useState(0)
@@ -57,7 +57,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
   const totalMooneyBalance = useTotalMooneyBalance(address)
   const { totalLocked } = useValidVP(address)
 
-  const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
+  const { MOONEY, NATIVE_TOKEN, DAI } = useUniswapTokens()
 
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price + 1,
@@ -203,6 +203,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
           selectedChain={selectedChain}
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
+          usdQuotes={usdQuotes}
         />
       </div>
     </StageContainer>
@@ -238,10 +239,23 @@ export function OnboardingStageManager({ selectedChain }: any) {
             <div></div>
           )}
         </div>
-        <div className="py-4 flex w-full">
+        {/* <div className="py-4 flex w-full">
           <button
             className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
             // style={{ marginBottom: '68px' }}
+            onClick={() => {
+              setStage(0)
+              setSelectedLevel({ price: 0, hasVotingPower: false })
+            }}
+          >
+            <input type="image" src="/backIcon.png" />
+            <span>Back</span>
+          </button>
+          <L2Toggle />
+        </div> */}
+        <div className="py-4 flex flex-col items-center justify-center w-full">
+          <button
+            className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3 mb-3 lg:mb-0"
             onClick={() => {
               setStage(0)
               setSelectedLevel({ price: 0, hasVotingPower: false })

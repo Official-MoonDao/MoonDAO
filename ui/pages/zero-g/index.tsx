@@ -1,8 +1,5 @@
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import Link from 'next/link'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
-import { useVMOONEYLock } from '../../lib/tokens/ve-token'
-import { getUserDiscordData } from '../../lib/utils/discord'
 import Head from '../../components/layout/Head'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
 import VotingEscrowABI from '../../const/abis/VotingEscrow.json'

@@ -1,17 +1,22 @@
 import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import { TradeType } from '@uniswap/sdk-core'
 import Image from 'next/image'
 import { Dispatch, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
+import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
+import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { useLightMode } from '../../lib/utils/hooks'
 import { ArrowSide } from '../assets'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type ContributionLevelProps = {
   lightIcon: string
   darkIcon: string
   title: string
   mooneyValue: number
+  usdQuote: number
   intro: string
   points: string[]
   hasVotingPower?: boolean
@@ -25,6 +30,7 @@ function ContributionLevel({
   darkIcon,
   title,
   mooneyValue,
+  usdQuote,
   intro,
   points,
   hasVotingPower,
@@ -43,9 +49,6 @@ function ContributionLevel({
   })
 
   const [lightMode] = useLightMode()
-
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
 
   const [levelVotingPower, setLevelVotingPower] = useState<any>()
 
@@ -67,7 +70,7 @@ function ContributionLevel({
 
   return (
     <div
-      className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
+      className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
         selectedLevel?.price === mooneyValue
           ? 'border-moon-orange border-opacity-100'
           : 'border-opacity-60 dark:border-opacity-20'
@@ -99,13 +102,10 @@ function ContributionLevel({
             {title}
           </h1>
           {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
-          <p className="mt-5 lg:mt-[5px] text-center">
-            {`${
-              hasVotingPower
-                ? (mooneyValue / 2).toLocaleString()
-                : mooneyValue.toLocaleString()
-            } $MOONEY`}
-          </p>
+
+          <p className="mt-5 lg:mt-[5px] text-center">{`~ ${usdQuote.toFixed(
+            2
+          )} USD`}</p>
 
           <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
             {intro}
@@ -119,6 +119,18 @@ function ContributionLevel({
 
             <div className="mt-[8px] pr-2 2xl:h-[210px]">
               <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
+                <div>{`✓ ${
+                  hasVotingPower
+                    ? (mooneyValue / 2).toLocaleString()
+                    : mooneyValue.toLocaleString()
+                } $MOONEY`}</div>
+                {hasVotingPower && (
+                  <div className="text-sm">
+                    {`✓ ${Math.floor(
+                      levelVotingPower
+                    ).toLocaleString()} Voting Power`}
+                  </div>
+                )}
                 {points.map((point, i) => (
                   <div
                     key={`contribution-level-${title}-desc-point-${i}`}
@@ -127,13 +139,6 @@ function ContributionLevel({
                     {'✓ ' + point}
                   </div>
                 ))}
-                {hasVotingPower && (
-                  <div className="text-sm">
-                    {`✓ ${Math.floor(
-                      levelVotingPower
-                    ).toLocaleString()} Voting Power`}
-                  </div>
-                )}
               </ul>
             </div>
           </div>
@@ -166,23 +171,26 @@ export function ContributionLevels({
   selectedLevel,
   setSelectedLevel,
   selectedChain,
+  usdQuotes,
 }: any) {
   {
     /*Card component */
   }
   // ;('Everything in the Citizen Tier.Exclusive promotion opportunities. Access to talent to help design, build, test your space hardware. 1,000,000 Voting Power 1,000,000 MOONEY')
   return (
-    <div className="flex flex-col min-[1400px]:flex-row justify-evenly mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
+    <div className="flex flex-col min-[1400px]:flex-row justify-between mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
       <ContributionLevel
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
         title="Explorer"
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
         mooneyValue={100}
+        usdQuote={usdQuotes[0]}
         points={[
-          'Can purchase two Ticket to Space Sweepstakes Entries',
-          'Community Discord Access',
+          'Can purchase (2) Ticket to Space Entries',
           'MoonDAO Marketplace Access',
+          'MoonDAO Community Discord Access',
+          'MoonDAO Newsletter Updates',
         ]}
         selectedLevel={selectedLevel}
         setSelectedLevel={setSelectedLevel}
@@ -194,8 +202,9 @@ export function ContributionLevels({
         title="Citizen"
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
         mooneyValue={50}
+        usdQuote={usdQuotes[1]}
         points={[
-          'Can purhcase up to 12 Ticket To Space Entries',
+          'Can purchase (12) Ticket To Space Entries',
           'Exclusive Discord Access',
           'MoonDAO Marketplace Access',
           'Co-governance of the MoonDAO Treasury',
@@ -213,10 +222,11 @@ export function ContributionLevels({
         title="Industry"
         intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
         mooneyValue={2000000}
+        usdQuote={usdQuotes[2]}
         points={[
           'Everything in the Citizen Tier',
-          'Exclusive promotion opportunities',
-          'Access to talent to help design, build, test your space hardware',
+          'Exclusive promotion opportunities to MoonDAO community members',
+          'Access to talent to help design, build, and test your space hardware',
         ]}
         hasVotingPower
         selectedLevel={selectedLevel}

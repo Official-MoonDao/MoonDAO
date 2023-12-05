@@ -14,6 +14,7 @@ import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { VMOONEY_ADDRESSES } from '../../const/config'
+import { PurhcaseNativeTokenModal } from './PurchaseNativeTokenModal'
 import { Step } from './TransactionStep'
 import { StepLoading } from './TransactionStepLoading'
 
@@ -39,15 +40,12 @@ export function OnboardingTransactions({
   const [currStep, setCurrStep] = useState(1)
   const [checksLoaded, setChecksLoaded] = useState(false)
 
+  const [enablePurchaseNativeTokenModal, setEnablePurchaseNativeTokenModal] =
+    useState(false)
+
   //Privy
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
-
-  //MoonPay
-  const fund = useMoonPay()
-  const extraFundsForGas = useMemo(() => {
-    return +selectedChain.chainId === 1 ? 0.05 : 1
-  }, [selectedChain])
 
   //Uniswap
   const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
@@ -81,6 +79,10 @@ export function OnboardingTransactions({
     }
   }, [selectedLevel?.nativeSwapRoute])
 
+  const extraFundsForGas = useMemo(() => {
+    return +selectedChain.chainId === 1 ? 0.05 : 1
+  }, [selectedChain])
+
   async function checkStep() {
     const vMooneyLock = await vMooneyContract.call('locked', [address])
     const mooneyBalance = await mooneyContract.call('balanceOf', [address])
@@ -89,7 +91,9 @@ export function OnboardingTransactions({
       VMOONEY_ADDRESSES[selectedChain.slug],
     ])
 
-    if (vMooneyLock?.[0].toString() >= (selectedLevel.price * 10 ** 18) * 0.5) {
+    if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
+      console.log(vMooneyLock?.[0].toString())
+      console.log(selectedLevel.price)
       setCurrStep(5)
       setStage(2)
     } else if (
@@ -111,7 +115,8 @@ export function OnboardingTransactions({
       if (
         +formattedNativeBalance >
           selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-            10 ** 18 + extraFundsForGas ||
+            10 ** 18 +
+            extraFundsForGas ||
         TESTING
       ) {
         setCurrStep(2)
@@ -128,171 +133,158 @@ export function OnboardingTransactions({
     return () => clearInterval(check)
   }, [])
 
-
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
+      {enablePurchaseNativeTokenModal && (
+        <PurhcaseNativeTokenModal
+          wallets={wallets}
+          selectedWallet={selectedWallet}
+          selectedChain={selectedChain}
+          nativeAmount={
+            selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+            10 ** 18
+          }
+          setEnabled={setEnablePurchaseNativeTokenModal}
+          extraFundsForGas={extraFundsForGas}
+        />
+      )}
       {checksLoaded ? (
         <>
-        <Step
-          realStep={currStep}
-          stepNum={1}
-          title={'Purchase MATIC'}
-          explanation={
-            'You need MATIC to swap it for our governance token $MOONEY.'
-          }
-          action={async () => {
-            const wallet = wallets[selectedWallet]
-            if (!wallet) return
-            const provider = await wallet.getEthersProvider()
-            const nativeBalance = await provider.getBalance(wallet.address)
-            const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
-            const levelPrice =
-              selectedLevel.nativeSwapRoute.route[0].rawQuote.toString() /
-              10 ** 18 + extraFundsForGas
-
-            await fund(levelPrice - +formattedNativeBalance + extraFundsForGas).then(() => {
-              checkStep()
-            }).catch((err: any) => {
-              throw(err)
-            })
-          }}
-          isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
-          txExplanation={`Fund wallet with ${
-            selectedLevel.nativeSwapRoute?.route[0]
-              ? (
-                  selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                    10 ** 18 +
-                  extraFundsForGas
-                ).toFixed(5)
-              : '...'
-          } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
-          selectedChain={selectedChain}
-          selectedWallet={selectedWallet}
-          wallets={wallets}
-        />
-        <Step
-          realStep={currStep}
-          stepNum={2}
-          title={'Purchase $MOONEY on Uniswap'}
-          explanation={
-            'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
-          }
-          action={async () => {
-            await executeMooneySwapRoute(mooneySwapRoute).then(() => {
-              checkStep()
-            }).catch((err: any) => {
-              throw(err)
-            })
-          }}
-          isDisabled={!mooneySwapRoute}
-          txExplanation={`Swap ${
-            selectedLevel.nativeSwapRoute
-              ? (
-                  selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                  10 ** 18
-                ).toFixed(
-                  selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                    10 ** 18 >=
-                    0.1
-                    ? 2
-                    : 5
-                )
-              : '...'
-          } ${
-            selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
-          } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
-          selectedChain={selectedChain}
-          selectedWallet={selectedWallet}
-          wallets={wallets}
-        />
-        {selectedLevel.hasVotingPower && (
-          <>
-            <Step
-              realStep={currStep}
-              stepNum={3}
-              title={'Token Approval'}
-              explanation={
-                'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
-              }
-              action={async () => {
-                await approveMooney().then(() => {
-                  checkStep()
-                }).catch((err: any) => {
-                  console.log(err)
-                  console.log("caught err")
-                  throw(err)
-                })
-              }}
-              isDisabled={!mooneySwapRoute}
-              txExplanation={`Approve ${(
-                selectedLevel.price / 2
-              ).toLocaleString()} $MOONEY for staking`}
-              selectedChain={selectedChain}
-              selectedWallet={selectedWallet}
-              wallets={wallets}
-            />
-            <Step
-              realStep={currStep}
-              stepNum={4}
-              title={'Stake $MOONEY'}
-              explanation={
-                'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
-              }
-              action={async () => {
-                await createLock().then(() => {
-                  checkStep()
-                }).catch((err: any) => {
-                  throw(err)
-                })
-              }}
-              txExplanation={`Stake ${
-                selectedLevel.price / 2
-              } $MOONEY for 1 year`}
-              selectedChain={selectedChain}
-              selectedWallet={selectedWallet}
-              wallets={wallets}
-            />
-          </>
-        )}
+          <Step
+            realStep={currStep}
+            stepNum={1}
+            title={'Purchase MATIC'}
+            explanation={
+              'You need MATIC to swap it for our governance token $MOONEY.'
+            }
+            action={async () => {
+              setEnablePurchaseNativeTokenModal(true)
+            }}
+            isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
+            txExplanation={`Fund wallet with ${
+              selectedLevel.nativeSwapRoute?.route[0]
+                ? (
+                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                      10 ** 18 +
+                    extraFundsForGas
+                  ).toFixed(5)
+                : '...'
+            } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
+            selectedChain={selectedChain}
+            selectedWallet={selectedWallet}
+            wallets={wallets}
+            noTxns
+          />
+          <Step
+            realStep={currStep}
+            stepNum={2}
+            title={'Purchase $MOONEY on Uniswap'}
+            explanation={
+              'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
+            }
+            action={async () => {
+              await executeMooneySwapRoute(mooneySwapRoute)
+              await checkStep()
+            }}
+            isDisabled={!mooneySwapRoute}
+            txExplanation={`Swap ${
+              selectedLevel.nativeSwapRoute
+                ? (
+                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                    10 ** 18
+                  ).toFixed(
+                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                      10 ** 18 >=
+                      0.1
+                      ? 2
+                      : 5
+                  )
+                : '...'
+            } ${
+              selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+            } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
+            selectedChain={selectedChain}
+            selectedWallet={selectedWallet}
+            wallets={wallets}
+          />
+          {selectedLevel.hasVotingPower && (
+            <>
+              <Step
+                realStep={currStep}
+                stepNum={3}
+                title={'Token Approval'}
+                explanation={
+                  'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
+                }
+                action={async () => {
+                  const tx = await approveMooney()
+                  await checkStep()
+                }}
+                isDisabled={!mooneySwapRoute}
+                txExplanation={`Approve ${(
+                  selectedLevel.price / 2
+                ).toLocaleString()} $MOONEY for staking`}
+                selectedChain={selectedChain}
+                selectedWallet={selectedWallet}
+                wallets={wallets}
+              />
+              <Step
+                realStep={currStep}
+                stepNum={4}
+                title={'Stake $MOONEY'}
+                explanation={
+                  'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
+                }
+                action={async () => {
+                  const tx = await createLock()
+                  await checkStep()
+                }}
+                txExplanation={`Stake ${
+                  selectedLevel.price / 2
+                } $MOONEY for 1 year`}
+                selectedChain={selectedChain}
+                selectedWallet={selectedWallet}
+                wallets={wallets}
+              />
+            </>
+          )}
         </>
       ) : (
         <>
-        <StepLoading
-          stepNum={1}
-          title={'Purchase MATIC'}
-          explanation={
-            'You need MATIC to swap it for our governance token $MOONEY.'
-          }
-        />
-        <StepLoading
-          stepNum={2}
-          title={'Purchase $MOONEY on Uniswap'}
-          explanation={
-            'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
-          }
-        />
-        {selectedLevel.hasVotingPower && (
-          <>
-            <StepLoading
-              stepNum={3}
-              title={'Token Approval'}
-              explanation={
-                'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
-              }
-            />
-            <StepLoading
-              stepNum={4}
-              title={'Stake $MOONEY'}
-              explanation={
-                'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
-              }
-            />
-          </>
-        )}
+          <StepLoading
+            stepNum={1}
+            title={'Purchase MATIC'}
+            explanation={
+              'You need MATIC to swap it for our governance token $MOONEY.'
+            }
+          />
+          <StepLoading
+            stepNum={2}
+            title={'Purchase $MOONEY on Uniswap'}
+            explanation={
+              'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
+            }
+          />
+          {selectedLevel.hasVotingPower && (
+            <>
+              <StepLoading
+                stepNum={3}
+                title={'Token Approval'}
+                explanation={
+                  'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
+                }
+              />
+              <StepLoading
+                stepNum={4}
+                title={'Stake $MOONEY'}
+                explanation={
+                  'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
+                }
+              />
+            </>
+          )}
         </>
       )}
-
-      
     </div>
   )
 }

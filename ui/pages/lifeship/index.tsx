@@ -7,13 +7,6 @@ import Head from '../../components/layout/Head'
 import Product from '../../components/shopify/Product'
 import flag from '../../public/Original.png'
 
-/* STAGES
-0. SELECT KITS
-1. UPLOAD IMAGE
-2. UPLOAD IMAGE SUCCESS
-3. USER ALREADY UPLOADED IMAGE
-*/
-
 function Button({ children, onClick, className = '' }: any) {
   return (
     <button
