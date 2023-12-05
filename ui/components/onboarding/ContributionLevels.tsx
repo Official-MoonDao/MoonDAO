@@ -111,7 +111,7 @@ function ContributionLevel({
           >
             {/*Perk List*/}
 
-            <div className="mt-[8px] pr-2 2xl:h-[210px]">
+            <div className="mt-[8px] pr-2 2xl:h-[230px]">
               <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
                 <div>{`✓ ${
                   hasVotingPower
