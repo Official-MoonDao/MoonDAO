@@ -62,22 +62,21 @@ export function PurhcaseNativeTokenModal({
           <hr className="border-1 w-full" />
         </div>
         <div className="flex flex-col w-full justify-between pt-8">
-          <div className="flex gap-2 items-start py-2 flex-col gap-2">
+          <p className="flex gap-2 items-center py-2 flex-row gap-3">
             <p className="border-2 rounded-full px-2 py-1">1</p>
-            <p>
+              <span>
               Follow the{' '}
-              <button
+              <a
                 className="text-moon-gold"
-                onClick={() =>
-                  window.open('https://www.coinbase.com/how-to-buy')
-                }
+                href='https://www.coinbase.com/how-to-buy'
+                target='_blank'
               >
                 guide
-              </button>{' '}
+              </a>{' '}
               and create a Coinbase account
-            </p>
-          </div>
-          <p className="flex gap-2 items-center py-2">
+              </span>
+          </p>
+          <p className="flex gap-3 items-center py-2">
             <p className="border-2 rounded-full px-2 py-1">2</p>
             {`Purchase ${(nativeAmount + extraFundsForGas).toFixed(
               5
@@ -93,7 +92,7 @@ export function PurhcaseNativeTokenModal({
           >
             {'Copy ' + nativeTokenName + ' Amount'}
           </button>
-          <p className="flex gap-2 items-center py-2">
+          <p className="flex gap-3 items-center py-2">
             <p className="border-2 rounded-full px-2 py-1">3</p>
             {'Send ' + nativeTokenName + ' to Wallet'}
           </p>

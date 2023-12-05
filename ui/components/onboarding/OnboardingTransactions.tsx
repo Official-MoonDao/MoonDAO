@@ -28,7 +28,7 @@ Step 3: Approve Mooney -- Check for Mooney approval > selected level
 Step 4: Lock Mooney -- Check for Mooney Lock amnt > selected level
 */
 
-const TESTING = true
+const TESTING = false
 export function OnboardingTransactions({
   selectedChain,
   selectedLevel,
