@@ -27,7 +27,6 @@ type StepProps = {
     selectedWallet,
     wallets,
   }: StepProps) {
-    const [isLoadingAction, setIsLoadingAction] = useState(false)
     const [isProcessingTx, setIsProcessingTx] = useState(false)
   
     return (
@@ -69,22 +68,20 @@ type StepProps = {
                   `Please switch wallet to ${selectedChain.name}`
                 )
               }
-  
-              setIsLoadingAction(true)
-  
+    
               try {
                 setIsProcessingTx(true)
                 await action()
               } catch (err: any) {
-                toast.error(err.message.slice(0, 150))
+                toast.error(err.message.slice(0, 25))
                 setIsProcessingTx(false)
               }
             }}
-            disabled={isDisabled || isLoadingAction || isProcessingTx}
+            disabled={isDisabled || isProcessingTx}
           >
             {isProcessingTx ? (
               <LoadingSpinner></LoadingSpinner>
-            ) : isDisabled || isLoadingAction ? (
+            ) : isDisabled ? (
               <LoadingSpinner>{'...loading'}</LoadingSpinner>
             ) : (
               'Start'
