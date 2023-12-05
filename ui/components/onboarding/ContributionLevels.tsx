@@ -67,11 +67,10 @@ function ContributionLevel({
 
   return (
     <div
-      className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${
-        selectedLevel?.price === mooneyValue
-          ? 'border-moon-orange border-opacity-100'
-          : 'border-opacity-60 dark:border-opacity-20'
-      }`}
+      className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${selectedLevel?.price === mooneyValue
+        ? 'border-moon-orange border-opacity-100'
+        : 'border-opacity-60 dark:border-opacity-20'
+        }`}
       onClick={() => {
         if (!user) login()
         else {
@@ -92,19 +91,17 @@ function ContributionLevel({
           </div>
           {/*Title*/}
           <h1
-            className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${
-              selectedLevel.price === mooneyValue && 'text-moon-orange'
-            }`}
+            className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${selectedLevel.price === mooneyValue && 'text-moon-orange'
+              }`}
           >
             {title}
           </h1>
           {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
           <p className="mt-5 lg:mt-[5px] text-center">
-            {`${
-              hasVotingPower
-                ? (mooneyValue / 2).toLocaleString()
-                : mooneyValue.toLocaleString()
-            } $MOONEY`}
+            {`${hasVotingPower
+              ? (mooneyValue / 2).toLocaleString()
+              : mooneyValue.toLocaleString()
+              } $MOONEY`}
           </p>
 
           <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
@@ -139,15 +136,13 @@ function ContributionLevel({
           </div>
         </div>
         <button
-          className={`mt-3 border flex justify-center items-center gap-3 ${
-            selectedLevel.price === mooneyValue
-              ? 'border-moon-orange'
-              : 'border-white-500'
-          } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
-            selectedLevel.price === mooneyValue
+          className={`mt-3 border flex justify-center items-center gap-3 ${selectedLevel.price === mooneyValue
+            ? 'border-moon-orange'
+            : 'border-white-500'
+            } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${selectedLevel.price === mooneyValue
               ? 'bg-moon-orange'
               : 'bg-transparent'
-          }`}
+            }`}
           style={{
             width: '261px',
             height: '50px',
@@ -172,7 +167,7 @@ export function ContributionLevels({
   }
   // ;('Everything in the Citizen Tier.Exclusive promotion opportunities. Access to talent to help design, build, test your space hardware. 1,000,000 Voting Power 1,000,000 MOONEY')
   return (
-    <div className="flex flex-col min-[1400px]:flex-row justify-evenly mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
+    <div className="flex flex-col min-[1400px]:flex-row justify-between mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
       <ContributionLevel
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
