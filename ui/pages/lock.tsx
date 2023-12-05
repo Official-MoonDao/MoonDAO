@@ -1,9 +1,4 @@
-//This is full of functions and console.logs
-import {
-  MoonIcon,
-  LockClosedIcon,
-  ClockIcon,
-} from '@heroicons/react/24/outline'
+
 import {
   Web3Button,
   useAddress,
@@ -12,7 +7,6 @@ import {
 } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
-import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import React from 'react'
 import { toast } from 'react-hot-toast'

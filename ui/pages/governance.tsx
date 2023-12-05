@@ -10,10 +10,8 @@ import {
   BuildingLibraryIcon,
 } from '@heroicons/react/24/outline'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { any } from 'cypress/types/bluebird'
-import { concat } from 'cypress/types/lodash'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useContext } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../lib/privy/privy-wallet-context'
 import Head from '../components/layout/Head'

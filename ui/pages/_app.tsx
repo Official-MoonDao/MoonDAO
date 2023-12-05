@@ -1,7 +1,5 @@
 import { PrivyProvider } from '@privy-io/react-auth'
-import { Chain, Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
-import { ThirdwebProvider, walletConnect } from '@thirdweb-dev/react'
-import { metamaskWallet, coinbaseWallet, safeWallet } from '@thirdweb-dev/react'
+import { Chain, Mumbai, Polygon } from '@thirdweb-dev/chains'
 import React, { useState } from 'react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
