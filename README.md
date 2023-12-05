@@ -20,7 +20,7 @@ The code in this repository is structured into two main parts:
 
 See [ui/README.md](ui/README.md)
 
-## Testing against the Sepolia Ethereum testnet
+## Testing against the Mumbai testnet
 
 Add sepolia testnet variables to your local development environment:
 ```
