@@ -10,7 +10,7 @@ export default function WebsiteHead({
 
   return (
     <Head>
-      <title key="meta-title">{'MoonDAO | ' + title}</title>
+      <title key="meta-title">{'Mission Control | ' + title}</title>
       <link rel="icon" href="/favicon.ico" key="link-favicon" />
       <meta
         name="viewport"
