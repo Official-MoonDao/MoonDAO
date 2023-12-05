@@ -6,8 +6,7 @@ export default function WebsiteHead({
   title,
   description = defaultDescription,
 }: any) {
-  const image =
-    'https://global-uploads.webflow.com/634742417f9e1c182c6697d4/636290c53f8c0a618be80367_MoonDAO-OG.png'
+  const image = '/metadata-image.png'
 
   return (
     <Head>

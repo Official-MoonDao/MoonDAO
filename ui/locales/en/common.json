@@ -41,12 +41,14 @@
   "wrongNetwork": "Wrong network",
   "safetyNote": "For safety reasons, we recommend you limit your token allowance to the amount you plan to deposit in the near future.",
 
-  "announcementsTitle": "Announcements",
-  "announcementsDesc": "View the latest announcements from the MoonDAO team.",
+  "welcomeTitle": "Welcome",
+  "welcomeDesc": "Welcome to the future of space exploration with MoonDAO! Be part of our community-driven initiative to democratize access to space and accelerate our multiplanetary future. The MoonDAO App is your gateway to all things MoonDAO.",
+  "onboardingTitle": "Onboarding",
+  "onboardingDesc": "Joining MoonDAO is now easier than ever with a simple login, wallet creation, and onboarding flow that will walk you through everything you need to join our borderless, permissionless community.",
+  "governanceTitle": "Governance",
+  "governanceDesc": "MoonDAO is governed by the community. Here you can export your embedded wallet, acquire and stake $MOONEY, prove personhood, and vote on MoonDAO proposals.",
   "analyticsTitle": "Analytics",
-  "analyticsDesc": "View the latest analytics for Voting Power and the MoonDAO Treasury.",
+  "analyticsDesc": "Fully transparent stats and analytics related to our community and the MoonDAO Treasury, including total holdings and all transactions.",
   "eventsTitle": "Events",
-  "eventsDesc": "Here you can find the latest discord events for MoonDAO.",
-  "proposalsTitle": "Proposals",
-  "proposalsDesc": "View the latest proposals at MoonDAO."
+  "eventsDesc": "Get involved with MoonDAO by attending one of our upcoming online events or find out how you can contribute to our ambitious plans by helping out on a project."
 }

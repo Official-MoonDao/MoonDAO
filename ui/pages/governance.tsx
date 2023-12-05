@@ -10,6 +10,7 @@ import {
   BuildingLibraryIcon,
 } from '@heroicons/react/24/outline'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
+import useTranslation from 'next-translate/useTranslation'
 import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import toast from 'react-hot-toast'
@@ -116,9 +117,12 @@ export default function Governance() {
       ],
     },
   ]
+
+  const { t } = useTranslation('common')
+
   return (
     <div className="animate-fadeIn">
-      <Head title="Governance" description="MoonDAO Governance introduction." />
+      <Head title={t('governanceTitle')} description={t('governanceDesc')} />
 
       {/*Section containing cards with links*/}
       <PageCards

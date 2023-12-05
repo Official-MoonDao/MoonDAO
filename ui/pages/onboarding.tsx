@@ -1,5 +1,6 @@
 import { Polygon } from '@thirdweb-dev/chains'
 import { Token, TradeType } from '@uniswap/sdk-core'
+import useTranslation from 'next-translate/useTranslation'
 import { useContext, useEffect } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
@@ -14,9 +15,11 @@ export default function Onboarding({ usdQuotes }: any) {
     setSelectedChain(Polygon)
   }, [])
 
+  const { t } = useTranslation('common')
+
   return (
     <div className="animate-fadeIn">
-      <Head title="Onboarding" />
+      <Head title={t('onboardingTitle')} description={t('onboardingDesc')} />
       <OnboardingStageManager
         selectedChain={selectedChain}
         usdQuotes={usdQuotes}
