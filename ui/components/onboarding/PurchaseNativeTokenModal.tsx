@@ -64,17 +64,18 @@ export function PurhcaseNativeTokenModal({
         <div className="flex flex-col w-full justify-between pt-8">
           <p className="flex gap-2 items-center py-2 flex-row gap-3">
             <p className="border-2 rounded-full px-2 py-1">1</p>
-              <span>
+            <span>
               Follow the{' '}
               <a
                 className="text-moon-gold"
-                href='https://www.coinbase.com/how-to-buy'
-                target='_blank'
+                href={`https://www.coinbase.com/how-to-buy/${selectedChain.slug}`}
+                target="_blank"
+                rel="noreferrer"
               >
                 guide
               </a>{' '}
               and create a Coinbase account
-              </span>
+            </span>
           </p>
           <p className="flex gap-3 items-center py-2">
             <p className="border-2 rounded-full px-2 py-1">2</p>
