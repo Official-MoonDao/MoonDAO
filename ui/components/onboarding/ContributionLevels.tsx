@@ -119,14 +119,6 @@ function ContributionLevel({
 
             <div className="mt-[8px] pr-2 2xl:h-[210px]">
               <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
-                {points.map((point, i) => (
-                  <div
-                    key={`contribution-level-${title}-desc-point-${i}`}
-                    className="text-sm"
-                  >
-                    {'✓ ' + point}
-                  </div>
-                ))}
                 <div>{`✓ ${
                   hasVotingPower
                     ? (mooneyValue / 2).toLocaleString()
@@ -139,6 +131,14 @@ function ContributionLevel({
                     ).toLocaleString()} Voting Power`}
                   </div>
                 )}
+                {points.map((point, i) => (
+                  <div
+                    key={`contribution-level-${title}-desc-point-${i}`}
+                    className="text-sm"
+                  >
+                    {'✓ ' + point}
+                  </div>
+                ))}
               </ul>
             </div>
           </div>
@@ -187,9 +187,10 @@ export function ContributionLevels({
         mooneyValue={100}
         usdQuote={usdQuotes[0]}
         points={[
-          'Can purchase two Ticket to Space Sweepstakes Entries',
-          'Community Discord Access',
+          'Can purchase (2) Ticket to Space Entries',
           'MoonDAO Marketplace Access',
+          'MoonDAO Community Discord Access',
+          'MoonDAO Newsletter Updates',
         ]}
         selectedLevel={selectedLevel}
         setSelectedLevel={setSelectedLevel}
@@ -203,7 +204,7 @@ export function ContributionLevels({
         mooneyValue={50}
         usdQuote={usdQuotes[1]}
         points={[
-          'Can purhcase up to 12 Ticket To Space Entries',
+          'Can purchase (12) Ticket To Space Entries',
           'Exclusive Discord Access',
           'MoonDAO Marketplace Access',
           'Co-governance of the MoonDAO Treasury',
@@ -224,8 +225,8 @@ export function ContributionLevels({
         usdQuote={usdQuotes[2]}
         points={[
           'Everything in the Citizen Tier',
-          'Exclusive promotion opportunities',
-          'Access to talent to help design, build, test your space hardware',
+          'Exclusive promotion opportunities to MoonDAO community members',
+          'Access to talent to help design, build, and test your space hardware',
         ]}
         hasVotingPower
         selectedLevel={selectedLevel}
