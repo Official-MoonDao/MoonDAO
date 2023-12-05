@@ -21,7 +21,7 @@ export default function WebsiteHead({
       <meta name="description" content={description} key="meta-desc" />
       <meta
         property="og:title"
-        content={`MoonDAO | ${title}`}
+        content={`Mission Control | ${title}`}
         key="meta-ogtitle"
       />
       <meta property="og:description" content={description} key="meta-ogdesc" />
@@ -35,7 +35,7 @@ export default function WebsiteHead({
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta
         name="twitter:title"
-        content={`MoonDAO | ${title}`}
+        content={`Mission Control | ${title}`}
         key="meta-twtitle"
       />
       <meta
