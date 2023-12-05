@@ -1,17 +1,22 @@
 import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import { TradeType } from '@uniswap/sdk-core'
 import Image from 'next/image'
 import { Dispatch, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
+import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
+import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { useLightMode } from '../../lib/utils/hooks'
 import { ArrowSide } from '../assets'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type ContributionLevelProps = {
   lightIcon: string
   darkIcon: string
   title: string
   mooneyValue: number
+  usdQuote: number
   intro: string
   points: string[]
   hasVotingPower?: boolean
@@ -25,6 +30,7 @@ function ContributionLevel({
   darkIcon,
   title,
   mooneyValue,
+  usdQuote,
   intro,
   points,
   hasVotingPower,
@@ -43,9 +49,6 @@ function ContributionLevel({
   })
 
   const [lightMode] = useLightMode()
-
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
 
   const [levelVotingPower, setLevelVotingPower] = useState<any>()
 
@@ -67,10 +70,11 @@ function ContributionLevel({
 
   return (
     <div
-      className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-white group hover:border-orange-500 font-RobotoMono ${selectedLevel?.price === mooneyValue
-        ? 'border-moon-orange border-opacity-100'
-        : 'border-opacity-60 dark:border-opacity-20'
-        }`}
+      className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
+        selectedLevel?.price === mooneyValue
+          ? 'border-moon-orange border-opacity-100'
+          : 'border-opacity-60 dark:border-opacity-20'
+      }`}
       onClick={() => {
         if (!user) login()
         else {
@@ -91,18 +95,17 @@ function ContributionLevel({
           </div>
           {/*Title*/}
           <h1
-            className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${selectedLevel.price === mooneyValue && 'text-moon-orange'
-              }`}
+            className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${
+              selectedLevel.price === mooneyValue && 'text-moon-orange'
+            }`}
           >
             {title}
           </h1>
           {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
-          <p className="mt-5 lg:mt-[5px] text-center">
-            {`${hasVotingPower
-              ? (mooneyValue / 2).toLocaleString()
-              : mooneyValue.toLocaleString()
-              } $MOONEY`}
-          </p>
+
+          <p className="mt-5 lg:mt-[5px] text-center">{`~ ${usdQuote.toFixed(
+            2
+          )} USD`}</p>
 
           <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
             {intro}
@@ -124,6 +127,11 @@ function ContributionLevel({
                     {'✓ ' + point}
                   </div>
                 ))}
+                <div>{`✓ ${
+                  hasVotingPower
+                    ? (mooneyValue / 2).toLocaleString()
+                    : mooneyValue.toLocaleString()
+                } $MOONEY`}</div>
                 {hasVotingPower && (
                   <div className="text-sm">
                     {`✓ ${Math.floor(
@@ -136,13 +144,15 @@ function ContributionLevel({
           </div>
         </div>
         <button
-          className={`mt-3 border flex justify-center items-center gap-3 ${selectedLevel.price === mooneyValue
-            ? 'border-moon-orange'
-            : 'border-white-500'
-            } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${selectedLevel.price === mooneyValue
+          className={`mt-3 border flex justify-center items-center gap-3 ${
+            selectedLevel.price === mooneyValue
+              ? 'border-moon-orange'
+              : 'border-white-500'
+          } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
+            selectedLevel.price === mooneyValue
               ? 'bg-moon-orange'
               : 'bg-transparent'
-            }`}
+          }`}
           style={{
             width: '261px',
             height: '50px',
@@ -161,6 +171,7 @@ export function ContributionLevels({
   selectedLevel,
   setSelectedLevel,
   selectedChain,
+  usdQuotes,
 }: any) {
   {
     /*Card component */
@@ -174,6 +185,7 @@ export function ContributionLevels({
         title="Explorer"
         intro="Perfect for those that want to dip their feet into the MoonDAO community."
         mooneyValue={100}
+        usdQuote={usdQuotes[0]}
         points={[
           'Can purchase two Ticket to Space Sweepstakes Entries',
           'Community Discord Access',
@@ -189,6 +201,7 @@ export function ContributionLevels({
         title="Citizen"
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
         mooneyValue={50}
+        usdQuote={usdQuotes[1]}
         points={[
           'Can purhcase up to 12 Ticket To Space Entries',
           'Exclusive Discord Access',
@@ -208,6 +221,7 @@ export function ContributionLevels({
         title="Industry"
         intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
         mooneyValue={2000000}
+        usdQuote={usdQuotes[2]}
         points={[
           'Everything in the Citizen Tier',
           'Exclusive promotion opportunities',

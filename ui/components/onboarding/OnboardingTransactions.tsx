@@ -173,6 +173,7 @@ export function OnboardingTransactions({
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
+            noTxns
           />
           <Step
             realStep={currStep}
