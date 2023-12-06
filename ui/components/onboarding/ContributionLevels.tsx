@@ -17,6 +17,7 @@ type ContributionLevelProps = {
   selectedLevel: any
   setSelectedLevel: Dispatch<any>
   selectedChain: any
+  isRecommended?: boolean
 }
 
 function ContributionLevel({
@@ -31,6 +32,7 @@ function ContributionLevel({
   selectedLevel,
   setSelectedLevel,
   selectedChain,
+  isRecommended
 }: ContributionLevelProps) {
   const { user } = usePrivy()
   const { login } = useLogin({
@@ -64,11 +66,10 @@ function ContributionLevel({
 
   return (
     <div
-      className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
-        selectedLevel?.price === mooneyValue
-          ? 'border-moon-orange border-opacity-100'
-          : 'border-opacity-60 dark:border-opacity-20'
-      }`}
+      className={`w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${selectedLevel?.price === mooneyValue
+        ? 'border-moon-orange border-opacity-100'
+        : 'border-opacity-60 dark:border-opacity-20'
+        }`}
       onClick={() => {
         if (!user) login()
         else {
@@ -76,10 +77,13 @@ function ContributionLevel({
         }
       }}
     >
+
       <div className="h-full flex flex-col justify-between">
         <div className="flex flex-col justify-center items-center">
           {/*Logo*/}
+
           <div className="mt-8">
+
             <Image
               alt={`Icon image for ${title}`}
               src={lightMode ? darkIcon : lightIcon}
@@ -89,9 +93,8 @@ function ContributionLevel({
           </div>
           {/*Title*/}
           <h1
-            className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${
-              selectedLevel.price === mooneyValue && 'text-moon-orange'
-            }`}
+            className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${selectedLevel.price === mooneyValue && 'text-moon-orange'
+              }`}
           >
             {title}
           </h1>
@@ -103,26 +106,52 @@ function ContributionLevel({
             {intro}
           </p>
 
+          {isRecommended && (
+            <div className=" top-0 right-0 mt-2 mr-2 bg-moon-orange text-white py-1 px-2 rounded">
+              Most Popular
+            </div>
+          )}
           <div
             className="mt-4 text-left text-sm"
-            style={{ marginBottom: '20px' }}
+            style={{ marginBottom: '30px' }}
           >
             {/*Perk List*/}
 
             <div className="mt-[8px] pr-2 2xl:h-[230px]">
               <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
-                <div>{`✓ ${
-                  hasVotingPower
-                    ? (mooneyValue / 2).toLocaleString()
-                    : mooneyValue.toLocaleString()
-                } $MOONEY`}</div>
+                <div>
+                  {
+                    title === 'Explorer' && (
+                      `✓ ${hasVotingPower
+                        ? (mooneyValue / 2).toLocaleString()
+                        : mooneyValue.toLocaleString()
+                      } $MOONEY.`
+                    )
+                  }
+                  {
+
+                    (title === "Citizen" || title === "Pioneer") && (
+                      `✓ ${hasVotingPower
+                        ? (mooneyValue / 2).toLocaleString()
+                        : mooneyValue.toLocaleString()
+                      } $MOONEY to purchase up to (${title === "Citizen" ? 12 : 50}) Ticket to Space entries`
+                    )
+                  }
+                </div>
+                {
+                  (title === "Citizen" || title === 'Pioneer') && (
+                    `✓ ${hasVotingPower
+                      ? (mooneyValue / 2).toLocaleString()
+                      : mooneyValue.toLocaleString()
+                    } $MOONEY staked for two years for co-governance of the MoonDAO treasury`
+                  )
+                }
                 {hasVotingPower && (
                   <div className="text-sm">
-                    {`✓ ${
-                      levelVotingPower
-                        ? Math.floor(levelVotingPower)?.toLocaleString()
-                        : '...'
-                    } Voting Power`}
+                    {`✓ ${levelVotingPower
+                      ? Math.floor(levelVotingPower)?.toLocaleString()
+                      : '...'
+                      } Voting Power`}
                   </div>
                 )}
                 {points.map((point, i) => (
@@ -138,15 +167,13 @@ function ContributionLevel({
           </div>
         </div>
         <button
-          className={`mt-3 border flex justify-center items-center gap-3 ${
-            selectedLevel.price === mooneyValue
-              ? 'border-moon-orange'
-              : 'border-white-500'
-          } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
-            selectedLevel.price === mooneyValue
+          className={`mt-3 border flex justify-center items-center gap-3 ${selectedLevel.price === mooneyValue
+            ? 'border-moon-orange'
+            : 'border-white-500'
+            } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${selectedLevel.price === mooneyValue
               ? 'bg-moon-orange'
               : 'bg-transparent'
-          }`}
+            }`}
           style={{
             width: '261px',
             height: '50px',
@@ -170,9 +197,10 @@ export function ContributionLevels({
   {
     /*Card component */
   }
+  console.log(usdQuotes)
   // ;('Everything in the Citizen Tier.Exclusive promotion opportunities. Access to talent to help design, build, test your space hardware. 1,000,000 Voting Power 1,000,000 MOONEY')
   return (
-    <div className="flex flex-col min-[1400px]:flex-row justify-between mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
+    <div className="flex flex-col min-[1400px]:flex-row justify-between mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-5">
       <ContributionLevel
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
@@ -198,8 +226,6 @@ export function ContributionLevels({
         usdQuote={usdQuotes[1]}
         points={[
           'Everything in the Explorer Tier',
-          'Can purchase up to (12) Ticket To Space Entries',
-          'Co-governance of the MoonDAO Treasury',
           'Submit Proposals for Projects',
           'Free Events Access',
         ]}
@@ -207,6 +233,7 @@ export function ContributionLevels({
         selectedLevel={selectedLevel}
         setSelectedLevel={setSelectedLevel}
         selectedChain={selectedChain}
+        isRecommended
       />
       <ContributionLevel
         lightIcon="/onboarding-icons/industry-white.svg"

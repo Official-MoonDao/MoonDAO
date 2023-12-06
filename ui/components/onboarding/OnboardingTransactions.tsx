@@ -127,7 +127,7 @@ export function OnboardingTransactions({
       if (
         +formattedNativeBalance >
         selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18 +
-          extraFundsForGas
+        extraFundsForGas
       ) {
         setCurrStep(2)
       }
@@ -164,7 +164,7 @@ export function OnboardingTransactions({
           <Step
             realStep={currStep}
             stepNum={1}
-            title={'Purchase MATIC'}
+            title={'Buy MATIC'}
             explanation={
               'You need MATIC to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire MATIC on an exchange and then send your tokens to your connected wallet.'
             }
@@ -172,6 +172,7 @@ export function OnboardingTransactions({
               setEnablePurchaseNativeTokenModal(true)
             }}
             isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
+
             txExplanation={`Fund wallet with ${
               selectedLevel.nativeSwapRoute?.route[0]
                 ? (
@@ -200,22 +201,20 @@ export function OnboardingTransactions({
               })
             }}
             isDisabled={!mooneySwapRoute}
-            txExplanation={`Swap ${
-              selectedLevel.nativeSwapRoute
-                ? (
-                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                    10 ** 18
-                  ).toFixed(
-                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                      10 ** 18 >=
-                      0.1
-                      ? 2
-                      : 5
-                  )
-                : '...'
-            } ${
-              selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
-            } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
+            txExplanation={`Swap ${selectedLevel.nativeSwapRoute
+              ? (
+                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                10 ** 18
+              ).toFixed(
+                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                  10 ** 18 >=
+                  0.1
+                  ? 2
+                  : 5
+              )
+              : '...'
+              } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+              } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
@@ -263,9 +262,8 @@ export function OnboardingTransactions({
                       throw err
                     })
                 }}
-                txExplanation={`Stake ${
-                  selectedLevel.price / 2
-                } $MOONEY for 1 year`}
+                txExplanation={`Stake ${selectedLevel.price / 2
+                  } $MOONEY for 1 year`}
                 selectedChain={selectedChain}
                 selectedWallet={selectedWallet}
                 wallets={wallets}
