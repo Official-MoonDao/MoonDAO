@@ -14,7 +14,7 @@ export function StepLoading({ stepNum, title, explanation }: StepLoadingProps) {
           {stepNum}
         </p>
         <div className="flex-col justify-start items-start gap-4 inline-flex">
-          <div className="mt-[15px] text-left block lg:mt-0 xl:text-xl w-[150px]">
+          <div className="mt-[15px] text-center block lg:mt-0 xl:text-xl w-[150px]">
             {title}
           </div>
         </div>
