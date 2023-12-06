@@ -146,14 +146,6 @@ function ContributionLevel({
                     } $MOONEY staked for two years for co-governance of the MoonDAO treasury`
                   )
                 }
-                {hasVotingPower && (
-                  <div className="text-sm">
-                    {`✓ ${levelVotingPower
-                      ? Math.floor(levelVotingPower)?.toLocaleString()
-                      : '...'
-                      } Voting Power`}
-                  </div>
-                )}
                 {points.map((point, i) => (
                   <div
                     key={`contribution-level-${title}-desc-point-${i}`}
