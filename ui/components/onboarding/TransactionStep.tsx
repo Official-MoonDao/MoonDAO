@@ -35,13 +35,12 @@ export function Step({
     <div className="mt-5 w-full h-full text-black dark:text-white">
       <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
         <p
-          className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
-            realStep === stepNum
+          className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${realStep === stepNum
               ? 'bg-[grey] animate-pulse'
               : realStep > stepNum
-              ? 'bg-[lightgreen]'
-              : 'bg-moon-orange'
-          }`}
+                ? 'bg-[lightgreen]'
+                : 'bg-moon-orange'
+            }`}
         >
           {stepNum}
         </p>
