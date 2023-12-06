@@ -8,20 +8,17 @@ import Head from '../components/layout/Head'
 import { OnboardingStageManager } from '../components/onboarding/OnboardingStageManager'
 import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
 
-export default function Onboarding({  }: any) {
+export default function Join({ usdQuotes }: any) {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
-
-  useEffect(() => {
-    setSelectedChain(Polygon)
-  }, [])
 
   const { t } = useTranslation('common')
 
   return (
     <div className="animate-fadeIn">
-      <Head title={t('onboardingTitle')} description={t('onboardingDesc')} />
+      <Head title={t('joinTitle')} description={t('joinDesc')} />
       <OnboardingStageManager
         selectedChain={selectedChain}
+        usdQuotes={usdQuotes}
       />
     </div>
   )
@@ -44,8 +41,17 @@ export async function getStaticProps() {
     'MOONEY (PoS)'
   )
 
+  const levelOneRoute = await pregenSwapRoute(Polygon, 40000, MOONEY, DAI)
+  const levelTwoRoute = await pregenSwapRoute(Polygon, 500000, MOONEY, DAI)
+  const levelThreeRoute = await pregenSwapRoute(Polygon, 2000000, MOONEY, DAI)
+
+  const usdQuotes = [levelOneRoute, levelTwoRoute, levelThreeRoute].map(
+    (swapRoute) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18
+  )
+
   return {
     props: {
+      usdQuotes,
     },
     revalidate: 60,
   }
