@@ -110,7 +110,7 @@ function ContributionLevel({
 
           <div
             className="mt-4 text-left text-sm"
-            style={{ marginBottom: '20px' }}
+            style={{ marginBottom: '30px' }}
           >
             {/*Perk List*/}
 
@@ -167,7 +167,7 @@ export function ContributionLevels({
   }
   // ;('Everything in the Citizen Tier.Exclusive promotion opportunities. Access to talent to help design, build, test your space hardware. 1,000,000 Voting Power 1,000,000 MOONEY')
   return (
-    <div className="flex flex-col min-[1400px]:flex-row justify-between mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-7">
+    <div className="flex flex-col min-[1400px]:flex-row justify-between mt-8 2xl:w-full 2xl:gap-[7.5%] lg:mt-12 gap-[18px] lg:gap-5">
       <ContributionLevel
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
