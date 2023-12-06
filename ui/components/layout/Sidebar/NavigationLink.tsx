@@ -10,16 +10,18 @@ const NavigationLink = ({ item }: any) => {
   const router = useRouter()
   const { t } = useTranslation('common')
   return (
-    <li className={`list-none`} key={item.name}>
+    <li
+      className={`list-none font-RobotoMono font-normal text-sm md:text-base text-black dark:text-gray-100`}
+      key={item.name}
+    >
       {item.external ? (
-        <Link href={item.href}    target="_blank"
-        rel="noopener noreferrer">
+        <Link href={item.href} target="_blank" rel="noopener noreferrer">
           <div
             className={`
-               text-gray-600 hover:bg-blue-100 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-gray-200
+               hover:bg-blue-100   dark:hover:bg-gray-900 
             group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150 cursor-pointer`}
           >
-            <item.icon className="mr-3 h-6 w-6 flex-shrink-0 text-blue-500 dark:text-moon-gold" />
+            <item.icon className="mr-2 h-5 w-5 flex-shrink-0 text-black dark:text-white" />
             {t(item.name)}
           </div>
         </Link>
@@ -28,11 +30,17 @@ const NavigationLink = ({ item }: any) => {
           <div
             className={`${
               router.pathname == item.href
-                ? 'bg-blue-200 text-blue-950 dark:bg-gray-800 dark:text-gray-50 hover:scale-100'
-                : 'text-gray-600 hover:bg-blue-100 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-gray-200'
+                ? 'bg-blue-200 text-blue-950 dark:bg-slate-950 dark:text-moon-orange font-semibold'
+                : ' hover:bg-blue-100 dark:hover:bg-gray-900 '
             } group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150 cursor-pointer`}
           >
-            <item.icon className="mr-3 h-6 w-6 flex-shrink-0 text-blue-500 dark:text-moon-gold" />
+            <item.icon
+              className={`mr-2 h-5 w-5 flex-shrink-0   ${
+                router.pathname == item.href
+                  ? 'text-blue-950 dark:text-moon-orange'
+                  : 'text-black dark:text-white'
+              }`}
+            />
             {t(item.name)}
           </div>
         </Link>
@@ -54,20 +62,26 @@ const Dropdown = ({ item, router }: any) => {
           <Disclosure.Button
             className={`${
               item?.children?.map((e: any) => e.href)?.includes(router.pathname)
-                ? 'bg-blue-200 text-blue-950 dark:bg-gray-800 dark:text-gray-50 hover:scale-100'
-                : 'text-gray-600 hover:bg-blue-100 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-gray-200'
+                ? 'bg-blue-200 text-blue-950 dark:bg-gray-950 dark:text-moon-orange hover:scale-100 font-semibold'
+                : ' hover:bg-blue-100  dark:hover:bg-gray-900'
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150`}
           >
             <item.icon
-              className="mr-3 h-6 w-6 text-blue-500 dark:text-moon-gold"
+              className={`mr-2 h-5 w-5 text-black  ${
+                item?.children
+                  ?.map((e: any) => e.href)
+                  ?.includes(router.pathname)
+                  ? 'text-blue-950 dark:text-moon-orange'
+                  : 'text-black dark:text-white'
+              }`}
               aria-hidden="true"
             />
             {item.name}
             <span className="ml-4">
               <ChevronRightIcon
                 className={`
-            ${open ? 'rotate-90 text-gray-500' : 'text-gray-400'}
-            'h-5 w-5 translate-all duration-150'
+            ${open && 'rotate-90'}
+            'h-5 w-5 translate-all duration-150 text-white'
             `}
                 aria-hidden="true"
               />
@@ -85,15 +99,15 @@ const Dropdown = ({ item, router }: any) => {
               {item.children.map((subItem: any) => (
                 <li
                   key={subItem.name}
-                  className="list-disc marker:text-detail-light dark:marker:text-yellow-100 group hover:scale-105 transition-all duration-150"
+                  className="list-disc marker:text-blue-950 dark:marker:text-moon-orange group hover:scale-105 transition-all duration-150"
                 >
                   <Link
                     href={subItem.href}
                     className={`${
                       router.pathname == subItem.href
-                        ? 'text-moon-blue dark:text-moon-gold'
-                        : 'text-gray-600  hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200'
-                    } my-3 flex items-center text-[15px] font-medium dark:text-gray-400 dark:hover:text-white`}
+                        ? 'text-blue-950 dark:text-moon-orange font-semibold'
+                        : '  dark:text-white'
+                    } my-3 flex items-center`}
                   >
                     {subItem.name}
                   </Link>

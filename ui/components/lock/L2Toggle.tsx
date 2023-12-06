@@ -1,26 +1,31 @@
-import { useEffect } from 'react'
 import { useL2Toggle } from '../../lib/thirdweb/hooks/useL2Toggle'
+
+// Fix "toggle Layer" so it selects the layer according to the name instead of toggling between them.
 
 export default function L2Toggle() {
   const { isL2, toggleLayer } = useL2Toggle()
   return (
     <div
-      className={`flex items-center rounded-full gap-3 bg-detail-light dark:bg-stronger-dark py-2 pl-5 w-[300px] transtion-all ${
+      className={`flex items-center rounded justify-around bg-[#00000050] dark:bg-[#ffffff50] py-2 w-[235px] transition-all duration-150 ${
         isL2 && ''
       }`}
     >
-      <p className="font-semibold tracking-wide text-gray-50">Ethereum</p>
-      <div
+      <button
         onClick={toggleLayer}
-        className="relative w-[75px] h-[28px] rounded-full bg-gray-300 dark:bg-slate-200"
+        className={`rounded px-3 py-[10px] w-[101px] text-black transition-all duration-150 ${
+          !isL2 && 'bg-[#CBE4F7] text-black font-semibold '
+        }`}
       >
-        <div
-          className={`absolute -top-[3px] h-[33px] w-[33px] rounded-full bg-moon-blue dark:bg-moon-gold duration-300 ease-in-out ${
-            isL2 && 'translate-x-[45px]'
-          }`}
-        />
-      </div>
-      <p className={`font-semibold tracking-wide text-gray-50`}>Polygon</p>
+        Ethereum
+      </button>
+      <button
+        onClick={toggleLayer}
+        className={` rounded px-3 py-[10px]  w-[101px] text-black transition-all duration-150 ${
+          isL2 && 'bg-[#CBE4F7] text-black font-semibold'
+        }`}
+      >
+        Polygon
+      </button>
     </div>
   )
 }

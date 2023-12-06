@@ -1,22 +1,27 @@
-import LogoBlack from "./LogoBlack";
-import LogoWhite from "./LogoWhite";
-import DiscordIcon from "./DiscordIcon";
-import TwitterIcon from "./TwitterIcon";
-import Menu from "./Menu";
-import MenuClose from "./MenuClose";
-import SearchIcon from "./SearchIcon";
-import ArrowDown from "./ArrowDown";
-import ArrowUp from "./ArrowUp";
-import ArrowSide from "./ArrowSide";
-import CopyIcon from "./CopyIcon";
-import GoldPaperArrow from "./GoldPaperArrow";
-import TreasuryAndMobileLogo from "./TreasuryAndMobileLogo";
-import CNAsset from "./CNAsset";
-import LogoSmall from "./LogoSmall";
+import ArrowDown from './ArrowDown'
+import ArrowSide from './ArrowSide'
+import ArrowUp from './ArrowUp'
+import CNAsset from './CNAsset'
+import CopyIcon from './CopyIcon'
+import DiscordIcon from './DiscordIcon'
+import GoldPaperArrow from './GoldPaperArrow'
+import LogoBlack from './LogoBlack'
+import LogoSidebar from './LogoSidebar'
+import LogoSidebarLight from './LogoSidebarLight'
+import LogoSmall from './LogoSmall'
+import LogoWhite from './LogoWhite'
+import Menu from './Menu'
+import MenuClose from './MenuClose'
+import SearchIcon from './SearchIcon'
+import { SolarConfetti } from './SolarConfetti'
+import TreasuryAndMobileLogo from './TreasuryAndMobileLogo'
+import TwitterIcon from './TwitterIcon'
 
 export {
   LogoBlack,
   LogoWhite,
+  LogoSidebar,
+  LogoSidebarLight,
   DiscordIcon,
   TwitterIcon,
   Menu,
@@ -29,5 +34,6 @@ export {
   GoldPaperArrow,
   TreasuryAndMobileLogo,
   CNAsset,
-  LogoSmall
-};
+  LogoSmall,
+  SolarConfetti,
+}

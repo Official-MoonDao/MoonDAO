@@ -18,68 +18,75 @@ export default function Product({
   //This return is the link to the store.
   if (linkToStore)
     return (
-      <div className="prod backdropBlur flex justify-center items-center">
+      <div className="mt-8 flex justify-center items-center">
         <div className="flex flex-col m-2">
           <div className="flex flex-col items-center justify-center my-3 text-center">
-            <h3 className="text-lg md:text-xl xl:text-2xl font-GoodTimes text-moon-gold">
+            <h3 className="title-text-colors font-GoodTimes text-center text-4xl lg:text-left leading-relaxed w-full">
               Lifeship NFT
             </h3>
-            <p className="lg:w-3/4 mt-2 md:mt-4 text-sm font-mono leading-relaxed lg:text-base xl:text-lg text-light-text dark:text-dark-text opacity-80">
+            <p className="lg:w-3/4 mt-2 md:mt-4 text-sm font-mono leading-relaxed lg:text-base lg:text-left lg:self-start xl:text-lg text-gray-900 dark:text-white opacity-90">
               MoonDAO is partnering with lifeship to send NFTs to space! Please
               upload a file and complete the checkout. You will be emailed
               instrucitons to claim your NFT.
             </p>
           </div>
-
-          <div className="flex flex-col justify-center items-center">
-            <Image
-              id="product-image"
-              className="rounded-2xl backdropBlur"
-              src={product.images[preview]?.src}
-              width={450}
-              height={450}
-              alt={`product-${preview}`}
-            />
-            <div className="flex justify-center items-center gap-4 my-2">
-              <button
-                className={`rounded-full bg-slate-800 w-8 h-8 text-white text-xl backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out`}
-                onClick={() =>
-                  preview > 0
-                    ? setPreview(preview - 1)
-                    : setPreview(product.images.length - 1)
-                }
-              >
-                {'<'}
-              </button>
-              <div className="flex justify-center items-center mb-2 relative bottom-1">
-                {product?.images[0] &&
-                  product.images.map((image: any, i: number) => (
-                    <button
-                      key={'pagination' + i}
-                      className={`${
-                        preview === i && 'text-n3blue'
-                      } text-4xl hover:scale-110 px-2`}
-                      onClick={() => setPreview(i)}
-                    >
-                      .
-                    </button>
-                  ))}
+          {/*NFT kit */}
+          <div className="p-5 flex flex-col  lg:items-start  inner-container-background lg:max-w-[700px] rounded">
+            <h3 className="title-text-colors font-GoodTimes text-center text-3xl lg:text-left leading-relaxed w-full">
+              NFT KIT
+            </h3>
+            <section className="flex flex-col items-center">
+              <Image
+                id="product-image"
+                className="mt-5 rounded-2xl block"
+                src={product.images[preview]?.src}
+                width={450}
+                height={450}
+                alt={`product-${preview}`}
+              />
+              {/*Buttons to toggle products*/}
+              <div className="flex items-center gap-4 my-2">
+                <button
+                  className={`rounded-full bg-slate-800 px-2 text-white text-xl backdropBlur py-1 hover:text-orange-500 duration-150 transition-all ease-in-ease-out`}
+                  onClick={() =>
+                    preview > 0
+                      ? setPreview(preview - 1)
+                      : setPreview(product.images.length - 1)
+                  }
+                >
+                  {'<'}
+                </button>
+                <div className="flex items-center mb-2 relative bottom-1">
+                  {product?.images[0] &&
+                    product.images.map((image: any, i: number) => (
+                      <button
+                        key={'pagination' + i}
+                        className={`${
+                          preview === i && 'text-moon-orange'
+                        } text-4xl hover:scale-110 transition-all duration-150 px-2`}
+                        onClick={() => setPreview(i)}
+                      >
+                        .
+                      </button>
+                    ))}
+                </div>
+                <button
+                  className={`rounded-full bg-slate-800 px-2 text-white text-xl py-1 hover:text-orange-500 duration-150 transition-all ease-in-ease-out`}
+                  onClick={() => {
+                    if (!product?.images) return
+                    preview < product.images.length - 1
+                      ? setPreview(preview + 1)
+                      : setPreview(0)
+                  }}
+                >
+                  {'>'}
+                </button>
               </div>
-              <button
-                className={`rounded-full bg-slate-800 w-8 h-8 text-white text-xl backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out`}
-                onClick={() => {
-                  if (!product?.images) return
-                  preview < product.images.length - 1
-                    ? setPreview(preview + 1)
-                    : setPreview(0)
-                }}
-              >
-                {'>'}
-              </button>
-            </div>
+            </section>
+            {/*Final page button*/}
             <button
               id="link-to-store"
-              className="font-GoodTimes border-style btn text-n3blue normal-case font-medium w-full bg-transparent hover:bg-n3blue hover:text-black duration-[0.6s] ease-in-ease-out my-2"
+              className="mt-4 py-3 text-white bg-moon-orange font-RobotoMono w-full duration-[0.6s] ease-in-ease-out text-1xl"
               onClick={() => linkToStore()}
             >
               Send a File to Space!
@@ -91,23 +98,24 @@ export default function Product({
 
   //This return is the products.
   return (
-    <div className="w-full lg:max-w-1/3 bg-gray-300 dark:bg-[#1c1c1c80] rounded-lg backdropBlur flex flex-col justify-center items-center p-3 lg:p-1 xl:p-3">
+    <div className="w-full relative lg:max-w-1/3 bg-gray-300 dark:bg-[#071732] rounded-lg flex flex-col justify-center items-center p-3 lg:p-1 font-RobotoMono">
       <div className="flex flex-col items-center lg:gap-5 xl:gap-2">
-        <h2 className="w-full mt-4 font-GoodTimes mx-4 text-center 2xl:text-left xl:text-lg 2xl:text-xl 2xl:mr-2 bg-gradient-to-b text-transparent bg-clip-text from-moon-blue to-blue-950 dark:from-moon-gold dark:to-amber-600">
+        <h2 className="w-full mt-4 mx-4 text-center xl:text-lg 2xl:mr-2 title-text-colors font-semibold">
           {label}
         </h2>
-        <div className="p-2 ">
+        <div className="p-2">
           {product?.images[preview] && (
             <Image
               id="product-image"
-              className={`rounded-2xl backdropBlur bg-gray-100 dark:bg-slate-900`}
+              className={`rounded-2xl bg-gray-100 dark:bg-slate-800`}
               src={product.images[preview]?.src}
-              width={450}
-              height={400}
+              width={250}
+              height={250}
               alt={`product-${preview}`}
             />
           )}
         </div>
+
         {/*Product pagination*/}
         <div className="w-full flex justify-center items-center">
           <button
@@ -126,8 +134,8 @@ export default function Product({
                 <button
                   key={'pagination' + i}
                   className={`${
-                    preview === i && 'text-moon-blue dark:text-moon-gold'
-                  } text-3xl hover:scale-110 px-1 2xl:px-2`}
+                    preview === i && 'text-moon-orange'
+                  } text-3xl hover:scale-110 px-1`}
                   onClick={() => setPreview(i)}
                 >
                   .
@@ -135,7 +143,7 @@ export default function Product({
               ))}
           </div>
           <button
-            className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 2xl:w-8 2xl:h-8 text-white text-xl backdropBlur hover:text-n3blue  duration-[0.6s] ease-in-ease-out`}
+            className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 2xl:w-8 2xl:h-8 text-white text-xl backdropBlur hover:text-moon-orange duration-[0.6s] ease-in-ease-out`}
             onClick={() => {
               if (!product?.images) return
               preview < product.images.length - 1
@@ -147,33 +155,30 @@ export default function Product({
           </button>
         </div>
       </div>
+
       {/*Plus, Minus, quantity, total*/}
-      <div className="mt-2 flex flex-col justify-center items-center max-w-3/4">
+      <div className="mt-2 flex flex-col justify-center items-center max-w-3/4 text-gray-900 dark:text-white">
         <div className="flex justify-center items-center w-full">
           <button
-            className={`absolute left-[3%]  h-9 w-9 lg:h-6 lg:w-6 2xl:h-8 2xl:w-8 dark:text-gray-100 text-gray-900  text-xl font-medium bg-white hover:bg-n3blue hover:text-white dark:bg-black dark:hover:bg-moon-gold dark:hover:text-black duration-[0.6s] ease-in-ease-out rounded-full border-gray-300 border ${
+            className={`absolute left-[4%] text-xl border border-black dark:border-white rounded-full px-2 hover:scale-105 transition-all duration-150 ${
               quantity <= 0 && 'disable opacity-[0.5] pointer-events-none'
             }`}
             onClick={() => setQuantity(quantity > 0 ? quantity - 1 : 0)}
           >
-            <span className="relative bottom-[2px] lg:bottom-1 2xl:bottom-[2px]">
-              -
-            </span>
+            <span className="">-</span>
           </button>
           {/*Quantity and total */}
           <div className="flex flex-col justify-center items-center gap-1">
             <div className="w-full">
-              <p className="text-title-light dark:text-title-dark lg:text-sm 2xl:text-base">
+              <p className=" text-sm">
                 {'Quantity:'}
-                <span className="ml-2 dark:text-moon-gold text-moon-blue">
-                  {quantity}
-                </span>
+                <span className="ml-2 text-moon-orange">{quantity}</span>
               </p>
             </div>
             <div className="w-full">
-              <p className=" text-title-light dark:text-title-dark lg:text-sm 2xl:text-base">
+              <p className="text-sm">
                 {'Total:'}
-                <span className="ml-2 dark:text-moon-gold text-moon-blue">{`$${
+                <span className="ml-2 text-moon-orange">{`$${
                   product?.variants
                     ? (product.variants[0].price.amount * quantity).toFixed(2)
                     : 0
@@ -182,12 +187,10 @@ export default function Product({
             </div>
           </div>
           <button
-            className="absolute right-[3%] h-9 w-9 lg:h-6 lg:w-6 2xl:h-8 2xl:w-8 dark:text-gray-100 text-gray-900 text-xl font-medium bg-white hover:bg-n3blue hover:text-white dark:bg-black dark:hover:bg-moon-gold dark:hover:text-black duration-[0.6s] ease-in-ease-out rounded-full border-gray-300 border"
+            className="absolute right-[4%] text-xl border border-black dark:border-white rounded-full px-2 hover:scale-105 transition-all duration-150"
             onClick={() => setQuantity(quantity + 1)}
           >
-            <span className="relative bottom-[2px] lg:bottom-1 2xl:bottom-[2px]">
-              +
-            </span>
+            <span className="">+</span>
           </button>
         </div>
       </div>

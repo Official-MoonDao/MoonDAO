@@ -1,9 +1,4 @@
-//This is full of functions and console.logs
-import {
-  MoonIcon,
-  LockClosedIcon,
-  ClockIcon,
-} from '@heroicons/react/24/outline'
+
 import {
   Web3Button,
   useAddress,
@@ -12,7 +7,6 @@ import {
 } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
-import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import React from 'react'
 import { toast } from 'react-hot-toast'
@@ -25,13 +19,15 @@ import {
   useVMOONEYCreateLock,
   useVMOONEYIncreaseLock,
   useVMOONEYWithdrawLock,
+  calculateVMOONEY,
 } from '../lib/tokens/ve-token'
 import { NumberType, transformNumber } from '../lib/utils/numbers'
 import Balance from '../components/Balance'
 import TimeRange from '../components/TimeRange'
 import Head from '../components/layout/Head'
-import Header from '../components/layout/Header'
 import L2Toggle from '../components/lock/L2Toggle'
+import { LockData } from '../components/lock/LockData'
+import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import LockPresets from '../components/thirdweb/LockPresets'
 import ERC20ABI from '../const/abis/ERC20.json'
@@ -54,37 +50,8 @@ const dateOut = (date: any, { days, years }: any) => {
   return dateOut
 }
 
-const calculateVMOONEY = ({
-  MOONEYAmount,
-  VMOONEYAmount,
-  time,
-  lockTime,
-  max,
-}: any) => {
-  if (!MOONEYAmount) return 0
-
-  const vestingStart = calculateVestingStart({
-    MOONEYAmount,
-    VMOONEYAmount,
-    lockTime,
-  })
-  const percentage = (time - vestingStart) / (max - vestingStart)
-  const finalVMOONEYAmount = MOONEYAmount * percentage
-  return finalVMOONEYAmount.toFixed(finalVMOONEYAmount > 1 ? 2 : 8)
-}
-
-const calculateVestingStart = ({
-  MOONEYAmount,
-  VMOONEYAmount,
-  lockTime,
-}: any) => {
-  const fourYears = 31556926000 * 4
-  return lockTime - (VMOONEYAmount / MOONEYAmount) * fourYears
-}
-
 export default function Lock() {
   const { selectedChain }: any = useContext(ChainContext)
-
   const address = useAddress()
   const sdk = useSDK()
 
@@ -114,11 +81,6 @@ export default function Lock() {
     vMooneyContract,
     address
   )
-
-  const [hasLock, setHasLock] = useState<boolean>()
-  useEffect(() => {
-    !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
-  }, [VMOONEYLock, address])
 
   const [hasExpired, setHasExpired] = useState<boolean>()
   useEffect(() => {
@@ -166,6 +128,11 @@ export default function Lock() {
     lockAmount && ethers.utils.parseEther(lockAmount),
     lockTime?.value.div(1000)
   )
+
+  const [hasLock, setHasLock] = useState<boolean>()
+  useEffect(() => {
+    !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
+  }, [VMOONEYLock, address, createLock])
 
   const { mutateAsync: increaseLock } = useVMOONEYIncreaseLock({
     votingEscrowContract: vMooneyContract,
@@ -228,97 +195,45 @@ export default function Lock() {
   const { t } = useTranslation('common')
 
   return (
-    <main className="animate-fadeIn">
+    <main className="animate-fadeIn font-RobotoMono">
       <Head title="Voting Power" />
-      <div className="mt-3 px-5 lg:px-10 xl:px-10 py-12 xl:pt-16 component-background w-[336px] rounded-2xl sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] border-detail-light dark:border-detail-dark border lg:border-2 shadow-md shadow-detail-light dark:shadow-detail-dark xl:flex xl:flex-col xl:items-center">
-        <div className="xl:w-3/4 pb-1">
-          <span className="sm:hidden">
-            <Header text="Lock $MOONEY" noStar />
-          </span>
-          <span className="hidden sm:block">
-            <Header text="Lock $MOONEY" />
-          </span>
-        </div>
-        <section className="mt-6 xl:mt-6 xl:w-3/4">
-          {/*Lock Data*/}
-          {hasLock && (
-            <>
-              <div className="card stats-vertical lg:stats-horizontal shadow mb-4">
-                <div className="stat">
-                  <div className="white-text stat-figure text-primary">
-                    <MoonIcon className="h-8 w-8" />
-                  </div>
-                  <div className="white-text">{t('hasLockMoney1')}</div>
-                  <div className="stat-value text-primary">
-                    <Balance
-                      balance={VMOONEYBalance?.toString() / 10 ** 18}
-                      loading={VMOONEYBalanceLoading}
-                      decimals={
-                        VMOONEYBalance &&
-                        VMOONEYBalance?.gt(ethers.utils.parseEther('1'))
-                          ? 2
-                          : 8
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="stat">
-                  <div className="white-text stat-figure text-secondary">
-                    <LockClosedIcon className="h-8 w-8" />
-                  </div>
-                  <div className="white-text">{t('hasLockMoney2')}</div>
-                  <div className="stat-value text-secondary">
-                    <Balance
-                      balance={VMOONEYLock && VMOONEYLock[0]}
-                      loading={VMOONEYLockLoading}
-                      decimals={2}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="card stats-vertical lg:stats-horizontal shadow mb-4">
-                <div className="stat">
-                  <div className="stat-figure">
-                    <ClockIcon className="h-8 w-8" />
-                  </div>
-                  <div className="white-text">{t('yourlockExpDate')}</div>
-                  <div className="yellow-text stat-value">
-                    {VMOONEYLock &&
-                      dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </section>
+      <div className="mt-3 px-5 lg:px-7 xl:px-9 py-12 lg:py-14 lg:mt-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] page-border-and-color">
+        <h1 className="page-title">Lock $MOONEY</h1>
+        <LockData
+          hasLock={hasLock}
+          VMOONEYBalance={VMOONEYBalance}
+          VMOONEYBalanceLoading={VMOONEYBalanceLoading}
+          VMOONEYLock={VMOONEYLock}
+          VMOONEYLockLoading={VMOONEYLockLoading}
+        />
 
         <div className="my-7 lg:my-5 justify-center xl:mt-8 flex xl:w-3/4 lg:justify-normal">
           <L2Toggle />
         </div>
-
+        {/*Available to Lock*/}
+        {!hasExpired && (
+          <div className="xl:w-3/4 rounded-md text-xs sm:tracking-wide lg:text-base uppercase font-semibold xl:text-xl inner-container-background px-2 py-3 lg:px-5 lg:py-4 flex items-center">
+            <p className="text-slate-900 dark:text-white">
+              {t('lockAvailableMoney')}{' '}
+            </p>
+            <Balance
+              balance={MOONEYBalance?.toString() / 10 ** 18}
+              loading={MOONEYBalanceLoading}
+            />
+          </div>
+        )}
         {/*Locking Section*/}
-        <div className="text-light-text dark:text-dark-text xl:w-3/4">
+        <div className="mt-5 py-5 xl:w-3/4 inner-container-background px-6 rounded-md">
           <div className="flex flex-col">
             {!hasExpired ? (
               <div>
-                {/*Available to Lock*/}
-                <p className="text-sm uppercase font-semibold xl:text-base">
-                  {t('lockAvailableMoney')}{' '}
-                  <Balance
-                    balance={MOONEYBalance?.toString() / 10 ** 18}
-                    loading={MOONEYBalanceLoading}
-                  />
-                </p>
                 {/*Lock Amount label*/}
-
-                <label className="mt-6 xl:mt-10 block">
-                  <p className="uppercase font-semibold underline text-title-light dark:text-title-dark">
+                <label className="block">
+                  <p className="uppercase font-semibold title-text-colors">
                     {t('lockAmount')}
                   </p>
                   <p
-                    className={`tracking-wider text-sm opacity-80 text-light-text dark:text-dark-text mt-3 ${
+                    className={`tracking-wider text-sm text-light-text dark:text-white mt-3 ${
                       hasLock && canIncrease.time ? 'animate-highlight' : ''
                     }`}
                   >
@@ -328,11 +243,11 @@ export default function Lock() {
                 </label>
 
                 {/*Input for Lock amount*/}
-                <div className="mt-4 flex items-center justify-between pl-6 h-[37px] rounded-full overflow-hidden bg-gray-200 dark:bg-slate-800 border border-detail-light dark:border-detail-dark">
+                <div className="mt-4 flex items-center justify-between pl-6 h-[37px] rounded-xl overflow-hidden border border-[#CBE4F7]">
                   <input
                     type="number"
                     placeholder="0"
-                    className="w-full dark:[color-scheme:dark] pl-2 py-1 text-title-light dark:text-title-dark bg-gray-200 dark:bg-slate-800 truncate font-semibold tracking-wide"
+                    className="w-full dark:[color-scheme:dark] pl-2 py-1 text-title-light dark:text-title-dark dark:bg-[#071732] truncate tracking-wide"
                     value={lockAmount || ''}
                     disabled={
                       !MOONEYBalance ||
@@ -353,7 +268,7 @@ export default function Lock() {
                   />
                   {/*MAX button*/}
                   <button
-                    className="w-[80px] bg-moon-blue dark:bg-moon-gold text-white font-semibold uppercase h-full"
+                    className="w-[80px] bg-[#CBE4F7] text-[18px] text-[#1F212B] uppercase h-full"
                     disabled={
                       !MOONEYBalance ||
                       +MOONEYBalance?.toString() === 0 ||
@@ -378,10 +293,10 @@ export default function Lock() {
 
                 {/*Lock Expiration date label*/}
                 <label className="mt-6 xl:mt-10 block">
-                  <p className="uppercase font-semibold underline text-title-light dark:text-title-dark">
+                  <p className="uppercase font-semibold title-text-colors">
                     {t('lockExpDate')}
                   </p>
-                  <p className="tracking-wider text-sm opacity-80 text-light-text dark:text-dark-text mt-3">
+                  <p className="tracking-wider text-sm text-light-text dark:text-white mt-3">
                     {t('lockDesc2')}
                     {hasLock && canIncrease.amount ? t('lockAmountNote') : ''}
                   </p>
@@ -391,7 +306,7 @@ export default function Lock() {
                 <input
                   type="date"
                   placeholder={t('lockExpDate')}
-                  className="mt-4 input input-bordered w-full  dark:[color-scheme:dark] text-title-light dark:text-title-dark bg-gray-200 dark:bg-slate-800 border border-detail-light dark:border-detail-dark"
+                  className="mt-4 input input-bordered w-full dark:[color-scheme:dark] dark:bg-[#071732] text-black dark:text-white border dark:border-white"
                   value={lockTime?.formatted}
                   min={
                     hasLock && address
@@ -480,12 +395,14 @@ export default function Lock() {
                   wantsToIncrease && (
                     <p className="mt-4 text-sm uppercase font-semibold">
                       {t('lockBalance')}{' '}
-                      <span className=" text-title-light dark:text-title-dark font-bold text-base inline-block">
+                      <span className=" text-white font-bold text-base inline-block">
                         {calculateVMOONEY({
                           CurrentMOONEYLock: ethers.utils.formatEther(
                             VMOONEYLock?.[0] || 0
                           ),
-                          MOONEYAmount: lockAmount && +lockAmount,
+                          MOONEYAmount:
+                            +lockAmount ||
+                            ethers.utils.formatEther(VMOONEYLock?.[0] || 0),
                           VMOONEYAmount: transformNumber(
                             +VMOONEYBalance?.toString() / 10 ** 18 || 0,
                             NumberType.number
@@ -505,8 +422,46 @@ export default function Lock() {
 
                 {/*Web3 button with actions according context*/}
                 <div className="card-actions mt-4 white-text">
-                  <Web3Button
-                    contractAddress={MOONEY_ADDRESSES[selectedChain.slug]}
+                  <PrivyWeb3Button
+                    label={
+                      !hasLock
+                        ? t('lock')
+                        : `${t('lockInc')} ${
+                            canIncrease.amount && !canIncrease.time
+                              ? t('amount')
+                              : ''
+                          }  
+                      ${
+                        !canIncrease.amount && canIncrease.time ? t('time') : ''
+                      }`
+                    }
+                    action={async () => {
+                      //check for token allowance
+
+                      const lockAmountBigNum =
+                        ethers.utils.parseEther(lockAmount)
+
+                      const increaseAmount = VMOONEYLock?.[0]
+                        ? lockAmountBigNum.sub(VMOONEYLock?.[0])
+                        : lockAmountBigNum
+
+                      if (increaseAmount.gt(tokenAllowance)) {
+                        const approvalTx: any = await approveToken()
+                        approvalTx?.receipt &&
+                          toast.success('Successfully approved MOONEY for lock')
+                      }
+
+                      const lockTx: any = hasLock
+                        ? await increaseLock?.()
+                        : await createLock?.()
+
+                      lockTx?.receipt &&
+                        toast.success(
+                          hasLock
+                            ? 'Successfully Increased lock'
+                            : 'Successfully Created lock'
+                        )
+                    }}
                     className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
                     isDisabled={
                       (!canIncrease.amount &&
@@ -520,47 +475,7 @@ export default function Lock() {
                             dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))
                           ))
                     }
-                    action={async () => {
-                      //check for token allowance
-
-                      const lockAmountBigNum =
-                        ethers.utils.parseEther(lockAmount)
-
-                      const increaseAmount = VMOONEYLock?.[0]
-                        ? lockAmountBigNum.sub(VMOONEYLock?.[0])
-                        : lockAmountBigNum
-
-                      if (increaseAmount.gt(tokenAllowance)) {
-                        const approvalTx = await approveToken()
-                        approvalTx?.receipt &&
-                          toast.success('Successfully approved MOONEY for lock')
-                      }
-
-                      const lockTx = hasLock
-                        ? await increaseLock?.()
-                        : await createLock?.()
-
-                      lockTx?.receipt &&
-                        toast.success(
-                          hasLock
-                            ? 'Successfully Increased lock'
-                            : 'Successfully Created lock'
-                        )
-                    }}
-                  >
-                    {!hasLock
-                      ? t('lock')
-                      : `${t('lockInc')} ${
-                          canIncrease.amount && !canIncrease.time
-                            ? t('amount')
-                            : ''
-                        }  
-                        ${
-                          !canIncrease.amount && canIncrease.time
-                            ? t('time')
-                            : ''
-                        }`}
-                  </Web3Button>
+                  />
                 </div>
               </div>
             ) : (

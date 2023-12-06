@@ -86,3 +86,33 @@ export function useVMOONEYSupply(
 ) {
   return useHandleRead(votingEscrowContract, 'totalSupply')
 }
+
+export function calculateVestingStart({
+  MOONEYAmount,
+  VMOONEYAmount,
+  lockTime,
+}: any) {
+  const fourYears = 31556926000 * 4
+  return lockTime - (VMOONEYAmount / MOONEYAmount) * fourYears
+}
+
+export function calculateVMOONEY({
+  MOONEYAmount,
+  VMOONEYAmount,
+  time,
+  lockTime,
+  max,
+}: any) {
+  if (!MOONEYAmount) return 0
+
+  const vestingStart = calculateVestingStart({
+    MOONEYAmount,
+    VMOONEYAmount,
+    lockTime,
+  })
+  const percentage = (time - vestingStart) / (max - vestingStart)
+  const finalVMOONEYAmount = MOONEYAmount * percentage || 0
+  return finalVMOONEYAmount.toFixed(
+    finalVMOONEYAmount > 1 || finalVMOONEYAmount === 0 ? 2 : 8
+  )
+}

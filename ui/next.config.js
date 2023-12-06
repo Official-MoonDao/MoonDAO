@@ -2,7 +2,12 @@ const nextTranslate = require('next-translate')
 module.exports = nextTranslate({
   reactStrictMode: true,
   images: {
-    domains: ['cdn.shopify.com', 'cryptologos.cc', 'gateway.ipfscdn.io'],
+    domains: [
+      'cdn.shopify.com',
+      'cryptologos.cc',
+      'gateway.ipfscdn.io',
+      'www.youtube.com',
+    ],
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {

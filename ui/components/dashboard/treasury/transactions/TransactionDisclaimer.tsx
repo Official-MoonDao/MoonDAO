@@ -9,10 +9,10 @@ const TransactionDisclaimer = () => {
           <>
             <dt>
               <Disclosure.Button className="flex w-full items-center justify-between text-left text-white">
-                <h6 className="text-lg lg:text-xl underline opacity-90 hover:opacity-100 font-semibold tracking-wide text-title-light dark:text-detail-dark transition-all duration-150 hover:scale-105">
+                <h6 className="text-lg lg:text-xl underline opacity-90 hover:opacity-100 font-semibold tracking-wide text-moon-orange transition-all duration-150 hover:scale-105">
                   Why are some transactions flagged?
                 </h6>
-                <span className="ml-3 flex h-7 items-center text-title-light dark:text-detail-dark">
+                <span className="ml-3 flex h-7 items-center text-moon-orange">
                   {open ? (
                     <MinusSmallIcon
                       className="h-6 w-6 lg:h-7 lg:w-7"

@@ -1,5 +1,5 @@
 @import url('/fonts/stylesheet.css');
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Open+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Acme&family=Abel&family=Open+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,6 +12,14 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
   overflow: auto;
+}
+
+.font-acme {
+  font-family: 'Acme', sans-serif;
+}
+
+.font-abel {
+  font-family: 'Abel', sans-serif;
 }
 
 a {
@@ -89,7 +97,6 @@ a {
 }
 
 .range3 {
-  border-color: #ffbc5c;
   border-radius: 25px;
   border-width: 2px;
 }
@@ -135,18 +142,9 @@ a {
   visibility: hidden;
 }
 
-
 /*
 
 Contains Loading Skeleton utilities, link & component background.
-
-*DO NOT* expand this list of class utilities using @layer or traditional CSS classes, instead, consider the following:
-
-1) If a class is going to be used just once or twice, prefer writing the classes on that same component.
-
-2) If we expect to use a set of classes more times than that, it's preferable to create a REACT COMPONENT that has those classes.
-
-What we achieve by doing this: the ideal scenario is that the HTML/JSX of a component has all the styling contained in itself using familiar Tailwind Classes, instead of having the component make a reference to other CSS files.
 
 */
 
@@ -166,16 +164,43 @@ What we achieve by doing this: the ideal scenario is that the HTML/JSX of a comp
   .component-background {
     @apply relative bg-gradient-to-br from-white via-gray-50 to-zinc-50 dark:from-black dark:via-slate-950 dark:to-gray-950;
   }
+
+  .page-title {
+    @apply text-[#071732] dark:text-white font-GoodTimes text-center text-3xl lg:text-5xl xl:text-[54px] lg:text-left;
+  }
+
+  .title-text-colors {
+    @apply text-[#071732] dark:text-white;
+  }
+
+  .page-border-and-color {
+    @apply border-4 border-[#071732] border-opacity-[0.06] dark:border-opacity-100 dark:border-[#CBE4F7] bg-white dark:bg-[#040C1A] shadow-[0px_4px_29px_0px_rgba(0,0,0,0.03)] dark:shadow-none;
+  }
+
+  .inner-container-background {
+    @apply bg-[#869cc2] bg-opacity-10  dark:bg-opacity-100 dark:bg-[#071732];
+  }
+
+  .sidebar-bg-dark {
+    background: linear-gradient(172.32deg, #090d21 70.56%, #46161b 106.43%);
+  }
+
+  .sidebar-bg-light {
+    background: rgba(131, 131, 131, 0.18);
+  }
 }
 
-/* These two classes control the color of the background*/
-
-.stars-dark {
-  background: url('/star-background.png') repeat,
-    linear-gradient(to right, rgb(10, 10, 10), rgb(5, 5, 5), rgb(3, 1, 7));
+.background-dark {
+  background: linear-gradient(
+    56.41deg,
+    #252c4d 29.98%,
+    #080c20 79.58%,
+    #2d121a 97.4%
+  );
 }
 
-.stars-light {
-  background: url('/star-background.png') repeat,
-    linear-gradient(to right, rgb(184, 186, 245), #dce3fa, rgb(129, 182, 235));
+.background-light {
+  background: #fcfafc;
 }
+
+/* These two classes control the color of the sidebar*/

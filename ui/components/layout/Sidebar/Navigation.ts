@@ -1,47 +1,46 @@
 import {
-  HomeIcon,
-  LockClosedIcon,
-  RocketLaunchIcon,
-  BellIcon,
-  ChartBarSquareIcon,
+  BuildingLibraryIcon,
   FolderIcon,
-  CalendarDaysIcon,
-  WalletIcon,
+  HomeIcon,
+  PlusIcon,
+  RocketLaunchIcon,
 } from '@heroicons/react/24/outline'
 
 export const navigation = [
   {
-    name: 'home',
+    name: 'Welcome',
     href: '/',
     icon: HomeIcon,
   },
   {
-    name: 'Buy $MOONEY',
-    href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
-    icon: WalletIcon,
-    external: true,
+    name: 'Join MoonDAO',
+    href: '/join',
+    icon: PlusIcon,
   },
   {
-    name: 'lockTokens',
-    href: '/lock',
-    icon: LockClosedIcon,
+    name: 'Governance',
+    href: '/governance',
+    icon: BuildingLibraryIcon,
   },
   {
-    name: 'Analytics',
-    href: '/analytics',
-    icon: ChartBarSquareIcon,
-  },
-  {
-    name: 'Calendar',
-    href: '/calendar',
-    icon: CalendarDaysIcon,
-  },
-  {
-    name: 'Missions',
+    name: 'Marketplace',
     icon: RocketLaunchIcon,
     children: [
-      { name: 'Zero Gravity', href: '/zero-g' },
-      { name: 'Moon Mission', href: '/lifeship' },
+      { name: 'ZeroG', href: '/zero-g' },
+      { name: 'Lifeship', href: '/lifeship' },
+      // { name: 'Sweepstakes', href: '/sweepstakes' },
+      { name: 'Digital Assets', href: 'https://market.moondao.com' },
+    ],
+  },
+  {
+    name: 'Links',
+    icon: FolderIcon,
+    children: [
+      { name: 'Snapshot', href: 'https://snapshot.org/#/tomoondao.eth' },
+      { name: 'Documentation', href: 'https://moondao.com/docs/introduction' },
+      { name: 'Newsletter', href: 'https://moondao.ck.page/profile' },
+      { name: 'Events', href: '/events' },
+      { name: 'Analytics', href: '/analytics' },
     ],
   },
 ]

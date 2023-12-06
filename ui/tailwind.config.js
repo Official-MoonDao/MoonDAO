@@ -23,7 +23,7 @@ module.exports = {
       colors: {
         'title-light': '#172554',
         'title-dark': '#fefce8',
-        'light-text': '#374151',
+        'light-text': '#071732',
         'dark-text': '#e5e7eb',
         faded: '#6b7280',
         'moon-gold': '#F9B95C',
@@ -43,6 +43,8 @@ module.exports = {
         n3bg: '#F4FAFF',
         n3nav: '#7395B2',
         moonBlue: '#0B3B8E',
+        'moon-orange': '#D7594F',
+       
       },
       keyframes: {
         notification: {

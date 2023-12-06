@@ -11,11 +11,12 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
     <div className="flex items-center px-4 md:px-0">
       <button
         aria-label="Toggle Light Mode"
-        className="h-8 w-8 fill-current text-blue-900 dark:text-moon-gold"
+        className="mr-5 h-6 w-6 fill-current text-black dark:text-white hover:scale-105"
         onClick={() => setLightMode(!lightMode)}
       >
         {lightMode ? <MoonIcon /> : <SunIcon />}
       </button>
+      <hr className="border-none rounded-sm w-[1px] inline-block h-6 bg-black dark:bg-gray-400" />
       <a
         className="ml-5"
         aria-label="Link to Discord"

@@ -6,12 +6,11 @@ export default function WebsiteHead({
   title,
   description = defaultDescription,
 }: any) {
-  const image =
-    'https://global-uploads.webflow.com/634742417f9e1c182c6697d4/636290c53f8c0a618be80367_MoonDAO-OG.png'
+  const image = '/metadata-image.png'
 
   return (
     <Head>
-      <title key="meta-title">{'MoonDAO | ' + title}</title>
+      <title key="meta-title">{'Mission Control | ' + title}</title>
       <link rel="icon" href="/favicon.ico" key="link-favicon" />
       <meta
         name="viewport"
@@ -22,7 +21,7 @@ export default function WebsiteHead({
       <meta name="description" content={description} key="meta-desc" />
       <meta
         property="og:title"
-        content={`MoonDAO | ${title}`}
+        content={`Mission Control | ${title}`}
         key="meta-ogtitle"
       />
       <meta property="og:description" content={description} key="meta-ogdesc" />
@@ -36,7 +35,7 @@ export default function WebsiteHead({
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta
         name="twitter:title"
-        content={`MoonDAO | ${title}`}
+        content={`Mission Control | ${title}`}
         key="meta-twtitle"
       />
       <meta

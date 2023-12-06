@@ -12,7 +12,14 @@ export function useHandleWrite(
   useHandleError(method, error)
 
   return {
-    mutateAsync: async () => await mutateAsync({ args, overrides }),
+    mutateAsync: async () => {
+      try {
+        await mutateAsync({ args, overrides })
+      } catch (err: any) {
+        console.log(err.message)
+        throw(err)
+      }
+    },
     isLoading,
     error,
   }

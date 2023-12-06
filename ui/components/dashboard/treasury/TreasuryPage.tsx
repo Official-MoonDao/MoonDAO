@@ -2,9 +2,6 @@ import useTranslation from 'next-translate/useTranslation'
 import { useState } from 'react'
 import { allowedAssets } from '../../../lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets, useTransactions } from '../../../lib/dashboard/hooks'
-import { errorToast } from '../../../lib/utils/errorToast'
-import Header from '../../layout/Header'
-import Line from '../../layout/Line'
 import AssetSkeletons from './balance/AssetSkeletons'
 import Assets from './balance/Assets'
 import TreasuryBalance from './balance/TreasuryBalance'
@@ -43,23 +40,25 @@ export default function TreasuryPage() {
   return (
     <>
       <div
-        id={'dashboard-treasury-page'}
-        className="md:ml-10 lg:flex lg:flex-col lg:items-center xl:flex-row xl:items-baseline xl:justify-around gap-12 xl:gap-16 2xl:gap-24"
+        id={'treasury-page'}
+        className="px-3 2xl:flex 2xl:items-baseline 2xl:justify-around gap-12 2xl:gap-20"
       >
         {/*Assets Section*/}
-        <section className="xl:w-[40%] 2xl:w-[45%] xl:max-w-[600px]">
-          <Header text={'Treasury'} />
-          <Line />
+        <section className="2xl:w-[50%] 2xl:max-w-[700px]">
+          <h2 className="title-text-colors text-4xl font-GoodTimes text-center 2xl:text-left">
+            Treasury
+          </h2>
+          <div className="mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full"></div>
           {loadingAssets || !tokens[0] ? (
             <AssetSkeletons />
           ) : (
-            <div id="dashboard-treasury-assets">
+            <div className="mt-4 xl:mt-7" id="dashboard-treasury-assets">
               <TreasuryBalance balance={balanceSum} />
               <Assets tokens={tokens} />
             </div>
           )}
           <a
-            className="mt-10 inline-block font-Montserrat text-lg underline text-stronger-light hover:text-title-light dark:text-moon-gold hover:dark:text-stronger-dark"
+            className="mt-10 inline-block w-full text-lg text-center underline dark:text-white text-gray-900"
             href="https://etherscan.io/address/0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
             target="_blank"
             rel="noreferrer"
@@ -69,9 +68,13 @@ export default function TreasuryPage() {
         </section>
 
         {/*Transactions Section*/}
-        <section className="mt-12 xl:mt-2 xl:w-[40%] 2xl:w-[50%] xl:max-w-[700px]">
-          <Header text={'Transactions'} noStar />
-          <Line />
+        <section className="mt-12 xl:mt-2 2xl:w-[50%] 2xl:max-w-[700px]">
+          <h2 className="title-text-colors text-3xl sm:text-4xl font-GoodTimes text-center 2xl:text-left">
+            Transactions
+          </h2>
+
+          <div className="mt-6 h-[1px] dark:bg-white bg-black opacity-20 w-full"></div>
+
           <div className="mt-10">
             {loadingTransactions || !transactions ? (
               <TransactionSkeletons />
@@ -94,7 +97,7 @@ export default function TreasuryPage() {
           ).length < 10 && <TransactionDisclaimer />}
 
           {/*Pagination*/}
-          <div className="mt-10 flex justify-between max-w-[650px] items-center">
+          <div className="mt-10 flex justify-between 2xl:w-full items-center">
             {/*Left Caret*/}
             <TransactionCaret
               left

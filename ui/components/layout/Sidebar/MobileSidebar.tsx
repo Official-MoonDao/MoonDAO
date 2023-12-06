@@ -3,9 +3,9 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Fragment } from 'react'
 import { useEffect } from 'react'
 import { TreasuryAndMobileLogo } from '../../assets'
-import ExternalLinks from './ExternalLinks'
 import { navigation } from './Navigation'
 import NavigationLink from './NavigationLink'
+import {LogoSidebar, LogoSidebarLight} from '../../assets'
 
 const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
   /*A useEffect used because the Dialog Headless UI component doesn't naturally recognize Dark Mode classes */
@@ -47,7 +47,7 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
             leaveTo="-translate-x-full"
           >
             {/*The actual menu inside */}
-            <Dialog.Panel className="relative flex w-full max-w-xs flex-1 flex-col px-3 pb-4 pt-5 bg-gradient-to-b from-zinc-50 via-blue-50 to-blue-100 dark:from-slate-950 dark:via-gray-950 dark:to-slate-900 ">
+            <Dialog.Panel className="relative flex w-full max-w-xs flex-1 flex-col px-3 pb-4 pt-5 bg-gray-200 dark:bg-slate-950">
               <Transition.Child
                 as={Fragment}
                 enter="ease-in-out duration-300"
@@ -73,7 +73,7 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
               </Transition.Child>
               <a href="https://moondao.com">
                 <div className="flex flex-shrink-0 items-center px-4">
-                  <TreasuryAndMobileLogo />
+                {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
                 </div>
               </a>
               <div className="mt-8 h-0 flex-1 overflow-y-auto">
@@ -81,9 +81,6 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
                   {navigation.map((item, i) => (
                     <NavigationLink item={item} key={i} />
                   ))}
-                  <div className="ml-5 pt-6">
-                    <ExternalLinks />
-                  </div>
                 </nav>
               </div>
             </Dialog.Panel>

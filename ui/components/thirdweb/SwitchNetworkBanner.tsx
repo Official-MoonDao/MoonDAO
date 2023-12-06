@@ -1,10 +1,7 @@
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
-import { useSwitchChain } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 
 export default function SwitchNetworkBanner({ newNetwork }: any) {
-  const switchChain = useSwitchChain()
-
   const capitalized = (network: any) =>
     network.name.charAt(0).toUpperCase() + network.name.slice(1)
 
@@ -17,10 +14,7 @@ export default function SwitchNetworkBanner({ newNetwork }: any) {
         {t('networkBanner1')} {capitalized(newNetwork)} {t('networkBanner2')}
       </p>
 
-      <button
-        className="relative right-1 sm:right-0 sm:mr-3 lg:ml-2 bg-amber-500 border shadow-sm font-medium shadow-yellow-200 border-yellow-200 border-opacity-30 text-white text-sm px-2 py-1 rounded-full transition-all duration-150 hover:scale-[1.03]"
-        onClick={() => switchChain(newNetwork?.chainId)}
-      >
+      <button className="relative right-1 sm:right-0 sm:mr-3 lg:ml-2 bg-amber-500 border shadow-sm font-medium shadow-yellow-200 border-yellow-200 border-opacity-30 text-white text-sm px-2 py-1 rounded-full transition-all duration-150 hover:scale-[1.03]">
         {t('networkButton')} {capitalized(newNetwork)}
       </button>
     </div>
