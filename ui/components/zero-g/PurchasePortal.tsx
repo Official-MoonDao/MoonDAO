@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 
-function Button({ children, onClick }: any) {
+function Button({ children, onClick, className = '' }: any) {
   return (
     <button
-      className="mt-4 py-3 text-white bg-moon-orange font-RobotoMono w-full duration-[0.6s] ease-in-ease-out text-1xl"
+      className={`mt-4 py-3 text-white bg-moon-orange font-RobotoMono w-full duration-[0.6s] ease-in-ease-out text-1xl ${className}`}
       onClick={onClick}
     >
       {children}
@@ -25,14 +25,15 @@ export default function PurchasePortal({ validLock }: any) {
       {state === 0 && (
         <>
           <Button
+            className="opacity-50 cursor-not-allowed"
             onClick={() => {
               //check if wallet has vMooney
-              if (validLock) {
-                setState(1)
-              } else setState(2)
+              // if (validLock) {
+              //   setState(1)
+              // } else setState(2)
             }}
           >
-            Buy a ticket
+            Not Currently Available
           </Button>
         </>
       )}
@@ -59,7 +60,7 @@ export default function PurchasePortal({ validLock }: any) {
         </>
       )}
       {state === 2 && (
-        <div className='mt-3'>
+        <div className="mt-3">
           <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">{`Please connect a wallet that has vMooney to receive a discount code, otherwise press continue.`}</p>
           <Button
             onClick={() => {

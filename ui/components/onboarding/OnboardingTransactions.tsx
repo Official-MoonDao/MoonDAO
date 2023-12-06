@@ -1,16 +1,10 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
-import { Transaction } from '@thirdweb-dev/sdk'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
-import toast from 'react-hot-toast'
-import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useHandleWrite } from '../../lib/thirdweb/hooks'
-import { useTokenAllowance } from '../../lib/tokens/approve'
-import { useMOONEYBalance } from '../../lib/tokens/mooney-token'
-import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { VMOONEY_ADDRESSES } from '../../const/config'
@@ -28,7 +22,6 @@ Step 3: Approve Mooney -- Check for Mooney approval > selected level
 Step 4: Lock Mooney -- Check for Mooney Lock amnt > selected level
 */
 
-const TESTING = false
 export function OnboardingTransactions({
   selectedChain,
   selectedLevel,
@@ -92,8 +85,6 @@ export function OnboardingTransactions({
     ])
 
     if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
-      console.log(vMooneyLock?.[0].toString())
-      console.log(selectedLevel.price)
       setCurrStep(5)
       setStage(2)
     } else if (
@@ -114,10 +105,8 @@ export function OnboardingTransactions({
       const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
       if (
         +formattedNativeBalance >
-          selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-            10 ** 18 +
-            extraFundsForGas ||
-        TESTING
+        selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18 +
+          extraFundsForGas
       ) {
         setCurrStep(2)
       }
@@ -173,6 +162,7 @@ export function OnboardingTransactions({
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
+            noTxns
           />
           <Step
             realStep={currStep}
@@ -182,8 +172,9 @@ export function OnboardingTransactions({
               'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
             }
             action={async () => {
-              await executeMooneySwapRoute(mooneySwapRoute)
-              await checkStep()
+              await executeMooneySwapRoute(mooneySwapRoute).then(() => {
+                checkStep()
+              })
             }}
             isDisabled={!mooneySwapRoute}
             txExplanation={`Swap ${
@@ -216,8 +207,11 @@ export function OnboardingTransactions({
                   'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
                 }
                 action={async () => {
-                  const tx = await approveMooney()
-                  await checkStep()
+                  await approveMooney().then(() => {
+                    checkStep()
+                  }).catch((err) => {
+                    throw(err)
+                  })
                 }}
                 isDisabled={!mooneySwapRoute}
                 txExplanation={`Approve ${(
@@ -235,8 +229,12 @@ export function OnboardingTransactions({
                   'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
                 }
                 action={async () => {
-                  const tx = await createLock()
-                  await checkStep()
+                  await createLock().then(() => {
+                    setChecksLoaded(false)
+                    checkStep()
+                  }).catch((err) => {
+                    throw(err)
+                  })
                 }}
                 txExplanation={`Stake ${
                   selectedLevel.price / 2

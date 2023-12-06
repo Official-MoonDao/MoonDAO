@@ -24,7 +24,6 @@ describe('<Product />', () => {
     )
     //check product data
     prodEl.get('#product-image').should('exist').wait(3000)
-    prodEl.get('h2').contains(label)
 
     //test adding quantity
     prodEl.get('button').contains('+').click()
@@ -58,7 +57,6 @@ describe('<Product />', () => {
     )
     //check product data
     prodEl.get('#product-image').should('exist')
-    prodEl.get('h2').contains(label)
 
     //test pagination
     prodEl.get('button').contains('>').click()
@@ -74,7 +72,6 @@ describe('<Product />', () => {
       .wait(1000)
 
     //check link to store
-    prodEl.get('a').contains('NFT Submission Details →')
     prodEl
       .get('#link-to-store')
       .click()

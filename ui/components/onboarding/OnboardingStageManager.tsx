@@ -34,7 +34,7 @@ function StageContainer({ children }: any) {
   )
 }
 
-export function OnboardingStageManager({ selectedChain }: any) {
+export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
   const address = useAddress()
   const { user, login } = usePrivy()
   const [stage, setStage] = useState(0)
@@ -57,7 +57,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
   const totalMooneyBalance = useTotalMooneyBalance(address)
   const { totalLocked } = useValidVP(address)
 
-  const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
+  const { MOONEY, NATIVE_TOKEN, DAI } = useUniswapTokens()
 
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price + 1,
@@ -203,6 +203,7 @@ export function OnboardingStageManager({ selectedChain }: any) {
           selectedChain={selectedChain}
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
+          usdQuotes={usdQuotes}
         />
       </div>
     </StageContainer>
@@ -242,8 +243,8 @@ export function OnboardingStageManager({ selectedChain }: any) {
           <button
             className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3 mb-3 lg:mb-0"
             onClick={() => {
-              setStage(0);
-              setSelectedLevel({ price: 0, hasVotingPower: false });
+              setStage(0)
+              setSelectedLevel({ price: 0, hasVotingPower: false })
             }}
           >
             <input type="image" src="/backIcon.png" />
@@ -308,9 +309,11 @@ export function OnboardingStageManager({ selectedChain }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
-              }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
+              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+            } text-md font-medium ${
+              isActive ? 'text-white' : 'text-[#40464f]'
+            }`}
           >
             {stepNumber}
           </span>

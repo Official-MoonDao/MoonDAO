@@ -1,12 +1,13 @@
+import useTranslation from 'next-translate/useTranslation'
 import { useRouter } from 'next/router'
 import Head from '../components/layout/Head'
 
 export default function Home() {
   const router = useRouter()
-
+  const { t } = useTranslation('common')
   return (
     <div className="animate-fadeIn">
-      <Head title="Home" />
+      <Head title={t('welcomeTitle')} description={t('welcomeDesc')} />
 
       <div
         id="home-hero"
