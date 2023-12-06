@@ -320,11 +320,9 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
-              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-            } text-md font-medium ${
-              isActive ? 'text-white' : 'text-[#40464f]'
-            }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
+              }`}
           >
             {stepNumber}
           </span>
