@@ -3,6 +3,7 @@ import { useAddress, useContract } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useEffect, useState, useRef, useMemo } from 'react'
+import toast from 'react-hot-toast'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
@@ -283,9 +284,14 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
         </h1>
         <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-900 dark:text-gray-100">{`Step 1: Tell your friends about MoonDAO. Top referrals get extra bonuses, like extra entries into our Sweepstakes with Blue Origin!`}</p>
 
-        <button className="mt-8 px-6 py-3 lg:px-8 xl:px-10 2xl:px-14 2xl:py-4 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange">
+        <a
+          className="mt-8 px-6 py-3 lg:px-8 xl:px-10 2xl:px-14 2xl:py-4 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
+          href={`https://hub.sparklp.co/c/MF11bc2c5d09c4`}
+          target="_blank"
+          rel="noreferrer"
+        >
           Share referral
-        </button>
+        </a>
         <p className="mt-12 xl:mt-14 text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-center lg:text-left text-gray-900 dark:text-gray-100">
           Step 2: Choose how you want to be involved.
         </p>
@@ -314,9 +320,11 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
-              }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
+              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+            } text-md font-medium ${
+              isActive ? 'text-white' : 'text-[#40464f]'
+            }`}
           >
             {stepNumber}
           </span>
