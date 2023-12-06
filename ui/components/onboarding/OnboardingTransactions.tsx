@@ -106,7 +106,7 @@ export function OnboardingTransactions({
       if (
         +formattedNativeBalance >
         selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18 +
-          extraFundsForGas
+        extraFundsForGas
       ) {
         setCurrStep(2)
       }
@@ -142,7 +142,7 @@ export function OnboardingTransactions({
           <Step
             realStep={currStep}
             stepNum={1}
-            title={'Purchase MATIC'}
+            title={'Buy MATIC'}
             explanation={
               'You need MATIC to swap it for our governance token $MOONEY.'
             }
@@ -150,15 +150,14 @@ export function OnboardingTransactions({
               setEnablePurchaseNativeTokenModal(true)
             }}
             isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
-            txExplanation={`Fund wallet with ${
-              selectedLevel.nativeSwapRoute?.route[0]
-                ? (
-                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                      10 ** 18 +
-                    extraFundsForGas
-                  ).toFixed(5)
-                : '...'
-            } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
+            txExplanation={`Fund wallet with ${selectedLevel.nativeSwapRoute?.route[0]
+              ? (
+                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                10 ** 18 +
+                extraFundsForGas
+              ).toFixed(5)
+              : '...'
+              } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
@@ -167,7 +166,7 @@ export function OnboardingTransactions({
           <Step
             realStep={currStep}
             stepNum={2}
-            title={'Purchase $MOONEY on Uniswap'}
+            title={'Swap MATIC for $MOONEY'}
             explanation={
               'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
             }
@@ -177,22 +176,20 @@ export function OnboardingTransactions({
               })
             }}
             isDisabled={!mooneySwapRoute}
-            txExplanation={`Swap ${
-              selectedLevel.nativeSwapRoute
-                ? (
-                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                    10 ** 18
-                  ).toFixed(
-                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                      10 ** 18 >=
-                      0.1
-                      ? 2
-                      : 5
-                  )
-                : '...'
-            } ${
-              selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
-            } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
+            txExplanation={`Swap ${selectedLevel.nativeSwapRoute
+              ? (
+                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                10 ** 18
+              ).toFixed(
+                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                  10 ** 18 >=
+                  0.1
+                  ? 2
+                  : 5
+              )
+              : '...'
+              } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+              } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
@@ -210,7 +207,7 @@ export function OnboardingTransactions({
                   await approveMooney().then(() => {
                     checkStep()
                   }).catch((err) => {
-                    throw(err)
+                    throw (err)
                   })
                 }}
                 isDisabled={!mooneySwapRoute}
@@ -233,12 +230,11 @@ export function OnboardingTransactions({
                     setChecksLoaded(false)
                     checkStep()
                   }).catch((err) => {
-                    throw(err)
+                    throw (err)
                   })
                 }}
-                txExplanation={`Stake ${
-                  selectedLevel.price / 2
-                } $MOONEY for 1 year`}
+                txExplanation={`Stake ${selectedLevel.price / 2
+                  } $MOONEY for 1 year`}
                 selectedChain={selectedChain}
                 selectedWallet={selectedWallet}
                 wallets={wallets}
