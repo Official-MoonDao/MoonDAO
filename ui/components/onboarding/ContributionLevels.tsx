@@ -119,10 +119,33 @@ function ContributionLevel({
 
             <div className="mt-[8px] pr-2 2xl:h-[230px]">
               <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
-                <div>{`✓ ${hasVotingPower
-                  ? (mooneyValue / 2).toLocaleString()
-                  : mooneyValue.toLocaleString()
-                  } $MOONEY`}</div>
+                <div>
+                  {
+                    title === 'Explorer' && (
+                      `✓ ${hasVotingPower
+                        ? (mooneyValue / 2).toLocaleString()
+                        : mooneyValue.toLocaleString()
+                      } $MOONEY.`
+                    )
+                  }
+                  {
+
+                    (title === "Citizen" || title === "Pioneer") && (
+                      `✓ ${hasVotingPower
+                        ? (mooneyValue / 2).toLocaleString()
+                        : mooneyValue.toLocaleString()
+                      } $MOONEY to purchase up to (${title === "Citizen" ? 12 : 50}) Ticket to Space entries`
+                    )
+                  }
+                </div>
+                {
+                  (title === "Citizen" || title === 'Pioneer') && (
+                    `✓ ${hasVotingPower
+                      ? (mooneyValue / 2).toLocaleString()
+                      : mooneyValue.toLocaleString()
+                    } $MOONEY staked for two years for co-governance of the MoonDAO treasury`
+                  )
+                }
                 {hasVotingPower && (
                   <div className="text-sm">
                     {`✓ ${levelVotingPower
@@ -203,8 +226,6 @@ export function ContributionLevels({
         usdQuote={usdQuotes[1]}
         points={[
           'Everything in the Explorer Tier',
-          'Can purchase up to (12) Ticket To Space Entries',
-          'Co-governance of the MoonDAO Treasury',
           'Submit Proposals for Projects',
           'Free Events Access',
         ]}
