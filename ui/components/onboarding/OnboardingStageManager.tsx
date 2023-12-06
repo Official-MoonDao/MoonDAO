@@ -245,20 +245,6 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
             <div></div>
           )}
         </div>
-        {/* <div className="py-4 flex w-full">
-          <button
-            className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
-            // style={{ marginBottom: '68px' }}
-            onClick={() => {
-              setStage(0)
-              setSelectedLevel({ price: 0, hasVotingPower: false })
-            }}
-          >
-            <input type="image" src="/backIcon.png" />
-            <span>Back</span>
-          </button>
-          <L2Toggle />
-        </div> */}
         <div className="py-4 flex flex-col items-center justify-center w-full">
           <button
             className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3 mb-3 lg:mb-0"
@@ -329,11 +315,9 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
-              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-            } text-md font-medium ${
-              isActive ? 'text-white' : 'text-[#40464f]'
-            }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
+              }`}
           >
             {stepNumber}
           </span>
