@@ -167,7 +167,6 @@ export function ContributionLevels({
   selectedLevel,
   setSelectedLevel,
   selectedChain,
-  usdQuotes,
 }: any) {
   {
     /*Card component */
@@ -179,14 +178,13 @@ export function ContributionLevels({
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
         title="Explorer"
-        intro="Perfect for those that want to dip their feet into the MoonDAO community."
-        mooneyValue={100}
-        usdQuote={usdQuotes[0]}
+        intro="Want to go to space? You won't receive voting power or become a MoonDAO Member, but you'll have enough $MOONEY for two entries into our sweepstakes."
+        mooneyValue={40000}
+        usdQuote={30}
         points={[
-          'Can purchase (2) Ticket to Space Entries',
+          'Can purchase up to (2) Ticket to Space Entries',
           'MoonDAO Marketplace Access',
-          'MoonDAO Community Discord Access',
-          'MoonDAO Newsletter Updates',
+          'Exclusive MoonDAO Discord Access',
         ]}
         selectedLevel={selectedLevel}
         setSelectedLevel={setSelectedLevel}
@@ -196,16 +194,15 @@ export function ContributionLevels({
         lightIcon="/onboarding-icons/citizen-white.svg"
         darkIcon="/onboarding-icons/citizen-black.svg"
         title="Citizen"
-        intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary."
-        mooneyValue={50}
-        usdQuote={usdQuotes[1]}
+        intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary. Full voting power citizen."
+        mooneyValue={500000}
+        usdQuote={300}
         points={[
-          'Can purchase (12) Ticket To Space Entries',
-          'Exclusive Discord Access',
-          'MoonDAO Marketplace Access',
+          'Everything in the Explorer Tier',
+          'Can purchase up to (12) Ticket To Space Entries',
           'Co-governance of the MoonDAO Treasury',
           'Submit Proposals for Projects',
-          'Free-Events Access',
+          'Free Events Access',
         ]}
         hasVotingPower
         selectedLevel={selectedLevel}
@@ -215,10 +212,10 @@ export function ContributionLevels({
       <ContributionLevel
         lightIcon="/onboarding-icons/industry-white.svg"
         darkIcon="/onboarding-icons/industry-black.svg"
-        title="Industry"
-        intro="If you’re a company that would like to join the coalition of organizations supporting MoonDAO, or a Whale that loves what we’re doing, this is for you."
+        title="Pioneer"
+        intro="For our biggest supporters, companies, and whales. If you want to deeply support what we’re doing, this is for you."
         mooneyValue={2000000}
-        usdQuote={usdQuotes[2]}
+        usdQuote={1500}
         points={[
           'Everything in the Citizen Tier',
           'Exclusive promotion opportunities to MoonDAO community members',

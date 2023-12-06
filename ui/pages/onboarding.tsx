@@ -47,12 +47,7 @@ export async function getStaticProps() {
 
   const levelOneUSDRoute = await pregenSwapRoute(Polygon, 100, MOONEY, DAI)
   const levelTwoUSDRoute = await pregenSwapRoute(Polygon, 25, MOONEY, DAI)
-  const levelThreeUSDRoute = await pregenSwapRoute(
-    Polygon,
-    2000000,
-    MOONEY,
-    DAI
-  )
+  const levelThreeUSDRoute = await pregenSwapRoute(Polygon, 2000000, MOONEY, DAI)
 
   const usdRoutes = [levelOneUSDRoute, levelTwoUSDRoute, levelThreeUSDRoute]
 
