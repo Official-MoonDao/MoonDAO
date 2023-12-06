@@ -18,6 +18,7 @@ type ContributionLevelProps = {
   selectedLevel: any
   setSelectedLevel: Dispatch<any>
   selectedChain: any
+  isRecommended?: boolean
 }
 
 function ContributionLevel({
@@ -31,6 +32,7 @@ function ContributionLevel({
   selectedLevel,
   setSelectedLevel,
   selectedChain,
+  isRecommended
 }: ContributionLevelProps) {
   const { user } = usePrivy()
   const { login } = useLogin({
@@ -78,10 +80,13 @@ function ContributionLevel({
         }
       }}
     >
+
       <div className="h-full flex flex-col justify-between">
         <div className="flex flex-col justify-center items-center">
           {/*Logo*/}
+
           <div className="mt-8">
+
             <Image
               alt={`Icon image for ${title}`}
               src={lightMode ? darkIcon : lightIcon}
@@ -103,7 +108,11 @@ function ContributionLevel({
               : mooneyValue.toLocaleString()
               } $MOONEY`}
           </p>
-
+          {isRecommended && (
+            <div className=" top-0 right-0 mt-2 mr-2 bg-moon-orange text-white py-1 px-2 rounded">
+              Recommended
+            </div>
+          )}
           <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
             {intro}
           </p>
@@ -201,6 +210,7 @@ export function ContributionLevels({
         selectedLevel={selectedLevel}
         setSelectedLevel={setSelectedLevel}
         selectedChain={selectedChain}
+        isRecommended
       />
       <ContributionLevel
         lightIcon="/onboarding-icons/industry-white.svg"
