@@ -2,6 +2,9 @@
   "name": "moondao-app",
   "private": true,
   "license": "MIT",
+  "engines": {
+    "node":"18"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
