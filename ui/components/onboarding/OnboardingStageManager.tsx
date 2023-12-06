@@ -238,20 +238,6 @@ export function OnboardingStageManager({ selectedChain }: any) {
             <div></div>
           )}
         </div>
-        {/* <div className="py-4 flex w-full">
-          <button
-            className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
-            // style={{ marginBottom: '68px' }}
-            onClick={() => {
-              setStage(0)
-              setSelectedLevel({ price: 0, hasVotingPower: false })
-            }}
-          >
-            <input type="image" src="/backIcon.png" />
-            <span>Back</span>
-          </button>
-          <L2Toggle />
-        </div> */}
         <div className="py-4 flex flex-col items-center justify-center w-full">
           <button
             className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3 mb-3 lg:mb-0"
