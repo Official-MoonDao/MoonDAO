@@ -64,6 +64,21 @@ export function OnboardingTransactions({
       ethers.utils.parseEther(String(selectedLevel.price / 2)),
     ])
 
+  const [nativeBalance, setNativeBalance] = useState<any>()
+
+  async function getNativeBalance() {
+    const wallet = wallets[selectedWallet]
+    if (!wallet) return
+    const provider = await wallet.getEthersProvider()
+    const nativeBalance = await provider.getBalance(wallet.address)
+    const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
+    setNativeBalance(formattedNativeBalance)
+  }
+
+  useEffect(() => {
+    getNativeBalance()
+  }, [wallets, selectedWallet])
+
   useEffect(() => {
     if (selectedLevel.nativeSwapRoute) {
       generateMooneyRoute(TradeType.EXACT_INPUT).then((swapRoute: any) =>
@@ -85,6 +100,12 @@ export function OnboardingTransactions({
     ])
 
     if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
+      setCurrStep(5)
+      setStage(2)
+    } else if (
+      !selectedLevel.hasVotingPower &&
+      mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1
+    ) {
       setCurrStep(5)
       setStage(2)
     } else if (
@@ -135,6 +156,7 @@ export function OnboardingTransactions({
           }
           setEnabled={setEnablePurchaseNativeTokenModal}
           extraFundsForGas={extraFundsForGas}
+          nativeBalance={nativeBalance}
         />
       )}
       {checksLoaded ? (
@@ -155,7 +177,8 @@ export function OnboardingTransactions({
                 ? (
                     selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
                       10 ** 18 +
-                    extraFundsForGas
+                    extraFundsForGas -
+                    nativeBalance
                   ).toFixed(5)
                 : '...'
             } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
@@ -207,11 +230,13 @@ export function OnboardingTransactions({
                   'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
                 }
                 action={async () => {
-                  await approveMooney().then(() => {
-                    checkStep()
-                  }).catch((err) => {
-                    throw(err)
-                  })
+                  await approveMooney()
+                    .then(() => {
+                      checkStep()
+                    })
+                    .catch((err) => {
+                      throw err
+                    })
                 }}
                 isDisabled={!mooneySwapRoute}
                 txExplanation={`Approve ${(
@@ -229,12 +254,14 @@ export function OnboardingTransactions({
                   'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
                 }
                 action={async () => {
-                  await createLock().then(() => {
-                    setChecksLoaded(false)
-                    checkStep()
-                  }).catch((err) => {
-                    throw(err)
-                  })
+                  await createLock()
+                    .then(() => {
+                      setChecksLoaded(false)
+                      checkStep()
+                    })
+                    .catch((err) => {
+                      throw err
+                    })
                 }}
                 txExplanation={`Stake ${
                   selectedLevel.price / 2

@@ -98,7 +98,7 @@ function ContributionLevel({
           {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
 
           <p className="mt-5 lg:mt-[5px] text-center">{`~ ${
-            usdQuote?.toFixed(2) || ''
+            usdQuote?.toFixed(0) || ''
           } USD`}</p>
 
           <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
@@ -167,6 +167,7 @@ export function ContributionLevels({
   selectedLevel,
   setSelectedLevel,
   selectedChain,
+  usdQuotes,
 }: any) {
   {
     /*Card component */
@@ -180,7 +181,7 @@ export function ContributionLevels({
         title="Explorer"
         intro="Want to go to space? You won't receive voting power or become a MoonDAO Member, but you'll have enough $MOONEY for two entries into our sweepstakes."
         mooneyValue={40000}
-        usdQuote={30}
+        usdQuote={usdQuotes[0]}
         points={[
           'Can purchase up to (2) Ticket to Space Entries',
           'MoonDAO Marketplace Access',
@@ -196,7 +197,7 @@ export function ContributionLevels({
         title="Citizen"
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary. Full voting power citizen."
         mooneyValue={500000}
-        usdQuote={300}
+        usdQuote={usdQuotes[1]}
         points={[
           'Everything in the Explorer Tier',
           'Can purchase up to (12) Ticket To Space Entries',
@@ -215,7 +216,7 @@ export function ContributionLevels({
         title="Pioneer"
         intro="For our biggest supporters, companies, and whales. If you want to deeply support what we’re doing, this is for you."
         mooneyValue={2000000}
-        usdQuote={1500}
+        usdQuote={usdQuotes[2]}
         points={[
           'Everything in the Citizen Tier',
           'Exclusive promotion opportunities to MoonDAO community members',
