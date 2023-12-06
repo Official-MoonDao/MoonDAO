@@ -134,8 +134,7 @@ export default function Home() {
                 </dt>
                 <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   Enjoy access to exclusive events like our Ticket to Space
-                  sweepstakes, Zero Gravity training with NASA astronauts, and
-                  other and other unforgettable experiences.
+                  sweepstakes, Zero Gravity training with NASA astronauts, and other unforgettable experiences.
                 </dd>
               </div>
             </div>
