@@ -218,7 +218,7 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
         <div className="flex flex-col w-full">
           <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
-            Check out
+            Quickstart Onboarding
           </h1>
 
           {+selectedChain.chainId === 1 ? (

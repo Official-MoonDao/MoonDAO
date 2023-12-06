@@ -95,7 +95,7 @@ export function PurhcaseNativeTokenModal({
           </button>
           <p className="flex gap-3 items-center py-2">
             <p className="border-2 rounded-full px-2 py-1">3</p>
-            {'Send ' + nativeTokenName + ' to Wallet'}
+            {'Send ' + nativeTokenName + ' to Wallet on Polygon Network'}
           </p>
           <button
             type="button"
