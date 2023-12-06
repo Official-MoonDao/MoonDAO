@@ -166,7 +166,7 @@ export function OnboardingTransactions({
             stepNum={1}
             title={'Purchase MATIC'}
             explanation={
-              'You need MATIC to swap it for our governance token $MOONEY.'
+              'You need MATIC to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire MATIC on an exchange and then send your tokens to your connected wallet.'
             }
             action={async () => {
               setEnablePurchaseNativeTokenModal(true)
@@ -190,9 +190,9 @@ export function OnboardingTransactions({
           <Step
             realStep={currStep}
             stepNum={2}
-            title={'Purchase $MOONEY on Uniswap'}
+            title={'Swap MATIC for $MOONEY'}
             explanation={
-              'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
+              'Swap your MATIC for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.'
             }
             action={async () => {
               await executeMooneySwapRoute(mooneySwapRoute).then(() => {
@@ -227,7 +227,7 @@ export function OnboardingTransactions({
                 stepNum={3}
                 title={'Token Approval'}
                 explanation={
-                  'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
+                  'Approve the $MOONEY tokens for staking. This prepares your tokens for the next step.'
                 }
                 action={async () => {
                   await approveMooney()
@@ -251,7 +251,7 @@ export function OnboardingTransactions({
                 stepNum={4}
                 title={'Stake $MOONEY'}
                 explanation={
-                  'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
+                  'Stake your tokens for voting power within the community. This makes you a full member of our community!'
                 }
                 action={async () => {
                   await createLock()
@@ -284,9 +284,9 @@ export function OnboardingTransactions({
           />
           <StepLoading
             stepNum={2}
-            title={'Purchase $MOONEY on Uniswap'}
+            title={'Swap MATIC for $MOONEY'}
             explanation={
-              'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
+              'MoonDAO routes the order to the best price on Uniswap. The amount of $MOONEY received may vary.'
             }
           />
           {selectedLevel.hasVotingPower && (
@@ -295,14 +295,14 @@ export function OnboardingTransactions({
                 stepNum={3}
                 title={'Token Approval'}
                 explanation={
-                  'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
+                  'Approve the $MOONEY tokens for staking. This prepares your tokens for the next step.'
                 }
               />
               <StepLoading
                 stepNum={4}
                 title={'Stake $MOONEY'}
                 explanation={
-                  'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
+                  'Stake your tokens for voting power within the community. This makes you a full member of our community!'
                 }
               />
             </>
