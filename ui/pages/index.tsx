@@ -28,7 +28,7 @@ export default function Home() {
           <button
             className="mt-10 px-8 py-4 lg:w-[300px] font-RobotoMono font-bold w-full bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
             onClick={() => {
-              router.push('/onboarding')
+              router.push('/join')
             }}
           >
             Join MoonDAO
@@ -157,7 +157,7 @@ export default function Home() {
             <button
               className="mt-10 lg:mt-14 px-8 py-4 lg:w-[300px] w-full bg-moon-orange text-white font-RobotoMono font-bold hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
               onClick={() => {
-                router.push('/onboarding')
+                router.push('/join')
               }}
             >
               Join MoonDAO
