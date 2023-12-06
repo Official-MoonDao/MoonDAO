@@ -8,18 +8,14 @@ import Head from '../components/layout/Head'
 import { OnboardingStageManager } from '../components/onboarding/OnboardingStageManager'
 import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
 
-export default function Onboarding({ usdQuotes }: any) {
+export default function Join({ usdQuotes }: any) {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
-
-  useEffect(() => {
-    setSelectedChain(Polygon)
-  }, [])
 
   const { t } = useTranslation('common')
 
   return (
     <div className="animate-fadeIn">
-      <Head title={t('onboardingTitle')} description={t('onboardingDesc')} />
+      <Head title={t('joinTitle')} description={t('joinDesc')} />
       <OnboardingStageManager
         selectedChain={selectedChain}
         usdQuotes={usdQuotes}
@@ -45,19 +41,12 @@ export async function getStaticProps() {
     'MOONEY (PoS)'
   )
 
-  const levelOneUSDRoute = await pregenSwapRoute(Polygon, 100, MOONEY, DAI)
-  const levelTwoUSDRoute = await pregenSwapRoute(Polygon, 25, MOONEY, DAI)
-  const levelThreeUSDRoute = await pregenSwapRoute(
-    Polygon,
-    2000000,
-    MOONEY,
-    DAI
-  )
+  const levelOneRoute = await pregenSwapRoute(Polygon, 40000, MOONEY, DAI)
+  const levelTwoRoute = await pregenSwapRoute(Polygon, 500000, MOONEY, DAI)
+  const levelThreeRoute = await pregenSwapRoute(Polygon, 2000000, MOONEY, DAI)
 
-  const usdRoutes = [levelOneUSDRoute, levelTwoUSDRoute, levelThreeUSDRoute]
-
-  const usdQuotes = usdRoutes.map(
-    (swapRoute: any) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18
+  const usdQuotes = [levelOneRoute, levelTwoRoute, levelThreeRoute].map(
+    (swapRoute) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18
   )
 
   return {

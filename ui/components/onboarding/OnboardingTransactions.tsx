@@ -64,6 +64,21 @@ export function OnboardingTransactions({
       ethers.utils.parseEther(String(selectedLevel.price / 2)),
     ])
 
+  const [nativeBalance, setNativeBalance] = useState<any>()
+
+  async function getNativeBalance() {
+    const wallet = wallets[selectedWallet]
+    if (!wallet) return
+    const provider = await wallet.getEthersProvider()
+    const nativeBalance = await provider.getBalance(wallet.address)
+    const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
+    setNativeBalance(formattedNativeBalance)
+  }
+
+  useEffect(() => {
+    getNativeBalance()
+  }, [wallets, selectedWallet])
+
   useEffect(() => {
     if (selectedLevel.nativeSwapRoute) {
       generateMooneyRoute(TradeType.EXACT_INPUT).then((swapRoute: any) =>
@@ -85,6 +100,12 @@ export function OnboardingTransactions({
     ])
 
     if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
+      setCurrStep(5)
+      setStage(2)
+    } else if (
+      !selectedLevel.hasVotingPower &&
+      mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1
+    ) {
       setCurrStep(5)
       setStage(2)
     } else if (
@@ -135,6 +156,7 @@ export function OnboardingTransactions({
           }
           setEnabled={setEnablePurchaseNativeTokenModal}
           extraFundsForGas={extraFundsForGas}
+          nativeBalance={nativeBalance}
         />
       )}
       {checksLoaded ? (
@@ -144,20 +166,23 @@ export function OnboardingTransactions({
             stepNum={1}
             title={'Buy MATIC'}
             explanation={
-              'You need MATIC to swap it for our governance token $MOONEY.'
+              'You need MATIC to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire MATIC on an exchange and then send your tokens to your connected wallet.'
             }
             action={async () => {
               setEnablePurchaseNativeTokenModal(true)
             }}
             isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
-            txExplanation={`Fund wallet with ${selectedLevel.nativeSwapRoute?.route[0]
-              ? (
-                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                10 ** 18 +
-                extraFundsForGas
-              ).toFixed(5)
-              : '...'
-              } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
+
+            txExplanation={`Fund wallet with ${
+              selectedLevel.nativeSwapRoute?.route[0]
+                ? (
+                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                      10 ** 18 +
+                    extraFundsForGas -
+                    nativeBalance
+                  ).toFixed(5)
+                : '...'
+            } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
@@ -168,7 +193,7 @@ export function OnboardingTransactions({
             stepNum={2}
             title={'Swap MATIC for $MOONEY'}
             explanation={
-              'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
+              'Swap your MATIC for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.'
             }
             action={async () => {
               await executeMooneySwapRoute(mooneySwapRoute).then(() => {
@@ -201,14 +226,16 @@ export function OnboardingTransactions({
                 stepNum={3}
                 title={'Token Approval'}
                 explanation={
-                  'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
+                  'Approve the $MOONEY tokens for staking. This prepares your tokens for the next step.'
                 }
                 action={async () => {
-                  await approveMooney().then(() => {
-                    checkStep()
-                  }).catch((err) => {
-                    throw (err)
-                  })
+                  await approveMooney()
+                    .then(() => {
+                      checkStep()
+                    })
+                    .catch((err) => {
+                      throw err
+                    })
                 }}
                 isDisabled={!mooneySwapRoute}
                 txExplanation={`Approve ${(
@@ -223,15 +250,17 @@ export function OnboardingTransactions({
                 stepNum={4}
                 title={'Stake $MOONEY'}
                 explanation={
-                  'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
+                  'Stake your tokens for voting power within the community. This makes you a full member of our community!'
                 }
                 action={async () => {
-                  await createLock().then(() => {
-                    setChecksLoaded(false)
-                    checkStep()
-                  }).catch((err) => {
-                    throw (err)
-                  })
+                  await createLock()
+                    .then(() => {
+                      setChecksLoaded(false)
+                      checkStep()
+                    })
+                    .catch((err) => {
+                      throw err
+                    })
                 }}
                 txExplanation={`Stake ${selectedLevel.price / 2
                   } $MOONEY for 1 year`}
@@ -253,9 +282,9 @@ export function OnboardingTransactions({
           />
           <StepLoading
             stepNum={2}
-            title={'Purchase $MOONEY on Uniswap'}
+            title={'Swap MATIC for $MOONEY'}
             explanation={
-              'MoonDAO routes the order to the best price on a Decentralized Exchange. The amount of $MOONEY received may vary.'
+              'MoonDAO routes the order to the best price on Uniswap. The amount of $MOONEY received may vary.'
             }
           />
           {selectedLevel.hasVotingPower && (
@@ -264,14 +293,14 @@ export function OnboardingTransactions({
                 stepNum={3}
                 title={'Token Approval'}
                 explanation={
-                  'Next, you’ll approve some of the MOONEY tokens for staking. This prepares your tokens for the next step.'
+                  'Approve the $MOONEY tokens for staking. This prepares your tokens for the next step.'
                 }
               />
               <StepLoading
                 stepNum={4}
                 title={'Stake $MOONEY'}
                 explanation={
-                  'Last step, staking tokens gives you voting power within the community and makes you a full member of our community!'
+                  'Stake your tokens for voting power within the community. This makes you a full member of our community!'
                 }
               />
             </>

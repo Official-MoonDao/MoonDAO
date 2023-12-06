@@ -14,7 +14,7 @@ export const navigation = [
   },
   {
     name: 'Join MoonDAO',
-    href: '/onboarding',
+    href: '/join',
     icon: PlusIcon,
   },
   {
