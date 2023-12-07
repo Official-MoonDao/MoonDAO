@@ -23,7 +23,7 @@ import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
 
-const TICKET_TO_SPACE_ADDRESS = '0x8Af8763090813cdcd31AE39fD651F0d9d6bc29D7' //mumbai
+const TICKET_TO_SPACE_ADDRESS = '0x5283b6035cfa7bb884b7F6A146Fa6824eC9773c7' //mumbai
 
 export default function Sweepstakes({ nftMetadata, mongoMoondaoApiKey }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
@@ -45,7 +45,7 @@ export default function Sweepstakes({ nftMetadata, mongoMoondaoApiKey }: any) {
   )
 
   const { contract: mooneyContract } = useContract(
-    '0x34f81E4f880d166C60925f2A8A1DCfc80f8D6494',
+    '0x0A720b8985A167fA4be98279980cA4b1715e741e',
     ERC20.abi
   ) //mumbai mooney
 
@@ -303,8 +303,9 @@ export async function getStaticProps() {
     ttsSweepstakesV2.abi
   )
 
-  const nftMetadata = await ticketToSpaceContract?.erc721.getTokenMetadata(1)
-  const mongoMoondaoApiKey = process.env.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY
+  const nftMetadata = await ticketToSpaceContract?.erc721.getTokenMetadata(0)
+  // TODO: Change to production db
+  const mongoMoondaoApiKey = process.env.MONGO_MOONDAO_API_KEY
 
   return {
     props: {
