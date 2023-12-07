@@ -3,6 +3,7 @@ import { useAddress, useContract } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useEffect, useState, useRef, useMemo } from 'react'
+import toast from 'react-hot-toast'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
@@ -81,23 +82,23 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
   }, [selectedLevel.price, address, selectedChain])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
-  // useEffect(() => {
-  //   if (
-  //     selectedLevel.price > 0 &&
-  //     totalLocked >= 0 &&
-  //     totalMooneyBalance >= 0
-  //   ) {
-  //     if (selectedLevel.hasVotingPower) {
-  //       if (selectedLevel.price / 2 <= totalLocked) {
-  //         setStage(3)
-  //       }
-  //     } else {
-  //       if (selectedLevel.price - 1 <= totalMooneyBalance) {
-  //         setStage(3)
-  //       }
-  //     }
-  //   }
-  // }, [selectedLevel.price, totalLocked, totalMooneyBalance, selectedChain])
+  useEffect(() => {
+    if (
+      selectedLevel.price > 0 &&
+      totalLocked >= 0 &&
+      totalMooneyBalance >= 0
+    ) {
+      if (selectedLevel.hasVotingPower) {
+        if (selectedLevel.price / 2 <= totalLocked) {
+          setStage(2)
+        }
+      } else {
+        if (selectedLevel.price - 1 <= totalMooneyBalance) {
+          setStage(2)
+        }
+      }
+    }
+  }, [selectedLevel.price, totalLocked, totalMooneyBalance, selectedChain])
 
   useEffect(() => {
     if (stage > 0) {
@@ -183,16 +184,21 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
         <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
           SELECT MEMBERSHIP LEVEL
         </h1>
-
+        <ContributionLevels
+          selectedChain={selectedChain}
+          selectedLevel={selectedLevel}
+          setSelectedLevel={setSelectedLevel}
+          usdQuotes={usdQuotes}
+        />
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
           Disclaimer: Entries into the Ticket To Space Sweepstakes are 20,000
-          $MOONEY each. There is no expectation of profit with $MOONEY, 
+          $MOONEY each. There is no expectation of profit with $MOONEY,
           <a
             className="text-moon-gold"
             href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
           >
             {' '}
-          read more about $MOONEY
+            read more about $MOONEY
           </a>
           . By joining you accept our
           <a
@@ -205,12 +211,6 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
           .
         </p>
 
-        <ContributionLevels
-          selectedChain={selectedChain}
-          selectedLevel={selectedLevel}
-          setSelectedLevel={setSelectedLevel}
-          usdQuotes={usdQuotes}
-        />
       </div>
     </StageContainer>
   )
@@ -245,20 +245,6 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
             <div></div>
           )}
         </div>
-        {/* <div className="py-4 flex w-full">
-          <button
-            className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3"
-            // style={{ marginBottom: '68px' }}
-            onClick={() => {
-              setStage(0)
-              setSelectedLevel({ price: 0, hasVotingPower: false })
-            }}
-          >
-            <input type="image" src="/backIcon.png" />
-            <span>Back</span>
-          </button>
-          <L2Toggle />
-        </div> */}
         <div className="py-4 flex flex-col items-center justify-center w-full">
           <button
             className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3 mb-3 lg:mb-0"
@@ -298,9 +284,14 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
         </h1>
         <p className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-900 dark:text-gray-100">{`Step 1: Tell your friends about MoonDAO. Top referrals get extra bonuses, like extra entries into our Sweepstakes with Blue Origin!`}</p>
 
-        <button className="mt-8 px-6 py-3 lg:px-8 xl:px-10 2xl:px-14 2xl:py-4 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange">
+        <a
+          className="mt-8 px-6 py-3 lg:px-8 xl:px-10 2xl:px-14 2xl:py-4 bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
+          href={`https://hub.sparklp.co/c/MF11bc2c5d09c4`}
+          target="_blank"
+          rel="noreferrer"
+        >
           Share referral
-        </button>
+        </a>
         <p className="mt-12 xl:mt-14 text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-center lg:text-left text-gray-900 dark:text-gray-100">
           Step 2: Choose how you want to be involved.
         </p>
@@ -329,11 +320,9 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
-              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-            } text-md font-medium ${
-              isActive ? 'text-white' : 'text-[#40464f]'
-            }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
+              }`}
           >
             {stepNumber}
           </span>

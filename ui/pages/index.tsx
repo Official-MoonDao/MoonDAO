@@ -17,7 +17,7 @@ export default function Home() {
           <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
             Welcome to MoonDAO
           </h2>
-          <p className="mt-6 sm:mt-6 lg:mt-8 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+          <p className="mt-6 sm:mt-6 lg:mt-8 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
             {`MoonDAO is accelerating the development of a lunar base through better coordination. Want to help? This flow will onboard you into our community in less than 5 minutes, even if you’re new to Web3.`}
           </p>
           <iframe
@@ -46,7 +46,7 @@ export default function Home() {
                 <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
                   Help Decentralize Access to Space
                 </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   Ensure our multi-planetary future isn’t the exclusive domain
                   of a few governments and billionaires. By working together to
                   support a borderless, decentralized future that's open to all
@@ -62,7 +62,7 @@ export default function Home() {
                 <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
                   Shape Our Community’s Destiny
                 </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   Be an integral part of MoonDAO's vibrant community by actively
                   participating in discussions, governance, voting, and
                   initiatives. Shape the community's direction, voice your
@@ -77,7 +77,7 @@ export default function Home() {
                 <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
                   Co-Create a Lunar Settlement
                 </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   Participate in shaping MoonDAO's direction through
                   governance—guide the allocation of resources in our treasury,
                   influence organizational decisions, and participate in direct
@@ -90,7 +90,7 @@ export default function Home() {
                 <dt className="text-lg font-medium font-RobotoMono text-center lg:text-left text-gray-950 dark:text-white">
                   Get Funding for R&D
                 </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm font-RobotoMono sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm font-RobotoMono sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   MoonDAO helps fund research and development projects from all
                   over the world that are helping to decentralize access to
                   space. Have a revolutionary idea? Pitch it to our community to
@@ -104,7 +104,7 @@ export default function Home() {
                 <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
                   Network with Space Professionals
                 </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   Connect and collaborate with a global network of like-minded
                   visionaries, builders, and thought leaders, fostering
                   innovation toward an open-source and open-space policy
@@ -118,7 +118,7 @@ export default function Home() {
                 <dt className="text-lg font-medium font-RobotoMono text-center lg:text-left text-gray-950 dark:text-white">
                   Savings on Space Ventures
                 </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   Use your $MOONEY to access discounts on space-related products
                   and services through the MoonDAO marketplace, including our
                   DNA Mission to the Moon, digital assets, and more. Stay up to
@@ -132,10 +132,9 @@ export default function Home() {
                 <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
                   Access to Extraordinary Events
                 </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   Enjoy access to exclusive events like our Ticket to Space
-                  sweepstakes, Zero Gravity training with NASA astronauts, and
-                  other unforgettable experiences.
+                  sweepstakes, Zero Gravity training with NASA astronauts, and other unforgettable experiences.
                 </dd>
               </div>
             </div>
@@ -144,7 +143,7 @@ export default function Home() {
                 <dt className="text-lg font-medium font-RobotoMono text-center lg:text-left text-gray-950 dark:text-white">
                   Let’s Build Together
                 </dt>
-                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-center lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+                <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
                   MoonDAO is only getting started with everything it plans to
                   achieve and you can help shape the directions and achievements
                   of the world’s largest Space Network State as humanity moves

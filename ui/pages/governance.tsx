@@ -63,6 +63,10 @@ export default function Governance() {
           href: 'https://wallet.polygon.technology/polygon/bridge/deposit',
           icon: ArrowsRightLeftIcon,
           externalLink: true,
+          hyperlink:
+            'https://www.youtube.com/watch?v=oQtHjbcbAio&ab_channel=MoonDAO',
+          hyperlinkText:
+            'Click here to learn how to bridge Mooney to Polygon L2!',
         },
       ],
     },
