@@ -184,7 +184,12 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
         <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
           SELECT MEMBERSHIP LEVEL
         </h1>
-
+        <ContributionLevels
+          selectedChain={selectedChain}
+          selectedLevel={selectedLevel}
+          setSelectedLevel={setSelectedLevel}
+          usdQuotes={usdQuotes}
+        />
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
           Disclaimer: Entries into the Ticket To Space Sweepstakes are 20,000
           $MOONEY each. There is no expectation of profit with $MOONEY,
@@ -206,12 +211,6 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
           .
         </p>
 
-        <ContributionLevels
-          selectedChain={selectedChain}
-          selectedLevel={selectedLevel}
-          setSelectedLevel={setSelectedLevel}
-          usdQuotes={usdQuotes}
-        />
       </div>
     </StageContainer>
   )
@@ -321,11 +320,9 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
-              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-            } text-md font-medium ${
-              isActive ? 'text-white' : 'text-[#40464f]'
-            }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
+              }`}
           >
             {stepNumber}
           </span>
