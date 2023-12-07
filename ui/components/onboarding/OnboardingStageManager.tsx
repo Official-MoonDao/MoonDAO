@@ -82,23 +82,23 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
   }, [selectedLevel.price, address, selectedChain])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
-  // useEffect(() => {
-  //   if (
-  //     selectedLevel.price > 0 &&
-  //     totalLocked >= 0 &&
-  //     totalMooneyBalance >= 0
-  //   ) {
-  //     if (selectedLevel.hasVotingPower) {
-  //       if (selectedLevel.price / 2 <= totalLocked) {
-  //         setStage(3)
-  //       }
-  //     } else {
-  //       if (selectedLevel.price - 1 <= totalMooneyBalance) {
-  //         setStage(3)
-  //       }
-  //     }
-  //   }
-  // }, [selectedLevel.price, totalLocked, totalMooneyBalance, selectedChain])
+  useEffect(() => {
+    if (
+      selectedLevel.price > 0 &&
+      totalLocked >= 0 &&
+      totalMooneyBalance >= 0
+    ) {
+      if (selectedLevel.hasVotingPower) {
+        if (selectedLevel.price / 2 <= totalLocked) {
+          setStage(2)
+        }
+      } else {
+        if (selectedLevel.price - 1 <= totalMooneyBalance) {
+          setStage(2)
+        }
+      }
+    }
+  }, [selectedLevel.price, totalLocked, totalMooneyBalance, selectedChain])
 
   useEffect(() => {
     if (stage > 0) {
