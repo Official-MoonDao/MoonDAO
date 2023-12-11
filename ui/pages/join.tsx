@@ -41,9 +41,9 @@ export async function getStaticProps() {
     'MOONEY (PoS)'
   )
 
-  const levelOneRoute = await pregenSwapRoute(Polygon, 40000, MOONEY, DAI)
-  const levelTwoRoute = await pregenSwapRoute(Polygon, 500000, MOONEY, DAI)
-  const levelThreeRoute = await pregenSwapRoute(Polygon, 2000000, MOONEY, DAI)
+  const levelOneRoute = await pregenSwapRoute(Polygon, 20000, MOONEY, DAI)
+  const levelTwoRoute = await pregenSwapRoute(Polygon, 100000, MOONEY, DAI)
+  const levelThreeRoute = await pregenSwapRoute(Polygon, 500000, MOONEY, DAI)
 
   const usdQuotes = [levelOneRoute, levelTwoRoute, levelThreeRoute].map(
     (swapRoute) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18
