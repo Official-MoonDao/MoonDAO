@@ -48,7 +48,20 @@ export function PageCards({ sections, id, header, title, description }: any) {
                   {page.name}
                 </dt>
                 <dd className="text-sm leading-7 lg:w-2/3 mb-3 lg:mb-0 mt-1 lg:mt-0 px-3 lg:px-1 text-light-text dark:text-white font-medium lg:text-left">
-                  <p className="">{page.description}</p>
+                  <p className="">
+                    {page.description}{' '}
+                    {page.hyperlink && page.hyperlinkText && (
+                      <a
+                        href={page.hyperlink}
+                        className="text-moon-gold hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {page.hyperlinkText}
+                      </a>
+                    )}
+                  </p>
                 </dd>
               </button>
             ))}
