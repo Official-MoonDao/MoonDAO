@@ -1,10 +1,4 @@
-
-import {
-  Web3Button,
-  useAddress,
-  useContract,
-  useSDK,
-} from '@thirdweb-dev/react'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import { useContext, useEffect, useState } from 'react'
@@ -482,12 +476,11 @@ export default function Lock() {
               <div>
                 <p className="">{t('expDesc')}</p>
                 <div className="card-actions mt-4">
-                  <Web3Button
-                    contractAddress={VMOONEY_ADDRESSES[selectedChain.slug]}
+                  <PrivyWeb3Button
+                    label={t('withdraw')}
+                    className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
                     action={withdraw}
-                  >
-                    {t('withdraw')}
-                  </Web3Button>
+                  />
                 </div>
               </div>
             )}
