@@ -11,6 +11,7 @@ import { VMOONEY_ADDRESSES } from '../../const/config'
 import { PurhcaseNativeTokenModal } from './PurchaseNativeTokenModal'
 import { Step } from './TransactionStep'
 import { StepLoading } from './TransactionStepLoading'
+import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 
 /*
 Step 1: Purchase MATIC -- Check for MATIC balance > selected level
@@ -32,6 +33,7 @@ export function OnboardingTransactions({
   const address = useAddress()
   const [currStep, setCurrStep] = useState(1)
   const [checksLoaded, setChecksLoaded] = useState(false)
+  const fund = useMoonPay()
 
   const [enablePurchaseNativeTokenModal, setEnablePurchaseNativeTokenModal] =
     useState(false)
@@ -143,6 +145,35 @@ export function OnboardingTransactions({
     return () => clearInterval(check)
   }, [])
 
+  const nativeAmount = selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+
+  const buttons = (
+    <>
+      <button
+        className="m-2 inline-flex justify-center w-full rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
+        onClick={async () => {
+          const wallet = wallets[selectedWallet]
+          if (!wallet) return
+          const provider = await wallet.getEthersProvider()
+          const nativeBalance = await provider.getBalance(wallet.address)
+          const formattedNativeBalance =
+            ethers.utils.formatEther(nativeBalance)
+          const levelPrice = nativeAmount + extraFundsForGas
+
+          await fund(levelPrice - +formattedNativeBalance)
+        }}
+      >
+        Purchase MATIC with MoonPay
+      </button>
+      <button
+        className="m-2 inline-flex justify-center w-full rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
+      // onClick={ }
+      >
+        Purchase MATIC with Exchange
+      </button>
+    </>
+  )
+
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
       {enablePurchaseNativeTokenModal && (
@@ -169,20 +200,18 @@ export function OnboardingTransactions({
               'You need MATIC to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire MATIC on an exchange and then send your tokens to your connected wallet.'
             }
             action={async () => {
-              setEnablePurchaseNativeTokenModal(true)
+              // setEnablePurchaseNativeTokenModal(true)
             }}
             isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
-
-            txExplanation={`Fund wallet with ${
-              selectedLevel.nativeSwapRoute?.route[0]
-                ? (
-                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                      10 ** 18 +
-                    extraFundsForGas -
-                    nativeBalance
-                  ).toFixed(5)
-                : '...'
-            } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
+            txExplanation={`Fund wallet with ${selectedLevel.nativeSwapRoute?.route[0]
+              ? (
+                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                10 ** 18 +
+                extraFundsForGas -
+                nativeBalance
+              ).toFixed(5)
+              : '...'
+              } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
