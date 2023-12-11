@@ -11,7 +11,6 @@ import { VMOONEY_ADDRESSES } from '../../const/config'
 import { PurhcaseNativeTokenModal } from './PurchaseNativeTokenModal'
 import { Step } from './TransactionStep'
 import { StepLoading } from './TransactionStepLoading'
-import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 
 /*
 Step 1: Purchase MATIC -- Check for MATIC balance > selected level
@@ -33,7 +32,6 @@ export function OnboardingTransactions({
   const address = useAddress()
   const [currStep, setCurrStep] = useState(1)
   const [checksLoaded, setChecksLoaded] = useState(false)
-  const fund = useMoonPay()
 
   const [enablePurchaseNativeTokenModal, setEnablePurchaseNativeTokenModal] =
     useState(false)
@@ -147,32 +145,7 @@ export function OnboardingTransactions({
 
   const nativeAmount = selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
 
-  const buttons = (
-    <>
-      <button
-        className="m-2 inline-flex justify-center w-full rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
-        onClick={async () => {
-          const wallet = wallets[selectedWallet]
-          if (!wallet) return
-          const provider = await wallet.getEthersProvider()
-          const nativeBalance = await provider.getBalance(wallet.address)
-          const formattedNativeBalance =
-            ethers.utils.formatEther(nativeBalance)
-          const levelPrice = nativeAmount + extraFundsForGas
-
-          await fund(levelPrice - +formattedNativeBalance)
-        }}
-      >
-        Purchase MATIC with MoonPay
-      </button>
-      <button
-        className="m-2 inline-flex justify-center w-full rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
-      // onClick={ }
-      >
-        Purchase MATIC with Exchange
-      </button>
-    </>
-  )
+  const selectedChainName = selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
 
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
@@ -195,12 +168,12 @@ export function OnboardingTransactions({
           <Step
             realStep={currStep}
             stepNum={1}
-            title={'Buy MATIC'}
+            title={`Buy ${selectedChainName}`}
             explanation={
-              'You need MATIC to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire MATIC on an exchange and then send your tokens to your connected wallet.'
+              `You need ${selectedChainName} to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire ${selectedChainName} on an exchange and then send your tokens to your connected wallet.`
             }
             action={async () => {
-              // setEnablePurchaseNativeTokenModal(true)
+              setEnablePurchaseNativeTokenModal(true)
             }}
             isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
             txExplanation={`Fund wallet with ${selectedLevel.nativeSwapRoute?.route[0]
@@ -216,13 +189,15 @@ export function OnboardingTransactions({
             selectedWallet={selectedWallet}
             wallets={wallets}
             noTxns
+            nativeAmount={nativeAmount}
+            extraFundsForGas={extraFundsForGas}
           />
           <Step
             realStep={currStep}
             stepNum={2}
-            title={'Swap MATIC for $MOONEY'}
+            title={`Swap ${selectedChainName} for $MOONEY`}
             explanation={
-              'Swap your MATIC for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.'
+              `Swap your ${selectedChainName} for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.`
             }
             action={async () => {
               await executeMooneySwapRoute(mooneySwapRoute).then(() => {
@@ -304,14 +279,14 @@ export function OnboardingTransactions({
         <>
           <StepLoading
             stepNum={1}
-            title={'Purchase MATIC'}
+            title={`Buy ${selectedChainName}`}
             explanation={
-              'You need MATIC to swap it for our governance token $MOONEY.'
+              `You need ${selectedChainName} to swap it for our governance token $MOONEY.`
             }
           />
           <StepLoading
             stepNum={2}
-            title={'Swap MATIC for $MOONEY'}
+            title={`Swap ${selectedChainName} for $MOONEY`}
             explanation={
               'MoonDAO routes the order to the best price on Uniswap. The amount of $MOONEY received may vary.'
             }
