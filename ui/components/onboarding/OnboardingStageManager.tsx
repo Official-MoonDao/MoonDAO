@@ -2,6 +2,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
+import Link from 'next/link'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
@@ -190,27 +191,49 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
           setSelectedLevel={setSelectedLevel}
           usdQuotes={usdQuotes}
         />
-        <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
-          Disclaimer: Entries into the Ticket To Space Sweepstakes are 20,000
-          $MOONEY each. There is no expectation of profit with $MOONEY,
-          <a
-            className="text-moon-gold"
-            href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
-          >
-            {' '}
-            read more about $MOONEY
-          </a>
-          . By joining you accept our
-          <a
-            className="text-moon-gold"
-            href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
-          >
-            {' '}
-            terms and conditions
-          </a>
-          .
-        </p>
-
+        <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
+          <p>
+            {`
+              Custom Membership: Not seeing the amount that’s right for you?
+              Advanced users can onboard directly by purchasing any amount of
+              `}
+            <Link
+              className="text-moon-gold"
+              href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              $MOONEY via Uniswap
+            </Link>{' '}
+            {` and `}
+            <Link className="text-moon-gold" href="/lock">
+              stake
+            </Link>{' '}
+            {`some or all of that for any amount of
+              time between one week and four years to maximize voting power.
+              `}
+          </p>
+          <p>
+            Disclaimer: Entries into the Ticket To Space Sweepstakes are 20,000
+            $MOONEY each. There is no expectation of profit with $MOONEY,
+            <a
+              className="text-moon-gold"
+              href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
+            >
+              {' '}
+              read more about $MOONEY
+            </a>
+            . By joining you accept our
+            <a
+              className="text-moon-gold"
+              href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
+            >
+              {' '}
+              terms and conditions
+            </a>
+            .
+          </p>
+        </div>
       </div>
     </StageContainer>
   )
@@ -320,9 +343,11 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
       <li>
         <div className="flex cursor-pointer items-center leading-[1.3rem] no-underline focus:outline-none">
           <span
-            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
-              } text-md font-medium ${isActive ? 'text-white' : 'text-[#40464f]'
-              }`}
+            className={`my-6 flex h-[40px] w-[40px] items-center justify-center rounded-full ${
+              isActive ? 'bg-[#16a34a]' : 'bg-[#ebedef]'
+            } text-md font-medium ${
+              isActive ? 'text-white' : 'text-[#40464f]'
+            }`}
           >
             {stepNumber}
           </span>

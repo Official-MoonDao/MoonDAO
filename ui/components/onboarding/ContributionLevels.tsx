@@ -32,7 +32,7 @@ function ContributionLevel({
   selectedLevel,
   setSelectedLevel,
   selectedChain,
-  isRecommended
+  isRecommended,
 }: ContributionLevelProps) {
   const { user } = usePrivy()
   const { login } = useLogin({
@@ -66,10 +66,15 @@ function ContributionLevel({
 
   return (
     <div
-      className={title !== "Citizen" ? `w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${selectedLevel?.price === mooneyValue
-        ? 'border-moon-orange border-opacity-100'
-        : 'border-opacity-60 dark:border-opacity-20'
-        }` : `w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono border-moon-orange border-opacity-100`}
+      className={
+        title !== 'Citizen'
+          ? `w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
+              selectedLevel?.price === mooneyValue
+                ? 'border-moon-orange border-opacity-100'
+                : 'border-opacity-60 dark:border-opacity-20'
+            }`
+          : `w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono border-moon-orange border-opacity-100`
+      }
       onClick={() => {
         if (!user) login()
         else {
@@ -77,13 +82,11 @@ function ContributionLevel({
         }
       }}
     >
-
       <div className="h-full flex flex-col justify-between">
         <div className="flex flex-col justify-center items-center">
           {/*Logo*/}
 
           <div className="mt-8">
-
             <Image
               alt={`Icon image for ${title}`}
               src={lightMode ? darkIcon : lightIcon}
@@ -93,8 +96,9 @@ function ContributionLevel({
           </div>
           {/*Title*/}
           <h1
-            className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${selectedLevel.price === mooneyValue && 'text-moon-orange'
-              }`}
+            className={`font-abel mt-[22px] text-3xl transition-all duration-150 ${
+              selectedLevel.price === mooneyValue && 'text-moon-orange'
+            }`}
           >
             {title}
           </h1>
@@ -119,35 +123,8 @@ function ContributionLevel({
           >
             {/*Perk List*/}
 
-            <div className="mt-[8px] pr-2 2xl:h-[230px] mb-8">
-              <ul className={`mt-1  flex flex-col list-disc w-full gap-1`}>
-                <div>
-                  {
-                    title === 'Explorer' && (
-                      `✓ ${hasVotingPower
-                        ? (mooneyValue / 2).toLocaleString()
-                        : mooneyValue.toLocaleString()
-                      } $MOONEY.`
-                    )
-                  }
-                  {
-
-                    (title === "Citizen" || title === "Pioneer") && (
-                      `✓ ${hasVotingPower
-                        ? (mooneyValue / 2).toLocaleString()
-                        : mooneyValue.toLocaleString()
-                      } $MOONEY to purchase up to (${title === "Citizen" ? 12 : 50}) Ticket to Space entries`
-                    )
-                  }
-                </div>
-                {
-                  (title === "Citizen" || title === 'Pioneer') && (
-                    `✓ ${hasVotingPower
-                      ? (mooneyValue / 2).toLocaleString()
-                      : mooneyValue.toLocaleString()
-                    } $MOONEY staked for two years for co-governance of the MoonDAO treasury`
-                  )
-                }
+            <div className="mt-12 pr-2 2xl:h-[230px] mb-8">
+              <ul className={`flex flex-col list-disc w-full gap-1`}>
                 {points.map((point, i) => (
                   <div
                     key={`contribution-level-${title}-desc-point-${i}`}
@@ -161,13 +138,15 @@ function ContributionLevel({
           </div>
         </div>
         <button
-          className={`mt-3 border flex justify-center items-center gap-3 ${selectedLevel.price === mooneyValue
-            ? 'border-moon-orange'
-            : 'border-white-500'
-            } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${selectedLevel.price === mooneyValue
+          className={`mt-3 border flex justify-center items-center gap-3 ${
+            selectedLevel.price === mooneyValue
+              ? 'border-moon-orange'
+              : 'border-white-500'
+          } rounded-md group-hover:scale-105 group-hover:bg-moon-orange group-hover:border-moon-orange px-5 py-3 transition-all duration-150 ${
+            selectedLevel.price === mooneyValue
               ? 'bg-moon-orange'
               : 'bg-transparent'
-            }`}
+          }`}
           style={{
             width: '261px',
             height: '50px',
@@ -199,13 +178,14 @@ export function ContributionLevels({
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
         title="Explorer"
-        intro="Want to go to space? You won't receive voting power or become a MoonDAO Member, but you'll have enough $MOONEY for two entries into our sweepstakes."
-        mooneyValue={40000}
+        intro="Want to go to space? You won't receive voting power or become a MoonDAO Citizen, but you will receive enough $MOONEY for one entry into our sweepstakes.
+        "
+        mooneyValue={20000}
         usdQuote={usdQuotes[0]}
         points={[
-          'Can purchase up to (2) Ticket to Space Entries',
+          '20,000 $MOONEY which you own and can use as you wish, such as purchase one Ticket to Space entry.',
+          'Unlike traditional organizations, you retain full ownership of your assets and there is no annual fee, dues, or middleman.',
           'MoonDAO Marketplace Access',
-          'Exclusive MoonDAO Discord Access',
         ]}
         selectedLevel={selectedLevel}
         setSelectedLevel={setSelectedLevel}
@@ -216,12 +196,13 @@ export function ContributionLevels({
         darkIcon="/onboarding-icons/citizen-black.svg"
         title="Citizen"
         intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary. Full voting power citizen."
-        mooneyValue={500000}
+        mooneyValue={100000}
         usdQuote={usdQuotes[1]}
         points={[
+          '50,000 $MOONEY which you own and can use as you wish, such as purchasing up to (2) Ticket to Space entries',
+          '50,000 $MOONEY staked for two years for co-governance of the MoonDAO treasury',
+          'Expanded MoonDAO Discord Access including governance and project channels',
           'Everything in the Explorer Tier',
-          'Submit Proposals for Projects',
-          'Free Events Access',
         ]}
         hasVotingPower
         selectedLevel={selectedLevel}
@@ -234,12 +215,13 @@ export function ContributionLevels({
         darkIcon="/onboarding-icons/industry-black.svg"
         title="Pioneer"
         intro="For our biggest supporters, companies, and whales. If you want to deeply support what we’re doing, this is for you."
-        mooneyValue={2000000}
+        mooneyValue={500000}
         usdQuote={usdQuotes[2]}
         points={[
-          'Everything in the Citizen Tier',
-          'Exclusive promotion opportunities to MoonDAO community members',
+          '250,000 $MOONEY which you own and can use as you wish, such as purchasing up to (12) Ticket to Space entries.',
+          '250,000 $MOONEY staked for two years for co-governance of the MoonDAO treasury',
           'Access to talent to help design, build, and test your space hardware',
+          'Everything in the Citizen Tier',
         ]}
         hasVotingPower
         selectedLevel={selectedLevel}
