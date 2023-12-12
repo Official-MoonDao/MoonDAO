@@ -305,7 +305,7 @@ export async function getStaticProps() {
 
   const nftMetadata = await ticketToSpaceContract?.erc721.getTokenMetadata(0)
   // TODO: Change to production db
-  const mongoMoondaoApiKey = process.env.MONGO_MOONDAO_API_KEY
+  const mongoMoondaoApiKey = process.env.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY
 
   return {
     props: {
