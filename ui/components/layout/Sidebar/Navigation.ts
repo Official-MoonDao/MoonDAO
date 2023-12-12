@@ -28,7 +28,7 @@ export const navigation = [
     children: [
       { name: 'ZeroG', href: '/zero-g' },
       { name: 'Lifeship', href: '/lifeship' },
-      { name: 'Sweepstakes', href: '/sweepstakes' },
+      // { name: 'Sweepstakes', href: '/sweepstakes' },
       { name: 'Digital Assets', href: 'https://market.moondao.com' },
     ],
   },
