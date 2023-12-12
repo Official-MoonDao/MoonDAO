@@ -143,6 +143,10 @@ export function OnboardingTransactions({
     return () => clearInterval(check)
   }, [])
 
+  const nativeAmount = selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+
+  const selectedChainName = selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
       {enablePurchaseNativeTokenModal && (
@@ -164,36 +168,36 @@ export function OnboardingTransactions({
           <Step
             realStep={currStep}
             stepNum={1}
-            title={'Buy MATIC'}
+            title={`Buy ${selectedChainName}`}
             explanation={
-              'You need MATIC to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire MATIC on an exchange and then send your tokens to your connected wallet.'
+              `You need ${selectedChainName} to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire ${selectedChainName} on an exchange and then send your tokens to your connected wallet.`
             }
             action={async () => {
               setEnablePurchaseNativeTokenModal(true)
             }}
             isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
-
-            txExplanation={`Fund wallet with ${
-              selectedLevel.nativeSwapRoute?.route[0]
-                ? (
-                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                      10 ** 18 +
-                    extraFundsForGas -
-                    nativeBalance
-                  ).toFixed(5)
-                : '...'
-            } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
+            txExplanation={`Fund wallet with ${selectedLevel.nativeSwapRoute?.route[0]
+              ? (
+                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                10 ** 18 +
+                extraFundsForGas -
+                nativeBalance
+              ).toFixed(5)
+              : '...'
+              } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
             noTxns
+            nativeAmount={nativeAmount}
+            extraFundsForGas={extraFundsForGas}
           />
           <Step
             realStep={currStep}
             stepNum={2}
-            title={'Swap MATIC for $MOONEY'}
+            title={`Swap ${selectedChainName} for $MOONEY`}
             explanation={
-              'Swap your MATIC for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.'
+              `Swap your ${selectedChainName} for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.`
             }
             action={async () => {
               await executeMooneySwapRoute(mooneySwapRoute).then(() => {
@@ -275,14 +279,14 @@ export function OnboardingTransactions({
         <>
           <StepLoading
             stepNum={1}
-            title={'Purchase MATIC'}
+            title={`Buy ${selectedChainName}`}
             explanation={
-              'You need MATIC to swap it for our governance token $MOONEY.'
+              `You need ${selectedChainName} to swap it for our governance token $MOONEY.`
             }
           />
           <StepLoading
             stepNum={2}
-            title={'Swap MATIC for $MOONEY'}
+            title={`Swap ${selectedChainName} for $MOONEY`}
             explanation={
               'MoonDAO routes the order to the best price on Uniswap. The amount of $MOONEY received may vary.'
             }
