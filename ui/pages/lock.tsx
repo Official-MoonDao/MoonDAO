@@ -456,7 +456,9 @@ export default function Lock() {
                             : 'Successfully Created lock'
                         )
                     }}
-                    className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
+                    className={`hover:!text-title-light 
+                    bg-slate-300
+                    dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
                     isDisabled={
                       (!canIncrease.amount &&
                         !canIncrease.time &&
@@ -474,11 +476,15 @@ export default function Lock() {
               </div>
             ) : (
               <div>
-                <p className="">{t('expDesc')}</p>
+                <p className="text-light-text dark:text-dark-text">
+                  {t('expDesc')}
+                </p>
                 <div className="card-actions mt-4">
                   <PrivyWeb3Button
                     label={t('withdraw')}
-                    className={`hover:!text-title-light dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
+                    className={`hover:!text-title-light 
+                    bg-slate-300
+                    dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
                     action={withdraw}
                   />
                 </div>
