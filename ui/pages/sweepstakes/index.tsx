@@ -26,7 +26,7 @@ import { devWhitelist } from '../../const/tts/whitelist'
 
 const TICKET_TO_SPACE_ADDRESS = '0x5283b6035cfa7bb884b7F6A146Fa6824eC9773c7' //mumbai
 
-export default function Sweepstakes({ nftMetadata, mongoMoondaoApiKey }: any) {
+export default function Sweepstakes({ nftMetadata }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const router = useRouter()
 
@@ -208,12 +208,12 @@ export default function Sweepstakes({ nftMetadata, mongoMoondaoApiKey }: any) {
               <div className="mt-4 flex flex-col gap-8">
                 <div className="block">
                   <div>
-                    <p className="mb-1 text-white lg:text-xl">
+                    <p className="mb-1 dark:text-white lg:text-xl">
                       Quantity to Mint
                     </p>
-                    <div className="h-[58px] flex w-[250px] md:w-[400px] bg-white bg-opacity-5 justify-between p-2 border-[1px] border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40">
+                    <div className="h-[58px] flex w-[250px] md:w-[400px] bg-white bg-opacity-5 justify-between p-2 border-[1px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40">
                       <input
-                        className="ml-2 w-1/2 text-white bg-transparent focus:outline-none"
+                        className="ml-2 w-1/2 dark:text-white bg-transparent focus:outline-none"
                         type="number"
                         step={1}
                         max={balance ? 50 - +balance : 0}
@@ -223,13 +223,11 @@ export default function Sweepstakes({ nftMetadata, mongoMoondaoApiKey }: any) {
                           if (e.target.value > 50 - balance) {
                             toast.error('Cannot mint more than 50')
                             setQuantity(50 - balance)
-                          }
-                          else if (e.target.value < 1) {
+                          } else if (e.target.value < 1) {
                             toast.error('Mint quantity must be at least 1')
                             console.log(e.target.value)
                             setQuantity(1)
-                          }
-                          else {
+                          } else {
                             setQuantity(e.target.value)
                           }
                         }}
@@ -333,13 +331,10 @@ export async function getStaticProps() {
   )
 
   const nftMetadata = await ticketToSpaceContract?.erc721.getTokenMetadata(0)
-  // TODO: Change to production db
-  const mongoMoondaoApiKey = process.env.MONGO_MOONDAO_API_KEY
 
   return {
     props: {
       nftMetadata,
-      mongoMoondaoApiKey,
     },
   }
 }
