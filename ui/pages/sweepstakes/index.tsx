@@ -194,15 +194,21 @@ export default function Sweepstakes({ nftMetadata, mongoMoondaoApiKey }: any) {
                         type="number"
                         step={1}
                         max={balance ? 50 - +balance : 0}
-                        min={0}
+                        min={1}
                         placeholder={'1'}
                         onChange={(e: any) => {
-                          if (quantity > 50 - balance) {
+                          if (e.target.value > 50 - balance) {
                             toast.error('Cannot mint more than 50')
-                            return setQuantity(50 - balance)
+                            setQuantity(50 - balance)
                           }
-
-                          setQuantity(e.target.value)
+                          else if (e.target.value < 1) {
+                            toast.error('Mint quantity must be at least 1')
+                            console.log(e.target.value)
+                            setQuantity(1)
+                          }
+                          else {
+                            setQuantity(e.target.value)
+                          }
                         }}
                         value={quantity}
                       />
