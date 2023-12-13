@@ -64,7 +64,8 @@ export const DEAD_ADDRESS: string =
 // DB Config
 const MONGO_USERNAME = process.env.MONGO_USERNAME || ''
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || ''
-const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@cluster0.u70uk7d.mongodb.net`
+const MONGO_PATH_SUFFIX = process.env.MONGO_PATH_SUFFIX || ''
+const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_PATH_SUFFIX}`
 
 export const mongoConfig = {
   url: MONGO_URL,
