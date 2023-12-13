@@ -25,7 +25,7 @@ import { devWhitelist } from '../../const/tts/whitelist'
 
 const TICKET_TO_SPACE_ADDRESS = '0x5283b6035cfa7bb884b7F6A146Fa6824eC9773c7' //mumbai
 
-export default function Sweepstakes({ nftMetadata, mongoMoondaoApiKey }: any) {
+export default function Sweepstakes({ nftMetadata }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const router = useRouter()
 
@@ -304,13 +304,10 @@ export async function getStaticProps() {
   )
 
   const nftMetadata = await ticketToSpaceContract?.erc721.getTokenMetadata(0)
-  // TODO: Change to production db
-  const mongoMoondaoApiKey = process.env.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY
 
   return {
     props: {
       nftMetadata,
-      mongoMoondaoApiKey,
     },
   }
 }

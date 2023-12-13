@@ -14,8 +14,6 @@ export default async function handler(
 
   const { method } = req
 
-  await dbConnect()
-
   switch (method) {
     case 'GET':
       try {
