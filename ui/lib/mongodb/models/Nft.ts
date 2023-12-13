@@ -18,10 +18,10 @@ export interface NftModel extends Nft, Document {}
 
 const NftSchema: Schema = new Schema(
   {
-    userId: { type: String, required: false },
-    tokenId: { type: String, required: true },
+    userId: { type: String, required: false, unique: true },
+    tokenId: { type: String, required: true, unique: true },
     name: { type: String, required: true },
-    email: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
     entryType: {
       type: String,
       enum: ['REGULAR', 'MAIL', 'REFERRAL'],

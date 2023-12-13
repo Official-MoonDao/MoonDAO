@@ -36,11 +36,10 @@ export function SubmitTTSInfoModal({
 
   async function submitInfoToDB(tokenId: number | string) {
     try {
-      const res = await fetch('/api/db/nft', {
+      fetch('/api/db/nft', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'moondao-api-key': process.env.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY,
         } as any,
         body: JSON.stringify({
           tokenId,
@@ -190,8 +189,6 @@ export function SubmitTTSInfoModal({
                     method: 'GET',
                     headers: {
                       'Content-Type': 'application/json',
-                      'moondao-api-key':
-                        process.env.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY,
                     } as any,
                   })
 
