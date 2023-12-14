@@ -1,6 +1,8 @@
 import { useContext, useEffect, useMemo, useState } from 'react'
+import { ethers } from 'ethers'
 import toast from 'react-hot-toast'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
+import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
 
 type StepProps = {
   realStep: number
@@ -14,6 +16,8 @@ type StepProps = {
   selectedWallet: any
   wallets: any[]
   noTxns?: boolean
+  nativeAmount?: any
+  extraFundsForGas?: any
 }
 
 export function Step({
@@ -28,20 +32,242 @@ export function Step({
   selectedWallet,
   wallets,
   noTxns,
+  nativeAmount,
+  extraFundsForGas,
 }: StepProps) {
   const [isProcessingTx, setIsProcessingTx] = useState(false)
+
+  //MoonPay
+  const fund = useMoonPay()
+
+  const stepButtons = useMemo(() => {
+    const selectedChainName = selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+
+    switch (realStep) {
+      case 1:
+        return (
+          <>
+            <button
+              className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
+              onClick={async () => {
+                const wallet = wallets[selectedWallet]
+                if (!wallet) return
+                const provider = await wallet.getEthersProvider()
+                const nativeBalance = await provider.getBalance(wallet.address)
+                const formattedNativeBalance =
+                  ethers.utils.formatEther(nativeBalance)
+                const levelPrice = nativeAmount + extraFundsForGas
+
+                await fund(levelPrice - +formattedNativeBalance)
+              }}
+
+              disabled={isDisabled || isProcessingTx}
+            >
+              {isProcessingTx ? (
+                <LoadingSpinner></LoadingSpinner>
+              ) : isDisabled ? (
+                <LoadingSpinner>{'...loading'}</LoadingSpinner>
+              ) : (
+                `Purchase ${selectedChainName} with MoonPay`
+              )}
+            </button>
+            <button
+              className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
+              onClick={async () => {
+                //check network
+                if (
+                  +wallets[selectedWallet].chainId.split(':')[1] !==
+                  +selectedChain.chainId
+                ) {
+                  return toast.error(
+                    `Please switch wallet to ${selectedChain.name}`
+                  )
+                }
+
+                try {
+                  setIsProcessingTx(true)
+                  await action()
+                  if (noTxns) {
+                    setIsProcessingTx(false)
+                  }
+                } catch (err: any) {
+                  toast.error(err.message.slice(0, 150))
+                  setIsProcessingTx(false)
+                }
+              }}
+              disabled={isDisabled || isProcessingTx}
+            >
+              {isProcessingTx ? (
+                <LoadingSpinner></LoadingSpinner>
+              ) : isDisabled ? (
+                <LoadingSpinner>{'...loading'}</LoadingSpinner>
+              ) : (
+                `Purchase ${selectedChainName} with Exchange`
+              )}
+            </button>
+          </>
+        )
+      case 2:
+        return (
+          <button
+            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
+            onClick={async () => {
+              //check network
+              if (
+                +wallets[selectedWallet].chainId.split(':')[1] !==
+                +selectedChain.chainId
+              ) {
+                return toast.error(
+                  `Please switch wallet to ${selectedChain.name}`
+                )
+              }
+
+              try {
+                setIsProcessingTx(true)
+                await action()
+                if (noTxns) {
+                  setIsProcessingTx(false)
+                }
+              } catch (err: any) {
+                toast.error(err.message.slice(0, 150))
+                setIsProcessingTx(false)
+              }
+            }}
+            disabled={isDisabled || isProcessingTx}
+          >
+            {isProcessingTx ? (
+              <LoadingSpinner></LoadingSpinner>
+            ) : isDisabled ? (
+              <LoadingSpinner>{'...loading'}</LoadingSpinner>
+            ) : (
+              'Swap MATIC'
+            )}
+          </button>
+        )
+      case 3:
+        return (
+          <button
+            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
+            onClick={async () => {
+              //check network
+              if (
+                +wallets[selectedWallet].chainId.split(':')[1] !==
+                +selectedChain.chainId
+              ) {
+                return toast.error(
+                  `Please switch wallet to ${selectedChain.name}`
+                )
+              }
+
+              try {
+                setIsProcessingTx(true)
+                await action()
+                if (noTxns) {
+                  setIsProcessingTx(false)
+                }
+              } catch (err: any) {
+                toast.error(err.message.slice(0, 150))
+                setIsProcessingTx(false)
+              }
+            }}
+            disabled={isDisabled || isProcessingTx}
+          >
+            {isProcessingTx ? (
+              <LoadingSpinner></LoadingSpinner>
+            ) : isDisabled ? (
+              <LoadingSpinner>{'...loading'}</LoadingSpinner>
+            ) : (
+              'Start Token Approval'
+            )}
+          </button>
+        )
+      case 4:
+        return (
+          <button
+            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
+            onClick={async () => {
+              //check network
+              if (
+                +wallets[selectedWallet].chainId.split(':')[1] !==
+                +selectedChain.chainId
+              ) {
+                return toast.error(
+                  `Please switch wallet to ${selectedChain.name}`
+                )
+              }
+
+              try {
+                setIsProcessingTx(true)
+                await action()
+                if (noTxns) {
+                  setIsProcessingTx(false)
+                }
+              } catch (err: any) {
+                toast.error(err.message.slice(0, 150))
+                setIsProcessingTx(false)
+              }
+            }}
+            disabled={isDisabled || isProcessingTx}
+          >
+            {isProcessingTx ? (
+              <LoadingSpinner></LoadingSpinner>
+            ) : isDisabled ? (
+              <LoadingSpinner>{'...loading'}</LoadingSpinner>
+            ) : (
+              'Stake $MOONEY'
+            )}
+          </button>
+        )
+      default:
+        return (
+          <button
+            className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
+            onClick={async () => {
+              //check network
+              if (
+                +wallets[selectedWallet].chainId.split(':')[1] !==
+                +selectedChain.chainId
+              ) {
+                return toast.error(
+                  `Please switch wallet to ${selectedChain.name}`
+                )
+              }
+
+              try {
+                setIsProcessingTx(true)
+                await action()
+                if (noTxns) {
+                  setIsProcessingTx(false)
+                }
+              } catch (err: any) {
+                toast.error(err.message.slice(0, 150))
+                setIsProcessingTx(false)
+              }
+            }}
+            disabled={isDisabled || isProcessingTx}
+          >
+            {isProcessingTx ? (
+              <LoadingSpinner></LoadingSpinner>
+            ) : isDisabled ? (
+              <LoadingSpinner>{'...loading'}</LoadingSpinner>
+            ) : (
+              'Start'
+            )}
+          </button>
+        )
+    }
+  }, [action, extraFundsForGas, fund, isDisabled, isProcessingTx, nativeAmount, noTxns, realStep, selectedChain.chainId, selectedChain.name, selectedChain.slug, selectedWallet, wallets])
 
   return (
     <div className="mt-5 w-full h-full text-black dark:text-white">
       <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
         <p
-          className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
-            realStep === stepNum
-              ? 'bg-[grey] animate-pulse'
-              : realStep > stepNum
+          className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${realStep === stepNum
+            ? 'bg-[grey] animate-pulse'
+            : realStep > stepNum
               ? 'bg-[lightgreen]'
               : 'bg-moon-orange'
-          }`}
+            }`}
         >
           {stepNum}
         </p>
@@ -58,40 +284,7 @@ export function Step({
         {/*Previously was a border-4 class on hover for this button but changed it for scale, as increasing border expands the whole container on hover*/}
       </div>
       {realStep === stepNum && (
-        <button
-          className="my-2 w-[100%] h-auto p-3 space-y-2 hover:scale-105 duration-300 ease-in-out px-8 py-2 text-black dark:text-white text-base font-normal font-['Roboto Mono'] dark:bg-[#FFFFFF14] bg-[#00000025]"
-          onClick={async () => {
-            //check network
-            if (
-              +wallets[selectedWallet].chainId.split(':')[1] !==
-              +selectedChain.chainId
-            ) {
-              return toast.error(
-                `Please switch wallet to ${selectedChain.name}`
-              )
-            }
-
-            try {
-              setIsProcessingTx(true)
-              await action()
-              if (noTxns) {
-                setIsProcessingTx(false)
-              }
-            } catch (err: any) {
-              toast.error(err.message.slice(0, 150))
-              setIsProcessingTx(false)
-            }
-          }}
-          disabled={isDisabled || isProcessingTx}
-        >
-          {isProcessingTx ? (
-            <LoadingSpinner></LoadingSpinner>
-          ) : isDisabled ? (
-            <LoadingSpinner>{'...loading'}</LoadingSpinner>
-          ) : (
-            'Start'
-          )}
-        </button>
+        stepButtons
       )}
     </div>
   )
