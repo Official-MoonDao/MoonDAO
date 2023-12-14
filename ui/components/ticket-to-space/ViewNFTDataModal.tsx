@@ -33,15 +33,14 @@ export function ViewNFTDataModal({
 
   async function fetchInfoFromDB() {
     const signature = await signMessage()
-    const ownedNfts = await ttsContract.erc721.balanceOf(address)
+    const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
 
     //find owned tokenIds in the databse
-    const verifiedNftsRes = await fetch('/api/db/nft', {
+    const verifiedNftsRes = await fetch('/api/db/nft?address='+address, {
         method: 'GET',
         headers: {
         'Content-Type': 'application/json',
-        'Signature': signature,
-        'Address': address,
+        'moondao-api-key': signature,
         } as any,
     })
 

@@ -67,12 +67,12 @@ export function SubmitTTSInfoModal({
 
   async function submitInfoToDB(tokenId: number | string, signature: string) {
     try {
-      fetch('/api/db/nft', {
+      console.log(signature)
+      fetch('/api/db/nft?address='+address, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Signature': signature,
-          'Address': address,
+          'moondao-api-key': signature,
         } as any,
         body: JSON.stringify({
           tokenId,
