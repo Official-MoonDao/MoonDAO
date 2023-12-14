@@ -1,10 +1,10 @@
-import { useAddress } from '@thirdweb-dev/react'
-import { useState, useEffect } from 'react'
-import toast from 'react-hot-toast'
 import { useWallets } from '@privy-io/react-auth'
-import { useContext } from 'react'
-import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { useAddress } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
+import { useState, useEffect } from 'react'
+import { useContext } from 'react'
+import toast from 'react-hot-toast'
+import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 
 type ViewNFTDataModalProps = {
   ttsContract: any
@@ -25,10 +25,10 @@ export function ViewNFTDataModal({
   async function signMessage() {
     const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
-    const message = "Sign to verify the identity of your Ticket(s)"
-    const signature = await signer.signMessage(message)
-
-    return signature;
+    const response = await fetch(`api/db/nonce?address=${address}`)
+    const data = await response.json()
+    const signature = await signer.signMessage(data.nonce)
+    return signature
   }
 
   async function fetchInfoFromDB() {
@@ -36,23 +36,19 @@ export function ViewNFTDataModal({
     const ownedNfts = await ttsContract.erc721.balanceOf(address)
 
     //find owned tokenIds in the databse
-    const verifiedNftsRes = await fetch('/api/db/nft', {
-        method: 'GET',
-        headers: {
+    const verifiedNftsRes = await fetch(`/api/db/nft?address=${address}`, {
+      method: 'GET',
+      headers: {
         'Content-Type': 'application/json',
-        'Signature': signature,
-        'Address': address,
-        } as any,
+        'moondao-api-key': signature,
+      } as any,
     })
 
     const { data: verifiedNfts } = await verifiedNftsRes.json()
     console.log(verifiedNfts)
 
-    const userNFTs = ownedNfts.filter(
-        (nft: any) =>
-        verifiedNfts.find(
-            (vNft: any) => vNft.owner === nft.metadata.id
-        )
+    const userNFTs = ownedNfts.filter((nft: any) =>
+      verifiedNfts.find((vNft: any) => vNft.owner === nft.metadata.id)
     )
 
     console.log(userNFTs)
@@ -75,16 +71,17 @@ export function ViewNFTDataModal({
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl">View your NFTs</h1>
         <p className="opacity-50 mb-4">
-          If an NFT is registered with the wrong name or has any errors, please contact MoonDAO Support at support@moondao.com.
+          If an NFT is registered with the wrong name or has any errors, please
+          contact MoonDAO Support at support@moondao.com.
         </p>
 
-        {isLoading ? 
-            <p>Please sign the message in your wallet to view your Verified NFTs</p>
-            :
-            <ul>
-                
-            </ul>
-        }
+        {isLoading ? (
+          <p>
+            Please sign the message in your wallet to view your Verified NFTs
+          </p>
+        ) : (
+          <ul></ul>
+        )}
 
         <div className="flex w-full justify-between pt-8">
           <button

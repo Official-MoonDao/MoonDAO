@@ -1,10 +1,10 @@
-import { useAddress } from '@thirdweb-dev/react'
-import { useState } from 'react'
-import toast from 'react-hot-toast'
 import { useWallets } from '@privy-io/react-auth'
-import { useContext } from 'react'
-import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { useAddress } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
+import { useState } from 'react'
+import { useContext } from 'react'
+import toast from 'react-hot-toast'
+import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 
 type SubmitInfoModalProps = {
   balance: any
@@ -40,7 +40,10 @@ export function SubmitTTSInfoModal({
   const [email, setEmail] = useState<string>('')
   const [fullName, setFullName] = useState<string>('')
 
-  function filterNewNFTS(prevNFTs: Array<BigNumber>, newNFTs: Array<BigNumber>) {
+  function filterNewNFTS(
+    prevNFTs: Array<BigNumber>,
+    newNFTs: Array<BigNumber>
+  ) {
     const nftsToSubmit = []
     for (let i = 0; i < newNFTs.length; i++) {
       let found = false
@@ -53,26 +56,25 @@ export function SubmitTTSInfoModal({
     }
 
     console.log(nftsToSubmit)
-    return nftsToSubmit;
+    return nftsToSubmit
   }
 
   async function signMessage() {
     const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
-    const message = "Sign to verify the identity of your Ticket(s)"
-    const signature = await signer.signMessage(message)
-
-    return signature;
+    const response = await fetch(`api/db/nonce?address=${address}`)
+    const data = await response.json()
+    const signature = await signer.signMessage(data.nonce)
+    return signature
   }
 
   async function submitInfoToDB(tokenId: number | string, signature: string) {
     try {
-      fetch('/api/db/nft', {
+      fetch(`/api/db/nft?address=${address}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Signature': signature,
-          'Address': address,
+          'moondao-api-key': signature,
         } as any,
         body: JSON.stringify({
           tokenId,
@@ -92,36 +94,32 @@ export function SubmitTTSInfoModal({
     const claimFreeTx = await claimFree()
     setStatus('')
 
-    const newBalance = await ttsContract.call('balanceOf', [
-      address,
-    ])
+    const newBalance = await ttsContract.call('balanceOf', [address])
 
     if (newBalance.toString() > balance.toString()) {
       toast.success('You successfully claimed your free ticket!')
     } else {
       toast.error('Claiming failed')
-      throw new Error("Claiming failed");
+      throw new Error('Claiming failed')
     }
   }
 
   async function mintTicket(approveToken: Function, mint: Function) {
     //check mooney balance
-    const mooneyBalance = await mooneyContract.call('balanceOf', [
-      address,
-    ])
+    const mooneyBalance = await mooneyContract.call('balanceOf', [address])
 
     if (mooneyBalance.toString() < 20000 * quantity * 10 ** 18) {
       toast.error(
         'You do not have enough Mooney to mint this ticket. Please purchase more Mooney and try again.'
       )
-      throw new Error("Not Enough Mooney");
+      throw new Error('Not Enough Mooney')
     }
 
     //check token allowance
-    const tokenAllowance = await mooneyContract.call(
-      'allowance',
-      [address, TICKET_TO_SPACE_ADDRESS]
-    )
+    const tokenAllowance = await mooneyContract.call('allowance', [
+      address,
+      TICKET_TO_SPACE_ADDRESS,
+    ])
 
     if (tokenAllowance.toString() < 20000 * quantity * 10 ** 18) {
       setStatus('Approving token allowance...')
@@ -129,15 +127,12 @@ export function SubmitTTSInfoModal({
       setStatus('')
 
       //check if approval was successful
-      const newTokenAllowance = await mooneyContract.call(
-        'allowance',
-        [address, TICKET_TO_SPACE_ADDRESS]
-      )
+      const newTokenAllowance = await mooneyContract.call('allowance', [
+        address,
+        TICKET_TO_SPACE_ADDRESS,
+      ])
 
-      if (
-        newTokenAllowance.toString() >=
-        20000 * quantity * 10 ** 18
-      ) {
+      if (newTokenAllowance.toString() >= 20000 * quantity * 10 ** 18) {
         setStatus('Minting ticket...')
         const mintTx = await mint()
         setStatus('')
@@ -145,7 +140,7 @@ export function SubmitTTSInfoModal({
         console.log(newTokenAllowance.toString())
         setStatus('')
         toast.error('Token approval failed')
-        throw new Error("Token Approval Error");
+        throw new Error('Token Approval Error')
       }
     } else {
       setStatus('Minting ticket...')
@@ -168,7 +163,7 @@ export function SubmitTTSInfoModal({
       console.log(parseInt(balance) + parseInt(quantity))
       console.log(ownedNfts.length)
       toast.error('Minting failed')
-      throw new Error("Minting error");
+      throw new Error('Minting error')
     }
   }
 
@@ -221,7 +216,8 @@ export function SubmitTTSInfoModal({
                   return toast.error('Please fill in all fields')
 
                 // Get list of NFT the address currently holds
-                const prevNFTBalance = await ttsContract.erc721.getOwnedTokenIds(address)
+                const prevNFTBalance =
+                  await ttsContract.erc721.getOwnedTokenIds(address)
                 console.log(prevNFTBalance)
 
                 //CLaim Free Ticket
@@ -231,13 +227,18 @@ export function SubmitTTSInfoModal({
                 } else if (approveToken && mint) {
                   await mintTicket(approveToken, mint)
                 }
-                  
+
                 setStatus('Verifying identity...')
 
-                const newNFTBalance = await ttsContract.erc721.getOwnedTokenIds(address)
+                const newNFTBalance = await ttsContract.erc721.getOwnedTokenIds(
+                  address
+                )
                 console.log(newNFTBalance)
 
-                const nftsToSubmit = filterNewNFTS(prevNFTBalance, newNFTBalance)
+                const nftsToSubmit = filterNewNFTS(
+                  prevNFTBalance,
+                  newNFTBalance
+                )
 
                 const signature = await signMessage()
 
@@ -247,7 +248,9 @@ export function SubmitTTSInfoModal({
                   }
                 } catch (err: any) {
                   console.log(err.message)
-                  toast.error("Error verifying NFT identity. Please contact MoonDAO support")
+                  toast.error(
+                    'Error verifying NFT identity. Please contact MoonDAO support'
+                  )
                 }
 
                 toast.success('Your NFT(s) have been verified and registered!')
