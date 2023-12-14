@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import Nft from '../../../../lib/mongodb/models/Nft'
+import apiKeyMiddleware from '../../../../lib/mongodb/models/middleware'
 import dbConnect from '../../../../lib/mongodb/mongo'
 
 export default async function handler(
@@ -7,6 +8,9 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const { method } = req
+
+  const auth = await apiKeyMiddleware(req, res)
+  if (!auth) return
 
   await dbConnect()
 
