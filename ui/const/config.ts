@@ -45,6 +45,11 @@ export const VMOONEY_ADDRESSES: Index = {
   mumbai: devConfigL2.vMOONEYToken,
 }
 
+export const CITIZEN_NFT_ADDRESSES: Index = {
+  ethereum: '',
+  polygon: '0xE8013d1B68FA9faF5C78DE4823f7F076A854407A',
+}
+
 export const VMOONEY_SWEEPSTAKES: string =
   defaultConfigL1.vMooneySweepstakesZeroG
 

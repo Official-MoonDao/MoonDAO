@@ -9,17 +9,12 @@ import { OnboardingStageManager } from '../components/onboarding/OnboardingStage
 import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
 
 export default function Join({ usdQuotes }: any) {
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
-
   const { t } = useTranslation('common')
 
   return (
     <div className="animate-fadeIn">
       <Head title={t('joinTitle')} description={t('joinDesc')} />
-      <OnboardingStageManager
-        selectedChain={selectedChain}
-        usdQuotes={usdQuotes}
-      />
+      <OnboardingStageManager usdQuotes={usdQuotes} />
     </div>
   )
 }
