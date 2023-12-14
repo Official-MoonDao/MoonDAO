@@ -1,6 +1,10 @@
 import { useAddress } from '@thirdweb-dev/react'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { useWallets } from '@privy-io/react-auth'
+import { useContext } from 'react'
+import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { BigNumber } from 'ethers'
 
 type ViewNFTDataModalProps = {
   ttsContract: any
@@ -13,45 +17,52 @@ export function ViewNFTDataModal({
 }: ViewNFTDataModalProps) {
   const address = useAddress()
 
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const { wallets } = useWallets()
+
   const [isLoading, setIsLoading] = useState(true)
 
+  async function signMessage() {
+    const provider = await wallets[selectedWallet].getEthersProvider()
+    const signer = provider?.getSigner()
+    const message = "Sign to verify the identity of your Ticket(s)"
+    const signature = await signer.signMessage(message)
+
+    return signature;
+  }
+
   async function fetchInfoFromDB() {
-    try {
-        const ownedNfts = await ttsContract.erc721.balanceOf(address)
+    const signature = await signMessage()
+    const ownedNfts = await ttsContract.erc721.balanceOf(address)
 
-        //find owned tokenIds that aren't in the database yet
-        const verifiedNftsRes = await fetch('/api/db/nft', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'moondao-api-key':
-              process.env.MONGO_MOONDAO_API_KEY,
-          } as any,
-        })
+    //find owned tokenIds in the databse
+    const verifiedNftsRes = await fetch('/api/db/nft', {
+        method: 'GET',
+        headers: {
+        'Content-Type': 'application/json',
+        'Signature': signature,
+        'Address': address,
+        } as any,
+    })
 
-        const { data: verifiedNfts } = await verifiedNftsRes.json()
-        console.log(verifiedNfts)
+    const { data: verifiedNfts } = await verifiedNftsRes.json()
+    console.log(verifiedNfts)
 
-        const userNFTs = ownedNfts.filter(
-          (nft: any) =>
-            verifiedNfts.find(
-              (vNft: any) => vNft.owner === nft.metadata.id
-            )
+    const userNFTs = ownedNfts.filter(
+        (nft: any) =>
+        verifiedNfts.find(
+            (vNft: any) => vNft.owner === nft.metadata.id
         )
+    )
 
-        console.log(userNFTs)
+    console.log(userNFTs)
 
-        setIsLoading(false)
-    } catch (err) {
-    //   toast.error(
-    //     'There was an issue retreiving your info to the database. Please refresh or contact a moondao member.'
-    //   )
-    }
+    setIsLoading(false)
   }
 
   useEffect(() => {
     fetchInfoFromDB()
-  })
+  }, [])
 
   return (
     <div
@@ -67,7 +78,13 @@ export function ViewNFTDataModal({
           If an NFT is registered with the wrong name or has any errors, please contact MoonDAO Support at support@moondao.com.
         </p>
 
-
+        {isLoading ? 
+            <p>Please sign the message in your wallet to view your Verified NFTs</p>
+            :
+            <ul>
+                
+            </ul>
+        }
 
         <div className="flex w-full justify-between pt-8">
           <button
