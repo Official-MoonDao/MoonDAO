@@ -19,6 +19,7 @@ import Head from '../../components/layout/Head'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
 import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
 import { SubmitTTSInfoModal } from '../../components/ticket-to-space/SubmitTTSInfoModal'
+import { ViewNFTDataModal } from '../../components/ticket-to-space/ViewNFTDataModal'
 import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
@@ -34,6 +35,7 @@ export default function Sweepstakes({ nftMetadata }: any) {
   const [supply, setSupply] = useState(0)
   const [enableMintInfoModal, setEnableMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
+  const [enableViewNFTsModal, setViewNFTsModal] = useState(false)
 
   const address = useAddress()
 
@@ -78,6 +80,11 @@ export default function Sweepstakes({ nftMetadata }: any) {
     merkleProof,
     address,
   ])
+
+  const openViewNFTs = (e: any) => {
+    e.preventDefault();
+    setViewNFTsModal(true)
+  };
 
   useEffect(() => {
     console.log('Can Claim Free', canClaimFree)
@@ -177,6 +184,22 @@ export default function Sweepstakes({ nftMetadata }: any) {
                           (balance > 1 ? ' Tickets' : ' Ticket')
                         : '...'}
                     </p>
+                  </div>
+
+                  {/* Owned NFTs Info */}
+                  <div>
+                    <button 
+                      className="opacity-70 lg:text-xl"
+                      onClick={openViewNFTs}
+                    >
+                      View your NFTs
+                    </button>
+                    {enableViewNFTsModal && 
+                      <ViewNFTDataModal
+                        ttsContract={ttsContract}
+                        setEnabled={setViewNFTsModal}
+                      />
+                    }
                   </div>
                 </div>
               </div>

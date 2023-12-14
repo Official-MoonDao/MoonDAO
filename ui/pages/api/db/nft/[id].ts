@@ -12,6 +12,9 @@ export default async function handler(
     method,
   } = req
 
+  const auth = await apiKeyMiddleware(req, res)
+  if (!auth) return
+
   await dbConnect()
 
   switch (method) {
@@ -29,8 +32,6 @@ export default async function handler(
 
     case 'PUT' /* Edit a model by its ID */:
       try {
-        const auth = apiKeyMiddleware(req, res)
-        if (!auth) return
         const nft = await Nft.findByIdAndUpdate(id, req.body, {
           new: true,
           runValidators: true,
@@ -46,8 +47,6 @@ export default async function handler(
 
     case 'DELETE' /* Delete a model by its ID */:
       try {
-        const auth = apiKeyMiddleware(req, res)
-        if (!auth) return
         const deletedNft = await Nft.deleteOne({ _id: id })
         if (!deletedNft) {
           return res.status(400).json({ success: false })
