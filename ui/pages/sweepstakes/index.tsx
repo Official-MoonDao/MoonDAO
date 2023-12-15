@@ -177,7 +177,7 @@ export default function Sweepstakes({ nftMetadata }: any) {
                         <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
                           {balance
                             ? balance.toString() +
-                              (balance > 1 ? ' Tickets' : ' Ticket')
+                              (balance == 1 ? ' Tickets' : ' Ticket')
                             : '...'}
                         </p>
                       </div>

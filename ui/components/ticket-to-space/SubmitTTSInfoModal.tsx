@@ -76,7 +76,7 @@ export function SubmitTTSInfoModal({
     try {
       console.log(signature)
       console.log(address)
-      fetch(`/api/db/nft?address=${address}`, {
+      await fetch(`/api/db/nft?address=${address}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -216,7 +216,7 @@ export function SubmitTTSInfoModal({
             htmlFor="checked-checkbox"
             className="ms-2 text-sm font-medium text-white dark:text-gray-300"
           >
-            Subscribe to mailing list!
+            Subscribe to our mailing list!
           </label>
         </div>
         <div className="flex w-full justify-between">
