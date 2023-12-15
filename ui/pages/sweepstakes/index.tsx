@@ -1,19 +1,16 @@
-import { Mumbai, Polygon } from '@thirdweb-dev/chains'
+import { Polygon } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
   useAddress,
   useContract,
   useContractRead,
-  useOwnedNFTs,
 } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
-import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import ChainContext from '../../lib/thirdweb/chain-context'
 import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
 import { initSDK } from '../../lib/thirdweb/thirdweb'
-import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
+import { useTokenApproval } from '../../lib/tokens/approve'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
 import Head from '../../components/layout/Head'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
@@ -27,9 +24,6 @@ import { devWhitelist } from '../../const/tts/whitelist'
 const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //mumbai
 
 export default function Sweepstakes({ nftMetadata }: any) {
-  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
-  const router = useRouter()
-
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(0)
@@ -58,14 +52,6 @@ export default function Sweepstakes({ nftMetadata }: any) {
     TICKET_TO_SPACE_ADDRESS
   )
 
-  const { data: tokenAllowance } = useTokenAllowance(
-    mooneyContract,
-    address,
-    TICKET_TO_SPACE_ADDRESS
-  )
-
-  const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
-
   const { data: balance } = useContractRead(ttsContract, 'balanceOf', [address])
 
   const { mutateAsync: mint } = useHandleWrite(ttsContract, 'mint', [
@@ -87,7 +73,6 @@ export default function Sweepstakes({ nftMetadata }: any) {
   }
 
   useEffect(() => {
-    setSelectedChain(Polygon)
     const ts = Math.floor(1705132740 - new Date().valueOf() / 1000)
     if (ts > 86400) setTime('T-' + Math.floor(ts / 86400) + ' Days')
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
