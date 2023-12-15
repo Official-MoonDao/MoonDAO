@@ -57,13 +57,16 @@ export function ViewNFTDataModal({
 
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
+        let found = false
         for (let j = 0; j < verifiedNfts.length; j++) {
             if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
                 nftsList.push({"id": ownedNfts[i]._hex, "name": verifiedNfts[j].name, "email": verifiedNfts[j].email})
+                found = true
                 break
             }
         }
-        nftsList.push({"id": ownedNfts[i]._hex, "name": "unverified", "email": "unverified"})
+        if (!found)
+            nftsList.push({"id": ownedNfts[i]._hex, "name": "unverified", "email": "unverified"})
     }
 
     setUserNFTs(nftsList)
@@ -97,7 +100,7 @@ export function ViewNFTDataModal({
             Please sign the message in your wallet to view your Verified NFTs
           </p>
         ) : (
-        <div className="overflow-visible w-full">
+        <div className="overflow-y-scroll w-full h-[200px]">
             {userNFTs.map(nft => (
             <div
                 className="flex flex-row gap-2 mt-1"

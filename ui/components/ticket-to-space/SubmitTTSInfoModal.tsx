@@ -64,12 +64,15 @@ export function SubmitTTSInfoModal({
     const signer = provider?.getSigner()
     const response = await fetch(`api/db/nonce?address=${address}`)
     const data = await response.json()
+    console.log(data)
     const signature = await signer.signMessage(data.nonce)
     return signature
   }
 
   async function submitInfoToDB(tokenId: number | string, signature: string) {
     try {
+      console.log(signature)
+      console.log(address)
       fetch(`/api/db/nft?address=${address}`, {
         method: 'POST',
         headers: {
@@ -80,6 +83,7 @@ export function SubmitTTSInfoModal({
           tokenId,
           email,
           name: fullName,
+          address: address,
         }),
       })
     } catch (err) {
@@ -240,9 +244,9 @@ export function SubmitTTSInfoModal({
                   newNFTBalance
                 )
 
-                const signature = await signMessage()
-
                 try {
+                  const signature = await signMessage()
+
                   for (let i = 0; i < nftsToSubmit.length; i++) {
                     await submitInfoToDB(nftsToSubmit[i], signature)
                   }
@@ -251,6 +255,7 @@ export function SubmitTTSInfoModal({
                   toast.error(
                     'Error verifying NFT identity. Please contact MoonDAO support'
                   )
+                  return setEnabled(false)
                 }
 
                 toast.success('Your NFT(s) have been verified and registered!')
