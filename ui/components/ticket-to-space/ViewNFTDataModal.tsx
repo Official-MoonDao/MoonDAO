@@ -3,6 +3,7 @@ import { useAddress } from '@thirdweb-dev/react'
 import { useState, useEffect } from 'react'
 import { useContext } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { sign } from 'crypto'
 
 type ViewNFTDataModalProps = {
   ttsContract: any
@@ -28,23 +29,22 @@ export function ViewNFTDataModal({
   >([])
 
   async function signMessage() {
-    try {
-      const provider = await wallets[selectedWallet].getEthersProvider()
-      const signer = provider?.getSigner()
-      const response = await fetch(`api/db/nonce?address=${address}`)
-      const data = await response.json()
-      let message =
-        'Please sign for verify and register your new NFTs into the sweepstakes. #' +
-        data.nonce
-      const signature = await signer.signMessage(message)
-      return signature
-    } catch (err) {
-      console.log(err)
-    }
+    const provider = await wallets[selectedWallet].getEthersProvider()
+    const signer = provider?.getSigner()
+    const response = await fetch(`api/db/nonce?address=${address}`)
+    const data = await response.json()
+    if (!data.nonce)
+        return null
+    let message =
+      'Please sign for verify and register your new NFTs into the sweepstakes. #' +
+      data.nonce
+    const signature = await signer.signMessage(message)
+    return signature
   }
 
   async function fetchInfoFromDB() {
     const signature = await signMessage()
+    if (!signature) return
     const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
 
     //find owned tokenIds in the databse
@@ -56,16 +56,12 @@ export function ViewNFTDataModal({
       } as any,
     })
 
-    console.log(verifiedNftsRes)
-
     const { data: verifiedNfts } = await verifiedNftsRes.json()
-    console.log(verifiedNfts)
-    console.log(ownedNfts)
 
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
       let found = false
-      for (let j = 0; j < verifiedNfts?.length; j++) {
+      for (let j = 0; j < verifiedNfts.length; j++) {
         if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
           nftsList.push({
             id: ownedNfts[i]._hex,
@@ -86,8 +82,6 @@ export function ViewNFTDataModal({
 
     setUserNFTs(nftsList)
 
-    console.log(nftsList)
-
     setIsLoading(false)
   }
 
@@ -103,7 +97,7 @@ export function ViewNFTDataModal({
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
+      <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] lg:w-[750px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl">View your NFTs</h1>
         <p className="opacity-50 mb-4">
           If an NFT is registered with the wrong name or has any errors, please
@@ -115,7 +109,7 @@ export function ViewNFTDataModal({
             Please sign the message in your wallet to view your Verified NFTs
           </p>
         ) : (
-          <div className="overflow-visible w-full">
+          <div className="overflow-visible w-full h-[200px] overflow-y-scroll">
             {userNFTs.map((nft, i) => (
               <div
                 key={'nft' + nft.id + i}

@@ -17,7 +17,7 @@ type SubmitInfoModalProps = {
   mint?: Function
 }
 
-const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //mumbai address
+const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //mumbai address
 
 export function SubmitTTSInfoModal({
   balance,
@@ -74,9 +74,7 @@ export function SubmitTTSInfoModal({
 
   async function submitInfoToDB(tokenId: number | string, signature: string) {
     try {
-      console.log(signature)
-      console.log(address)
-      fetch(`/api/db/nft?address=${address}`, {
+      await fetch(`/api/db/nft?address=${address}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +142,6 @@ export function SubmitTTSInfoModal({
         await mint()
         setStatus('')
       } else {
-        console.log(newTokenAllowance.toString())
         setStatus('')
         toast.error('Token approval failed')
         throw new Error('Token Approval Error')
@@ -156,7 +153,6 @@ export function SubmitTTSInfoModal({
     }
 
     const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
-    console.log(ownedNfts)
 
     if (ownedNfts.length == parseInt(balance) + parseInt(quantity))
       toast.success(
@@ -216,7 +212,7 @@ export function SubmitTTSInfoModal({
             htmlFor="checked-checkbox"
             className="ms-2 text-sm font-medium text-white dark:text-gray-300"
           >
-            Subscribe to mailing list!
+            Subscribe to our mailing list!
           </label>
         </div>
         <div className="flex w-full justify-between">
@@ -251,7 +247,6 @@ export function SubmitTTSInfoModal({
                 const newNFTBalance = await ttsContract.erc721.getOwnedTokenIds(
                   address
                 )
-                console.log(newNFTBalance)
 
                 const nftsToSubmit = filterNewNFTS(
                   prevNFTBalance,
@@ -265,7 +260,6 @@ export function SubmitTTSInfoModal({
                     await submitInfoToDB(nftsToSubmit[i], signature)
                   }
                 } catch (err: any) {
-                  console.log(err.message)
                   toast.error(
                     'Error verifying NFT identity. Please contact MoonDAO support'
                   )
