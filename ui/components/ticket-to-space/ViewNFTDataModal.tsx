@@ -56,11 +56,7 @@ export function ViewNFTDataModal({
       } as any,
     })
 
-    console.log(verifiedNftsRes)
-
     const { data: verifiedNfts } = await verifiedNftsRes.json()
-    console.log(verifiedNfts)
-    console.log(ownedNfts)
 
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
@@ -85,8 +81,6 @@ export function ViewNFTDataModal({
     }
 
     setUserNFTs(nftsList)
-
-    console.log(nftsList)
 
     setIsLoading(false)
   }

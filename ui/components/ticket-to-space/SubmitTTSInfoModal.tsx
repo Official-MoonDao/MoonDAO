@@ -74,8 +74,6 @@ export function SubmitTTSInfoModal({
 
   async function submitInfoToDB(tokenId: number | string, signature: string) {
     try {
-      console.log(signature)
-      console.log(address)
       await fetch(`/api/db/nft?address=${address}`, {
         method: 'POST',
         headers: {
@@ -144,7 +142,6 @@ export function SubmitTTSInfoModal({
         await mint()
         setStatus('')
       } else {
-        console.log(newTokenAllowance.toString())
         setStatus('')
         toast.error('Token approval failed')
         throw new Error('Token Approval Error')
@@ -156,7 +153,6 @@ export function SubmitTTSInfoModal({
     }
 
     const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
-    console.log(ownedNfts)
 
     if (ownedNfts.length == parseInt(balance) + parseInt(quantity))
       toast.success(
@@ -251,7 +247,6 @@ export function SubmitTTSInfoModal({
                 const newNFTBalance = await ttsContract.erc721.getOwnedTokenIds(
                   address
                 )
-                console.log(newNFTBalance)
 
                 const nftsToSubmit = filterNewNFTS(
                   prevNFTBalance,
@@ -265,7 +260,6 @@ export function SubmitTTSInfoModal({
                     await submitInfoToDB(nftsToSubmit[i], signature)
                   }
                 } catch (err: any) {
-                  console.log(err.message)
                   toast.error(
                     'Error verifying NFT identity. Please contact MoonDAO support'
                   )
