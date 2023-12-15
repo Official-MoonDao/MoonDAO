@@ -25,7 +25,7 @@ import { devWhitelist } from '../../const/tts/whitelist'
 
 const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
 
-export default function Sweepstakes({ nftMetadata }: any) {
+export default function Sweepstakes() {
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(0)
@@ -149,7 +149,12 @@ export default function Sweepstakes({ nftMetadata }: any) {
             <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]">
               <div className="md:flex">
                 <div className="m-auto my-2 p-2 flex justify-center">
-                  <MediaRenderer src={nftMetadata.image} width={'300px'} />
+                  <MediaRenderer
+                    src={
+                      'ipfs://Qmba3umb3db7DqCA19iRSSbtzv9nYUmP8Cibo5QMkLpgpP'
+                    }
+                    width={'300px'}
+                  />
                 </div>
                 {/*Quantity, price, expiration, balance */}
                 <div className="flex flex-col justify-center m-auto mt-4 lg:mt-4 gap-2 lg:gap-4">
@@ -335,21 +340,4 @@ export default function Sweepstakes({ nftMetadata }: any) {
       </div>
     </main>
   )
-}
-
-export async function getStaticProps() {
-  const sdk = initSDK(Polygon)
-
-  const ticketToSpaceContract = await sdk.getContract(
-    TICKET_TO_SPACE_ADDRESS,
-    ttsSweepstakesV2.abi
-  )
-
-  const nftMetadata = await ticketToSpaceContract?.erc721.getTokenMetadata(0)
-
-  return {
-    props: {
-      nftMetadata,
-    },
-  }
 }
