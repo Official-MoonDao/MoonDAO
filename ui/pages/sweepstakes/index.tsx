@@ -24,7 +24,7 @@ import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
 
-const TICKET_TO_SPACE_ADDRESS = '0x5283b6035cfa7bb884b7F6A146Fa6824eC9773c7' //mumbai
+const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //mumbai
 
 export default function Sweepstakes({ nftMetadata }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
@@ -47,7 +47,7 @@ export default function Sweepstakes({ nftMetadata }: any) {
   )
 
   const { contract: mooneyContract } = useContract(
-    '0x0A720b8985A167fA4be98279980cA4b1715e741e',
+    '0x77d8b01e64Dd3E50fc5f0325fA5791378bA25dC5',
     ERC20.abi
   ) //mumbai mooney
 
@@ -92,7 +92,7 @@ export default function Sweepstakes({ nftMetadata }: any) {
 
   useEffect(() => {
     setSelectedChain(Mumbai)
-    const ts = Math.floor(1704067200 - new Date().valueOf() / 1000)
+    const ts = Math.floor(1705132740 - new Date().valueOf() / 1000)
     if (ts > 86400) setTime('T-' + Math.floor(ts / 86400) + ' Days')
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
     else if (ts > 60) setTime('T-' + Math.floor(ts / 60) + ' Minutes')
