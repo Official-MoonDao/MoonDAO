@@ -27,25 +27,15 @@ export function ViewNFTDataModal({
     }[]
   >([])
 
-  const [nonce, setNonce] = useState<any>()
-
-  async function getNonceDataFromDB() {
-    const response = await fetch(`api/db/nonce?address=${address}`)
-    const data = await response.json()
-    setNonce(data.nonce)
-  }
-
-  useEffect(() => {
-    getNonceDataFromDB()
-  }, [address])
-
   async function signMessage() {
     try {
       const provider = await wallets[selectedWallet].getEthersProvider()
       const signer = provider?.getSigner()
+      const response = await fetch(`api/db/nonce?address=${address}`)
+      const data = await response.json()
       let message =
         'Please sign for verify and register your new NFTs into the sweepstakes. #' +
-        nonce
+        data.nonce
       const signature = await signer.signMessage(message)
       return signature
     } catch (err) {
@@ -75,7 +65,7 @@ export function ViewNFTDataModal({
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
       let found = false
-      for (let j = 0; j < verifiedNfts.length; j++) {
+      for (let j = 0; j < verifiedNfts?.length; j++) {
         if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
           nftsList.push({
             id: ownedNfts[i]._hex,
