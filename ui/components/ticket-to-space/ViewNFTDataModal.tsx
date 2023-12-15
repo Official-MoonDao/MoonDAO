@@ -27,16 +27,30 @@ export function ViewNFTDataModal({
     }[]
   >([])
 
-  async function signMessage() {
-    const provider = await wallets[selectedWallet].getEthersProvider()
-    const signer = provider?.getSigner()
+  const [nonce, setNonce] = useState<any>()
+
+  async function getNonceDataFromDB() {
     const response = await fetch(`api/db/nonce?address=${address}`)
     const data = await response.json()
-    let message =
-      'Please sign for verify and register your new NFTs into the sweepstakes. #' +
-      data.nonce
-    const signature = await signer.signMessage(message)
-    return signature
+    setNonce(data.nonce)
+  }
+
+  useEffect(() => {
+    getNonceDataFromDB()
+  }, [address])
+
+  async function signMessage() {
+    try {
+      const provider = await wallets[selectedWallet].getEthersProvider()
+      const signer = provider?.getSigner()
+      let message =
+        'Please sign for verify and register your new NFTs into the sweepstakes. #' +
+        nonce
+      const signature = await signer.signMessage(message)
+      return signature
+    } catch (err) {
+      console.log(err)
+    }
   }
 
   async function fetchInfoFromDB() {
