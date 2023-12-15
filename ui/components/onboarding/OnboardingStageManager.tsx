@@ -253,13 +253,21 @@ export function OnboardingStageManager({ usdQuotes }: any) {
             <p className="absolut  mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
               Warning: The Ticket to Space Sweepstakes is on Polygon. If you
               continue with Ethereum you must bridge your $MOONEY to Polygon to
-              participate. Learn how to bridge your $MOONEY
+              participate. Learn how to bridge your $MOONEY with our
               <a
                 className="text-moon-gold"
                 href="https://youtu.be/oQtHjbcbAio?feature=shared"
               >
                 {' '}
-                here
+                video tutorial
+              </a>
+              or read the 
+              <a
+                className="text-moon-gold"
+                href="https://wallet.polygon.technology/polygon/bridge/deposit"
+              >
+                {' '}
+                guide
               </a>
               .
             </p>

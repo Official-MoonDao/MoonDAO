@@ -116,11 +116,18 @@ export default function Sweepstakes({ nftMetadata }: any) {
         </p>
 
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
-          The Ticket to Space Sweepstakes is on Polygon. Learn how to bridge
-          your $MOONEY
+          The Ticket to Space Sweepstakes is on Polygon. Check out this 
           <a
             className="text-moon-gold"
             href="https://youtu.be/oQtHjbcbAio?feature=shared"
+          >
+            {' '}
+            guide
+          </a>
+          {' '}and bridge your $MOONEY
+          <a
+            className="text-moon-gold"
+            href="https://wallet.polygon.technology/polygon/bridge/deposit"
           >
             {' '}
             here
@@ -130,7 +137,7 @@ export default function Sweepstakes({ nftMetadata }: any) {
 
         <div className="">
           <p className="mt-5 text-sm lg:mt-6 opacity-70 max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-base xl:text-lg">
-            We will randomly select an owner to win a trip to space on a future
+            We will randomly select an individual to win a trip to space on a future
             Blue Origin rocket! Every individual may mint up to 50 entries.
           </p>
         </div>
