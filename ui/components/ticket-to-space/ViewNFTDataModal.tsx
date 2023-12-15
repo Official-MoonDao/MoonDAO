@@ -60,23 +60,6 @@ export function ViewNFTDataModal({
 
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
-<<<<<<< HEAD
-      for (let j = 0; j < verifiedNfts.length; j++) {
-        if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
-          nftsList.push({
-            id: ownedNfts[i]._hex,
-            name: verifiedNfts[j].name,
-            email: verifiedNfts[j].email,
-          })
-          break
-        }
-      }
-      nftsList.push({
-        id: ownedNfts[i]._hex,
-        name: 'unverified',
-        email: 'unverified',
-      })
-=======
         let found = false
         for (let j = 0; j < verifiedNfts.length; j++) {
             if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
@@ -87,7 +70,6 @@ export function ViewNFTDataModal({
         }
         if (!found)
             nftsList.push({"id": ownedNfts[i]._hex, "name": "unverified", "email": "unverified"})
->>>>>>> bd55485591c889622f19cd3054d524c05ac5f9f6
     }
 
     setUserNFTs(nftsList)
