@@ -32,7 +32,8 @@ export function ViewNFTDataModal({
     const signer = provider?.getSigner()
     const response = await fetch(`api/db/nonce?address=${address}`)
     const data = await response.json()
-    const signature = await signer.signMessage(data.nonce)
+    let message = "Please sign for verify and register your new NFTs into the sweepstakes. #" + data.nonce;
+    const signature = await signer.signMessage(message)
     return signature
   }
 

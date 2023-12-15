@@ -176,6 +176,7 @@ export default function Sweepstakes({ nftMetadata }: any) {
                   </div>
 
                   {/* Wallet Balance */}
+                  {address && (<>
                   <div>
                     <p className="opacity-70 lg:text-xl">Your Balance</p>
                     <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
@@ -186,7 +187,6 @@ export default function Sweepstakes({ nftMetadata }: any) {
                     </p>
                   </div>
 
-                  {/* Owned NFTs Info */}
                   <div>
                     <button 
                       className="p-3 bg-moon-orange lg:text-lg"
@@ -201,6 +201,8 @@ export default function Sweepstakes({ nftMetadata }: any) {
                       />
                     }
                   </div>
+                  </>
+                  )}
                 </div>
               </div>
 

@@ -65,7 +65,8 @@ export function SubmitTTSInfoModal({
     const response = await fetch(`api/db/nonce?address=${address}`)
     const data = await response.json()
     console.log(data)
-    const signature = await signer.signMessage(data.nonce)
+    let message = "Please sign for verify and register your new NFTs into the sweepstakes. #" + data.nonce;
+    const signature = await signer.signMessage(message)
     return signature
   }
 

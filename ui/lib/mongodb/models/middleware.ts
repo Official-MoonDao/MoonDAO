@@ -19,7 +19,7 @@ const apiKeyMiddleware = async (req: NextApiRequest, res: NextApiResponse) => {
   const user = await User.findOne({ address })
   if (user && user.nonce) {
     const recoveredAddress = ethers.utils.verifyMessage(
-      user.nonce,
+      "Please sign for verify and register your new NFTs into the sweepstakes. #" + user.nonce,
       apiKey as string
     )
     if (address === recoveredAddress) {
