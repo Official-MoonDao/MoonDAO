@@ -1,4 +1,4 @@
-import { Mumbai } from '@thirdweb-dev/chains'
+import { Mumbai, Polygon } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
   useAddress,
@@ -82,16 +82,12 @@ export default function Sweepstakes({ nftMetadata }: any) {
   ])
 
   const openViewNFTs = (e: any) => {
-    e.preventDefault();
+    e.preventDefault()
     setViewNFTsModal(true)
-  };
+  }
 
   useEffect(() => {
-    console.log('Can Claim Free', canClaimFree)
-  }, [canClaimFree])
-
-  useEffect(() => {
-    setSelectedChain(Mumbai)
+    setSelectedChain(Polygon)
     const ts = Math.floor(1705132740 - new Date().valueOf() / 1000)
     if (ts > 86400) setTime('T-' + Math.floor(ts / 86400) + ' Days')
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
@@ -176,32 +172,33 @@ export default function Sweepstakes({ nftMetadata }: any) {
                   </div>
 
                   {/* Wallet Balance */}
-                  {address && (<>
-                  <div>
-                    <p className="opacity-70 lg:text-xl">Your Balance</p>
-                    <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
-                      {balance
-                        ? balance.toString() +
-                          (balance > 1 ? ' Tickets' : ' Ticket')
-                        : '...'}
-                    </p>
-                  </div>
+                  {address && (
+                    <>
+                      <div>
+                        <p className="opacity-70 lg:text-xl">Your Balance</p>
+                        <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
+                          {balance
+                            ? balance.toString() +
+                              (balance > 1 ? ' Tickets' : ' Ticket')
+                            : '...'}
+                        </p>
+                      </div>
 
-                  <div>
-                    <button 
-                      className="p-3 bg-moon-orange lg:text-lg"
-                      onClick={openViewNFTs}
-                    >
-                      View your NFTs
-                    </button>
-                    {enableViewNFTsModal && 
-                      <ViewNFTDataModal
-                        ttsContract={ttsContract}
-                        setEnabled={setViewNFTsModal}
-                      />
-                    }
-                  </div>
-                  </>
+                      <div>
+                        <button
+                          className="p-3 bg-moon-orange lg:text-lg"
+                          onClick={openViewNFTs}
+                        >
+                          View your NFTs
+                        </button>
+                        {enableViewNFTsModal && (
+                          <ViewNFTDataModal
+                            ttsContract={ttsContract}
+                            setEnabled={setViewNFTsModal}
+                          />
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -297,27 +294,37 @@ export default function Sweepstakes({ nftMetadata }: any) {
           )}
         </div>
         <p className="mt-4 text-sm">
-          NO PURCHASE OR OBLIGATION NECESSARY TO ENTER OR WIN. PURCHASE WILL
-          NOT INCREASE YOUR ODDS OF WINNING. IT IS NOT NECESSARY TO PURCHASE A
-          TICKET TO SPACE NFT IN ORDER TO ENTER OR WIN. VOID WHERE PROHIBITED. THIS
-          SWEEPSTAKES IS IN NO WAY SPONSORED, ENDORSED, SPONSORED OR APPROVED
-          BY BLUE ORIGIN TEXAS, LLC (“BLUE ORIGIN”). 
+          NO PURCHASE OR OBLIGATION NECESSARY TO ENTER OR WIN. PURCHASE WILL NOT
+          INCREASE YOUR ODDS OF WINNING. IT IS NOT NECESSARY TO PURCHASE A
+          TICKET TO SPACE NFT IN ORDER TO ENTER OR WIN. VOID WHERE PROHIBITED.
+          THIS SWEEPSTAKES IS IN NO WAY SPONSORED, ENDORSED, SPONSORED OR
+          APPROVED BY BLUE ORIGIN TEXAS, LLC (“BLUE ORIGIN”).
           <br></br>
           <br></br>
-            The Sweepstakes is open only to individuals who are 18 years of age or older, or the age of majority if greater than 18 in their respective jurisdictions. Sweepstakes is void in Florida, New York, Puerto Rico and where otherwise prohibited by law. Runner-Up Prize winners are responsible for taxes associated with the Runner-Up Prizes. 
+          The Sweepstakes is open only to individuals who are 18 years of age or
+          older, or the age of majority if greater than 18 in their respective
+          jurisdictions. Sweepstakes is void in Florida, New York, Puerto Rico
+          and where otherwise prohibited by law. Runner-Up Prize winners are
+          responsible for taxes associated with the Runner-Up Prizes.
           <br></br>
           <br></br>
-            Odds of winning depend on the number of entries received during the contest period, but can be calculated by dividing the number of prizes by the total number of entries received. Contest ends on January 12, 2024. For Alternative Method of Entry, 
+          Odds of winning depend on the number of entries received during the
+          contest period, but can be calculated by dividing the number of prizes
+          by the total number of entries received. Contest ends on January 12,
+          2024. For Alternative Method of Entry,
           <a
             className="text-moon-gold"
             href="https://publish.obsidian.md/moondao/MoonDAO/docs/Ticket+to+Space+NFT/Ticket+to+Space+Sweepstakes+Rules"
           >
             {' '}
             click here
-          </a>.
+          </a>
+          .<br></br>
           <br></br>
-          <br></br>
-          You must enter your full legal name (as displayed on a government issued photo ID) and the best email for us to contact you if you win a prize in the Sweepstakes. By submitting your information, you agree to our Privacy Policy.
+          You must enter your full legal name (as displayed on a government
+          issued photo ID) and the best email for us to contact you if you win a
+          prize in the Sweepstakes. By submitting your information, you agree to
+          our Privacy Policy.
         </p>
       </div>
     </main>
@@ -325,7 +332,7 @@ export default function Sweepstakes({ nftMetadata }: any) {
 }
 
 export async function getStaticProps() {
-  const sdk = initSDK(Mumbai)
+  const sdk = initSDK(Polygon)
 
   const ticketToSpaceContract = await sdk.getContract(
     TICKET_TO_SPACE_ADDRESS,
