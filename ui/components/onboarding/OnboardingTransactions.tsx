@@ -280,7 +280,7 @@ export function OnboardingTransactions({
                 stepNum={4}
                 title={'Stake $MOONEY'}
                 explanation={
-                  'Stake your tokens for voting power within the community. This makes you a full member of our community!'
+                  'Stake your tokens for voting power within the community.'
                 }
                 action={async () => {
                   await createLock()
@@ -303,7 +303,7 @@ export function OnboardingTransactions({
                 <Step
                   realStep={currStep}
                   stepNum={5}
-                  title={'Mint Citizen Mission Patch'}
+                  title={'Mint Citizen NFT'}
                   explanation={
                     'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
                   }
@@ -331,14 +331,12 @@ export function OnboardingTransactions({
           <StepLoading
             stepNum={1}
             title={`Buy ${selectedChainName}`}
-            explanation={`You need ${selectedChainName} to swap it for our governance token $MOONEY.`}
+            explanation={`You need ${selectedChainName} to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire ${selectedChainName} on an exchange and then send your tokens to your connected wallet.`}
           />
           <StepLoading
             stepNum={2}
             title={`Swap ${selectedChainName} for $MOONEY`}
-            explanation={
-              'MoonDAO routes the order to the best price on Uniswap. The amount of $MOONEY received may vary.'
-            }
+            explanation={`Swap your ${selectedChainName} for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.`}
           />
           {selectedLevel.hasVotingPower && (
             <>
@@ -353,13 +351,13 @@ export function OnboardingTransactions({
                 stepNum={4}
                 title={'Stake $MOONEY'}
                 explanation={
-                  'Stake your tokens for voting power within the community. This makes you a full member of our community!'
+                  'Stake your tokens for voting power within the community.'
                 }
               />
               {selectedChain.slug === 'polygon' && (
                 <StepLoading
                   stepNum={5}
-                  title={'Mint Citizen Mission Patch'}
+                  title={'Mint Citizen NFT'}
                   explanation={
                     'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
                   }
