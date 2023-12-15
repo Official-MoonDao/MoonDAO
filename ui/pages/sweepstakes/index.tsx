@@ -23,7 +23,7 @@ import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
 
-const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //mumbai
+const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
 
 export default function Sweepstakes({ nftMetadata }: any) {
   const [time, setTime] = useState<string>()
@@ -45,7 +45,7 @@ export default function Sweepstakes({ nftMetadata }: any) {
   )
 
   const { contract: mooneyContract } = useContract(
-    '0x77d8b01e64Dd3E50fc5f0325fA5791378bA25dC5',
+    '0x74Ac7664ABb1C8fa152D41bb60e311a663a41C7E',
     ERC20.abi
   ) //mumbai mooney
 
