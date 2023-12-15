@@ -21,11 +21,13 @@ export function ViewNFTDataModal({
   const { wallets } = useWallets()
 
   const [isLoading, setIsLoading] = useState(true)
-  const [userNFTs, setUserNFTs] = useState<{
-                                            id: any;
-                                            name: any;
-                                            email: any;
-                                            }[]>([])
+  const [userNFTs, setUserNFTs] = useState<
+    {
+      id: any
+      name: any
+      email: any
+    }[]
+  >([])
 
   async function signMessage() {
     const provider = await wallets[selectedWallet].getEthersProvider()
@@ -57,13 +59,21 @@ export function ViewNFTDataModal({
 
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
-        for (let j = 0; j < verifiedNfts.length; j++) {
-            if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
-                nftsList.push({"id": ownedNfts[i]._hex, "name": verifiedNfts[j].name, "email": verifiedNfts[j].email})
-                break
-            }
+      for (let j = 0; j < verifiedNfts.length; j++) {
+        if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
+          nftsList.push({
+            id: ownedNfts[i]._hex,
+            name: verifiedNfts[j].name,
+            email: verifiedNfts[j].email,
+          })
+          break
         }
-        nftsList.push({"id": ownedNfts[i]._hex, "name": "unverified", "email": "unverified"})
+      }
+      nftsList.push({
+        id: ownedNfts[i]._hex,
+        name: 'unverified',
+        email: 'unverified',
+      })
     }
 
     setUserNFTs(nftsList)
@@ -97,23 +107,18 @@ export function ViewNFTDataModal({
             Please sign the message in your wallet to view your Verified NFTs
           </p>
         ) : (
-        <div className="overflow-visible w-full">
-            {userNFTs.map(nft => (
-            <div
+          <div className="overflow-visible w-full">
+            {userNFTs.map((nft, i) => (
+              <div
+                key={'nft' + nft.id + i}
                 className="flex flex-row gap-2 mt-1"
-            >
+              >
                 <div>{Number(nft.id)}:</div>
-                <div
-                    className="ml"
-                >
-                    {nft.name}
-                </div>
-                {nft.email != "unverified" && <div>- {nft.email}</div>}
-                
-            </div>
-          ))}
-        </div>
-          
+                <div className="ml">{nft.name}</div>
+                {nft.email != 'unverified' && <div>- {nft.email}</div>}
+              </div>
+            ))}
+          </div>
         )}
 
         <div className="flex w-full justify-between pt-8">
