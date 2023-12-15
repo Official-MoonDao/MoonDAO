@@ -4,13 +4,15 @@ import {
   useAddress,
   useContract,
   useContractRead,
+  useOwnedNFTs,
 } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import ChainContext from '../../lib/thirdweb/chain-context'
 import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
 import { initSDK } from '../../lib/thirdweb/thirdweb'
-import { useTokenApproval } from '../../lib/tokens/approve'
+import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
 import Head from '../../components/layout/Head'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
@@ -30,6 +32,8 @@ export default function Sweepstakes({ nftMetadata }: any) {
   const [enableMintInfoModal, setEnableMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
   const [enableViewNFTsModal, setViewNFTsModal] = useState(false)
+
+  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
   const address = useAddress()
 
@@ -72,7 +76,16 @@ export default function Sweepstakes({ nftMetadata }: any) {
     setViewNFTsModal(true)
   }
 
+  const { data: tokenAllowance } = useTokenAllowance(
+    mooneyContract,
+    address,
+    TICKET_TO_SPACE_ADDRESS
+  )
+
+  const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
+
   useEffect(() => {
+    setSelectedChain(Polygon)
     const ts = Math.floor(1705132740 - new Date().valueOf() / 1000)
     if (ts > 86400) setTime('T-' + Math.floor(ts / 86400) + ' Days')
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
