@@ -189,7 +189,7 @@ export default function Sweepstakes({ nftMetadata }: any) {
                   {/* Owned NFTs Info */}
                   <div>
                     <button 
-                      className="opacity-70 lg:text-xl"
+                      className="p-3 bg-moon-orange lg:text-lg"
                       onClick={openViewNFTs}
                     >
                       View your NFTs
@@ -295,27 +295,27 @@ export default function Sweepstakes({ nftMetadata }: any) {
           )}
         </div>
         <p className="mt-4 text-sm">
-          NO PURCHASE NECESSARY TO ENTER. PURCHASE WILL NOT INCREASE YOUR ODDS
-          OF WINNING.  NO PURCHASE OF A TICKET TO SPACE NFT IS NECESSARY TO
-          ENTER THE SWEEPSTAKES OR WIN A CHANCE TO FLY TO SPACE.  PURCHASE OF A
-          TICKET TO SPACE NFT WILL NOT INCREASE YOUR ODDS OF WINNING A PRIZE.
-          Sweepstakes are open only to individuals who are 18 years of age or
-          older, or the age of majority if greater than 18 in their respective
-          jurisdictions. Sweepstakes is void in Florida, New York,Puerto Rico
-          and where otherwise prohibited by law. Alternate prize winners are
-          responsible for taxes associated with the prizes. Odds of winning
-          depend on the number of entries received during the contest period,
-          but can be calculated by dividing the number of prizes by the total
-          number of entries received. Sponsor: LuckDAO Limited d/b/a MoonDAO.
-          Contest ends on January 15th 2024. For Alternative Method of Entry,
+          NO PURCHASE OR OBLIGATION NECESSARY TO ENTER OR WIN. PURCHASE WILL
+          NOT INCREASE YOUR ODDS OF WINNING. IT IS NOT NECESSARY TO PURCHASE A
+          TICKET TO SPACE NFT IN ORDER TO ENTER OR WIN. VOID WHERE PROHIBITED. THIS
+          SWEEPSTAKES IS IN NO WAY SPONSORED, ENDORSED, SPONSORED OR APPROVED
+          BY BLUE ORIGIN TEXAS, LLC (“BLUE ORIGIN”). 
+          <br></br>
+          <br></br>
+            The Sweepstakes is open only to individuals who are 18 years of age or older, or the age of majority if greater than 18 in their respective jurisdictions. Sweepstakes is void in Florida, New York, Puerto Rico and where otherwise prohibited by law. Runner-Up Prize winners are responsible for taxes associated with the Runner-Up Prizes. 
+          <br></br>
+          <br></br>
+            Odds of winning depend on the number of entries received during the contest period, but can be calculated by dividing the number of prizes by the total number of entries received. Contest ends on January 12, 2024. For Alternative Method of Entry, 
           <a
             className="text-moon-gold"
             href="https://publish.obsidian.md/moondao/MoonDAO/docs/Ticket+to+Space+NFT/Ticket+to+Space+Sweepstakes+Rules"
           >
             {' '}
             click here
-          </a>
-          .
+          </a>.
+          <br></br>
+          <br></br>
+          You must enter your full legal name (as displayed on a government issued photo ID) and the best email for us to contact you if you win a prize in the Sweepstakes. By submitting your information, you agree to our Privacy Policy.
         </p>
       </div>
     </main>
