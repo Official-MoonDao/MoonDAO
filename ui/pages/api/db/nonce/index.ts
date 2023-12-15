@@ -15,12 +15,14 @@ export default async function handler(
       try {
         const nonce = Math.floor(Math.random() * 1000000).toString()
         const address = query.address as string
+        const subscribed = query.subscribed === 'true'
         const user = await User.findOne({ address })
         if (user) {
           user.nonce = nonce
+          user.subscribed = subscribed
           await user.save()
         } else {
-          await User.create({ address, nonce })
+          await User.create({ address, nonce, subscribed })
         }
 
         res.status(200).json({ nonce })

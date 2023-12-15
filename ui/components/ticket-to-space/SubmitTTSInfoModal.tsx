@@ -1,8 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
-import { useState } from 'react'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 
@@ -39,6 +38,7 @@ export function SubmitTTSInfoModal({
   const [status, setStatus] = useState<string>('')
   const [email, setEmail] = useState<string>('')
   const [fullName, setFullName] = useState<string>('')
+  const [checkBoxEnabled, setCheckBoxEnabled] = useState<boolean>(true)
 
   function filterNewNFTS(
     prevNFTs: Array<BigNumber>,
@@ -55,17 +55,19 @@ export function SubmitTTSInfoModal({
       if (!found) nftsToSubmit.push(newNFTs[i]._hex)
     }
 
-    console.log(nftsToSubmit)
     return nftsToSubmit
   }
 
   async function signMessage() {
     const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
-    const response = await fetch(`api/db/nonce?address=${address}`)
+    const response = await fetch(
+      `api/db/nonce?address=${address}&subscribed=${checkBoxEnabled}`
+    )
     const data = await response.json()
-    console.log(data)
-    let message = "Please sign for verify and register your new NFTs into the sweepstakes. #" + data.nonce;
+    let message =
+      'Please sign for verify and register your new NFTs into the sweepstakes. #' +
+      data.nonce
     const signature = await signer.signMessage(message)
     return signature
   }
@@ -96,7 +98,7 @@ export function SubmitTTSInfoModal({
 
   async function claimFreeTicket(claimFree: Function) {
     setStatus('Claiming free ticket...')
-    const claimFreeTx = await claimFree()
+    await claimFree()
     setStatus('')
 
     const newBalance = await ttsContract.call('balanceOf', [address])
@@ -128,7 +130,7 @@ export function SubmitTTSInfoModal({
 
     if (tokenAllowance.toString() < 20000 * quantity * 10 ** 18) {
       setStatus('Approving token allowance...')
-      const approvalTx = await approveToken()
+      await approveToken()
       setStatus('')
 
       //check if approval was successful
@@ -139,7 +141,7 @@ export function SubmitTTSInfoModal({
 
       if (newTokenAllowance.toString() >= 20000 * quantity * 10 ** 18) {
         setStatus('Minting ticket...')
-        const mintTx = await mint()
+        await mint()
         setStatus('')
       } else {
         console.log(newTokenAllowance.toString())
@@ -149,7 +151,7 @@ export function SubmitTTSInfoModal({
       }
     } else {
       setStatus('Minting ticket...')
-      const mintTx = await mint()
+      await mint()
       setStatus('')
     }
 
@@ -163,10 +165,6 @@ export function SubmitTTSInfoModal({
         }!`
       )
     else {
-      console.log(balance)
-      console.log(quantity)
-      console.log(parseInt(balance) + parseInt(quantity))
-      console.log(ownedNfts.length)
       toast.error('Minting failed')
       throw new Error('Minting error')
     }
@@ -205,7 +203,23 @@ export function SubmitTTSInfoModal({
           className="h-[50px] w-full text-lg rounded-sm px-2 bg-white bg-opacity-5 border-[1px] border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40 focus:outline-none"
           onChange={(e) => setEmail(e.target.value)}
         />
-        <div className="flex w-full justify-between pt-8">
+        <div className="flex items-center">
+          <input
+            checked={checkBoxEnabled}
+            onClick={() => setCheckBoxEnabled(!checkBoxEnabled)}
+            id="checked-checkbox"
+            type="checkbox"
+            value=""
+            className="my-4 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          />
+          <label
+            htmlFor="checked-checkbox"
+            className="ms-2 text-sm font-medium text-white dark:text-gray-300"
+          >
+            Subscribe to mailing list!
+          </label>
+        </div>
+        <div className="flex w-full justify-between">
           <button
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
             onClick={() => setEnabled(false)}
@@ -223,7 +237,6 @@ export function SubmitTTSInfoModal({
                 // Get list of NFT the address currently holds
                 const prevNFTBalance =
                   await ttsContract.erc721.getOwnedTokenIds(address)
-                console.log(prevNFTBalance)
 
                 //CLaim Free Ticket
                 if (claimFree) {

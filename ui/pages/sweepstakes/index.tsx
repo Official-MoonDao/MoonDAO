@@ -1,4 +1,4 @@
-import { Mumbai, Polygon } from '@thirdweb-dev/chains'
+import { Polygon } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
   useAddress,
@@ -7,7 +7,6 @@ import {
   useOwnedNFTs,
 } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
-import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -27,15 +26,14 @@ import { devWhitelist } from '../../const/tts/whitelist'
 const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //mumbai
 
 export default function Sweepstakes({ nftMetadata }: any) {
-  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
-  const router = useRouter()
-
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(0)
   const [enableMintInfoModal, setEnableMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
   const [enableViewNFTsModal, setViewNFTsModal] = useState(false)
+
+  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
   const address = useAddress()
 
@@ -58,14 +56,6 @@ export default function Sweepstakes({ nftMetadata }: any) {
     TICKET_TO_SPACE_ADDRESS
   )
 
-  const { data: tokenAllowance } = useTokenAllowance(
-    mooneyContract,
-    address,
-    TICKET_TO_SPACE_ADDRESS
-  )
-
-  const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
-
   const { data: balance } = useContractRead(ttsContract, 'balanceOf', [address])
 
   const { mutateAsync: mint } = useHandleWrite(ttsContract, 'mint', [
@@ -85,6 +75,14 @@ export default function Sweepstakes({ nftMetadata }: any) {
     e.preventDefault()
     setViewNFTsModal(true)
   }
+
+  const { data: tokenAllowance } = useTokenAllowance(
+    mooneyContract,
+    address,
+    TICKET_TO_SPACE_ADDRESS
+  )
+
+  const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
 
   useEffect(() => {
     setSelectedChain(Polygon)
