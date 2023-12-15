@@ -1,13 +1,14 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
+import { useAddress, useContract } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { useHandleWrite } from '../../lib/thirdweb/hooks'
+import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
-import { VMOONEY_ADDRESSES } from '../../const/config'
+import CitizenNFTABI from '../../const/abis/CitizenNFT.json'
+import { CITIZEN_NFT_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
 import { PurhcaseNativeTokenModal } from './PurchaseNativeTokenModal'
 import { Step } from './TransactionStep'
 import { StepLoading } from './TransactionStepLoading'
@@ -52,17 +53,26 @@ export function OnboardingTransactions({
     MOONEY
   )
 
+  const { mutateAsync: approveMooney, isLoading: isLoadingApproveMooney } =
+    useHandleWrite(mooneyContract, 'approve', [
+      VMOONEY_ADDRESSES[selectedChain.slug],
+      ethers.utils.parseEther(String(selectedLevel.price / 2)),
+    ])
   const { mutateAsync: createLock, isLoading: isLoadingCreateLock } =
     useHandleWrite(vMooneyContract, 'create_lock', [
       ethers.utils.parseEther(String(selectedLevel.price / 2)),
       Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 1,
     ])
 
-  const { mutateAsync: approveMooney, isLoading: isLoadingApproveMooney } =
-    useHandleWrite(mooneyContract, 'approve', [
-      VMOONEY_ADDRESSES[selectedChain.slug],
-      ethers.utils.parseEther(String(selectedLevel.price / 2)),
-    ])
+  const { contract: citizenNFTContract } = useContract(
+    CITIZEN_NFT_ADDRESSES[selectedChain.slug],
+    CitizenNFTABI
+  )
+
+  const { mutateAsync: mintCitizenNFT } = useHandleWrite(
+    citizenNFTContract,
+    'mint'
+  )
 
   const [nativeBalance, setNativeBalance] = useState<any>()
 
@@ -99,25 +109,41 @@ export function OnboardingTransactions({
       VMOONEY_ADDRESSES[selectedChain.slug],
     ])
 
+    //check for citizen NFT
+    if (selectedChain.slug === 'polygon' && citizenNFTContract) {
+      const citizenNFTBalance = await citizenNFTContract.call('balanceOf', [
+        address,
+        0,
+      ])
+      if (citizenNFTBalance.toString() > 0) {
+        setCurrStep(5)
+        setStage(2)
+      }
+    }
+
+    //check for vmooney, approval, mooney balance, and native balance
     if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
       setCurrStep(5)
-      setStage(2)
+      if (selectedChain.slug !== 'polygon') {
+        setStage(2)
+      }
+      return
     } else if (
       !selectedLevel.hasVotingPower &&
       mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1
     ) {
       setCurrStep(5)
-      setStage(2)
+      return setStage(2)
     } else if (
       mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1 &&
       tokenAllowance?.toString() / 10 ** 18 >= selectedLevel.price / 2
     ) {
-      setCurrStep(4)
+      return setCurrStep(4)
     } else if (
       mooneyBalance?.toString() / 10 ** 18 >=
       selectedLevel.price - 1
     ) {
-      setCurrStep(3)
+      return setCurrStep(3)
     } else {
       const wallet = wallets[selectedWallet]
       if (!wallet) return
@@ -127,7 +153,7 @@ export function OnboardingTransactions({
       if (
         +formattedNativeBalance >
         selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18 +
-        extraFundsForGas
+          extraFundsForGas
       ) {
         setCurrStep(2)
       }
@@ -143,7 +169,8 @@ export function OnboardingTransactions({
     return () => clearInterval(check)
   }, [])
 
-  const nativeAmount = selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
+  const nativeAmount =
+    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
 
   const selectedChainName = selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
 
@@ -169,22 +196,21 @@ export function OnboardingTransactions({
             realStep={currStep}
             stepNum={1}
             title={`Buy ${selectedChainName}`}
-            explanation={
-              `You need ${selectedChainName} to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire ${selectedChainName} on an exchange and then send your tokens to your connected wallet.`
-            }
+            explanation={`You need ${selectedChainName} to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire ${selectedChainName} on an exchange and then send your tokens to your connected wallet.`}
             action={async () => {
               setEnablePurchaseNativeTokenModal(true)
             }}
             isDisabled={!selectedLevel.nativeSwapRoute?.route[0]}
-            txExplanation={`Fund wallet with ${selectedLevel.nativeSwapRoute?.route[0]
-              ? (
-                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                10 ** 18 +
-                extraFundsForGas -
-                nativeBalance
-              ).toFixed(5)
-              : '...'
-              } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
+            txExplanation={`Fund wallet with ${
+              selectedLevel.nativeSwapRoute?.route[0]
+                ? (
+                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                      10 ** 18 +
+                    extraFundsForGas -
+                    nativeBalance
+                  ).toFixed(5)
+                : '...'
+            } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
@@ -196,29 +222,29 @@ export function OnboardingTransactions({
             realStep={currStep}
             stepNum={2}
             title={`Swap ${selectedChainName} for $MOONEY`}
-            explanation={
-              `Swap your ${selectedChainName} for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.`
-            }
+            explanation={`Swap your ${selectedChainName} for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.`}
             action={async () => {
               await executeMooneySwapRoute(mooneySwapRoute).then(() => {
                 checkStep()
               })
             }}
             isDisabled={!mooneySwapRoute}
-            txExplanation={`Swap ${selectedLevel.nativeSwapRoute
-              ? (
-                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                10 ** 18
-              ).toFixed(
-                selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
-                  10 ** 18 >=
-                  0.1
-                  ? 2
-                  : 5
-              )
-              : '...'
-              } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
-              } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
+            txExplanation={`Swap ${
+              selectedLevel.nativeSwapRoute
+                ? (
+                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                    10 ** 18
+                  ).toFixed(
+                    selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() /
+                      10 ** 18 >=
+                      0.1
+                      ? 2
+                      : 5
+                  )
+                : '...'
+            } ${
+              selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+            } for ${selectedLevel.price.toLocaleString()} $MOONEY`}
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
@@ -254,24 +280,49 @@ export function OnboardingTransactions({
                 stepNum={4}
                 title={'Stake $MOONEY'}
                 explanation={
-                  'Stake your tokens for voting power within the community. This makes you a full member of our community!'
+                  'Stake your tokens for voting power within the community.'
                 }
                 action={async () => {
                   await createLock()
                     .then(() => {
-                      setChecksLoaded(false)
+                      selectedChain.slug !== 'polygon' && setChecksLoaded(false)
                       checkStep()
                     })
                     .catch((err) => {
                       throw err
                     })
                 }}
-                txExplanation={`Stake ${selectedLevel.price / 2
-                  } $MOONEY for 1 year`}
+                txExplanation={`Stake ${
+                  selectedLevel.price / 2
+                } $MOONEY for 1 year`}
                 selectedChain={selectedChain}
                 selectedWallet={selectedWallet}
                 wallets={wallets}
               />
+              {selectedChain.slug === 'polygon' && (
+                <Step
+                  realStep={currStep}
+                  stepNum={5}
+                  title={'Mint Citizen NFT'}
+                  explanation={
+                    'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
+                  }
+                  action={async () => {
+                    await mintCitizenNFT()
+                      .then(() => {
+                        setChecksLoaded(false)
+                        checkStep()
+                      })
+                      .catch((err) => {
+                        throw err
+                      })
+                  }}
+                  txExplanation={`Mint Citizen Mission Patch NFT`}
+                  selectedChain={selectedChain}
+                  selectedWallet={selectedWallet}
+                  wallets={wallets}
+                />
+              )}
             </>
           )}
         </>
@@ -280,16 +331,12 @@ export function OnboardingTransactions({
           <StepLoading
             stepNum={1}
             title={`Buy ${selectedChainName}`}
-            explanation={
-              `You need ${selectedChainName} to swap it for our governance token $MOONEY.`
-            }
+            explanation={`You need ${selectedChainName} to swap for our governance token $MOONEY. Use MoonPay to onboard using a credit card. Otherwise, you can acquire ${selectedChainName} on an exchange and then send your tokens to your connected wallet.`}
           />
           <StepLoading
             stepNum={2}
             title={`Swap ${selectedChainName} for $MOONEY`}
-            explanation={
-              'MoonDAO routes the order to the best price on Uniswap. The amount of $MOONEY received may vary.'
-            }
+            explanation={`Swap your ${selectedChainName} for $MOONEY on Uniswap. The amount of $MOONEY received may vary based on current prices.`}
           />
           {selectedLevel.hasVotingPower && (
             <>
@@ -304,9 +351,18 @@ export function OnboardingTransactions({
                 stepNum={4}
                 title={'Stake $MOONEY'}
                 explanation={
-                  'Stake your tokens for voting power within the community. This makes you a full member of our community!'
+                  'Stake your tokens for voting power within the community.'
                 }
               />
+              {selectedChain.slug === 'polygon' && (
+                <StepLoading
+                  stepNum={5}
+                  title={'Mint Citizen NFT'}
+                  explanation={
+                    'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
+                  }
+                />
+              )}
             </>
           )}
         </>

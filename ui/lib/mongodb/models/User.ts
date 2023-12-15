@@ -1,16 +1,18 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export interface User {
-  name: string
-  email: string
+  address: string
+  nonce: string
+  subscribed: boolean
 }
 
 export interface UserModel extends User, Document {}
 
 const UserSchema: Schema = new Schema(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true },
+    address: { type: String, required: true },
+    nonce: { type: String, required: true },
+    subscribed: { type: Boolean, default: false },
   },
   {
     versionKey: false,

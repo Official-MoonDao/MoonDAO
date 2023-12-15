@@ -45,6 +45,11 @@ export const VMOONEY_ADDRESSES: Index = {
   mumbai: devConfigL2.vMOONEYToken,
 }
 
+export const CITIZEN_NFT_ADDRESSES: Index = {
+  ethereum: '',
+  polygon: '0xE8013d1B68FA9faF5C78DE4823f7F076A854407A',
+}
+
 export const VMOONEY_SWEEPSTAKES: string =
   defaultConfigL1.vMooneySweepstakesZeroG
 
@@ -64,7 +69,8 @@ export const DEAD_ADDRESS: string =
 // DB Config
 const MONGO_USERNAME = process.env.MONGO_USERNAME || ''
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || ''
-const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@cluster0.u70uk7d.mongodb.net`
+const MONGO_PATH_SUFFIX = process.env.MONGO_PATH_SUFFIX || ''
+const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_PATH_SUFFIX}`
 
 export const mongoConfig = {
   url: MONGO_URL,

@@ -7,10 +7,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const auth = apiKeyMiddleware(req, res)
-  if (!auth) return
-
   const { method } = req
+
+  const auth = await apiKeyMiddleware(req, res)
+  if (!auth) return
 
   await dbConnect()
 

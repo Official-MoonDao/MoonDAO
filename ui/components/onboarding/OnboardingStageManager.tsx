@@ -1,10 +1,8 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
-import { ethers } from 'ethers'
 import Link from 'next/link'
-import { useEffect, useState, useRef, useMemo } from 'react'
-import toast from 'react-hot-toast'
+import { useEffect, useState, useRef, useMemo, useContext } from 'react'
+import ChainContext from '../../lib/thirdweb/chain-context'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
@@ -36,9 +34,9 @@ function StageContainer({ children }: any) {
   )
 }
 
-export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
+export function OnboardingStageManager({ usdQuotes }: any) {
   const address = useAddress()
-  const { user, login } = usePrivy()
+  const { selectedChain } = useContext(ChainContext)
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
   const [selectedLevel, setSelectedLevel] = useState<any>({
@@ -85,6 +83,7 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
     if (
+      selectedChain.slug !== 'polygon' &&
       selectedLevel.price > 0 &&
       totalLocked >= 0 &&
       totalMooneyBalance >= 0
@@ -254,13 +253,21 @@ export function OnboardingStageManager({ selectedChain, usdQuotes }: any) {
             <p className="absolut  mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
               Warning: The Ticket to Space Sweepstakes is on Polygon. If you
               continue with Ethereum you must bridge your $MOONEY to Polygon to
-              participate. Learn how to bridge your $MOONEY
+              participate. Learn how to bridge your $MOONEY with our
               <a
                 className="text-moon-gold"
                 href="https://youtu.be/oQtHjbcbAio?feature=shared"
               >
                 {' '}
-                here
+                video tutorial
+              </a>
+              or read the 
+              <a
+                className="text-moon-gold"
+                href="https://wallet.polygon.technology/polygon/bridge/deposit"
+              >
+                {' '}
+                guide
               </a>
               .
             </p>
