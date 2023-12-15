@@ -113,11 +113,15 @@ export default function Sweepstakes() {
         </h3> */}
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
           {`
-        Take the leap, for the chance to win an opportunity to fly to space! We're selecting one lucky member of the MoonDAO community to win. (Join MoonDAO now) and get your Ticket to Space.`}
+        Take the leap, for the chance to win an opportunity to fly to space! We're selecting one lucky member of the MoonDAO community to win. If you're not a member of our community`}
+          <a className="text-moon-gold" href="/join" target="_blank">
+            {' join MoonDAO now '}
+          </a>
+          {`to enter.`}
         </p>
 
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
-          {`The Ticket to Space Sweepstakes is on Polygon. Check out this guide and bridge your $MOONEY here.`}
+          {`The Ticket to Space Sweepstakes is on Polygon. Check out this`}
           <a
             className="text-moon-gold"
             href="https://youtu.be/oQtHjbcbAio?feature=shared"
@@ -332,10 +336,20 @@ export default function Sweepstakes() {
           </a>
           .<br></br>
           <br></br>
+          {`
           You must enter your full legal name (as displayed on a government
           issued photo ID) and the best email for us to contact you if you win a
           prize in the Sweepstakes. By submitting your information, you agree to
-          our Privacy Policy.
+          our
+          `}
+          <a
+            className="text-moon-gold"
+            href="https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {'Privacy Policy.'}
+          </a>
         </p>
       </div>
     </main>
