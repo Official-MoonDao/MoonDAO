@@ -1,9 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
-import { BigNumber } from 'ethers'
 import { useState, useEffect } from 'react'
 import { useContext } from 'react'
-import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 
 type ViewNFTDataModalProps = {
@@ -34,7 +32,9 @@ export function ViewNFTDataModal({
     const signer = provider?.getSigner()
     const response = await fetch(`api/db/nonce?address=${address}`)
     const data = await response.json()
-    let message = "Please sign for verify and register your new NFTs into the sweepstakes. #" + data.nonce;
+    let message =
+      'Please sign for verify and register your new NFTs into the sweepstakes. #' +
+      data.nonce
     const signature = await signer.signMessage(message)
     return signature
   }
@@ -60,16 +60,24 @@ export function ViewNFTDataModal({
 
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
-        let found = false
-        for (let j = 0; j < verifiedNfts.length; j++) {
-            if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
-                nftsList.push({"id": ownedNfts[i]._hex, "name": verifiedNfts[j].name, "email": verifiedNfts[j].email})
-                found = true
-                break
-            }
+      let found = false
+      for (let j = 0; j < verifiedNfts.length; j++) {
+        if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
+          nftsList.push({
+            id: ownedNfts[i]._hex,
+            name: verifiedNfts[j].name,
+            email: verifiedNfts[j].email,
+          })
+          found = true
+          break
         }
-        if (!found)
-            nftsList.push({"id": ownedNfts[i]._hex, "name": "unverified", "email": "unverified"})
+      }
+      if (!found)
+        nftsList.push({
+          id: ownedNfts[i]._hex,
+          name: 'unverified',
+          email: 'unverified',
+        })
     }
 
     setUserNFTs(nftsList)
