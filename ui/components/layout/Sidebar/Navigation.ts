@@ -26,9 +26,9 @@ export const navigation = [
     name: 'Marketplace',
     icon: RocketLaunchIcon,
     children: [
+      { name: 'Sweepstakes 🚀', href: '/sweepstakes' },
       { name: 'ZeroG', href: '/zero-g' },
       { name: 'Lifeship', href: '/lifeship' },
-      { name: 'Sweepstakes', href: '/sweepstakes' },
       { name: 'Digital Assets', href: 'https://market.moondao.com' },
     ],
   },
