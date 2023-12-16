@@ -18,7 +18,7 @@ export default function ZeroG() {
     VotingEscrowABI.abi
   )
 
-  const validLock = useValidVP(address)
+  const validVP = useValidVP(address)
 
   return (
     <main className="animate-fadeIn">
@@ -59,7 +59,7 @@ export default function ZeroG() {
         </div>
 
         <section className="mt-6 w-full flex flex-col items-center lg:items-start">
-          <PurchasePortal validLock={validLock} />
+          <PurchasePortal validVP={validVP} />
         </section>
       </div>
     </main>
