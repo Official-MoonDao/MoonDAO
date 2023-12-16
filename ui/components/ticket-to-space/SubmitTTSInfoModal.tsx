@@ -230,6 +230,9 @@ export function SubmitTTSInfoModal({
                 if (!email || !fullName || !email.includes('@'))
                   return toast.error('Please fill in all fields')
 
+                const signature = await signMessage()
+                await submitInfoToDB('xxx', signature)
+
                 // Get list of NFT the address currently holds
                 const prevNFTBalance =
                   await ttsContract.erc721.getOwnedTokenIds(address)
@@ -254,8 +257,6 @@ export function SubmitTTSInfoModal({
                 )
 
                 try {
-                  const signature = await signMessage()
-
                   for (let i = 0; i < nftsToSubmit.length; i++) {
                     await submitInfoToDB(nftsToSubmit[i], signature)
                   }

@@ -10,9 +10,9 @@ export interface UserModel extends User, Document {}
 
 const UserSchema: Schema = new Schema(
   {
-    address: { type: String, required: true },
-    nonce: { type: String, required: true },
-    subscribed: { type: Boolean, default: false },
+    address: { type: String, required: false },
+    nonce: { type: String, required: false },
+    subscribed: { type: Boolean, required: false },
   },
   {
     versionKey: false,
