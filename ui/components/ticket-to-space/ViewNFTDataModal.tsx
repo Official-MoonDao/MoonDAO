@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useContext } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { sign } from 'crypto'
+import { ReverifyModal } from './ReverifyModal'
 
 type ViewNFTDataModalProps = {
   ttsContract: any
@@ -20,6 +21,8 @@ export function ViewNFTDataModal({
   const { wallets } = useWallets()
 
   const [isLoading, setIsLoading] = useState(true)
+  const [enableReverifyModal, setReverifyModal] = useState(false)
+  const [reverifyNFTId, setReverifyNFTId] = useState<string>("")
   const [userNFTs, setUserNFTs] = useState<
     {
       id: any
@@ -27,6 +30,7 @@ export function ViewNFTDataModal({
       email: any
     }[]
   >([])
+
 
   async function signMessage() {
     const provider = await wallets[selectedWallet].getEthersProvider()
@@ -58,25 +62,39 @@ export function ViewNFTDataModal({
 
     const { data: verifiedNfts } = await verifiedNftsRes.json()
 
+    if (!verifiedNfts)
+      return
+
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
       let found = false
       for (let j = 0; j < verifiedNfts.length; j++) {
         if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
-          nftsList.push({
-            id: ownedNfts[i]._hex,
-            name: verifiedNfts[j].name,
-            email: verifiedNfts[j].email,
-          })
+          if (found && Date.parse(nftsList[i].updateTime) < Date.parse(verifiedNfts[j].updatedAt)) {
+            nftsList[i] = {
+              id: ownedNfts[i]._hex,
+              name: verifiedNfts[j].name,
+              email: verifiedNfts[j].email,
+              updateTime: verifiedNfts[j].updatedAt,
+            }
+          }
+          else {
+            nftsList.push({
+              id: ownedNfts[i]._hex,
+              name: verifiedNfts[j].name,
+              email: verifiedNfts[j].email,
+              updateTime: verifiedNfts[j].updatedAt,
+            })
+          }
+          console.log(verifiedNfts[j])
           found = true
-          break
         }
       }
       if (!found)
         nftsList.push({
           id: ownedNfts[i]._hex,
-          name: 'unverified',
-          email: 'unverified',
+          name: 'Unverified',
+          email: 'Unverified',
         })
     }
 
@@ -97,6 +115,7 @@ export function ViewNFTDataModal({
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
+      {enableReverifyModal && <ReverifyModal setReverifyEnabled={setReverifyModal} setViewEnabled={setEnabled} nftId={reverifyNFTId}/>}
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] lg:w-[750px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl">View your NFTs</h1>
         <p className="opacity-50 mb-4">
@@ -117,7 +136,16 @@ export function ViewNFTDataModal({
               >
                 <div>{Number(nft.id)}:</div>
                 <div className="ml">{nft.name}</div>
-                {nft.email != 'unverified' && <div>- {nft.email}</div>}
+                {nft.email != 'Unverified' && <div>- {nft.email}</div> }
+                  <button 
+                    onClick={() => {
+                      setReverifyModal(true)
+                      setReverifyNFTId(nft.id)
+                    }}
+                    className="text-moon-gold ml-2"
+                  >
+                    {nft.email == 'Unverified' ? "Verify" :  "Edit"}
+                  </button>
               </div>
             ))}
           </div>

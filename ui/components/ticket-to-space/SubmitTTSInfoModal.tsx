@@ -17,7 +17,8 @@ type SubmitInfoModalProps = {
   mint?: Function
 }
 
-const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //mumbai address
+const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //prod address
+// const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //test address
 
 export function SubmitTTSInfoModal({
   balance,
