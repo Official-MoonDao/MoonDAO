@@ -115,7 +115,7 @@ export function ViewNFTDataModal({
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      {enableReverifyModal && <ReverifyModal setReverifyEnabled={setReverifyModal} nftId={reverifyNFTId}/>}
+      {enableReverifyModal && <ReverifyModal setReverifyEnabled={setReverifyModal} setViewEnabled={setEnabled} nftId={reverifyNFTId}/>}
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] lg:w-[750px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl">View your NFTs</h1>
         <p className="opacity-50 mb-4">

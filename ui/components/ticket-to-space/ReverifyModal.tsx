@@ -6,10 +6,11 @@ import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 
 type SubmitInfoModalProps = {
   setReverifyEnabled: Function
+  setViewEnabled: Function
   nftId: string
 }
 
-export function ReverifyModal({ setReverifyEnabled, nftId }: SubmitInfoModalProps) {
+export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftId }: SubmitInfoModalProps) {
   const address = useAddress()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -54,6 +55,7 @@ export function ReverifyModal({ setReverifyEnabled, nftId }: SubmitInfoModalProp
     setStatus('')
     const data = await res.json()
     setReverifyEnabled(false)
+    setViewEnabled(false)
     if (data.success) {
         toast.success("You're all set! There's nothing else you need to do.")
     } else {
@@ -67,7 +69,9 @@ export function ReverifyModal({ setReverifyEnabled, nftId }: SubmitInfoModalProp
   return (
     <div
       onClick={(e: any) => {
-        if (e.target.id === 'reverify-modal-backdrop') setReverifyEnabled(false)
+        if (e.target.id === 'reverify-modal-backdrop') {
+            setReverifyEnabled(false)
+        }
       }}
       id="reverify-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
@@ -100,7 +104,9 @@ export function ReverifyModal({ setReverifyEnabled, nftId }: SubmitInfoModalProp
         <div className="flex w-full justify-between">
           <button
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
-            onClick={() => setReverifyEnabled(false)}
+            onClick={() => {
+                setReverifyEnabled(false)
+            }}
           >
             Back
           </button>
