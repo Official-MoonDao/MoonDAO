@@ -160,7 +160,7 @@ export default function Lock() {
         formatted: dateToReadable(oneWeekOut),
       })
     }
-  }, [hasLock, VMOONEYLock, selectedChain])
+  }, [hasLock, VMOONEYLock, selectedChain, address])
 
   //Lock time min/max
   useEffect(() => {
@@ -184,7 +184,7 @@ export default function Lock() {
         max: dateToReadable(dateOut(new Date(), { days: 1461 })),
       })
     }
-  }, [hasLock, lockAmount, lockTime, VMOONEYLock])
+  }, [hasLock, lockAmount, lockTime, VMOONEYLock, address])
 
   const { t } = useTranslation('common')
 
