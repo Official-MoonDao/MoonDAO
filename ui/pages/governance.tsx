@@ -138,11 +138,11 @@ export default function Governance() {
             {`MoonDAO's Treasury is governed by its Citizens. If you don't have voting power, become a Citizen by `}
             <button
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
-              onClick={() => router.push('/onboarding')}
+              onClick={() => router.push('/join')}
             >
-              onboarding
+              joining
             </button>
-            {` into our community. You can read MoonDAO's `}
+            {`our community. You can read MoonDAO's `}
             <button
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
               onClick={() =>
