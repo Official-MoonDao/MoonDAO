@@ -7,6 +7,7 @@ import {
   useOwnedNFTs,
 } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
+import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -144,9 +145,14 @@ export default function Sweepstakes() {
           <p className="mt-5 text-sm lg:mt-6 opacity-70 max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-base xl:text-lg">
             {`
             We will randomly select an individual to win an opportunity to fly to space on a future Blue Origin rocket launch! Every individual may mint up to 50 entries.  Watch step-by-step walkthrough `}
-            <a className="text-moon-gold" href="/join" target="_blank">
+            <Link
+              className="text-moon-gold"
+              href="https://www.youtube.com/watch?v=VxU8dOrL0fE"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {'here'}
-            </a>
+            </Link>
             {'.'}
           </p>
         </div>
