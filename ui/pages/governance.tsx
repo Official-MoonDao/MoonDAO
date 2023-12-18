@@ -142,7 +142,7 @@ export default function Governance() {
             >
               joining
             </button>
-            {`our community. You can read MoonDAO's `}
+            {` our community. You can read MoonDAO's `}
             <button
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
               onClick={() =>
