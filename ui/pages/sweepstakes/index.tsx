@@ -110,9 +110,7 @@ export default function Sweepstakes() {
       <Head title="Ticket to Space" />
       <div className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 page-border-and-color font-RobotoMono w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] text-slate-950 dark:text-white">
         <h1 className={`page-title`}>Ticket to Space</h1>
-        {/* <h3 className="mt-5 lg:mt-8 font-bold text-center lg:text-left text-lg lg:text-xl xl:text-2xl">
-          Take the leap, for the chance to win a trip to space!
-        </h3> */}
+
         <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
           {`
         Take the leap, for the chance to win an opportunity to fly to space! We're selecting one lucky member of the MoonDAO community to win. If you're not a member of our community`}
@@ -145,9 +143,15 @@ export default function Sweepstakes() {
         <div className="">
           <p className="mt-5 text-sm lg:mt-6 opacity-70 max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-base xl:text-lg">
             {`
-            We will randomly select an individual to win an opportunity to fly to space on a future Blue Origin rocket launch! Every individual may mint up to 50 entries.`}
+            We will randomly select an individual to win an opportunity to fly to space on a future Blue Origin rocket launch! Every individual may mint up to 50 entries.  Watch step-by-step walkthrough `}
+            <a className="text-moon-gold" href="/join" target="_blank">
+              {'here'}
+            </a>
+            {'.'}
           </p>
         </div>
+
+        <p className="mt-5 text-[#1F212B] dark:text-white  py-2 xl:py-3 2xl:max-w-[750px] xl:text-left text-sm xl:text-base"></p>
 
         {/*Collection title, image and description*/}
         <div className="mt-6 inner-container-background relative w-full">
