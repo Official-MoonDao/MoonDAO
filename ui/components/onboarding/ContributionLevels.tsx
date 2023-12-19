@@ -178,13 +178,13 @@ export function ContributionLevels({
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
         title="Explorer"
-        intro="Want to go to space? You won't receive voting power or become a MoonDAO Citizen, but you will receive enough $MOONEY for one entry into our sweepstakes.
+        intro="Want to go to space? You won't be a MoonDAO Citizen or be able to vote, but you will get enough $MOONEY for one entry into our sweepstakes.
         "
         mooneyValue={20000}
         usdQuote={usdQuotes[0]}
         points={[
-          '20,000 $MOONEY which you own and can use as you wish, such as purchase one Ticket to Space entry.',
-          'Unlike traditional organizations, you retain full ownership of your assets and there is no annual fee, dues, or middleman.',
+          '20,000 $MOONEY which you own and can use as you wish, such as purchase one Ticket to Space entry',
+          'Unlike traditional organizations, you retain full ownership of your assets and there is no annual fee, dues, or middleman',
           'MoonDAO Marketplace Access',
         ]}
         selectedLevel={selectedLevel}
@@ -195,13 +195,13 @@ export function ContributionLevels({
         lightIcon="/onboarding-icons/citizen-white.svg"
         darkIcon="/onboarding-icons/citizen-black.svg"
         title="Citizen"
-        intro="Take an active seat in the construction of the largest network-state focused on becoming multi-planetary. Full voting power citizen."
+        intro="Play an active role in building the largest Space Network-State focused on becoming multi-planetary with full voting power."
         mooneyValue={100000}
         usdQuote={usdQuotes[1]}
         points={[
-          '50,000 $MOONEY which you own and can use as you wish, such as purchasing up to (2) Ticket to Space entries',
-          '50,000 $MOONEY staked for two years for co-governance of the MoonDAO treasury',
-          'Expanded MoonDAO Discord Access including governance and project channels',
+          '50,000 $MOONEY which you own and can use as you wish, such as purchasing up to 2 Ticket to Space entries',
+          '50,000 $MOONEY staked for two years to co-govern MoonDAO',
+          'Expanded access including governance and project channels',
           'Everything in the Explorer Tier',
         ]}
         hasVotingPower
@@ -218,8 +218,8 @@ export function ContributionLevels({
         mooneyValue={500000}
         usdQuote={usdQuotes[2]}
         points={[
-          '250,000 $MOONEY which you own and can use as you wish, such as purchasing up to (12) Ticket to Space entries.',
-          '250,000 $MOONEY staked for two years for co-governance of the MoonDAO treasury',
+          '250,000 $MOONEY which you own and can use as you wish, such as purchasing up to 12 Ticket to Space entries',
+          '250,000 $MOONEY staked for two years  to co-govern MoonDAO',
           'Access to talent to help design, build, and test your space hardware',
           'Everything in the Citizen Tier',
         ]}
