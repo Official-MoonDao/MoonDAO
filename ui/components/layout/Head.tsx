@@ -6,8 +6,7 @@ export default function WebsiteHead({
   title,
   description = defaultDescription,
 }: any) {
-  const image =
-    'https://drive.google.com/file/d/1E5i0pp73JRl3zDIenwvNon6l8i1_ADB9/view?usp=sharing'
+  const image = 'ipfs://QmVyGXVwnWUSCFY2vtYpcVryVyDdLKx4Wi7k57dSoo9Bpf'
 
   return (
     <Head>
