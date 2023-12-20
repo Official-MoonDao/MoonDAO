@@ -182,7 +182,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
     <StageContainer>
       <div className="flex flex-col font-RobotoMono items-center">
         <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
-          SELECT MEMBERSHIP LEVEL
+          SELECT MEMBERSHIP
         </h1>
         <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
           <p>
@@ -192,7 +192,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {'Watch step-by-step walkthrough'}
+              {'Watch Tutorial'}
             </Link>
           </p>
         </div>
@@ -205,8 +205,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
         <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
           <p>
             {`
-              Custom Membership: Not seeing the amount that’s right for you?
-              Advanced users can onboard directly by purchasing any amount of
+              Custom Membership: Not seeing what’s right for you? Advanced users can purchase any amount of $MOONEY via Uniswap and stake between one week and four years for voting power.
               `}
             <Link
               className="text-moon-gold"
@@ -225,8 +224,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
               `}
           </p>
           <p>
-            Disclaimer: Entries into the Ticket To Space Sweepstakes are 20,000
-            $MOONEY each. There is no expectation of profit with $MOONEY,
+            {`Disclaimer: Ticket To Space Sweepstakes entries are 20,000 $MOONEY each. There is no expectation of profit with $MOONEY, `}
             <a
               className="text-moon-gold"
               href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"

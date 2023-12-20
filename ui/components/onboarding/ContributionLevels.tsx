@@ -214,7 +214,8 @@ export function ContributionLevels({
         lightIcon="/onboarding-icons/industry-white.svg"
         darkIcon="/onboarding-icons/industry-black.svg"
         title="Pioneer"
-        intro="For our biggest supporters, companies, and whales. If you want to deeply support what we’re doing, this is for you."
+        intro="For those that deeply support the ideals of decentralized access to space and are dedicated to making it happen, this is for you.
+        "
         mooneyValue={500000}
         usdQuote={usdQuotes[2]}
         points={[
