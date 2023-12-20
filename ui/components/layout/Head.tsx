@@ -6,7 +6,8 @@ export default function WebsiteHead({
   title,
   description = defaultDescription,
 }: any) {
-  const image = 'ipfs://QmVyGXVwnWUSCFY2vtYpcVryVyDdLKx4Wi7k57dSoo9Bpf'
+  const image =
+    'https://dweb.link/ipfs/QmVyGXVwnWUSCFY2vtYpcVryVyDdLKx4Wi7k57dSoo9Bpf'
 
   return (
     <Head>
