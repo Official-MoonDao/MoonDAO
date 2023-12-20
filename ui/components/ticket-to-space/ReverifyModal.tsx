@@ -7,10 +7,10 @@ import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 type SubmitInfoModalProps = {
   setReverifyEnabled: Function
   setViewEnabled: Function
-  nftId: string
+  nftIds: string[]
 }
 
-export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftId }: SubmitInfoModalProps) {
+export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftIds }: SubmitInfoModalProps) {
   const address = useAddress()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -39,31 +39,36 @@ export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftId }: Sub
 
     const signature = await signMessage()
     setStatus('Submitting...')
-    const res = await fetch(`/api/db/nft?address=${address}`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'moondao-api-key': signature,
-    } as any,
-    body: JSON.stringify({
-        tokenId: nftId,
-        email,
-        name: fullName,
-        address: address,
-    }),
-    })
-    setStatus('')
-    const data = await res.json()
+
+    let success = true
+    for (let i = 0; i < nftIds.length; i++) {
+      const res = await fetch(`/api/db/nft?address=${address}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'moondao-api-key': signature,
+        } as any,
+        body: JSON.stringify({
+            tokenId: nftIds[i],
+            email,
+            name: fullName,
+            address: address,
+        }),
+        })
+        setStatus('')
+        const data = await res.json()
+        if (!data.success) success = false
+    }
+    
     setReverifyEnabled(false)
     setViewEnabled(false)
-    if (data.success) {
+    if (success) {
         toast.success("You're all set! There's nothing else you need to do.")
     } else {
-        toast.error(
-            'There was an issue adding your info to the database. Please contact a moondao member.'
-        )
+      toast.error(
+        'There was an issue adding your info to the database. Please contact a moondao member.'
+      )
     }
-    console.log(2)
   }
 
   return (
@@ -77,7 +82,7 @@ export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftId }: Sub
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
-        <h1 className="text-2xl text-white">Reverify NFT {Number(nftId)}</h1>
+        <h1 className="text-2xl text-white">Reverify {nftIds.length > 1 ? "All NFTs" : "NFT " + Number(nftIds)}</h1>
         <p className="opacity-50 mb-4 text-gray-300">
           Please enter your full legal name (as displayed on a government issued
           photo ID) and the best email for us to contact you if you win a prize

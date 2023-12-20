@@ -41,6 +41,10 @@ export function SubmitTTSInfoModal({
   const [fullName, setFullName] = useState<string>('')
   const [checkBoxEnabled, setCheckBoxEnabled] = useState<boolean>(true)
 
+  function timeout(delay: number) {
+    return new Promise( res => setTimeout(res, delay) );
+  } 
+
   function filterNewNFTS(
     prevNFTs: Array<BigNumber>,
     newNFTs: Array<BigNumber>
@@ -247,6 +251,8 @@ export function SubmitTTSInfoModal({
                 }
 
                 setStatus('Verifying identity...')
+
+                await timeout(3000);
 
                 const newNFTBalance = await ttsContract.erc721.getOwnedTokenIds(
                   address

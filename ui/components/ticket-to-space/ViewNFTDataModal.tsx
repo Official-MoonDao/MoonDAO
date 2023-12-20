@@ -22,7 +22,7 @@ export function ViewNFTDataModal({
 
   const [isLoading, setIsLoading] = useState(true)
   const [enableReverifyModal, setReverifyModal] = useState(false)
-  const [reverifyNFTId, setReverifyNFTId] = useState<string>("")
+  const [reverifyNFTId, setReverifyNFTId] = useState<string[]>([])
   const [userNFTs, setUserNFTs] = useState<
     {
       id: any
@@ -62,8 +62,10 @@ export function ViewNFTDataModal({
 
     const { data: verifiedNfts } = await verifiedNftsRes.json()
 
-    if (!verifiedNfts)
-      return
+    if (!verifiedNfts) return
+
+    const email = verifiedNfts[0].email
+    const name = verifiedNfts[0].name
 
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
@@ -86,15 +88,14 @@ export function ViewNFTDataModal({
               updateTime: verifiedNfts[j].updatedAt,
             })
           }
-          console.log(verifiedNfts[j])
           found = true
         }
       }
       if (!found)
         nftsList.push({
           id: ownedNfts[i]._hex,
-          name: 'Unverified',
-          email: 'Unverified',
+          name: name || 'Unverified',
+          email: email || 'Unverified',
         })
     }
 
@@ -115,7 +116,7 @@ export function ViewNFTDataModal({
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      {enableReverifyModal && <ReverifyModal setReverifyEnabled={setReverifyModal} setViewEnabled={setEnabled} nftId={reverifyNFTId}/>}
+      {enableReverifyModal && <ReverifyModal setReverifyEnabled={setReverifyModal} setViewEnabled={setEnabled} nftIds={reverifyNFTId}/>}
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] lg:w-[750px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl">View your NFTs</h1>
         <p className="opacity-50 mb-4">
@@ -128,6 +129,7 @@ export function ViewNFTDataModal({
             Please sign the message in your wallet to view your Verified NFTs
           </p>
         ) : (
+          <>
           <div className="overflow-visible w-full h-[200px] overflow-y-scroll">
             {userNFTs.map((nft, i) => (
               <div
@@ -140,7 +142,7 @@ export function ViewNFTDataModal({
                   <button 
                     onClick={() => {
                       setReverifyModal(true)
-                      setReverifyNFTId(nft.id)
+                      setReverifyNFTId([nft.id])
                     }}
                     className="text-moon-gold ml-2"
                   >
@@ -149,9 +151,24 @@ export function ViewNFTDataModal({
               </div>
             ))}
           </div>
+
+          <button
+          onClick={() => {
+            setReverifyModal(true)
+            let nftsList : string[] = []
+            userNFTs.map((nft) => (nftsList.push(nft.id)))
+            setReverifyNFTId(nftsList)
+          }}
+          className="text-moon-gold mt-2 text-lg"
+          >
+          Reverify All
+          </button>
+          </>
         )}
 
-        <div className="flex w-full justify-between pt-8">
+        
+
+        <div className="flex w-full justify-between pt-4">
           <button
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
             onClick={() => setEnabled(false)}

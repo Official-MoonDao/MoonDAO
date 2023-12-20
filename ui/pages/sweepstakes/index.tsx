@@ -201,6 +201,7 @@ export default function Sweepstakes() {
                         </p>
                       </div>
 
+                      {balance > 0 &&
                       <div>
                         <button
                           className="p-3 bg-moon-orange lg:text-lg"
@@ -215,6 +216,7 @@ export default function Sweepstakes() {
                           />
                         )}
                       </div>
+                      }
                     </>
                   )}
                 </div>
