@@ -7,7 +7,6 @@ import {
   useOwnedNFTs,
 } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
-import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -24,8 +23,7 @@ import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
 
-const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //prod address
-// const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //test address
+const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
 
 export default function Sweepstakes() {
   const [time, setTime] = useState<string>()
@@ -48,7 +46,6 @@ export default function Sweepstakes() {
 
   const { contract: mooneyContract } = useContract(
     '0x74Ac7664ABb1C8fa152D41bb60e311a663a41C7E',
-    // '0x77d8b01e64Dd3E50fc5f0325fA5791378bA25dC5', //test address
     ERC20.abi
   ) //mumbai mooney
 
@@ -111,41 +108,44 @@ export default function Sweepstakes() {
       <Head title="Ticket to Space" />
       <div className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 page-border-and-color font-RobotoMono w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] text-slate-950 dark:text-white">
         <h1 className={`page-title`}>Ticket to Space</h1>
+        {/* <h3 className="mt-5 lg:mt-8 font-bold text-center lg:text-left text-lg lg:text-xl xl:text-2xl">
+          Take the leap, for the chance to win a trip to space!
+        </h3> */}
+        <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
+          {`
+        Take the leap, for the chance to win an opportunity to fly to space! We're selecting one lucky member of the MoonDAO community to win. If you're not a member of our community`}
+          <a className="text-moon-gold" href="/join" target="_blank">
+            {' join MoonDAO now '}
+          </a>
+          {`to enter.`}
+        </p>
+
+        <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
+          {`The Ticket to Space Sweepstakes is on Polygon. Check out this`}
+          <a
+            className="text-moon-gold"
+            href="https://youtu.be/oQtHjbcbAio?feature=shared"
+          >
+            {' '}
+            guide
+          </a>{' '}
+          and bridge your $MOONEY
+          <a
+            className="text-moon-gold"
+            href="https://wallet.polygon.technology/polygon/bridge/deposit"
+          >
+            {' '}
+            here
+          </a>
+          .
+        </p>
 
         <div className="">
-          <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
+          <p className="mt-5 text-sm lg:mt-6 opacity-70 max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-base xl:text-lg">
             {`
-           One person will be randomly selected to win an opportunity aboard a future Blue Origin rocket to space! Each NFT costs 20,000 MOONEY `}
-            {'('}
-            <Link
-              className="text-moon-gold"
-              href="https://www.youtube.com/watch?v=VxU8dOrL0fE"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {'Watch Tutorial'}
-            </Link>
-            {')'}
-            {','}
-            {`
-            aquire some
-            `}
-            <Link className="text-moon-gold" href="/join" target="_blank">
-              {'by joining MoonDAO'}
-            </Link>
-            {'. '}
-            {`If you already have $MOONEY `}
-            <Link
-              className="text-moon-gold"
-              href="https://wallet.polygon.technology/polygon/bridge/deposit"
-            >
-              {'bridge your tokens '}
-            </Link>
-            {`to the Polygon PoS Network. You can mint up to 50 entries.`}
+            We will randomly select an individual to win an opportunity to fly to space on a future Blue Origin rocket launch! Every individual may mint up to 50 entries.`}
           </p>
         </div>
-
-        <p className="mt-5 text-[#1F212B] dark:text-white  py-2 xl:py-3 2xl:max-w-[750px] xl:text-left text-sm xl:text-base"></p>
 
         {/*Collection title, image and description*/}
         <div className="mt-6 inner-container-background relative w-full">
@@ -199,7 +199,6 @@ export default function Sweepstakes() {
                         </p>
                       </div>
 
-                      {balance > 0 &&
                       <div>
                         <button
                           className="p-3 bg-moon-orange lg:text-lg"
@@ -214,7 +213,18 @@ export default function Sweepstakes() {
                           />
                         )}
                       </div>
-                      }
+                      {+balance.toString() > 0 && (
+                        <button
+                          className="p-3 bg-moon-orange lg:text-lg"
+                          onClick={() =>
+                            window.open(
+                              `https://twitter.com/intent/tweet?text=I%20entered%20to%20win%20a%20ticket%20to%20space%20through%20%0A%40OfficialMoonDAO%0A%0ASo%20awesome%20to%20know%20I%20have%20a%20chance%20to%20go%20to%20space!%20%0A%0AGet%20yours%20here%20⬇%EF%B8%8F&url=https%3A%2F%2Fapp.moondao.com%2Fsweepstakes`
+                            )
+                          }
+                        >
+                          Click to Tweet
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
