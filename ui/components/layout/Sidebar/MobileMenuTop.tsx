@@ -1,6 +1,7 @@
-import ColorsAndSocials from './ColorsAndSocials';
-import { Bars3BottomLeftIcon } from '@heroicons/react/24/outline';
-import LanguageChange from './LanguageChange';
+import { Bars3BottomLeftIcon } from '@heroicons/react/24/outline'
+import { PrivyConnectWallet } from '../../privy/PrivyConnectWallet'
+import ColorsAndSocials from './ColorsAndSocials'
+import LanguageChange from './LanguageChange'
 
 interface MobileMenuTop {
   setSidebarOpen: Function
@@ -27,10 +28,12 @@ const MobileMenuTop = ({
             aria-hidden="true"
           />
         </button>
-        <div className='flex items-center'>
-        <LanguageChange/>
+        <div className="flex items-center">
+          <LanguageChange />
 
-        <ColorsAndSocials lightMode={lightMode} setLightMode={setLightMode} />
+          <PrivyConnectWallet />
+
+          <ColorsAndSocials lightMode={lightMode} setLightMode={setLightMode} />
         </div>
       </div>
     </div>

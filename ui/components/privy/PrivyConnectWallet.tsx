@@ -95,7 +95,7 @@ export function PrivyConnectWallet() {
       {user && wallets?.[0] ? (
         <div
           id="privy-connect-wallet"
-          className={`w-[225px] relative flex flex-col items-right justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[10]`}
+          className={`w-[150px] md:w-[225px] relative flex flex-col items-right justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[10]`}
           onClick={(e: any) => {
             !e.target.closest('#privy-connect-wallet-dropdown') &&
               setEnabled(!enabled)
@@ -112,7 +112,7 @@ export function PrivyConnectWallet() {
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="mt-4 w-[325px] text-sm font-RobotoMono absolute top-10 right-0 animate-fadeIn mt-2 px-2 py-2 flex flex-col bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2"
+              className="mt-4 w-[325px] text-sm font-RobotoMono absolute top-10 left-[-5%] md:right-0 animate-fadeIn mt-2 px-2 py-2 flex flex-col bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2"
             >
               <div>
                 <div className="flex items-center">

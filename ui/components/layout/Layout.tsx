@@ -39,8 +39,9 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const layout = (
     <div
       id="app-layout"
-      className={`${!lightMode ? 'dark background-dark' : 'background-light'
-        } min-h-screen`}
+      className={`${
+        !lightMode ? 'dark background-dark' : 'background-light'
+      } min-h-screen`}
     >
       <Script src="https://cdn.splitbee.io/sb.js" />
 
@@ -96,22 +97,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         >
           {/*Connect Wallet and Preferred network warning*/}
           <div
-            className={`max-w-[1400px] mb-4 lg:mb-2 flex flex-col items-end`}
+            className={`max-w-[1400px] mb-4 lg:mb-2 flex flex-col items-end invisible md:visible`}
           >
-            {/* <div
-              className={`${
-                address && chain?.name === selectedChain?.name
-                  ? 'hidden'
-                  : ' mb-3'
-              }`}
-            >
-              {address && chain?.name !== selectedChain?.name && (
-                <SwitchNetworkBanner newNetwork={selectedChain} />
-              )}
-            </div> */}
-
-            {/* <ConnectWallet className="!bg-gradient-to-b !text-slate-800 dark:!text-zinc-50 from-moon-gold to-yellow-300 dark:to-amber-400 !border-yellow-200 !border-opacity-50 !shadow !shadow-gray-200 hover:!scale-105 !transition-all !duration-150" /> */}
-
             <PrivyConnectWallet />
           </div>
           {children}
