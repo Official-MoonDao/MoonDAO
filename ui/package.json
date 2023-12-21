@@ -17,6 +17,7 @@
   "dependencies": {
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
+    "@maticnetwork/maticjs": "^3.6.7",
     "@privy-io/react-auth": "^1.41.0",
     "@privy-io/wagmi-connector": "0.1.8",
     "@react-three/drei": "^9.86.0",

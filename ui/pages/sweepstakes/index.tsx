@@ -122,7 +122,7 @@ export default function Sweepstakes() {
             {'Watch Tutorial'}
           </Link>
           {`), aquire some `}
-          <Link className="text-moon-gold" href="/join" target="_blank">
+          <Link className="text-moon-gold" href="/join">
             {' by joining MoonDAO'}
           </Link>
           {`. If you already have $MOONEY, `}
