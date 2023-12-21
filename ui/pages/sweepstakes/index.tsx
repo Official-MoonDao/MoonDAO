@@ -202,7 +202,7 @@ export default function Sweepstakes() {
                           />
                         )}
                       </div>
-                      {+balance.toString() > 0 && (
+                      {balance && +balance.toString() > 0 && (
                         <button
                           className="p-3 bg-moon-orange lg:text-lg"
                           onClick={() =>
