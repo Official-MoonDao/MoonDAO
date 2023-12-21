@@ -17,7 +17,6 @@ import toast from 'react-hot-toast'
 import PrivyWalletContext from '../lib/privy/privy-wallet-context'
 import Head from '../components/layout/Head'
 import { PageCards } from '../components/layout/PageCards'
-import { MooneyBridgeModal } from '../components/tokens/MooneyBridgeModal'
 
 export default function Governance() {
   const router = useRouter()
@@ -64,7 +63,12 @@ export default function Governance() {
           description:
             'Reduce onchain gas fees by bridging $MOONEY from L1 to L2.',
           icon: ArrowsRightLeftIcon,
-          onClick: () => setEnableBridgeModal(true),
+          href: 'https://wallet.polygon.technology/polygon/bridge/deposit',
+          externalLink: true,
+          hyperlink:
+            'https://www.youtube.com/watch?v=oQtHjbcbAio&ab_channel=MoonDAO',
+          hyperlinkText:
+            'Click here to learn how to bridge Mooney to Polygon L2!',
         },
       ],
     },
@@ -126,9 +130,6 @@ export default function Governance() {
     <div className="animate-fadeIn">
       <Head title={t('governanceTitle')} description={t('governanceDesc')} />
 
-      {enableBridgeModal && (
-        <MooneyBridgeModal setEnabled={setEnableBridgeModal} />
-      )}
       {/*Section containing cards with links*/}
       <PageCards
         id="gov-cards"
