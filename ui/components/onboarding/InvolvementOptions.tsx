@@ -2,6 +2,7 @@ import {
   BellAlertIcon,
   HandRaisedIcon,
   PhoneArrowUpRightIcon,
+  TicketIcon,
 } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -44,7 +45,7 @@ export function InvolvementOptions() {
     isOnboardingCall,
   }: any) {
     return (
-      <div className="flex flex-col w-[300px] py-8 px-5 border-slate-700 dark:border-white dark:border-opacity-20 border font-RobotoMono text-slate-950 dark:text-gray-50">
+      <div className="flex flex-col w-[250px] py-8 px-5 border-slate-700 dark:border-white dark:border-opacity-20 border font-RobotoMono text-slate-950 dark:text-gray-50">
         {icon}
 
         <div className="mt-7 pb-12 flex flex-col h-full justify-between">
@@ -68,7 +69,16 @@ export function InvolvementOptions() {
   }
 
   return (
-    <div className="mt-5 flex flex-col xl:flex-row gap-2 xl:gap-3 2xl:gap-10">
+    <div className="mt-5 flex flex-col xl:flex-row gap-2 xl:gap-3 2xl:gap-8">
+      <Card
+        label={'Enter the Sweepstakes'}
+        description={'Take the leap, for the chance to win a trip to space!'}
+        icon={<TicketIcon width={50} />}
+        CTA="Enter Sweepstakes"
+        onClick={() => {
+          router.push('/sweepstakes')
+        }}
+      />
       <Card
         label={'Stay Informed'}
         description={
