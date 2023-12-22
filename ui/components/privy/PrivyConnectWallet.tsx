@@ -95,7 +95,7 @@ export function PrivyConnectWallet() {
       {user && wallets?.[0] ? (
         <div
           id="privy-connect-wallet"
-          className={`w-[150px] md:w-[225px] relative flex flex-col items-right justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[10]`}
+          className={`w-[1000px] md:w-[225px] relative flex flex-col items-right justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[10]`}
           onClick={(e: any) => {
             !e.target.closest('#privy-connect-wallet-dropdown') &&
               setEnabled(!enabled)
@@ -235,7 +235,7 @@ export function PrivyConnectWallet() {
       ) : (
         <button
           onClick={() => (user ? logout() : login())}
-          className="w-[200px] px-5 py-3 bg-moon-orange font-RobotoMono hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
+          className="w-[125px] md:w-[200px] px-5 py-3 bg-moon-orange font-RobotoMono hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
         >
           Connect
         </button>

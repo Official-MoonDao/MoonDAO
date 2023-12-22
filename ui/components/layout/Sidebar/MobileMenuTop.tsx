@@ -28,10 +28,11 @@ const MobileMenuTop = ({
             aria-hidden="true"
           />
         </button>
+        <div className="py-2 w-full px-2">
+          <PrivyConnectWallet />
+        </div>
         <div className="flex items-center">
           <LanguageChange />
-
-          <PrivyConnectWallet />
 
           <ColorsAndSocials lightMode={lightMode} setLightMode={setLightMode} />
         </div>
