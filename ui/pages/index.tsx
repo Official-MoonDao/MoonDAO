@@ -11,11 +11,11 @@ export default function Home() {
 
       <div
         id="home-hero"
-        className="flex flex-col lg:px-7 xl:px-9 py-4 lg:py-14 lg:mt-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px]"
+        className="flex flex-col lg:px-7 xl:px-9 py-4 lg:pb-14 lg:mt-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px]"
       >
         <div className="flex flex-col items-center">
           <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
-            Welcome to MoonDAO
+            Mission Control
           </h2>
           <p className="mt-6 sm:mt-6 lg:mt-8 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
             {`MoonDAO is accelerating the development of a lunar base through better coordination. Want to help? This flow will onboard you into our community in less than 5 minutes, even if you’re new to Web3.`}
@@ -25,15 +25,16 @@ export default function Home() {
             src="https://www.youtube.com/embed/Vs_vAtRgaBA?showinfo=0&controls=1&rel=0&mute=1&autoplay=1"
             allowFullScreen
           />
+          <button
+            className="mt-10 px-8 py-4 lg:w-[300px] font-RobotoMono font-bold w-full bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
+            onClick={() => {
+              router.push('/join')
+            }}
+          >
+            Join MoonDAO
+          </button>
         </div>
-        <button
-          className="mt-10 px-8 py-4 lg:w-[300px] font-RobotoMono font-bold w-full bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
-          onClick={() => {
-            router.push('/join')
-          }}
-        >
-          Join MoonDAO
-        </button>
+
         <div className="mt-12">
           <div className="">
             <h2 className="text-3xl text-[#071732] dark:text-white font-GoodTimes sm:text-4xl lg:text-4xl xl:text-4xl text-center lg:text-left">
@@ -43,7 +44,7 @@ export default function Home() {
           <dl className="mt-8 lg:mt-12 space-y-10 lg:space-y-0 lg:grid lg:gap-x-6 lg:gap-y-12 lg:grid-cols-2">
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
+                <dt className="text-lg font-RobotoMono font-medium text-left lg:text-left text-gray-950 dark:text-white">
                   Help Decentralize Access to Space
                 </dt>
                 <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
@@ -59,7 +60,7 @@ export default function Home() {
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
+                <dt className="text-lg font-RobotoMono font-medium text-left text-gray-950 dark:text-white">
                   Shape Our Community’s Destiny
                 </dt>
                 <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
@@ -74,7 +75,7 @@ export default function Home() {
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
+                <dt className="text-lg font-RobotoMono font-medium text-left text-gray-950 dark:text-white">
                   Co-Create a Lunar Settlement
                 </dt>
                 <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
@@ -87,7 +88,7 @@ export default function Home() {
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-medium font-RobotoMono text-center lg:text-left text-gray-950 dark:text-white">
+                <dt className="text-lg font-medium font-RobotoMono text-left text-gray-950 dark:text-white">
                   Get Funding for R&D
                 </dt>
                 <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm font-RobotoMono sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
@@ -101,7 +102,7 @@ export default function Home() {
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
+                <dt className="text-lg font-RobotoMono font-medium text-left text-gray-950 dark:text-white">
                   Network with Space Professionals
                 </dt>
                 <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
@@ -115,7 +116,7 @@ export default function Home() {
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-medium font-RobotoMono text-center lg:text-left text-gray-950 dark:text-white">
+                <dt className="text-lg font-medium font-RobotoMono text-left text-gray-950 dark:text-white">
                   Savings on Space Ventures
                 </dt>
                 <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
@@ -129,7 +130,7 @@ export default function Home() {
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-RobotoMono font-medium text-center lg:text-left text-gray-950 dark:text-white">
+                <dt className="text-lg font-RobotoMono font-medium text-left text-gray-950 dark:text-white">
                   Access to Extraordinary Events
                 </dt>
                 <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
@@ -141,7 +142,7 @@ export default function Home() {
             </div>
             <div className="flex">
               <div className="ml-3">
-                <dt className="text-lg font-medium font-RobotoMono text-center lg:text-left text-gray-950 dark:text-white">
+                <dt className="text-lg font-medium font-RobotoMono text-left text-gray-950 dark:text-white">
                   Let’s Build Together
                 </dt>
                 <dd className="mt-5 lg:mt-4 xl:mt-6 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
