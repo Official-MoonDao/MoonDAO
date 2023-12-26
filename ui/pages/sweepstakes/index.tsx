@@ -320,40 +320,41 @@ export default function Sweepstakes() {
           APPROVED BY BLUE ORIGIN TEXAS, LLC (“BLUE ORIGIN”).
           <br></br>
           <br></br>
-          The Sweepstakes is open only to individuals who are 18 years of age or
-          older, or the age of majority if greater than 18 in their respective
-          jurisdictions. Sweepstakes is void in Florida, New York, Puerto Rico
-          and where otherwise prohibited by law. Runner-Up Prize winners are
-          responsible for taxes associated with the Runner-Up Prizes.
+          THE SWEEPSTAKES IS OPEN ONLY TO INDIVIDUALS WHO ARE 18 YEARS OF AGE OR
+          OLDER, OR THE AGE OF MAJORITY IF GREATER THAN 18 IN THEIR RESPECTIVE
+          JURISDICTIONS. SWEEPSTAKES IS VOID IN FLORIDA, NEW YORK, PUERTO RICO
+          AND WHERE OTHERWISE PROHIBITED BY LAW. RUNNER-UP PRIZE WINNERS ARE
+          RESPONSIBLE FOR TAXES ASSOCIATED WITH THE RUNNER-UP PRIZES.
           <br></br>
           <br></br>
-          Odds of winning depend on the number of entries received during the
-          contest period, but can be calculated by dividing the number of prizes
-          by the total number of entries received. Contest ends on January 12,
-          2024. For Alternative Method of Entry,
+          ODDS OF WINNING DEPEND ON THE NUMBER OF ENTRIES RECEIVED DURING THE
+          CONTEST PERIOD, BUT CAN BE CALCULATED BY DIVIDING THE NUMBER OF PRIZES
+          BY THE TOTAL NUMBER OF ENTRIES RECEIVED. CONTEST ENDS ON JANUARY 12,
+          2024. FOR ALTERNATIVE METHOD OF ENTRY,{' '}
           <a
-            className="text-moon-gold"
+            className="underline"
             href="https://publish.obsidian.md/moondao/MoonDAO/docs/Ticket+to+Space+NFT/Ticket+to+Space+Sweepstakes+Rules"
           >
-            {' '}
-            click here
+            
+            CLICK HERE
           </a>
           .<br></br>
           <br></br>
           {`
-          You must enter your full legal name (as displayed on a government
-          issued photo ID) and the best email for us to contact you if you win a
-          prize in the Sweepstakes. By submitting your information, you agree to
-          our
+          YOU MUST ENTER YOUR FULL LEGAL NAME (AS DISPLAYED ON A GOVERNMENT
+          ISSUED PHOTO ID) AND THE BEST EMAIL FOR US TO CONTACT YOU IF YOU WIN A
+          PRIZE IN THE SWEEPSTAKES. BY SUBMITTING YOUR INFORMATION, YOU AGREE TO
+          OUR
           `}
           <a
-            className="text-moon-gold"
+            className="underline"
             href="https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy"
             target="_blank"
             rel="noreferrer"
           >
-            {'Privacy Policy.'}
+            {'PRIVACY POLICY'}
           </a>
+          .
         </p>
       </div>
     </main>

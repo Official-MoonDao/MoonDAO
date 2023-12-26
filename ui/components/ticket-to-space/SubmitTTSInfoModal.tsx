@@ -40,6 +40,7 @@ export function SubmitTTSInfoModal({
   const [email, setEmail] = useState<string>('')
   const [fullName, setFullName] = useState<string>('')
   const [checkBoxEnabled, setCheckBoxEnabled] = useState<boolean>(true)
+  const [submitting, setSubmitting] = useState<boolean>(false)
 
   function timeout(delay: number) {
     return new Promise( res => setTimeout(res, delay) );
@@ -174,7 +175,7 @@ export function SubmitTTSInfoModal({
   return (
     <div
       onClick={(e: any) => {
-        if (e.target.id === 'submit-tts-info-modal-backdrop') setEnabled(false)
+        if (e.target.id === 'submit-tts-info-modal-backdrop' && !submitting) setEnabled(false)
       }}
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
@@ -222,19 +223,22 @@ export function SubmitTTSInfoModal({
         </div>
         <div className="flex w-full justify-between">
           <button
-            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
+            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white enabled:hover:bg-white enabled:hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange disabled:opacity-50"
             onClick={() => setEnabled(false)}
+            disabled={submitting}
           >
             Back
           </button>
           <button
             type="button"
-            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
+            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white enabled:hover:bg-white enabled:hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange disabled:opacity-50"
+            disabled={submitting}
             onClick={async () => {
               try {
                 if (!email || !fullName || !email.includes('@'))
                   return toast.error('Please fill in all fields')
 
+                setSubmitting(true)
                 const signature = await signMessage()
                 await submitInfoToDB('xxx', signature)
 
