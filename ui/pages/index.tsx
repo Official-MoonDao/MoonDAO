@@ -11,33 +11,27 @@ export default function Home() {
 
       <div
         id="home-hero"
-        className="flex flex-col lg:px-7 xl:px-9 py-4 lg:pb-14 lg:mt-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px]"
+        className="flex flex-col items-center lg:px-3 xl:px-9 py-4 lg:pb-14 lg:mt-1 md:max-w-[1080px]"
       >
-        <div className="flex flex-col items-center">
-          <h2 className="text-[#071732] dark:text-white font-GoodTimes text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
+        <div className="flex flex-col justify-center items-center w-[90%]">
+          <h2 className="text-[#071732] dark:text-white font-GoodTimes text-3xl lg:text-4xl xl:text-5xl text-center">
             Mission Control
           </h2>
-          <p className="mt-6 sm:mt-6 lg:mt-8 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
-            {`MoonDAO is accelerating the development of a lunar base through better coordination. Want to help? This flow will onboard you into our community in less than 5 minutes, even if you’re new to Web3.`}
-          </p>
+          <div className='mt-4 h-[1px] w-full bg-white'></div>
           <iframe
-            className="mt-10 xl:w-5/6 aspect-video object-cover w-screen md:w-full"
+            className="mt-6 aspect-video object-cover w-full"
             src="https://www.youtube.com/embed/Vs_vAtRgaBA?showinfo=0&controls=1&rel=0&mute=1&autoplay=1"
             allowFullScreen
           />
-          <button
-            className="mt-10 px-8 py-4 lg:w-[300px] font-RobotoMono font-bold w-full bg-moon-orange text-white hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
-            onClick={() => {
-              router.push('/join')
-            }}
-          >
-            Join MoonDAO
-          </button>
+          <p className="mt-6 sm:mt-6 lg:mt-8 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+            {`MoonDAO is accelerating the development of a lunar base through better coordination. Want to help? This flow will onboard you into our community in less than 5 minutes, even if you’re new to Web3.`}
+          </p>
+          <div className='mt-6 h-[1px] w-full bg-white'></div>
         </div>
 
-        <div className="mt-12">
+        <div className="mt-12 w-[90%]">
           <div className="">
-            <h2 className="text-3xl text-[#071732] dark:text-white font-GoodTimes sm:text-4xl lg:text-4xl xl:text-4xl text-center lg:text-left">
+            <h2 className="text-2xl text-[#071732] dark:text-white font-GoodTimes lg:text-4xl xl:text-4xl text-center">
               Why Join MoonDAO?
             </h2>
           </div>
@@ -154,9 +148,9 @@ export default function Home() {
               </div>
             </div>
           </dl>
-          <div className="flex justify-left">
+          <div className="flex justify-center">
             <button
-              className="mt-10 lg:mt-14 px-8 py-4 lg:w-[300px] w-full bg-moon-orange text-white font-RobotoMono font-bold hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
+              className="mt-10 lg:mt-14 px-8 py-4 md:w-[400px] w-full bg-moon-orange text-white font-RobotoMono font-bold hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
               onClick={() => {
                 router.push('/join')
               }}

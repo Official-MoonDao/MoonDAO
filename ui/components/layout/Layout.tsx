@@ -93,11 +93,11 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       {/*The content, child rendered here*/}
       <main className="flex justify-center pb-24 md:ml-48 relative">
         <section
-          className={`mt-4 flex flex-col lg:w-[80%] lg:px-14 xl:px-16 2xl:px-20`}
+          className={`mt-4 flex flex-col md:w-[90%] lg:px-14 xl:px-16 2xl:px-20`}
         >
           {/*Connect Wallet and Preferred network warning*/}
           <div
-            className={`max-w-[1400px] mb-4 lg:mb-2 flex flex-col items-end invisible md:visible`}
+            className={`max-w-[1400px] max-h-[0px] md:max-h-full md:mb-4 lg:mb-2 flex flex-col items-end invisible md:visible`}
           >
             <PrivyConnectWallet />
           </div>
