@@ -40,6 +40,7 @@ export function SubmitTTSInfoModal({
   const [email, setEmail] = useState<string>('')
   const [fullName, setFullName] = useState<string>('')
   const [checkBoxEnabled, setCheckBoxEnabled] = useState<boolean>(true)
+  const [submitting, setSubmitting] = useState<boolean>(false)
 
   function timeout(delay: number) {
     return new Promise( res => setTimeout(res, delay) );
@@ -96,11 +97,12 @@ export function SubmitTTSInfoModal({
       toast.error(
         'There was an issue adding your info to the database. Please contact a moondao member.'
       )
+      setSubmitting(false)
     }
   }
 
   async function claimFreeTicket(claimFree: Function) {
-    setStatus('Claiming free ticket...')
+    setStatus('Claiming free ticket')
     await claimFree()
     setStatus('')
 
@@ -108,8 +110,10 @@ export function SubmitTTSInfoModal({
 
     if (newBalance.toString() > balance.toString()) {
       toast.success('You successfully claimed your free ticket!')
+      setSubmitting(false)
     } else {
       toast.error('Claiming failed')
+      setSubmitting(false)
       throw new Error('Claiming failed')
     }
   }
@@ -122,6 +126,7 @@ export function SubmitTTSInfoModal({
       toast.error(
         'You do not have enough Mooney to mint this ticket. Please purchase more Mooney and try again.'
       )
+      setSubmitting(false)
       throw new Error('Not Enough Mooney')
     }
 
@@ -132,7 +137,7 @@ export function SubmitTTSInfoModal({
     ])
 
     if (tokenAllowance.toString() < 20000 * quantity * 10 ** 18) {
-      setStatus('Approving token allowance...')
+      setStatus('Approving token allowance')
       await approveToken()
       setStatus('')
 
@@ -143,30 +148,33 @@ export function SubmitTTSInfoModal({
       ])
 
       if (newTokenAllowance.toString() >= 20000 * quantity * 10 ** 18) {
-        setStatus('Minting ticket...')
+        setStatus('Minting ticket')
         await mint()
         setStatus('')
       } else {
         setStatus('')
         toast.error('Token approval failed')
+        setSubmitting(false)
         throw new Error('Token Approval Error')
       }
     } else {
-      setStatus('Minting ticket...')
+      setStatus('Minting ticket')
       await mint()
       setStatus('')
     }
 
     const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
 
-    if (ownedNfts.length == parseInt(balance) + parseInt(quantity))
+    if (ownedNfts.length == parseInt(balance) + parseInt(quantity)) {
       toast.success(
         `You successfully minted ${quantity} Ticket to Space ${
           quantity === 1 ? 'NFT' : 'NFTs'
         }!`
       )
+    }
     else {
       toast.error('Minting failed')
+      setSubmitting(false)
       throw new Error('Minting error')
     }
   }
@@ -174,7 +182,7 @@ export function SubmitTTSInfoModal({
   return (
     <div
       onClick={(e: any) => {
-        if (e.target.id === 'submit-tts-info-modal-backdrop') setEnabled(false)
+        if (e.target.id === 'submit-tts-info-modal-backdrop' && !submitting) setEnabled(false)
       }}
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
@@ -222,19 +230,22 @@ export function SubmitTTSInfoModal({
         </div>
         <div className="flex w-full justify-between">
           <button
-            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
+            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white enabled:hover:bg-white enabled:hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange disabled:opacity-50"
             onClick={() => setEnabled(false)}
+            disabled={submitting}
           >
             Back
           </button>
           <button
             type="button"
-            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
+            className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white enabled:hover:bg-white enabled:hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange disabled:opacity-50"
+            disabled={submitting}
             onClick={async () => {
               try {
                 if (!email || !fullName || !email.includes('@'))
                   return toast.error('Please fill in all fields')
 
+                setSubmitting(true)
                 const signature = await signMessage()
                 await submitInfoToDB('xxx', signature)
 
@@ -250,7 +261,7 @@ export function SubmitTTSInfoModal({
                   await mintTicket(approveToken, mint)
                 }
 
-                setStatus('Verifying identity...')
+                setStatus('Verifying identity')
 
                 await timeout(3000);
 
@@ -285,7 +296,17 @@ export function SubmitTTSInfoModal({
             Submit
           </button>
         </div>
-        <p>{status}</p>
+        <p className='flex mt-3 gap-3 text-lg'>
+          {status}
+          {status && 
+          <div className="flex flex-col justify-center items-center gap-2">
+            <div
+              className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+              role="status"
+            />
+          </div>
+          }
+        </p>
       </div>
     </div>
   )
