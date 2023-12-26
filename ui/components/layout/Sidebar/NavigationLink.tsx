@@ -55,7 +55,7 @@ const Dropdown = ({ item, router }: any) => {
   return (
     <Disclosure
       as="div"
-      // defaultOpen={item?.children?.some((e: any) => e.href !== router.pathname)}
+      defaultOpen={item?.children?.some((e: any) => e.href !== router.pathname)}
     >
       {({ open }) => (
         <>
