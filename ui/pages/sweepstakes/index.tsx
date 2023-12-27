@@ -16,6 +16,7 @@ import { initSDK } from '../../lib/thirdweb/thirdweb'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
 import Head from '../../components/layout/Head'
+import L2Toggle from '../../components/lock/L2Toggle'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
 import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
 import { SubmitTTSInfoModal } from '../../components/ticket-to-space/SubmitTTSInfoModal'
@@ -140,13 +141,17 @@ export default function Sweepstakes() {
         <div className="mt-6 inner-container-background relative w-full">
           {collectionMetadata && (
             <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]">
+              <div className="p-4">
+                <L2Toggle />
+              </div>
               <div className="md:flex">
                 <div className="m-auto my-2 p-2 flex justify-center">
                   <MediaRenderer
                     src={
                       'ipfs://Qmba3umb3db7DqCA19iRSSbtzv9nYUmP8Cibo5QMkLpgpP'
                     }
-                    width={'300px'}
+                    width={'330px'}
+                    height={'330px'}
                   />
                 </div>
                 {/*Quantity, price, expiration, balance */}
@@ -255,6 +260,7 @@ export default function Sweepstakes() {
                       />
                     </div>
                   </div>
+
                   {enableMintInfoModal && (
                     <SubmitTTSInfoModal
                       balance={balance}
@@ -307,6 +313,7 @@ export default function Sweepstakes() {
             </div>
           )}
         </div>
+
         <p className="mt-4 text-sm">
           NO PURCHASE OR OBLIGATION NECESSARY TO ENTER OR WIN. PURCHASE WILL NOT
           INCREASE YOUR ODDS OF WINNING. IT IS NOT NECESSARY TO PURCHASE A
@@ -330,7 +337,6 @@ export default function Sweepstakes() {
             className="underline"
             href="https://publish.obsidian.md/moondao/MoonDAO/docs/Ticket+to+Space+NFT/Ticket+to+Space+Sweepstakes+Rules"
           >
-            
             CLICK HERE
           </a>
           .<br></br>
