@@ -259,7 +259,6 @@ export default function Sweepstakes() {
                     <SubmitTTSInfoModal
                       balance={balance}
                       quantity={quantity}
-                      supply={supply}
                       approveToken={approveToken}
                       mint={mint}
                       setEnabled={setEnableMintInfoModal}
@@ -293,7 +292,6 @@ export default function Sweepstakes() {
                         <SubmitTTSInfoModal
                           quantity={quantity}
                           balance={balance}
-                          supply={supply}
                           claimFree={claimFree}
                           setEnabled={setEnableFreeMintInfoModal}
                           ttsContract={ttsContract}
