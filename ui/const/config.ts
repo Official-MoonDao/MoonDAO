@@ -75,3 +75,6 @@ const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_PAT
 export const mongoConfig = {
   url: MONGO_URL,
 }
+
+export const TICKET_TO_SPACE_ADDRESS =
+  '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
