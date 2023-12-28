@@ -93,9 +93,9 @@ export function PrivyConnectWallet() {
   return (
     <>
       {user && wallets?.[0] ? (
-        <div
+         <div
           id="privy-connect-wallet"
-          className={`w-[120px] md:w-[225px] relative flex flex-col items-right justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[10]`}
+          className={`w-[1000px] md:w-[225px] relative flex flex-col items-right justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[10]`}
           onClick={(e: any) => {
             !e.target.closest('#privy-connect-wallet-dropdown') &&
               setEnabled(!enabled)
@@ -103,7 +103,7 @@ export function PrivyConnectWallet() {
         >
           {/*Address and Toggle open/close button*/}
           <div className="flex items-center w-full h-full justify-between">
-            <p className="text-xs">{`${wallets?.[selectedWallet].address?.slice(
+            <p className="text-sm">{`${wallets?.[selectedWallet].address?.slice(
               0,
               6
             )}...${wallets?.[selectedWallet].address?.slice(-4)}`}</p>
