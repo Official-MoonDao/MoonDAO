@@ -52,7 +52,7 @@ export function SubmitTTSInfoModalETH({
 
   async function submitNftToDB(tokenId: number | string, signature: string) {
     try {
-      await fetch(`/api/db/nft-eth?address=${address}`, {
+      await fetch(`/api/db/mainnetTx?address=${address}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ export function SubmitTTSInfoModalETH({
 
   async function submitUserToDB(signature: string) {
     try {
-      await fetch(`/api/db/user-eth?address=${address}`, {
+      await fetch(`/api/db/mainnet-eth?address=${address}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ export function SubmitTTSInfoModalETH({
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
-        <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes</h1>
+        <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes (ETH)</h1>
         <p className="opacity-50 mb-4 text-gray-300">
           Please enter your <span className="font-black text-moon-gold">full legal name</span> (as displayed on a government issued
           photo ID) and the best email for us to contact you if you win a prize
@@ -184,6 +184,7 @@ export function SubmitTTSInfoModalETH({
 
                 //CLaim Free Ticket
                 if (burn) {
+                  console.log(1)
                   await burnMooney(burn)
                 }
 

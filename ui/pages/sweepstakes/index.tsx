@@ -24,14 +24,17 @@ import { ViewNFTDataModal } from '../../components/ticket-to-space/ViewNFTDataMo
 import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
+import { SubmitTTSInfoModalETH } from '../../components/ticket-to-space/SubmitTTSInfoModalETH'
 
-const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
+// const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
+const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //test address
 
 export default function Sweepstakes() {
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(0)
   const [enableMintInfoModal, setEnableMintInfoModal] = useState(false)
+  const [enableEthMintInfoModal, setEnableEthMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
   const [enableViewNFTsModal, setViewNFTsModal] = useState(false)
 
@@ -49,7 +52,13 @@ export default function Sweepstakes() {
   const { contract: mooneyContract } = useContract(
     '0x74Ac7664ABb1C8fa152D41bb60e311a663a41C7E',
     ERC20.abi
-  ) //mumbai mooney
+  ) //polygon mooney
+
+  const { contract: mooneyETHContract } = useContract(
+    // '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395',
+    '0xa1fF0A4a63f067Fc79Daf4ec3a079c73F9a88E12', // testnet
+    ERC20.abi
+  ) //eth mooney
 
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
@@ -62,6 +71,11 @@ export default function Sweepstakes() {
 
   const { mutateAsync: mint } = useHandleWrite(ttsContract, 'mint', [
     BigNumber.from(quantity || 0),
+  ])
+
+  const { mutateAsync: burn } = useHandleWrite(mooneyETHContract, 'transfer', [
+    "0x000000000000000000000000000000000000dead", 
+    ethers.utils.parseEther(String(20000 * quantity))
   ])
 
   const { mutateAsync: claimFree } = useHandleWrite(ttsContract, 'claimFree', [
@@ -87,7 +101,7 @@ export default function Sweepstakes() {
   const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
 
   useEffect(() => {
-    setSelectedChain(Polygon)
+    // setSelectedChain(Polygon)
     const ts = Math.floor(1705132740 - new Date().valueOf() / 1000)
     if (ts > 86400) setTime('T-' + Math.floor(ts / 86400) + ' Days')
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
@@ -256,7 +270,7 @@ export default function Sweepstakes() {
                       <PrivyWeb3Button
                         className="text-white rounded-none bg-moon-orange w-[160px]"
                         label="Mint"
-                        action={() => setEnableMintInfoModal(true)}
+                        action={() => {selectedChain == Polygon ? setEnableMintInfoModal(true) : setEnableEthMintInfoModal(true)}}
                       />
                     </div>
                   </div>
@@ -270,6 +284,15 @@ export default function Sweepstakes() {
                       setEnabled={setEnableMintInfoModal}
                       ttsContract={ttsContract}
                       mooneyContract={mooneyContract}
+                    />
+                  )}
+
+                  {enableEthMintInfoModal && (
+                    <SubmitTTSInfoModalETH
+                      quantity={quantity}
+                      setEnabled={setEnableEthMintInfoModal}
+                      mooneyContract={mooneyETHContract}
+                      burn={burn}
                     />
                   )}
                 </div>
