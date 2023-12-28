@@ -93,7 +93,7 @@ export function PrivyConnectWallet() {
   return (
     <>
       {user && wallets?.[0] ? (
-        <div
+         <div
           id="privy-connect-wallet"
           className={`w-[120px] md:w-[225px] relative flex flex-col items-right justify-center px-5 py-3 bg-moon-orange font-RobotoMono z-[10]`}
           onClick={(e: any) => {
