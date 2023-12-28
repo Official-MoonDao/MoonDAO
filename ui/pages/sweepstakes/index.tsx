@@ -106,7 +106,10 @@ export default function Sweepstakes() {
 
   return (
     <main className="animate-fadeIn">
-      <Head title="Ticket to Space" />
+      <Head
+        title="Ticket to Space"
+        image="https://bafybeihaumkonrmyxfq75kn4tz4y4qjnwz5253fnatsdqkrkcnbo32rm5y.ipfs.dweb.link/"
+      />
       <div className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 page-border-and-color font-RobotoMono w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] text-slate-950 dark:text-white">
         <h1 className={`page-title`}>Ticket to Space</h1>
         {/* <h3 className="mt-5 lg:mt-8 font-bold text-center lg:text-left text-lg lg:text-xl xl:text-2xl">
@@ -330,7 +333,6 @@ export default function Sweepstakes() {
             className="underline"
             href="https://publish.obsidian.md/moondao/MoonDAO/docs/Ticket+to+Space+NFT/Ticket+to+Space+Sweepstakes+Rules"
           >
-            
             CLICK HERE
           </a>
           .<br></br>
