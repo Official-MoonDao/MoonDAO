@@ -1,9 +1,9 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
+import { sign } from 'crypto'
 import { useState, useEffect } from 'react'
 import { useContext } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { sign } from 'crypto'
 import { ReverifyModal } from './ReverifyModal'
 
 type ViewNFTDataModalProps = {
@@ -31,14 +31,12 @@ export function ViewNFTDataModal({
     }[]
   >([])
 
-
   async function signMessage() {
     const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
     const response = await fetch(`api/db/nonce?address=${address}`)
     const data = await response.json()
-    if (!data.nonce)
-        return null
+    if (!data.nonce) return null
     let message =
       'Please sign for verify and register your new NFTs into the sweepstakes. #' +
       data.nonce
@@ -64,23 +62,31 @@ export function ViewNFTDataModal({
 
     if (!verifiedNfts) return
 
-    const email = verifiedNfts[0].email
-    const name = verifiedNfts[0].name
+    const email = verifiedNfts.find(
+      (nft: any) => nft.address === address && nft.email
+    )?.email
+
+    const name = verifiedNfts.find(
+      (nft: any) => nft.address === address && nft.name
+    )?.name
 
     let nftsList = []
     for (let i = 0; i < ownedNfts.length; i++) {
       let found = false
       for (let j = 0; j < verifiedNfts.length; j++) {
         if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
-          if (found && Date.parse(nftsList[i].updateTime) < Date.parse(verifiedNfts[j].updatedAt)) {
+          if (
+            found &&
+            Date.parse(nftsList[i].updateTime) <
+              Date.parse(verifiedNfts[j].updatedAt)
+          ) {
             nftsList[i] = {
               id: ownedNfts[i]._hex,
               name: verifiedNfts[j].name,
               email: verifiedNfts[j].email,
               updateTime: verifiedNfts[j].updatedAt,
             }
-          }
-          else {
+          } else {
             nftsList.push({
               id: ownedNfts[i]._hex,
               name: verifiedNfts[j].name,
@@ -116,7 +122,13 @@ export function ViewNFTDataModal({
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      {enableReverifyModal && <ReverifyModal setReverifyEnabled={setReverifyModal} setViewEnabled={setEnabled} nftIds={reverifyNFTId}/>}
+      {enableReverifyModal && (
+        <ReverifyModal
+          setReverifyEnabled={setReverifyModal}
+          setViewEnabled={setEnabled}
+          nftIds={reverifyNFTId}
+        />
+      )}
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] lg:w-[750px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl">View your NFTs</h1>
         <p className="opacity-50 mb-4">
@@ -130,43 +142,41 @@ export function ViewNFTDataModal({
           </p>
         ) : (
           <>
-          <div className="overflow-visible w-full h-[200px] overflow-y-scroll">
-            {userNFTs.map((nft, i) => (
-              <div
-                key={'nft' + nft.id + i}
-                className="flex flex-row gap-2 mt-1"
-              >
-                <div>{Number(nft.id)}:</div>
-                <div className="ml">{nft.name}</div>
-                {nft.email != 'Unverified' && <div>- {nft.email}</div> }
-                  <button 
+            <div className="overflow-visible w-full h-[200px] overflow-y-scroll">
+              {userNFTs.map((nft, i) => (
+                <div
+                  key={'nft' + nft.id + i}
+                  className="flex flex-row gap-2 mt-1"
+                >
+                  <div>{Number(nft.id)}:</div>
+                  <div className="ml">{nft.name}</div>
+                  {nft.email != 'Unverified' && <div>- {nft.email}</div>}
+                  <button
                     onClick={() => {
                       setReverifyModal(true)
                       setReverifyNFTId([nft.id])
                     }}
                     className="text-moon-gold ml-2"
                   >
-                    {nft.email == 'Unverified' ? "Verify" :  "Edit"}
+                    {nft.email == 'Unverified' ? 'Verify' : 'Edit'}
                   </button>
-              </div>
-            ))}
-          </div>
+                </div>
+              ))}
+            </div>
 
-          <button
-          onClick={() => {
-            setReverifyModal(true)
-            let nftsList : string[] = []
-            userNFTs.map((nft) => (nftsList.push(nft.id)))
-            setReverifyNFTId(nftsList)
-          }}
-          className="text-moon-gold mt-2 text-lg"
-          >
-          Reverify All
-          </button>
+            <button
+              onClick={() => {
+                setReverifyModal(true)
+                let nftsList: string[] = []
+                userNFTs.map((nft) => nftsList.push(nft.id))
+                setReverifyNFTId(nftsList)
+              }}
+              className="text-moon-gold mt-2 text-lg"
+            >
+              Reverify All
+            </button>
           </>
         )}
-
-        
 
         <div className="flex w-full justify-between pt-4">
           <button
