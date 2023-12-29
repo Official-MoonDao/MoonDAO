@@ -1,4 +1,4 @@
-import { Polygon } from '@thirdweb-dev/chains'
+import { Polygon, Sepolia } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
   useAddress,
@@ -101,7 +101,7 @@ export default function Sweepstakes() {
   const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
 
   useEffect(() => {
-    // setSelectedChain(Polygon)
+    setSelectedChain(Polygon)
     const ts = Math.floor(1705132740 - new Date().valueOf() / 1000)
     if (ts > 86400) setTime('T-' + Math.floor(ts / 86400) + ' Days')
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
@@ -155,9 +155,6 @@ export default function Sweepstakes() {
         <div className="mt-6 inner-container-background relative w-full">
           {collectionMetadata && (
             <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]">
-              <div className="p-4">
-                <L2Toggle />
-              </div>
               <div className="md:flex">
                 <div className="m-auto my-2 p-2 flex justify-center">
                   <MediaRenderer
@@ -245,9 +242,9 @@ export default function Sweepstakes() {
                     <p className="mb-1 dark:text-white lg:text-xl">
                       Quantity to Mint
                     </p>
-                    <div className="h-[58px] flex w-[250px] md:w-[400px] bg-white bg-opacity-5 justify-between p-2 border-[1px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40">
+                    <div className="h-[58px] flex w-full bg-white bg-opacity-5 justify-between p-2 border-[1px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40">
                       <input
-                        className="ml-2 w-1/2 dark:text-white bg-transparent focus:outline-none"
+                        className="ml-2 w-1/3 dark:text-white bg-transparent focus:outline-none"
                         type="number"
                         step={1}
                         max={balance ? 50 - +balance : 0}
@@ -270,7 +267,18 @@ export default function Sweepstakes() {
                       <PrivyWeb3Button
                         className="text-white rounded-none bg-moon-orange w-[160px]"
                         label="Mint"
-                        action={() => {selectedChain == Polygon ? setEnableMintInfoModal(true) : setEnableEthMintInfoModal(true)}}
+                        action={() => {
+                          setSelectedChain(Polygon)
+                          setEnableMintInfoModal(true)
+                        }}
+                      />
+                      <PrivyWeb3Button
+                        className="text-white rounded-none bg-moon-orange w-[160px] ml-1"
+                        label="Mint (ETH)"
+                        action={() => {
+                          setSelectedChain(Sepolia)
+                          setEnableEthMintInfoModal(true)
+                        }}
                       />
                     </div>
                   </div>
@@ -291,6 +299,7 @@ export default function Sweepstakes() {
                     <SubmitTTSInfoModalETH
                       quantity={quantity}
                       setEnabled={setEnableEthMintInfoModal}
+                      setChain={setSelectedChain}
                       mooneyContract={mooneyETHContract}
                       burn={burn}
                     />

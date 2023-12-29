@@ -4,10 +4,13 @@ import { BigNumber } from 'ethers'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { Polygon } from '@thirdweb-dev/chains'
+
 
 type SubmitInfoModalPropsETH = {
   quantity: any
   setEnabled: Function
+  setChain: Function
   mooneyContract: any
   burn?: Function
 }
@@ -18,6 +21,7 @@ const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //p
 export function SubmitTTSInfoModalETH({
   quantity,
   setEnabled,
+  setChain,
   mooneyContract,
   burn,
 }: SubmitInfoModalPropsETH) {
@@ -115,7 +119,10 @@ export function SubmitTTSInfoModalETH({
   return (
     <div
       onClick={(e: any) => {
-        if (e.target.id === 'submit-tts-info-modal-backdrop' && !submitting) setEnabled(false)
+        if (e.target.id === 'submit-tts-info-modal-backdrop' && !submitting) {
+          setChain(Polygon)
+          setEnabled(false)
+        }
       }}
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
@@ -164,7 +171,10 @@ export function SubmitTTSInfoModalETH({
         <div className="flex w-full justify-between">
           <button
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white enabled:hover:bg-white enabled:hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange disabled:opacity-50"
-            onClick={() => setEnabled(false)}
+            onClick={() => {
+              setChain(Polygon)
+              setEnabled(false)
+            }}
             disabled={submitting}
           >
             Back
@@ -198,11 +208,13 @@ export function SubmitTTSInfoModalETH({
                   toast.error(
                     'Error verifying identity. Please contact MoonDAO support'
                   )
+                  setChain(Polygon)
                   return setEnabled(false)
                 }
 
                 toast.success('Your NFT(s) have been reserved! They will be sent to your polygon wallet within 24 hours.')
 
+                setChain(Polygon)
                 setEnabled(false)
               } catch (err: any) {
                 console.log(err.message)
