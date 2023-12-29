@@ -56,8 +56,7 @@ export function SubmitTTSInfoModalETH({
 
   async function submitNftToDB(tokenId: number | string, signature: string) {
     try {
-      console.log("posting NFT to DB")
-      await fetch(`/api/db/mainnetTx`, {
+      await fetch(`/api/db/mainnetTx?address=${address}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,8 +79,7 @@ export function SubmitTTSInfoModalETH({
 
   async function submitUserToDB(signature: string) {
     try {
-      console.log("posting User to DB")
-      await fetch(`/api/db/user`, {
+      await fetch(`/api/db/user?address=${address}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,8 +101,7 @@ export function SubmitTTSInfoModalETH({
 
   async function getUserNfts(signature: string) {
     try {
-      console.log("getting NFTs from DB")
-      await fetch(`/api/db/mainnetTx?address=${address}`, {
+      await fetch(`/api/db/mainnetTx/?address=${address}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -216,6 +213,7 @@ export function SubmitTTSInfoModalETH({
 
                 setSubmitting(true)
                 const signature = await signMessage()
+                console.log(signature)
 
                 // Add user info to database
                 await submitUserToDB(signature)

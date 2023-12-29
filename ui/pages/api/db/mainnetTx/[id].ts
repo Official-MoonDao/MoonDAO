@@ -20,7 +20,7 @@ export default async function handler(
   switch (method) {
     case 'GET' /* Get a model by its ID */:
       try {
-        const mainnetTx = await MainnetTx.findById(id)
+        const mainnetTx = await MainnetTx.find({address: id})
         if (!mainnetTx) {
           return res.status(400).json({ success: false })
         }

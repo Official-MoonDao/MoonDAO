@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import User from '../../../../lib/mongodb/models/User'
+import Nonce from '../../../../lib/mongodb/models/Nonce'
 import dbConnect from '../../../../lib/mongodb/mongo'
 
 export default async function handler(
@@ -16,13 +16,13 @@ export default async function handler(
         const nonce = Math.floor(Math.random() * 1000000).toString()
         const address = query.address as string
         const subscribed = query.subscribed === 'true'
-        const user = await User.findOne({ address })
-        if (user) {
-          user.nonce = nonce
-          user.subscribed = subscribed
-          await user.save()
+        const nonceRecord = await Nonce.findOne({ address })
+        if (nonceRecord) {
+          nonceRecord.nonce = nonce
+          nonceRecord.subscribed = subscribed
+          await nonceRecord.save()
         } else {
-          await User.create({ address, nonce, subscribed })
+          await Nonce.create({ address, nonce, subscribed })
         }
 
         res.status(200).json({ nonce })
