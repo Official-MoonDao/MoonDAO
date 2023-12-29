@@ -8,7 +8,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const {
-    query: { id },
+    query: { id, type },
     method,
   } = req
 
@@ -20,7 +20,13 @@ export default async function handler(
   switch (method) {
     case 'GET' /* Get a model by its ID */:
       try {
-        const nft = await Nft.findById(id)
+        let nft
+        if (type === 'address') {
+          nft = await Nft.find({ address: id, tokenId: { $ne: 'xxx' } })
+        } else {
+          nft = await Nft.findById(id)
+        }
+
         if (!nft) {
           return res.status(400).json({ success: false })
         }

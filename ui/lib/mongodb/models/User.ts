@@ -2,8 +2,8 @@ import mongoose, { Document, Schema } from 'mongoose'
 
 export interface User {
   address: string
-  nonce: string
-  subscribed: boolean
+  name: string
+  email: string
 }
 
 export interface UserModel extends User, Document {}
@@ -11,8 +11,8 @@ export interface UserModel extends User, Document {}
 const UserSchema: Schema = new Schema(
   {
     address: { type: String, required: false },
-    nonce: { type: String, required: false },
-    subscribed: { type: Boolean, required: false },
+    name: { type: String, required: false },
+    email: { type: String, required: false },
   },
   {
     versionKey: false,
