@@ -57,15 +57,15 @@ export function SubmitTTSInfoModalETH({
   async function submitNftToDB(tokenId: number | string, signature: string) {
     try {
       console.log("posting NFT to DB")
-      await fetch(`/api/db/mainnetTx?address=${address}`, {
+      await fetch(`/api/db/mainnetTx`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'moondao-api-key': signature,
         } as any,
         body: JSON.stringify({
-          tokenId,
-          email,
+          state: 'PENDING',
+          email: email,
           name: fullName,
           address: address,
         }),
@@ -81,14 +81,14 @@ export function SubmitTTSInfoModalETH({
   async function submitUserToDB(signature: string) {
     try {
       console.log("posting User to DB")
-      await fetch(`/api/db/user?address=${address}`, {
+      await fetch(`/api/db/user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'moondao-api-key': signature,
         } as any,
         body: JSON.stringify({
-          email,
+          email: email,
           name: fullName,
           address: address,
         }),
@@ -151,7 +151,11 @@ export function SubmitTTSInfoModalETH({
     >
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes</h1>
-        <p className="opacity-50 mb-4 text-gray-300">
+        <p className="mb-2 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white p-2">
+          You are acquiring your NFT using $MOONEY on the Ethereum chain. 
+          After confirming your transaction your NFT will be minted on the Polygon chain to the same wallet address within 24 hours.
+        </p>
+        <p className="opacity-50 mb-4 text-gray-300 p-2">
           Please enter your <span className="font-black text-moon-gold">full legal name</span> (as displayed on a government issued
           photo ID) and the best email for us to contact you if you win a prize
           the Sweepstakes. By submitting your information, you agree to our
@@ -163,10 +167,6 @@ export function SubmitTTSInfoModalETH({
             Privacy Policy
           </a>
           .
-        </p>
-        <p className="opacity-50 mb-4 text-gray-300">
-          You are reserving your NFT using MOONEY on the Ethereum chain. 
-          After confirming your reservation your NFT will be minted on the Polygon chain to the same wallet address within 24 hours.
         </p>
         <label className="text-white">Full Name</label>
         <input

@@ -131,32 +131,9 @@ export default function Sweepstakes() {
         {/* <h3 className="mt-5 lg:mt-8 font-bold text-center lg:text-left text-lg lg:text-xl xl:text-2xl">
           Take the leap, for the chance to win a trip to space!
         </h3> */}
-        <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
-          {`One person will be randomly selected to win an opportunity aboard a future Blue Origin rocket to space! Each NFT costs 20,000 $MOONEY (`}
-          <Link
-            className="text-moon-gold"
-            href="https://www.youtube.com/watch?v=VxU8dOrL0fE"
-            target="_blank"
-          >
-            {'Watch Tutorial'}
-          </Link>
-          {`), aquire some `}
-          <Link className="text-moon-gold" href="/join">
-            {' by joining MoonDAO'}
-          </Link>
-          {`. If you already have $MOONEY, `}
-          <Link
-            className="text-moon-gold"
-            href="https://youtu.be/oQtHjbcbAio?feature=shared"
-            target="_blank"
-          >
-            {' bridge your tokens '}
-          </Link>
-          {`to the Polygon PoS Network. You can mint up to 50 entries.`}
-        </p>
 
         {/*Collection title, image and description*/}
-        <div className="mt-6 inner-container-background relative w-full">
+        <div className="mt-6 inner-container-background relative w-full pb-3">
           {collectionMetadata && (
             <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]" id="nft-container">
               <div className="md:flex md:justify-between md:gap-2 xl:gap-8">
@@ -230,7 +207,7 @@ export default function Sweepstakes() {
                             )
                           }
                         >
-                          Click to Tweet
+                          Share on X
                         </button>
                       )}
                       </div>
@@ -246,7 +223,7 @@ export default function Sweepstakes() {
                     <p className="mb-1 dark:text-white lg:text-xl">
                       Quantity to Mint
                     </p>
-                    <div className="md:h-[58px] flex flex-col md:flex-row w-full justify-left gap-3 p-2 border-[1px] md:border-[2px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40">
+                    <div className={`md:h-[64px] flex flex-col md:flex-row w-full justify-left ${!address && 'justify-between'} gap-3 p-2 border-[1px] md:border-[2px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-401`}>
                       <input
                         className="grow-0 md:ml-2 w-full md:w-1/5 dark:text-white bg-white bg-opacity-5 bg-transparent focus:outline-none text-center p-2"
                         type="number"
@@ -269,21 +246,21 @@ export default function Sweepstakes() {
                         value={quantity}
                       />
                       <PrivyWeb3Button
-                        className="grow text-xs xl:text-base text-white rounded-none bg-moon-orange"
+                        className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
                         label="Mint"
                         action={() => {
                           setSelectedChain(Polygon)
                           setEnableMintInfoModal(true)
                         }}
                       />
-                      <PrivyWeb3Button
-                        className="grow text-xs xl:text-base text-white rounded-none bg-moon-orange"
-                        label="Reserve via Ethereum"
+                      {address && <PrivyWeb3Button
+                        className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
+                        label="Use Ethereum Network"
                         action={() => {
                           setSelectedChain(Sepolia)
                           setEnableEthMintInfoModal(true)
                         }}
-                      />
+                      />}
                     </div>
                   </div>
 
@@ -348,6 +325,27 @@ export default function Sweepstakes() {
               </div>
             </div>
           )}
+          <div className="mx-5 mb-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
+          <div>
+            {`One person will be randomly selected to win an opportunity on a future Blue Origin rocket to space! 
+              Each NFT entry requires burning 20,000 $MOONEY. You can mint up to 50 entries.`}
+          </div>
+          <div className='mt-2'>
+            {`You can acquire $MOONEY `}
+            <Link className="text-moon-gold" href="/join">
+              {' using our app'}
+            </Link>
+            {` (`}
+            <Link
+              className="text-moon-gold"
+              href="https://youtu.be/oQtHjbcbAio?feature=shared"
+              target="_blank"
+            >
+              {'watch tutorial'}
+            </Link>
+            {`). If your $MOONEY is on the Ethereum network click "Use Ethereum Network" to enter.`}
+          </div>
+        </div>
         </div>
 
         <p className="mt-4 text-sm">
