@@ -56,6 +56,7 @@ export function SubmitTTSInfoModalETH({
 
   async function submitNftToDB(tokenId: number | string, signature: string) {
     try {
+      console.log("posting NFT to DB")
       await fetch(`/api/db/mainnetTx?address=${address}`, {
         method: 'POST',
         headers: {
@@ -79,7 +80,8 @@ export function SubmitTTSInfoModalETH({
 
   async function submitUserToDB(signature: string) {
     try {
-      await fetch(`/api/db/mainnet-eth?address=${address}`, {
+      console.log("posting User to DB")
+      await fetch(`/api/db/user?address=${address}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,6 +96,26 @@ export function SubmitTTSInfoModalETH({
     } catch (err) {
       toast.error(
         'There was an issue adding your info to the database. Please contact a moondao member.'
+      )
+      setSubmitting(false)
+    }
+  }
+
+  async function getUserNfts(signature: string) {
+    try {
+      console.log("getting NFTs from DB")
+      await fetch(`/api/db/mainnetTx?address=${address}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'moondao-api-key': signature,
+        } as any,
+      }).then((data: any) => {
+        return data.json().length
+      })
+    } catch (err) {
+      toast.error(
+        'Error reserving NFTs. Please try again.'
       )
       setSubmitting(false)
     }
@@ -128,7 +150,7 @@ export function SubmitTTSInfoModalETH({
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
-        <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes (ETH)</h1>
+        <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes</h1>
         <p className="opacity-50 mb-4 text-gray-300">
           Please enter your <span className="font-black text-moon-gold">full legal name</span> (as displayed on a government issued
           photo ID) and the best email for us to contact you if you win a prize
@@ -141,6 +163,10 @@ export function SubmitTTSInfoModalETH({
             Privacy Policy
           </a>
           .
+        </p>
+        <p className="opacity-50 mb-4 text-gray-300">
+          You are reserving your NFT using MOONEY on the Ethereum chain. 
+          After confirming your reservation your NFT will be minted on the Polygon chain to the same wallet address within 24 hours.
         </p>
         <label className="text-white">Full Name</label>
         <input
@@ -190,16 +216,29 @@ export function SubmitTTSInfoModalETH({
 
                 setSubmitting(true)
                 const signature = await signMessage()
+
+                // Add user info to database
                 await submitUserToDB(signature)
 
-                //CLaim Free Ticket
+                // Get user NFTs from database. If the sum of the amount they are trying to reserve and the amount in the db is greater than 50, then throw an error.
+                const userNFTs : any = await getUserNfts(signature)
+
+                if (quantity > 50 - userNFTs) {
+                  toast.error(
+                    "You are reserving more NFTs than you are allowed. Currently there are " + userNFTs + " NFTs reserved under your address."
+                  )
+                  setChain(Polygon)
+                  return setEnabled(false)
+                }
+
+                // Perform the MOONEY burn
                 if (burn) {
-                  console.log(1)
                   await burnMooney(burn)
                 }
 
                 setStatus('Verifying identity')
 
+                // Add Reserved NFTs to database
                 try {
                   for (let i = 0; i < quantity; i++) {
                     await submitNftToDB('pending', signature)

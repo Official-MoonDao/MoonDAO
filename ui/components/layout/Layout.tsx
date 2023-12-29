@@ -91,7 +91,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       </div>
 
       {/*The content, child rendered here*/}
-      <main className="flex justify-center pb-24 md:ml-48 relative">
+      <main className="flex justify-center pb-24 md:ml-60 relative">
         <section
           className={`mt-4 flex flex-col md:w-[90%] lg:px-14 xl:px-16 2xl:px-20`}
         >
