@@ -1,4 +1,4 @@
-import { Polygon, Sepolia } from '@thirdweb-dev/chains'
+import { Polygon, Ethereum } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
   useAddress,
@@ -26,8 +26,8 @@ import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
 import { SubmitTTSInfoModalETH } from '../../components/ticket-to-space/SubmitTTSInfoModalETH'
 
-// const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
-const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //test address
+const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
+// const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //test address
 
 export default function Sweepstakes() {
   const [time, setTime] = useState<string>()
@@ -55,8 +55,8 @@ export default function Sweepstakes() {
   ) //polygon mooney
 
   const { contract: mooneyETHContract } = useContract(
-    // '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395',
-    '0xa1fF0A4a63f067Fc79Daf4ec3a079c73F9a88E12', // testnet
+    '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395',
+    // '0xa1fF0A4a63f067Fc79Daf4ec3a079c73F9a88E12', // sepolia testnet
     ERC20.abi
   ) //eth mooney
 
@@ -257,7 +257,7 @@ export default function Sweepstakes() {
                         className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
                         label="Use Ethereum Network"
                         action={() => {
-                          setSelectedChain(Sepolia)
+                          setSelectedChain(Ethereum)
                           setEnableEthMintInfoModal(true)
                         }}
                       />}

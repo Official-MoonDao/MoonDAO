@@ -130,7 +130,6 @@ export function SubmitTTSInfoModalETH({
       throw new Error('Not Enough Mooney')
     }
 
-    setStatus('Reserving ticket')
     await burn() //rejected by user?
     setStatus('')
   }
@@ -210,6 +209,8 @@ export function SubmitTTSInfoModalETH({
               try {
                 if (!email || !fullName || !email.includes('@'))
                   return toast.error('Please fill in all fields')
+
+                setStatus('Reserving ticket')
 
                 setSubmitting(true)
                 const signature = await signMessage()

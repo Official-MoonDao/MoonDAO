@@ -18,15 +18,12 @@ const apiKeyMiddleware = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   const nonceRecord = await Nonce.findOne({ address })
-  console.log('yo')
-  console.log(nonceRecord)
   if (nonceRecord && nonceRecord.nonce) {
     const recoveredAddress = ethers.utils.verifyMessage(
       'Please sign for verify and register your new NFTs into the sweepstakes. #' +
         nonceRecord.nonce,
       apiKey as string
     )
-    console.log(address, recoveredAddress)
     if (address === recoveredAddress) {
       return true
     }
