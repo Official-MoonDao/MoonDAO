@@ -28,7 +28,7 @@ const isDevEnv = process.env.NODE_ENV === 'development'
 
 function StageContainer({ children }: any) {
   return (
-    <section className="py-8 w-[336px] sm:w-[400px] lg:w-full font-RobotoMono">
+    <section className="w-[336px] sm:w-[400px] lg:w-full font-RobotoMono">
       {children}
     </section>
   )
@@ -184,6 +184,13 @@ export function OnboardingStageManager({ usdQuotes }: any) {
         <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
           SELECT MEMBERSHIP
         </h1>
+        
+        <ContributionLevels
+          selectedChain={selectedChain}
+          selectedLevel={selectedLevel}
+          setSelectedLevel={setSelectedLevel}
+          usdQuotes={usdQuotes}
+        />
         <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
           <p>
             <Link
@@ -196,12 +203,6 @@ export function OnboardingStageManager({ usdQuotes }: any) {
             </Link>
           </p>
         </div>
-        <ContributionLevels
-          selectedChain={selectedChain}
-          selectedLevel={selectedLevel}
-          setSelectedLevel={setSelectedLevel}
-          usdQuotes={usdQuotes}
-        />
         <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
           <p>
             {`
@@ -381,7 +382,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   ]
 
   return (
-    <div className="flex flex-col pt-10 w-full h-full">
+    <div className="flex flex-col pt-4 w-full h-full">
       <MultiStepStage steps={steps} />
     </div>
   )
