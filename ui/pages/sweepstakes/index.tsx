@@ -125,8 +125,11 @@ export default function Sweepstakes() {
 
   return (
     <main className="animate-fadeIn">
-      <Head title="Ticket to Space" />
-      <div className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 page-border-and-color font-RobotoMono w-[336px] sm:w-[400px] lg:mt-10 md:w-full lg:max-w-[1080px] text-slate-950 dark:text-white">
+      <Head
+        title="Ticket to Space"
+        image="https://gray-main-toad-36.mypinata.cloud/ipfs/QmdTYGGb5ayHor23WeCsNeT61Qzj8JK9EQmxKWeuGTQhYq"
+      />
+      <div className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 page-border-and-color font-RobotoMono w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] text-slate-950 dark:text-white">
         <h1 className={`page-title`}>Ticket to Space</h1>
         {/* <h3 className="mt-5 lg:mt-8 font-bold text-center lg:text-left text-lg lg:text-xl xl:text-2xl">
           Take the leap, for the chance to win a trip to space!

@@ -2,12 +2,14 @@ import Head from 'next/head'
 
 const defaultDescription = "Let's decentralize access to space!"
 
+const defaultImage = 'https://dweb.link/ipfs/QmVyGXVwnWUSCFY2vtYpcVryVyDdLKx4Wi7k57dSoo9Bpf'
+
 export default function WebsiteHead({
   title,
   description = defaultDescription,
+  image = defaultImage,
 }: any) {
-  const image =
-    'https://dweb.link/ipfs/QmVyGXVwnWUSCFY2vtYpcVryVyDdLKx4Wi7k57dSoo9Bpf'
+
 
   return (
     <Head>
