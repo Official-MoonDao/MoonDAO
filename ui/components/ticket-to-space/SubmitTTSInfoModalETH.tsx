@@ -4,31 +4,27 @@ import { BigNumber } from 'ethers'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { Polygon } from '@thirdweb-dev/chains'
 
-type SubmitInfoModalProps = {
-  balance: any
+
+type SubmitInfoModalPropsETH = {
   quantity: any
   setEnabled: Function
-  ttsContract: any
+  setChain: Function
   mooneyContract: any
-  claimFree?: Function
-  approveToken?: Function
-  mint?: Function
+  burn?: Function
 }
 
 const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //prod address
 // const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //test address
 
-export function SubmitTTSInfoModal({
-  balance,
+export function SubmitTTSInfoModalETH({
   quantity,
   setEnabled,
-  ttsContract,
+  setChain,
   mooneyContract,
-  claimFree,
-  approveToken,
-  mint,
-}: SubmitInfoModalProps) {
+  burn,
+}: SubmitInfoModalPropsETH) {
   const address = useAddress()
 
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -42,24 +38,6 @@ export function SubmitTTSInfoModal({
 
   function timeout(delay: number) {
     return new Promise( res => setTimeout(res, delay) );
-  } 
-
-  function filterNewNFTS(
-    prevNFTs: Array<BigNumber>,
-    newNFTs: Array<BigNumber>
-  ) {
-    const nftsToSubmit = []
-    for (let i = 0; i < newNFTs.length; i++) {
-      let found = false
-      for (let j = 0; j < prevNFTs.length; j++) {
-        if (newNFTs[i]._hex == prevNFTs[j]._hex) {
-          found = true
-        }
-      }
-      if (!found) nftsToSubmit.push(newNFTs[i]._hex)
-    }
-
-    return nftsToSubmit
   }
 
   async function signMessage() {
@@ -76,17 +54,17 @@ export function SubmitTTSInfoModal({
     return signature
   }
 
-  async function submitInfoToDB(tokenId: number | string, signature: string) {
+  async function submitNftToDB(tokenId: number | string, signature: string) {
     try {
-      await fetch(`/api/db/nft?address=${address}`, {
+      await fetch(`/api/db/mainnetTx?address=${address}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'moondao-api-key': signature,
         } as any,
         body: JSON.stringify({
-          tokenId,
-          email,
+          state: 'PENDING',
+          email: email,
           name: fullName,
           address: address,
         }),
@@ -99,95 +77,81 @@ export function SubmitTTSInfoModal({
     }
   }
 
-  async function claimFreeTicket(claimFree: Function) {
-    setStatus('Claiming free ticket')
-    await claimFree()
-    setStatus('')
-
-    const newBalance = await ttsContract.call('balanceOf', [address])
-
-    if (newBalance.toString() > balance.toString()) {
-      toast.success('You successfully claimed your free ticket!')
+  async function submitUserToDB(signature: string) {
+    try {
+      await fetch(`/api/db/user?address=${address}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'moondao-api-key': signature,
+        } as any,
+        body: JSON.stringify({
+          email: email,
+          name: fullName,
+          address: address,
+        }),
+      })
+    } catch (err) {
+      toast.error(
+        'There was an issue adding your info to the database. Please contact a moondao member.'
+      )
       setSubmitting(false)
-    } else {
-      toast.error('Claiming failed')
-      setSubmitting(false)
-      throw new Error('Claiming failed')
     }
   }
 
-  async function mintTicket(approveToken: Function, mint: Function) {
+  async function getUserNfts(signature: string) {
+    try {
+      await fetch(`/api/db/mainnetTx/?address=${address}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'moondao-api-key': signature,
+        } as any,
+      }).then((data: any) => {
+        return data.json().length
+      })
+    } catch (err) {
+      toast.error(
+        'Error reserving NFTs. Please try again.'
+      )
+      setSubmitting(false)
+    }
+  }
+
+  async function burnMooney(burn: Function) {
     //check mooney balance
     const mooneyBalance = await mooneyContract.call('balanceOf', [address])
 
     if (mooneyBalance.toString() < 20000 * quantity * 10 ** 18) {
       toast.error(
-        'You do not have enough Mooney to mint this ticket. Please purchase more Mooney and try again.'
+        'You do not have enough Mooney to reserve this ticket. Please purchase more Mooney and try again.'
       )
       setSubmitting(false)
       throw new Error('Not Enough Mooney')
     }
 
-    //check token allowance
-    const tokenAllowance = await mooneyContract.call('allowance', [
-      address,
-      TICKET_TO_SPACE_ADDRESS,
-    ])
-
-    if (tokenAllowance.toString() < 20000 * quantity * 10 ** 18) {
-      setStatus('Approving token allowance')
-      await approveToken()
-      setStatus('')
-
-      //check if approval was successful
-      const newTokenAllowance = await mooneyContract.call('allowance', [
-        address,
-        TICKET_TO_SPACE_ADDRESS,
-      ])
-
-      if (newTokenAllowance.toString() >= 20000 * quantity * 10 ** 18) {
-        setStatus('Minting ticket')
-        await mint()
-        setStatus('')
-      } else {
-        setStatus('')
-        toast.error('Token approval failed')
-        setSubmitting(false)
-        throw new Error('Token Approval Error')
-      }
-    } else {
-      setStatus('Minting ticket')
-      await mint()
-      setStatus('')
-    }
-
-    const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
-
-    if (ownedNfts.length == parseInt(balance) + parseInt(quantity)) {
-      toast.success(
-        `You successfully minted ${quantity} Ticket to Space ${
-          quantity === 1 ? 'NFT' : 'NFTs'
-        }!`
-      )
-    }
-    else {
-      toast.error('Minting failed')
-      setSubmitting(false)
-      throw new Error('Minting error')
-    }
+    await burn() //rejected by user?
+    setStatus('')
   }
 
   return (
     <div
       onClick={(e: any) => {
-        if (e.target.id === 'submit-tts-info-modal-backdrop' && !submitting) setEnabled(false)
+        if (e.target.id === 'submit-tts-info-modal-backdrop' && !submitting) {
+          setChain(Polygon)
+          setEnabled(false)
+        }
       }}
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes</h1>
-        <p className="opacity-50 mb-4 text-gray-300">
+        <p className="mb-2 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white p-2">
+          You are acquiring your NFT using $MOONEY on the Ethereum chain. 
+          After confirming your transaction your NFT will be minted on the Polygon chain to the same wallet address within 24 hours.
+        </p>
+        <p className="opacity-50 mb-4 text-gray-300 p-2">
           Please enter your <span className="font-black text-moon-gold">full legal name</span> (as displayed on a government issued
           photo ID) and the best email for us to contact you if you win a prize
           the Sweepstakes. By submitting your information, you agree to our
@@ -229,7 +193,10 @@ export function SubmitTTSInfoModal({
         <div className="flex w-full justify-between">
           <button
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white enabled:hover:bg-white enabled:hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange disabled:opacity-50"
-            onClick={() => setEnabled(false)}
+            onClick={() => {
+              setChain(Polygon)
+              setEnabled(false)
+            }}
             disabled={submitting}
           >
             Back
@@ -243,48 +210,49 @@ export function SubmitTTSInfoModal({
                 if (!email || !fullName || !email.includes('@'))
                   return toast.error('Please fill in all fields')
 
+                setStatus('Reserving ticket')
+
                 setSubmitting(true)
                 const signature = await signMessage()
-                await submitInfoToDB('xxx', signature)
+                console.log(signature)
 
-                // Get list of NFT the address currently holds
-                const prevNFTBalance =
-                  await ttsContract.erc721.getOwnedTokenIds(address)
+                // Add user info to database
+                await submitUserToDB(signature)
 
-                //CLaim Free Ticket
-                if (claimFree) {
-                  await claimFreeTicket(claimFree)
-                  //Approve Mooney & Mint Ticket
-                } else if (approveToken && mint) {
-                  await mintTicket(approveToken, mint)
+                // Get user NFTs from database. If the sum of the amount they are trying to reserve and the amount in the db is greater than 50, then throw an error.
+                const userNFTs : any = await getUserNfts(signature)
+
+                if (quantity > 50 - userNFTs) {
+                  toast.error(
+                    "You are reserving more NFTs than you are allowed. Currently there are " + userNFTs + " NFTs reserved under your address."
+                  )
+                  setChain(Polygon)
+                  return setEnabled(false)
+                }
+
+                // Perform the MOONEY burn
+                if (burn) {
+                  await burnMooney(burn)
                 }
 
                 setStatus('Verifying identity')
 
-                await timeout(3000);
-
-                const newNFTBalance = await ttsContract.erc721.getOwnedTokenIds(
-                  address
-                )
-
-                const nftsToSubmit = filterNewNFTS(
-                  prevNFTBalance,
-                  newNFTBalance
-                )
-
+                // Add Reserved NFTs to database
                 try {
-                  for (let i = 0; i < nftsToSubmit.length; i++) {
-                    await submitInfoToDB(nftsToSubmit[i], signature)
+                  for (let i = 0; i < quantity; i++) {
+                    await submitNftToDB('pending', signature)
                   }
                 } catch (err: any) {
                   toast.error(
-                    'Error verifying NFT identity. Please contact MoonDAO support'
+                    'Error verifying identity. Please contact MoonDAO support'
                   )
+                  setChain(Polygon)
                   return setEnabled(false)
                 }
 
-                toast.success('Your NFT(s) have been verified and registered!')
+                toast.success('Your NFT(s) have been reserved! They will be sent to your polygon wallet within 24 hours.')
 
+                setChain(Polygon)
                 setEnabled(false)
               } catch (err: any) {
                 console.log(err.message)

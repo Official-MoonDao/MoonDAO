@@ -1,4 +1,4 @@
-import { Polygon } from '@thirdweb-dev/chains'
+import { Polygon, Ethereum } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
   useAddress,
@@ -16,6 +16,7 @@ import { initSDK } from '../../lib/thirdweb/thirdweb'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
 import Head from '../../components/layout/Head'
+import L2Toggle from '../../components/lock/L2Toggle'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
 import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
 import { SubmitTTSInfoModal } from '../../components/ticket-to-space/SubmitTTSInfoModal'
@@ -23,14 +24,17 @@ import { ViewNFTDataModal } from '../../components/ticket-to-space/ViewNFTDataMo
 import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
+import { SubmitTTSInfoModalETH } from '../../components/ticket-to-space/SubmitTTSInfoModalETH'
 
 const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
+// const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //test address
 
 export default function Sweepstakes() {
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(0)
   const [enableMintInfoModal, setEnableMintInfoModal] = useState(false)
+  const [enableEthMintInfoModal, setEnableEthMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
   const [enableViewNFTsModal, setViewNFTsModal] = useState(false)
 
@@ -48,7 +52,13 @@ export default function Sweepstakes() {
   const { contract: mooneyContract } = useContract(
     '0x74Ac7664ABb1C8fa152D41bb60e311a663a41C7E',
     ERC20.abi
-  ) //mumbai mooney
+  ) //polygon mooney
+
+  const { contract: mooneyETHContract } = useContract(
+    '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395',
+    // '0xa1fF0A4a63f067Fc79Daf4ec3a079c73F9a88E12', // sepolia testnet
+    ERC20.abi
+  ) //eth mooney
 
   const { mutateAsync: approveToken } = useTokenApproval(
     mooneyContract,
@@ -61,6 +71,11 @@ export default function Sweepstakes() {
 
   const { mutateAsync: mint } = useHandleWrite(ttsContract, 'mint', [
     BigNumber.from(quantity || 0),
+  ])
+
+  const { mutateAsync: burn } = useHandleWrite(mooneyETHContract, 'transfer', [
+    "0x000000000000000000000000000000000000dead", 
+    ethers.utils.parseEther(String(20000 * quantity))
   ])
 
   const { mutateAsync: claimFree } = useHandleWrite(ttsContract, 'claimFree', [
@@ -85,8 +100,12 @@ export default function Sweepstakes() {
 
   const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
 
+  const [nftWidth, setNftWidth] = useState(0)
+
   useEffect(() => {
     setSelectedChain(Polygon)
+    setNftWidth(document.getElementById('nft-container')!.offsetWidth! * 0.6)
+    if (screen.availWidth < 768) setNftWidth(document.getElementById('nft-container')!.offsetWidth! * 0.9)
     const ts = Math.floor(1705132740 - new Date().valueOf() / 1000)
     if (ts > 86400) setTime('T-' + Math.floor(ts / 86400) + ' Days')
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
@@ -115,48 +134,26 @@ export default function Sweepstakes() {
         {/* <h3 className="mt-5 lg:mt-8 font-bold text-center lg:text-left text-lg lg:text-xl xl:text-2xl">
           Take the leap, for the chance to win a trip to space!
         </h3> */}
-        <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
-          {`One person will be randomly selected to win an opportunity aboard a future Blue Origin rocket to space! Each NFT costs 20,000 $MOONEY (`}
-          <Link
-            className="text-moon-gold"
-            href="https://www.youtube.com/watch?v=VxU8dOrL0fE"
-            target="_blank"
-          >
-            {'Watch Tutorial'}
-          </Link>
-          {`), aquire some `}
-          <Link className="text-moon-gold" href="/join">
-            {' by joining MoonDAO'}
-          </Link>
-          {`. If you already have $MOONEY, `}
-          <Link
-            className="text-moon-gold"
-            href="https://youtu.be/oQtHjbcbAio?feature=shared"
-            target="_blank"
-          >
-            {' bridge your tokens '}
-          </Link>
-          {`to the Polygon PoS Network. You can mint up to 50 entries.`}
-        </p>
 
         {/*Collection title, image and description*/}
-        <div className="mt-6 inner-container-background relative w-full">
+        <div className="mt-6 inner-container-background relative w-full pb-3">
           {collectionMetadata && (
-            <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]">
-              <div className="md:flex">
-                <div className="m-auto my-2 p-2 flex justify-center">
+            <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]" id="nft-container">
+              <div className="md:flex md:justify-between md:gap-2 xl:gap-8">
+                <div className="flex justify-center border-[1px] md:border-[2px] border-[#1F212B] dark:border-white">
                   <MediaRenderer
                     src={
                       'ipfs://Qmba3umb3db7DqCA19iRSSbtzv9nYUmP8Cibo5QMkLpgpP'
                     }
-                    width={'300px'}
+                    width={nftWidth+'px'}
+                    height={nftWidth+'px'}
                   />
                 </div>
                 {/*Quantity, price, expiration, balance */}
-                <div className="flex flex-col justify-center m-auto mt-4 lg:mt-4 gap-2 lg:gap-4">
+                <div className="grow flex flex-col lg:py-3 gap-2 xl:gap-6 mt-2 md:mt-0 md:text-sm md:w-1/4 border-[1px] md:border-[2px] border-[#1F212B] dark:border-white p-3 xl:px-6">
                   <div>
-                    <p className="opacity-70 lg:text-xl">Total Minted</p>
-                    <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
+                    <p className="opacity-70 xl:text-xl">Total Minted</p>
+                    <p className="mt-1 lg:mt-2 font-semibold xl:text-lg">
                       {supply
                         ? supply + (supply > 1 ? ' Tickets' : ' Ticket')
                         : '...loading'}
@@ -165,15 +162,15 @@ export default function Sweepstakes() {
 
                   {/* Pricing information */}
                   <div>
-                    <p className="opacity-70 lg:text-xl">Price</p>
-                    <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
+                    <p className="opacity-70 xl:text-xl">Price</p>
+                    <p className="mt-1 lg:mt-2 font-semibold xl:text-lg">
                       20,000 MOONEY
                     </p>
                   </div>
                   {/*Expiration*/}
                   <div>
-                    <p className="opacity-70 lg:text-xl">Expiration</p>
-                    <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
+                    <p className="opacity-70 xl:text-xl">Expiration</p>
+                    <p className="mt-1 lg:mt-2 font-semibold xl:text-lg">
                       {time}
                     </p>
                   </div>
@@ -182,8 +179,8 @@ export default function Sweepstakes() {
                   {address && (
                     <>
                       <div>
-                        <p className="opacity-70 lg:text-xl">Your Balance</p>
-                        <p className="mt-1 lg:mt-2 font-semibold lg:text-lg">
+                        <p className="opacity-70 xl:text-xl">Your Balance</p>
+                        <p className="mt-1 lg:mt-2 font-semibold xl:text-lg">
                           {balance
                             ? balance.toString() +
                               (balance == 1 ? ' Ticket' : ' Tickets')
@@ -191,32 +188,32 @@ export default function Sweepstakes() {
                         </p>
                       </div>
 
-                      <div>
-                        <button
-                          className="p-3 bg-moon-orange lg:text-lg"
-                          onClick={openViewNFTs}
-                        >
-                          View your NFTs
-                        </button>
-                        {enableViewNFTsModal && (
-                          <ViewNFTDataModal
-                            ttsContract={ttsContract}
-                            setEnabled={setViewNFTsModal}
-                          />
-                        )}
-                      </div>
+                      <div className='grow flex flex-col justify-end gap-2 xl:gap-4'>
+                      <button
+                        className="p-3 bg-moon-orange text-xs xl:text-base"
+                        onClick={openViewNFTs}
+                      >
+                        View your NFTs
+                      </button>
+                      {enableViewNFTsModal && (
+                        <ViewNFTDataModal
+                          ttsContract={ttsContract}
+                          setEnabled={setViewNFTsModal}
+                        />
+                      )}
                       {balance && +balance.toString() > 0 && (
                         <button
-                          className="p-3 bg-moon-orange lg:text-lg"
+                          className="p-3 bg-moon-orange text-xs xl:text-base"
                           onClick={() =>
                             window.open(
                               `https://twitter.com/intent/tweet?text=I%20entered%20to%20win%20a%20ticket%20to%20space%20through%20%0A%40OfficialMoonDAO%0A%0ASo%20awesome%20to%20know%20I%20have%20a%20chance%20to%20go%20to%20space!%20%0A%0AGet%20yours%20here%20⬇%EF%B8%8F&url=https%3A%2F%2Fapp.moondao.com%2Fsweepstakes`
                             )
                           }
                         >
-                          Click to Tweet
+                          Share on X
                         </button>
                       )}
+                      </div>
                     </>
                   )}
                 </div>
@@ -229,19 +226,19 @@ export default function Sweepstakes() {
                     <p className="mb-1 dark:text-white lg:text-xl">
                       Quantity to Mint
                     </p>
-                    <div className="h-[58px] flex w-[250px] md:w-[400px] bg-white bg-opacity-5 justify-between p-2 border-[1px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40">
+                    <div className={`md:h-[64px] flex flex-col md:flex-row w-full justify-left ${!address && 'justify-between'} gap-3 p-2 border-[1px] md:border-[2px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-401`}>
                       <input
-                        className="ml-2 w-1/2 dark:text-white bg-transparent focus:outline-none"
+                        className="grow-0 md:ml-2 w-full md:w-1/5 dark:text-white bg-white bg-opacity-5 bg-transparent focus:outline-none text-center p-2"
                         type="number"
                         step={1}
                         max={balance ? 50 - +balance : 0}
-                        min={1}
+                        min={0}
                         placeholder={'1'}
                         onChange={(e: any) => {
                           if (e.target.value > 50 - balance) {
                             toast.error('Cannot mint more than 50')
                             setQuantity(50 - balance)
-                          } else if (e.target.value < 1) {
+                          } else if (e.target.value < 0) {
                             toast.error('Mint quantity must be at least 1')
                             console.log(e.target.value)
                             setQuantity(1)
@@ -252,22 +249,43 @@ export default function Sweepstakes() {
                         value={quantity}
                       />
                       <PrivyWeb3Button
-                        className="text-white rounded-none bg-moon-orange w-[160px]"
+                        className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
                         label="Mint"
-                        action={() => setEnableMintInfoModal(true)}
+                        action={() => {
+                          setSelectedChain(Polygon)
+                          setEnableMintInfoModal(true)
+                        }}
                       />
+                      {address && <PrivyWeb3Button
+                        className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
+                        label="Use Ethereum Network"
+                        action={() => {
+                          setSelectedChain(Ethereum)
+                          setEnableEthMintInfoModal(true)
+                        }}
+                      />}
                     </div>
                   </div>
+
                   {enableMintInfoModal && (
                     <SubmitTTSInfoModal
                       balance={balance}
                       quantity={quantity}
-                      supply={supply}
                       approveToken={approveToken}
                       mint={mint}
                       setEnabled={setEnableMintInfoModal}
                       ttsContract={ttsContract}
                       mooneyContract={mooneyContract}
+                    />
+                  )}
+
+                  {enableEthMintInfoModal && (
+                    <SubmitTTSInfoModalETH
+                      quantity={quantity}
+                      setEnabled={setEnableEthMintInfoModal}
+                      setChain={setSelectedChain}
+                      mooneyContract={mooneyETHContract}
+                      burn={burn}
                     />
                   )}
                 </div>
@@ -296,7 +314,6 @@ export default function Sweepstakes() {
                         <SubmitTTSInfoModal
                           quantity={quantity}
                           balance={balance}
-                          supply={supply}
                           claimFree={claimFree}
                           setEnabled={setEnableFreeMintInfoModal}
                           ttsContract={ttsContract}
@@ -311,7 +328,29 @@ export default function Sweepstakes() {
               </div>
             </div>
           )}
+          <div className="mx-5 mb-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
+          <div>
+            {`One person will be randomly selected to win an opportunity on a future Blue Origin rocket to space! 
+              Each NFT entry requires burning 20,000 $MOONEY. You can mint up to 50 entries.`}
+          </div>
+          <div className='mt-2'>
+            {`You can acquire $MOONEY `}
+            <Link className="text-moon-gold" href="/join">
+              {' using our app'}
+            </Link>
+            {` (`}
+            <Link
+              className="text-moon-gold"
+              href="https://youtu.be/oQtHjbcbAio?feature=shared"
+              target="_blank"
+            >
+              {'watch tutorial'}
+            </Link>
+            {`). If your $MOONEY is on the Ethereum network click "Use Ethereum Network" to enter.`}
+          </div>
         </div>
+        </div>
+
         <p className="mt-4 text-sm">
           NO PURCHASE OR OBLIGATION NECESSARY TO ENTER OR WIN. PURCHASE WILL NOT
           INCREASE YOUR ODDS OF WINNING. IT IS NOT NECESSARY TO PURCHASE A

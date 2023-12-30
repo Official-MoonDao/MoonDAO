@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 import { NextApiRequest, NextApiResponse } from 'next'
 import dbConnect from '../mongo'
+import Nonce from './Nonce'
 import User from './User'
 
 const apiKeyMiddleware = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -16,10 +17,11 @@ const apiKeyMiddleware = async (req: NextApiRequest, res: NextApiResponse) => {
     return true
   }
 
-  const user = await User.findOne({ address })
-  if (user && user.nonce) {
+  const nonceRecord = await Nonce.findOne({ address })
+  if (nonceRecord && nonceRecord.nonce) {
     const recoveredAddress = ethers.utils.verifyMessage(
-      "Please sign for verify and register your new NFTs into the sweepstakes. #" + user.nonce,
+      'Please sign for verify and register your new NFTs into the sweepstakes. #' +
+        nonceRecord.nonce,
       apiKey as string
     )
     if (address === recoveredAddress) {
