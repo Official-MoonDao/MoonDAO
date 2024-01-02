@@ -5,13 +5,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Good Times';
+  src: url('/fonts/goodtimesrg.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'Lato';
+  src: url('/fonts/Lato-Regular.ttf') format('truetype');
+}
+
 html,
 body {
   padding: 0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-  overflow: auto;
+  font-family: 'Lato';
 }
 
 .font-acme {
@@ -29,16 +37,6 @@ a {
 
 * {
   box-sizing: border-box;
-}
-
-@font-face {
-  font-family: 'Good Times';
-  src: url('/fonts/goodtimesrg.otf') format('opentype');
-}
-
-@font-face {
-  font-family: 'Roboto Mono';
-  src: url('/fonts/RobotoMono-Regular.ttf') format('truetype');
 }
 
 .galaxy-bg {
