@@ -11,6 +11,11 @@
 }
 
 @font-face {
+  font-family: 'Roboto Mono';
+  src: url('/fonts/RobotoMono-Regular.ttf') format('truetype');
+}
+
+@font-face {
   font-family: 'Lato';
   src: url('/fonts/Lato-Regular.ttf') format('truetype');
 }
@@ -19,7 +24,7 @@ html,
 body {
   padding: 0;
   margin: 0;
-  font-family: Lato;
+  font-family: 'Lato';
   overflow: auto;
 }
 
