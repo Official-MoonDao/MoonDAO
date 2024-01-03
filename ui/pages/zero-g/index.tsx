@@ -1,22 +1,11 @@
-import { useAddress, useContract } from '@thirdweb-dev/react'
+import { useAddress } from '@thirdweb-dev/react'
+import Link from 'next/link'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import Head from '../../components/layout/Head'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
-import VotingEscrowABI from '../../const/abis/VotingEscrow.json'
-import { VMOONEY_ADDRESSES } from '../../const/config'
 
 export default function ZeroG() {
   const address = useAddress()
-
-  const { contract: L1vMooneyContract }: any = useContract(
-    VMOONEY_ADDRESSES['ethereum'],
-    VotingEscrowABI.abi
-  )
-
-  const { contract: L2vMooneyContract }: any = useContract(
-    VMOONEY_ADDRESSES['polygon'],
-    VotingEscrowABI.abi
-  )
 
   const validVP = useValidVP(address)
 
@@ -28,34 +17,32 @@ export default function ZeroG() {
         <h2 className="page-title">Zero-G Flight</h2>
 
         <div className="mt-3 lg:mt-4 font-RobotoMono">
-          {/*Subtitle */}
-          <div className="mt-6 lg:mt-2 text-center lg:text-left text-black dark:text-white lg:text-lg">
-            <p className="">
-              {`In partnership with `}
-              <br className="lg:hidden" />
-              <a
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-block cursor-pointer text-moon-orange hover:scale-[1.025] ease-in-ease-out duration-300"
-                onClick={() => window.open('https://spaceforabetterworld.com/')}
-              >
-                {'Space for a Better World'}
-              </a>
-            </p>
-          </div>
+          <iframe
+            className="mt-6 aspect-video object-cover w-full"
+            src="https://www.youtube.com/embed/Ie7WIhz99vU?showinfo=0&controls=1&rel=0&mute=1&autoplay=1"
+            allowFullScreen
+          />
 
-          <p className="mt-6 font-mono text-base xl:text-lg lg:text-left text-center leading-8 text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+          <p className="mt-6 font-RobotoMono text-base xl:text-lg lg:text-left text-center leading-8 text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`MoonDAO has chartered an entire ZeroG flight in partnership with `}
+            <Link
+              href="https://spaceforabetterworld.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="cursor-pointer text-moon-orange ease-in-ease-out duration-300"
+            >
+              {'Space for a Better World'}
+            </Link>
+            {`. Aboard the flight will be three NASA legends: Apollo 16 Moonwalker Charlie Duke, Nicole Stott, and Doug Hurley. `}
+          </p>
+
+          <p className="mt-6 font-RobotoMono text-base xl:text-lg lg:text-left text-center leading-8 text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
             {`The team’s Boeing 727 flies in parabolic arcs to create a weightless environment, allowing you to float, flip, and soar as if you were in space. Start training for a journey to the Moon and experience the adventure of a lifetime with our Zero-G flight!`}
           </p>
 
-          <a
-            className="mt-6 lg:mt-7 text-moon-orange font-RobotoMono inline-block text-sm text-center w-full lg:text-left hover:text-orange-600 transition-all duration-105 cursor-pointer"
-            target="_blank"
-            rel="noreferrer"
-            href="https://www.moondao.com/zero-g"
-          >
-            Event Details →
-          </a>
+          <p className="mt-6 lg:mt-7 text-moon-orange font-RobotoMono inline-block text-sm text-center w-full lg:text-left">
+            Feb 23, 2024 at Kennedy Space Center, Florida
+          </p>
         </div>
 
         <section className="mt-6 w-full flex flex-col items-center lg:items-start">
