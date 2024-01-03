@@ -21,7 +21,7 @@ export default function PurchasePortal({ validVP }: any) {
   }, [validVP])
 
   return (
-    <ReservationRaffleLayout title="Purchase">
+    <>
       {state === 0 && (
         <>
           <Button
@@ -40,7 +40,7 @@ export default function PurchasePortal({ validVP }: any) {
       {state === 1 && (
         <>
           <div className="mt-3">
-            <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">
+            <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7 font-RobotoMono">
               {`Use Promo Code ${process.env.NEXT_PUBLIC_ZERO_G_PROMO_CODE} at checkout to receive $1,000 off your flight!`}
             </p>
             <Button
@@ -60,7 +60,7 @@ export default function PurchasePortal({ validVP }: any) {
       )}
       {state === 2 && (
         <div className="mt-3">
-          <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">{`MoonDAO members can claim $1,000 off, please connect a wallet that has vMooney to receive a discount code, otherwise press continue.`}</p>
+          <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7 font-RobotoMono">{`MoonDAO members can claim $1,000 off, please connect a wallet that has voting power to receive a discount code, otherwise press continue.`}</p>
           <Button
             onClick={() => {
               window.open('https://www.gozerog.com/ksc-with-md-and-spacefabw/')
@@ -73,6 +73,6 @@ export default function PurchasePortal({ validVP }: any) {
           </Button>
         </div>
       )}
-    </ReservationRaffleLayout>
+    </>
   )
 }

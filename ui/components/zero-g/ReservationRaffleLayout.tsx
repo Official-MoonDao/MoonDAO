@@ -16,14 +16,7 @@ export default function ReservationRaffleLayout({
           <div
             className={` min-w-80 lg:w-full rounded-2xl text-[#071732] dark:text-white inner-container-background font-RobotoMono overflow-visible `}
           >
-            <div className={` ${className} p-[5%]`}>
-              <h2
-                className={` text-center text-xl dark:text-white font-GoodTimes lg:text-left`}
-              >
-                {title}
-              </h2>
-              {children}
-            </div>
+            <div className={` ${className} p-[5%]`}>{children}</div>
           </div>
         </div>
       ) : (
