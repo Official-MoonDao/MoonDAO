@@ -41,12 +41,12 @@ export default function PurchasePortal({ validVP }: any) {
         <>
           <div className="mt-3">
             <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">
-              {`Use Promo Code "MOONDAO" at checkout to receive $1,000 off your flight!`}
+              {`Use Promo Code ${process.env.NEXT_PUBLIC_ZERO_G_PROMO_CODE} at checkout to receive $1,000 off your flight!`}
             </p>
             <Button
               onClick={() => {
                 window.open(
-                  'https://d2fkch04.na1.hs-sales-engage.com/Ctc/RK+23284/d2FkCH04/Jl22-6qcW7lCdLW6lZ3kSW6VST4-6wXSpPW3D7m8y4KR-PlW91J_rQ6jzqY7W7tnnBn7vG0VqW20j_9P4Hg96-W1CYnbR5nJp3vW7Yfr7F1x0f5vW4g57z22cmfJTW2d_PST73ZnFhW2_JcNR325BWFN9hqVnM_lhw-W35smWZ100JznW99-WZ64MmSTYW8vTcMW3Q4H-sW46TTCz2GMSgsW6Q2FpK4HrFGxW6H41jV6BcfzLW8KyMSl4jXBLHW5-RT8W4M0F-8W30LNg_33vRbQW6dhhWB6sTKP8W7VxsmJ40RSd1W7PcwBx8g-Q54VnqgRD15xWDPf8s5qtP04'
+                  'https://www.gozerog.com/ksc-with-md-and-spacefabw/'
                 )
                 setTimeout(() => {
                   setState(0)
@@ -60,12 +60,10 @@ export default function PurchasePortal({ validVP }: any) {
       )}
       {state === 2 && (
         <div className="mt-3">
-          <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">{`Please connect a wallet that has vMooney to receive a discount code, otherwise press continue.`}</p>
+          <p className="text-sm text-center lg:text-left ease-in-ease-out duration-300 text-opacity-80 leading-7">{`MoonDAO members can claim $1,000 off, please connect a wallet that has vMooney to receive a discount code, otherwise press continue.`}</p>
           <Button
             onClick={() => {
-              window.open(
-                'https://www.gozerog.com/reservations/moondao-spacefabw-flight/'
-              )
+              window.open('https://www.gozerog.com/ksc-with-md-and-spacefabw/')
               setTimeout(() => {
                 setState(0)
               }, 1000)
