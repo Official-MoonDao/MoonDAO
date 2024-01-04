@@ -20,11 +20,11 @@ import L2Toggle from '../../components/lock/L2Toggle'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
 import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
 import { SubmitTTSInfoModal } from '../../components/ticket-to-space/SubmitTTSInfoModal'
+import { SubmitTTSInfoModalETH } from '../../components/ticket-to-space/SubmitTTSInfoModalETH'
 import { ViewNFTDataModal } from '../../components/ticket-to-space/ViewNFTDataModal'
 import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { devWhitelist } from '../../const/tts/whitelist'
-import { SubmitTTSInfoModalETH } from '../../components/ticket-to-space/SubmitTTSInfoModalETH'
 
 const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
 // const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //test address
@@ -74,8 +74,8 @@ export default function Sweepstakes() {
   ])
 
   const { mutateAsync: burn } = useHandleWrite(mooneyETHContract, 'transfer', [
-    "0x000000000000000000000000000000000000dead", 
-    ethers.utils.parseEther(String(20000 * quantity))
+    '0x000000000000000000000000000000000000dead',
+    ethers.utils.parseEther(String(20000 * quantity)),
   ])
 
   const { mutateAsync: claimFree } = useHandleWrite(ttsContract, 'claimFree', [
@@ -105,7 +105,8 @@ export default function Sweepstakes() {
   useEffect(() => {
     setSelectedChain(Polygon)
     setNftWidth(document.getElementById('nft-container')!.offsetWidth! * 0.6)
-    if (screen.availWidth < 768) setNftWidth(document.getElementById('nft-container')!.offsetWidth! * 0.9)
+    if (screen.availWidth < 768)
+      setNftWidth(document.getElementById('nft-container')!.offsetWidth! * 0.9)
     const ts = Math.floor(1705132740 - new Date().valueOf() / 1000)
     if (ts > 86400) setTime('T-' + Math.floor(ts / 86400) + ' Days')
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
@@ -138,15 +139,18 @@ export default function Sweepstakes() {
         {/*Collection title, image and description*/}
         <div className="mt-6 inner-container-background relative w-full pb-3">
           {collectionMetadata && (
-            <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]" id="nft-container">
+            <div
+              className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]"
+              id="nft-container"
+            >
               <div className="md:flex md:justify-between md:gap-2 xl:gap-8">
                 <div className="flex justify-center border-[1px] md:border-[2px] border-[#1F212B] dark:border-white">
                   <MediaRenderer
                     src={
                       'ipfs://Qmba3umb3db7DqCA19iRSSbtzv9nYUmP8Cibo5QMkLpgpP'
                     }
-                    width={nftWidth+'px'}
-                    height={nftWidth+'px'}
+                    width={nftWidth + 'px'}
+                    height={nftWidth + 'px'}
                   />
                 </div>
                 {/*Quantity, price, expiration, balance */}
@@ -188,31 +192,31 @@ export default function Sweepstakes() {
                         </p>
                       </div>
 
-                      <div className='grow flex flex-col justify-end gap-2 xl:gap-4'>
-                      <button
-                        className="p-3 bg-moon-orange text-xs xl:text-base"
-                        onClick={openViewNFTs}
-                      >
-                        View your NFTs
-                      </button>
-                      {enableViewNFTsModal && (
-                        <ViewNFTDataModal
-                          ttsContract={ttsContract}
-                          setEnabled={setViewNFTsModal}
-                        />
-                      )}
-                      {balance && +balance.toString() > 0 && (
+                      <div className="grow flex flex-col justify-end gap-2 xl:gap-4">
                         <button
                           className="p-3 bg-moon-orange text-xs xl:text-base"
-                          onClick={() =>
-                            window.open(
-                              `https://twitter.com/intent/tweet?text=I%20entered%20to%20win%20a%20ticket%20to%20space%20through%20%0A%40OfficialMoonDAO%0A%0ASo%20awesome%20to%20know%20I%20have%20a%20chance%20to%20go%20to%20space!%20%0A%0AGet%20yours%20here%20⬇%EF%B8%8F&url=https%3A%2F%2Fapp.moondao.com%2Fsweepstakes`
-                            )
-                          }
+                          onClick={openViewNFTs}
                         >
-                          Share on X
+                          View your NFTs
                         </button>
-                      )}
+                        {enableViewNFTsModal && (
+                          <ViewNFTDataModal
+                            ttsContract={ttsContract}
+                            setEnabled={setViewNFTsModal}
+                          />
+                        )}
+                        {balance && +balance.toString() > 0 && (
+                          <button
+                            className="p-3 bg-moon-orange text-xs xl:text-base"
+                            onClick={() =>
+                              window.open(
+                                `https://twitter.com/intent/tweet?text=I%20entered%20to%20win%20a%20ticket%20to%20space%20through%20%0A%40OfficialMoonDAO%0A%0ASo%20awesome%20to%20know%20I%20have%20a%20chance%20to%20go%20to%20space!%20%0A%0AGet%20yours%20here%20⬇%EF%B8%8F&url=https%3A%2F%2Fapp.moondao.com%2Fsweepstakes`
+                              )
+                            }
+                          >
+                            Share on X
+                          </button>
+                        )}
                       </div>
                     </>
                   )}
@@ -226,7 +230,11 @@ export default function Sweepstakes() {
                     <p className="mb-1 dark:text-white lg:text-xl">
                       Quantity to Mint
                     </p>
-                    <div className={`md:h-[64px] flex flex-col md:flex-row w-full justify-left ${!address && 'justify-between'} gap-3 p-2 border-[1px] md:border-[2px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-401`}>
+                    <div
+                      className={`md:h-[64px] flex flex-col md:flex-row w-full justify-left ${
+                        !address && 'justify-between'
+                      } gap-3 p-2 border-[1px] md:border-[2px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-401`}
+                    >
                       <input
                         className="grow-0 md:ml-2 w-full md:w-1/5 dark:text-white bg-white bg-opacity-5 bg-transparent focus:outline-none text-center p-2"
                         type="number"
@@ -256,14 +264,16 @@ export default function Sweepstakes() {
                           setEnableMintInfoModal(true)
                         }}
                       />
-                      {address && <PrivyWeb3Button
-                        className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
-                        label="Use Ethereum Network"
-                        action={() => {
-                          setSelectedChain(Ethereum)
-                          setEnableEthMintInfoModal(true)
-                        }}
-                      />}
+                      {address && (
+                        <PrivyWeb3Button
+                          className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
+                          label="Use Ethereum Network"
+                          action={() => {
+                            setSelectedChain(Ethereum)
+                            setEnableEthMintInfoModal(true)
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -329,26 +339,26 @@ export default function Sweepstakes() {
             </div>
           )}
           <div className="mx-5 mb-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
-          <div>
-            {`One person will be randomly selected to win an opportunity on a future Blue Origin rocket to space! 
+            <div>
+              {`One person will be randomly selected to win an opportunity on a future Blue Origin rocket to space! 
               Each NFT entry requires burning 20,000 $MOONEY. You can mint up to 50 entries.`}
+            </div>
+            <div className="mt-2">
+              {`You can acquire $MOONEY `}
+              <Link className="text-moon-gold" href="/join">
+                {' using our app'}
+              </Link>
+              {` (`}
+              <Link
+                className="text-moon-gold"
+                href="https://youtu.be/oQtHjbcbAio?feature=shared"
+                target="_blank"
+              >
+                {'watch tutorial'}
+              </Link>
+              {`). If your $MOONEY is on the Ethereum network click "Use Ethereum Network" to enter.`}
+            </div>
           </div>
-          <div className='mt-2'>
-            {`You can acquire $MOONEY `}
-            <Link className="text-moon-gold" href="/join">
-              {' using our app'}
-            </Link>
-            {` (`}
-            <Link
-              className="text-moon-gold"
-              href="https://youtu.be/oQtHjbcbAio?feature=shared"
-              target="_blank"
-            >
-              {'watch tutorial'}
-            </Link>
-            {`). If your $MOONEY is on the Ethereum network click "Use Ethereum Network" to enter.`}
-          </div>
-        </div>
         </div>
 
         <p className="mt-4 text-sm">
