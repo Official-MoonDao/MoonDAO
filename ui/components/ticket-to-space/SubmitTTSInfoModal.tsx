@@ -41,8 +41,8 @@ export function SubmitTTSInfoModal({
   const [submitting, setSubmitting] = useState<boolean>(false)
 
   function timeout(delay: number) {
-    return new Promise( res => setTimeout(res, delay) );
-  } 
+    return new Promise((res) => setTimeout(res, delay))
+  }
 
   function filterNewNFTS(
     prevNFTs: Array<BigNumber>,
@@ -169,8 +169,7 @@ export function SubmitTTSInfoModal({
           quantity === 1 ? 'NFT' : 'NFTs'
         }!`
       )
-    }
-    else {
+    } else {
       toast.error('Minting failed')
       setSubmitting(false)
       throw new Error('Minting error')
@@ -180,17 +179,20 @@ export function SubmitTTSInfoModal({
   return (
     <div
       onClick={(e: any) => {
-        if (e.target.id === 'submit-tts-info-modal-backdrop' && !submitting) setEnabled(false)
+        if (e.target.id === 'submit-tts-info-modal-backdrop' && !submitting)
+          setEnabled(false)
       }}
       id="submit-tts-info-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
+      <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes</h1>
         <p className="opacity-50 mb-4 text-gray-300">
-          Please enter your <span className="font-black text-moon-gold">full legal name</span> (as displayed on a government issued
-          photo ID) and the best email for us to contact you if you win a prize
-          the Sweepstakes. By submitting your information, you agree to our
+          Please enter your{' '}
+          <span className="font-black text-moon-gold">full legal name</span> (as
+          displayed on a government issued photo ID) and the best email for us
+          to contact you if you win a prize the Sweepstakes. By submitting your
+          information, you agree to our
           <a
             className="text-moon-gold"
             href="https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy"
@@ -261,7 +263,7 @@ export function SubmitTTSInfoModal({
 
                 setStatus('Verifying identity')
 
-                await timeout(3000);
+                await timeout(3000)
 
                 const newNFTBalance = await ttsContract.erc721.getOwnedTokenIds(
                   address
@@ -294,16 +296,16 @@ export function SubmitTTSInfoModal({
             Submit
           </button>
         </div>
-        <p className='flex mt-3 gap-3 text-lg'>
+        <p className="flex mt-3 gap-3 text-lg">
           {status}
-          {status && 
-          <div className="flex flex-col justify-center items-center gap-2">
-            <div
-              className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-              role="status"
-            />
-          </div>
-          }
+          {status && (
+            <div className="flex flex-col justify-center items-center gap-2">
+              <div
+                className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                role="status"
+              />
+            </div>
+          )}
         </p>
       </div>
     </div>

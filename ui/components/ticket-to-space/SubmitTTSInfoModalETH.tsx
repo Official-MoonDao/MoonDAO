@@ -1,11 +1,10 @@
 import { useWallets } from '@privy-io/react-auth'
+import { Polygon } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { Polygon } from '@thirdweb-dev/chains'
-
 
 type SubmitInfoModalPropsETH = {
   quantity: any
@@ -37,7 +36,7 @@ export function SubmitTTSInfoModalETH({
   const [submitting, setSubmitting] = useState<boolean>(false)
 
   function timeout(delay: number) {
-    return new Promise( res => setTimeout(res, delay) );
+    return new Promise((res) => setTimeout(res, delay))
   }
 
   async function signMessage() {
@@ -111,9 +110,7 @@ export function SubmitTTSInfoModalETH({
         return data.json().length
       })
     } catch (err) {
-      toast.error(
-        'Error reserving NFTs. Please try again.'
-      )
+      toast.error('Error reserving NFTs. Please try again.')
       setSubmitting(false)
     }
   }
@@ -143,18 +140,21 @@ export function SubmitTTSInfoModalETH({
         }
       }}
       id="submit-tts-info-modal-backdrop"
-      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
+      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000] overflow-scroll"
     >
-      <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
+      <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md mt-12">
         <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes</h1>
         <p className="mb-2 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white p-2">
-          You are acquiring your NFT using $MOONEY on the Ethereum chain. 
-          After confirming your transaction your NFT will be minted on the Polygon chain to the same wallet address within 24 hours.
+          You are acquiring your NFT using $MOONEY on the Ethereum chain. After
+          confirming your transaction your NFT will be minted on the Polygon
+          chain to the same wallet address within 24 hours.
         </p>
         <p className="opacity-50 mb-4 text-gray-300 p-2">
-          Please enter your <span className="font-black text-moon-gold">full legal name</span> (as displayed on a government issued
-          photo ID) and the best email for us to contact you if you win a prize
-          the Sweepstakes. By submitting your information, you agree to our
+          Please enter your{' '}
+          <span className="font-black text-moon-gold">full legal name</span> (as
+          displayed on a government issued photo ID) and the best email for us
+          to contact you if you win a prize the Sweepstakes. By submitting your
+          information, you agree to our
           <a
             className="text-moon-gold"
             href="https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy"
@@ -220,11 +220,13 @@ export function SubmitTTSInfoModalETH({
                 await submitUserToDB(signature)
 
                 // Get user NFTs from database. If the sum of the amount they are trying to reserve and the amount in the db is greater than 50, then throw an error.
-                const userNFTs : any = await getUserNfts(signature)
+                const userNFTs: any = await getUserNfts(signature)
 
                 if (quantity > 50 - userNFTs) {
                   toast.error(
-                    "You are reserving more NFTs than you are allowed. Currently there are " + userNFTs + " NFTs reserved under your address."
+                    'You are reserving more NFTs than you are allowed. Currently there are ' +
+                      userNFTs +
+                      ' NFTs reserved under your address.'
                   )
                   setChain(Polygon)
                   return setEnabled(false)
@@ -250,7 +252,9 @@ export function SubmitTTSInfoModalETH({
                   return setEnabled(false)
                 }
 
-                toast.success('Your NFT(s) have been reserved! They will be sent to your polygon wallet within 24 hours.')
+                toast.success(
+                  'Your NFT(s) have been reserved! They will be sent to your polygon wallet within 24 hours.'
+                )
 
                 setChain(Polygon)
                 setEnabled(false)
@@ -262,16 +266,16 @@ export function SubmitTTSInfoModalETH({
             Submit
           </button>
         </div>
-        <p className='flex mt-3 gap-3 text-lg'>
+        <p className="flex mt-3 gap-3 text-lg">
           {status}
-          {status && 
-          <div className="flex flex-col justify-center items-center gap-2">
-            <div
-              className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-              role="status"
-            />
-          </div>
-          }
+          {status && (
+            <div className="flex flex-col justify-center items-center gap-2">
+              <div
+                className="inline-block h-5 w-5 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+                role="status"
+              />
+            </div>
+          )}
         </p>
       </div>
     </div>
