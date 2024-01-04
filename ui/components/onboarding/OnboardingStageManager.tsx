@@ -184,7 +184,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
         <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
           SELECT MEMBERSHIP
         </h1>
-        
+
         <ContributionLevels
           selectedChain={selectedChain}
           selectedLevel={selectedLevel}
@@ -203,7 +203,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
             </Link>
           </p>
         </div>
-        <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
+        <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base font-[Lato]">
           <p>
             {`
               Custom Membership: Not seeing what’s right for you? Advanced users can purchase any amount of $MOONEY via Uniswap and stake between one week and four years for voting power.
@@ -261,7 +261,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
           </h1>
 
           {+selectedChain.chainId === 1 ? (
-            <p className="absolut  mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
+            <p className="absolut  mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base font-[Lato]">
               Warning: The Ticket to Space Sweepstakes is on Polygon. If you
               continue with Ethereum you must bridge your $MOONEY to Polygon to
               participate. Learn how to bridge your $MOONEY with our

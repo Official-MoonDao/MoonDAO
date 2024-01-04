@@ -136,7 +136,7 @@ export default function Governance() {
         sections={sections}
         title="Governance"
         description={
-          <>
+          <p className="font-[Lato]">
             {`MoonDAO's Treasury is governed by its Citizens. If you don't have voting power, become a Citizen by `}
             <button
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
@@ -156,7 +156,7 @@ export default function Governance() {
               Constitution
             </button>
             {` to understand more about how our governance works.`}
-          </>
+          </p>
         }
       />
     </div>

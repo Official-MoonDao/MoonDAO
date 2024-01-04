@@ -10,7 +10,11 @@ type SubmitInfoModalProps = {
   nftIds: string[]
 }
 
-export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftIds }: SubmitInfoModalProps) {
+export function ReverifyModal({
+  setReverifyEnabled,
+  setViewEnabled,
+  nftIds,
+}: SubmitInfoModalProps) {
   const address = useAddress()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -35,7 +39,7 @@ export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftIds }: Su
 
   const handleSubmit = async () => {
     if (!email || !fullName || !email.includes('@'))
-        return toast.error('Please fill in all fields')
+      return toast.error('Please fill in all fields')
 
     const signature = await signMessage()
     setStatus('Submitting...')
@@ -45,25 +49,25 @@ export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftIds }: Su
       const res = await fetch(`/api/db/nft?address=${address}`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'moondao-api-key': signature,
+          'Content-Type': 'application/json',
+          'moondao-api-key': signature,
         } as any,
         body: JSON.stringify({
-            tokenId: nftIds[i],
-            email,
-            name: fullName,
-            address: address,
+          tokenId: nftIds[i],
+          email,
+          name: fullName,
+          address: address,
         }),
-        })
-        setStatus('')
-        const data = await res.json()
-        if (!data.success) success = false
+      })
+      setStatus('')
+      const data = await res.json()
+      if (!data.success) success = false
     }
-    
+
     setReverifyEnabled(false)
     setViewEnabled(false)
     if (success) {
-        toast.success("You're all set! There's nothing else you need to do.")
+      toast.success("You're all set! There's nothing else you need to do.")
     } else {
       toast.error(
         'There was an issue adding your info to the database. Please contact a moondao member.'
@@ -75,15 +79,17 @@ export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftIds }: Su
     <div
       onClick={(e: any) => {
         if (e.target.id === 'reverify-modal-backdrop') {
-            setReverifyEnabled(false)
+          setReverifyEnabled(false)
         }
       }}
       id="reverify-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] p-8 bg-[#080C20] rounded-md">
-        <h1 className="text-2xl text-white">Reverify {nftIds.length > 1 ? "All NFTs" : "NFT " + Number(nftIds)}</h1>
-        <p className="opacity-50 mb-4 text-gray-300">
+        <h1 className="text-2xl text-white">
+          Reverify {nftIds.length > 1 ? 'All NFTs' : 'NFT ' + Number(nftIds)}
+        </h1>
+        <p className="opacity-50 mb-4 text-gray-300 font-[Lato]">
           Please enter your full legal name (as displayed on a government issued
           photo ID) and the best email for us to contact you if you win a prize
           the Sweepstakes. By submitting your information, you agree to our
@@ -110,7 +116,7 @@ export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftIds }: Su
           <button
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
             onClick={() => {
-                setReverifyEnabled(false)
+              setReverifyEnabled(false)
             }}
           >
             Back

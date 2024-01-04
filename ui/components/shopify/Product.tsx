@@ -24,7 +24,7 @@ export default function Product({
             <h3 className="title-text-colors font-GoodTimes text-center text-4xl lg:text-left leading-relaxed w-full">
               Lifeship NFT
             </h3>
-            <p className="lg:w-3/4 mt-2 md:mt-4 text-sm font-mono leading-relaxed lg:text-base lg:text-left lg:self-start xl:text-lg text-gray-900 dark:text-white opacity-90">
+            <p className="lg:w-3/4 mt-2 md:mt-4 text-sm font-[Lato] leading-relaxed lg:text-base lg:text-left lg:self-start xl:text-lg text-gray-900 dark:text-white opacity-90">
               MoonDAO is partnering with lifeship to send NFTs to space! Please
               upload a file and complete the checkout. You will be emailed
               instrucitons to claim your NFT.

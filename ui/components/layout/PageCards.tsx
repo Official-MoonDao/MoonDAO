@@ -4,7 +4,7 @@ export function PageCards({ sections, id, header, title, description }: any) {
   const router = useRouter()
 
   return (
-    <div className="mt-3 px-5 lg:px-8 xl:px-9 py-12 lg:py-14 page-border-and-color w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] font-Lato">
+    <div className="mt-3 px-5 lg:px-8 xl:px-9 py-12 lg:py-14 page-border-and-color w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] font-[Lato]">
       {header && (
         <p className="text-[#071732] dark:text-white font-RobotoMono font-semibold text-sm lg:text-base text-center lg:text-left">
           {header}
@@ -25,7 +25,7 @@ export function PageCards({ sections, id, header, title, description }: any) {
             className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-4 lg:max-w-none mb-8"
             key={id + 'page-cards' + i}
           >
-            <p className="text-2xl text-center lg:text-left text-gray-950 dark:text-white">
+            <p className="text-2xl text-center lg:text-left text-gray-950 dark:text-white font-RobotoMono">
               {section.sectionName}
             </p>
             {section.pages.map((page: any, i: number) => (
@@ -40,7 +40,7 @@ export function PageCards({ sections, id, header, title, description }: any) {
                 key={page.name}
                 className="flex flex-col lg:flex-row items-center text-center inner-container-background rounded-[6px] lg:p-4 gap-x-4 hover:scale-105 transition-all duration-150"
               >
-                <dt className="flex min-w-max items-center justify-center mt-3 lg:mt-0 py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold lg:w-1/3">
+                <dt className="flex min-w-max items-center justify-center mt-3 lg:mt-0 py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold font-RobotoMono lg:w-1/3">
                   <page.icon
                     className="h-5 w-5 stroke-2 flex-none text-[#1F212B]"
                     aria-hidden="true"

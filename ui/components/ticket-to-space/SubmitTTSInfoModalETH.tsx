@@ -144,12 +144,12 @@ export function SubmitTTSInfoModalETH({
     >
       <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md mt-12">
         <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes</h1>
-        <p className="mb-2 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white p-2">
+        <p className="mb-2 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white p-2 font-[Lato]">
           You are acquiring your NFT using $MOONEY on the Ethereum chain. After
           confirming your transaction your NFT will be minted on the Polygon
           chain to the same wallet address within 24 hours.
         </p>
-        <p className="opacity-50 mb-4 text-gray-300 p-2">
+        <p className="opacity-50 mb-4 text-gray-300 p-2 font-[Lato]">
           Please enter your{' '}
           <span className="font-black text-moon-gold">full legal name</span> (as
           displayed on a government issued photo ID) and the best email for us

@@ -14,9 +14,9 @@ export function NewsletterSubModal({ setEnabled }: any) {
       id="newsletter-sub-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] h-[450px] p-8 bg-background-light dark:bg-background-dark rounded-md">
+      <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] h-auto p-8 bg-background-light dark:bg-background-dark rounded-md">
         <h1 className="text-2xl">Subscribe</h1>
-        <p className="opacity-50">
+        <p className="opacity-50 font-[Lato]">
           {'Enter your email and subscribe to the MoonDAO Newsletter.'}
         </p>
         <label>Email :</label>

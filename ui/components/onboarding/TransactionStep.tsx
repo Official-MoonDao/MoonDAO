@@ -1,8 +1,8 @@
-import { useContext, useEffect, useMemo, useState } from 'react'
 import { ethers } from 'ethers'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type StepProps = {
   realStep: number
@@ -41,7 +41,8 @@ export function Step({
   const fund = useMoonPay()
 
   const stepButtons = useMemo(() => {
-    const selectedChainName = selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+    const selectedChainName =
+      selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
 
     switch (realStep) {
       case 1:
@@ -60,7 +61,6 @@ export function Step({
 
                 await fund(levelPrice - +formattedNativeBalance)
               }}
-
               disabled={isDisabled || isProcessingTx}
             >
               {isProcessingTx ? (
@@ -256,18 +256,33 @@ export function Step({
           </button>
         )
     }
-  }, [action, extraFundsForGas, fund, isDisabled, isProcessingTx, nativeAmount, noTxns, realStep, selectedChain.chainId, selectedChain.name, selectedChain.slug, selectedWallet, wallets])
+  }, [
+    action,
+    extraFundsForGas,
+    fund,
+    isDisabled,
+    isProcessingTx,
+    nativeAmount,
+    noTxns,
+    realStep,
+    selectedChain.chainId,
+    selectedChain.name,
+    selectedChain.slug,
+    selectedWallet,
+    wallets,
+  ])
 
   return (
     <div className="mt-5 w-full h-full text-black dark:text-white">
       <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
         <p
-          className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${realStep === stepNum
-            ? 'bg-[grey] animate-pulse'
-            : realStep > stepNum
+          className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
+            realStep === stepNum
+              ? 'bg-[grey] animate-pulse'
+              : realStep > stepNum
               ? 'bg-[lightgreen]'
               : 'bg-moon-orange'
-            }`}
+          }`}
         >
           {stepNum}
         </p>
@@ -276,16 +291,14 @@ export function Step({
             {title}
           </div>
         </div>
-        <div className="mt-1 opacity-60 text-base font-normal lg:mt-0 xl:text-base">
+        <div className="mt-1 opacity-60 text-base font-normal lg:mt-0 xl:text-base font-[Lato]">
           {explanation}
         </div>
 
         {realStep === stepNum && txExplanation && <p>{txExplanation}</p>}
         {/*Previously was a border-4 class on hover for this button but changed it for scale, as increasing border expands the whole container on hover*/}
       </div>
-      {realStep === stepNum && (
-        stepButtons
-      )}
+      {realStep === stepNum && stepButtons}
     </div>
   )
 }

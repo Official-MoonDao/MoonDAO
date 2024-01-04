@@ -131,13 +131,13 @@ export function ViewNFTDataModal({
       )}
       <div className="flex flex-col gap-2 items-start justify-start w-[300px] md:w-[500px] lg:w-[750px] p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl">View your NFTs</h1>
-        <p className="opacity-50 mb-4">
+        <p className="opacity-50 mb-4 font-[Lato]">
           If an NFT is registered with the wrong name or has any errors, please
           contact MoonDAO Support at support@moondao.com.
         </p>
 
         {isLoading ? (
-          <p>
+          <p className="font-[Lato]">
             Please sign the message in your wallet to view your Verified NFTs
           </p>
         ) : (

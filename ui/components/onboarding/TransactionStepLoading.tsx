@@ -18,7 +18,7 @@ export function StepLoading({ stepNum, title, explanation }: StepLoadingProps) {
             {title}
           </div>
         </div>
-        <div className="mt-1 opacity-60 text-base font-normal lg:mt-0 xl:text-base w-full">
+        <div className="mt-1 opacity-60 text-base font-normal lg:mt-0 xl:text-base w-full font-[Lato]">
           {explanation}
         </div>
         <LoadingSpinner />

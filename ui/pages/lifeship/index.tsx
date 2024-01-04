@@ -79,7 +79,7 @@ export default function Lifeship({ products = [] }: any) {
         {state === 0 && (
           <div className="mt-5 lg:mt-8 flex flex-col justify-center items-center text-left gap-4 md:w-full w-full">
             {/*Paragraph text */}
-            <p className="max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-lg lg:self-start">
+            <p className="max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-lg lg:self-start font-[Lato]">
               {`Send DNA or ashes to the moon, leaving your legacy in the universe! MoonDAO is partnering with`}{' '}
               <span>
                 <button
@@ -99,7 +99,7 @@ export default function Lifeship({ products = [] }: any) {
                 <div className="w-full lg:min-h-[35vh] h-full flex flex-col lg:grid lg:grid-cols-2 2xl:grid-cols-3 gap-2 xl:gap-4">
                   <Product
                     product={products[0]}
-                    label="DNA kit"
+                    label="DNA Kit"
                     quantity={quantities.dna}
                     setQuantity={(q: number) =>
                       setQuantities({ ...quantities, dna: q })
@@ -115,7 +115,7 @@ export default function Lifeship({ products = [] }: any) {
                   />
                   <Product
                     product={products[2]}
-                    label="Ashes kit"
+                    label="Ashes Kit"
                     quantity={quantities.ashes}
                     setQuantity={(q: number) =>
                       setQuantities({ ...quantities, ashes: q })
@@ -160,9 +160,9 @@ export default function Lifeship({ products = [] }: any) {
                 </Button>
 
                 {/*Section after products*/}
-                <p className="mt-5 font-RobotoMono max-w-2xl lg:max-w-3xl text-center lg:text-left w-full lg:self-start lg:text-lg">
+                <p className="mt-5 font-[Lato] max-w-2xl lg:max-w-3xl text-center lg:text-left w-full lg:self-start lg:text-lg">
                   {
-                    'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through Lifeship'
+                    'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through Lifeship.'
                   }
                 </p>
                 <Product

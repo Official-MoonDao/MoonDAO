@@ -173,7 +173,7 @@ export function ContributionLevels({
   console.log(usdQuotes)
   // ;('Everything in the Citizen Tier.Exclusive promotion opportunities. Access to talent to help design, build, test your space hardware. 1,000,000 Voting Power 1,000,000 MOONEY')
   return (
-    <div className="flex flex-col min-[1400px]:flex-row justify-between mt-6 2xl:w-full 2xl:gap-[7.5%] lg:mt-8 gap-[18px] lg:gap-5">
+    <div className="w-full flex flex-col min-[1400px]:flex-row justify-between md:justify-center mt-6 2xl:w-full 2xl:gap-[7.5%] lg:mt-8 gap-[18px] lg:gap-5">
       <ContributionLevel
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"

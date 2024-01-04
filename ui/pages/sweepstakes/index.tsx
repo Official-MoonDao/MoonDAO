@@ -338,7 +338,7 @@ export default function Sweepstakes() {
               </div>
             </div>
           )}
-          <div className="mx-5 mb-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
+          <div className="mx-5 mb-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base font-[Lato]">
             <div>
               {`One person will be randomly selected to win an opportunity on a future Blue Origin rocket to space! 
               Each NFT entry requires burning 20,000 $MOONEY. You can mint up to 50 entries.`}
@@ -361,7 +361,7 @@ export default function Sweepstakes() {
           </div>
         </div>
 
-        <p className="mt-4 text-sm">
+        <p className="mt-4 text-sm font-[Lato]">
           NO PURCHASE OR OBLIGATION NECESSARY TO ENTER OR WIN. PURCHASE WILL NOT
           INCREASE YOUR ODDS OF WINNING. IT IS NOT NECESSARY TO PURCHASE A
           TICKET TO SPACE NFT IN ORDER TO ENTER OR WIN. VOID WHERE PROHIBITED.

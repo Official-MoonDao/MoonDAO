@@ -26,7 +26,7 @@ export function InvolvementOptions() {
     return (
       <div className="cal_div">
         <PopupButton
-          className="w-full mt-10 px-[10px] py-[10px] border border-slate-600 dark:border-white dark:border-opacity-[0.16] font-bold text-[20px]"
+          className="w-full mt-10 px-[10px] py-[10px] border border-slate-600 dark:border-white dark:border-opacity-[0.16] font-bold text-sm"
           url="https://calendly.com/moondaospace/moondao-welcome-call"
           rootElement={rootElement!}
           text="Join Discord"
@@ -51,11 +51,11 @@ export function InvolvementOptions() {
         <div className="mt-7 pb-12 flex flex-col h-full justify-between">
           <div>
             <h1 className="font-bold text-[20px]">{label}</h1>
-            <p className="mt-3 opacity-60">{description}</p>
+            <p className="mt-3 opacity-60 font-[Lato]">{description}</p>
           </div>
           {!isOnboardingCall ? (
             <button
-              className="mt-10 px-[10px] py-[10px] border border-slate-600 dark:border-white dark:border-opacity-[0.16] font-bold text-[20px] w-full"
+              className="mt-10 px-[10px] py-[10px] border border-slate-600 dark:border-white dark:border-opacity-[0.16] font-bold text-[20px] w-full text-sm"
               onClick={onClick}
             >
               {CTA}

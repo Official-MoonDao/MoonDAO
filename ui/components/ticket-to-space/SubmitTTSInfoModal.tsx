@@ -187,7 +187,7 @@ export function SubmitTTSInfoModal({
     >
       <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl text-white">Win a Prize in the Sweepstakes</h1>
-        <p className="opacity-50 mb-4 text-gray-300">
+        <p className="opacity-50 mb-4 text-gray-300 font-[Lato]">
           Please enter your{' '}
           <span className="font-black text-moon-gold">full legal name</span> (as
           displayed on a government issued photo ID) and the best email for us
