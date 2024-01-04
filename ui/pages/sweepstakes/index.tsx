@@ -272,6 +272,7 @@ export default function Sweepstakes() {
                             setSelectedChain(Ethereum)
                             setEnableEthMintInfoModal(true)
                           }}
+                          chain={Ethereum}
                         />
                       )}
                     </div>
