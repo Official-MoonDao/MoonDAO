@@ -257,7 +257,6 @@ export default function Sweepstakes() {
                         className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
                         label="Mint"
                         action={() => {
-                          // setSelectedChain(Polygon)
                           setEnableMintInfoModal(true)
                         }}
                         chain={Polygon}
@@ -267,7 +266,6 @@ export default function Sweepstakes() {
                           className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
                           label="Use Ethereum Network"
                           action={() => {
-                            // setSelectedChain(Ethereum)
                             setEnableEthMintInfoModal(true)
                           }}
                           chain={Ethereum}
