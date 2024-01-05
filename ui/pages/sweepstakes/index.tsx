@@ -12,11 +12,9 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
-import { initSDK } from '../../lib/thirdweb/thirdweb'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
 import Head from '../../components/layout/Head'
-import L2Toggle from '../../components/lock/L2Toggle'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
 import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
 import { SubmitTTSInfoModal } from '../../components/ticket-to-space/SubmitTTSInfoModal'
@@ -103,7 +101,6 @@ export default function Sweepstakes() {
   const [nftWidth, setNftWidth] = useState(0)
 
   useEffect(() => {
-    setSelectedChain(Polygon)
     setNftWidth(document.getElementById('nft-container')!.offsetWidth! * 0.6)
     if (screen.availWidth < 768)
       setNftWidth(document.getElementById('nft-container')!.offsetWidth! * 0.9)
@@ -260,16 +257,17 @@ export default function Sweepstakes() {
                         className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
                         label="Mint"
                         action={() => {
-                          setSelectedChain(Polygon)
+                          // setSelectedChain(Polygon)
                           setEnableMintInfoModal(true)
                         }}
+                        chain={Polygon}
                       />
                       {address && (
                         <PrivyWeb3Button
                           className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
                           label="Use Ethereum Network"
                           action={() => {
-                            setSelectedChain(Ethereum)
+                            // setSelectedChain(Ethereum)
                             setEnableEthMintInfoModal(true)
                           }}
                           chain={Ethereum}

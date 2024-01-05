@@ -30,7 +30,7 @@ export function PrivyWeb3Button({
   onError,
   chain,
 }: PrivyWeb3BtnProps) {
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const chainId = chain?.chainId || selectedChain.chainId
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { user, login } = usePrivy()
@@ -69,6 +69,7 @@ export function PrivyWeb3Button({
         <Button
           onClick={async () => {
             try {
+              chain && setSelectedChain(chain)
               await wallets[selectedWallet].switchChain(chainId)
             } catch (err: any) {
               console.log(err.message)
