@@ -1,5 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
-import { Polygon } from '@thirdweb-dev/chains'
+import { Chain, Ethereum, Polygon } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
 import { useContext, useState } from 'react'
@@ -10,6 +10,7 @@ type SubmitInfoModalPropsETH = {
   quantity: any
   setEnabled: Function
   setChain: Function
+  selectedChain: Chain
   mooneyContract: any
   burn?: Function
 }
@@ -20,6 +21,7 @@ const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //p
 export function SubmitTTSInfoModalETH({
   quantity,
   setEnabled,
+  selectedChain,
   setChain,
   mooneyContract,
   burn,
@@ -206,6 +208,11 @@ export function SubmitTTSInfoModalETH({
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white enabled:hover:bg-white enabled:hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange disabled:opacity-50"
             disabled={submitting}
             onClick={async () => {
+              if (wallets[selectedWallet].chainId.split(':')[1] !== '1') {
+                wallets[selectedWallet].switchChain(Ethereum.chainId)
+                return toast.error('Please switch to Ethereum.')
+              }
+
               try {
                 if (!email || !fullName || !email.includes('@'))
                   return toast.error('Please fill in all fields')

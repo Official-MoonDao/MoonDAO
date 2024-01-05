@@ -15,6 +15,7 @@ import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
 import Head from '../../components/layout/Head'
+import L2Toggle from '../../components/lock/L2Toggle'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
 import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
 import { SubmitTTSInfoModal } from '../../components/ticket-to-space/SubmitTTSInfoModal'
@@ -259,16 +260,16 @@ export default function Sweepstakes() {
                         action={() => {
                           setEnableMintInfoModal(true)
                         }}
-                        chain={Polygon}
                       />
                       {address && (
                         <PrivyWeb3Button
                           className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
                           label="Use Ethereum Network"
                           action={() => {
+                            setSelectedChain(Ethereum)
                             setEnableEthMintInfoModal(true)
                           }}
-                          chain={Ethereum}
+                          skipNetworkCheck
                         />
                       )}
                     </div>
@@ -291,6 +292,7 @@ export default function Sweepstakes() {
                       quantity={quantity}
                       setEnabled={setEnableEthMintInfoModal}
                       setChain={setSelectedChain}
+                      selectedChain={selectedChain}
                       mooneyContract={mooneyETHContract}
                       burn={burn}
                     />

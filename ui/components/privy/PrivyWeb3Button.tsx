@@ -18,7 +18,7 @@ type PrivyWeb3BtnProps = {
   className?: string
   onSuccess?: Function
   onError?: Function
-  chain?: Chain
+  skipNetworkCheck?: boolean
 }
 
 export function PrivyWeb3Button({
@@ -28,10 +28,9 @@ export function PrivyWeb3Button({
   className = '',
   onSuccess,
   onError,
-  chain,
+  skipNetworkCheck = false,
 }: PrivyWeb3BtnProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
-  const chainId = chain?.chainId || selectedChain.chainId
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { user, login } = usePrivy()
   const { wallets } = useWallets()
@@ -55,7 +54,10 @@ export function PrivyWeb3Button({
   useEffect(() => {
     if (!user) {
       setBtnState(0)
-    } else if (chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]) {
+    } else if (
+      !skipNetworkCheck &&
+      selectedChain.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
+    ) {
       setBtnState(1)
     } else {
       setBtnState(2)
@@ -69,8 +71,7 @@ export function PrivyWeb3Button({
         <Button
           onClick={async () => {
             try {
-              chain && setSelectedChain(chain)
-              await wallets[selectedWallet].switchChain(chainId)
+              await wallets[selectedWallet]?.switchChain(selectedChain.chainId)
             } catch (err: any) {
               console.log(err.message)
             }
