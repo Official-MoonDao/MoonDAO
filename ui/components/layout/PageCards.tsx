@@ -38,7 +38,7 @@ export function PageCards({ sections, id, header, title, description }: any) {
                     : page?.onClick
                 }
                 key={page.name}
-                className="flex flex-col lg:flex-row items-center text-center inner-container-background rounded-[6px] lg:p-4 gap-x-4 hover:scale-105 transition-all duration-150"
+                className="flex flex-col lg:flex-row items-left lg:items-center text-center inner-container-background rounded-[6px] p-4 gap-x-4 hover:scale-105 transition-all duration-150"
               >
                 <dt className="flex min-w-max items-center justify-center mt-3 lg:mt-0 py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold font-RobotoMono lg:w-1/3">
                   <page.icon
@@ -47,7 +47,7 @@ export function PageCards({ sections, id, header, title, description }: any) {
                   />
                   {page.name}
                 </dt>
-                <dd className="text-sm leading-7 lg:w-2/3 mb-3 lg:mb-0 mt-1 lg:mt-0 px-3 lg:px-1 text-light-text dark:text-white font-medium lg:text-left">
+                <dd className="text-sm leading-7 lg:w-2/3 mb-3 lg:mb-0 mt-2 lg:mt-0 lg:px-1 text-light-text dark:text-white font-medium text-left">
                   <p className="">
                     {page.description}{' '}
                     {page.hyperlink && page.hyperlinkText && (
