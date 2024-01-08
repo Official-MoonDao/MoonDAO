@@ -1,4 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
+import { Polygon } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
 import { useContext, useState } from 'react'
@@ -242,6 +243,10 @@ export function SubmitTTSInfoModal({
             disabled={submitting}
             onClick={async () => {
               try {
+                if (wallets[selectedWallet].chainId.split(':')[1] !== '137') {
+                  wallets[selectedWallet].switchChain(Polygon.chainId)
+                  return toast.error('Please switch to Polygon.')
+                }
                 if (!email || !fullName || !email.includes('@'))
                   return toast.error('Please fill in all fields')
 
