@@ -12,9 +12,9 @@ export function PageCards({ sections, id, header, title, description }: any) {
       )}
       <h1 className="mt-2 lg:mt-3 leading-relaxed page-title">{title}</h1>
 
-      <p className="mt-4 lg:mt-5 text-center lg:text-left font-RobotoMono text-base lg:text-lg dark:text-white text-[#071732] opacity-60">
+      <div className="mt-4 lg:mt-5 text-center lg:text-left font-RobotoMono text-base lg:text-lg dark:text-white text-[#071732] opacity-60">
         {description}
-      </p>
+      </div>
       <div
         id={id}
         className="mx-auto mt-8 max-w-2xl lg:mt-12 xl:mt-14 lg:max-w-none"
