@@ -1,4 +1,5 @@
-import { Polygon, Ethereum } from '@thirdweb-dev/chains'
+import { useWallets } from '@privy-io/react-auth'
+import { Polygon, Ethereum, Goerli, Mumbai } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
   useAddress,
@@ -10,12 +11,12 @@ import { BigNumber, ethers } from 'ethers'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
 import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
 import Head from '../../components/layout/Head'
-import L2Toggle from '../../components/lock/L2Toggle'
 import { collectionMetadata } from '../../components/marketplace/assets/seed'
 import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
 import { SubmitTTSInfoModal } from '../../components/ticket-to-space/SubmitTTSInfoModal'
@@ -29,6 +30,8 @@ const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //p
 // const TICKET_TO_SPACE_ADDRESS = '0x2b9496C22956E23CeC73299B9d3d3b7A9483D6Ff' //test address
 
 export default function Sweepstakes() {
+  const { wallets } = useWallets()
+
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(0)
@@ -37,6 +40,7 @@ export default function Sweepstakes() {
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
   const [enableViewNFTsModal, setViewNFTsModal] = useState(false)
 
+  const { selectedWallet } = useContext(PrivyWalletContext)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
   const address = useAddress()
@@ -121,6 +125,21 @@ export default function Sweepstakes() {
         .catch((err: any) => console.log(err))
     }
   }, [ttsContract])
+
+  useEffect(() => {
+    const L1Chain =
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Ethereum : Goerli
+    const L2Chain =
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
+
+    const walletChainId = wallets[selectedWallet]?.chainId.split(':')[1]
+
+    if (walletChainId === '1' || walletChainId === '5') {
+      setSelectedChain(L1Chain)
+    } else {
+      setSelectedChain(L2Chain)
+    }
+  }, [])
 
   return (
     <main className="animate-fadeIn">
