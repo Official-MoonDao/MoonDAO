@@ -126,21 +126,6 @@ export default function Sweepstakes() {
     }
   }, [ttsContract])
 
-  useEffect(() => {
-    const L1Chain =
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Ethereum : Goerli
-    const L2Chain =
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
-
-    const walletChainId = wallets[selectedWallet]?.chainId.split(':')[1]
-
-    if (walletChainId === '1' || walletChainId === '5') {
-      setSelectedChain(L1Chain)
-    } else {
-      setSelectedChain(L2Chain)
-    }
-  }, [])
-
   return (
     <main className="animate-fadeIn">
       <Head
