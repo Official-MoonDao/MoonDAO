@@ -38,6 +38,7 @@ export default function Sweepstakes() {
   const [enableEthMintInfoModal, setEnableEthMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
   const [enableViewNFTsModal, setViewNFTsModal] = useState(false)
+  const isMismatched = useNetworkMismatch();
 
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
@@ -225,7 +226,7 @@ export default function Sweepstakes() {
                 <div className="block">
                   <div>
                     <p className="mb-1 dark:text-white lg:text-xl">
-                      Quantity to Mint
+                      Quantity to Mint (50 max)
                     </p>
                     <div className={`md:h-[64px] flex flex-col md:flex-row w-full justify-left ${!address && 'justify-between'} gap-3 p-2 border-[1px] md:border-[2px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-401`}>
                       <input
@@ -280,7 +281,7 @@ export default function Sweepstakes() {
                     />
                   )}
 
-                  {enableEthMintInfoModal && !useNetworkMismatch() && (
+                  {enableEthMintInfoModal && !isMismatched && (
                     <SubmitTTSInfoModalETH
                       quantity={quantity}
                       setEnabled={setEnableEthMintInfoModal}
