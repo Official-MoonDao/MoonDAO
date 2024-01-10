@@ -45,6 +45,8 @@ export function PrivyConnectWallet() {
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
   const { selectedChain }: any = useContext(ChainContext)
 
+  const [networkMistmatch, setNetworkMismatch] = useState(false)
+
   const address = useAddress()
   const [nativeBalance, setNativeBalance] = useState(0)
   const [walletChainId, setWalletChainId] = useState(1)
@@ -78,10 +80,15 @@ export function PrivyConnectWallet() {
     }
   }, [wallets, selectedWallet])
 
+  useEffect(() => {
+    if (walletChainId !== selectedChain.chainId) setNetworkMismatch(true)
+    else setNetworkMismatch(false)
+  }, [walletChainId, selectedChain])
+
   function NetworkIcon() {
     return (
       <>
-        {walletChainId === 1 || walletChainId === 5 ? (
+        {selectedChain.chainId === 1 || selectedChain.chainId === 5 ? (
           <EthIcon />
         ) : (
           <PolygonIcon />
@@ -121,16 +128,15 @@ export function PrivyConnectWallet() {
                     <p className="uppercase font-normal inline-block">
                       {
                         allChains.find(
-                          (chain) =>
-                            chain.chainId ===
-                            +wallets?.[selectedWallet]?.chainId.split(':')[1]
+                          (chain) => chain.chainId === selectedChain.chainId
                         )?.name
                       }
                     </p>
-                    <p className="text-sm">{`${address?.slice(
-                      0,
-                      6
-                    )}...${address?.slice(-4)}`}</p>
+                    <p className="text-sm">{`${wallets?.[
+                      selectedWallet
+                    ].address?.slice(0, 6)}...${wallets?.[
+                      selectedWallet
+                    ].address?.slice(-4)}`}</p>
                   </div>
                   <button
                     className="ml-4"
@@ -151,32 +157,49 @@ export function PrivyConnectWallet() {
                   </button>
                 </div>
               </div>
-              <div className="w-full flex flex-col gap-2 py-2">
-                <div className=" w-full flex justify-left items-center gap-4">
-                  <Image
-                    src="/coins/MOONEY.png"
-                    width={45}
-                    height={45}
-                    alt=""
-                  />
-                  <p>
-                    {mooneyBalance
-                      ? (mooneyBalance?.toString() / 10 ** 18).toFixed(2)
-                      : '...'}
-                  </p>
-                  <p>$MOONEY</p>
+              {networkMistmatch ? (
+                <div>
+                  <button
+                    className="w-full mt-4 p-2 border text-white hover:scale-105 transition-all duration-150 border-white hover:bg-white hover:text-moon-orange"
+                    onClick={() => {
+                      wallets[selectedWallet].switchChain(selectedChain.chainId)
+                    }}
+                  >
+                    {`Switch to ${
+                      allChains.find(
+                        (chain) => chain.chainId === selectedChain.chainId
+                      )?.name
+                    }`}
+                  </button>
                 </div>
+              ) : (
+                <div className="w-full flex flex-col gap-2 py-2">
+                  <div className=" w-full flex justify-left items-center gap-4">
+                    <Image
+                      src="/coins/MOONEY.png"
+                      width={45}
+                      height={45}
+                      alt=""
+                    />
+                    <p>
+                      {mooneyBalance
+                        ? (mooneyBalance?.toString() / 10 ** 18).toFixed(2)
+                        : '...'}
+                    </p>
+                    <p>$MOONEY</p>
+                  </div>
 
-                <div className=" w-full flex justify-left items-center gap-4">
-                  <NetworkIcon />
-                  <p>{nativeBalance}</p>
-                  <p>
-                    {walletChainId === 1 || walletChainId === 5
-                      ? 'ETH'
-                      : 'MATIC'}
-                  </p>
+                  <div className=" w-full flex justify-left items-center gap-4">
+                    <NetworkIcon />
+                    <p>{nativeBalance}</p>
+                    <p>
+                      {walletChainId === 1 || walletChainId === 5
+                        ? 'ETH'
+                        : 'MATIC'}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="pt-1">
                 <p className="font-semibold">Wallets:</p>
