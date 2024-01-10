@@ -290,6 +290,18 @@ export function SubmitTTSInfoModal({
                   return setEnabled(false)
                 }
 
+                await fetch('/api/convertkit', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'moondao-api-key': signature,
+                  },
+                  body: JSON.stringify({
+                    userEmail: email,
+                    name: fullName,
+                  }),
+                })
+
                 toast.success('Your NFT(s) have been verified and registered!')
 
                 setEnabled(false)
