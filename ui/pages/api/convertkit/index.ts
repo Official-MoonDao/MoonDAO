@@ -18,8 +18,8 @@ export default async function handler(
       try {
         const { userEmail } = req.body
         const formId = '6052865'
-        const convertKitEndpoint = `https://api.convertkit.com/v3/forms/${formId}/subscribe`
-        const result = await fetch(convertKitEndpoint, {
+        const formResultEndpoint = `https://api.convertkit.com/v3/forms/${formId}/subscribe`
+        const formResult = await fetch(formResultEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -29,8 +29,19 @@ export default async function handler(
             email: userEmail,
           }),
         })
-        const data = await result.json()
-        console.log(data)
+
+        const tagId = '4416101'
+        const tagResultEndpoint = `https://api.convertkit.com/v3/tags/${tagId}/subscribe`
+        const tagResult = await fetch(tagResultEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            api_key: process.env.NEXT_PUBLIC_CONVERT_KIT_API_KEY,
+            email: userEmail,
+          }),
+        })
         res.status(200).json({ success: true })
       } catch (error) {
         console.log(error)
