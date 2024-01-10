@@ -5,7 +5,6 @@ import {
   useContract,
   useContractRead,
   useOwnedNFTs,
-  useNetworkMismatch,
 } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
 import Link from 'next/link'
@@ -38,7 +37,6 @@ export default function Sweepstakes() {
   const [enableEthMintInfoModal, setEnableEthMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
   const [enableViewNFTsModal, setViewNFTsModal] = useState(false)
-  const isMismatched = useNetworkMismatch();
 
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
@@ -281,7 +279,7 @@ export default function Sweepstakes() {
                     />
                   )}
 
-                  {enableEthMintInfoModal && !isMismatched && (
+                  {enableEthMintInfoModal && (
                     <SubmitTTSInfoModalETH
                       quantity={quantity}
                       setEnabled={setEnableEthMintInfoModal}
