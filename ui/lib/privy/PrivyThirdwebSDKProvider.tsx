@@ -16,8 +16,8 @@ export function PrivyThirdwebSDKProvider({ selectedChain, children }: any) {
     try {
       const wallet = wallets[selectedWallet]
       const provider = await wallet?.getEthersProvider()
-      setSigner(provider?.getSigner())
       await wallet?.switchChain(selectedChain.chainId)
+      setSigner(provider?.getSigner())
     } catch (err: any) {
       console.log(err.message)
     }
