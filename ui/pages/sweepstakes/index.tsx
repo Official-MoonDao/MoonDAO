@@ -1,4 +1,4 @@
-import { useWallets } from '@privy-io/react-auth'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { Polygon, Ethereum, Goerli, Mumbai } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
@@ -31,7 +31,7 @@ const TICKET_TO_SPACE_ADDRESS = '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //p
 
 export default function Sweepstakes() {
   const { wallets } = useWallets()
-
+  const { user } = usePrivy()
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
   const [supply, setSupply] = useState(0)
@@ -267,7 +267,7 @@ export default function Sweepstakes() {
                         }}
                         skipNetworkCheck
                       />
-                      {address && (
+                      {user && (
                         <PrivyWeb3Button
                           className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
                           label="Use Ethereum Network"
