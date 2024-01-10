@@ -96,7 +96,7 @@ export function ReverifyModal({ setReverifyEnabled, setViewEnabled, nftIds }: Su
           </a>
           .
         </p>
-        <label className="text-white">Full Name</label>
+        <label className="text-white">Full Legal Name (as appears on your ID)</label>
         <input
           className="h-[50px] w-full text-lg rounded-sm px-2 bg-white bg-opacity-5 border-[1px] border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40 focus:outline-none"
           onChange={(e) => setFullName(e.target.value)}
