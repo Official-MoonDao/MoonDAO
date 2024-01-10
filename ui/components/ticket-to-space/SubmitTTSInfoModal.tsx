@@ -298,6 +298,7 @@ export function SubmitTTSInfoModal({
                   },
                   body: JSON.stringify({
                     userEmail: email,
+                    name: fullName,
                   }),
                 })
 
