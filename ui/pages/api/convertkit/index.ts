@@ -19,7 +19,7 @@ export default async function handler(
         const { userEmail } = req.body
         const formId = '6052865'
         const formResultEndpoint = `https://api.convertkit.com/v3/forms/${formId}/subscribe`
-        const formResult = await fetch(formResultEndpoint, {
+        await fetch(formResultEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -32,7 +32,7 @@ export default async function handler(
 
         const tagId = '4416101'
         const tagResultEndpoint = `https://api.convertkit.com/v3/tags/${tagId}/subscribe`
-        const tagResult = await fetch(tagResultEndpoint, {
+        await fetch(tagResultEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
