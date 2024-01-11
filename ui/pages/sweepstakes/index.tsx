@@ -230,7 +230,7 @@ export default function Sweepstakes() {
                 <div className="block">
                   <div>
                     <p className="mb-1 dark:text-white lg:text-xl">
-                      Quantity to Mint
+                      Quantity to Mint (50 max)
                     </p>
                     <div
                       className={`md:h-[64px] flex flex-col md:flex-row w-full justify-left ${
