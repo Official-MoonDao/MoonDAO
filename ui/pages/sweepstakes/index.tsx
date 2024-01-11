@@ -361,7 +361,31 @@ export default function Sweepstakes() {
               >
                 {'watch tutorial'}
               </Link>
-              {`). If your $MOONEY is on the Ethereum network click "Use Ethereum Network" to enter.`}
+              {'), or via '}
+              <Link
+                className="text-moon-gold"
+                href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet"
+              >
+                Uniswap
+              </Link>
+              {`. If your $MOONEY is on the Ethereum network click "Use Ethereum Network" to enter.`}
+            </div>
+            <div className="mt-2">
+              {`If you’re having an issue while trying to mint, you can email us at `}
+              <Link
+                className="text-moon-gold"
+                href="mailto:support@moondao.com"
+              >
+                support@moondao.com
+              </Link>
+              {` or post in our `}
+              <Link
+                className="text-moon-gold"
+                href="http://discord.gg/moondao"
+                target="_blank"
+                rel="noreferrer"
+              >{`Discord's`}</Link>
+              {` support channel.`}
             </div>
           </div>
         </div>
