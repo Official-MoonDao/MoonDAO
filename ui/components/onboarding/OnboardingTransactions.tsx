@@ -135,7 +135,7 @@ export function OnboardingTransactions({
       setCurrStep(5)
       return setStage(2)
     } else if (
-      mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1 &&
+      mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price / 2 - 1 &&
       tokenAllowance?.toString() / 10 ** 18 >= selectedLevel.price / 2
     ) {
       return setCurrStep(4)
