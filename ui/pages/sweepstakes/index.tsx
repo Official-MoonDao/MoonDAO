@@ -361,12 +361,23 @@ export default function Sweepstakes() {
               >
                 {'watch tutorial'}
               </Link>
-              {'), or via '}
+              {'), or via Uniswap on '}
               <Link
                 className="text-moon-gold"
-                href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet"
+                href="https://app.uniswap.org/tokens/polygon/0x74Ac7664ABb1C8fa152D41bb60e311a663a41C7E?inputCurrency=NATIVE"
+                target="_blank"
+                rel="noreferrer"
               >
-                Uniswap
+                Polygon
+              </Link>
+              {' or '}
+              <Link
+                className="text-moon-gold"
+                href="https://app.uniswap.org/tokens/ethereum/0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395?inputCurrency=NATIVE"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ethereum
               </Link>
               {`. If your $MOONEY is on the Ethereum network click "Use Ethereum Network" to enter.`}
             </div>
