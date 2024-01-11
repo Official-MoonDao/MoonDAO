@@ -121,6 +121,16 @@ export function OnboardingTransactions({
       }
     }
 
+    console.log(
+      'Formatted Mooney Balance : ',
+      mooneyBalance.toString() / 10 ** 18
+    )
+    console.log(
+      'Formatted Mooney Allowance : ',
+      tokenAllowance.toString() / 10 ** 18
+    )
+    console.log('Selected Level Price : ', selectedLevel.price)
+
     //check for vmooney, approval, mooney balance, and native balance
     if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
       setCurrStep(5)
