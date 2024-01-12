@@ -35,8 +35,9 @@ function ContributionLevel({
   isRecommended,
 }: ContributionLevelProps) {
   const { user } = usePrivy()
+
   const { login } = useLogin({
-    onComplete: () => {
+    onComplete() {
       setSelectedLevel({ price: mooneyValue, hasVotingPower })
     },
     onError: (error) => {
@@ -77,9 +78,7 @@ function ContributionLevel({
       }
       onClick={() => {
         if (!user) login()
-        else {
-          setSelectedLevel({ price: mooneyValue, hasVotingPower })
-        }
+        setSelectedLevel({ price: mooneyValue, hasVotingPower })
       }}
     >
       <div className="h-full flex flex-col justify-between">

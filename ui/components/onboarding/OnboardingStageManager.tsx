@@ -1,3 +1,4 @@
+import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import Link from 'next/link'
@@ -36,6 +37,7 @@ function StageContainer({ children }: any) {
 
 export function OnboardingStageManager({ usdQuotes }: any) {
   const address = useAddress()
+  const { user } = usePrivy()
   const { selectedChain } = useContext(ChainContext)
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -66,7 +68,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   )
 
   useEffect(() => {
-    if (selectedLevel.price > 0) {
+    if (user && selectedLevel.price > 0) {
       setStage(1)
     }
 
