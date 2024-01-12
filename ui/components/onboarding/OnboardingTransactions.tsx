@@ -56,7 +56,7 @@ export function OnboardingTransactions({
   const { mutateAsync: approveMooney, isLoading: isLoadingApproveMooney } =
     useHandleWrite(mooneyContract, 'approve', [
       VMOONEY_ADDRESSES[selectedChain.slug],
-      ethers.utils.parseEther(String(selectedLevel.price / 2)),
+      ethers.utils.parseEther(String(selectedLevel.price / 2 + 1)),
     ])
   const { mutateAsync: createLock, isLoading: isLoadingCreateLock } =
     useHandleWrite(vMooneyContract, 'create_lock', [
@@ -121,16 +121,6 @@ export function OnboardingTransactions({
       }
     }
 
-    console.log(
-      'Formatted Mooney Balance : ',
-      mooneyBalance.toString() / 10 ** 18
-    )
-    console.log(
-      'Formatted Mooney Allowance : ',
-      tokenAllowance.toString() / 10 ** 18
-    )
-    console.log('Selected Level Price : ', selectedLevel.price)
-
     //check for vmooney, approval, mooney balance, and native balance
     if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
       setCurrStep(5)
@@ -146,7 +136,7 @@ export function OnboardingTransactions({
       return setStage(2)
     } else if (
       mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price / 2 - 1 &&
-      tokenAllowance?.toString() / 10 ** 18 >= selectedLevel.price / 2
+      tokenAllowance?.toString() / 10 ** 18 >= selectedLevel.price / 2 - 1
     ) {
       return setCurrStep(4)
     } else if (
