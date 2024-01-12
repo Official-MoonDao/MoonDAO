@@ -65,12 +65,12 @@ function ContributionLevel({
     <div
       className={
         title !== 'Citizen'
-          ? `w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
+          ? `w-[320px] md:w-[280px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
               selectedLevel?.price === mooneyValue
                 ? 'border-moon-orange border-opacity-100'
                 : 'border-opacity-60 dark:border-opacity-20'
             }`
-          : `w-[320px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono border-moon-orange border-opacity-100`
+          : `w-[320px] md:w-[280px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono border-moon-orange border-opacity-100`
       }
       onClick={() => {
         if (!user) login()
