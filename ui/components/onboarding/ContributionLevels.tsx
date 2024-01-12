@@ -227,7 +227,7 @@ export function ContributionLevels({
       <ContributionLevel
         lightIcon="/onboarding-icons/industry-white.svg"
         darkIcon="/onboarding-icons/industry-black.svg"
-        title="Mooney Millionaire"
+        title="MOONEY Millionaire"
         intro="Want to maximize your odds of going to space? You won't be a MoonDAO Citizen or be able to vote, but you will get enough $MOONEY for 50 entries into our sweepstakes."
         mooneyValue={1000000}
         usdQuote={usdQuotes[3]}
