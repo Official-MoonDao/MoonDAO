@@ -81,7 +81,7 @@ function ContributionLevel({
         <div className="flex flex-col justify-center items-center">
           {/*Logo*/}
 
-          <div className="mt-8">
+          <div className="mt-8 h-[75px]">
             <Image
               alt={`Icon image for ${title}`}
               src={lightMode ? darkIcon : lightIcon}
@@ -99,26 +99,21 @@ function ContributionLevel({
           </h1>
           {/*Price, just switch "demoPriceProp" for "levelPrice" to return to normal */}
 
-          <p className="mt-5 lg:mt-[5px] text-center">{`~ $${
+          <p className="mt-5 lg:mt-[5px] text-center">{`~$${
             usdQuote?.toFixed(0) || ''
           } USD`}</p>
 
-          <p className="py-4 2xl:h-[120px] leading-[18.46px] font-normal">
+          <p className="p-2 2xl:h-[120px] leading-[18.46px] font-normal">
             {intro}
           </p>
 
-          {isRecommended && (
-            <div className=" top-0 right-0 mt-2 mr-2 bg-moon-orange text-white py-1 px-2 rounded">
-              Most Popular
-            </div>
-          )}
           <div
             className="mt-4 text-left text-sm"
             style={{ marginBottom: '30px' }}
           >
             {/*Perk List*/}
 
-            <div className="mt-12 pr-2 2xl:h-[230px] mb-8">
+            <div className="p-2 mt-12 pr-2 2xl:h-[230px] mb-8">
               <ul className={`flex flex-col list-disc w-full gap-1`}>
                 {points.map((point, i) => (
                   <div
@@ -131,6 +126,11 @@ function ContributionLevel({
               </ul>
             </div>
           </div>
+          {isRecommended && (
+            <div className=" top-0 right-0 mb-2 mr-2 bg-moon-orange text-white py-1 px-2 rounded">
+              Most Popular
+            </div>
+          )}
         </div>
         <button
           className={`mt-3 border flex justify-center items-center gap-3 ${
