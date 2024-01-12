@@ -168,7 +168,7 @@ export function ContributionLevels({
   console.log(usdQuotes)
   // ;('Everything in the Citizen Tier.Exclusive promotion opportunities. Access to talent to help design, build, test your space hardware. 1,000,000 Voting Power 1,000,000 MOONEY')
   return (
-    <div className="w-full flex flex-col min-[1400px]:flex-row justify-between md:justify-center mt-6 2xl:w-full 2xl:gap-[7.5%] lg:mt-8 gap-[18px] lg:gap-5">
+    <div className="p-4 w-full flex flex-col min-[1400px]:flex-row justify-between md:justify-center mt-6 2xl:w-full lg:mt-8 gap-[18px]">
       <ContributionLevel
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
@@ -220,6 +220,21 @@ export function ContributionLevels({
           'Everything in the Citizen Tier',
         ]}
         hasVotingPower
+        selectedLevel={selectedLevel}
+        setSelectedLevel={setSelectedLevel}
+        selectedChain={selectedChain}
+      />
+      <ContributionLevel
+        lightIcon="/onboarding-icons/industry-white.svg"
+        darkIcon="/onboarding-icons/industry-black.svg"
+        title="Mooney Millionaire"
+        intro="Want to maximize your odds of going to space? You won't be a MoonDAO Citizen or be able to vote, but you will get enough $MOONEY for 50 entries into our sweepstakes."
+        mooneyValue={1000000}
+        usdQuote={usdQuotes[3]}
+        points={[
+          '1,000,000 $MOONEY which you own and can use as you wish, such as purchasing up to 50 Ticket to Space entries',
+          'Everything in the Explorer Tier',
+        ]}
         selectedLevel={selectedLevel}
         setSelectedLevel={setSelectedLevel}
         selectedChain={selectedChain}
