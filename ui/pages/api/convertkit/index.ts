@@ -28,24 +28,23 @@ export default async function handler(
             api_key: process.env.NEXT_PUBLIC_CONVERT_KIT_API_KEY,
             email: userEmail,
             first_name: name,
-            tags: [4416101],
           }),
         })
         const data = await response.json()
         console.log(data)
 
-        // const tagId = '4416101'
-        // const tagResultEndpoint = `https://api.convertkit.com/v3/tags/${tagId}/subscribe`
-        // await fetch(tagResultEndpoint, {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: JSON.stringify({
-        //     api_key: process.env.NEXT_PUBLIC_CONVERT_KIT_API_KEY,
-        //     email: userEmail,
-        //   }),
-        // })
+        const tagId = '4416101'
+        const tagResultEndpoint = `https://api.convertkit.com/v3/tags/${tagId}/subscribe`
+        await fetch(tagResultEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            api_key: process.env.NEXT_PUBLIC_CONVERT_KIT_API_KEY,
+            email: userEmail,
+          }),
+        })
         res.status(200).json({ success: true })
       } catch (error) {
         console.log(error)
