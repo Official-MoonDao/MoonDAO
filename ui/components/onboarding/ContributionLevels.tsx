@@ -1,4 +1,4 @@
-import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import { useLogin, usePrivy } from '@privy-io/react-auth'
 import Image from 'next/image'
 import { Dispatch, useEffect, useState } from 'react'
 import { calculateVMOONEY } from '../../lib/tokens/ve-token'
@@ -31,15 +31,11 @@ function ContributionLevel({
   hasVotingPower,
   selectedLevel,
   setSelectedLevel,
-  selectedChain,
   isRecommended,
 }: ContributionLevelProps) {
   const { user } = usePrivy()
 
   const { login } = useLogin({
-    onComplete() {
-      setSelectedLevel({ price: mooneyValue, hasVotingPower })
-    },
     onError: (error) => {
       console.log(error)
     },
