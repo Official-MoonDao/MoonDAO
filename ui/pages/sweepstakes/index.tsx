@@ -39,6 +39,7 @@ export default function Sweepstakes() {
   const [enableEthMintInfoModal, setEnableEthMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
   const [enableViewNFTsModal, setViewNFTsModal] = useState(false)
+  const [expired, setExpired] = useState(false)
 
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
@@ -114,7 +115,10 @@ export default function Sweepstakes() {
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
     else if (ts > 60) setTime('T-' + Math.floor(ts / 60) + ' Minutes')
     else if (ts > 0) setTime('T-' + ts + ' Seconds')
-    else 'Expired'
+    else {
+      setTime('Expired')
+      setExpired(true)
+    }
   }, [])
 
   useEffect(() => {
@@ -226,121 +230,123 @@ export default function Sweepstakes() {
               </div>
 
               {/*Not definitive, this one is being used on another page*/}
-              <div className="mt-4 flex flex-col gap-8">
-                <div className="block">
-                  <div>
-                    <p className="mb-1 dark:text-white lg:text-xl">
-                      Quantity to Mint (50 max)
-                    </p>
-                    <div
-                      className={`md:h-[64px] flex flex-col md:flex-row w-full justify-left ${
-                        !address && 'justify-between'
-                      } gap-3 p-2 border-[1px] md:border-[2px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-401`}
-                    >
-                      <input
-                        className="grow-0 md:ml-2 w-full md:w-1/5 dark:text-white bg-white bg-opacity-5 bg-transparent focus:outline-none text-center p-2"
-                        type="number"
-                        step={1}
-                        max={balance ? 50 - +balance : 0}
-                        min={0}
-                        placeholder={'1'}
-                        onChange={(e: any) => {
-                          if (e.target.value > 50 - balance) {
-                            toast.error('Cannot mint more than 50')
-                            setQuantity(50 - balance)
-                          } else if (e.target.value < 0) {
-                            toast.error('Mint quantity must be at least 1')
-                            console.log(e.target.value)
-                            setQuantity(1)
-                          } else {
-                            setQuantity(e.target.value)
-                          }
-                        }}
-                        value={quantity}
-                      />
-                      <PrivyWeb3Button
-                        className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
-                        label="Mint"
-                        action={() => {
-                          setSelectedChain(Polygon)
-                          setEnableMintInfoModal(true)
-                        }}
-                        skipNetworkCheck
-                      />
-                      {user && (
+              {!expired &&
+                <div className="mt-4 flex flex-col gap-8">
+                  <div className="block">
+                    <div>
+                      <p className="mb-1 dark:text-white lg:text-xl">
+                        Quantity to Mint (50 max)
+                      </p>
+                      <div
+                        className={`md:h-[64px] flex flex-col md:flex-row w-full justify-left ${
+                          !address && 'justify-between'
+                        } gap-3 p-2 border-[1px] md:border-[2px] border-[#1F212B] dark:border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-401`}
+                      >
+                        <input
+                          className="grow-0 md:ml-2 w-full md:w-1/5 dark:text-white bg-white bg-opacity-5 bg-transparent focus:outline-none text-center p-2"
+                          type="number"
+                          step={1}
+                          max={balance ? 50 - +balance : 0}
+                          min={0}
+                          placeholder={'1'}
+                          onChange={(e: any) => {
+                            if (e.target.value > 50 - balance) {
+                              toast.error('Cannot mint more than 50')
+                              setQuantity(50 - balance)
+                            } else if (e.target.value < 0) {
+                              toast.error('Mint quantity must be at least 1')
+                              console.log(e.target.value)
+                              setQuantity(1)
+                            } else {
+                              setQuantity(e.target.value)
+                            }
+                          }}
+                          value={quantity}
+                        />
                         <PrivyWeb3Button
                           className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
-                          label="Use Ethereum Network"
+                          label="Mint"
                           action={() => {
-                            setSelectedChain(Ethereum)
-                            setEnableEthMintInfoModal(true)
+                            setSelectedChain(Polygon)
+                            setEnableMintInfoModal(true)
                           }}
                           skipNetworkCheck
                         />
-                      )}
-                    </div>
-                  </div>
-
-                  {enableMintInfoModal && (
-                    <SubmitTTSInfoModal
-                      balance={balance}
-                      quantity={quantity}
-                      approveToken={approveToken}
-                      mint={mint}
-                      setEnabled={setEnableMintInfoModal}
-                      ttsContract={ttsContract}
-                      mooneyContract={mooneyContract}
-                    />
-                  )}
-
-                  {enableEthMintInfoModal && (
-                    <SubmitTTSInfoModalETH
-                      quantity={quantity}
-                      setEnabled={setEnableEthMintInfoModal}
-                      setChain={setSelectedChain}
-                      selectedChain={selectedChain}
-                      mooneyContract={mooneyETHContract}
-                      burn={burn}
-                    />
-                  )}
-                </div>
-                {whitelist.includes(address || '') && canClaimFree ? (
-                  <>
-                    <div className="w-full border-2 opacity-50" />
-                    <div className="flex gap-8">
-                      <PrivyWeb3Button
-                        className="text-white rounded-none bg-moon-orange w-[160px]"
-                        label="Claim Free"
-                        action={() => setEnableFreeMintInfoModal(true)}
-                      />
-                      <div className="flex flex-col gap-2">
-                        <p className="text-[90%]">
-                          {'Claim your free Ticket to Space NFT!'}
-                        </p>
-                        <p className="text-[80%] opacity-50">
-                          {
-                            '(One is available per address that entered the previous sweepstakes)'
-                          }
-                        </p>
+                        {user && (
+                          <PrivyWeb3Button
+                            className="md:w-2/5 text-xs xl:text-base text-white rounded-none bg-moon-orange"
+                            label="Use Ethereum Network"
+                            action={() => {
+                              setSelectedChain(Ethereum)
+                              setEnableEthMintInfoModal(true)
+                            }}
+                            skipNetworkCheck
+                          />
+                        )}
                       </div>
                     </div>
-                    <div className="flex flex-col items-center gap-4">
-                      {enableFreeMintInfoModal && (
-                        <SubmitTTSInfoModal
-                          quantity={quantity}
-                          balance={balance}
-                          claimFree={claimFree}
-                          setEnabled={setEnableFreeMintInfoModal}
-                          ttsContract={ttsContract}
-                          mooneyContract={mooneyContract}
+
+                    {enableMintInfoModal && (
+                      <SubmitTTSInfoModal
+                        balance={balance}
+                        quantity={quantity}
+                        approveToken={approveToken}
+                        mint={mint}
+                        setEnabled={setEnableMintInfoModal}
+                        ttsContract={ttsContract}
+                        mooneyContract={mooneyContract}
+                      />
+                    )}
+
+                    {enableEthMintInfoModal && (
+                      <SubmitTTSInfoModalETH
+                        quantity={quantity}
+                        setEnabled={setEnableEthMintInfoModal}
+                        setChain={setSelectedChain}
+                        selectedChain={selectedChain}
+                        mooneyContract={mooneyETHContract}
+                        burn={burn}
+                      />
+                    )}
+                  </div>
+                  {whitelist.includes(address || '') && canClaimFree ? (
+                    <>
+                      <div className="w-full border-2 opacity-50" />
+                      <div className="flex gap-8">
+                        <PrivyWeb3Button
+                          className="text-white rounded-none bg-moon-orange w-[160px]"
+                          label="Claim Free"
+                          action={() => setEnableFreeMintInfoModal(true)}
                         />
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <></>
-                )}
-              </div>
+                        <div className="flex flex-col gap-2">
+                          <p className="text-[90%]">
+                            {'Claim your free Ticket to Space NFT!'}
+                          </p>
+                          <p className="text-[80%] opacity-50">
+                            {
+                              '(One is available per address that entered the previous sweepstakes)'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-4">
+                        {enableFreeMintInfoModal && (
+                          <SubmitTTSInfoModal
+                            quantity={quantity}
+                            balance={balance}
+                            claimFree={claimFree}
+                            setEnabled={setEnableFreeMintInfoModal}
+                            ttsContract={ttsContract}
+                            mooneyContract={mooneyContract}
+                          />
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <></>
+                  )}
+                </div>
+              }
             </div>
           )}
           <div className="mx-5 mb-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base font-[Lato]">
