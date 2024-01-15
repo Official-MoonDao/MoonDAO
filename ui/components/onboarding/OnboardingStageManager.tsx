@@ -227,7 +227,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
               `}
           </p>
           <p>
-            {`Disclaimer: Ticket To Space Sweepstakes entries are 20,000 $MOONEY each. There is no expectation of profit with $MOONEY, `}
+            {`*Ticket To Space Sweepstakes entries are 20,000 $MOONEY each. There is no expectation of profit with $MOONEY,`}
             <a
               className="text-moon-gold"
               href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
@@ -243,8 +243,9 @@ export function OnboardingStageManager({ usdQuotes }: any) {
               {' '}
               terms and conditions
             </a>
-            .
+            .*
           </p>
+          <p>{`*Market data for $MOONEY is being fetched in real-time from decentralized exchanges. Prices may fluctuate over time based on demand.*`}</p>
         </div>
       </div>
     </StageContainer>

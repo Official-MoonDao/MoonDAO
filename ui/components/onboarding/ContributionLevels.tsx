@@ -101,7 +101,7 @@ function ContributionLevel({
 
           <p className="mt-5 lg:mt-[5px] text-center">{`~$${
             usdQuote?.toFixed(0) || ''
-          } USD`}</p>
+          } USD*`}</p>
 
           <p className="p-2 2xl:h-[120px] leading-[18.46px] font-normal">
             {intro}
