@@ -226,25 +226,6 @@ export function OnboardingStageManager({ usdQuotes }: any) {
               time between one week and four years to maximize voting power.
               `}
           </p>
-          <p>
-            {`*Ticket To Space Sweepstakes entries are 20,000 $MOONEY each. There is no expectation of profit with $MOONEY,`}
-            <a
-              className="text-moon-gold"
-              href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
-            >
-              {' '}
-              read more about $MOONEY
-            </a>
-            . By joining you accept our
-            <a
-              className="text-moon-gold"
-              href="https://publish.obsidian.md/moondao/MoonDAO/docs/Governance+Tokens"
-            >
-              {' '}
-              terms and conditions
-            </a>
-            .*
-          </p>
           <p>{`*Market data for $MOONEY is being fetched in real-time from decentralized exchanges. Prices may fluctuate over time based on demand.*`}</p>
         </div>
       </div>
