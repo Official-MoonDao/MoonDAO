@@ -168,7 +168,7 @@ export function ContributionLevels({
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
         title="Explorer"
-        intro="Begin your journey with the Internet’s Space Program. You can participate in governance and decision making, including voting on projects, proposals, and treasury spending. 
+        intro="Begin your journey with MoonDAO, participate in governance and decision making by voting on projects, proposals, and treasury spending. 
         "
         mooneyValue={20000}
         usdQuote={usdQuotes[0]}
