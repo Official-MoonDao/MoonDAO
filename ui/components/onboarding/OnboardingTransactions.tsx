@@ -299,30 +299,31 @@ export function OnboardingTransactions({
                 selectedWallet={selectedWallet}
                 wallets={wallets}
               />
-              {selectedChain.slug === 'polygon' && (
-                <Step
-                  realStep={currStep}
-                  stepNum={5}
-                  title={'Mint Citizen NFT'}
-                  explanation={
-                    'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
-                  }
-                  action={async () => {
-                    await mintCitizenNFT()
-                      .then(() => {
-                        setChecksLoaded(false)
-                        checkStep()
-                      })
-                      .catch((err) => {
-                        throw err
-                      })
-                  }}
-                  txExplanation={`Mint Citizen Mission Patch NFT`}
-                  selectedChain={selectedChain}
-                  selectedWallet={selectedWallet}
-                  wallets={wallets}
-                />
-              )}
+              {selectedChain.slug === 'polygon' &&
+                selectedLevel.price > 40000 && (
+                  <Step
+                    realStep={currStep}
+                    stepNum={5}
+                    title={'Mint Citizen NFT'}
+                    explanation={
+                      'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
+                    }
+                    action={async () => {
+                      await mintCitizenNFT()
+                        .then(() => {
+                          setChecksLoaded(false)
+                          checkStep()
+                        })
+                        .catch((err) => {
+                          throw err
+                        })
+                    }}
+                    txExplanation={`Mint Citizen Mission Patch NFT`}
+                    selectedChain={selectedChain}
+                    selectedWallet={selectedWallet}
+                    wallets={wallets}
+                  />
+                )}
             </>
           )}
         </>
@@ -354,15 +355,16 @@ export function OnboardingTransactions({
                   'Stake your tokens for voting power within the community.'
                 }
               />
-              {selectedChain.slug === 'polygon' && (
-                <StepLoading
-                  stepNum={5}
-                  title={'Mint Citizen NFT'}
-                  explanation={
-                    'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
-                  }
-                />
-              )}
+              {selectedChain.slug === 'polygon' &&
+                selectedLevel.price > 40000 && (
+                  <StepLoading
+                    stepNum={5}
+                    title={'Mint Citizen NFT'}
+                    explanation={
+                      'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
+                    }
+                  />
+                )}
             </>
           )}
         </>
