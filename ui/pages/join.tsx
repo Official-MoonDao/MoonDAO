@@ -39,14 +39,10 @@ export async function getStaticProps() {
   const levelOneRoute = await pregenSwapRoute(Polygon, 20000, MOONEY, DAI)
   const levelTwoRoute = await pregenSwapRoute(Polygon, 100000, MOONEY, DAI)
   const levelThreeRoute = await pregenSwapRoute(Polygon, 500000, MOONEY, DAI)
-  const levelFourRoute = await pregenSwapRoute(Polygon, 1000000, MOONEY, DAI)
 
-  const usdQuotes = [
-    levelOneRoute,
-    levelTwoRoute,
-    levelThreeRoute,
-    levelFourRoute,
-  ].map((swapRoute) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18)
+  const usdQuotes = [levelOneRoute, levelTwoRoute, levelThreeRoute].map(
+    (swapRoute) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18
+  )
 
   return {
     props: {
