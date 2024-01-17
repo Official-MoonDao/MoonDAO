@@ -65,12 +65,12 @@ function ContributionLevel({
     <div
       className={
         title !== 'Citizen'
-          ? `w-[320px] md:w-[280px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
+          ? `w-[320px] min-h-[900px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
               selectedLevel?.price === mooneyValue
                 ? 'border-moon-orange border-opacity-100'
                 : 'border-opacity-60 dark:border-opacity-20'
             }`
-          : `w-[320px] md:w-[280px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono border-moon-orange border-opacity-100`
+          : `w-[320px] min-h-[900px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono border-moon-orange border-opacity-100`
       }
       onClick={() => {
         if (!user) login()
@@ -103,17 +103,17 @@ function ContributionLevel({
             usdQuote?.toFixed(0) || ''
           } USD*`}</p>
 
-          <p className="p-2 2xl:h-[120px] leading-[18.46px] font-normal">
+          <p className="mt-2 p-2 2xl:h-[120px] leading-[18.46px] font-normal">
             {intro}
           </p>
 
           <div
-            className="mt-4 text-left text-sm"
+            className="mt-2 text-left text-sm"
             style={{ marginBottom: '30px' }}
           >
             {/*Perk List*/}
 
-            <div className="p-2 mt-12 pr-2 2xl:h-[230px] mb-8">
+            <div className="p-2 mt-8 pr-2 2xl:h-[230px] mb-8">
               <ul className={`flex flex-col list-disc w-full gap-1`}>
                 {points.map((point, i) => (
                   <div
@@ -126,14 +126,16 @@ function ContributionLevel({
               </ul>
             </div>
           </div>
-          {isRecommended && (
-            <div className=" top-0 right-0 mb-2 mr-2 bg-moon-orange text-white py-1 px-2 rounded">
-              Most Popular
-            </div>
-          )}
         </div>
+        {isRecommended && (
+          <div className="my-4 w-full flex justify-center">
+            <button className="bg-moon-orange text-white py-1 px-2 rounded">
+              Most Popular
+            </button>
+          </div>
+        )}
         <button
-          className={`mt-3 border flex justify-center items-center gap-3 ${
+          className={`py-12 px-20 mt-3 border flex justify-center items-center gap-3 ${
             selectedLevel.price === mooneyValue
               ? 'border-moon-orange'
               : 'border-white-500'
@@ -142,12 +144,6 @@ function ContributionLevel({
               ? 'bg-moon-orange'
               : 'bg-transparent'
           }`}
-          style={{
-            width: '261px',
-            height: '50px',
-            padding: '12px, 20px, 12px, 20px',
-            textAlign: 'center',
-          }}
         >
           {'Get Started'} <ArrowSide />
         </button>
@@ -163,7 +159,7 @@ export function ContributionLevels({
   usdQuotes,
 }: any) {
   return (
-    <div className="p-4 w-full flex flex-col min-[1225px]:flex-row max-[1225px]:items-center justify-between md:justify-center mt-6 lg:mt-8 gap-[5%]">
+    <div className="p-4 w-full flex flex-col min-[1300px]:flex-row max-[1300px]:items-center justify-between md:justify-center mt-6 lg:mt-8 gap-8">
       <ContributionLevel
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
@@ -174,7 +170,7 @@ export function ContributionLevels({
         usdQuote={usdQuotes[0]}
         points={[
           '10,000 $MOONEY which you own and can use as you wish, such as purchasing items in the MoonDAO Marketplace',
-          ' 10,000 $MOONEY staked for two years to co-govern MoonDAO. At the end of two-years, your 10,000 $MOONEY unlocks to use as you wish',
+          ' 10,000 $MOONEY staked for one year to co-govern MoonDAO. At the end of one year, your 10,000 $MOONEY unlocks to use as you wish',
           'Unlike traditional organizations, you retain full ownership of your assets and there is no annual fee, dues, or middleman',
           'MoonDAO Marketplace Access',
         ]}
@@ -192,7 +188,7 @@ export function ContributionLevels({
         usdQuote={usdQuotes[1]}
         points={[
           '50,000 $MOONEY which you own and can use as you wish, such as purchasing items in the MoonDAO Marketplace',
-          ' 50,000 $MOONEY staked for two years to co-govern MoonDAO. At the end of two-years, your 50,000 $MOONEY unlocks to use as you wish',
+          ' 50,000 $MOONEY staked for one year to co-govern MoonDAO. At the end of one year, your 50,000 $MOONEY unlocks to use as you wish',
           'Expanded access including governance and project channels',
           'Everything in the Explorer Tier',
         ]}
@@ -212,7 +208,7 @@ export function ContributionLevels({
         usdQuote={usdQuotes[2]}
         points={[
           '250,000 $MOONEY which you own and can use as you wish, such as purchasing items in the MoonDAO Marketplace',
-          '250,000 $MOONEY staked for two years to co-govern MoonDAO. At the end of two-years, your 50,000 $MOONEY unlocks to use as you wish',
+          '250,000 $MOONEY staked for one year to co-govern MoonDAO. At the end of one year, your 50,000 $MOONEY unlocks to use as you wish',
           'Everything in the Citizen Tier',
         ]}
         hasVotingPower
