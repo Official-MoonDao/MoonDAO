@@ -4,7 +4,7 @@ import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
+import { useHandleWrite } from '../../lib/thirdweb/hooks'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import CitizenNFTABI from '../../const/abis/CitizenNFT.json'
@@ -61,7 +61,7 @@ export function OnboardingTransactions({
   const { mutateAsync: createLock, isLoading: isLoadingCreateLock } =
     useHandleWrite(vMooneyContract, 'create_lock', [
       ethers.utils.parseEther(String(selectedLevel.price / 2)),
-      Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 1,
+      Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365,
     ])
 
   const { contract: citizenNFTContract } = useContract(
@@ -110,7 +110,11 @@ export function OnboardingTransactions({
     ])
 
     //check for citizen NFT
-    if (selectedChain.slug === 'polygon' && citizenNFTContract) {
+    if (
+      selectedChain.slug === 'polygon' &&
+      citizenNFTContract &&
+      selectedLevel.price > 40000
+    ) {
       const citizenNFTBalance = await citizenNFTContract.call('balanceOf', [
         address,
         0,
