@@ -80,7 +80,7 @@ export function SweepstakesMinting({
     else if (ts > 3600) setTime('T-' + Math.floor(ts / 3600) + ' Hours')
     else if (ts > 60) setTime('T-' + Math.floor(ts / 60) + ' Minutes')
     else if (ts > 0) setTime('T-' + ts + ' Seconds')
-    else 'Expired'
+    else setTime('Expired')
   }, [])
 
   useEffect(() => {
@@ -204,7 +204,7 @@ export function SweepstakesMinting({
           {/*Not definitive, this one is being used on another page*/}
           <div className="mt-4 flex flex-col gap-8">
             <div className="block">
-              <div>
+              {/* <div>
                 <p className="mb-1 dark:text-white lg:text-xl">
                   Quantity to Mint
                 </p>
@@ -247,7 +247,7 @@ export function SweepstakesMinting({
                     }}
                   />
                 </div>
-              </div>
+              </div> */}
 
               {enableMintInfoModal && (
                 <SubmitTTSInfoModal
@@ -272,7 +272,7 @@ export function SweepstakesMinting({
                 />
               )}
             </div>
-            {whitelist.includes(address || '') && canClaimFree ? (
+            {/* {whitelist.includes(address || '') && canClaimFree ? (
               <>
                 <div className="w-full border-2 opacity-50" />
                 <div className="flex gap-8">
@@ -307,7 +307,7 @@ export function SweepstakesMinting({
               </>
             ) : (
               <></>
-            )}
+            )} */}
           </div>
         </div>
       </div>
