@@ -2,7 +2,7 @@
 
 [![](/ui/public/Original_Black.png)](https://app.moondao.com)
 
-The MoonDAO App at https://app.moondao.com is where people can connect their Ethereum wallet and interact with the MoonDAO smart contracts.
+The MoonDAO App at https://app.moondao.com is where people can connect their Ethereum or Polygon wallet and interact with the MoonDAO smart contracts.
 
 > [![app](/ui/public/screenshot.png)](https://app.moondao.com)
 
@@ -22,7 +22,7 @@ See [ui/README.md](ui/README.md)
 
 ## Testing against the Mumbai testnet
 
-Add sepolia testnet variables to your local development environment:
+Add testnet variables to your local development environment:
 ```
 cp .env.testnet .env.local
 ```

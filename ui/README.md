@@ -14,7 +14,7 @@ Install the dependencies:
 yarn install
 ```
 
-Add variables to your local development environment:
+Add testnet variables to your local development environment:
 ```
 cp .env.testnet .env.local
 ```
