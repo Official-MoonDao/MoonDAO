@@ -84,37 +84,42 @@ export function SweepstakesWinners() {
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'30,000 $MOONEY'}
+            prize={'50,000 $MOONEY'}
           />
           <Winner
             number={6}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
+            prize={'30,000 $MOONEY'}
           />
           <Winner
             number={7}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
+            prize={'30,000 $MOONEY'}
           />
           <Winner
             number={8}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
+            prize={'30,000 $MOONEY'}
           />
           <Winner
             number={9}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
+            prize={'30,000 $MOONEY'}
           />
           <Winner
             number={10}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
+            prize={'30,000 $MOONEY'}
           />
         </div>
       </div>
