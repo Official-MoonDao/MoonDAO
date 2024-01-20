@@ -2,10 +2,11 @@ import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Fragment } from 'react'
 import { useEffect } from 'react'
+import { useSwipeDirection } from '../../../lib/utils/hooks/useSwipeDirection'
 import { TreasuryAndMobileLogo } from '../../assets'
+import { LogoSidebar, LogoSidebarLight } from '../../assets'
 import { navigation } from './Navigation'
 import NavigationLink from './NavigationLink'
-import {LogoSidebar, LogoSidebarLight} from '../../assets'
 
 const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
   /*A useEffect used because the Dialog Headless UI component doesn't naturally recognize Dark Mode classes */
@@ -16,6 +17,14 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
       document.body.classList.remove('dark')
     }
   }, [lightMode])
+
+  //close sidebar when swiping left
+  const swipeDirection = useSwipeDirection()
+  useEffect(() => {
+    if (sidebarOpen && swipeDirection === 'left') {
+      setSidebarOpen(false)
+    }
+  }, [swipeDirection])
 
   return (
     <Transition.Root show={sidebarOpen} as={Fragment}>
@@ -73,7 +82,7 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
               </Transition.Child>
               <a href="https://moondao.com">
                 <div className="flex flex-shrink-0 items-center px-4">
-                {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
+                  {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
                 </div>
               </a>
               <div className="mt-8 h-0 flex-1 overflow-y-auto">
