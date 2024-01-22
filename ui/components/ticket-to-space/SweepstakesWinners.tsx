@@ -19,7 +19,7 @@ function Winner({ number, name, tokenId, address, prize }: any) {
           number === 1 && 'bg-moon-gold dark:bg-moon-gold'
         }`}
       />
-      <div className="flex flex-col">
+      <div className="flex flex-col w-full">
         <p>{`Name : ${name}`}</p>
         <p>{`Token Id : ${tokenId}`}</p>
         <Link
@@ -34,8 +34,9 @@ function Winner({ number, name, tokenId, address, prize }: any) {
           number === 1 && 'bg-moon-gold dark:bg-moon-gold'
         }`}
       />
-
-      <p>{prize}</p>
+      <div className="flex w-1/2">
+        <p>{prize}</p>
+      </div>
     </div>
   )
 }
