@@ -56,70 +56,70 @@ export function SweepstakesWinners() {
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'Blue Origin Rocket Ride to Space'}
+            prize={`🚀 Ticket to Space on Blue Origin's New Shepard!`}
           />
           <Winner
             number={2}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'200,000 $MOONEY'}
+            prize={`💰 200,000 $MOONEY`}
           />
           <Winner
             number={3}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'100,000 $MOONEY'}
+            prize={`💰 100,000 $MOONEY`}
           />
           <Winner
             number={4}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'50,000 $MOONEY'}
+            prize={`💰 50,000 $MOONEY`}
           />
           <Winner
             number={5}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'50,000 $MOONEY'}
+            prize={`💰 50,000 $MOONEY`}
           />
           <Winner
             number={6}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'30,000 $MOONEY'}
+            prize={`💰 30,000 $MOONEY`}
           />
           <Winner
             number={7}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'30,000 $MOONEY'}
+            prize={`💰 30,000 $MOONEY`}
           />
           <Winner
             number={8}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'30,000 $MOONEY'}
+            prize={`💰 30,000 $MOONEY`}
           />
           <Winner
             number={9}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'30,000 $MOONEY'}
+            prize={`💰 30,000 $MOONEY`}
           />
           <Winner
             number={10}
             name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
-            prize={'30,000 $MOONEY'}
+            prize={`💰 30,000 $MOONEY`}
           />
         </div>
       </div>
