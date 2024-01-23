@@ -17,7 +17,7 @@ const generateEmailContent = (data: any) => {
     ''
   )
 
-  const { name, email, phone, message } = JSON.parse(data)
+  const { name, email, message } = JSON.parse(data)
 
   const htmlData = `
   <div>
@@ -25,8 +25,6 @@ const generateEmailContent = (data: any) => {
   <p>${name}</p>
   <label for="email"><strong>Email</strong></label>
   <p>${email}</p>
-  <label for="phone"><strong>Phone</strong></label>
-  <p>${phone}</p>
   <label for="message"><strong>Message</strong></label>
   <p>${message}</p>
   </div>
