@@ -2,6 +2,7 @@ import { useAddress } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import Head from '../../components/layout/Head'
+import { Contact } from '../../components/nodemailer/Contact'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
 
 export default function ZeroG() {
@@ -45,7 +46,10 @@ export default function ZeroG() {
         </div>
 
         <section className="mt-6 w-full flex flex-col items-center">
-          <PurchasePortal validVP={validVP} />
+          {/* <PurchasePortal validVP={validVP} /> */}
+          <div className="w-3/4">
+            <Contact />
+          </div>
         </section>
       </div>
     </main>
