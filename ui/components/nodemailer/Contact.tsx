@@ -6,7 +6,6 @@ import toast from 'react-hot-toast'
 export function Contact() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
   const [message, setMessage] = useState('')
 
   const [verified, setVerified] = useState(false)
@@ -19,7 +18,7 @@ export function Contact() {
   }
 
   async function submitContactForm() {
-    if (!email.includes('@') || message.trim() === '' || phone.trim() === '')
+    if (!email.includes('@'))
       return toast.error('Please fill out all required fields.')
     if (!verified) return toast.error("Please verify you're not a robot.")
     else {
@@ -29,7 +28,6 @@ export function Contact() {
           body: JSON.stringify({
             name,
             email,
-            phone,
             message,
           }),
         })
@@ -57,7 +55,7 @@ export function Contact() {
         </div>
         <div className="w-full">
           <label className="font-semibold">
-            Email<span className="text-[tomato]">*</span> :
+            Email <span className="text-[tomato]">*</span> :
           </label>
           <input
             className="w-full rounded-md px-2 dark:bg-[#ffffff25]"
@@ -66,19 +64,7 @@ export function Contact() {
           />
         </div>
         <div className="w-full">
-          <label className="font-semibold">
-            Phone<span className="text-[tomato]">*</span> :
-          </label>
-          <input
-            className="w-full rounded-md px-2 dark:bg-[#ffffff25]"
-            onChange={({ target }) => setPhone(target.value)}
-            value={phone}
-          />
-        </div>
-        <div className="w-full">
-          <label className="font-semibold">
-            Message<span className="text-[tomato]">*</span> :
-          </label>
+          <label className="font-semibold">Message :</label>
           <textarea
             className="w-full h-32 rounded-md px-2 dark:bg-[#ffffff25]"
             onChange={({ target }) => setMessage(target.value)}
@@ -86,14 +72,16 @@ export function Contact() {
             value={message}
           ></textarea>
         </div>
-        {email.includes('@') && message.trim() !== '' && (
-          <ReCaptcha
-            sitekey={
-              process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY as string
-            }
-            onChange={(e: any) => console.log('Recaptcha res :', e)}
-          />
-        )}
+        <div className="mt-2">
+          {email.includes('@') && (
+            <ReCaptcha
+              sitekey={
+                process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY as string
+              }
+              onChange={(e: any) => setVerified(true)}
+            />
+          )}
+        </div>
         <button
           className={`mt-4 py-3 text-white bg-moon-orange font-RobotoMono w-full duration-[0.6s] ease-in-ease-out text-1xl hover:scale-105`}
           onClick={submitContactForm}

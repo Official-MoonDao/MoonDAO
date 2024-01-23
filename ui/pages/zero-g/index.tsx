@@ -47,7 +47,7 @@ export default function ZeroG() {
 
         <section className="mt-6 w-full flex flex-col items-center">
           {/* <PurchasePortal validVP={validVP} /> */}
-          <div className="w-3/4">
+          <div className="w-full md:w-3/4">
             <Contact />
           </div>
         </section>
