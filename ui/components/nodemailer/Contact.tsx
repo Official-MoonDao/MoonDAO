@@ -24,11 +24,12 @@ export function Contact() {
     if (!verified) return toast.error("Please verify you're not a robot.")
     else {
       try {
-        const res = await fetch('/api/contact', {
+        const res = await fetch('/api/nodemailer/zero-g-contact', {
           method: 'POST',
           body: JSON.stringify({
             name,
             email,
+            phone,
             message,
           }),
         })
