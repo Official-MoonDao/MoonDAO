@@ -12,6 +12,7 @@ import { devWhitelist } from '../../const/tts/whitelist'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { SubmitTTSInfoModal } from './SubmitTTSInfoModal'
 import { SubmitTTSInfoModalETH } from './SubmitTTSInfoModalETH'
+import { SweepstakesWinners } from './SweepstakesWinners'
 import { ViewNFTDataModal } from './ViewNFTDataModal'
 
 export function SweepstakesMinting({
@@ -99,38 +100,18 @@ export function SweepstakesMinting({
           Take the leap, for the chance to win a trip to space!
         </h3> */}
       <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
-        {`One person will be randomly selected to win an opportunity aboard a future Blue Origin rocket to space! Each NFT costs 20,000 $MOONEY (`}
-        <Link
-          className="text-moon-gold"
-          href="https://www.youtube.com/watch?v=VxU8dOrL0fE"
-          target="_blank"
-        >
-          {'Watch Tutorial'}
-        </Link>
-        {`), aquire some `}
-        <Link className="text-moon-gold" href="/join">
-          {' by joining MoonDAO'}
-        </Link>
-        {`. If you already have $MOONEY, `}
-        <Link
-          className="text-moon-gold"
-          href="https://youtu.be/oQtHjbcbAio?feature=shared"
-          target="_blank"
-        >
-          {' bridge your tokens '}
-        </Link>
-        {`to the Polygon PoS Network. You can mint up to 50 entries.`}
+        {`One person will be randomly selected to win an opportunity aboard a future Blue Origin rocket to space!`}
       </p>
 
       {/*Collection title, image and description*/}
       <div className="mt-6 inner-container-background relative w-full">
         <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]">
           <div className="md:flex">
-            <div className="m-auto my-2 p-2 flex justify-center">
+            <div className="m-auto my-2 p-2 flex justify-center md:w-1/2">
               <MediaRenderer
                 src={'ipfs://Qmba3umb3db7DqCA19iRSSbtzv9nYUmP8Cibo5QMkLpgpP'}
-                width={'330px'}
-                height={'330px'}
+                width="100%"
+                height="100%"
               />
             </div>
             {/*Quantity, price, expiration, balance */}
@@ -311,6 +292,8 @@ export function SweepstakesMinting({
           </div>
         </div>
       </div>
+
+      {/* <SweepstakesWinners /> */}
 
       <p className="mt-4 text-sm">
         NO PURCHASE OR OBLIGATION NECESSARY TO ENTER OR WIN. PURCHASE WILL NOT
