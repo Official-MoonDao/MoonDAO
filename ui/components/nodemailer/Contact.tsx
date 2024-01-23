@@ -88,7 +88,9 @@ export function Contact() {
         </div>
         {email.includes('@') && message.trim() !== '' && (
           <ReCaptcha
-            sitekey={process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY}
+            sitekey={
+              process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY as string
+            }
             onChange={(e: any) => console.log('Recaptcha res :', e)}
           />
         )}
