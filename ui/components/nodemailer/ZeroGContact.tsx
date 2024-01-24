@@ -31,7 +31,6 @@ export function ZeroGContact() {
             message,
           }),
         })
-        console.log(res)
         toast.success('Message sent!')
         resetContactForm()
       } catch (e: any) {
