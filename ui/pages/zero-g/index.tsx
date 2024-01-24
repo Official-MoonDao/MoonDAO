@@ -2,7 +2,7 @@ import { useAddress } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import Head from '../../components/layout/Head'
-import { Contact } from '../../components/nodemailer/Contact'
+import { ZeroGContact } from '../../components/nodemailer/ZeroGContact'
 import PurchasePortal from '../../components/zero-g/PurchasePortal'
 
 export default function ZeroG() {
@@ -45,10 +45,14 @@ export default function ZeroG() {
           </p>
         </div>
 
-        <section className="mt-6 w-full flex flex-col items-center">
+        <section className="mt-4 w-full flex flex-col items-start">
           {/* <PurchasePortal validVP={validVP} /> */}
-          <div className="w-full md:w-3/4">
-            <Contact />
+          <h1 className="mt-4 font-bold text-2xl">{'Contact:'}</h1>
+          <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-center text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`Contact pablo@moondao.com or christina@spaceforabetterworld.com for more details or use the contact form below.`}
+          </p>
+          <div className="w-full">
+            <ZeroGContact />
           </div>
         </section>
       </div>

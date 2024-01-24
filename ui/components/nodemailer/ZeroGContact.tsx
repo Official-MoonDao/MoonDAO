@@ -3,7 +3,7 @@ import { useState } from 'react'
 import ReCaptcha from 'react-google-recaptcha'
 import toast from 'react-hot-toast'
 
-export function Contact() {
+export function ZeroGContact() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
@@ -43,7 +43,6 @@ export function Contact() {
 
   return (
     <div className="text-black dark:text-white">
-      <h1 className="mt-4 font-bold text-2xl text-center">{'Contact:'}</h1>
       <div className="mt-2 p-4 w-full flex flex-col items-center gap-2 duration-300 h-full bg-[#1d1d1d50] rounded-md">
         <div className="w-full">
           <label className="font-semibold">Name :</label>
@@ -55,7 +54,7 @@ export function Contact() {
         </div>
         <div className="w-full">
           <label className="font-semibold">
-            Email <span className="text-[tomato]">*</span> :
+            Email : <span className="text-[tomato]">*</span>
           </label>
           <input
             className="w-full rounded-md px-2 dark:bg-[#ffffff25]"
