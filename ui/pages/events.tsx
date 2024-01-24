@@ -1,5 +1,4 @@
 import useTranslation from 'next-translate/useTranslation'
-import React, { useEffect } from 'react'
 import { useCalendarEvents } from '../lib/dashboard/hooks'
 import { SeshEvent } from '../components/dashboard/calendar/SeshEvent'
 import Head from '../components/layout/Head'

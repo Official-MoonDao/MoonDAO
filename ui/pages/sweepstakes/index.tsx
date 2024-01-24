@@ -1,4 +1,4 @@
-import { Polygon, Ethereum, Goerli, Mumbai } from '@thirdweb-dev/chains'
+import { Polygon, Mumbai } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../../lib/thirdweb/chain-context'
