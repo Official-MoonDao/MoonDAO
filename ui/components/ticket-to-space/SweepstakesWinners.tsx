@@ -20,7 +20,7 @@ function Winner({ number, name, tokenId, address, prize }: any) {
         }`}
       />
       <div className="flex flex-col w-full">
-        <p>{`Name : ${name}`}</p>
+        {name && <p>{`Name : ${name}`}</p>}
         <p>{`Token Id : ${tokenId}`}</p>
         <Link
           href={'https://polygonscan.com/address/' + address}
@@ -49,70 +49,60 @@ export function SweepstakesWinners() {
         <div className="flex flex-col items-start">
           <Winner
             number={1}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`🚀 Ticket to Space on Blue Origin's New Shepard!`}
           />
           <Winner
             number={2}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`💰 200,000 $MOONEY`}
           />
           <Winner
             number={3}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`💰 100,000 $MOONEY`}
           />
           <Winner
             number={4}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`💰 50,000 $MOONEY`}
           />
           <Winner
             number={5}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`💰 50,000 $MOONEY`}
           />
           <Winner
             number={6}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`💰 30,000 $MOONEY`}
           />
           <Winner
             number={7}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`💰 30,000 $MOONEY`}
           />
           <Winner
             number={8}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`💰 30,000 $MOONEY`}
           />
           <Winner
             number={9}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`💰 30,000 $MOONEY`}
           />
           <Winner
             number={10}
-            name={'Test'}
             tokenId={1}
             address={'0x1234567890123456789012345678901234567890'}
             prize={`💰 30,000 $MOONEY`}
