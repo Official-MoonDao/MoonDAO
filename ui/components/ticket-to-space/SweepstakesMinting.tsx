@@ -293,7 +293,7 @@ export function SweepstakesMinting({
         </div>
       </div>
 
-      {/* <SweepstakesWinners /> */}
+      <SweepstakesWinners ttsContract={ttsContract} supply={supply} />
 
       <p className="mt-4 text-sm">
         NO PURCHASE OR OBLIGATION NECESSARY TO ENTER OR WIN. PURCHASE WILL NOT

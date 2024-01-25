@@ -1,6 +1,25 @@
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
-function Winner({ number, name, tokenId, address, prize }: any) {
+type Winner = {
+  tokenId: string
+  address: string
+}
+
+const PRIZES = [
+  "🚀 Ticket to Space on Blue Origin's New Shepard!",
+  '💰 200,000 $MOONEY',
+  '💰 100,000 $MOONEY',
+  '💰 50,000 $MOONEY',
+  '💰 50,000 $MOONEY',
+  '💰 30,000 $MOONEY',
+  '💰 30,000 $MOONEY',
+  '💰 30,000 $MOONEY',
+  '💰 30,000 $MOONEY',
+  '💰 30,000 $MOONEY',
+]
+
+function Winner({ number, tokenId, address, prize }: any) {
   return (
     <div
       className={`flex items-center gap-4 px-5 lg:px-7 xl:px-10 py-6 border-2 dark:border-[#ffffff20] font-RobotoMono w-[300px] md:w-[400px] lg:mt-10 lg:w-3/4 lg:max-w-[1080px] text-slate-950 text-sm dark:text-white ${
@@ -20,7 +39,6 @@ function Winner({ number, name, tokenId, address, prize }: any) {
         }`}
       />
       <div className="flex flex-col w-full">
-        {name && <p>{`Name : ${name}`}</p>}
         <p>{`Token Id : ${tokenId}`}</p>
         <Link
           href={'https://polygonscan.com/address/' + address}
@@ -41,73 +59,82 @@ function Winner({ number, name, tokenId, address, prize }: any) {
   )
 }
 
-export function SweepstakesWinners() {
+export function SweepstakesWinners({ ttsContract, supply }: any) {
+  const [winners, setWinners] = useState<Winner[]>([])
+
+  async function getWinners() {
+    const winners = []
+
+    for (let i = 0; i <= 10; i++) {
+      try {
+        const randomWordsId = await ttsContract.call('requestIds', [i])
+        if (randomWordsId) {
+          const { randomWords } = await ttsContract.call('getRequestStatus', [
+            randomWordsId,
+          ])
+
+          const winningTokenId = await randomWords[0].mod(supply)
+
+          const ownerOfWinningTokenId = await ttsContract.call('ownerOf', [
+            winningTokenId.toString(),
+          ])
+
+          const winner = {
+            tokenId: winningTokenId,
+            address: ownerOfWinningTokenId,
+          }
+
+          // winners.push(winner)
+          winners.push(winner)
+        }
+      } catch (err) {
+        console.log(err)
+      }
+    }
+    setWinners(winners.reverse())
+  }
+
+  useEffect(() => {
+    let refresh: any
+    if (ttsContract && supply) {
+      getWinners()
+      refresh = setInterval(() => {
+        getWinners()
+      }, 5000)
+    }
+    return () => clearInterval(refresh)
+  }, [ttsContract, supply])
+
   return (
     <>
       <div className="mt-5">
         <h2 className="page-title">Winners</h2>
-        <div className="flex flex-col items-start">
-          <Winner
-            number={1}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`🚀 Ticket to Space on Blue Origin's New Shepard!`}
-          />
-          <Winner
-            number={2}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`💰 200,000 $MOONEY`}
-          />
-          <Winner
-            number={3}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`💰 100,000 $MOONEY`}
-          />
-          <Winner
-            number={4}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`💰 50,000 $MOONEY`}
-          />
-          <Winner
-            number={5}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`💰 50,000 $MOONEY`}
-          />
-          <Winner
-            number={6}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`💰 30,000 $MOONEY`}
-          />
-          <Winner
-            number={7}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`💰 30,000 $MOONEY`}
-          />
-          <Winner
-            number={8}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`💰 30,000 $MOONEY`}
-          />
-          <Winner
-            number={9}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`💰 30,000 $MOONEY`}
-          />
-          <Winner
-            number={10}
-            tokenId={1}
-            address={'0x1234567890123456789012345678901234567890'}
-            prize={`💰 30,000 $MOONEY`}
-          />
+        <div className="w-full flex flex-col items-start">
+          <button
+            className="w-[250px] md:w-1/2 mt-4 p-1 border text-white hover:scale-105 transition-all duration-150 border-white hover:bg-white hover:text-moon-orange"
+            onClick={getWinners}
+          >
+            Refresh ↺
+          </button>
         </div>
+        {winners.length > 0 ? (
+          <div className="flex flex-col items-start">
+            {winners.map((winner: any, i: number) => (
+              <Winner
+                key={'Winner-' + i}
+                number={10 - winners.length + i + 1}
+                name={winner.name}
+                tokenId={winner.tokenId}
+                address={winner.address}
+                prize={PRIZES[10 - winners.length + i]}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-start">
+            <div className="flex gap-4 px-5 lg:px-7 xl:px-10 py-6 border-2 dark:border-[#ffffff20] font-RobotoMono w-[400px] h-[100px] lg:mt-10 lg:w-3/4 lg:max-w-[1080px] text-slate-950 text-sm dark:text-white animate-pulse"></div>
+          </div>
+        )}
       </div>
     </>
   )
