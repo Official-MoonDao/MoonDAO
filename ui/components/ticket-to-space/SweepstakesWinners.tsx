@@ -59,6 +59,12 @@ function Winner({ number, tokenId, address, prize }: any) {
   )
 }
 
+function WinnerSkeleton() {
+  return (
+    <div className="flex w-[300px] md:w-[400px] gap-4 px-5 lg:px-7 xl:px-10 py-6 border-2 dark:border-[#ffffff20] font-RobotoMono h-[100px] lg:mt-10 lg:w-3/4 lg:max-w-[1080px] text-slate-950 text-sm dark:text-white animate-pulse"></div>
+  )
+}
+
 export function SweepstakesWinners({ ttsContract, supply }: any) {
   const [winners, setWinners] = useState<Winner[]>([])
 
@@ -109,14 +115,7 @@ export function SweepstakesWinners({ ttsContract, supply }: any) {
     <>
       <div className="mt-5">
         <h2 className="page-title">Winners</h2>
-        <div className="w-full flex flex-col items-start">
-          <button
-            className="w-[250px] md:w-1/2 mt-4 p-1 border text-white hover:scale-105 transition-all duration-150 border-white hover:bg-white hover:text-moon-orange"
-            onClick={getWinners}
-          >
-            Refresh ↺
-          </button>
-        </div>
+        <div className="mt-4 w-full flex flex-col items-start"></div>
         {winners.length > 0 ? (
           <div className="flex flex-col items-start">
             {winners.map((winner: any, i: number) => (
@@ -132,7 +131,9 @@ export function SweepstakesWinners({ ttsContract, supply }: any) {
           </div>
         ) : (
           <div className="flex flex-col items-start">
-            <div className="flex gap-4 px-5 lg:px-7 xl:px-10 py-6 border-2 dark:border-[#ffffff20] font-RobotoMono w-[400px] h-[100px] lg:mt-10 lg:w-3/4 lg:max-w-[1080px] text-slate-950 text-sm dark:text-white animate-pulse"></div>
+            {Array.from({ length: 10 }, (_, i) => (
+              <WinnerSkeleton key={'WinnerSkeleton-' + i} />
+            ))}
           </div>
         )}
       </div>
