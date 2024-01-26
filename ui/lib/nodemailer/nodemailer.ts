@@ -4,6 +4,7 @@ const opEmail = 'info@moondao.com'
 
 const emailList = [
   process.env.NODEMAILER_MOONDAO_PRIMARY_EMAIL,
+  process.env.NODEMAILER_MOONDAO_SECONDARY_EMAIL,
   process.env.NODEMAILER_SFBW_PRIMARY_EMAIL,
 ]
 

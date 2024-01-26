@@ -6,9 +6,10 @@ import toast from 'react-hot-toast'
 export function ZeroGContact() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [message, setMessage] = useState('')
 
-  const [verified, setVerified] = useState(false)
+  const [verified, setVerified] = useState(true)
 
   function resetContactForm() {
     setName('')
@@ -28,6 +29,7 @@ export function ZeroGContact() {
           body: JSON.stringify({
             name,
             email,
+            phone,
             message,
           }),
         })
@@ -59,6 +61,14 @@ export function ZeroGContact() {
             className="w-full rounded-md px-2 dark:bg-[#ffffff25]"
             onChange={({ target }) => setEmail(target.value)}
             value={email}
+          />
+        </div>
+        <div className="w-full">
+          <label className="font-semibold">Phone :</label>
+          <input
+            className="w-full rounded-md px-2 dark:bg-[#ffffff25]"
+            onChange={({ target }) => setPhone(target.value)}
+            value={phone}
           />
         </div>
         <div className="w-full">
