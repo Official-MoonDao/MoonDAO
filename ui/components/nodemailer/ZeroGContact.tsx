@@ -14,12 +14,13 @@ export function ZeroGContact() {
   function resetContactForm() {
     setName('')
     setEmail('')
+    setPhone('')
     setMessage('')
     setVerified(false)
   }
 
   async function submitContactForm() {
-    if (!email.includes('@'))
+    if (!email.includes('@') || name.trim() === '')
       return toast.error('Please fill out all required fields.')
     if (!verified) return toast.error("Please verify you're not a robot.")
     else {
@@ -46,7 +47,9 @@ export function ZeroGContact() {
     <div className="text-black dark:text-white">
       <div className="mt-2 p-4 w-full flex flex-col items-center gap-2 duration-300 h-full bg-[#1d1d1d50] rounded-md">
         <div className="w-full">
-          <label className="font-semibold">Name :</label>
+          <label className="font-semibold">
+            Name : <span className="text-[tomato]">*</span>
+          </label>
           <input
             className="w-full rounded-md px-2 dark:bg-[#ffffff25]"
             onChange={({ target }) => setName(target.value)}
