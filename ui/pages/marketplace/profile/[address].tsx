@@ -13,6 +13,7 @@ import {
   AuctionListing,
   DirectListing,
 } from '../../../lib/marketplace/marketplace-utils'
+import { useChainDefault } from '../../../lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '../../../lib/utils/hooks'
 import Skeleton from '../../../components/marketplace/Layout/Skeleton'
 import ProfileListingGrid from '../../../components/marketplace/Profile/ProfileListingGrid'
@@ -28,6 +29,7 @@ export default function ProfilePage({
   walletAddress,
   queryTab,
 }: ProfilePageProps) {
+  useChainDefault('l2')
   const router = useRouter()
   const address: any = useAddress()
 

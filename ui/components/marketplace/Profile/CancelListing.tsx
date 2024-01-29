@@ -1,14 +1,16 @@
-import { Web3Button } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { toast } from 'react-hot-toast'
 import toastStyle from '../../../lib/marketplace/marketplace-utils/toastConfig'
 import { MARKETPLACE_ADDRESS } from '../../../const/config'
+import { PrivyWeb3Button } from '../../privy/PrivyWeb3Button'
 
 export default function CancelListing({
+  marketplaceContract,
   listingId,
   type,
   expired = false,
 }: {
+  marketplaceContract: any
   listingId: string | number
   type: string
   expired?: boolean
@@ -16,9 +18,11 @@ export default function CancelListing({
   const router = useRouter()
   return (
     <div>
-      <Web3Button
-        className="web3-button web3-button-secondary"
-        contractAddress={MARKETPLACE_ADDRESS}
+      <PrivyWeb3Button
+        label="Cancel Listing"
+        className={`hover:!text-title-light 
+          bg-slate-300
+          dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
         action={(contract: any) =>
           type === 'auction'
             ? contract.englishAuctions.cancelAuction(listingId)
@@ -30,9 +34,7 @@ export default function CancelListing({
             toast.success('Successfully canceled!', { style: toastStyle })
           }, 1000)
         }}
-      >
-        {`Cancel Listing`}
-      </Web3Button>
+      />
       <div className="text-[80%] text-moon-gold opacity-70">
         {type === 'auction' && expired ? (
           <p>This auction expired with no bids</p>

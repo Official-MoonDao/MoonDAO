@@ -10,6 +10,7 @@ import {
   AuctionListing,
   DirectListing,
 } from '../../lib/marketplace/marketplace-utils'
+import { useChainDefault } from '../../lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '../../lib/thirdweb/thirdweb'
 import Hero from '../../components/marketplace/Home/Hero'
 import CollectionShowcase from '../../components/marketplace/Home/Showcases/CollectionShowcase'
@@ -24,6 +25,8 @@ type HomeProps = {
 }
 
 export default function Home({ _validListings, _validAuctions }: HomeProps) {
+  useChainDefault('l2')
+
   const { contract: marketplace }: any = useContract(
     MARKETPLACE_ADDRESS,
     'marketplace-v3'
@@ -56,31 +59,36 @@ export default function Home({ _validListings, _validAuctions }: HomeProps) {
   }, [_validAuctions, _validListings])
 
   return (
-    <main className="flex flex-col items-center px-6 md:px-10">
-      <Metadata title="Home" />
-      <Hero
-        topAssets={trendingAssets.slice(
-          0,
-          trendingAssets.length < 4 ? trendingAssets.length : 4
-        )}
-      />
+    <div className="animate-fadeIn">
+      <div
+        id="home-hero"
+        className="flex flex-col items-center lg:px-3 xl:px-9 py-4 lg:pb-14 lg:mt-1 md:max-w-[1080px]"
+      >
+        <Metadata title="Home" />
+        <Hero
+          topAssets={trendingAssets.slice(
+            0,
+            trendingAssets.length < 4 ? trendingAssets.length : 4
+          )}
+        />
 
-      <CollectionShowcase
-        collections={trendingCollections}
-        validListings={validListings}
-        validAuctions={validAuctions}
-      />
-      <TrendingShowcase
-        assets={trendingAssets}
-        validListings={validListings}
-        validAuctions={validAuctions}
-      />
-      <NewShowcase
-        collections={newCollections}
-        validListings={validListings}
-        validAuctions={validAuctions}
-      />
-    </main>
+        <CollectionShowcase
+          collections={trendingCollections}
+          validListings={validListings}
+          validAuctions={validAuctions}
+        />
+        <TrendingShowcase
+          assets={trendingAssets}
+          validListings={validListings}
+          validAuctions={validAuctions}
+        />
+        <NewShowcase
+          collections={newCollections}
+          validListings={validListings}
+          validAuctions={validAuctions}
+        />
+      </div>
+    </div>
   )
 }
 

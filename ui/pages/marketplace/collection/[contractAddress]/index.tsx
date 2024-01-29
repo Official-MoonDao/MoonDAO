@@ -1,9 +1,14 @@
 import { Mumbai, Polygon } from '@thirdweb-dev/chains'
-import { MediaRenderer, useContract } from '@thirdweb-dev/react'
-import { getAllDetectedExtensionNames } from '@thirdweb-dev/sdk'
+import {
+  MediaRenderer,
+  getAllDetectedExtensionNames,
+  useContract,
+} from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
-import { useAssets } from '../../../../lib/marketplace/hooks'
-import { useCollectionStats } from '../../../../lib/marketplace/hooks/useStats'
+import {
+  useAssets,
+  useCollectionStats,
+} from '../../../../lib/marketplace/hooks'
 import {
   getAllValidAuctions,
   getAllValidListings,
@@ -12,6 +17,7 @@ import {
   AuctionListing,
   DirectListing,
 } from '../../../../lib/marketplace/marketplace-utils'
+import { useChainDefault } from '../../../../lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '../../../../lib/thirdweb/thirdweb'
 import AssetPreview from '../../../../components/marketplace/Collection/AssetPreview'
 import Metadata from '../../../../components/marketplace/Layout/Metadata'
@@ -28,8 +34,9 @@ export default function CollectionPage({
   contractAddress,
   collectionMetadata,
 }: CollectionPageProps) {
+  useChainDefault('l2')
   //Marketplace data
-  const { contract: marketplace }: any = useContract(
+  const { contract: marketplace } = useContract(
     MARKETPLACE_ADDRESS,
     'marketplace-v3'
   )
@@ -152,8 +159,9 @@ export default function CollectionPage({
 
 export async function getServerSideProps({ params }: any) {
   const contractAddress = params?.contractAddress
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
-  const sdk = initSDK(chain)
+  const sdk = initSDK(
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
+  )
   const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS)
   const acceptedCollections = await marketplace.roles.get('asset')
 

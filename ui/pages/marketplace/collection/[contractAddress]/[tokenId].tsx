@@ -2,26 +2,27 @@ import { Mumbai, Polygon } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
   ThirdwebNftMedia,
+  getAllDetectedExtensionNames,
   useAddress,
   useContract,
   useMetadata,
 } from '@thirdweb-dev/react'
-import { getAllDetectedExtensionNames } from '@thirdweb-dev/sdk'
 import { GetServerSideProps } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useListingsByTokenId } from '../../../../lib/marketplace/hooks'
 import {
   getAllValidAuctions,
   getAllValidListings,
 } from '../../../../lib/marketplace/marketplace-listings'
 import {
-  DirectListing,
   AuctionListing,
   CurrListing,
+  DirectListing,
 } from '../../../../lib/marketplace/marketplace-utils'
 import randomColor from '../../../../lib/marketplace/marketplace-utils/randomColor'
+import { useChainDefault } from '../../../../lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '../../../../lib/thirdweb/thirdweb'
 import Metadata from '../../../../components/marketplace/Layout/Metadata'
 import Skeleton from '../../../../components/marketplace/Layout/Skeleton'
@@ -43,6 +44,7 @@ export default function TokenPage({
   tokenId,
   nft,
 }: TokenPageProps) {
+  useChainDefault('l2')
   const router = useRouter()
   const address = useAddress()
 
@@ -175,7 +177,7 @@ export default function TokenPage({
           <div className="relative w-full max-w-full top-0 tablet:flex-shrink tablet:sticky tablet:min-w-[370px] tablet:max-w-[450px] tablet:mt-4 tablet:mr-4">
             {collectionMetadata && (
               <div className="flex items-center mb-2">
-                <Link href={`/marketplace/collection/${contractAddress}`}>
+                <Link href={`/collection/${contractAddress}`}>
                   <MediaRenderer
                     src={collectionMetadata.image}
                     className="!w-[36px] !h-[36px] rounded-lg mr-4 ml-3 mb-2"
@@ -369,8 +371,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const contractAddress = params?.contractAddress
   const tokenId = params?.tokenId
 
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
-  const sdk = initSDK(chain)
+  const sdk = initSDK(
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
+  )
   const marketplace: any = await sdk.getContract(
     MARKETPLACE_ADDRESS,
     'marketplace-v3'
