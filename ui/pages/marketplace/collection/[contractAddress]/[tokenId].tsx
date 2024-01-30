@@ -120,12 +120,12 @@ export default function TokenPage({
         description={nft.metadata.description}
         image={nft.metadata.image}
       />
-      <article className="w-full ml-auto mr-auto px-4 md:mt-24 max-w-[1200px]">
+      <article className="w-full ml-auto mr-auto px-4 max-w-[1200px]">
         <div className="w-full flex flex-col gap-8 mt-4 md:mt-32 tablet:flex-row pb-32 tablet:pb-0">
           <div className="flex flex-col flex-1 w-full mt-8 tablet:mt-0">
             <ThirdwebNftMedia
               metadata={nft?.metadata}
-              className="!w-full !h-full bg-white bg-opacity-[0.04] rounded-2xl"
+              className="!w-full md:!w-1/2 !h-full bg-white bg-opacity-[0.04] rounded-2xl"
             />
 
             {/*Description*/}
@@ -177,7 +177,7 @@ export default function TokenPage({
           <div className="relative w-full max-w-full top-0 tablet:flex-shrink tablet:sticky tablet:min-w-[370px] tablet:max-w-[450px] tablet:mt-4 tablet:mr-4">
             {collectionMetadata && (
               <div className="flex items-center mb-2">
-                <Link href={`/collection/${contractAddress}`}>
+                <Link href={`/marketplace/collection/${contractAddress}`}>
                   <MediaRenderer
                     src={collectionMetadata.image}
                     className="!w-[36px] !h-[36px] rounded-lg mr-4 ml-3 mb-2"

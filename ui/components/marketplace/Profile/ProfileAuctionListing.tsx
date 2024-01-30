@@ -126,6 +126,7 @@ export default function ProfileAuctionListing({
           <>
             {walletAddress && walletAddress === listing.creatorAddress && (
               <ClaimAuctionPayout
+                marketplaceContract={marketplace}
                 claimable={claimable}
                 auctionId={+listing.auctionId}
               />
@@ -143,12 +144,17 @@ export default function ProfileAuctionListing({
         +end * 1000 < Date.now() &&
         !claimable ? (
           <CancelListing
+            marketplaceContract={marketplace}
             type="auction"
             listingId={+listing.auctionId}
             expired
           />
         ) : !loadingBid && walletAddress && !winningBidObj ? (
-          <CancelListing type="auction" listingId={+listing.auctionId} />
+          <CancelListing
+            marketplaceContract={marketplace}
+            type="auction"
+            listingId={+listing.auctionId}
+          />
         ) : (
           ''
         )}

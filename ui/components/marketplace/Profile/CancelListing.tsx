@@ -1,3 +1,4 @@
+import { useContract } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { toast } from 'react-hot-toast'
 import toastStyle from '../../../lib/marketplace/marketplace-utils/toastConfig'
@@ -16,6 +17,7 @@ export default function CancelListing({
   expired?: boolean
 }) {
   const router = useRouter()
+
   return (
     <div>
       <PrivyWeb3Button
@@ -23,10 +25,10 @@ export default function CancelListing({
         className={`hover:!text-title-light 
           bg-slate-300
           dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
-        action={(contract: any) =>
+        action={() =>
           type === 'auction'
-            ? contract.englishAuctions.cancelAuction(listingId)
-            : contract.directListings.cancelListing(listingId)
+            ? marketplaceContract?.englishAuctions.cancelAuction(listingId)
+            : marketplaceContract?.directListings.cancelListing(listingId)
         }
         onSuccess={() => {
           router.reload()

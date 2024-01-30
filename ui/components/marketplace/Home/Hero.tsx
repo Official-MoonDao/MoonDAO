@@ -59,8 +59,8 @@ export default function Hero({ topAssets }: any) {
         />
 
         {/*Stars and frame detail*/}
-        <span className="hidden lg:block lg:absolute top-80 right-64 xl:top-96 xl:right-72 2xl:hidden">
-          <HeroStar size={{ width: 217, height: 235 }} />
+        <span className="hidden lg:block lg:absolute top-80 right-40 xl:top-96 xl:right-72 2xl:hidden">
+          <HeroStar size={{ width: 150, height: 150 }} />
         </span>
         <span className="hidden 2xl:block absolute -bottom-32 -left-40">
           <HeroStar />

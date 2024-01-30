@@ -29,7 +29,7 @@ export const navigation = [
       { name: 'Sweepstakes 🚀', href: '/sweepstakes' },
       { name: 'ZeroG', href: '/zero-g' },
       { name: 'Lifeship', href: '/lifeship' },
-      { name: 'Digital Assets', href: 'https://market.moondao.com' },
+      { name: 'Digital Assets', href: '/marketplace' },
     ],
   },
   {
