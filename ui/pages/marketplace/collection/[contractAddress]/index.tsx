@@ -94,7 +94,7 @@ export default function CollectionPage({
           {/*Title */}
           <div className="mt-8 w-[320px] md:w-[420px] xl:w-[520px] ">
             {collectionMetadata ? (
-              <h2 className="mt-8 font-GoodTimes text-2xl md:text-3xl xl:text-4xl  bg-clip-text text-transparent bg-gradient-to-b from-indigo-100 via-moon-orange to-moon-secondary">
+              <h2 className="mt-8 font-GoodTimes text-2xl md:text-3xl xl:text-4xl  bg-clip-text text-transparent bg-gradient-to-b from-moon-gold via-moon-orange to-moon-gold">
                 {collectionMetadata.name}
               </h2>
             ) : (

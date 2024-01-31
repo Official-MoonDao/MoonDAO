@@ -121,12 +121,35 @@ export default function TokenPage({
         image={nft.metadata.image}
       />
       <article className="w-full ml-auto mr-auto px-4 max-w-[1200px]">
-        <div className="w-full flex flex-col gap-8 mt-4 md:mt-32 tablet:flex-row pb-32 tablet:pb-0">
+        <div className="w-full flex flex-col gap-8 mt-4 tablet:flex-row pb-32 tablet:pb-0">
           <div className="flex flex-col flex-1 w-full mt-8 tablet:mt-0">
             <ThirdwebNftMedia
               metadata={nft?.metadata}
               className="!w-full md:!w-1/2 !h-full bg-white bg-opacity-[0.04] rounded-2xl"
             />
+            <div className="mt-8">
+              {collectionMetadata && (
+                <div className="flex items-center mb-2">
+                  <Link href={`/marketplace/collection/${contractAddress}`}>
+                    <MediaRenderer
+                      src={collectionMetadata.image}
+                      className="!w-[36px] !h-[36px] rounded-lg mr-4 ml-3 mb-2"
+                    />
+                    <p className="truncate w-full mx-4 mt-[5px] opacity-50">
+                      {collectionMetadata.name}
+                    </p>
+                  </Link>
+                </div>
+              )}
+            </div>
+            <h1 className="font-GoodTimes font-medium text-[32px] break-words mb-2 mx-4 text-moon-white">
+              {nft.metadata.name}
+            </h1>
+            <div className="inline-block">
+              <p className="font-medium truncate mx-4 mt-4 text-[20px] py-1 px-[10px] rounded-sm bg-moon-secondary bg-opacity-40">
+                Token ID #{nft.metadata.id}
+              </p>
+            </div>
 
             {/*Description*/}
             <div className="px-4">
@@ -163,40 +186,18 @@ export default function TokenPage({
               </div>
 
               {/*History*/}
-              {currListing?.listing && nft.type === 'ERC721' && (
+              {/* {currListing?.listing && nft.type === 'ERC721' && (
                 <AssetHistory
                   marketplace={marketplace}
                   contract={nftCollection}
                   tokenId={currListing.listing.tokenId}
                 />
-              )}
+              )} */}
             </div>
           </div>
 
           {/*Collection title, image and description*/}
           <div className="relative w-full max-w-full top-0 tablet:flex-shrink tablet:sticky tablet:min-w-[370px] tablet:max-w-[450px] tablet:mt-4 tablet:mr-4">
-            {collectionMetadata && (
-              <div className="flex items-center mb-2">
-                <Link href={`/marketplace/collection/${contractAddress}`}>
-                  <MediaRenderer
-                    src={collectionMetadata.image}
-                    className="!w-[36px] !h-[36px] rounded-lg mr-4 ml-3 mb-2"
-                  />
-                  <p className="truncate w-full mx-4 mt-[5px] opacity-50">
-                    {collectionMetadata.name}
-                  </p>
-                </Link>
-              </div>
-            )}
-            <h1 className="font-GoodTimes font-medium text-[32px] break-words mb-2 mx-4 text-moon-white">
-              {nft.metadata.name}
-            </h1>
-            <div className="inline-block">
-              <p className="font-medium truncate mx-4 mt-4 text-[20px] py-1 px-[10px] rounded-sm bg-moon-secondary bg-opacity-40">
-                Token ID #{nft.metadata.id}
-              </p>
-            </div>
-
             {currListing?.listing && nft.type === 'ERC721' && (
               <div className="flex items-center mb-2 mt-6 gap-2 transition-opacity duration-200 ease-in-out mx-4">
                 {/* Random linear gradient circle shape */}
