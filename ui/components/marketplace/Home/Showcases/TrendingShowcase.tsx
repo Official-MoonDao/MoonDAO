@@ -56,7 +56,7 @@ export default function TrendingShowcase({
       <ArrowButton
         text="See all"
         position={'mt-9 lg:mt-12'}
-        link={'/buy?filterType=trending'}
+        link={'/marketplace/buy?filterType=trending'}
       />
     </div>
   )

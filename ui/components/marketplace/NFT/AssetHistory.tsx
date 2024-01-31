@@ -1,6 +1,7 @@
 import { useContractEvents } from '@thirdweb-dev/react'
 import { SmartContract } from '@thirdweb-dev/sdk'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useCurrBlockNum } from '../../../lib/marketplace/marketplace-utils/hooks'
 
 export const ETHERSCAN_URL: string = process.env.NEXT_PUBLIC_CHAIN
@@ -15,6 +16,7 @@ interface AssetHistoryProps {
 
 export default function AssetHistory({ contract, tokenId }: AssetHistoryProps) {
   const currBlockNum: any = useCurrBlockNum()
+  const [assetTransferEvents, setAssetTransferEvents] = useState<any[]>([])
   const { data: transferEvents, isLoading: loadingTransferEvents }: any =
     useContractEvents(contract, 'Transfer', {
       queryFilter: {
@@ -25,6 +27,18 @@ export default function AssetHistory({ contract, tokenId }: AssetHistoryProps) {
         order: 'desc',
       },
     })
+
+  //filter by token id (query filter doesn't always work)
+  useEffect(() => {
+    if (transferEvents) {
+      setAssetTransferEvents(
+        transferEvents.filter(
+          (event: any) => event.data.tokenId.toString() === tokenId
+        )
+      )
+    }
+  }, [transferEvents])
+
   return (
     <>
       <h3 className="mt-8 mb-[15px] text-[23px] font-medium font-GoodTimes text-moon-gold">
@@ -32,10 +46,10 @@ export default function AssetHistory({ contract, tokenId }: AssetHistoryProps) {
       </h3>
       <div className="flex flex-wrap gap-4 mt-3 bg-white bg-opacity-[0.13] border border-white border-opacity-20 max-h-[410px] overflow-y-scroll">
         {transferEvents &&
-          transferEvents[0] &&
-          transferEvents.map((event: any, index: number) => (
+          assetTransferEvents[0] &&
+          assetTransferEvents.map((event: any, index: number) => (
             <div
-              key={event.transaction.transactionHash}
+              key={event.transaction.transactionHash + index}
               className="flex justify-between items-center grow gap-1 py-2 px-3 min-w-[128px] rounded-2xl min-h-[32px]"
             >
               <div className="flex flex-col gap-1">
