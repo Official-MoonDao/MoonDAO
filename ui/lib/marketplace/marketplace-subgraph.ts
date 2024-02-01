@@ -42,52 +42,56 @@ export async function queryTrending(
           }
     }
     `
+  try {
+    const {
+      data: { newSales, newBids },
+    } = await graphQuery(query)
+    //Find assets with the most bids/sales
+    const trendingCount: any = {}
 
-  const {
-    data: { newSales, newBids },
-  } = await graphQuery(query)
-  //Find assets with the most bids/sales
-  const trendingCount: any = {}
-
-  newSales.forEach((sale: any) => {
-    const key = sale.assetContract.toLowerCase() + '/' + sale.tokenId
-    if (trendingCount[key]) {
-      trendingCount[key] += 1
-    } else {
-      trendingCount[key] = 1
-    }
-  })
-  newBids.forEach((bid: any) => {
-    const key = bid.assetContract.toLowerCase() + '/' + bid.auction_tokenId
-    if (trendingCount[key]) {
-      trendingCount[key] += 1
-    } else {
-      trendingCount[key] = 1
-    }
-  })
-
-  let allListings = !validListings[0]
-    ? validAuctions
-    : !validAuctions[0]
-    ? validListings
-    : [...validListings, ...validAuctions]
-
-  const trendingListings: any = {}
-
-  allListings.forEach((listing: any) => {
-    const trendingCountKey: string =
-      listing.assetContractAddress.toLowerCase() + '/' + listing.tokenId
-    if (!trendingListings[trendingCountKey]) {
-      trendingListings[trendingCountKey] = {
-        ...listing,
-        popularity: trendingCount[trendingCountKey] || 0,
+    newSales.forEach((sale: any) => {
+      const key = sale.assetContract.toLowerCase() + '/' + sale.tokenId
+      if (trendingCount[key]) {
+        trendingCount[key] += 1
+      } else {
+        trendingCount[key] = 1
       }
-    }
-  })
+    })
+    newBids.forEach((bid: any) => {
+      const key = bid.assetContract.toLowerCase() + '/' + bid.auction_tokenId
+      if (trendingCount[key]) {
+        trendingCount[key] += 1
+      } else {
+        trendingCount[key] = 1
+      }
+    })
 
-  return Object.values(trendingListings).sort(
-    (a: any, b: any) => b.popularity - a.popularity
-  )
+    let allListings = !validListings[0]
+      ? validAuctions
+      : !validAuctions[0]
+      ? validListings
+      : [...validListings, ...validAuctions]
+
+    const trendingListings: any = {}
+
+    allListings.forEach((listing: any) => {
+      const trendingCountKey: string =
+        listing.assetContractAddress.toLowerCase() + '/' + listing.tokenId
+      if (!trendingListings[trendingCountKey]) {
+        trendingListings[trendingCountKey] = {
+          ...listing,
+          popularity: trendingCount[trendingCountKey] || 0,
+        }
+      }
+    })
+
+    return Object.values(trendingListings).sort(
+      (a: any, b: any) => b.popularity - a.popularity
+    )
+  } catch (err) {
+    console.log(err)
+    return []
+  }
 }
 
 function filterExpiring(

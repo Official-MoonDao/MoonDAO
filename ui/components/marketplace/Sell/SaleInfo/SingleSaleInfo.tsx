@@ -141,7 +141,7 @@ export default function SingleSaleInfo({
       endTimestamp: endDate,
     }
     const txResult = await marketplace.englishAuctions.createAuction(auction)
-    await router.push(`/collection/${data.nftContractAddress}/${data.tokenId}`)
+    await router.push(`/marketplace/collection/${data.nftContractAddress}/${data.tokenId}`)
     toast('Listed Successfully!', {
       icon: '🥳',
       style: toastStyle,
@@ -167,7 +167,7 @@ export default function SingleSaleInfo({
       isReservedListing: false,
     }
     const txResult = await marketplace.directListings.createListing(listing)
-    await router.push(`/collection/${data.nftContractAddress}/${data.tokenId}`)
+    await router.push(`/marketplace/collection/${data.nftContractAddress}/${data.tokenId}`)
     toast('Listed Successfully!', {
       icon: '🥳',
       style: toastStyle,
@@ -299,6 +299,7 @@ export default function SingleSaleInfo({
                        bg-slate-300
                        dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
                     action={async () => {
+                      console.log('test')
                       await handleSubmitDirect(handleSubmissionDirect)()
                     }}
                   />

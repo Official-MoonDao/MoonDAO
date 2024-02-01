@@ -131,7 +131,7 @@ export default function CollectionPage({
           </div>
           <div className="mt-8 xl:mt-9 max-w-[320px] xl:max-w-[420px]">
             {collectionMetadata ? (
-              <p className=" xl:text-base xl:leading-loose text-sm font-light leading-relaxed">
+              <p className=" xl:text-base xl:leading-loose text-sm font-light leading-relaxed dark:text-white text-black">
                 {collectionMetadata?.description}
               </p>
             ) : (

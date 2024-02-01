@@ -1,5 +1,5 @@
 import { Mumbai, Polygon } from '@thirdweb-dev/chains'
-import { useNetworkMismatch, useSigner } from '@thirdweb-dev/react'
+import { useAddress, useNetworkMismatch, useSigner } from '@thirdweb-dev/react'
 import {
   MarketplaceV3,
   ThirdwebSDK,
@@ -17,6 +17,7 @@ export function useUserAssets(
   batch: any,
   walletAddress: string
 ) {
+  const address = useAddress()
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
   const [assets, setAssets] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(true)
@@ -27,7 +28,7 @@ export function useUserAssets(
     listings: profileListings,
     auctions: profileAuctions,
     isLoading: loadingProfileListings,
-  } = useListingsByWallet(validListings, validAuctions, signer?._address)
+  } = useListingsByWallet(validListings, validAuctions, address || '')
 
   useEffect(() => {
     if (
@@ -42,7 +43,6 @@ export function useUserAssets(
       marketplace.roles.get('asset').then(async (res: any) => {
         await res.forEach(async (collection: any) => {
           if (networkMismatch) return
-
           try {
             const sdk: ThirdwebSDK = ThirdwebSDK.fromSigner(signer, chain)
             const contract: any = await sdk.getContract(collection)
