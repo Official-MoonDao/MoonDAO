@@ -3,12 +3,17 @@ import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
 //Checks if the navigation object has a property 'external' set to true, if so returns a link that opens another tab, otherwise checks if the navigation object has children. If it does, it returns the dropdown, if it doesn't it returns an internal navigation link.
 
 const NavigationLink = ({ item }: any) => {
   const router = useRouter()
   const { t } = useTranslation('common')
+
+  useEffect(() => {
+    console.log(router.pathname, item.dynamicHref, item.href)
+  }, [router.pathname, item])
   return (
     <li
       className={`list-none font-RobotoMono font-normal text-sm md:text-base text-black dark:text-gray-100`}
@@ -52,6 +57,9 @@ const NavigationLink = ({ item }: any) => {
 }
 
 const Dropdown = ({ item, router }: any) => {
+  useEffect(() => {
+    console.log(item.children)
+  }, [item])
   return (
     <Disclosure
       as="div"
@@ -67,13 +75,9 @@ const Dropdown = ({ item, router }: any) => {
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150`}
           >
             <item.icon
-              className={`mr-2 h-5 w-5 text-black  ${
-                item?.children
-                  ?.map((e: any) => e.href)
-                  ?.includes(router.pathname)
-                  ? 'text-blue-950 dark:text-moon-orange'
-                  : 'text-black dark:text-white'
-              }`}
+              className={`mr-2 h-5 w-5 text-black  ${item?.children
+                ?.map((e: any) => e.href)
+                ?.includes(router.pathname)}`}
               aria-hidden="true"
             />
             {item.name}
@@ -104,7 +108,8 @@ const Dropdown = ({ item, router }: any) => {
                   <Link
                     href={subItem.href}
                     className={`${
-                      router.pathname == subItem.href
+                      router.pathname == subItem.href ||
+                      router.pathname == subItem.dynamicHref
                         ? 'text-blue-950 dark:text-moon-orange font-semibold'
                         : '  dark:text-white'
                     } my-3 flex items-center`}

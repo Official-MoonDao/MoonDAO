@@ -79,11 +79,11 @@ export default function CollectionPage({
         image={collectionMetadata?.image}
       />
       {/*Collection title and data*/}
-      <div className="flex flex-col items-center md:flex-row md:items-start md:gap-12 lg:gap-16 xl:gap-20">
-        <div>
+      <div className="flex flex-col items-center lg:flex-row md:items-start md:gap-12 lg:gap-16 xl:gap-20">
+        <div className="w-[320px]">
           {collectionMetadata ? (
             <MediaRenderer
-              className="border-4 p-2 rounded-full object-cover xl:w-[320px] xl:h-[320px]"
+              className="border-4 p-2 rounded-full object-cover w-[320px] h-[320px]"
               src={collectionMetadata.image}
               alt="Collection thumbnail"
             />
