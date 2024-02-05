@@ -1,14 +1,14 @@
 type ImageSelector = {
-  currentSlide: number;
-  setCurrentSlide: Function;
-  topAssetsLength: number;
-};
+  currentSlide: number
+  setCurrentSlide: Function
+  topAssetsLength: number
+}
 
 type ImageSelectorButton = {
-  currentSlide: number;
-  slideNumber: number;
-  setCurrentSlide: Function;
-};
+  currentSlide: number
+  slideNumber: number
+  setCurrentSlide: Function
+}
 
 const HeroImageSelector = ({
   currentSlide,
@@ -20,15 +20,15 @@ const HeroImageSelector = ({
     <div className="mt-8 flex gap-5 lg:ml-12 lg:mt-6">
       {Array.from(Array(topAssetsLength)).map((_, i) => (
         <SelectButton
-          key={"select-button-" + i}
+          key={'select-button-' + i}
           slideNumber={i}
           setCurrentSlide={setCurrentSlide}
           currentSlide={currentSlide}
         />
       ))}
     </div>
-  );
-};
+  )
+}
 
 const SelectButton = ({
   currentSlide,
@@ -41,12 +41,10 @@ const SelectButton = ({
     <button
       onClick={() => setCurrentSlide(slideNumber)}
       className={`${
-        currentSlide === slideNumber
-          ? "bg-moon-secondary"
-          : "bg-white bg-opacity-20"
+        currentSlide === slideNumber ? 'bg-moon-gold' : 'bg-white bg-opacity-20'
       } transition-all duration-150 w-11 lg:w-8 2xl:w-11 h-1 xl:h-[6px] rounded`}
     ></button>
-  );
-};
+  )
+}
 
-export default HeroImageSelector;
+export default HeroImageSelector

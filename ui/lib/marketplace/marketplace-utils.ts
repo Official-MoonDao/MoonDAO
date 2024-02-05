@@ -101,6 +101,7 @@ export function BigConvert(data: any) {
 export function serialize(data: any) {
   //data = array of listings = [[{listingData1}], [{listingData2}]]
   let formatted
+  console.log(data[0])
   if (data[0]?.minimumBidAmount) {
     formatted = data.map(
       (auction: EnglishAuction) =>
@@ -154,9 +155,12 @@ export function serialize(data: any) {
 }
 
 function isL2MOONEY(currencyAddress: string) {
-  return (
-    currencyAddress.toLowerCase() === MOONEY_ADDRESSES['polygon'].toLowerCase()
-  )
+  const mooneyAddress =
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+      ? MOONEY_ADDRESSES['polygon']
+      : MOONEY_ADDRESSES['mumbai']
+
+  return currencyAddress.toLowerCase() === mooneyAddress.toLowerCase()
 }
 
 //////HOOKS////////////////////////////////////////////

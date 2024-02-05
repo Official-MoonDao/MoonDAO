@@ -1,4 +1,3 @@
-import { Web3Button } from '@thirdweb-dev/react'
 import { MarketplaceV3 } from '@thirdweb-dev/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -7,6 +6,7 @@ import { toast } from 'react-hot-toast'
 import { CurrListing } from '../../../lib/marketplace/marketplace-utils'
 import toastStyle from '../../../lib/marketplace/marketplace-utils/toastConfig'
 import { MARKETPLACE_ADDRESS, MOONEY_DECIMALS } from '../../../const/config'
+import { PrivyWeb3Button } from '../../privy/PrivyWeb3Button'
 import Skeleton from '../Layout/Skeleton'
 
 type BuyOrBidProps = {
@@ -112,12 +112,11 @@ export default function BuyOrBid({
           ) : (
             <>
               <div className="flex justify-evenly items-center">
-                <Web3Button
-                  contractAddress={MARKETPLACE_ADDRESS}
-                  action={async () => await buyListing()}
-                  className={`connect-button`}
-                >
-                  {`Buy ${
+                <PrivyWeb3Button
+                  className={`hover:!text-title-light 
+                    bg-slate-300
+                    dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
+                  label={`Buy ${
                     currListing?.type === 'direct'
                       ? directListingQuantity || '1'
                       : currListing?.listing.quantity
@@ -132,7 +131,8 @@ export default function BuyOrBid({
                           currListing?.listing.buyoutBidAmount / MOONEY_DECIMALS
                         ).toFixed(1)
                   } (MOONEY)`}
-                </Web3Button>
+                  action={async () => await buyListing()}
+                />
 
                 {currListing?.type === 'direct' &&
                   currListing?.listing.quantity > 1 && (
@@ -186,13 +186,13 @@ export default function BuyOrBid({
                       }}
                     />
 
-                    <Web3Button
-                      contractAddress={MARKETPLACE_ADDRESS}
+                    <PrivyWeb3Button
+                      className={`hover:!text-title-light 
+                      bg-slate-300
+                      dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
+                      label={'Place bid'}
                       action={async () => await createBidOrOffer()}
-                      className={`connect-button`}
-                    >
-                      Place bid
-                    </Web3Button>
+                    />
                     <p className="text-[80%] opacity-60 p-2">
                       {
                         '*Winning an Auction: after the auction has expired go to the'

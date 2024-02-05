@@ -1,9 +1,14 @@
 import { Mumbai, Polygon } from '@thirdweb-dev/chains'
-import { MediaRenderer, useContract } from '@thirdweb-dev/react'
-import { getAllDetectedExtensionNames } from '@thirdweb-dev/sdk'
+import {
+  MediaRenderer,
+  getAllDetectedExtensionNames,
+  useContract,
+} from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
-import { useAssets } from '../../../../lib/marketplace/hooks'
-import { useCollectionStats } from '../../../../lib/marketplace/hooks/useStats'
+import {
+  useAssets,
+  useCollectionStats,
+} from '../../../../lib/marketplace/hooks'
 import {
   getAllValidAuctions,
   getAllValidListings,
@@ -12,7 +17,9 @@ import {
   AuctionListing,
   DirectListing,
 } from '../../../../lib/marketplace/marketplace-utils'
+import { useChainDefault } from '../../../../lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '../../../../lib/thirdweb/thirdweb'
+import { LoadingSpinner } from '../../../../components/layout/LoadingSpinner'
 import AssetPreview from '../../../../components/marketplace/Collection/AssetPreview'
 import Metadata from '../../../../components/marketplace/Layout/Metadata'
 import Skeleton from '../../../../components/marketplace/Layout/Skeleton'
@@ -28,8 +35,9 @@ export default function CollectionPage({
   contractAddress,
   collectionMetadata,
 }: CollectionPageProps) {
+  useChainDefault('l2')
   //Marketplace data
-  const { contract: marketplace }: any = useContract(
+  const { contract: marketplace } = useContract(
     MARKETPLACE_ADDRESS,
     'marketplace-v3'
   )
@@ -87,7 +95,7 @@ export default function CollectionPage({
           {/*Title */}
           <div className="mt-8 w-[320px] md:w-[420px] xl:w-[520px] ">
             {collectionMetadata ? (
-              <h2 className="mt-8 font-GoodTimes text-2xl md:text-3xl xl:text-4xl  bg-clip-text text-transparent bg-gradient-to-b from-indigo-100 via-moon-orange to-moon-secondary">
+              <h2 className="mt-8 font-GoodTimes text-2xl md:text-3xl xl:text-4xl  bg-clip-text text-transparent bg-gradient-to-b from-moon-gold via-moon-orange to-moon-gold">
                 {collectionMetadata.name}
               </h2>
             ) : (
@@ -102,14 +110,14 @@ export default function CollectionPage({
               <span className="flex items-center gap-[6px] max-w-[60px] xl:max-w-[90px] truncate">
                 <LogoSmall size={{ width: 10.54, height: 11.07 }} />
                 {/*Floor*/}
-                {floorPrice}
+                {floorPrice || '. . .'}
               </span>
             </p>
             {/*Listings*/}
             <p className="w-[149px] xl:w-[189px] rounded-[3px] bg-[#301B3D] py-[6px] xl:py-2 px-[10px] xl:px-3 flex items-center justify-between">
               Listed{' '}
               <span className="max-w-[60px] truncate xl:max-w-[90px]">
-                {listed}
+                {listed || '. . .'}
               </span>
             </p>
             {/*Supply*/}
@@ -117,14 +125,14 @@ export default function CollectionPage({
               <p className="w-[149px] xl:w-[189px] rounded-[3px] bg-[#301B3D] py-[6px] xl:py-2 px-[10px] xl:px-3 flex items-center justify-between">
                 Supply{' '}
                 <span className="max-w-[60px] truncate xl:max-w-[90px]">
-                  {supply}
+                  {supply || '. . .'}
                 </span>
               </p>
             )}
           </div>
           <div className="mt-8 xl:mt-9 max-w-[320px] xl:max-w-[420px]">
             {collectionMetadata ? (
-              <p className=" xl:text-base xl:leading-loose text-sm font-light leading-relaxed">
+              <p className=" xl:text-base xl:leading-loose text-sm font-light leading-relaxed dark:text-white text-black">
                 {collectionMetadata?.description}
               </p>
             ) : (
@@ -135,7 +143,7 @@ export default function CollectionPage({
       </div>
       {/*Grid with the collection's assets */}
       <div className="mt-20 md:mt-24 flex flex-col gap-10 md:grid md:grid-cols-2 md:grid-flow-row md:gap-12 xl:grid-cols-3 xl:gap-14">
-        {assets[0] &&
+        {assets[0] ? (
           assets.map((l: DirectListing | AuctionListing, i: number) => (
             <div className="" key={`asset-${i}`}>
               <AssetPreview
@@ -144,7 +152,10 @@ export default function CollectionPage({
                 validAuctions={validAuctions}
               />
             </div>
-          ))}
+          ))
+        ) : (
+          <LoadingSpinner />
+        )}
       </div>
     </main>
   )
@@ -152,8 +163,9 @@ export default function CollectionPage({
 
 export async function getServerSideProps({ params }: any) {
   const contractAddress = params?.contractAddress
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
-  const sdk = initSDK(chain)
+  const sdk = initSDK(
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
+  )
   const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS)
   const acceptedCollections = await marketplace.roles.get('asset')
 

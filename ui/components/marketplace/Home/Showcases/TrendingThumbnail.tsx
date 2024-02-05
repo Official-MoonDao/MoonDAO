@@ -30,18 +30,14 @@ export default function TrendingThumbnail({
         {/*Image container to create zoom effect*/}
         <div className={'w-full h-[275px] overflow-hidden'}>
           <ThirdwebNftMedia
-            className={`object-cover object-center group-hover:scale-110 hover:rounded transition-all duration-200  ${
-              first && 'rounded-tl-[75px]'
-            }`}
+            className={`object-cover object-center group-hover:scale-110 hover:rounded transition-all duration-200`}
             width={'100%'}
             metadata={asset.asset}
           />
         </div>
         {/*Card with Asset data*/}
         <div
-          className={`bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 relative z-10 bg-opacity-10 w-full max-w-[300px] h-[182px] flex justify-between ${
-            last && 'rounded-br-[75px]'
-          }`}
+          className={`bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 relative z-10 bg-opacity-10 w-full max-w-[300px] h-[182px] flex justify-between`}
         >
           <div className="pl-6 mt-5 flex flex-col items-start">
             <h6 className="text-lg font-bold">{asset.asset.name}</h6>

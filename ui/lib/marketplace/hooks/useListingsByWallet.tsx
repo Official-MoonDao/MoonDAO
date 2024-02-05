@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { AuctionListing, DirectListing } from "../marketplace-utils";
+import { useEffect, useState } from 'react'
+import { AuctionListing, DirectListing } from '../marketplace-utils'
 
 //Get listings and auctions for a specific wallet
 export function useListingsByWallet(
@@ -7,13 +7,13 @@ export function useListingsByWallet(
   allAuctions: AuctionListing[],
   walletAddress: string
 ) {
-  const [listings, setListings] = useState<any>();
-  const [auctions, setAuctions] = useState<any>();
-  const [loading, setLoading] = useState<boolean>(false);
+  const [listings, setListings] = useState<any>()
+  const [auctions, setAuctions] = useState<any>()
+  const [loading, setLoading] = useState<boolean>(false)
 
   useEffect(() => {
     if (walletAddress) {
-      setLoading(true);
+      setLoading(true)
       const filteredListings =
         (validListings &&
           validListings[0] &&
@@ -21,7 +21,7 @@ export function useListingsByWallet(
             (l: DirectListing) =>
               l.creatorAddress && l.creatorAddress === walletAddress
           )) ||
-        [];
+        []
       const filteredAuctions =
         (allAuctions &&
           allAuctions[0] &&
@@ -29,12 +29,12 @@ export function useListingsByWallet(
             (a: AuctionListing) =>
               a.creatorAddress && a.creatorAddress === walletAddress
           )) ||
-        [];
-      setListings(filteredListings);
-      setAuctions(filteredAuctions);
-      setLoading(false);
+        []
+      setListings(filteredListings)
+      setAuctions(filteredAuctions)
+      setLoading(false)
     }
-  }, [validListings, allAuctions, walletAddress]);
+  }, [validListings, allAuctions, walletAddress])
 
-  return { listings, auctions, isLoading: loading };
+  return { listings, auctions, isLoading: loading }
 }

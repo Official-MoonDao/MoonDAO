@@ -34,7 +34,7 @@ export default function AssetPreview({
       <div className="bg-main-background h-[40px] w-[100px] z-50 rotate-[-32.17deg] absolute -left-8 -top-3"></div>
       <div className="bg-main-background h-[40px] w-[100px] z-50 rotate-[-32.17deg] absolute -right-8 -bottom-3"></div>
       {/*Image container to create zoom effect*/}
-      <div className="w-[335px] h-[275px] overflow-hidden">
+      <div className="w-full h-[275px] overflow-hidden">
         <button
           onClick={() =>
             router.push(
@@ -51,7 +51,7 @@ export default function AssetPreview({
         </button>
       </div>
       {/*Card with Asset data*/}
-      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 relative z-10 bg-opacity-10 w-[335px] h-[162px] flex justify-between">
+      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 relative z-10 bg-opacity-10 w-full h-[162px] flex justify-between">
         <div className="pl-6 mt-5 flex flex-col items-start">
           <h6 className="text-lg font-bold">{listing.asset.name}</h6>
           {/*Price*/}

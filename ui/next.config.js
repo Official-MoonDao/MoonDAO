@@ -6,7 +6,7 @@ module.exports = nextTranslate({
       'cdn.shopify.com',
       'cryptologos.cc',
       'gateway.ipfscdn.io',
-      'www.youtube.com',
+      'ipfs.cf-ipfs.com',
     ],
   },
   webpack: (config, { isServer }) => {

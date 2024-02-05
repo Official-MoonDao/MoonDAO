@@ -70,6 +70,7 @@ export default function ProfileWinningBid({
           winningBidObj &&
           winningBidObj?.bidderAddress === walletAddress && (
             <ClaimAsset
+              marketplaceContract={marketplace}
               walletAddress={walletAddress}
               auctionId={listing.auctionId}
             />

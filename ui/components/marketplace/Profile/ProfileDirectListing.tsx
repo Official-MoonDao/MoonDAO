@@ -1,7 +1,7 @@
-import { MediaRenderer } from '@thirdweb-dev/react'
+import { MediaRenderer, useContract } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { DirectListing } from '../../../lib/marketplace/marketplace-utils'
-import { MOONEY_DECIMALS } from '../../../const/config'
+import { MARKETPLACE_ADDRESS, MOONEY_DECIMALS } from '../../../const/config'
 import Skeleton from '../Layout/Skeleton'
 import CancelListing from './CancelListing'
 
@@ -16,6 +16,12 @@ export default function ProfileDirectListing({
 }: ProfileDirectListingProps) {
   const buyOut = listing.pricePerToken
   const end = listing.endTimestamp
+
+  const { contract: marketplace } = useContract(
+    MARKETPLACE_ADDRESS,
+    'marketplace-v3'
+  )
+
   return (
     <article className="relative flex flex-col justify-baseline my-2 hover:scale-[1.03] transition-all duration-150">
       {/*Status*/}
@@ -69,7 +75,11 @@ export default function ProfileDirectListing({
           ).toLocaleTimeString()}`}</p>
         </div>
         {walletAddress && walletAddress === listing.creatorAddress && (
-          <CancelListing type="direct" listingId={+listing.listingId} />
+          <CancelListing
+            marketplaceContract={marketplace}
+            type="direct"
+            listingId={+listing.listingId}
+          />
         )}
       </div>
     </article>

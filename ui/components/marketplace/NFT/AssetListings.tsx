@@ -31,11 +31,11 @@ export default function AssetListings({
     >
       <div className={'w-full flex justify-evenly p-2'}>
         <h3
-          className={`p-4 text-base font-semibold cursor-pointer transition-colors duration-100 ease-in-out hover:text-[#e9e9f9]
+          className={`p-4 text-base font-semibold cursor-pointer transition-colors duration-100 ease-in-out hover:text-moon-orange
         ${
           tab === 'listings'
             ? 'border-b-2 border-moon-gold text-moon-gold'
-            : 'text-white text-opacity-60'
+            : 'text-opacity-60 text-[black] dark:text-[white]'
         }`}
           onClick={() => {
             if (!directListings[0])
@@ -48,11 +48,11 @@ export default function AssetListings({
           Listings
         </h3>
         <h3
-          className={`p-4 text-base font-semibold text-white text-opacity-60 cursor-pointer transition-colors duration-100 ease-in-out hover:text-[#e9e9f9]
+          className={`p-4 text-base font-semibold text-white text-opacity-60 cursor-pointer transition-colors duration-100 ease-in-out hover:text-moon-orange
         ${
           tab === 'auctions'
             ? 'border-b-2 border-moon-gold text-moon-gold'
-            : 'text-white text-opacity-60'
+            : 'text-opacity-60 text-[black] dark:text-[white]'
         }`}
           onClick={() => {
             if (!auctionListings[0])

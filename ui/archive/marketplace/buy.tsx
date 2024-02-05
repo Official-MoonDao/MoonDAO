@@ -18,6 +18,7 @@ import CollectionPreview from '../../components/marketplace/Collection/Collectio
 import Metadata from '../../components/marketplace/Layout/Metadata'
 import VerticalStar from '../../components/marketplace/assets/VerticalStar'
 import { MARKETPLACE_ADDRESS } from '../../const/config'
+import { useChainDefault } from '../../lib/thirdweb/hooks/useChainDefault'
 
 type BuyPageProps = {
   _validListings: DirectListing[]
@@ -25,6 +26,7 @@ type BuyPageProps = {
 }
 
 export default function Buy({ _validListings, _validAuctions }: BuyPageProps) {
+  useChainDefault('l2')
   const router = useRouter()
 
   const { contract: marketplace }: any = useContract(

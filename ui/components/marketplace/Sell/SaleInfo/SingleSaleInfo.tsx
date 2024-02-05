@@ -2,12 +2,13 @@ import { useContract, Web3Button } from '@thirdweb-dev/react'
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast, { Toaster } from 'react-hot-toast'
-import toastStyle from '../../../../lib/marketplace/marketplace-utils/toastConfig'
 import {
   AuctionSubmission,
   DirectSubmission,
 } from '../../../../lib/marketplace/marketplace-utils'
+import toastStyle from '../../../../lib/marketplace/marketplace-utils/toastConfig'
 import { MARKETPLACE_ADDRESS, MOONEY_ADDRESSES } from '../../../../const/config'
+import { PrivyWeb3Button } from '../../../privy/PrivyWeb3Button'
 
 type Props = {
   nft: any
@@ -140,7 +141,7 @@ export default function SingleSaleInfo({
       endTimestamp: endDate,
     }
     const txResult = await marketplace.englishAuctions.createAuction(auction)
-    await router.push(`/collection/${data.nftContractAddress}/${data.tokenId}`)
+    await router.push(`/marketplace/collection/${data.nftContractAddress}/${data.tokenId}`)
     toast('Listed Successfully!', {
       icon: '🥳',
       style: toastStyle,
@@ -166,7 +167,7 @@ export default function SingleSaleInfo({
       isReservedListing: false,
     }
     const txResult = await marketplace.directListings.createListing(listing)
-    await router.push(`/collection/${data.nftContractAddress}/${data.tokenId}`)
+    await router.push(`/marketplace/collection/${data.nftContractAddress}/${data.tokenId}`)
     toast('Listed Successfully!', {
       icon: '🥳',
       style: toastStyle,
@@ -292,22 +293,16 @@ export default function SingleSaleInfo({
                     {...registerDirect('price')}
                   />
 
-                  <Web3Button
-                    className="connect-button"
-                    contractAddress={MARKETPLACE_ADDRESS}
+                  <PrivyWeb3Button
+                    label="Create Direct Listing"
+                    className={`hover:!text-title-light 
+                       bg-slate-300
+                       dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
                     action={async () => {
+                      console.log('test')
                       await handleSubmitDirect(handleSubmissionDirect)()
                     }}
-                    onError={(error) => {
-                      toast(`Listed Failed! Reason: ${error.cause}`, {
-                        icon: '❌',
-                        style: toastStyle,
-                        position: 'bottom-center',
-                      })
-                    }}
-                  >
-                    Create Direct Listing
-                  </Web3Button>
+                  />
                 </>
               }
             </div>
@@ -417,22 +412,14 @@ export default function SingleSaleInfo({
                 {...registerAuction('buyoutPrice')}
               />
 
-              <Web3Button
+              <PrivyWeb3Button
+                label="Create Auction Listing"
                 className="connect-button"
-                contractAddress={MARKETPLACE_ADDRESS}
                 action={async () =>
                   await handleSubmitAuction(handleSubmissionAuction)()
                 }
-                onError={(error) => {
-                  toast(`Listed Failed! Reason: ${error.cause}`, {
-                    icon: '❌',
-                    style: toastStyle,
-                    position: 'bottom-center',
-                  })
-                }}
-              >
-                Create Auction Listing
-              </Web3Button>
+              />
+
               {/* info */}
               <div className="flex flex-col gap-2 text-[80%] opacity-60 p-2 mt-4 bg-[#1d1d1d] rounded-lg bg-opacity-60">
                 <h1 className="text-[110%]">Auction Info:</h1>

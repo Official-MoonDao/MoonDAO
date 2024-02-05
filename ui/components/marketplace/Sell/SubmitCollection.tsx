@@ -17,7 +17,9 @@ export default function SubmitCollection() {
       {!enabled ? (
         <div className="w-full flex flex-col gap-2 justify-center items-center">
           <button
-            className="connect-button w-3/4 max-w-[600px]"
+            className="hover:!text-title-light 
+            bg-slate-300
+            dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark w-3/4 max-w-[600px]"
             onClick={() => setEnabled(true)}
           >
             Submit a Collection

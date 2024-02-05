@@ -8,6 +8,7 @@ import {
   getAllValidAuctions,
   getAllValidListings,
 } from '../../lib/marketplace/marketplace-listings'
+import { useChainDefault } from '../../lib/thirdweb/hooks/useChainDefault'
 import NoAssets from '../../components/marketplace/Sell/NoAssets'
 import BatchSaleInfo from '../../components/marketplace/Sell/SaleInfo/BatchSaleInfo'
 import ManageBatch from '../../components/marketplace/Sell/SaleInfo/ManageBatch'
@@ -19,6 +20,7 @@ import VerticalStar from '../../components/marketplace/assets/VerticalStar'
 import { MARKETPLACE_ADDRESS } from '../../const/config'
 
 export default function Sell() {
+  useChainDefault('l2')
   const router = useRouter()
   const address: any = useAddress()
   const [selectedNft, setSelectedNft]: any = useState({ metadata: {} })

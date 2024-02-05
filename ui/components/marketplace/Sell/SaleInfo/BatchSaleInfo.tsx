@@ -8,6 +8,7 @@ import {
 } from '../../../../lib/marketplace/marketplace-utils'
 import toastStyle from '../../../../lib/marketplace/marketplace-utils/toastConfig'
 import { MARKETPLACE_ADDRESS, MOONEY_ADDRESSES } from '../../../../const/config'
+import { PrivyWeb3Button } from '../../../privy/PrivyWeb3Button'
 
 type Props = {
   nft: any
@@ -317,22 +318,15 @@ export default function BatchSaleInfo({
                     {...registerDirect('price')}
                   />
 
-                  <Web3Button
-                    className="connect-button"
-                    contractAddress={MARKETPLACE_ADDRESS}
+                  <PrivyWeb3Button
+                    label="Add Listing to Batch"
+                    className={`hover:!text-title-light 
+                      bg-slate-300
+                      dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
                     action={async () =>
                       await handleSubmitDirect(handleSubmissionDirect)()
                     }
-                    onError={(error) => {
-                      toast(`Listed Failed! Reason: ${error.cause}`, {
-                        icon: '❌',
-                        style: toastStyle,
-                        position: 'bottom-center',
-                      })
-                    }}
-                  >
-                    Add Listing to Batch
-                  </Web3Button>
+                  />
                 </>
               }
             </div>
@@ -442,22 +436,15 @@ export default function BatchSaleInfo({
                 {...registerAuction('buyoutPrice')}
               />
 
-              <Web3Button
-                className="connect-button"
-                contractAddress={MARKETPLACE_ADDRESS}
+              <PrivyWeb3Button
+                label="Add Auction to Batch"
+                className={`hover:!text-title-light 
+                   bg-slate-300
+                   dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
                 action={async () =>
                   await handleSubmitAuction(handleSubmissionAuction)()
                 }
-                onError={(error) => {
-                  toast(`Listed Failed! Reason: ${error.cause}`, {
-                    icon: '❌',
-                    style: toastStyle,
-                    position: 'bottom-center',
-                  })
-                }}
-              >
-                Add Auction to Batch
-              </Web3Button>
+              />
               {/* info */}
               <div className="flex flex-col gap-2 text-[80%] opacity-60 p-2 mt-4 bg-[#1d1d1d] rounded-lg bg-opacity-60">
                 <h1 className="text-[110%]">Auction Info:</h1>

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import toastStyle from '../../../../lib/marketplace/marketplace-utils/toastConfig'
 import { MARKETPLACE_ADDRESS } from '../../../../const/config'
+import { PrivyWeb3Button } from '../../../privy/PrivyWeb3Button'
 
 type ManageBatchProps = {
   batchType: 'direct' | 'auction' | undefined
@@ -39,9 +40,9 @@ export default function ManageBatch({
 
   function CreateBatch() {
     return (
-      <Web3Button
+      <PrivyWeb3Button
+        label="Submit Batch"
         className="!bg-moon-secondary !text-white !px-3 py-1 !rounded-sm !shadow !shadow-white hover:scale-[1.03] transition-all duration-150 font-medium"
-        contractAddress={MARKETPLACE_ADDRESS}
         action={async () => {
           if (!batchType)
             return toast('Add 2 or more listings to create a batch', {
@@ -56,9 +57,7 @@ export default function ManageBatch({
           }
           router.reload()
         }}
-      >
-        Submit Batch
-      </Web3Button>
+      />
     )
   }
 
