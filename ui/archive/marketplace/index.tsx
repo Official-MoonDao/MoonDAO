@@ -102,7 +102,6 @@ export async function getStaticProps() {
   const validListings: DirectListing[] = await getAllValidListings(marketplace)
   const validAuctions: AuctionListing[] = await getAllValidAuctions(marketplace)
 
-  console.log(validListings, validAuctions)
   return {
     props: {
       _validListings: validListings,

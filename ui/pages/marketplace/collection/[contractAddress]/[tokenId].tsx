@@ -122,7 +122,7 @@ export default function TokenPage({
       />
       <article className="w-full ml-auto mr-auto px-4 max-w-[1200px] text-black dark:text-white">
         <div className="w-full flex flex-col lg:flex-row gap-12 mt-4 pb-32 tablet:pb-0">
-          <div className="flex flex-col flex-1 w-full mt-8 tablet:mt-0">
+          <div className="p-4 flex flex-col flex-1 w-full mt-8 tablet:mt-0">
             <ThirdwebNftMedia
               metadata={nft?.metadata}
               className="!w-full !h-full bg-white bg-opacity-[0.04] rounded-2xl"
@@ -219,7 +219,7 @@ export default function TokenPage({
               </div>
             )}
 
-            <div className="flex flex-col w-full relative grow bg-[#00000025] dark:bg-transparent rounded-2xl overflow-hidden mt-8 mb-6">
+            <div className="p-4 flex flex-col w-full relative grow bg-[#00000025] dark:bg-transparent rounded-2xl overflow-hidden mt-8 mb-6">
               <div className="p-4 pl-5 rounded-xl bg-white bg-opacity-[0.13] w-full m-0 mb-3">
                 {/* Quantity for ERC1155 */}
                 {currListing?.listing && nft.type === 'ERC1155' && (

@@ -19,6 +19,7 @@ import {
 } from '../../../../lib/marketplace/marketplace-utils'
 import { useChainDefault } from '../../../../lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '../../../../lib/thirdweb/thirdweb'
+import { LoadingSpinner } from '../../../../components/layout/LoadingSpinner'
 import AssetPreview from '../../../../components/marketplace/Collection/AssetPreview'
 import Metadata from '../../../../components/marketplace/Layout/Metadata'
 import Skeleton from '../../../../components/marketplace/Layout/Skeleton'
@@ -109,14 +110,14 @@ export default function CollectionPage({
               <span className="flex items-center gap-[6px] max-w-[60px] xl:max-w-[90px] truncate">
                 <LogoSmall size={{ width: 10.54, height: 11.07 }} />
                 {/*Floor*/}
-                {floorPrice}
+                {floorPrice || '. . .'}
               </span>
             </p>
             {/*Listings*/}
             <p className="w-[149px] xl:w-[189px] rounded-[3px] bg-[#301B3D] py-[6px] xl:py-2 px-[10px] xl:px-3 flex items-center justify-between">
               Listed{' '}
               <span className="max-w-[60px] truncate xl:max-w-[90px]">
-                {listed}
+                {listed || '. . .'}
               </span>
             </p>
             {/*Supply*/}
@@ -124,7 +125,7 @@ export default function CollectionPage({
               <p className="w-[149px] xl:w-[189px] rounded-[3px] bg-[#301B3D] py-[6px] xl:py-2 px-[10px] xl:px-3 flex items-center justify-between">
                 Supply{' '}
                 <span className="max-w-[60px] truncate xl:max-w-[90px]">
-                  {supply}
+                  {supply || '. . .'}
                 </span>
               </p>
             )}
@@ -142,7 +143,7 @@ export default function CollectionPage({
       </div>
       {/*Grid with the collection's assets */}
       <div className="mt-20 md:mt-24 flex flex-col gap-10 md:grid md:grid-cols-2 md:grid-flow-row md:gap-12 xl:grid-cols-3 xl:gap-14">
-        {assets[0] &&
+        {assets[0] ? (
           assets.map((l: DirectListing | AuctionListing, i: number) => (
             <div className="" key={`asset-${i}`}>
               <AssetPreview
@@ -151,7 +152,10 @@ export default function CollectionPage({
                 validAuctions={validAuctions}
               />
             </div>
-          ))}
+          ))
+        ) : (
+          <LoadingSpinner />
+        )}
       </div>
     </main>
   )
