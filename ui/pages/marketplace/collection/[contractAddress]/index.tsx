@@ -3,6 +3,7 @@ import {
   MediaRenderer,
   getAllDetectedExtensionNames,
   useContract,
+  useMetadata,
 } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 import {
@@ -28,12 +29,10 @@ import { MARKETPLACE_ADDRESS } from '../../../../const/config'
 
 type CollectionPageProps = {
   contractAddress: string //pre-rendered
-  collectionMetadata: any //pre-rendered
 }
 
 export default function CollectionPage({
   contractAddress,
-  collectionMetadata,
 }: CollectionPageProps) {
   useChainDefault('l2')
   //Marketplace data
@@ -47,6 +46,7 @@ export default function CollectionPage({
   //NFT Collection Data
   const [collectionType, setCollectionType] = useState<string>('')
   const { contract: collectionContract }: any = useContract(contractAddress)
+  const { data: collectionMetadata }: any = useMetadata(collectionContract)
 
   const assets = useAssets(validListings, validAuctions, contractAddress)
   const { floorPrice, listed, supply } = useCollectionStats(
@@ -213,10 +213,8 @@ export async function getStaticProps({ params }: any) {
     }
   }
 
-  const collectionContract = await sdk.getContract(contractAddress)
-  const collectionMetadata = await collectionContract.metadata.get()
-
   return {
-    props: { contractAddress, collectionMetadata },
+    props: { contractAddress },
+    revalidate: 60,
   }
 }
