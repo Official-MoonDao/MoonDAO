@@ -102,7 +102,7 @@ export function PrivyConnectWallet() {
       {user && wallets?.[0] ? (
         <div
           id="privy-connect-wallet"
-          className={`w-[125px] md:w-[175px] relative flex flex-col items-right justify-center px-3 md:px-5 py-3 bg-moon-orange font-RobotoMono z-[10]`}
+          className={`w-[125px] md:w-[175px] md:full relative flex flex-col items-right justify-center px-3 md:px-5 py-2 md:py-3 bg-moon-orange font-RobotoMono z-[10] rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300`}
           onClick={(e: any) => {
             !e.target.closest('#privy-connect-wallet-dropdown') &&
               setEnabled(!enabled)
@@ -242,7 +242,7 @@ export function PrivyConnectWallet() {
                     <strong>Import Token</strong>
                   </button>
                   <button
-                    className="w-2/5 mt-4 p-1 border text-white hover:scale-105 transition-all duration-150 bg-moon-orange hover:bg-white hover:text-moon-orange"
+                    className="w-2/5 mt-4 p-1 border text-white transition-all duration-150 bg-moon-orange hover:bg-white hover:text-moon-orange"
                     onClick={async () => {
                       wallets.forEach((wallet) => wallet.disconnect())
                       logout()
@@ -257,8 +257,15 @@ export function PrivyConnectWallet() {
         </div>
       ) : (
         <button
-          onClick={() => (user ? logout() : login())}
-          className="w-[125px] md:w-[175px] px-5 py-3 bg-moon-orange font-RobotoMono hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
+          onClick={async () => {
+            if (user) {
+              await logout()
+              login()
+            } else {
+              login()
+            }
+          }}
+          className="w-[125px] md:w-[175px] px-3 md:px-5 py-2 md:py-3 bg-moon-orange font-RobotoMono hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300"
         >
           Connect
         </button>
