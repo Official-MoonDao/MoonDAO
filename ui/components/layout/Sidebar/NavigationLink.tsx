@@ -10,10 +10,6 @@ import { useEffect } from 'react'
 const NavigationLink = ({ item }: any) => {
   const router = useRouter()
   const { t } = useTranslation('common')
-
-  useEffect(() => {
-    console.log(router.pathname, item.dynamicHref, item.href)
-  }, [router.pathname, item])
   return (
     <li
       className={`list-none font-RobotoMono font-normal text-sm md:text-base text-black dark:text-gray-100`}
@@ -57,9 +53,6 @@ const NavigationLink = ({ item }: any) => {
 }
 
 const Dropdown = ({ item, router }: any) => {
-  useEffect(() => {
-    console.log(item.children)
-  }, [item])
   return (
     <Disclosure
       as="div"

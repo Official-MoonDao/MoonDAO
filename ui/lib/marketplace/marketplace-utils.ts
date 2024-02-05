@@ -101,7 +101,6 @@ export function BigConvert(data: any) {
 export function serialize(data: any) {
   //data = array of listings = [[{listingData1}], [{listingData2}]]
   let formatted
-  console.log(data[0])
   if (data[0]?.minimumBidAmount) {
     formatted = data.map(
       (auction: EnglishAuction) =>
