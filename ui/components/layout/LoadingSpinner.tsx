@@ -1,4 +1,4 @@
-export function LoadingSpinner() {
+export function LoadingSpinner({ children }: any) {
   return (
     <div className="flex flex-col justify-center items-center gap-2">
       <div
