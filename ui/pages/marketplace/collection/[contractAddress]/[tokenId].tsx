@@ -6,6 +6,7 @@ import {
   useAddress,
   useContract,
   useMetadata,
+  useNFT,
 } from '@thirdweb-dev/react'
 import { GetServerSideProps } from 'next'
 import Link from 'next/link'
@@ -24,6 +25,7 @@ import {
 import randomColor from '../../../../lib/marketplace/marketplace-utils/randomColor'
 import { useChainDefault } from '../../../../lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '../../../../lib/thirdweb/thirdweb'
+import { LoadingSpinner } from '../../../../components/layout/LoadingSpinner'
 import Metadata from '../../../../components/marketplace/Layout/Metadata'
 import Skeleton from '../../../../components/marketplace/Layout/Skeleton'
 import AssetHistory from '../../../../components/marketplace/NFT/AssetHistory'
@@ -42,7 +44,6 @@ const [randomColor1, randomColor2] = [randomColor(), randomColor()]
 export default function TokenPage({
   contractAddress,
   tokenId,
-  nft,
 }: TokenPageProps) {
   useChainDefault('l2')
   const router = useRouter()
@@ -71,6 +72,7 @@ export default function TokenPage({
 
   //NFT Collection & Metadata
   const { contract: nftCollection } = useContract(contractAddress)
+  const { data: nft } = useNFT(nftCollection, tokenId)
 
   const { data: collectionMetadata }: any = useMetadata(nftCollection)
 
@@ -113,13 +115,11 @@ export default function TokenPage({
     //check if connected wallet is owner of asset
   }, [currListing, address, loadingContract])
 
+  if (!nft) return <LoadingSpinner />
+
   return (
     <>
-      <Metadata
-        title={'Asset'}
-        description={nft.metadata.description}
-        image={nft.metadata.image}
-      />
+      <Metadata title={'Asset'} />
       <article className="w-full ml-auto mr-auto px-4 max-w-[1200px] text-black dark:text-white">
         <div className="w-full flex flex-col lg:flex-row gap-12 mt-4 pb-32 tablet:pb-0">
           <div className="p-4 flex flex-col flex-1 w-full mt-8 tablet:mt-0">
@@ -371,45 +371,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const contractAddress = params?.contractAddress
   const tokenId = params?.tokenId
 
-  const sdk = initSDK(
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
-  )
-  const marketplace: any = await sdk.getContract(
-    MARKETPLACE_ADDRESS,
-    'marketplace-v3'
-  )
-  const acceptedCollections = await marketplace.roles.get('asset')
-
-  // if no contract address or token id, return 404
-  if (!acceptedCollections.includes(contractAddress)) {
-    return {
-      notFound: true,
-    }
-  }
-
-  const collectionContract: any = await sdk.getContract(
-    contractAddress as string
-  )
-  const extensions = getAllDetectedExtensionNames(collectionContract.abi)
-
-  let nft
-  if (extensions[0] === 'ERC1155') {
-    nft = await collectionContract.erc1155.get(tokenId)
-  } else {
-    nft = await collectionContract.erc721.get(tokenId)
-  }
-
-  if (!nft) {
-    return {
-      notFound: true,
-    }
-  }
-
   return {
     props: {
       contractAddress,
       tokenId,
-      nft,
     },
   }
 }
