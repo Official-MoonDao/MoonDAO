@@ -161,7 +161,45 @@ export default function CollectionPage({
   )
 }
 
-export async function getServerSideProps({ params }: any) {
+export async function getStaticPaths() {
+  const sdk = initSDK(
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
+  )
+  const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS)
+  const acceptedCollections = await marketplace.roles.get('asset')
+
+  const paths = acceptedCollections.map((contractAddress: string) => ({
+    params: { contractAddress },
+  }))
+  return {
+    paths,
+    fallback: true,
+  }
+}
+
+// export async function getServerSideProps({ params }: any) {
+//   const contractAddress = params?.contractAddress
+//   const sdk = initSDK(
+//     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
+//   )
+//   const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS)
+//   const acceptedCollections = await marketplace.roles.get('asset')
+
+//   if (!acceptedCollections.includes(contractAddress)) {
+//     return {
+//       notFound: true,
+//     }
+//   }
+
+//   const collectionContract = await sdk.getContract(contractAddress)
+//   const collectionMetadata = await collectionContract.metadata.get()
+
+//   return {
+//     props: { contractAddress, collectionMetadata },
+//   }
+// }
+
+export async function getStaticProps({ params }: any) {
   const contractAddress = params?.contractAddress
   const sdk = initSDK(
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
