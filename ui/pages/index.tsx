@@ -5,7 +5,7 @@ import Head from '../components/layout/Head'
 function HomeCard({ label, text }: any) {
   return (
     <div className="flex">
-      <div className="ml-3">
+      <div>
         <dt className="text-lg font-RobotoMono font-medium text-left lg:text-left text-gray-950 dark:text-white">
           {label}
         </dt>
@@ -38,13 +38,13 @@ export default function Home() {
             src="https://www.youtube.com/embed/Vs_vAtRgaBA?showinfo=0&controls=1&rel=0&mute=1&autoplay=1"
             allowFullScreen
           />
-          <p className="mt-6 sm:mt-6 lg:mt-8 font-RobotoMono text-sm sm:text-base lg:text-sm xl:text-base text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
+          <p className="mt-6 sm:mt-6 lg:mt-8 text-sm sm:text-base lg:text-sm xl:text-base text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
             {`MoonDAO is accelerating the development of a lunar base through better coordination. Want to help? This flow will onboard you into our community in less than 5 minutes, even if you’re new to Web3.`}
           </p>
-          <div className="mt-6 h-[1px] w-full bg-white"></div>
+          <div className="mt-8 h-[1px] w-full bg-white"></div>
         </div>
 
-        <div className="mt-12 w-[90%]">
+        <div className="mt-8 w-[90%]">
           <div className="">
             <h2 className="text-2xl text-[#071732] dark:text-white font-GoodTimes lg:text-4xl xl:text-4xl text-center">
               Why Join MoonDAO?
