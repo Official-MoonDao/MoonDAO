@@ -68,7 +68,7 @@ const Dropdown = ({ item, router }: any) => {
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150`}
           >
             <item.icon
-              className={`mr-2 h-5 w-5 text-black  ${item?.children
+              className={`mr-2 h-5 w-5  ${item?.children
                 ?.map((e: any) => e.href)
                 ?.includes(router.pathname)}`}
               aria-hidden="true"
