@@ -19,7 +19,7 @@ export default function ZeroG() {
 
         <div className="mt-3 lg:mt-4 font-Lato">
           <p className="mt-6 lg:mt-7 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg">
-            Feb 23, 2024 at Kennedy Space Center, Florida
+            {`SOLD OUT Feb 23, 2024 at Kennedy Space Center, Florida. Fill out the form below to be contacted about future opportunities.`}
           </p>
           <iframe
             className="mt-6 aspect-video object-cover w-full"
@@ -28,20 +28,22 @@ export default function ZeroG() {
           />
 
           <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-center text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-            {`Welcome to MoonDAO's Astronaut Training Program. Learn from legendary Apollo 16 astronaut Charlie Duke, SpaceX Astronaut Doug Hurley, and NASA astronaut Nicole Stott how to float in Zero Gravity. MoonDAO has chartered an entire Zero Gravity flight in partnership with `}
+            {`Welcome to MoonDAO's Astronaut Training Program. We've partnered with `}
             <Link
               href="https://spaceforabetterworld.com/"
               target="_blank"
               rel="noreferrer"
               className="cursor-pointer text-moon-orange ease-in-ease-out duration-300"
             >
-              {'Space for a Better World'}
+              {'Space for a Better World '}
             </Link>
-            {'.'}
+            {
+              'to bring these training opportunities to more people alongside experienced NASA astronauts. Our first flight out of Kennedy Space Center featured legendary Apollo 16 astronaut Charlie Duke, SpaceX Astronaut Doug Hurley, and NASA astronaut Nicole Stott in Zero Gravity.'
+            }
           </p>
 
           <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-center text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-            {`The team’s Boeing 727 flies in parabolic arcs to create a weightless environment, allowing you to float, flip, and soar as if you were in space. Start training for a journey to the Moon and experience the adventure of a lifetime with our Zero-G flight!`}
+            {`A Boeing 727 flies in parabolic arcs to create a weightless environment, allowing you to float, flip, and soar as if you were in space. Start training for a journey to the Moon and experience the adventure of a lifetime with a Zero-G flight!`}
           </p>
         </div>
 
@@ -49,7 +51,7 @@ export default function ZeroG() {
           {/* <PurchasePortal validVP={validVP} /> */}
           <h1 className="mt-4 font-bold text-2xl">{'Contact:'}</h1>
           <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-center text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-            {`Contact pablo@moondao.com or christina@spaceforabetterworld.com for more details or use the contact form below.`}
+            {`Fill out the form below to get notified about any future training opportunities in zero gravity.`}
           </p>
           <div className="w-full">
             <ZeroGContact />
