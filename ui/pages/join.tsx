@@ -1,4 +1,4 @@
-import { Polygon } from '@thirdweb-dev/chains'
+import { Polygon, Sepolia } from '@thirdweb-dev/chains'
 import { Token } from '@uniswap/sdk-core'
 import useTranslation from 'next-translate/useTranslation'
 import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
