@@ -43,7 +43,7 @@ function PolygonIcon() {
 
 export function PrivyConnectWallet() {
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain }: any = useContext(ChainContext)
+  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
   const [networkMistmatch, setNetworkMismatch] = useState(false)
 
