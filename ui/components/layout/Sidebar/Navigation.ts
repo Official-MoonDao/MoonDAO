@@ -22,23 +22,23 @@ export const navigation = [
     icon: BuildingLibraryIcon,
     children: [
       {
-        name: 'Get MOONEY',
+        name: 'Get $MOONEY',
         href: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
       },
-      { name: 'Lock', href: '/lock' },
+      { name: 'Lock $MOONEY', href: '/lock' },
       {
         name: 'Constitution',
         href: 'https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution',
       },
       {
-        name: 'Vote',
+        name: 'Vote on Proposals',
         href: 'https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution',
       },
       {
         name: 'Submit Proposal',
         href: 'https://discord.com/channels/914720248140279868/1027658256706961509',
       },
-      { name: 'More', href: '/governance' },
+      { name: 'More...', href: '/governance' },
     ],
   },
   {
