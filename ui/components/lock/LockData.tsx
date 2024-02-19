@@ -24,7 +24,7 @@ export function LockData({
 }: any) {
   const { t } = useTranslation('common')
   return (
-    <section className="mt-6 xl:mt-6 xl:w-3/4">
+    <section id="lock-data" className="mt-6 xl:mt-6 xl:w-3/4">
       {/*Lock Data*/}
       {hasLock && (
         <>
@@ -36,6 +36,8 @@ export function LockData({
               <div className="white-text">{t('hasLockMoney1')}</div>
               <div className="stat-value text-primary">
                 <Balance
+                  id="lock-data-vmooney-balance"
+                  token="VMOONEY"
                   balance={VMOONEYBalance?.toString() / 10 ** 18}
                   loading={VMOONEYBalanceLoading}
                   decimals={
@@ -55,6 +57,7 @@ export function LockData({
               <div className="white-text">{t('hasLockMoney2')}</div>
               <div className="stat-value text-secondary">
                 <Balance
+                  id="lock-data-locked-mooney"
                   balance={VMOONEYLock && VMOONEYLock[0]}
                   loading={VMOONEYLockLoading}
                   decimals={2}
