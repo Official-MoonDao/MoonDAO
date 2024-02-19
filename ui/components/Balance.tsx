@@ -2,11 +2,13 @@ import React from 'react'
 import { NumberType, transformNumber } from '../lib/utils/numbers'
 
 export default function Balance({
+  id,
   loading = false,
   balance,
   prefix = '',
   suffix = '',
   decimals = 2,
+  token = '$MOONEY',
 }: any) {
   return (
     <div className="ml-3 gap-2 text-xs lg:text-base xl:text-xl font-normal text-moon-orange tracking-wide flex items-center">
@@ -34,14 +36,15 @@ export default function Balance({
           </svg>
         </p>
       ) : balance ? (
-        <p>
-          {prefix}{transformNumber(balance, NumberType.string, decimals)}
+        <p id={id}>
+          {prefix}
+          {transformNumber(balance, NumberType.string, decimals)}
           {suffix}
         </p>
       ) : (
         0
       )}{' '}
-      <p className="font-semibold text-moon-orange">$MOONEY</p>
+      <p className="font-semibold text-moon-orange">{token}</p>
     </div>
   )
 }
