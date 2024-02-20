@@ -1,14 +1,26 @@
+import { Widget } from '@typeform/embed-react'
 import { ethers } from 'ethers'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { createSafe } from '../../lib/gnosis/createSafe'
 
 export function CreateEntity({ address, wallets, selectedWallet }: any) {
   const userImageRef: any = useRef()
+
   const [safeAddress, setSafeAddress] = useState<string>()
+
   return (
     <div className="flex flex-col">
-      <input type="file" ref={userImageRef} accept="image/png, image/jpeg" />
+      <Widget
+        id="IvM4Kp23"
+        onSubmit={async (e) => {
+          const responseRes = await fetch(
+            `/api/typeform/response?formId=${e.formId}&responseId=${e.responseId}`
+          )
+          const data = await responseRes.json()
+        }}
+        height={800}
+      />
       <button
         className="border-2"
         onClick={async () => {
@@ -21,34 +33,42 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
           }
 
           try {
-            //sign and verify message
-            const message = 'Please sign to pin this entity to IPFS'
+            //get signer
             const provider = await wallets[selectedWallet].getEthersProvider()
-
             const signer = provider?.getSigner()
+
+            //create safe
+            const safeSDK = await createSafe(signer, [address], 1)
+            const safeAddress = await safeSDK.getAddress()
+            setSafeAddress(safeAddress)
+
+            //sign message
+            const message = 'Please sign to pin this entity to IPFS'
             const signature = await signer?.signMessage(message)
-            const recoveredAddress = ethers.utils.verifyMessage(
-              message,
-              signature
-            )
 
-            if (recoveredAddress !== address) {
-              return toast.error('Unauthorized')
-            }
-
-            //pin image to IPFS
-
-            const imageFormData: any = new FormData()
-
-            imageFormData.append('file', userImageRef.current.files[0])
-            imageFormData.append('pinataMetadata', { name: 'File Name' })
-            imageFormData.append('pinataOptions', { cidVersion: 0 })
-
+            //get pinata jwt
             const jwtRes = await fetch('/api/ipfs/upload', {
               method: 'POST',
+              headers: {
+                signature,
+              },
+              body: JSON.stringify({ address, message }),
             })
 
             const JWT = await jwtRes.text()
+
+            //pin image to IPFS
+            const imageFormData = new FormData()
+
+            imageFormData.append('file', userImageRef.current.files[0])
+            imageFormData.append(
+              'pinataMetadata',
+              JSON.stringify({ name: 'File Name' })
+            )
+            imageFormData.append(
+              'pinataOptions',
+              JSON.stringify({ cidVersion: 0 })
+            )
 
             const imageRes = await fetch(
               'https://api.pinata.cloud/pinning/pinFileToIPFS',
@@ -63,18 +83,38 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
 
             const { IpfsHash: newImageIpfsHash } = await imageRes.json()
 
-            //pin metadata to IPFS
+            if (!newImageIpfsHash) {
+              return toast.error('Error pinning image to IPFS')
+            }
 
+            //get the next token id of the nft collection
+            const nextTokenId = 0
+
+            //pin metadata to IPFS
             const metadata = {
-              name: 'test#1',
-              description: 'test',
+              name: `Entity #${nextTokenId}`,
+              description: '',
               image: `ipfs://${newImageIpfsHash}`,
+              attributes: [
+                {
+                  trait_type: 'multisig',
+                  value: safeAddress,
+                },
+                {
+                  trait_type: 'twitter',
+                  value: '',
+                },
+                {
+                  trait_type: 'view',
+                  value: '',
+                },
+              ],
             }
 
             const metadataFormData: any = new FormData()
             metadataFormData.append(
               'pinataMetadata',
-              JSON.stringify({ name: 'Test Metadata' })
+              JSON.stringify({ name: 'Test Metadata.json' })
             )
             metadataFormData.append(
               'pinataOptions',
@@ -99,12 +139,6 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
             )
 
             const { IpfsHash: newMetadataIpfsHash } = await metadataRes.json()
-
-            //create safe
-            const safeSDK = await createSafe(signer, [address], 1)
-            const safeAddress = await safeSDK.getAddress()
-            setSafeAddress(safeAddress)
-
             //mint NFT to safe
 
             //claim Entity hat
