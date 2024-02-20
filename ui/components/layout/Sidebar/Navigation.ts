@@ -31,12 +31,12 @@ export const navigation = [
         href: 'https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution',
       },
       {
-        name: 'Vote on Proposals',
-        href: 'https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution',
-      },
-      {
         name: 'Submit Proposal',
         href: 'https://discord.com/channels/914720248140279868/1027658256706961509',
+      },
+      {
+        name: 'Vote',
+        href: 'https://snapshot.org/#/tomoondao.eth',
       },
       { name: 'More...', href: '/governance' },
     ],
