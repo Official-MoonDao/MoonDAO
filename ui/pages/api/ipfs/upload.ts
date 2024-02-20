@@ -1,8 +1,9 @@
+import { ethers } from 'ethers'
 import { NextApiRequest, NextApiResponse } from 'next'
 
 const keyRestrictions = {
-  keyName: 'Signed Update JWT',
-  maxUses: 3,
+  keyName: 'Signed Upload JWT',
+  maxUses: 2,
   permissions: {
     endpoints: {
       data: {
@@ -13,7 +14,7 @@ const keyRestrictions = {
         pinFileToIPFS: true,
         pinJSONToIPFS: false,
         pinJobs: false,
-        unpin: true,
+        unpin: false,
         userPinPolicy: false,
       },
     },
@@ -25,6 +26,15 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === 'POST') {
+    const signature = req.headers.signature as string
+    const { address, message } = JSON.parse(req.body)
+
+    const recoveredAddress = ethers.utils.verifyMessage(message, signature)
+
+    if (recoveredAddress !== address) {
+      return res.status(401).send('Unauthorized')
+    }
+
     const jwtResponse = await fetch(
       'https://api.pinata.cloud/users/generateApiKey',
       {
