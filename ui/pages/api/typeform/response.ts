@@ -42,9 +42,6 @@ export default async function handler(
 ) {
   const { formId, responseId } = req.query
 
-  console.log('id', formId)
-  console.log('responseId', responseId)
-
   const data = await retryGetResponse(formId as string, responseId as string)
 
   if (!data) {
@@ -56,15 +53,6 @@ export default async function handler(
   const response = data.items[0]
   if (!response) {
     return res.status(404).json({ message: 'Response not found' })
-  }
-
-  console.log('response.answers', response.answers)
-
-  function getAnswer(ref: any, type: any) {
-    const answer = response.answers.find(
-      (answer: any) => answer.field.ref === ref
-    )
-    return (answer && answer[type]) || ''
   }
 
   return res.status(200).json({
