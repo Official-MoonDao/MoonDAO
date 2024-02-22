@@ -16,15 +16,13 @@ import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
 import Head from '../components/layout/Head'
 import { CreateEntity } from '../components/onboarding/CreateEntity'
 import { OnboardingStageManager } from '../components/onboarding/OnboardingStageManager'
+import { OnboardingV2 } from '../components/onboarding/OnboardingV2'
 import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
 
 export default function Join({ usdQuotes }: any) {
   const { t } = useTranslation('common')
 
-  const address = useAddress()
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
-  const { wallets } = useWallets()
+  const { setSelectedChain } = useContext(ChainContext)
 
   useEffect(() => {
     setSelectedChain(Sepolia)
@@ -34,48 +32,42 @@ export default function Join({ usdQuotes }: any) {
     <div className="animate-fadeIn">
       <Head title={t('joinTitle')} description={t('joinDesc')} />
       {/* IPFS Test Form */}
-      <div className="flex flex-col gap-4 w-1/2">
-        <h1>IPFS Test</h1>
-        <CreateEntity
-          address={address}
-          wallets={wallets}
-          selectedWallet={selectedWallet}
-        />
-      </div>
-      <OnboardingStageManager usdQuotes={usdQuotes} />
+
+      <OnboardingV2 />
+      {/* <OnboardingStageManager usdQuotes={usdQuotes} /> */}
     </div>
   )
 }
 
-export async function getStaticProps() {
-  const DAI = new Token(
-    137,
-    DAI_ADDRESSES['polygon'],
-    18,
-    'DAI',
-    'DAI Stablecoin'
-  )
+// export async function getStaticProps() {
+//   const DAI = new Token(
+//     137,
+//     DAI_ADDRESSES['polygon'],
+//     18,
+//     'DAI',
+//     'DAI Stablecoin'
+//   )
 
-  const MOONEY = new Token(
-    137,
-    MOONEY_ADDRESSES['polygon'],
-    18,
-    'MOONEY',
-    'MOONEY (PoS)'
-  )
+//   const MOONEY = new Token(
+//     137,
+//     MOONEY_ADDRESSES['polygon'],
+//     18,
+//     'MOONEY',
+//     'MOONEY (PoS)'
+//   )
 
-  const levelOneRoute = await pregenSwapRoute(Polygon, 20000, MOONEY, DAI)
-  const levelTwoRoute = await pregenSwapRoute(Polygon, 100000, MOONEY, DAI)
-  const levelThreeRoute = await pregenSwapRoute(Polygon, 500000, MOONEY, DAI)
+//   const levelOneRoute = await pregenSwapRoute(Polygon, 20000, MOONEY, DAI)
+//   const levelTwoRoute = await pregenSwapRoute(Polygon, 100000, MOONEY, DAI)
+//   const levelThreeRoute = await pregenSwapRoute(Polygon, 500000, MOONEY, DAI)
 
-  const usdQuotes = [levelOneRoute, levelTwoRoute, levelThreeRoute].map(
-    (swapRoute) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18
-  )
+//   const usdQuotes = [levelOneRoute, levelTwoRoute, levelThreeRoute].map(
+//     (swapRoute) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18
+//   )
 
-  return {
-    props: {
-      usdQuotes,
-    },
-    revalidate: 60,
-  }
-}
+//   return {
+//     props: {
+//       usdQuotes,
+//     },
+//     revalidate: 60,
+//   }
+// }

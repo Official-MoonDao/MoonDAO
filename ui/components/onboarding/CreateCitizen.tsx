@@ -1,9 +1,7 @@
 import { Widget } from '@typeform/embed-react'
-import { ethers } from 'ethers'
 import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { createSafe } from '../../lib/gnosis/createSafe'
 
 function StageContainer({ children }: any) {
   return (
@@ -25,15 +23,13 @@ function Button({ onClick, children, isDisabled }: any) {
   )
 }
 
-export function CreateEntity({ address, wallets, selectedWallet }: any) {
+export function CreateCitizen({ address, wallets, selectedWallet }: any) {
   const [stage, setStage] = useState<number>(0)
 
   const [userImage, setUserImage] = useState<any>()
   const [safeAddress, setSafeAddress] = useState<string>()
 
-  const [entityName, setEntityName] = useState<string>()
-  const [entityTwitter, setEntityTwitter] = useState<string>()
-  const [entityView, setEntityView] = useState<boolean>(false)
+  const [citizenName, setCitizenName] = useState<string>()
   const [formResponseId, setFormResponseId] = useState<string>()
 
   return (
@@ -53,9 +49,8 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
                 const data = await responseRes.json()
 
                 setFormResponseId(responseId)
-                setEntityName(data.answers[3].text)
-                setEntityTwitter(data.answers[4].text)
-                setEntityView(data.answers[5].boolean)
+                setCitizenName(data.answers[3].text)
+
                 setStage(1)
               }}
               height={700}
@@ -96,34 +91,8 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
           </Button>
         </StageContainer>
       )}
-      {/* Create Gnosis Safe */}
-      {stage === 2 && (
-        <StageContainer>
-          <Button
-            className="border-2"
-            onClick={async () => {
-              const provider = await wallets[selectedWallet].getEthersProvider()
-              const signer = provider?.getSigner()
-
-              //create safe
-              const safeSDK = await createSafe(signer, [address], 1)
-              const safeAddress = safeSDK.getAddress()
-              setSafeAddress(safeAddress)
-
-              if (safeAddress) setStage(3)
-
-              try {
-              } catch (err) {
-                console.error(err)
-              }
-            }}
-          >
-            Create Safe
-          </Button>
-        </StageContainer>
-      )}
       {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
-      {stage === 3 && (
+      {stage === 2 && (
         <StageContainer>
           <Button
             onClick={async () => {
@@ -181,22 +150,8 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
               //pin metadata to IPFS
               const metadata = {
                 name: `Entity #${nextTokenId}`,
-                description: `MoonDAO Entity : ${entityName}`,
+                description: `MoonDAO Entity : ${citizenName}`,
                 image: `ipfs://${newImageIpfsHash}`,
-                attributes: [
-                  {
-                    trait_type: 'multisig',
-                    value: safeAddress,
-                  },
-                  {
-                    trait_type: 'twitter',
-                    value: entityTwitter,
-                  },
-                  {
-                    trait_type: 'view',
-                    value: entityView ? 'public' : 'private',
-                  },
-                ],
                 formResponseId,
               }
 
