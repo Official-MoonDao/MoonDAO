@@ -21,6 +21,19 @@ type PrivyWeb3BtnProps = {
   skipNetworkCheck?: boolean
 }
 
+function Button({ className, onClick, isDisabled, children }: any) {
+  return (
+    <button
+      // className={`px-8 py-2 w-[200px] rounded-md text-black ${className}`}
+      className={`p-2 rounded-md text-black min-w-[200px] ${className}`}
+      onClick={onClick}
+      disabled={isDisabled}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function PrivyWeb3Button({
   label,
   action,
@@ -30,7 +43,7 @@ export function PrivyWeb3Button({
   onError,
   skipNetworkCheck = false,
 }: PrivyWeb3BtnProps) {
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContext)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { user, login } = usePrivy()
   const { wallets } = useWallets()
@@ -39,18 +52,6 @@ export function PrivyWeb3Button({
 
   const [btnState, setBtnState] = useState(0)
 
-  function Button({ onClick, children }: any) {
-    return (
-      <button
-        // className={`px-8 py-2 w-[200px] rounded-md text-black ${className}`}
-        className={`p-2 rounded-md text-black min-w-[200px] ${className}`}
-        onClick={onClick}
-        disabled={isDisabled}
-      >
-        {children}
-      </button>
-    )
-  }
   useEffect(() => {
     if (!user) {
       setBtnState(0)
@@ -69,6 +70,7 @@ export function PrivyWeb3Button({
       {btnState === 0 && <Button onClick={login}>Connect</Button>}
       {btnState === 1 && (
         <Button
+          className={className}
           onClick={async () => {
             try {
               await wallets[selectedWallet]?.switchChain(selectedChain.chainId)
@@ -76,12 +78,14 @@ export function PrivyWeb3Button({
               console.log(err.message)
             }
           }}
+          isDisabled={isDisabled}
         >
           Switch Network
         </Button>
       )}
       {btnState === 2 && (
         <Button
+          className={className}
           onClick={async () => {
             setIsLoading(true)
             try {
@@ -93,7 +97,7 @@ export function PrivyWeb3Button({
             }
             setIsLoading(false)
           }}
-          disabled={isDisabled}
+          isDisabled={isDisabled}
         >
           {isLoading ? 'loading...' : label}
         </Button>

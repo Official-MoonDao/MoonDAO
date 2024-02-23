@@ -15,6 +15,7 @@ import {
   useVMOONEYWithdrawLock,
   calculateVMOONEY,
 } from '../lib/tokens/ve-token'
+import { bigNumberToDate, dateOut, dateToReadable } from '../lib/utils/dates'
 import { NumberType, transformNumber } from '../lib/utils/numbers'
 import Balance from '../components/Balance'
 import TimeRange from '../components/TimeRange'
@@ -27,22 +28,6 @@ import LockPresets from '../components/thirdweb/LockPresets'
 import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrow from '../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
-
-const dateToReadable = (date: any) => {
-  return date && date.toISOString().substring(0, 10)
-}
-
-const bigNumberToDate = (bigNumber: any) => {
-  return bigNumber && new Date(bigNumber.mul(1000).toNumber())
-}
-
-const dateOut = (date: any, { days, years }: any) => {
-  if (!date) return
-  let dateOut = date
-  days && dateOut.setDate(date.getDate() + days)
-  years && dateOut.setFullYear(date.getFullYear() + years)
-  return dateOut
-}
 
 export default function Lock() {
   const { selectedChain }: any = useContext(ChainContext)

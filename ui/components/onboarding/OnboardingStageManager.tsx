@@ -270,7 +270,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
             <div></div>
           )}
         </div>
-        <div className="py-4 flex flex-col items-center justify-center w-full">
+        <div className="py-4 flex items-center gap-12 w-full">
           <button
             className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3 mb-3 lg:mb-0"
             onClick={() => {

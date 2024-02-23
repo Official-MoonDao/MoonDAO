@@ -1,6 +1,4 @@
-import { useWallets } from '@privy-io/react-auth'
 import { Polygon, Sepolia } from '@thirdweb-dev/chains'
-import { useAddress } from '@thirdweb-dev/react'
 import { Token } from '@uniswap/sdk-core'
 import { create } from 'cypress/types/lodash'
 import { ethers } from 'ethers'
