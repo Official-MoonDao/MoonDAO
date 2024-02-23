@@ -4,10 +4,11 @@ import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { createSafe } from '../../lib/gnosis/createSafe'
+import { Steps } from '../layout/Steps'
 
 function StageContainer({ children }: any) {
   return (
-    <div className="w-[336px] sm:w-[400px] lg:w-full font-RobotoMono">
+    <div className="w-[336px] sm:w-[400px] lg:w-full font-RobotoMono flex flex-col justify-center items-center">
       {children}
     </div>
   )
@@ -38,13 +39,19 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
 
   return (
     <div className="flex flex-col">
+      <Steps
+        className="mb-8"
+        steps={['Form', 'Upload', 'Create Safe', 'Pin to IPFS']}
+        currStep={stage}
+      />
+
       {/* Typeform form */}
       {stage === 0 && (
         <StageContainer>
           <div className="w-full md:w-3/4">
             <Widget
               id="iE1aaGrT"
-              onSubmit={async (formResponse) => {
+              onSubmit={async (formResponse: any) => {
                 //get response from form
                 const { formId, responseId } = formResponse
                 const responseRes = await fetch(

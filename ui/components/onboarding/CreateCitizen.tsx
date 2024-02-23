@@ -2,6 +2,7 @@ import { Widget } from '@typeform/embed-react'
 import Image from 'next/image'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { Steps } from '../layout/Steps'
 
 function StageContainer({ children }: any) {
   return (
@@ -34,6 +35,11 @@ export function CreateCitizen({ address, wallets, selectedWallet }: any) {
 
   return (
     <div className="flex flex-col">
+      <Steps
+        className="mb-8"
+        steps={['Form', 'Upload', 'Create Safe', 'Pin to IPFS']}
+        currStep={stage}
+      />
       {/* Typeform form */}
       {stage === 0 && (
         <StageContainer>
