@@ -28,6 +28,7 @@
     "@uniswap/sdk-core": "^4.0.7",
     "@uniswap/smart-order-router": "^3.19.2",
     "@uniswap/universal-router-sdk": "^2.0.2",
+    "@walletconnect/qrcode-modal": "^1.8.0",
     "abitype": "^0.10.2",
     "axios": "^1.4.0",
     "daisyui": "^2.13.5",
