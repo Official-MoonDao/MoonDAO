@@ -27,7 +27,7 @@
     "@thirdweb-dev/react": "^4.1.11",
     "@thirdweb-dev/sdk": "^4.0.18",
     "@typeform/embed": "^4.5.0",
-    "@typeform/embed-react": "^3.11.0",
+    "@typeform/embed-react": "^3.15.0",
     "@uniswap/sdk-core": "^4.0.7",
     "@uniswap/smart-order-router": "^3.19.2",
     "@uniswap/universal-router-sdk": "^2.0.2",

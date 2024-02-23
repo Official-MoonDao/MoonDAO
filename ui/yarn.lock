@@ -3604,15 +3604,20 @@
     mkdirp "^1.0.4"
     path-browserify "^1.0.1"
 
-"@typeform/embed-react@^3.11.0":
-  version "3.11.0"
-  resolved "https://registry.yarnpkg.com/@typeform/embed-react/-/embed-react-3.11.0.tgz#0465667240f25d7c48e1a05699fe020f63c4595b"
-  integrity sha512-FRCtoKoMLvvWxfMmGVtjQVqljPex5K0bw//+fGaR+TrexZgn2ydgj9KNdVhIhTeauwslknxoJ2/ptjpT9NiREA==
+"@typeform/embed-react@^3.15.0":
+  version "3.15.0"
+  resolved "https://registry.yarnpkg.com/@typeform/embed-react/-/embed-react-3.15.0.tgz#bb0945832ad8284adb5944a46c0d4aef294b5f75"
+  integrity sha512-yt+WKg/jmm5CLu7g0aG+l99nxVVwnQxvyAhQCt1BrBDVSwQ8reyCjZZfGMvfp9nYBmw5XMG11FFF2mNT8AO1og==
   dependencies:
-    "@typeform/embed" "4.5.0"
+    "@typeform/embed" "4.8.1"
     fast-deep-equal "^3.1.3"
 
-"@typeform/embed@4.5.0", "@typeform/embed@^4.5.0":
+"@typeform/embed@4.8.1":
+  version "4.8.1"
+  resolved "https://registry.yarnpkg.com/@typeform/embed/-/embed-4.8.1.tgz#eabf1b06a34d3d12623fee6619ce5c7c97ebd447"
+  integrity sha512-dI39cbgh8oNCOP90y/58JA7e9c4P0OSDO0yzgVy6tmi4tI8UmBwPH42mkFIr/yo+l71LcrPVt/3f/7VbuBdI2Q==
+
+"@typeform/embed@^4.5.0":
   version "4.5.0"
   resolved "https://registry.yarnpkg.com/@typeform/embed/-/embed-4.5.0.tgz#c54685931a2031c1c92790f70d7de7349a5c0a06"
   integrity sha512-k6lLxxOxu+QcWqXkMgsxo2HA2KRyF3gpXEZzN+16LjeyHih8YzY6K7g3w+RPtHBKaV4ld8+7lS9yipaM4etriw==
