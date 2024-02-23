@@ -5,14 +5,15 @@ import {
 } from '@heroicons/react/24/outline'
 import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
+import { bigNumberToDate, dateToReadable } from '../../lib/utils/dates'
 import Balance from '../Balance'
 
-const dateToReadable = (date: any) => {
-  return date && date.toISOString().substring(0, 10)
-}
-
-const bigNumberToDate = (bigNumber: any) => {
-  return bigNumber && new Date(bigNumber.mul(1000).toNumber())
+type LockDataProps = {
+  hasLock: boolean
+  VMOONEYBalance: any
+  VMOONEYBalanceLoading: boolean
+  VMOONEYLock: any
+  VMOONEYLockLoading: boolean
 }
 
 export function LockData({

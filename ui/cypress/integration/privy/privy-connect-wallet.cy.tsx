@@ -6,7 +6,6 @@ import ChainContext from '../../../lib/thirdweb/chain-context'
 import { PrivyConnectWallet } from '../../../components/privy/PrivyConnectWallet'
 
 describe('<PrivyConnectWallet />', () => {
-  //first load privy provider
   it('Renders Privy Web3 Connect Wallet Button', () => {
     cy.mount(
       <ChainContext.Provider

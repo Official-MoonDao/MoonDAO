@@ -14,5 +14,13 @@ export default defineConfig({
       framework: 'next',
       bundler: 'webpack',
     },
+    // excludeSpecPattern: [
+    //   'cypress/integration/layout/main-card.cy.tsx',
+    //   'cypress/integration/lock/lock-data.cy.tsx',
+    //   'cypress/integration/lock/balance.cy.tsx',
+    //   'cypress/integration/privy/privy-connect-wallet.cy.tsx',
+    //   'cypress/integration/privy/privy-web3-button.cy.tsx',
+    //   'cypress/integration/shopify/product.cy.tsx',
+    // ],
   },
 })

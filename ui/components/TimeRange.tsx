@@ -1,18 +1,30 @@
 import React from 'react'
 
+type TimeRangeProps = {
+  id?: string
+  disabled: boolean
+  time: any
+  min: number
+  max: number
+  displaySteps: boolean
+  onChange: any
+}
+
 export default function TimeRange({
+  id,
   disabled,
   time,
   min,
   max,
   displaySteps,
   onChange,
-}: any) {
+}: TimeRangeProps) {
   const step = (min * 100) / max
 
   return (
     <>
       <input
+        id={id}
         type="range"
         min={min || 0}
         max={max || 0}
@@ -20,9 +32,7 @@ export default function TimeRange({
         onChange={(e) => {
           onChange(new Date(parseFloat(e.target.value)))
         }}
-        className={`range mt-6  ${
-          disabled ? 'btn-disabled' : ''
-        }`}
+        className={`range mt-6  ${disabled ? 'btn-disabled' : ''}`}
         step={step || 0}
       />
 
