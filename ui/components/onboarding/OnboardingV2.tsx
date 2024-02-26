@@ -3,7 +3,6 @@ import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import { useContext, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { CreateCitizen } from './CreateCitizen'
 import { CreateEntity } from './CreateEntity'
 
 type TierProps = {
@@ -63,11 +62,6 @@ export function OnboardingV2() {
     return (
       <div>
         <BackButton setSelectedTier={setSelectedTier} />
-        <CreateCitizen
-          address={address}
-          selectedWallet={selectedWallet}
-          wallets={wallets}
-        />
       </div>
     )
   }
@@ -87,6 +81,14 @@ export function OnboardingV2() {
 
   return (
     <div className="flex flex-col justify-center gap-12">
+      <div className="flex flex-col gap-4 items-start lg:px-3 xl:px-9 py-4 lg:pb-14 lg:mt-1 md:max-w-[1080px]">
+        <h1 className="text-3xl font-GoodTimes">Welcome to MoonDAO</h1>
+        <p>
+          Bein your journey with MoonDAO, participate in governance and decision
+          making by voting on project, proposals, and treasury spending.
+        </p>
+      </div>
+
       <Tier
         label="Citizen"
         description="Bring yourself onchain today!"

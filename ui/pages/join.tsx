@@ -29,10 +29,7 @@ export default function Join({ usdQuotes }: any) {
   return (
     <div className="animate-fadeIn">
       <Head title={t('joinTitle')} description={t('joinDesc')} />
-      {/* IPFS Test Form */}
-
       <OnboardingV2 />
-      {/* <OnboardingStageManager usdQuotes={usdQuotes} /> */}
     </div>
   )
 }

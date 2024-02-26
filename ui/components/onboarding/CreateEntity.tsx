@@ -83,24 +83,26 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
           ) : (
             <div className="w-[300px] h-[300px] bg-[#ffffff50]"></div>
           )}
-          <input
-            onChange={(e: any) => setUserImage(e.target.files[0])}
-            type="file"
-            accept="image/png, image/jpeg"
-          />
-          <Button
-            onClick={() => {
-              if (!userImage) return toast.error('No file selected')
+          <div className="flex flex-col w-[300px]">
+            <input
+              onChange={(e: any) => setUserImage(e.target.files[0])}
+              type="file"
+              accept="image/png, image/jpeg"
+            />
+            <Button
+              onClick={() => {
+                if (!userImage) return toast.error('No file selected')
 
-              const fileType = userImage.type
-              if (fileType !== 'image/png' && fileType !== 'image/jpeg') {
-                return toast.error('File type must be .png or .jpeg')
-              }
-              setStage(2)
-            }}
-          >
-            Submit Image
-          </Button>
+                const fileType = userImage.type
+                if (fileType !== 'image/png' && fileType !== 'image/jpeg') {
+                  return toast.error('File type must be .png or .jpeg')
+                }
+                setStage(2)
+              }}
+            >
+              Submit Image
+            </Button>
+          </div>
         </StageContainer>
       )}
       {/* Create Gnosis Safe */}
