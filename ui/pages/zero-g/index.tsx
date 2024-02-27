@@ -1,4 +1,5 @@
 import { useAddress } from '@thirdweb-dev/react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import Head from '../../components/layout/Head'
@@ -19,14 +20,15 @@ export default function ZeroG() {
 
         <div className="mt-3 lg:mt-4 font-Lato">
           <p className="mt-6 lg:mt-7 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg">
-            {`SOLD OUT Feb 23, 2024 at Kennedy Space Center, Florida. Fill out the form below to be contacted about future opportunities.`}
+            {`Fill out the form below to be contacted about future opportunities.`}
           </p>
-          <iframe
-            className="mt-6 aspect-video object-cover w-full"
-            src="https://www.youtube.com/embed/Ie7WIhz99vU?showinfo=0&controls=1&rel=0&mute=1&autoplay=1"
-            allowFullScreen
+          <Image
+            className="mt-2"
+            src="/zero-g-image.jpg"
+            width={800}
+            height={300}
+            alt=""
           />
-
           <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-center text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
             {`Welcome to MoonDAO's Astronaut Training Program. We've partnered with `}
             <Link

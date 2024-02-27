@@ -1,7 +1,12 @@
 import Link from 'next/link'
 import React from 'react'
 
-export default function GradientLink({ text, href, textSize }: any) {
+type GradientLinkProps = {
+  text: string
+  href: string
+}
+
+export default function GradientLink({ text, href }: GradientLinkProps) {
   if (href?.charAt(0) === '/') {
     return (
       <Link id="gradient-link" href={href}>
