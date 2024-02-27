@@ -1,33 +1,12 @@
 import { Widget } from '@typeform/embed-react'
-import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import {useState } from 'react'
 import toast from 'react-hot-toast'
 import { createSafe } from '../../lib/gnosis/createSafe'
-import { CopyIcon } from '../assets'
 import { Steps } from '../layout/Steps'
-
-function StageContainer({ children, title }: any) {
-  return (
-    <div className="animate-fadeIn w-[336px] sm:w-[400px] lg:w-full font-RobotoMono flex flex-col justify-center items-center">
-      <h1 className="font-GoodTimes text-3xl mb-8">{title}</h1>
-      {children}
-    </div>
-  )
-}
-
-function Button({ onClick, children, isDisabled }: any) {
-  return (
-    <button
-      className={'mt-8 w-[300px] border-2'}
-      onClick={onClick}
-      disabled={isDisabled}
-    >
-      {children}
-    </button>
-  )
-}
+import { StageButton } from './StageButton'
+import { StageContainer } from './StageContainer'
 
 export function CreateEntity({ address, wallets, selectedWallet }: any) {
   const [stage, setStage] = useState<number>(0)
@@ -65,7 +44,7 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
                 setEntityView(data.answers[4].boolean)
                 setStage(1)
               }}
-              height={600}
+              height={500}
             />
           </div>
         </StageContainer>
@@ -89,7 +68,7 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
               type="file"
               accept="image/png, image/jpeg"
             />
-            <Button
+            <StageButton
               onClick={() => {
                 if (!userImage) return toast.error('No file selected')
 
@@ -101,7 +80,7 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
               }}
             >
               Submit Image
-            </Button>
+            </StageButton>
           </div>
         </StageContainer>
       )}
@@ -134,7 +113,7 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
               <p>Safe Address: {safeAddress}</p>
             </div>
           )}
-          <Button
+          <StageButton
             onClick={async () => {
               const provider = await wallets[selectedWallet].getEthersProvider()
               const signer = provider?.getSigner()
@@ -153,13 +132,13 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
             }}
           >
             Create Safe
-          </Button>
+          </StageButton>
         </StageContainer>
       )}
       {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
       {stage === 3 && (
         <StageContainer title="Mint">
-          <Button
+          <StageButton
             onClick={async () => {
               //get signer
               const provider = await wallets[selectedWallet].getEthersProvider()
@@ -267,7 +246,7 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
             }}
           >
             Pin to IPFS and Mint Nft
-          </Button>
+          </StageButton>
         </StageContainer>
       )}
 
