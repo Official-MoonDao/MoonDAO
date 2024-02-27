@@ -13,8 +13,8 @@ import { initSDK } from '../lib/thirdweb/thirdweb'
 import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
 import Head from '../components/layout/Head'
 import { CreateEntity } from '../components/onboarding/CreateEntity'
-import { OnboardingStageManager } from '../components/onboarding/OnboardingStageManager'
 import { OnboardingV2 } from '../components/onboarding/OnboardingV2'
+import { OnboardingStageManager } from '../archive/onboarding/OnboardingStageManager'
 import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
 
 export default function Join({ usdQuotes }: any) {

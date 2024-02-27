@@ -15,7 +15,7 @@ type TierProps = {
 function Tier({ label, description, points, onClick }: TierProps) {
   return (
     <div
-      className="w-3/4 min-[1300px]:min-h-[300px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono hover:border-moon-orange border-opacity-100 bg-[#0d0a1b]"
+      className="w-3/4 group transition-all duration-150 text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono hover:border-moon-orange border-opacity-100 bg-[#0d0a1b]"
       onClick={onClick}
     >
       <div className="w-full h-full flex flex-col md:flex-row justify-between">
@@ -84,8 +84,9 @@ export function OnboardingV2() {
       <div className="flex flex-col gap-4 items-start lg:px-3 xl:px-9 py-4 lg:pb-14 lg:mt-1 md:max-w-[1080px]">
         <h1 className="text-3xl font-GoodTimes">Welcome to MoonDAO</h1>
         <p>
-          Bein your journey with MoonDAO, participate in governance and decision
-          making by voting on project, proposals, and treasury spending.
+          Begin your journey with MoonDAO, participate in governance and
+          decision making by voting on projects, proposals, and treasury
+          spending.
         </p>
       </div>
 
