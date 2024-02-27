@@ -10,6 +10,7 @@ export function ZeroGContact() {
   const [message, setMessage] = useState('')
 
   const [verified, setVerified] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
   function resetContactForm() {
     setName('')
@@ -20,6 +21,7 @@ export function ZeroGContact() {
   }
 
   async function submitContactForm() {
+    setIsLoading(true)
     if (!email.includes('@') || name.trim() === '')
       return toast.error('Please fill out all required fields.')
     if (!verified) return toast.error("Please verify you're not a robot.")
@@ -41,6 +43,7 @@ export function ZeroGContact() {
         console.error(e)
       }
     }
+    setIsLoading(false)
   }
 
   return (
@@ -96,8 +99,9 @@ export function ZeroGContact() {
         <button
           className={`mt-4 py-3 text-white bg-moon-orange font-RobotoMono w-full duration-[0.6s] ease-in-ease-out text-1xl hover:scale-105`}
           onClick={submitContactForm}
+          disabled={isLoading}
         >
-          Submit
+          {isLoading ? 'Sending...' : 'Submit'}
         </button>
 
         <Link
