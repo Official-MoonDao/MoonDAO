@@ -1,13 +1,34 @@
-import * as React from "react";
+import * as React from 'react'
 
 const TwitterIcon = () => (
-  <svg className="h-6 w-6 hover:scale-105" xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" viewBox="0 0 248 204">
-    <path
-    className="fill-black dark:fill-white"
-      fill="#1d9bf0"
-      d="M221.95 51.29c.15 2.17.15 4.34.15 6.53 0 66.73-50.8 143.69-143.69 143.69v-.04c-27.44.04-54.31-7.82-77.41-22.64 3.99.48 8 .72 12.02.73 22.74.02 44.83-7.61 62.72-21.66-21.61-.41-40.56-14.5-47.18-35.07a50.338 50.338 0 0 0 22.8-.87C27.8 117.2 10.85 96.5 10.85 72.46v-.64a50.18 50.18 0 0 0 22.92 6.32C11.58 63.31 4.74 33.79 18.14 10.71a143.333 143.333 0 0 0 104.08 52.76 50.532 50.532 0 0 1 14.61-48.25c20.34-19.12 52.33-18.14 71.45 2.19 11.31-2.23 22.15-6.38 32.07-12.26a50.69 50.69 0 0 1-22.2 27.93c10.01-1.18 19.79-3.86 29-7.95a102.594 102.594 0 0 1-25.2 26.16z"
-    />
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    x="0px"
+    y="0px"
+    width="30"
+    height="30"
+    viewBox="0,0,256,256"
+  >
+    <g
+      fill="#ffffff"
+      fillRule="nonzero"
+      stroke="none"
+      strokeWidth="1"
+      strokeLinecap="butt"
+      strokeLinejoin="miter"
+      strokeMiterlimit="10"
+      strokeDasharray=""
+      strokeDashoffset="0"
+      fontFamily="none"
+      fontWeight="none"
+      fontSize="none"
+      textAnchor="none"
+    >
+      <g transform="scale(5.12,5.12)">
+        <path d="M5.91992,6l14.66211,21.375l-14.35156,16.625h3.17969l12.57617,-14.57812l10,14.57813h12.01367l-15.31836,-22.33008l13.51758,-15.66992h-3.16992l-11.75391,13.61719l-9.3418,-13.61719zM9.7168,8h7.16406l23.32227,34h-7.16406z"></path>
+      </g>
+    </g>
   </svg>
-);
+)
 
-export default TwitterIcon;
+export default TwitterIcon
