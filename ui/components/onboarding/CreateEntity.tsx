@@ -1,14 +1,17 @@
 import { Widget } from '@typeform/embed-react'
 import { ethers } from 'ethers'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { createSafe } from '../../lib/gnosis/createSafe'
+import { CopyIcon } from '../assets'
 import { Steps } from '../layout/Steps'
 
-function StageContainer({ children }: any) {
+function StageContainer({ children, title }: any) {
   return (
-    <div className="w-[336px] sm:w-[400px] lg:w-full font-RobotoMono flex flex-col justify-center items-center">
+    <div className="animate-fadeIn w-[336px] sm:w-[400px] lg:w-full font-RobotoMono flex flex-col justify-center items-center">
+      <h1 className="font-GoodTimes text-3xl mb-8">{title}</h1>
       {children}
     </div>
   )
@@ -17,7 +20,7 @@ function StageContainer({ children }: any) {
 function Button({ onClick, children, isDisabled }: any) {
   return (
     <button
-      className={'w-[300px] border-2'}
+      className={'mt-8 w-[300px] border-2'}
       onClick={onClick}
       disabled={isDisabled}
     >
@@ -35,22 +38,21 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
   const [entityName, setEntityName] = useState<string>()
   const [entityTwitter, setEntityTwitter] = useState<string>()
   const [entityView, setEntityView] = useState<boolean>(false)
-  const [formResponseId, setFormResponseId] = useState<string>()
 
   return (
     <div className="flex flex-col">
       <Steps
         className="mb-8"
-        steps={['Form', 'Upload', 'Create Safe', 'Pin to IPFS']}
+        steps={['Info', 'Upload', 'Create Entity', 'Mint']}
         currStep={stage}
       />
 
       {/* Typeform form */}
       {stage === 0 && (
-        <StageContainer>
+        <StageContainer title="Info">
           <div className="w-full md:w-3/4">
             <Widget
-              id="iE1aaGrT"
+              id={process.env.NEXT_PUBLIC_TYPEFORM_ENTITY_FORM_ID as string}
               onSubmit={async (formResponse: any) => {
                 //get response from form
                 const { formId, responseId } = formResponse
@@ -58,21 +60,19 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
                   `/api/typeform/response?formId=${formId}&responseId=${responseId}`
                 )
                 const data = await responseRes.json()
-
-                setFormResponseId(responseId)
-                setEntityName(data.answers[3].text)
-                setEntityTwitter(data.answers[4].text)
-                setEntityView(data.answers[5].boolean)
+                setEntityName(data.answers[2].text)
+                setEntityTwitter(data.answers[3].text)
+                setEntityView(data.answers[4].boolean)
                 setStage(1)
               }}
-              height={700}
+              height={600}
             />
           </div>
         </StageContainer>
       )}
       {/* Upload & Create Image */}
       {stage === 1 && (
-        <StageContainer>
+        <StageContainer title="Upload">
           {userImage ? (
             <Image
               src={URL.createObjectURL(userImage)}
@@ -107,9 +107,34 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
       )}
       {/* Create Gnosis Safe */}
       {stage === 2 && (
-        <StageContainer>
+        <StageContainer title={'Create Entity'}>
+          {safeAddress && (
+            <div className="flex flex-col">
+              <p>
+                <button
+                  className="text-moon-gold"
+                  onClick={() => {
+                    navigator.clipboard.writeText(safeAddress)
+                    toast.success('Copied to clipboard')
+                  }}
+                >
+                  Copy
+                </button>
+                {` your safe address and import it `}
+                <Link
+                  className="text-moon-gold"
+                  href="https://app.safe.global/welcome/accounts"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  here
+                </Link>
+              </p>
+
+              <p>Safe Address: {safeAddress}</p>
+            </div>
+          )}
           <Button
-            className="border-2"
             onClick={async () => {
               const provider = await wallets[selectedWallet].getEthersProvider()
               const signer = provider?.getSigner()
@@ -133,7 +158,7 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
       )}
       {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
       {stage === 3 && (
-        <StageContainer>
+        <StageContainer title="Mint">
           <Button
             onClick={async () => {
               //get signer
@@ -142,6 +167,8 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
               //sign message
               const message = 'Please sign to pin this entity to IPFS'
               const signature = await signer?.signMessage(message)
+
+              if (!signature) return toast.error('Error signing message')
 
               //get pinata jwt
               const jwtRes = await fetch('/api/ipfs/upload', {
@@ -206,7 +233,6 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
                     value: entityView ? 'public' : 'private',
                   },
                 ],
-                formResponseId,
               }
 
               const metadataFormData: any = new FormData()
