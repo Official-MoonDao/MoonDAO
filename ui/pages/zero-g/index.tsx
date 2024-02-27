@@ -1,4 +1,5 @@
 import { useAddress } from '@thirdweb-dev/react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import Head from '../../components/layout/Head'
@@ -21,7 +22,13 @@ export default function ZeroG() {
           <p className="mt-6 lg:mt-7 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg">
             {`Fill out the form below to be contacted about future opportunities.`}
           </p>
-
+          <Image
+            className="mt-2"
+            src="/zero-g-image.jpg"
+            width={800}
+            height={300}
+            alt=""
+          />
           <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-center text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
             {`Welcome to MoonDAO's Astronaut Training Program. We've partnered with `}
             <Link
