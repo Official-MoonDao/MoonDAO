@@ -32,10 +32,13 @@ function Button({ children, onClick }: any) {
 export default function EntityDetailPage({ tokenId }: any) {
   // const {contract: entityContract} = useContract(ENTITY_CONTRACT_ADDRESS);
   // const {nft} = useNFT(entityContract, tokenId);
+  // const {multisigAddress, members, updateEntityMembers} = useEntityMetadata(entityContract, nft);
+
   const newestProposals = useNewestProposals(3)
 
   return (
     <div className="animate-fadeIn flex flex-col gap-6">
+      {/* Header and socials */}
       <Card>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="flex items-center gap-8">
@@ -73,6 +76,7 @@ export default function EntityDetailPage({ tokenId }: any) {
         </div>
       </Card>
 
+      {/* Mooney and Voting Power */}
       <div className="flex flex-col md:flex-row gap-6">
         <Card className="w-full md:w-1/2 flex flex-col gap-4">
           <div className="flex justify-between">
@@ -114,6 +118,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
+        {/* Proposals */}
         <Card className="w-full md:w-2/3">
           <p>MoonDAO Proposals</p>
           <div className="mt-2 flex flex-col gap-4">
@@ -150,11 +155,14 @@ export default function EntityDetailPage({ tokenId }: any) {
             <Button>Receive Funding</Button>
           </div>
         </Card>
+        {/* Members */}
         <Card className="w-full md:w-1/3">
           <p>Members</p>
+          {}
           <Button>Add members</Button>
         </Card>
       </div>
+      {/* General Actions */}
       <div className="flex flex-col gap-4">
         <p className="p-4">General Actions</p>
         <div className="flex flex-col md:flex-row gap-8">
