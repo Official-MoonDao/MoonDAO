@@ -1,9 +1,10 @@
 import { Widget } from '@typeform/embed-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import {useState } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { createSafe } from '../../lib/gnosis/createSafe'
+import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import { Steps } from '../layout/Steps'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
@@ -161,30 +162,11 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
               const JWT = await jwtRes.text()
 
               //pin image to IPFS
-              const imageFormData = new FormData()
-
-              imageFormData.append('file', userImage)
-              imageFormData.append(
-                'pinataMetadata',
-                JSON.stringify({ name: safeAddress + ' Image' })
+              const newImageIpfsHash = await pinImageToIPFS(
+                JWT,
+                userImage,
+                safeAddress + ' Image'
               )
-              imageFormData.append(
-                'pinataOptions',
-                JSON.stringify({ cidVersion: 0 })
-              )
-
-              const imageRes = await fetch(
-                'https://api.pinata.cloud/pinning/pinFileToIPFS',
-                {
-                  method: 'POST',
-                  body: imageFormData,
-                  headers: {
-                    Authorization: `Bearer ${JWT}`,
-                  },
-                }
-              )
-
-              const { IpfsHash: newImageIpfsHash } = await imageRes.json()
 
               if (!newImageIpfsHash) {
                 return toast.error('Error pinning image to IPFS')
@@ -214,34 +196,14 @@ export function CreateEntity({ address, wallets, selectedWallet }: any) {
                 ],
               }
 
-              const metadataFormData: any = new FormData()
-              metadataFormData.append(
-                'pinataMetadata',
-                JSON.stringify({ name: safeAddress + ' Metadata.json' })
-              )
-              metadataFormData.append(
-                'pinataOptions',
-                JSON.stringify({ cidVersion: 0 })
-              )
-              metadataFormData.append(
-                'file',
-                new Blob([JSON.stringify(metadata)], {
-                  type: 'application/json',
-                })
+              const newMetadataIpfsHash = await pinMetadataToIPFS(
+                JWT,
+                metadata,
+                safeAddress + ' Metadata'
               )
 
-              const metadataRes = await fetch(
-                'https://api.pinata.cloud/pinning/pinFileToIPFS',
-                {
-                  method: 'POST',
-                  body: metadataFormData,
-                  headers: {
-                    Authorization: `Bearer ${JWT}`,
-                  },
-                }
-              )
-
-              const { IpfsHash: newMetadataIpfsHash } = await metadataRes.json()
+              if (!newMetadataIpfsHash)
+                return toast.error('Error pinning metadata to IPFS')
               //mint NFT to safe
             }}
           >
