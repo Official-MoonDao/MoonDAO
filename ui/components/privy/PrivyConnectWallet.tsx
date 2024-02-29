@@ -78,6 +78,7 @@ export function PrivyConnectWallet() {
       setWalletChainId(+wallets?.[0]?.chainId.split(':')[1])
       getNativeBalance()
     }
+    console.log(wallets)
   }, [wallets, selectedWallet])
 
   useEffect(() => {
@@ -216,7 +217,6 @@ export function PrivyConnectWallet() {
                       >
                         {selectedWallet === i ? '■' : '□'}
                       </button>
-                      {/*Wallet address and copy button*/}
                       <p>
                         <span className="uppercase font-bold">
                           {wallet?.walletClientType.slice(0, 1).toUpperCase() +
@@ -228,6 +228,15 @@ export function PrivyConnectWallet() {
                           '...' +
                           wallet?.address.slice(-4)}
                       </p>
+                      {/*Wallet address and copy button*/}
+                      {wallet?.walletClientType === 'safe' && (
+                        <button
+                          className="ml-12"
+                          onClick={() => wallet.disconnect()}
+                        >
+                          X
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
