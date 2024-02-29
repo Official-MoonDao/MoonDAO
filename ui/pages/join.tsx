@@ -1,26 +1,14 @@
-import { Polygon, Sepolia } from '@thirdweb-dev/chains'
-import { Token } from '@uniswap/sdk-core'
-import { create } from 'cypress/types/lodash'
-import { ethers } from 'ethers'
-import FormData from 'form-data'
+import { Sepolia } from '@thirdweb-dev/chains'
 import useTranslation from 'next-translate/useTranslation'
 import { useContext, useEffect, useRef, useState } from 'react'
-import toast from 'react-hot-toast'
-import { createSafe } from '../lib/gnosis/createSafe'
-import PrivyWalletContext from '../lib/privy/privy-wallet-context'
 import ChainContext from '../lib/thirdweb/chain-context'
-import { initSDK } from '../lib/thirdweb/thirdweb'
-import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
 import Head from '../components/layout/Head'
-import { CreateEntity } from '../components/onboarding/CreateEntity'
 import { OnboardingV2 } from '../components/onboarding/OnboardingV2'
-import { OnboardingStageManager } from '../archive/onboarding/OnboardingStageManager'
-import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
 
 export default function Join({ usdQuotes }: any) {
   const { t } = useTranslation('common')
 
-  const { setSelectedChain } = useContext(ChainContext)
+  const { selectedChain, setSelectedChain } = useContext(ChainContext)
 
   useEffect(() => {
     setSelectedChain(Sepolia)
@@ -29,7 +17,7 @@ export default function Join({ usdQuotes }: any) {
   return (
     <div className="animate-fadeIn">
       <Head title={t('joinTitle')} description={t('joinDesc')} />
-      <OnboardingV2 />
+      <OnboardingV2 selectedChain={selectedChain} />
     </div>
   )
 }
