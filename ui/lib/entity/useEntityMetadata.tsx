@@ -6,41 +6,53 @@ import toast from 'react-hot-toast'
 import { pinMetadataToIPFS } from '../ipfs/pin'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 
-export function useEntityMetadata(entityContract: any, nft: NFT) {
+function getAttribute(attributes: any[], traitType: string) {
+  return Object.values(attributes).find(
+    (attr: any) => attr.trait_type === traitType
+  )
+}
+
+export function useEntityMetadata(entityContract: any, nft: any) {
   const address = useAddress()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
   const [members, setMembers] = useState<string[]>()
   const [multisigAddress, setMultisigAddress] = useState<any>()
+  const [socials, setSocials] = useState<any>()
 
   function getMultisigAddress() {
-    if (!nft.metadata.attributes) return
-    const entityMultisigAddress = Object.entries(nft.metadata.attributes).find(
-      (attr: any) => {
-        if (attr.trait_type === 'Multisig') {
-          return attr.value
-        }
-      }
+    const entityMultisigAddress = getAttribute(
+      nft.metadata.attributes,
+      'multisig'
     )
+    setMultisigAddress(entityMultisigAddress.value)
+  }
 
-    setMultisigAddress(entityMultisigAddress)
+  function getEntitySocials() {
+    const entityTwitter = getAttribute(nft.metadata.attributes, 'twitter')
+    const entityDiscord = getAttribute(nft.metadata.attributes, 'discord')
+    const entityTelegram = getAttribute(nft.metadata.attributes, 'telegram')
+    const entityWebsite = getAttribute(nft.metadata.attributes, 'website')
+    setSocials({
+      twitter: entityTwitter?.value,
+      discord: entityDiscord?.value,
+      telegram: entityTelegram?.value,
+      website: entityWebsite?.value,
+    })
   }
 
   function getEntityMembers() {
-    if (!nft.metadata.attributes) return
-    const entityMembers = Object.entries(nft.metadata.attributes).map(
-      (attr: any) => {
-        if (attr.trait_type === 'Member') {
-          return attr.value
-        }
-      }
+    if (!nft?.metadata?.attributes) return
+    const entityMembers: any = Object.values(nft.metadata.attributes).find(
+      (attr: any) => attr.trait_type === 'members'
     )
+    setMembers(entityMembers.value.split(','))
   }
 
   async function updateEntityMembers(newMembers: string[]) {
     if (address != multisigAddress)
-      return toast.error('Connect the entity multisig to update members')
+      return toast.error(`Connect the entity's safe to update members`)
 
     const provider = await wallets[selectedWallet].getEthersProvider()
 
@@ -90,9 +102,11 @@ export function useEntityMetadata(entityContract: any, nft: NFT) {
   }
 
   useEffect(() => {
+    if (!nft?.metadata?.attributes) return
     getMultisigAddress()
+    getEntitySocials()
     getEntityMembers()
   }, [nft])
 
-  return { members, multisigAddress, updateEntityMembers }
+  return { members, multisigAddress, socials, updateEntityMembers }
 }
