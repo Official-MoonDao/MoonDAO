@@ -15,7 +15,7 @@ type TierProps = {
 function Tier({ label, description, points, onClick }: TierProps) {
   return (
     <div
-      className="w-3/4 group transition-all duration-150 text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono hover:border-moon-orange border-opacity-100 bg-[#0d0a1b]"
+      className="w-full md:w-1/2 group transition-all duration-150 text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0d0a1b]"
       onClick={onClick}
     >
       <div className="w-full h-full flex flex-col md:flex-row justify-between">
@@ -26,13 +26,9 @@ function Tier({ label, description, points, onClick }: TierProps) {
           alt=""
         />
         <div className="md:w-3/4">
-          <h1
-            className={`font-abel mt-[22px] text-3xl font-bold transition-all duration-150`}
-          >
-            {label}
-          </h1>
           <p>{description}</p>
-          <div className="w-full border-[1px] bg-white md:w-3/4" />
+          <h1 className={`text-3xl font-bold`}>{label}</h1>
+          <div className="w-full border-[1px] bg-[#ffffff25] md:w-1/2" />
           <div>
             {points.map((p: any, i: number) => (
               <p key={`${label}-tier-point-${i}`}>{'✓' + p}</p>
@@ -47,12 +43,12 @@ function Tier({ label, description, points, onClick }: TierProps) {
 function BackButton({ setSelectedTier }: any) {
   return (
     <button onClick={() => setSelectedTier(null)}>
-      <Image src={'/backIcon.png'} width={50} height={50} alt="" />
+      <Image src={'/backIcon.png'} width={30} height={30} alt="" />
     </button>
   )
 }
 
-export function OnboardingV2() {
+export function OnboardingV2({ selectedChain }: any) {
   const address = useAddress()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -72,6 +68,7 @@ export function OnboardingV2() {
         <BackButton setSelectedTier={setSelectedTier} />
         <CreateEntity
           address={address}
+          selectedChain={selectedChain}
           selectedWallet={selectedWallet}
           wallets={wallets}
         />
