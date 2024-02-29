@@ -51,7 +51,7 @@ export async function pinMetadataToIPFS(
       })
     )
     const metadataRes = await fetch(
-      'https://api.pinata.cloud/pinning/pinJSONToIPFS',
+      'https://api.pinata.cloud/pinning/pinFileToIPFS',
       {
         method: 'POST',
         body: metadataFormData,
@@ -60,6 +60,8 @@ export async function pinMetadataToIPFS(
         },
       }
     )
+
+    console.log(metadataRes)
 
     const { IpfsHash } = await metadataRes.json()
 
