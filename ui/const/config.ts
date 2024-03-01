@@ -86,3 +86,8 @@ export const TICKET_TO_SPACE_ADDRESS =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
     : '0x5283b6035cfa7bb884b7f6a146fa6824ec9773c7' //mumbai
+
+export const ENTITY_ADDRESSES: Index = {
+  ethereum: '',
+  sepolia: '0xdd64537bb968a81c3e8d3c91e464c2b40ce9a4b4',
+}

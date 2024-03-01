@@ -7,6 +7,7 @@ module.exports = nextTranslate({
       'cryptologos.cc',
       'gateway.ipfscdn.io',
       'ipfs.cf-ipfs.com',
+      'ipfscdn.io',
     ],
   },
   webpack: (config, { isServer }) => {
