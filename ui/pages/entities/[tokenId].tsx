@@ -1,8 +1,11 @@
 import {
   ArrowUpRightIcon,
+  ChatBubbleLeftIcon,
   GlobeAltIcon,
+  PencilIcon,
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
+import { useWallets } from '@privy-io/react-auth'
 import { Sepolia } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
@@ -11,11 +14,7 @@ import {
   useContract,
   useNFT,
 } from '@thirdweb-dev/react'
-import {
-  ENTITY_ADDRESSES,
-  MOONEY_ADDRESSES,
-  VMOONEY_ADDRESSES,
-} from 'const/config'
+import { ENTITY_ADDRESSES, HATS_ADDRESS, MOONEY_ADDRESSES } from 'const/config'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -24,16 +23,18 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useEntityMetadata } from '@/lib/entity/useEntityMetadata'
 import { useValidPass } from '@/lib/entity/useValidPass'
+import { useHatTree } from '@/lib/hats/useHatTree'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { useNewestProposals } from '@/lib/snapshot/useNewestProposals'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
-import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
-import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
+import { CopyIcon, TwitterIcon } from '@/components/assets'
 import { CoordinapeLogo } from '@/components/assets/CoordinapeLogo'
 import { JuiceboxLogo } from '@/components/assets/JuiceboxLogo'
-import TelegramIcon from '@/components/assets/TelegramIcon'
 import { EntityMembersModal } from '@/components/entity/EntityMembersModal'
+import { HatWearers } from '@/components/hats/HatWearers'
 
 function Card({ children, className = '', onClick }: any) {
   if (onClick)
@@ -64,6 +65,10 @@ export default function EntityDetailPage({ tokenId }: any) {
   const router = useRouter()
   const address = useAddress()
 
+  //privy
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const { wallets } = useWallets()
+
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
 
   const [entityMembersModalEnabled, setEntityMembersModalEnabled] =
@@ -75,14 +80,8 @@ export default function EntityDetailPage({ tokenId }: any) {
   )
   const { data: nft } = useNFT(entityContract, tokenId)
 
-  const { multisigAddress, members, socials, updateEntityMembers } =
+  const { multisigAddress, members, socials, isPublic, hatTreeId } =
     useEntityMetadata(entityContract, nft)
-
-  const { data: expiresAt } = useHandleRead(entityContract, 'expiresAt', [
-    nft?.metadata?.id || '',
-  ])
-
-  const validPass = useValidPass(expiresAt)
 
   //Entity Balances
   const { contract: mooneyContract } = useContract(
@@ -92,33 +91,46 @@ export default function EntityDetailPage({ tokenId }: any) {
     mooneyContract,
     multisigAddress
   )
+  const [nativeBalance, setNativeBalance] = useState<number>(0)
 
-  const { contract: vMooneyContract } = useContract(
-    VMOONEY_ADDRESSES[selectedChain.slug]
-  )
-  const { data: VMOONEYBalance } = useVMOONEYBalance(
-    vMooneyContract,
-    multisigAddress
-  )
+  async function getNativeBalance() {
+    const sdk = initSDK(selectedChain)
+    const provider = sdk.getProvider()
+    const balance: any = await provider.getBalance(multisigAddress)
+    setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
+  }
 
+  //Subscription Data
+  const { data: expiresAt } = useHandleRead(entityContract, 'expiresAt', [
+    nft?.metadata?.id || '',
+  ])
+  const validPass = useValidPass(expiresAt)
+
+  //Proposals
   const newestProposals = useNewestProposals(3)
+
+  //Hats
+  const hats = useHatTree(selectedChain, hatTreeId)
+  const { contract: hatsContract } = useContract(HATS_ADDRESS)
+
+  // get native balance for multisig
+  useEffect(() => {
+    if (wallets && multisigAddress) {
+      getNativeBalance()
+    }
+  }, [wallets, multisigAddress])
 
   useEffect(() => {
     setSelectedChain(Sepolia)
   }, [])
 
-  useEffect(() => {
-    console.log(entityContract)
-    console.log(nft)
-  }, [entityContract, nft])
-
   return (
-    <div className="animate-fadeIn flex flex-col gap-6">
+    <div className="animate-fadeIn flex flex-col gap-6 max-w-[1080px]">
       {/* Header and socials */}
       <Card>
         <div className="flex flex-col lg:flex-row md:items-center justify-between gap-8">
           <div className="flex items-center gap-8">
-            {nft?.metadata.image ? (
+            {nft?.metadata.image && isPublic ? (
               <ThirdwebNftMedia
                 metadata={nft.metadata}
                 height={'200px'}
@@ -128,16 +140,16 @@ export default function EntityDetailPage({ tokenId }: any) {
               <div className="w-[200px] h-[200px] bg-[#ffffff25] animate-pulse" />
             )}
             <div>
-              {nft ? (
+              {nft && isPublic ? (
                 <h1 className="text-white text-3xl">{nft.metadata.name}</h1>
               ) : (
                 <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
               )}
-              {multisigAddress ? (
+              {multisigAddress && isPublic ? (
                 <button
                   className="mt-4 flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
                   onClick={() => {
-                    navigator.clipboard.writeText('multisigAddress')
+                    navigator.clipboard.writeText(multisigAddress)
                     toast.success('Address copied to clipboard')
                   }}
                 >
@@ -150,8 +162,11 @@ export default function EntityDetailPage({ tokenId }: any) {
                 <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
               )}
             </div>
+            <button>
+              <PencilIcon width={35} height={35} />
+            </button>
           </div>
-          {validPass && (
+          {validPass && isPublic && (
             <div className="flex flex-col items-center">
               <p className="py-2 px-4 border-2 rounded-full border-moon-green text-moon-green max-w-[175px]">
                 ✓ 12 Month Pass
@@ -164,33 +179,28 @@ export default function EntityDetailPage({ tokenId }: any) {
           )}
         </div>
 
-        {nft?.metadata.description ? (
+        {nft?.metadata.description && isPublic ? (
           <p className="mt-4">{nft?.metadata.description || ''}</p>
         ) : (
           <div className="mt-4 w-full h-[30px] bg-[#ffffff25] animate-pulse" />
         )}
         {/* Socials */}
         <div className="mt-4 flex items-center gap-12">
-          {socials ? (
+          {socials && isPublic ? (
             <>
               {socials.twitter && (
                 <Link href={socials.twitter} target="_blank" passHref>
                   <TwitterIcon />
                 </Link>
               )}
-              {socials.discord && (
-                <Link href={socials.discord} target="_blank" passHref>
-                  <DiscordIcon />
+              {socials.communications && (
+                <Link href={socials.communications} target="_blank" passHref>
+                  <ChatBubbleLeftIcon />
                 </Link>
               )}
               {socials.website && (
                 <Link href={socials.website} target="_blank" passHref>
                   <GlobeAltIcon height={30} width={30} />
-                </Link>
-              )}
-              {socials.telegram && (
-                <Link href={socials.telegram} target="_blank" passHref>
-                  <TelegramIcon />
                 </Link>
               )}
             </>
@@ -209,7 +219,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       <div className="flex flex-col lg:flex-row gap-6">
         <Card className="w-full lg:w-1/2 flex flex-col gap-4">
           <div className="flex justify-between">
-            <p>{`Total asset value`}</p>
+            <p>{`Total ETH`}</p>
             <p className="p-2 bg-[#ffffff25] flex gap-2">
               <Image
                 src="/icons/networks/ethereum.svg"
@@ -220,7 +230,7 @@ export default function EntityDetailPage({ tokenId }: any) {
               {`Ethereum`}
             </p>
           </div>
-          <p className="text-3xl">{`111,111 USD`}</p>
+          <p className="text-3xl">{isPublic ? nativeBalance : 0}</p>
           <Button
             onClick={() =>
               window.open(
@@ -235,9 +245,11 @@ export default function EntityDetailPage({ tokenId }: any) {
         <Card className="w-full lg:w-1/2 flex flex-col lg:flex-row">
           <div className="w-3/4">
             <p>{`Total $MOONEY`}</p>
-            <p className="text-3xl">{MOONEYBalance?.toString() || 0}</p>
-            <p className="mt-8">{`Total Voting Power`}</p>
-            <p className="text-3xl">{VMOONEYBalance?.toString() || 0}</p>
+            <p className="mt-8 text-3xl">
+              {MOONEYBalance && isPublic
+                ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
+                : 0}
+            </p>
           </div>
           <div className="mt-2 flex flex-col justify-evenly gap-2">
             <Button
@@ -297,44 +309,31 @@ export default function EntityDetailPage({ tokenId }: any) {
           </div>
         </Card>
         {/* Members */}
-        {entityMembersModalEnabled && (
-          <EntityMembersModal
-            setEnabled={setEntityMembersModalEnabled}
-            updateEntityMembers={() => {}}
-          />
-        )}
         <Card className="w-full lg:w-1/3">
-          <p>Members</p>
-          <div className="py-2 pr-4 flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
-            {members
-              ? members.map((member: string) => (
-                  <p
-                    key={member}
-                    className="py-4 px-2 w-full h-[50px] bg-[#ffffff25]"
-                  >
-                    {member.slice(0, 6) + '...' + member.slice(-4)}
-                  </p>
-                ))
-              : Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="py-4 w-full h-[50px] bg-[#ffffff25] animate-pulse"
-                  />
-                ))}
-          </div>
+          <p>Hats</p>
+          <div className="pb-8 h-full flex flex-col justify-between">
+            <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-y-scroll">
+              {hats?.map((hat: any, i: number) => (
+                <HatWearers
+                  key={'hat-' + i}
+                  hatId={hat.id}
+                  hatsContract={hatsContract}
+                  wearers={hat.wearers}
+                />
+              ))}
+            </div>
 
-          <Button
-            className="mt-2"
-            onClick={() => {
-              if (address != multisigAddress)
-                return toast.error(
-                  `Connect the entity's safe to update members`
+            <Button
+              className="mt-2"
+              onClick={() => {
+                window.open(
+                  `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
                 )
-              setEntityMembersModalEnabled(true)
-            }}
-          >
-            Add members
-          </Button>
+              }}
+            >
+              Manage members
+            </Button>
+          </div>
         </Card>
       </div>
       {/* General Actions */}

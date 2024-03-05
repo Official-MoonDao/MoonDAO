@@ -15,12 +15,14 @@
     "cy:run-ct": "cypress run --component"
   },
   "dependencies": {
+    "@hatsprotocol/sdk-v1-subgraph": "^0.4.3",
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
-    "@privy-io/react-auth": "^1.56.1",
+    "@privy-io/react-auth": "^1.57.2",
     "@privy-io/wagmi-connector": "^0.1.12",
     "@react-three/drei": "^9.86.0",
     "@react-three/fiber": "^8.14.3",
+    "@safe-global/api-kit": "1.0.1",
     "@safe-global/protocol-kit": "0.1.1",
     "@shopify/shopify-api": "^6.2.0",
     "@thirdweb-dev/chains": "^0.1.53",

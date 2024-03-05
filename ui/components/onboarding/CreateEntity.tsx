@@ -1,14 +1,15 @@
-import { PlusCircleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { ENTITY_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRef, useState } from 'react'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { createSafe } from '../../lib/gnosis/createSafe'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
+import HatsABI from '../../const/abis/Hats.json'
 import { Steps } from '../layout/Steps'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
@@ -17,10 +18,9 @@ type EntityData = {
   name: string
   description: string
   twitter: string
-  discord: string
-  telegram: string
+  communications: string
   website: string
-  view: boolean
+  view: string
 }
 
 export function CreateEntity({
@@ -28,24 +28,27 @@ export function CreateEntity({
   wallets,
   selectedWallet,
   selectedChain,
+  hatsContract,
 }: any) {
+  const router = useRouter()
+
   const [stage, setStage] = useState<number>(0)
 
+  const [isLoading, setIsLoading] = useState(false)
   const [entityImage, setEntityImage] = useState<any>()
   const [multisigAddress, setMultisigAddress] = useState<string>()
+  const [hatsTreeId, setHatsTreeId] = useState<number>()
+
+  const [pinataJWT, setPinataJWT] = useState<string>()
 
   const [entityData, setEntityData] = useState<EntityData>({
     name: '',
     description: '',
     twitter: '',
-    discord: '',
-    telegram: '',
+    communications: '',
     website: '',
-    view: false,
+    view: 'private',
   })
-
-  const [entityMembers, setEntityMembers] = useState<string[]>([])
-  const currMemberRef = useRef<any>()
 
   const { contract: entityContract } = useContract(
     ENTITY_ADDRESSES[selectedChain.slug]
@@ -55,7 +58,7 @@ export function CreateEntity({
     <div className="flex flex-col">
       <Steps
         className="mb-8"
-        steps={['Info', 'Design', 'Create Entity', 'Add Members', 'Mint']}
+        steps={['Info', 'Design', 'Create Entity', 'Hats', 'Mint']}
         currStep={stage}
       />
 
@@ -79,31 +82,32 @@ export function CreateEntity({
                 setEntityData({
                   name: data.answers[0].text,
                   description: data.answers[1].text,
-                  twitter: '',
-                  discord: '',
-                  telegram: '',
-                  website: '',
-                  view: data.answers[3].boolean,
+                  website: data.answers[2].url,
+                  twitter: data.answers[3].url,
+                  communications: data.answers[4].url,
+                  view:
+                    data.answers[5].choice.label === 'Yes'
+                      ? 'public'
+                      : 'private',
                 })
                 setStage(1)
               }}
               height={500}
             />
-            {/* <button
+            <button
               className="p-2 border-2"
               onClick={() => {
                 setEntityData({
-                  name: 'Test Org',
+                  name: 'Test Entity',
                   description: 'Test Org description for testing',
                   twitter: 'https://twitter.com/OfficialMoonDAO',
-                  discord:'',
-                  telegram: '',
+                  communications: 'https://discord.com',
                   website: 'https://google.com',
-                  view: true,
+                  view: 'public',
                 })
                 setStage(1)
               }}
-            >{`Complete form (testing)`}</button> */}
+            >{`Complete form (testing)`}</button>
           </div>
         </StageContainer>
       )}
@@ -178,7 +182,9 @@ export function CreateEntity({
             </div>
           )}
           <StageButton
+            isLoading={isLoading}
             onClick={async () => {
+              setIsLoading(true)
               const provider = await wallets[selectedWallet].getEthersProvider()
               const signer = provider?.getSigner()
 
@@ -189,12 +195,13 @@ export function CreateEntity({
                 setMultisigAddress(safeAddress)
 
                 if (safeAddress) {
-                  setEntityMembers([address])
                   setStage(3)
                 }
               } catch (err) {
                 console.error(err)
               }
+
+              setIsLoading(false)
             }}
           >
             Create Safe
@@ -204,79 +211,20 @@ export function CreateEntity({
       {/* Add Entity members */}
       {stage === 3 && (
         <StageContainer
-          title="Add Members"
-          description="Add members to your entity."
+          title="Hats"
+          description="Create a hat tree for your entity."
         >
-          <div className="flex flex-col gap-4">
-            <div className="w-full flex gap-4">
-              <input
-                className="px-2 text-black w-5/6 bg-[#00000025] dark:bg-[#ffffff25]"
-                type="text"
-                ref={currMemberRef}
-              />
-              <button
-                className="flex items-center text-moon-orange"
-                onClick={() => {
-                  const currMember = currMemberRef.current.value
-                  if (currMember.length != 42 || !currMember.startsWith('0x'))
-                    return toast.error('Invalid address')
-                  if (entityMembers.includes(currMember))
-                    return toast.error('Member already added')
-                  setEntityMembers((prev) => [...prev, currMember])
-                }}
-              >
-                <PlusCircleIcon className="h-12 w-12" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-2">
-              {entityMembers.map((member) => (
-                <>
-                  <div
-                    key={member}
-                    className="flex items-center justify-between text-[80%]"
-                  >
-                    <p>{member}</p>
-                    <button
-                      className="hover:scale-110 duration-300"
-                      onClick={() => {
-                        if (entityMembers.length === 1)
-                          return toast.error(
-                            'Entities must have at least one member'
-                          )
-                        setEntityMembers((prev) =>
-                          prev.filter((m) => m != member)
-                        )
-                      }}
-                    >
-                      <XMarkIcon className="h-6 w-6" />
-                    </button>
-                  </div>
-                  <hr className="border-1"></hr>
-                </>
-              ))}
-            </div>
-          </div>
           <StageButton
-            onClick={() => {
-              if (entityMembers.length === 0)
-                return toast.error('Entities must have at least one member')
-              setStage(4)
-            }}
-          >
-            Submit Members
-          </StageButton>
-        </StageContainer>
-      )}
-      {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
-      {stage === 4 && (
-        <StageContainer title="Mint" description="Mint your Entity NFT!">
-          <StageButton
+            isLoading={isLoading}
             onClick={async () => {
+              setIsLoading(true)
               //get signer
               const provider = await wallets[selectedWallet].getEthersProvider()
               const signer = provider?.getSigner()
               //sign message
-              const message = 'Please sign to pin this entity to IPFS'
+              const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
+              const nonceData = await nonceRes.json()
+              const message = `Please sign to pin this entity to IPFS #${nonceData.nonce}`
               const signature = await signer?.signMessage(message)
 
               if (!signature) return toast.error('Error signing message')
@@ -292,11 +240,60 @@ export function CreateEntity({
 
               const JWT = await jwtRes.text()
 
-              console.log(JWT)
+              setPinataJWT(JWT)
 
+              const hatMetadata = {
+                type: '1.0',
+                data: {
+                  name: `${entityData.name} Admin`,
+                  description: entityData.description,
+                },
+              }
+
+              const hatMetadataIpfsHash = await pinMetadataToIPFS(
+                JWT,
+                hatMetadata,
+                entityData.name + ' Hat Metadata'
+              )
+
+              const tx = await hatsContract.call('mintTopHat', [
+                address,
+                'ipfs://' + hatMetadataIpfsHash,
+                '',
+              ])
+
+              const hatsInterface = new ethers.utils.Interface(HatsABI)
+
+              const decoded = hatsInterface.decodeEventLog(
+                'HatCreated',
+                tx.receipt.logs[0].data
+              )
+
+              const treeId = await hatsContract.call('getTopHatDomain', [
+                decoded.id.toString(),
+              ])
+
+              setHatsTreeId(treeId)
+
+              if (treeId) setStage(4)
+
+              setIsLoading(false)
+            }}
+          >
+            Create Hat Tree
+          </StageButton>
+        </StageContainer>
+      )}
+      {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
+      {stage === 4 && (
+        <StageContainer title="Mint" description="Mint your Entity NFT!">
+          <StageButton
+            isLoading={isLoading}
+            onClick={async () => {
+              setIsLoading(true)
               //pin image to IPFS
               const newImageIpfsHash = await pinImageToIPFS(
-                JWT,
+                pinataJWT || '',
                 entityImage,
                 multisigAddress + ' Image'
               )
@@ -308,7 +305,8 @@ export function CreateEntity({
               //get the next token id of the nft collection
               const totalSupply = await entityContract?.call('totalSupply')
               const nextTokenId = totalSupply.toString()
-              //pin metadata to IPFS
+
+              // pin metadata to IPFS
               const metadata = {
                 name: `Entity #${nextTokenId}`,
                 description: `${entityData.name} : ${entityData.description}`,
@@ -323,12 +321,8 @@ export function CreateEntity({
                     value: entityData.twitter,
                   },
                   {
-                    trait_type: 'discord',
-                    value: entityData.discord,
-                  },
-                  {
-                    trait_type: 'telegram',
-                    value: entityData.telegram,
+                    trait_type: 'communications',
+                    value: entityData.communications,
                   },
                   {
                     trait_type: 'website',
@@ -336,17 +330,17 @@ export function CreateEntity({
                   },
                   {
                     trait_type: 'view',
-                    value: entityData.view ? 'public' : 'private',
+                    value: entityData.view,
                   },
                   {
-                    trait_type: 'members',
-                    value: entityMembers.join(','),
+                    trait_type: 'hatsTreeId',
+                    value: hatsTreeId,
                   },
                 ],
               }
 
               const newMetadataIpfsHash = await pinMetadataToIPFS(
-                JWT,
+                pinataJWT || '',
                 metadata,
                 multisigAddress + ' Metadata'
               )
@@ -354,13 +348,15 @@ export function CreateEntity({
               if (!newMetadataIpfsHash)
                 return toast.error('Error pinning metadata to IPFS')
               //mint NFT to safe
-              entityContract?.call(
+              await entityContract?.call(
                 'mintTo',
-                [multisigAddress, 'ipfs://' + newMetadataIpfsHash],
+                [address, 'ipfs://' + newMetadataIpfsHash],
                 {
                   value: ethers.utils.parseEther('0.01'),
                 }
               )
+              router.push(`/entities/${nextTokenId}`)
+              setIsLoading(false)
             }}
           >
             Mint
