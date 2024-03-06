@@ -11,10 +11,17 @@ export function useSwipeDirection() {
   }
 
   function handleTouchMove({ touches }: TouchEvent) {
-    if (clientX.current && touches[0].clientX > clientX.current) {
-      setSwipeDirection('right')
-    } else {
-      setSwipeDirection('left')
+    console.log(touches[0].clientX)
+    if (clientX.current) {
+      const delta = touches[0].clientX - clientX.current
+
+      if (delta < -100) {
+        setSwipeDirection('left')
+      }
+
+      if (delta > 100) {
+        setSwipeDirection('right')
+      }
     }
   }
 
