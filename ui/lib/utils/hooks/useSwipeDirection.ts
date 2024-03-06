@@ -11,7 +11,6 @@ export function useSwipeDirection() {
   }
 
   function handleTouchMove({ touches }: TouchEvent) {
-    console.log(touches[0].clientX)
     if (clientX.current) {
       const delta = touches[0].clientX - clientX.current
 
