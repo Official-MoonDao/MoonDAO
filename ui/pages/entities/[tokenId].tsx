@@ -33,7 +33,7 @@ import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { CopyIcon, TwitterIcon } from '@/components/assets'
 import { CoordinapeLogo } from '@/components/assets/CoordinapeLogo'
 import { JuiceboxLogo } from '@/components/assets/JuiceboxLogo'
-import { EntityMembersModal } from '@/components/entity/EntityMembersModal'
+import { EntityMetadataModal } from '@/components/entity/EntityMetadataModal'
 import { HatWearers } from '@/components/hats/HatWearers'
 
 function Card({ children, className = '', onClick }: any) {
@@ -71,7 +71,7 @@ export default function EntityDetailPage({ tokenId }: any) {
 
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
 
-  const [entityMembersModalEnabled, setEntityMembersModalEnabled] =
+  const [entityMetadataModalEnabled, setEntityMetadataModalEnabled] =
     useState(false)
 
   //Entity Data
@@ -80,7 +80,7 @@ export default function EntityDetailPage({ tokenId }: any) {
   )
   const { data: nft } = useNFT(entityContract, tokenId)
 
-  const { multisigAddress, members, socials, isPublic, hatTreeId } =
+  const { multisigAddress, socials, isPublic, hatTreeId, updateMetadata } =
     useEntityMetadata(entityContract, nft)
 
   //Entity Balances
@@ -129,7 +129,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       {/* Header and socials */}
       <Card>
         <div className="flex flex-col lg:flex-row md:items-center justify-between gap-8">
-          <div className="flex items-center gap-8">
+          <div className="flex flex-col md:flex-row items-center gap-8">
             {nft?.metadata.image && isPublic ? (
               <ThirdwebNftMedia
                 metadata={nft.metadata}
@@ -162,7 +162,24 @@ export default function EntityDetailPage({ tokenId }: any) {
                 <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
               )}
             </div>
-            <button>
+            {entityMetadataModalEnabled && (
+              <EntityMetadataModal
+                setEnabled={setEntityMetadataModalEnabled}
+                nft={nft}
+                updateMetadata={updateMetadata}
+                entityData={{
+                  name: nft?.metadata.name,
+                  description: nft?.metadata.description,
+                  website: socials?.website,
+                  twitter: socials?.twitter,
+                  communications: socials?.communications,
+                  view: isPublic,
+                  multisig: multisigAddress,
+                  hatsTreeId: hatTreeId,
+                }}
+              />
+            )}
+            <button onClick={() => setEntityMetadataModalEnabled(true)}>
               <PencilIcon width={35} height={35} />
             </button>
           </div>
@@ -310,7 +327,7 @@ export default function EntityDetailPage({ tokenId }: any) {
         </Card>
         {/* Members */}
         <Card className="w-full lg:w-1/3">
-          <p>Hats</p>
+          <p>Members</p>
           <div className="pb-8 h-full flex flex-col justify-between">
             <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-y-scroll">
               {hats?.map((hat: any, i: number) => (
@@ -366,22 +383,6 @@ export default function EntityDetailPage({ tokenId }: any) {
           </Card>
           <Card
             className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300"
-            onClick={() => window.open('https://www.hatsprotocol.xyz/')}
-          >
-            <Image src="/logos/hats-logo.png" width={65} height={50} alt="" />
-            <p className="mt-2">{`Gorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.`}</p>
-            <div className="mt-8 flex gap-4">
-              <p className="py-2 px-4 bg-[#ffffff25] rounded-full">
-                Coordination
-              </p>
-              <p className="py-2 px-4 bg-[#ffffff25] rounded-full">Roles</p>
-            </div>
-          </Card>
-        </div>
-        {/* 2nd row of general actions */}
-        <div className="mt-2 lg:mr-16 flex flex-col md:flex-row gap-8">
-          <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300"
             onClick={() => window.open('https://passport.gitcoin.co/')}
           >
             <Image
@@ -399,6 +400,8 @@ export default function EntityDetailPage({ tokenId }: any) {
             </div>
           </Card>
         </div>
+        {/* 2nd row of general actions */}
+        <div className="mt-2 lg:mr-16 flex flex-col md:flex-row gap-8"></div>
       </div>
     </div>
   )
