@@ -1,9 +1,8 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress, useResolvedMediaType } from '@thirdweb-dev/react'
-import { useContext, useEffect, useState } from 'react'
+import { useAddress } from '@thirdweb-dev/react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinMetadataToIPFS } from '../ipfs/pin'
-import PrivyWalletContext from '../privy/privy-wallet-context'
 
 function getAttribute(attributes: any[], traitType: string) {
   return Object.values(attributes).find(
@@ -15,20 +14,10 @@ export function useEntityMetadata(entityContract: any, nft: any) {
   const address = useAddress()
   const { wallets } = useWallets()
 
-  const [members, setMembers] = useState<string[]>()
   const [multisigAddress, setMultisigAddress] = useState<any>()
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState<number>()
-
-  const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
-  const [rawMetadata, setRawMetadata] = useState<any>()
-
-  async function getRawMetadata() {
-    const metadataRes = await fetch(resolvedMetadata.url)
-    const rawMetadata = await metadataRes.json()
-    setRawMetadata(rawMetadata)
-  }
 
   function getMultisigAddress() {
     const entityMultisigAddress = getAttribute(
@@ -117,9 +106,11 @@ export function useEntityMetadata(entityContract: any, nft: any) {
     console.log(nft.metadata.attributes)
   }, [nft])
 
-  useEffect(() => {
-    getRawMetadata()
-  }, [resolvedMetadata])
-
-  return { members, multisigAddress, socials, isPublic, hatTreeId }
+  return {
+    multisigAddress,
+    socials,
+    isPublic,
+    hatTreeId,
+    updateMetadata,
+  }
 }
