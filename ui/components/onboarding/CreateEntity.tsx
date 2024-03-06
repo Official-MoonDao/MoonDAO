@@ -58,7 +58,7 @@ export function CreateEntity({
     <div className="flex flex-col">
       <Steps
         className="mb-8"
-        steps={['Info', 'Design', 'Create Entity', 'Hats', 'Mint']}
+        steps={['Info', 'Design', 'Treasury ', 'Organization', 'Mint']}
         currStep={stage}
       />
 
@@ -152,8 +152,8 @@ export function CreateEntity({
       {/* Create Gnosis Safe */}
       {stage === 2 && (
         <StageContainer
-          title="Create Entity"
-          description="Create a gnosis safe for your Entity."
+          title="Treasury"
+          description="Create a treasury for your Entity."
         >
           {multisigAddress && (
             <div className="flex flex-col">
@@ -211,7 +211,7 @@ export function CreateEntity({
       {/* Add Entity members */}
       {stage === 3 && (
         <StageContainer
-          title="Hats"
+          title="Organization"
           description="Create a hat tree for your entity."
         >
           <StageButton
