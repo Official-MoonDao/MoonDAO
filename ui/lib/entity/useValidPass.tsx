@@ -7,8 +7,7 @@ export function useValidPass(expiresAt: BigNumber) {
   function checkPass() {
     const expires = new Date(+expiresAt?.toString() * 1000)
     const now = new Date()
-    console.log('expires', expires)
-    console.log('now', now)
+
     setValidPass(expires > now)
   }
 

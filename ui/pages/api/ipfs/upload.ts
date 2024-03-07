@@ -1,9 +1,11 @@
+import { Sepolia } from '@thirdweb-dev/chains'
 import { ethers } from 'ethers'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 
 const keyRestrictions = {
   keyName: 'Signed Upload JWT',
-  maxUses: 2,
+  maxUses: 3,
   permissions: {
     endpoints: {
       data: {
@@ -30,7 +32,6 @@ export default async function handler(
     const { address, message } = JSON.parse(req.body)
 
     const recoveredAddress = ethers.utils.verifyMessage(message, signature)
-
     if (recoveredAddress !== address) {
       return res.status(401).send('Unauthorized')
     }

@@ -50,7 +50,7 @@ export function PrivyConnectWallet() {
   const address = useAddress()
   const [nativeBalance, setNativeBalance] = useState(0)
   const [walletChainId, setWalletChainId] = useState(1)
-  const { login, logout, user }: any = usePrivy()
+  const { login, logout, user, authenticated, connectWallet }: any = usePrivy()
   const { wallets } = useWallets()
 
   const [enabled, setEnabled] = useState(false)
@@ -78,7 +78,6 @@ export function PrivyConnectWallet() {
       setWalletChainId(+wallets?.[0]?.chainId.split(':')[1])
       getNativeBalance()
     }
-    console.log(wallets)
   }, [wallets, selectedWallet])
 
   useEffect(() => {
@@ -229,7 +228,7 @@ export function PrivyConnectWallet() {
                           wallet?.address.slice(-4)}
                       </p>
                       {/*Wallet address and copy button*/}
-                      {wallet?.walletClientType === 'safe' && (
+                      {wallet.walletClientType != 'metamask' && (
                         <button
                           className="ml-12"
                           onClick={() => wallet.disconnect()}
@@ -239,6 +238,14 @@ export function PrivyConnectWallet() {
                       )}
                     </div>
                   ))}
+                  <button
+                    className="w-full p-1 border"
+                    onClick={async () => {
+                      connectWallet()
+                    }}
+                  >
+                    <strong>Connect</strong>
+                  </button>
                 </div>
               </div>
               <div className="pt-1">

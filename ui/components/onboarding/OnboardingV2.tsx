@@ -1,5 +1,6 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
+import { useAddress, useContract } from '@thirdweb-dev/react'
+import { HATS_ADDRESS } from 'const/config'
 import Image from 'next/image'
 import { useContext, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
@@ -54,6 +55,8 @@ export function OnboardingV2({ selectedChain }: any) {
   const { wallets } = useWallets()
   const [selectedTier, setSelectedTier] = useState<string>()
 
+  const { contract: hatsContract } = useContract(HATS_ADDRESS)
+
   if (selectedTier === 'citizen') {
     return (
       <div>
@@ -71,6 +74,7 @@ export function OnboardingV2({ selectedChain }: any) {
           selectedChain={selectedChain}
           selectedWallet={selectedWallet}
           wallets={wallets}
+          hatsContract={hatsContract}
         />
       </div>
     )

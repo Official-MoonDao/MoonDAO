@@ -91,3 +91,5 @@ export const ENTITY_ADDRESSES: Index = {
   ethereum: '',
   sepolia: '0xdd64537bb968a81c3e8d3c91e464c2b40ce9a4b4',
 }
+
+export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
