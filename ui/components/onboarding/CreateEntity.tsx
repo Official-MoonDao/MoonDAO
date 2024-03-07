@@ -224,8 +224,10 @@ export function CreateEntity({
               //sign message
               const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
               const nonceData = await nonceRes.json()
-              const message = `Please sign to pin this entity to IPFS #${nonceData.nonce}`
-              const signature = await signer?.signMessage(message)
+              const message = `Please sign to pin this entity to IPFS #`
+              const signature = await signer?.signMessage(
+                message + nonceData.nonce
+              )
 
               if (!signature) return toast.error('Error signing message')
 
