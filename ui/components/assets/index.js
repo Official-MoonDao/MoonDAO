@@ -1,5 +1,6 @@
 import ArrowDown from './ArrowDown'
 import ArrowSide from './ArrowSide'
+import ArrowLeft from "./ArrowLeft"
 import ArrowUp from './ArrowUp'
 import CNAsset from './CNAsset'
 import CopyIcon from './CopyIcon'
@@ -30,6 +31,7 @@ export {
   ArrowDown,
   ArrowUp,
   ArrowSide,
+  ArrowLeft,
   CopyIcon,
   GoldPaperArrow,
   TreasuryAndMobileLogo,
