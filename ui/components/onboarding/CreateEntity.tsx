@@ -67,7 +67,7 @@ export function CreateEntity({
         <StageContainer title="Info" description="Complete the form.">
           <div className="w-full md:w-3/4">
             <Widget
-              className="w-[100vw] md:w-[100%]"
+              className="w-[100%] md:w-[100%]"
               id={process.env.NEXT_PUBLIC_TYPEFORM_ENTITY_FORM_ID as string}
               onSubmit={async (formResponse: any) => {
                 //get response from form
