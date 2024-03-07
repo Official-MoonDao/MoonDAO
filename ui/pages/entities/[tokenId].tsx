@@ -34,6 +34,7 @@ import { CopyIcon, TwitterIcon } from '@/components/assets'
 import { CoordinapeLogo } from '@/components/assets/CoordinapeLogo'
 import { JuiceboxLogo } from '@/components/assets/JuiceboxLogo'
 import { EntityMetadataModal } from '@/components/entity/EntityMetadataModal'
+import { EntitySubscriptionModal } from '@/components/entity/EntitySubscriptionModal'
 import { HatWearers } from '@/components/hats/HatWearers'
 
 function Card({ children, className = '', onClick }: any) {
@@ -72,6 +73,8 @@ export default function EntityDetailPage({ tokenId }: any) {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
 
   const [entityMetadataModalEnabled, setEntityMetadataModalEnabled] =
+    useState(false)
+  const [EntitySubscriptionModalEnabled, setEntitySubscriptionModalEnabled] =
     useState(false)
 
   //Entity Data
@@ -130,7 +133,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       <Card>
         <div className="flex flex-col lg:flex-row md:items-center justify-between gap-8">
           <div className="flex flex-col md:flex-row items-center gap-8">
-            {nft?.metadata.image && isPublic ? (
+            {nft?.metadata.image ? (
               <ThirdwebNftMedia
                 metadata={nft.metadata}
                 height={'200px'}
@@ -140,12 +143,12 @@ export default function EntityDetailPage({ tokenId }: any) {
               <div className="w-[200px] h-[200px] bg-[#ffffff25] animate-pulse" />
             )}
             <div>
-              {nft && isPublic ? (
+              {nft ? (
                 <h1 className="text-white text-3xl">{nft.metadata.name}</h1>
               ) : (
                 <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
               )}
-              {multisigAddress && isPublic ? (
+              {multisigAddress ? (
                 <button
                   className="mt-4 flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
                   onClick={() => {
@@ -183,20 +186,36 @@ export default function EntityDetailPage({ tokenId }: any) {
               <PencilIcon width={35} height={35} />
             </button>
           </div>
-          {validPass && isPublic && (
-            <div className="flex flex-col items-center">
-              <p className="py-2 px-4 border-2 rounded-full border-moon-green text-moon-green max-w-[175px]">
-                ✓ 12 Month Pass
-              </p>
+          {EntitySubscriptionModalEnabled && (
+            <EntitySubscriptionModal
+              setEnabled={setEntitySubscriptionModalEnabled}
+              nft={nft}
+              validPass={validPass}
+              expiresAt={expiresAt}
+            />
+          )}
+
+          <div className="m-8 flex flex-col items-center">
+            <button
+              className={`py-2 px-4 border-2 rounded-full ${
+                validPass
+                  ? 'border-moon-green text-moon-green'
+                  : 'border-moon-orange text-moon-orange'
+              } max-w-[175px] hover:scale-105 duration-300`}
+              onClick={() => setEntitySubscriptionModalEnabled(true)}
+            >
+              {`${validPass ? '✓ Valid' : 'X Invalid'} Pass`}
+            </button>
+            {validPass && (
               <p className="opacity-50">
                 {'Exp: '}
                 {new Date(expiresAt?.toString() * 1000).toLocaleString()}
               </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {nft?.metadata.description && isPublic ? (
+        {nft?.metadata.description ? (
           <p className="mt-4">{nft?.metadata.description || ''}</p>
         ) : (
           <div className="mt-4 w-full h-[30px] bg-[#ffffff25] animate-pulse" />
@@ -233,8 +252,8 @@ export default function EntityDetailPage({ tokenId }: any) {
       </Card>
 
       {/* Mooney and Voting Power */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <Card className="w-full lg:w-1/2 flex flex-col gap-4">
+      <div className="flex flex-col xl:flex-row gap-6">
+        <Card className="w-full xl:w-1/2 flex flex-col gap-4">
           <div className="flex justify-between">
             <p>{`Total ETH`}</p>
             <p className="p-2 bg-[#ffffff25] flex gap-2">
@@ -247,7 +266,7 @@ export default function EntityDetailPage({ tokenId }: any) {
               {`Ethereum`}
             </p>
           </div>
-          <p className="text-3xl">{isPublic ? nativeBalance : 0}</p>
+          <p className="text-3xl">{nativeBalance}</p>
           <Button
             onClick={() =>
               window.open(
@@ -259,7 +278,7 @@ export default function EntityDetailPage({ tokenId }: any) {
             {'Manage Treasury'}
           </Button>
         </Card>
-        <Card className="w-full lg:w-1/2 flex flex-col lg:flex-row">
+        <Card className="w-full xl:w-1/2 flex flex-col">
           <div className="w-3/4">
             <p>{`Total $MOONEY`}</p>
             <p className="mt-8 text-3xl">
@@ -268,7 +287,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                 : 0}
             </p>
           </div>
-          <div className="mt-2 flex flex-col justify-evenly gap-2">
+          <div className="mt-2 flex gap-2">
             <Button
               onClick={() =>
                 window.open(
@@ -289,7 +308,7 @@ export default function EntityDetailPage({ tokenId }: any) {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Proposals */}
-        <Card className="w-full lg:w-2/3">
+        <Card className="w-full lg:w-1/2">
           <p>MoonDAO Proposals</p>
           <div className="mt-2 flex flex-col gap-4">
             {newestProposals
@@ -326,7 +345,7 @@ export default function EntityDetailPage({ tokenId }: any) {
           </div>
         </Card>
         {/* Members */}
-        <Card className="w-full lg:w-1/3">
+        <Card className="w-full lg:w-1/2">
           <p>Members</p>
           <div className="pb-8 h-full flex flex-col justify-between">
             <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-y-scroll">
