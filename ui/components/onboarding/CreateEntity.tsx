@@ -58,7 +58,7 @@ export function CreateEntity({
     <div className="flex flex-col">
       <Steps
         className="mb-8"
-        steps={['Info', 'Design', 'Treasury ', 'Organization', 'Mint']}
+        steps={['Form', 'Design', 'Treasury ', 'Organization', 'Mint']}
         currStep={stage}
       />
 
@@ -367,9 +367,27 @@ export function CreateEntity({
       )}
 
       {/* Dev Buttons */}
-      <div>
-        <button onClick={() => setStage((prev) => prev - 1)}>back</button>
-        <button onClick={() => setStage((prev) => prev + 1)}>next</button>
+      <div className="ml-12 flex flex-row justify-between w-3/4 ">
+        <button
+          className="p-3 bg-blue-500"
+          onClick={() => {
+            if (stage > 0) {
+              setStage((prev) => prev - 1)
+            }
+          }}
+        >
+          Back
+        </button>
+        <button
+          className="p-3 bg-red-500"
+          onClick={() => {
+            if (stage < 4) {
+              setStage((prev) => prev + 1)
+            }
+          }}
+        >
+          Next
+        </button>
       </div>
     </div>
   )
