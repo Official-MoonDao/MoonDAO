@@ -50,9 +50,9 @@ export function HatWearers({ hatsContract, hatId, wearers }: HatWearersProps) {
 
   return (
     <div className="px-4 flex flex-col max-h-[300px] overflow-y-scroll">
-      <div className="flex justify-between">
-        <h1>{hatData.name}</h1>
-        <h1>{`(${hatData.supply})`}</h1>
+      <div className="flex gap-2 justify-between">
+        <h1>{`${hatData.name} (${hatData.supply})`}</h1>
+
         {/* rotate button with tailwind */}
         <button
           className={`ease-in-out duration-300 ${

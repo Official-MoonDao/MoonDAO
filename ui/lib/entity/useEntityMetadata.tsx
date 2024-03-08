@@ -66,16 +66,16 @@ export function useEntityMetadata(entityContract: any, nft: any) {
 
     const nonceData = await nonceRes.json()
 
-    const message = `Please sign this message to update this entity's members #${nonceData.nonce}`
+    const message = `Please sign this message to update this entity's members #`
 
-    const signature = await signer.signMessage(message)
+    const signature = await signer.signMessage(message + nonceData.nonce)
 
     if (!signature) return toast.error('Error signing message')
 
     const jwtRes = await fetch('/api/ipfs/upload', {
       method: 'POST',
       headers: {
-        signature,
+        'moondao-api-key': signature,
       },
       body: JSON.stringify({ address: EOAWallet.address, message }),
     })
