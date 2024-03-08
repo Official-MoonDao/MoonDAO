@@ -25,12 +25,12 @@ export function EntityMetadataModal({
   return (
     <div
       onMouseDown={(e: any) => {
-        if (e.target.id === 'submit-tts-info-modal-backdrop') setEnabled(false)
+        if (e.target.id === 'entity-metadata-modal-backdrop') setEnabled(false)
       }}
-      id="submit-tts-info-modal-backdrop"
+      id="entity-metadata-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
+      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl font-bold">Update Info</h1>
         <h1 className="font-bold">Info</h1>
         <div className="w-full flex flex-col gap-4 text-black">
