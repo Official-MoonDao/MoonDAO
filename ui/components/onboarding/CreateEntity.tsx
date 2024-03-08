@@ -357,7 +357,7 @@ export function CreateEntity({
                   value: ethers.utils.parseEther('0.01'),
                 }
               )
-              router.push(`/entities/${nextTokenId}`)
+              router.push(`/entity/${nextTokenId}`)
               setIsLoading(false)
             }}
           >

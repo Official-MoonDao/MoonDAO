@@ -8,9 +8,9 @@ import {
 } from '@thirdweb-dev/react'
 import { ENTITY_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
-import ChainContext from '../../lib/thirdweb/chain-context'
+import ChainContext from '../lib/thirdweb/chain-context'
 import { useEntityMetadata } from '@/lib/entity/useEntityMetadata'
-import Head from '../../components/layout/Head'
+import Head from '../components/layout/Head'
 import { ArrowLeft, ArrowSide, SearchIcon } from '@/components/assets'
 
 function EntityCard({ metadata, owner }: { metadata: any; owner: string }) {
