@@ -58,7 +58,7 @@ export function CreateEntity({
     <div className="flex flex-col">
       <Steps
         className="mb-8"
-        steps={['Info', 'Design', 'Treasury ', 'Organization', 'Mint']}
+        steps={['Info', 'Design', 'Treasury ', 'Org', 'Mint']}
         currStep={stage}
       />
 

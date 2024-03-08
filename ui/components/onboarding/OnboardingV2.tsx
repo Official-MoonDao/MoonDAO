@@ -16,7 +16,7 @@ type TierProps = {
 function Tier({ label, description, points, onClick }: TierProps) {
   return (
     <div
-      className="w-full md:w-1/2 group transition-all duration-150 text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0d0a1b]"
+      className="w-full max-w-[500px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0d0a1b]"
       onClick={onClick}
     >
       <div className="w-full h-full flex flex-col md:flex-row justify-between">
@@ -26,8 +26,10 @@ function Tier({ label, description, points, onClick }: TierProps) {
           height={100}
           alt=""
         />
-        <div className="md:w-3/4">
-          <p>{description}</p>
+        <div className="py-8 md:w-3/4">
+          <p className="mb-4 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
+            {description}
+          </p>
           <h1 className={`text-3xl font-bold`}>{label}</h1>
           <div className="w-full border-[1px] bg-[#ffffff25] md:w-1/2" />
           <div>

@@ -338,17 +338,16 @@ export default function EntityDetailPage({ tokenId }: any) {
                   />
                 ))}
           </div>
-          <div className="mt-4 flex flex-col lg:flex-row gap-2">
+          <div className="mt-4 flex flex-col md:flex-row gap-2">
             <Button>Create Proposals</Button>
             <Button>Vote on Proposals</Button>
-            <Button>Receive Funding</Button>
           </div>
         </Card>
         {/* Members */}
         <Card className="w-full lg:w-1/2">
           <p>Members</p>
           <div className="pb-8 h-full flex flex-col justify-between">
-            <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-y-scroll">
+            <div className="py-2 pr-4 flex flex-col gap-4 max-h-[150px] overflow-y-scroll">
               {hats?.map((hat: any, i: number) => (
                 <HatWearers
                   key={'hat-' + i}
