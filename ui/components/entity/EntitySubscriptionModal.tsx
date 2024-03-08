@@ -8,7 +8,7 @@ export function EntitySubscriptionModal({
   validPass,
   expiresAt,
 }: any) {
-  const [expDate, setExpDate] = useState<Date>('')
+  const [expDate, setExpDate] = useState<Date>()
 
   function getFutureDateByYear(years: number): Date {
     const currentDate: Date = new Date()
