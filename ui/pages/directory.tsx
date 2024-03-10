@@ -9,7 +9,7 @@ import {
 import { ENTITY_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
-import { useEntityMetadata } from '@/lib/entity/useEntityMetadata'
+import { useEntityMetadata } from '@/lib/entity/useEntityData'
 import Head from '../components/layout/Head'
 import { ArrowLeft, ArrowSide, SearchIcon } from '@/components/assets'
 
@@ -91,7 +91,7 @@ export default function Entities() {
     data: nfts,
     isLoading,
     error,
-  } = useNFTs(entityContract, { start: 2, count: 100 })
+  } = useNFTs(entityContract, { start: 0, count: 100 })
 
   const [pageIdx, setPageIdx] = useState(1)
 

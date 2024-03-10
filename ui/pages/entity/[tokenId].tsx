@@ -21,7 +21,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useEntityMetadata } from '@/lib/entity/useEntityMetadata'
+import { useEntityData } from '@/lib/entity/useEntityData'
 import { useValidPass } from '@/lib/entity/useValidPass'
 import { useHatTree } from '@/lib/hats/useHatTree'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -83,8 +83,14 @@ export default function EntityDetailPage({ tokenId }: any) {
   )
   const { data: nft } = useNFT(entityContract, tokenId)
 
-  const { multisigAddress, socials, isPublic, hatTreeId, updateMetadata } =
-    useEntityMetadata(entityContract, nft)
+  const {
+    multisigAddress,
+    socials,
+    isPublic,
+    hatTreeId,
+    admin,
+    updateMetadata,
+  } = useEntityData(entityContract, nft)
 
   //Entity Balances
   const { contract: mooneyContract } = useContract(
@@ -176,13 +182,21 @@ export default function EntityDetailPage({ tokenId }: any) {
                   website: socials?.website,
                   twitter: socials?.twitter,
                   communications: socials?.communications,
-                  view: isPublic,
+                  isPublic,
                   multisig: multisigAddress,
                   hatsTreeId: hatTreeId,
                 }}
               />
             )}
-            <button onClick={() => setEntityMetadataModalEnabled(true)}>
+            <button
+              onClick={() => {
+                if (address != multisigAddress && address != admin)
+                  return toast.error(
+                    'Connect the entity admin wallet or multisig to edit metadata.'
+                  )
+                setEntityMetadataModalEnabled(true)
+              }}
+            >
               <PencilIcon width={35} height={35} />
             </button>
           </div>
@@ -192,27 +206,35 @@ export default function EntityDetailPage({ tokenId }: any) {
               nft={nft}
               validPass={validPass}
               expiresAt={expiresAt}
+              entityContract={entityContract}
             />
           )}
-
-          <div className="m-8 flex flex-col items-center">
-            <button
-              className={`py-2 px-4 border-2 rounded-full ${
-                validPass
-                  ? 'border-moon-green text-moon-green'
-                  : 'border-moon-orange text-moon-orange'
-              } max-w-[175px] hover:scale-105 duration-300`}
-              onClick={() => setEntitySubscriptionModalEnabled(true)}
-            >
-              {`${validPass ? '✓ Valid' : 'X Invalid'} Pass`}
-            </button>
-            {validPass && (
-              <p className="opacity-50">
-                {'Exp: '}
-                {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-              </p>
-            )}
-          </div>
+          {expiresAt && (
+            <div className="m-8 flex flex-col gap-4 items-center">
+              <button
+                className={`py-2 px-4 border-2 rounded-full ${
+                  validPass
+                    ? 'border-moon-green text-moon-green'
+                    : 'border-moon-orange text-moon-orange'
+                } max-w-[175px] hover:scale-105 duration-300`}
+                onClick={() => {
+                  if (address != multisigAddress && address != admin)
+                    return toast.error(
+                      'Connect the entity admin wallet or multisig to extend subscription.'
+                    )
+                  setEntitySubscriptionModalEnabled(true)
+                }}
+              >
+                {`${validPass ? '✓ Valid' : 'X Invalid'} Pass`}
+              </button>
+              {validPass && (
+                <p className="opacity-50">
+                  {'Exp: '}
+                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {nft?.metadata.description ? (
@@ -287,7 +309,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                 : 0}
             </p>
           </div>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-4 flex gap-2">
             <Button
               onClick={() =>
                 window.open(
