@@ -1,7 +1,6 @@
 import { useResolvedMediaType } from '@thirdweb-dev/react'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-
-function Input() {}
 
 export function EntityMetadataModal({
   nft,
@@ -9,6 +8,9 @@ export function EntityMetadataModal({
   updateMetadata,
   setEnabled,
 }: any) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+
   const [entityName, setEntityName] = useState(entityData.name || '')
   const [entityDescription, setEntityDescription] = useState(
     entityData.description || ''
@@ -18,7 +20,7 @@ export function EntityMetadataModal({
   const [entityCommunications, setEntityCommunications] = useState(
     entityData.communications || ''
   )
-  const [entityView, setEntityView] = useState(entityData.view || false)
+  const [entityView, setEntityView] = useState(entityData.isPublic || false)
 
   const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
 
@@ -85,14 +87,16 @@ export function EntityMetadataModal({
 
         <button
           className="border-2 px-4 py-2"
+          disabled={isLoading}
           onClick={async () => {
+            setIsLoading(true)
             const rawMetadataRes = await fetch(resolvedMetadata.url)
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
 
             const metadata = {
               name: entityName,
-              description: `${entityName} : ${entityDescription}`,
+              description: entityDescription,
               image: imageIPFSLink,
               attributes: [
                 {
@@ -113,7 +117,7 @@ export function EntityMetadataModal({
                 },
                 {
                   trait_type: 'view',
-                  value: entityView,
+                  value: entityView ? 'public' : 'private',
                 },
                 {
                   trait_type: 'hatsTreeId',
@@ -123,9 +127,13 @@ export function EntityMetadataModal({
             }
 
             await updateMetadata(metadata)
+
+            setIsLoading(false)
+            setEnabled(false)
+            router.reload()
           }}
         >
-          Update Metadata
+          {isLoading ? 'Updating...' : 'Update'}
         </button>
       </div>
     </div>
