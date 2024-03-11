@@ -1,7 +1,6 @@
 import { useResolvedMediaType } from '@thirdweb-dev/react'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-
-function Input() {}
 
 export function EntityMetadataModal({
   nft,
@@ -9,6 +8,9 @@ export function EntityMetadataModal({
   updateMetadata,
   setEnabled,
 }: any) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+
   const [entityName, setEntityName] = useState(entityData.name || '')
   const [entityDescription, setEntityDescription] = useState(
     entityData.description || ''
@@ -18,19 +20,19 @@ export function EntityMetadataModal({
   const [entityCommunications, setEntityCommunications] = useState(
     entityData.communications || ''
   )
-  const [entityView, setEntityView] = useState(entityData.view || false)
+  const [entityView, setEntityView] = useState(entityData.isPublic || false)
 
   const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
 
   return (
     <div
       onMouseDown={(e: any) => {
-        if (e.target.id === 'submit-tts-info-modal-backdrop') setEnabled(false)
+        if (e.target.id === 'entity-metadata-modal-backdrop') setEnabled(false)
       }}
-      id="submit-tts-info-modal-backdrop"
+      id="entity-metadata-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
+      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl font-bold">Update Info</h1>
         <h1 className="font-bold">Info</h1>
         <div className="w-full flex flex-col gap-4 text-black">
@@ -85,14 +87,16 @@ export function EntityMetadataModal({
 
         <button
           className="border-2 px-4 py-2"
+          disabled={isLoading}
           onClick={async () => {
+            setIsLoading(true)
             const rawMetadataRes = await fetch(resolvedMetadata.url)
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
 
             const metadata = {
               name: entityName,
-              description: `${entityName} : ${entityDescription}`,
+              description: entityDescription,
               image: imageIPFSLink,
               attributes: [
                 {
@@ -113,7 +117,7 @@ export function EntityMetadataModal({
                 },
                 {
                   trait_type: 'view',
-                  value: entityView,
+                  value: entityView ? 'public' : 'private',
                 },
                 {
                   trait_type: 'hatsTreeId',
@@ -123,9 +127,13 @@ export function EntityMetadataModal({
             }
 
             await updateMetadata(metadata)
+
+            setIsLoading(false)
+            setEnabled(false)
+            router.reload()
           }}
         >
-          Update Metadata
+          {isLoading ? 'Updating...' : 'Update'}
         </button>
       </div>
     </div>

@@ -28,29 +28,34 @@ export function HatWearers({ hatsContract, hatId, wearers }: HatWearersProps) {
 
   async function getHatData() {
     const { supply, active } = hat
-    const metadataRes = await fetch(resolvedMetadata.url)
-    const { data } = await metadataRes.json()
 
-    setHatData({
-      name: data.name,
-      description: data.description,
-      supply: supply,
-      active: active,
-    })
+    try {
+      const metadataRes = await fetch(resolvedMetadata.url)
+      const { data } = await metadataRes.json()
+
+      setHatData({
+        name: data.name,
+        description: data.description,
+        supply: supply,
+        active: active,
+      })
+    } catch (err: any) {
+      console.error(err)
+    }
   }
 
   useEffect(() => {
     if (hatsContract) {
       getHatAndMetadata()
-      if (resolvedMetadata) {
+      if (resolvedMetadata?.url) {
         getHatData()
       }
     }
   }, [hatsContract, hatId, wearers, resolvedMetadata])
 
   return (
-    <div className="px-4 flex flex-col max-h-[300px] overflow-y-scroll">
-      <div className="flex gap-2 justify-between">
+    <div className="px-4 flex flex-col ">
+      <div className="flex">
         <h1>{`${hatData.name} (${hatData.supply})`}</h1>
 
         {/* rotate button with tailwind */}
@@ -63,15 +68,17 @@ export function HatWearers({ hatsContract, hatId, wearers }: HatWearersProps) {
           <ChevronDownIcon height={30} width={30} />
         </button>
       </div>
-      {dropdownEnabled && (
-        <div className="flex flex-col gap-2">
-          {wearers.map(({ id }) => (
-            <div key={hatData.name + id}>
-              <p>{id.slice(0, 6) + '...' + id.slice(-4)}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="flex gap-2 justify-between max-h-[300px] overflow-y-scroll">
+        {dropdownEnabled && (
+          <div className="flex flex-col gap-2">
+            {wearers.map(({ id }) => (
+              <div key={hatData.name + id}>
+                <p>{id.slice(0, 6) + '...' + id.slice(-4)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

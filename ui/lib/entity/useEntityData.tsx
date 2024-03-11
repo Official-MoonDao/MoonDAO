@@ -3,6 +3,7 @@ import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinMetadataToIPFS } from '../ipfs/pin'
+import { useHandleRead } from '../thirdweb/hooks'
 
 function getAttribute(attributes: any[], traitType: string) {
   return Object.values(attributes).find(
@@ -10,7 +11,7 @@ function getAttribute(attributes: any[], traitType: string) {
   )
 }
 
-export function useEntityMetadata(entityContract: any, nft: any) {
+export function useEntityData(entityContract: any, nft: any) {
   const address = useAddress()
   const { wallets } = useWallets()
 
@@ -18,6 +19,10 @@ export function useEntityMetadata(entityContract: any, nft: any) {
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState<number>()
+
+  const { data: admin } = useHandleRead(entityContract, 'getAdmin', [
+    nft?.metadata?.id,
+  ])
 
   function getMultisigAddress() {
     const entityMultisigAddress = getAttribute(
@@ -52,8 +57,10 @@ export function useEntityMetadata(entityContract: any, nft: any) {
   }
 
   async function updateMetadata(newMetadata: any) {
-    if (address != multisigAddress)
-      return toast.error(`Connect the entity's safe to update members`)
+    if (address != multisigAddress && address != admin)
+      return toast.error(
+        `Connect the entity's admin wallet or multisig to update metadata`
+      )
 
     const EOAWallet = wallets.find((w: any) => w.walletClientType != 'safe')
 
@@ -66,7 +73,7 @@ export function useEntityMetadata(entityContract: any, nft: any) {
 
     const nonceData = await nonceRes.json()
 
-    const message = `Please sign this message to update this entity's members #`
+    const message = `Please sign this message to update this entity's metadata #`
 
     const signature = await signer.signMessage(message + nonceData.nonce)
 
@@ -75,7 +82,7 @@ export function useEntityMetadata(entityContract: any, nft: any) {
     const jwtRes = await fetch('/api/ipfs/upload', {
       method: 'POST',
       headers: {
-        'moondao-api-key': signature,
+        signature,
       },
       body: JSON.stringify({ address: EOAWallet.address, message }),
     })
@@ -103,7 +110,6 @@ export function useEntityMetadata(entityContract: any, nft: any) {
     getEntitySocials()
     getView()
     getHatTreeId()
-    console.log(nft.metadata.attributes)
   }, [nft])
 
   return {
@@ -111,6 +117,7 @@ export function useEntityMetadata(entityContract: any, nft: any) {
     socials,
     isPublic,
     hatTreeId,
+    admin,
     updateMetadata,
   }
 }

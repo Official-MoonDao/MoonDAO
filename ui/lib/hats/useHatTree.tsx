@@ -22,7 +22,6 @@ export function useHatTree(selectedChain: Chain, treeId: number | undefined) {
         },
       })
       setHats(tree.hats)
-      console.log(hats)
     } catch (err) {
       console.log(err)
     }

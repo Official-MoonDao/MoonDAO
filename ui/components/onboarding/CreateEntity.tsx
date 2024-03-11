@@ -34,10 +34,9 @@ export function CreateEntity({
 
   const [stage, setStage] = useState<number>(0)
 
-  const [isLoading, setIsLoading] = useState(false)
   const [entityImage, setEntityImage] = useState<any>()
   const [multisigAddress, setMultisigAddress] = useState<string>()
-  const [hatsTreeId, setHatsTreeId] = useState<number>()
+  const [hatTreeId, setHatTreeId] = useState<number>()
 
   const [pinataJWT, setPinataJWT] = useState<string>()
 
@@ -58,7 +57,7 @@ export function CreateEntity({
     <div className="flex flex-col">
       <Steps
         className="mb-8"
-        steps={['Info', 'Design', 'Treasury ', 'Organization', 'Mint']}
+        steps={['Info', 'Design', 'Treasury ', 'Org', 'Mint']}
         currStep={stage}
       />
 
@@ -189,9 +188,7 @@ export function CreateEntity({
             alt=""
           />
           <StageButton
-            isLoading={isLoading}
             onClick={async () => {
-              setIsLoading(true)
               const provider = await wallets[selectedWallet].getEthersProvider()
               const signer = provider?.getSigner()
 
@@ -207,15 +204,13 @@ export function CreateEntity({
               } catch (err) {
                 console.error(err)
               }
-
-              setIsLoading(false)
             }}
           >
             Create Safe
           </StageButton>
         </StageContainer>
       )}
-      {/* Add Entity members */}
+      {/* Hats */}
       {stage === 3 && (
         <StageContainer
           title="Organization"
@@ -228,71 +223,75 @@ export function CreateEntity({
             alt=""
           />
           <StageButton
-            isLoading={isLoading}
             onClick={async () => {
-              setIsLoading(true)
-              //get signer
-              const provider = await wallets[selectedWallet].getEthersProvider()
-              const signer = provider?.getSigner()
-              //sign message
-              const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
-              const nonceData = await nonceRes.json()
-              const message = `Please sign to pin this entity to IPFS #`
-              const signature = await signer?.signMessage(
-                message + nonceData.nonce
-              )
+              try {
+                //get signer
+                const provider = await wallets[
+                  selectedWallet
+                ].getEthersProvider()
+                const signer = provider?.getSigner()
+                //sign message
+                const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
+                const nonceData = await nonceRes.json()
+                const message = `Please sign to pin this entity to IPFS #`
+                const signature = await signer?.signMessage(
+                  message + nonceData.nonce
+                )
 
-              if (!signature) return toast.error('Error signing message')
+                if (!signature) {
+                  return toast.error('Error signing message')
+                }
 
-              //get pinata jwt
-              const jwtRes = await fetch('/api/ipfs/upload', {
-                method: 'POST',
-                headers: {
-                  signature,
-                },
-                body: JSON.stringify({ address, message }),
-              })
+                //get pinata jwt
+                const jwtRes = await fetch('/api/ipfs/upload', {
+                  method: 'POST',
+                  headers: {
+                    signature,
+                  },
+                  body: JSON.stringify({ address, message }),
+                })
 
-              const JWT = await jwtRes.text()
+                const JWT = await jwtRes.text()
 
-              setPinataJWT(JWT)
+                setPinataJWT(JWT)
 
-              const hatMetadata = {
-                type: '1.0',
-                data: {
-                  name: `${entityData.name} Admin`,
-                  description: entityData.description,
-                },
+                const hatMetadata = {
+                  type: '1.0',
+                  data: {
+                    name: `${entityData.name} Admin`,
+                    description: entityData.description,
+                  },
+                }
+
+                const hatMetadataIpfsHash = await pinMetadataToIPFS(
+                  JWT,
+                  hatMetadata,
+                  entityData.name + ' Hat Metadata'
+                )
+
+                const tx = await hatsContract.call('mintTopHat', [
+                  address,
+                  'ipfs://' + hatMetadataIpfsHash,
+                  '',
+                ])
+
+                const hatsInterface = new ethers.utils.Interface(HatsABI)
+
+                const decoded = hatsInterface.decodeEventLog(
+                  'HatCreated',
+                  tx.receipt.logs[0].data
+                )
+
+                const treeId = await hatsContract.call('getTopHatDomain', [
+                  decoded.id.toString(),
+                ])
+
+                setHatTreeId(treeId)
+
+                if (treeId) setStage(4)
+              } catch (err) {
+                console.log(err)
               }
-
-              const hatMetadataIpfsHash = await pinMetadataToIPFS(
-                JWT,
-                hatMetadata,
-                entityData.name + ' Hat Metadata'
-              )
-
-              const tx = await hatsContract.call('mintTopHat', [
-                address,
-                'ipfs://' + hatMetadataIpfsHash,
-                '',
-              ])
-
-              const hatsInterface = new ethers.utils.Interface(HatsABI)
-
-              const decoded = hatsInterface.decodeEventLog(
-                'HatCreated',
-                tx.receipt.logs[0].data
-              )
-
-              const treeId = await hatsContract.call('getTopHatDomain', [
-                decoded.id.toString(),
-              ])
-
-              setHatsTreeId(treeId)
-
-              if (treeId) setStage(4)
-
-              setIsLoading(false)
             }}
           >
             Create Hat Tree
@@ -303,75 +302,76 @@ export function CreateEntity({
       {stage === 4 && (
         <StageContainer title="Mint" description="Mint your Entity NFT!">
           <StageButton
-            isLoading={isLoading}
             onClick={async () => {
-              setIsLoading(true)
-              //pin image to IPFS
-              const newImageIpfsHash = await pinImageToIPFS(
-                pinataJWT || '',
-                entityImage,
-                multisigAddress + ' Image'
-              )
+              try {
+                //pin image to IPFS
+                const newImageIpfsHash = await pinImageToIPFS(
+                  pinataJWT || '',
+                  entityImage,
+                  multisigAddress + ' Image'
+                )
 
-              if (!newImageIpfsHash) {
-                return toast.error('Error pinning image to IPFS')
-              }
-
-              //get the next token id of the nft collection
-              const totalSupply = await entityContract?.call('totalSupply')
-              const nextTokenId = totalSupply.toString()
-
-              // pin metadata to IPFS
-              const metadata = {
-                name: `Entity #${nextTokenId}`,
-                description: `${entityData.name} : ${entityData.description}`,
-                image: `ipfs://${newImageIpfsHash}`,
-                attributes: [
-                  {
-                    trait_type: 'multisig',
-                    value: multisigAddress,
-                  },
-                  {
-                    trait_type: 'twitter',
-                    value: entityData.twitter,
-                  },
-                  {
-                    trait_type: 'communications',
-                    value: entityData.communications,
-                  },
-                  {
-                    trait_type: 'website',
-                    value: entityData.website,
-                  },
-                  {
-                    trait_type: 'view',
-                    value: entityData.view,
-                  },
-                  {
-                    trait_type: 'hatsTreeId',
-                    value: hatsTreeId,
-                  },
-                ],
-              }
-
-              const newMetadataIpfsHash = await pinMetadataToIPFS(
-                pinataJWT || '',
-                metadata,
-                multisigAddress + ' Metadata'
-              )
-
-              if (!newMetadataIpfsHash)
-                return toast.error('Error pinning metadata to IPFS')
-              //mint NFT to safe
-              await entityContract?.call(
-                'mintTo',
-                [address, 'ipfs://' + newMetadataIpfsHash],
-                {
-                  value: ethers.utils.parseEther('0.01'),
+                if (!newImageIpfsHash) {
+                  return toast.error('Error pinning image to IPFS')
                 }
-              )
-              router.push(`/entities/${nextTokenId}`)
-              setIsLoading(false)
+
+                //get the next token id of the nft collection
+                const totalSupply = await entityContract?.call('totalSupply')
+                const nextTokenId = totalSupply.toString()
+
+                // pin metadata to IPFS
+                const metadata = {
+                  name: `Entity #${nextTokenId}`,
+                  description: `${entityData.name} : ${entityData.description}`,
+                  image: `ipfs://${newImageIpfsHash}`,
+                  attributes: [
+                    {
+                      trait_type: 'multisig',
+                      value: multisigAddress,
+                    },
+                    {
+                      trait_type: 'twitter',
+                      value: entityData.twitter,
+                    },
+                    {
+                      trait_type: 'communications',
+                      value: entityData.communications,
+                    },
+                    {
+                      trait_type: 'website',
+                      value: entityData.website,
+                    },
+                    {
+                      trait_type: 'view',
+                      value: entityData.view,
+                    },
+                    {
+                      trait_type: 'hatsTreeId',
+                      value: hatTreeId,
+                    },
+                  ],
+                }
+
+                const newMetadataIpfsHash = await pinMetadataToIPFS(
+                  pinataJWT || '',
+                  metadata,
+                  multisigAddress + ' Metadata'
+                )
+
+                if (!newMetadataIpfsHash)
+                  return toast.error('Error pinning metadata to IPFS')
+                //mint NFT to safe
+                await entityContract?.call(
+                  'mintTo',
+                  [multisigAddress, 'ipfs://' + newMetadataIpfsHash],
+                  {
+                    value: ethers.utils.parseEther('0.1'),
+                  }
+                )
+                router.push(`/entity/${nextTokenId}`)
+              } catch (err) {
+                console.error(err)
+              }
             }}
           >
             Mint

@@ -8,9 +8,9 @@ import {
 } from '@thirdweb-dev/react'
 import { ENTITY_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
-import ChainContext from '../../lib/thirdweb/chain-context'
-import { useEntityMetadata } from '@/lib/entity/useEntityMetadata'
-import Head from '../../components/layout/Head'
+import ChainContext from '../lib/thirdweb/chain-context'
+import { useEntityMetadata } from '@/lib/entity/useEntityData'
+import Head from '../components/layout/Head'
 import { ArrowLeft, ArrowSide, SearchIcon } from '@/components/assets'
 
 function EntityCard({ metadata, owner }: { metadata: any; owner: string }) {
@@ -91,7 +91,7 @@ export default function Entities() {
     data: nfts,
     isLoading,
     error,
-  } = useNFTs(entityContract, { start: 2, count: 100 })
+  } = useNFTs(entityContract, { start: 0, count: 100 })
 
   const [pageIdx, setPageIdx] = useState(1)
 
@@ -136,7 +136,10 @@ export default function Entities() {
           />
         </div>
         {isLoading && <p className="text-center">Loading...</p>}
-        <div className="grid grid-cols-1 md:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center place-items-center">
+        <div
+          className="grid grid-cols-1
+        lg:grid-cols-2 xl:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center place-items-center"
+        >
           {cachedNFTs?.slice((pageIdx - 1) * 9, pageIdx * 9).map((nft) => {
             if (nft.metadata.name !== 'Failed to load NFT metadata') {
               return (
