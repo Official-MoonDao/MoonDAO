@@ -16,7 +16,7 @@ type TierProps = {
 function Tier({ label, description, points, onClick }: TierProps) {
   return (
     <div
-className="w-full md:w-2/3 group transition-all duration-150 text-black cursor-pointer dark:text-white p-8 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22]"
+      className="w-full md:w-2/3 group transition-all duration-150 text-black cursor-pointer dark:text-white p-8 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22]"
       onClick={onClick}
     >
       <div className="w-full h-full flex flex-col md:flex-row space-x-10">
@@ -30,9 +30,9 @@ className="w-full md:w-2/3 group transition-all duration-150 text-black cursor-p
           height={312}
           alt=""
         />
- <div className="flex flex-col justify-between">
+        <div className="flex flex-col justify-between">
           <div className="flex flex-col space-y-5">
-            <p className="p-2 text-sm text-red-500 rounded-full bg-red-600 bg-opacity-10">
+            <p className="p-2 text-sm text-moon-orange rounded-full bg-red-600 bg-opacity-10">
               {description}
             </p>
             <h1 className={'font-GoodTimes text-3xl'}>{label} CREATION</h1>
@@ -50,7 +50,7 @@ className="w-full md:w-2/3 group transition-all duration-150 text-black cursor-p
               ))}
             </div>
           </div>
-          <button className="self-start p-2 text-red-500 rounded-full bg-red-600 bg-opacity-10 after:content-['_↗']">
+          <button className="self-start p-2 text-moon-orange rounded-full bg-moon-orange bg-opacity-10 after:content-['_↗']">
             See more
           </button>
         </div>

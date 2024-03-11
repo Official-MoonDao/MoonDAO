@@ -64,7 +64,7 @@ export function CreateEntity({
       {/* Typeform form */}
       {stage === 0 && (
         <StageContainer title="Info" description="Input your information">
-          <div className="w-full md:w-3/4">
+          <div className="w-full">
             <Widget
               className="w-[100%] md:w-[100%]"
               id={process.env.NEXT_PUBLIC_TYPEFORM_ENTITY_FORM_ID as string}
@@ -93,7 +93,6 @@ export function CreateEntity({
               }}
               height={500}
             />
-            <StageButton onClick={() => setStage(1)}>Next</StageButton>
             <button
               className="p-2 border-2"
               onClick={() => {
