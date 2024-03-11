@@ -58,13 +58,13 @@ export function CreateEntity({
     <div className="flex flex-col">
       <Steps
         className="mb-8"
-        steps={['Form', 'Design', 'Treasury ', 'Organization', 'Mint']}
+        steps={['Info', 'Design', 'Treasury ', 'Organization', 'Mint']}
         currStep={stage}
       />
 
       {/* Typeform form */}
       {stage === 0 && (
-        <StageContainer title="Info" description="Complete the form.">
+        <StageContainer title="Info" description="Input your information">
           <div className="w-full md:w-3/4">
             <Widget
               className="w-[100%] md:w-[100%]"
@@ -94,6 +94,7 @@ export function CreateEntity({
               }}
               height={500}
             />
+            <StageButton onClick={() => setStage(1)}>Next</StageButton>
             <button
               className="p-2 border-2"
               onClick={() => {
@@ -153,7 +154,7 @@ export function CreateEntity({
       {stage === 2 && (
         <StageContainer
           title="Treasury"
-          description="Create a treasury for your Entity."
+          description="Create a treasury for your Entity"
         >
           {multisigAddress && (
             <div className="flex flex-col">
@@ -181,6 +182,12 @@ export function CreateEntity({
               <p>Safe Address: {multisigAddress}</p>
             </div>
           )}
+          <Image
+            src={'/onboarding-icons/safe.png'}
+            width={400}
+            height={400}
+            alt=""
+          />
           <StageButton
             isLoading={isLoading}
             onClick={async () => {
@@ -212,8 +219,14 @@ export function CreateEntity({
       {stage === 3 && (
         <StageContainer
           title="Organization"
-          description="Create a hat tree for your entity."
+          description="Create a hat tree for your Entity"
         >
+          <Image
+            src={'/onboarding-icons/hat.png'}
+            width={400}
+            height={400}
+            alt=""
+          />
           <StageButton
             isLoading={isLoading}
             onClick={async () => {
@@ -367,7 +380,8 @@ export function CreateEntity({
       )}
 
       {/* Dev Buttons */}
-      <div className="ml-12 flex flex-row justify-between w-3/4 ">
+
+      <div className="ml-8 flex flex-row justify-between w-3/4 mt-8">
         <button
           className="p-3 bg-blue-500"
           onClick={() => {

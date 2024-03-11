@@ -99,9 +99,11 @@ module.exports = {
           secondary: '#ffbc5c',
           accent: '#ffbc5c',
           neutral: '#3d4451',
+          error: '#D7594F',
           'primary-content': '#ffffff',
           'base-100': '#ffffff',
           'base-content': '#ffffff',
+          "moon": "#D7594F"
         },
       },
     ],
