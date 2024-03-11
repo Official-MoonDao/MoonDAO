@@ -1,4 +1,4 @@
-import { useWallets } from '@privy-io/react-auth'
+import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { HATS_ADDRESS } from 'const/config'
 import Image from 'next/image'
@@ -14,10 +14,21 @@ type TierProps = {
 }
 
 function Tier({ label, description, points, onClick }: TierProps) {
+  const { user } = usePrivy()
+
+  const { login } = useLogin({
+    onComplete: () => {
+      onClick()
+    },
+  })
+
   return (
     <div
       className="w-full md:w-2/3 group transition-all duration-150 text-black cursor-pointer dark:text-white p-8 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22]"
-      onClick={onClick}
+      onClick={() => {
+        if (!user) login()
+        else onClick()
+      }}
     >
       <div className="w-full h-full flex flex-col md:flex-row space-x-10">
         <Image
