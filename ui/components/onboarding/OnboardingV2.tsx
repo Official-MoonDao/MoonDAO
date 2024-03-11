@@ -16,27 +16,43 @@ type TierProps = {
 function Tier({ label, description, points, onClick }: TierProps) {
   return (
     <div
-      className="w-full max-w-[500px] group transition-all duration-150 text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0d0a1b]"
+className="w-full md:w-2/3 group transition-all duration-150 text-black cursor-pointer dark:text-white p-8 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22]"
       onClick={onClick}
     >
-      <div className="w-full h-full flex flex-col md:flex-row justify-between">
+      <div className="w-full h-full flex flex-col md:flex-row space-x-10">
         <Image
-          src={'/onboarding-icons/citizen-white.svg'}
-          width={100}
-          height={100}
+          src={
+            label === 'ENTITY'
+              ? '/onboarding-icons/entity-creation-icon.png'
+              : '/onboarding-icons/citizen-creation-icon.png'
+          }
+          width={254}
+          height={312}
           alt=""
         />
-        <div className="py-8 md:w-3/4">
-          <p className="mb-4 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
-            {description}
-          </p>
-          <h1 className={`text-3xl font-bold`}>{label}</h1>
-          <div className="w-full border-[1px] bg-[#ffffff25] md:w-1/2" />
-          <div>
-            {points.map((p: any, i: number) => (
-              <p key={`${label}-tier-point-${i}`}>{'✓' + p}</p>
-            ))}
+ <div className="flex flex-col justify-between">
+          <div className="flex flex-col space-y-5">
+            <p className="p-2 text-sm text-red-500 rounded-full bg-red-600 bg-opacity-10">
+              {description}
+            </p>
+            <h1 className={'font-GoodTimes text-3xl'}>{label} CREATION</h1>
+            <div>
+              {points.map((p: any, i: number) => (
+                <div
+                  className="flex flex-row bg-[#FFFFFF08] bg-opacity-3 p-2 rounded-sm space-x-2"
+                  key={`${label}-tier-point-${i}`}
+                >
+                  <p className="rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2 ">
+                    ✓
+                  </p>
+                  <p>{p}</p>
+                </div>
+              ))}
+            </div>
           </div>
+          <button className="self-start p-2 text-red-500 rounded-full bg-red-600 bg-opacity-10 after:content-['_↗']">
+            See more
+          </button>
         </div>
       </div>
     </div>
@@ -55,7 +71,7 @@ export function OnboardingV2({ selectedChain }: any) {
   const address = useAddress()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
-  const [selectedTier, setSelectedTier] = useState<string>()
+  const [selectedTier, setSelectedTier] = useState<'entity' | 'citizen'>()
 
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
 
@@ -83,28 +99,27 @@ export function OnboardingV2({ selectedChain }: any) {
   }
 
   return (
-    <div className="flex flex-col justify-center gap-12">
-      <div className="flex flex-col gap-4 items-start lg:px-3 xl:px-9 py-4 lg:pb-14 lg:mt-1 md:max-w-[1080px]">
-        <h1 className="text-3xl font-GoodTimes">Welcome to MoonDAO</h1>
-        <p>
+    <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white">
+      <div className="flex flex-col items-center space-y-7">
+        <h1 className={`page-title`}>Welcome to MoonDAO</h1>
+        <p className="text-2xl text-center antialiased">
           Begin your journey with MoonDAO, participate in governance and
           decision making by voting on projects, proposals, and treasury
           spending.
         </p>
+        <Tier
+          label="CITIZEN"
+          description="Join the internet's space program today!"
+          points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
+          onClick={() => setSelectedTier('citizen')}
+        />
+        <Tier
+          label="ENTITY"
+          description="Bring your entity onchain today!"
+          points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
+          onClick={() => setSelectedTier('entity')}
+        />
       </div>
-
-      <Tier
-        label="Citizen"
-        description="Bring yourself onchain today!"
-        points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
-        onClick={() => setSelectedTier('citizen')}
-      />
-      <Tier
-        label="Entity"
-        description="Bring your entity onchain today!"
-        points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
-        onClick={() => setSelectedTier('entity')}
-      />
     </div>
   )
 }
