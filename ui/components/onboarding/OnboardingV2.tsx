@@ -24,13 +24,13 @@ function Tier({ label, description, points, onClick }: TierProps) {
 
   return (
     <div
-      className="w-full md:w-2/3 group transition-all duration-150 text-black cursor-pointer dark:text-white p-8 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22]"
+      className="w-full group transition-all duration-150 text-black cursor-pointer dark:text-white p-8 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22]"
       onClick={() => {
         if (!user) login()
         else onClick()
       }}
     >
-      <div className="w-full h-full flex flex-col md:flex-row space-x-10">
+      <div className="w-full h-full flex flex-col lg:flex-row lg:space-x-10">
         <Image
           src={
             label === 'ENTITY'
