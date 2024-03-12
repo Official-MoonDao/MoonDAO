@@ -54,9 +54,9 @@ export function CreateEntity({
   )
 
   return (
-    <div className="flex flex-col lg:max-w-[1256px] md:items-start">
+    <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
       <Steps
-        className="mb-8 w-full lg:max-w-[900px] md:-ml-12"
+        className="mb-4 w-full lg:max-w-[900px] md:-ml-12"
         steps={['Info', 'Design', 'Treasury ', 'Org', 'Mint']}
         currStep={stage}
       />

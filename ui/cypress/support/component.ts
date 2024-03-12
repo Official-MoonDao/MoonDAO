@@ -16,6 +16,7 @@
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
 import { mount } from 'cypress/react18'
+import * as NextRouter from 'next/router'
 import './commands'
 
 // Augment the Cypress namespace to include type definitions for
@@ -31,6 +32,7 @@ declare global {
     interface Chainable {
       mount: typeof mount
       getById: GetById
+      mountNextRouter: (pathname: string) => void
     }
   }
 }
@@ -45,3 +47,9 @@ Cypress.Commands.add('getById', (input: any) => {
 // Example use:
 // React: <div data-cy="my-id" />
 // Cypress: cy.getById('my-id')
+
+//mock next router
+Cypress.Commands.add('mountNextRouter', (pathname: string) => {
+  const push = cy.stub()
+  cy.stub(NextRouter, 'useRouter').returns({ pathname, push })
+})
