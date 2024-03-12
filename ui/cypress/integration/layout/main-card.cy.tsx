@@ -6,8 +6,8 @@ describe('<MainCard />', () => {
     cy.mount(<MainCard title={'test'} />)
     cy.get('.card-title').contains('test')
 
-    const loading = cy.mount(<MainCard title={'test'} loading={true} />)
+    cy.mount(<MainCard title={'test'} loading={true} />)
 
-    loading.get('.btn').should('exist')
+    cy.get('.btn').should('exist')
   })
 })
