@@ -1,4 +1,4 @@
-import { useWallets } from '@privy-io/react-auth'
+import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { HATS_ADDRESS } from 'const/config'
 import Image from 'next/image'
@@ -14,10 +14,21 @@ type TierProps = {
 }
 
 function Tier({ label, description, points, onClick }: TierProps) {
+  const { user } = usePrivy()
+
+  const { login } = useLogin({
+    onComplete: () => {
+      onClick()
+    },
+  })
+
   return (
     <div
       className="w-full md:w-2/3 transition-all duration-150 text-black cursor-pointer dark:text-white md:p-8 flex flex-col border-[2px] hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22] p-3"
-      onClick={onClick}
+      onClick={() => {
+        if (!user) login()
+        else onClick()
+      }}
     >
       <div className="w-full h-full flex flex-col md:flex-row md:space-x-10">
         <Image
@@ -33,7 +44,7 @@ function Tier({ label, description, points, onClick }: TierProps) {
 
         <div className="flex flex-col justify-between w-full items-start">
           <div className="flex flex-col space-y-5">
-            <p className="md:p-2 text-sm text-red-500 rounded-full bg-red-600 bg-opacity-10">
+            <p className="md:p-2 text-sm text-moon-orange rounded-full bg-red-600 bg-opacity-10">
               {description}
             </p>
             <h1 className={'font-GoodTimes text-3xl'}>{label} CREATION</h1>
@@ -51,7 +62,7 @@ function Tier({ label, description, points, onClick }: TierProps) {
               ))}
             </div>
           </div>
-          <button className="self-start p-2 text-red-500 rounded-full bg-red-600 bg-opacity-10 after:content-['_↗']">
+          <button className="self-start p-2 text-moon-orange rounded-full bg-moon-orange bg-opacity-10 after:content-['_↗']">
             See more
           </button>
         </div>

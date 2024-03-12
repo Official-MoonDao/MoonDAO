@@ -1259,10 +1259,10 @@
     stream-browserify "^3.0.0"
     util "^0.12.4"
 
-"@coinbase/wallet-sdk@^3.9.0":
-  version "3.9.1"
-  resolved "https://registry.yarnpkg.com/@coinbase/wallet-sdk/-/wallet-sdk-3.9.1.tgz#503a14671bb392d653623ef2340934e213ac971f"
-  integrity sha512-cGUE8wm1/cMI8irRMVOqbFWYcnNugqCtuy2lnnHfgloBg+GRLs9RsrkOUDMdv/StfUeeKhCDyYudsXXvcL1xIA==
+"@coinbase/wallet-sdk@^3.9.2":
+  version "3.9.2"
+  resolved "https://registry.yarnpkg.com/@coinbase/wallet-sdk/-/wallet-sdk-3.9.2.tgz#757d6652d0972eb8804c50e3923a05242833caf1"
+  integrity sha512-SyfUlG0DzgRu2WQ8+c7DpFEIe8Bt/nxyP1hcExDUXF7cHaopdAU43djT8SLIWH8Li40ZK9VBGVuNIK/pwHR9LA==
   dependencies:
     bn.js "^5.2.1"
     buffer "^6.0.3"
@@ -2603,12 +2603,12 @@
   resolved "https://registry.npmjs.org/@pedrouid/environment/-/environment-1.0.1.tgz"
   integrity sha512-HaW78NszGzRZd9SeoI3JD11JqY+lubnaOx7Pewj5pfjqWXOEATpeKIFb9Z4t2WBUK2iryiXX3lzWwmYWgUL0Ug==
 
-"@privy-io/react-auth@^1.57.2":
-  version "1.57.2"
-  resolved "https://registry.yarnpkg.com/@privy-io/react-auth/-/react-auth-1.57.2.tgz#48e391aa4ce054dae4774ccb227d6b0796594a65"
-  integrity sha512-F0IYmbYfu4mlQxDNvVP6ZoaFrsW+Icr73FxTxCzQd+dpFrZRiPDJooWYXJMxAhI3yFfL8kyjvX8BXOX/v64UyQ==
+"@privy-io/react-auth@^1.59.2":
+  version "1.59.2"
+  resolved "https://registry.yarnpkg.com/@privy-io/react-auth/-/react-auth-1.59.2.tgz#2a71991eddcd5ef7cb4e9a043913787cc739ded2"
+  integrity sha512-iIyeaMmcAhFNxe6UjhxO+hsWsc6oVvbsghXnisPJYGsmGyp8d4XJ85uek90Oorr+qtGd4vtIA9bjosvWZEB5kA==
   dependencies:
-    "@coinbase/wallet-sdk" "^3.9.0"
+    "@coinbase/wallet-sdk" "^3.9.2"
     "@ethersproject/abstract-signer" "^5.7.0"
     "@ethersproject/address" "^5.7.0"
     "@ethersproject/bignumber" "^5.7.0"
