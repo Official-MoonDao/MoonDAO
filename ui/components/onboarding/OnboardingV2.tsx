@@ -24,13 +24,13 @@ function Tier({ label, description, points, onClick }: TierProps) {
 
   return (
     <div
-      className="w-full group transition-all duration-150 text-black cursor-pointer dark:text-white p-8 flex flex-col items-center border-[2px] group hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22]"
+      className="w-full md:w-2/3 transition-all duration-150 text-black cursor-pointer dark:text-white md:p-8 flex flex-col border-[2px] hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22] p-3"
       onClick={() => {
         if (!user) login()
         else onClick()
       }}
     >
-      <div className="w-full h-full flex flex-col lg:flex-row lg:space-x-10">
+      <div className="w-full h-full flex flex-col md:flex-row md:space-x-10">
         <Image
           src={
             label === 'ENTITY'
@@ -41,9 +41,10 @@ function Tier({ label, description, points, onClick }: TierProps) {
           height={312}
           alt=""
         />
-        <div className="flex flex-col justify-between">
+
+        <div className="flex flex-col justify-between w-full items-start">
           <div className="flex flex-col space-y-5">
-            <p className="p-2 text-sm text-moon-orange rounded-full bg-red-600 bg-opacity-10">
+            <p className="md:p-2 text-sm text-moon-orange rounded-full bg-red-600 bg-opacity-10">
               {description}
             </p>
             <h1 className={'font-GoodTimes text-3xl'}>{label} CREATION</h1>
@@ -97,7 +98,7 @@ export function OnboardingV2({ selectedChain }: any) {
   if (selectedTier === 'entity') {
     return (
       <div>
-        <BackButton setSelectedTier={setSelectedTier} />
+        {/* <BackButton setSelectedTier={setSelectedTier} /> */}
         <CreateEntity
           address={address}
           selectedChain={selectedChain}
@@ -111,25 +112,27 @@ export function OnboardingV2({ selectedChain }: any) {
 
   return (
     <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white">
-      <div className="flex flex-col items-center space-y-7">
+      <div className="flex flex-col space-y-7">
         <h1 className={`page-title`}>Welcome to MoonDAO</h1>
-        <p className="text-2xl text-center antialiased">
+        <p className="text-2xl  antialiased">
           Begin your journey with MoonDAO, participate in governance and
           decision making by voting on projects, proposals, and treasury
           spending.
         </p>
-        <Tier
-          label="CITIZEN"
-          description="Join the internet's space program today!"
-          points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
-          onClick={() => setSelectedTier('citizen')}
-        />
-        <Tier
-          label="ENTITY"
-          description="Bring your entity onchain today!"
-          points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
-          onClick={() => setSelectedTier('entity')}
-        />
+        <div className="flex flex-col  space-y-7">
+          <Tier
+            label="CITIZEN"
+            description="Join the internet's space program today!"
+            points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
+            onClick={() => setSelectedTier('citizen')}
+          />
+          <Tier
+            label="ENTITY"
+            description="Bring your entity onchain today!"
+            points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
+            onClick={() => setSelectedTier('entity')}
+          />
+        </div>
       </div>
     </div>
   )
