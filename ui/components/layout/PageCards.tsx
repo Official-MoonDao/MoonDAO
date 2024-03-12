@@ -5,7 +5,7 @@ type PageCardsProps = {
   id: string
   header?: string
   title: string
-  description: string
+  description: any
 }
 
 export function PageCards({
