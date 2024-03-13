@@ -123,7 +123,7 @@ export default function Entities() {
     <main className="animate-fadeIn">
       <Head title="Entity Directory" image="" />
       <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-[#080C20] font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white">
-        <h1 className={`page-title`}>Entity Directory</h1>
+        <h1 className={`page-title`}>Directory</h1>
         <div className="w-1/2 h-[30px] flex-row flex space-x-5">
           <SearchIcon />
           <input

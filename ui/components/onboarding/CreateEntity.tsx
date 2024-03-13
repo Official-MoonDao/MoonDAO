@@ -132,8 +132,8 @@ export function CreateEntity({
               type="file"
               accept="image/png, image/jpeg"
             />
-            <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-              {`Upload your organization's logo and we'll create a unique image to represent you Entity's certification within MoonDAO.`}
+            <p className="mt-6 font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`Upload your organization's logo to create a unique image that represents your Entity's certification onchain.`}
             </p>
             <StageButton
               onClick={() => {
@@ -189,9 +189,11 @@ export function CreateEntity({
             height={400}
             alt=""
           />
-          <p className="mt-6 w-[400px] font-Lato text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-            {`This will allow you to receive funds from MoonDAO and allow your entity to interact with any smart contracts within the Ethereum ecosystem.
-            Your Treasury will start out as a multisignature wallet using Gnosis safe, you can add more signers later via your Entity management portal.`}
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`A self-custodied multisignature treasury will secure your organization's assets, allowing you to interact with any smart contracts within the Ethereum ecosystem.`}
+          </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`You can add more signers later via your Entity management portal.`}
           </p>
           <StageButton
             onClick={async () => {
@@ -228,11 +230,12 @@ export function CreateEntity({
             height={400}
             alt=""
           />
-          <p className="mt-6 w-[400px] font-Lato text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-              {`This will create an Administrator token for your entity that can modify your onchain organization.
-              To begin, the currently connected wallet will act as the Administrator.
-              You can change the administrator or add more members to your organization using the Hats Protocol within your Entity Management Portal.`}
-            </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`The admin can modify your organization's information. To begin, the currently connected wallet will act as the Administrator.`}
+          </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`You can change the admin or add more members to your organization using the Hats Protocol within your Entity Management Portal.`}
+          </p>
           <StageButton
             onClick={async () => {
               try {
@@ -312,11 +315,12 @@ export function CreateEntity({
       {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
       {stage === 4 && (
         <StageContainer title="Mint Entity" description="Mint your Entity onchain!">
-          <p className="mt-6 w-[400px] font-Lato text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-              {`Make sure all your information is displayed correcly. 
-              The entity administrator (your current connected wallet) will be able to update this information later if anything changes. 
-              Welcome onboard the future of off-world coordination via MoonDAO.`}
-            </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`Make sure all your information is displayed correcly.`}
+          </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`Welcome to the future of off-world coordination with MoonDAO.`}
+          </p>
           <StageButton
             onClick={async () => {
               try {
