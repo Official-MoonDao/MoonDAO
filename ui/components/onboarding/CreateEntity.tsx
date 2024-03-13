@@ -63,7 +63,7 @@ export function CreateEntity({
 
       {/* Typeform form */}
       {stage === 0 && (
-        <StageContainer title="Info" description="Input your information">
+        <StageContainer title="Info" description="Input your information (2 minutes)">
           <div className="w-full">
             <Widget
               className="w-[100%] md:w-[100%]"
@@ -114,7 +114,7 @@ export function CreateEntity({
       {stage === 1 && (
         <StageContainer
           title="Design"
-          description="Design an Image for your Entity."
+          description="Design your unique onchain registration certificate for your Entity by uploading your logo."
         >
           {entityImage ? (
             <Image
@@ -152,7 +152,7 @@ export function CreateEntity({
       {stage === 2 && (
         <StageContainer
           title="Treasury"
-          description="Create a treasury for your Entity"
+          description="Create a treasury for your Entity. This will allow you to receive funds from MoonDAO and allow your entity to interact with any smart contracts within the Ethereum ecosystem. Your Treasury will start out as a multisignature wallet using Gnosis safe, you can add more signers later via your Entity management portal."
         >
           {multisigAddress && (
             <div className="flex flex-col">
@@ -213,7 +213,7 @@ export function CreateEntity({
       {stage === 3 && (
         <StageContainer
           title="Organization"
-          description="Create a hat tree for your Entity"
+          description="Create a Org Tree for your Entity. This will allow you to set permissions for your onchain Entity as you bring your team onchain. This creates an administrator hat that will lie in your personal connected wallet. You can change the administrator or add more members to your organization using the Hats Protocol within your Entity Management Portal."
         >
           <Image
             src={'/onboarding-icons/hat.png'}
@@ -299,7 +299,7 @@ export function CreateEntity({
       )}
       {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
       {stage === 4 && (
-        <StageContainer title="Mint" description="Mint your Entity NFT!">
+        <StageContainer title="Mint Entity" description="Mint your Entity onchain! Make sure all your information is displayed correcly. The entity administrator (your current connected wallet) will be able to update this information later if anything changes. Welcome onboard the future of off-world coordination via MoonDAO.">
           <StageButton
             onClick={async () => {
               try {
@@ -373,7 +373,7 @@ export function CreateEntity({
               }
             }}
           >
-            Mint
+            Mint Entity
           </StageButton>
         </StageContainer>
       )}

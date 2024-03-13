@@ -123,13 +123,19 @@ export function OnboardingV2({ selectedChain }: any) {
           <Tier
             label="CITIZEN"
             description="Join the internet's space program today!"
-            points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
+            points={['Become a Citizen of the MoonDAO community.',
+                     'Access the biggest network of startups, nations, and individuals working to create a long-term presence on the lunar surface.',
+                     'Help govern the fate of the first off-world settlement.']}
             onClick={() => setSelectedTier('citizen')}
           />
           <Tier
             label="ENTITY"
             description="Bring your entity onchain today!"
-            points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
+            points={['Bring your organization onchain by registering your entity with MoonDAO.',
+                     'Apply for funding from the MoonDAO multi-million dollar treasury.',
+                     'Recruit from our community and network with other cutting-edge organizations.',
+                     'Access the frontier of onchain tooling to manage your organization and interface with any other onchain contracts.',
+                     'List your products and services on the MoonDAO Marketplace.']}
             onClick={() => setSelectedTier('entity')}
           />
         </div>
