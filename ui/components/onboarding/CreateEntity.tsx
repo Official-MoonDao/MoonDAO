@@ -57,13 +57,13 @@ export function CreateEntity({
     <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
       <Steps
         className="mb-4 w-full lg:max-w-[900px] md:-ml-12"
-        steps={['Info', 'Design', 'Treasury ', 'Org', 'Mint']}
+        steps={['Info', 'Design', 'Treasury ', 'Admin', 'Mint']}
         currStep={stage}
       />
 
       {/* Typeform form */}
       {stage === 0 && (
-        <StageContainer title="Info" description="Input your information (2 minutes)">
+        <StageContainer title="Info" description="Input your organization's information.">
           <div className="w-full">
             <Widget
               className="w-[100%] md:w-[100%]"
@@ -114,7 +114,7 @@ export function CreateEntity({
       {stage === 1 && (
         <StageContainer
           title="Design"
-          description="Design your unique onchain registration certificate for your Entity by uploading your logo."
+          description="Design your unique onchain registration certificate."
         >
           {entityImage ? (
             <Image
@@ -124,14 +124,17 @@ export function CreateEntity({
               alt=""
             />
           ) : (
-            <div className="w-[300px] h-[300px] bg-[#ffffff50]"></div>
+            <div className="w-[350px] h-[350px] bg-[#ffffff50]"></div>
           )}
-          <div className="flex flex-col w-[300px]">
+          <div className="flex flex-col w-[400px]">
             <input
               onChange={(e: any) => setEntityImage(e.target.files[0])}
               type="file"
               accept="image/png, image/jpeg"
             />
+            <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`Upload your organization's logo and we'll create a unique image to represent you Entity's certification within MoonDAO.`}
+            </p>
             <StageButton
               onClick={() => {
                 if (!entityImage) return toast.error('No file selected')
@@ -152,7 +155,7 @@ export function CreateEntity({
       {stage === 2 && (
         <StageContainer
           title="Treasury"
-          description="Create a treasury for your Entity. This will allow you to receive funds from MoonDAO and allow your entity to interact with any smart contracts within the Ethereum ecosystem. Your Treasury will start out as a multisignature wallet using Gnosis safe, you can add more signers later via your Entity management portal."
+          description="Create a treasury for your Entity."
         >
           {multisigAddress && (
             <div className="flex flex-col">
@@ -186,6 +189,10 @@ export function CreateEntity({
             height={400}
             alt=""
           />
+          <p className="mt-6 w-[400px] font-Lato text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`This will allow you to receive funds from MoonDAO and allow your entity to interact with any smart contracts within the Ethereum ecosystem.
+            Your Treasury will start out as a multisignature wallet using Gnosis safe, you can add more signers later via your Entity management portal.`}
+          </p>
           <StageButton
             onClick={async () => {
               const provider = await wallets[selectedWallet].getEthersProvider()
@@ -212,8 +219,8 @@ export function CreateEntity({
       {/* Hats */}
       {stage === 3 && (
         <StageContainer
-          title="Organization"
-          description="Create a Org Tree for your Entity. This will allow you to set permissions for your onchain Entity as you bring your team onchain. This creates an administrator hat that will lie in your personal connected wallet. You can change the administrator or add more members to your organization using the Hats Protocol within your Entity Management Portal."
+          title="Admin"
+          description="Create an Admin for your Entity."
         >
           <Image
             src={'/onboarding-icons/hat.png'}
@@ -221,6 +228,11 @@ export function CreateEntity({
             height={400}
             alt=""
           />
+          <p className="mt-6 w-[400px] font-Lato text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`This will create an Administrator token for your entity that can modify your onchain organization.
+              To begin, the currently connected wallet will act as the Administrator.
+              You can change the administrator or add more members to your organization using the Hats Protocol within your Entity Management Portal.`}
+            </p>
           <StageButton
             onClick={async () => {
               try {
@@ -293,13 +305,18 @@ export function CreateEntity({
               }
             }}
           >
-            Create Hat Tree
+            Create Admin
           </StageButton>
         </StageContainer>
       )}
       {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
       {stage === 4 && (
-        <StageContainer title="Mint Entity" description="Mint your Entity onchain! Make sure all your information is displayed correcly. The entity administrator (your current connected wallet) will be able to update this information later if anything changes. Welcome onboard the future of off-world coordination via MoonDAO.">
+        <StageContainer title="Mint Entity" description="Mint your Entity onchain!">
+          <p className="mt-6 w-[400px] font-Lato text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`Make sure all your information is displayed correcly. 
+              The entity administrator (your current connected wallet) will be able to update this information later if anything changes. 
+              Welcome onboard the future of off-world coordination via MoonDAO.`}
+            </p>
           <StageButton
             onClick={async () => {
               try {
