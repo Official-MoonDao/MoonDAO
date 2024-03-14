@@ -51,7 +51,7 @@ export const navigation = [
     name: 'Marketplace',
     icon: RocketLaunchIcon,
     children: [
-      { name: 'Sweepstakes 🚀', href: '/sweepstakes' },
+      { name: 'Ticket To Space 🚀', href: '/sweepstakes' },
       { name: 'ZeroG', href: '/zero-g' },
       { name: 'Lifeship', href: '/lifeship' },
       {

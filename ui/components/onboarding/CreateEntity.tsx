@@ -57,13 +57,13 @@ export function CreateEntity({
     <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
       <Steps
         className="mb-4 w-full lg:max-w-[900px] md:-ml-12"
-        steps={['Info', 'Design', 'Treasury ', 'Org', 'Mint']}
+        steps={['Info', 'Design', 'Treasury ', 'Admin', 'Mint']}
         currStep={stage}
       />
 
       {/* Typeform form */}
       {stage === 0 && (
-        <StageContainer title="Info" description="Input your information">
+        <StageContainer title="Info" description="Input your organization's information.">
           <div className="w-full">
             <Widget
               className="w-[100%] md:w-[100%]"
@@ -114,7 +114,7 @@ export function CreateEntity({
       {stage === 1 && (
         <StageContainer
           title="Design"
-          description="Design an Image for your Entity."
+          description="Design your unique onchain registration certificate."
         >
           {entityImage ? (
             <Image
@@ -124,14 +124,17 @@ export function CreateEntity({
               alt=""
             />
           ) : (
-            <div className="w-[300px] h-[300px] bg-[#ffffff50]"></div>
+            <div className="w-[350px] h-[350px] bg-[#ffffff50]"></div>
           )}
-          <div className="flex flex-col w-[300px]">
+          <div className="flex flex-col w-[400px]">
             <input
               onChange={(e: any) => setEntityImage(e.target.files[0])}
               type="file"
               accept="image/png, image/jpeg"
             />
+            <p className="mt-6 font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`Upload your organization's logo to create a unique image that represents your Entity's certification onchain.`}
+            </p>
             <StageButton
               onClick={() => {
                 if (!entityImage) return toast.error('No file selected')
@@ -152,7 +155,7 @@ export function CreateEntity({
       {stage === 2 && (
         <StageContainer
           title="Treasury"
-          description="Create a treasury for your Entity"
+          description="Create a treasury for your Entity."
         >
           {multisigAddress && (
             <div className="flex flex-col">
@@ -186,6 +189,12 @@ export function CreateEntity({
             height={400}
             alt=""
           />
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`A self-custodied multisignature treasury will secure your organization's assets, allowing you to interact with any smart contracts within the Ethereum ecosystem.`}
+          </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`You can add more signers later via your Entity management portal.`}
+          </p>
           <StageButton
             onClick={async () => {
               const provider = await wallets[selectedWallet].getEthersProvider()
@@ -212,8 +221,8 @@ export function CreateEntity({
       {/* Hats */}
       {stage === 3 && (
         <StageContainer
-          title="Organization"
-          description="Create a hat tree for your Entity"
+          title="Admin"
+          description="Create an Admin for your Entity."
         >
           <Image
             src={'/onboarding-icons/hat.png'}
@@ -221,6 +230,12 @@ export function CreateEntity({
             height={400}
             alt=""
           />
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`The admin can modify your organization's information. To begin, the currently connected wallet will act as the Administrator.`}
+          </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`You can change the admin or add more members to your organization using the Hats Protocol within your Entity Management Portal.`}
+          </p>
           <StageButton
             onClick={async () => {
               try {
@@ -293,13 +308,19 @@ export function CreateEntity({
               }
             }}
           >
-            Create Hat Tree
+            Create Admin
           </StageButton>
         </StageContainer>
       )}
       {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
       {stage === 4 && (
-        <StageContainer title="Mint" description="Mint your Entity NFT!">
+        <StageContainer title="Mint Entity" description="Mint your Entity onchain!">
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`Make sure all your information is displayed correcly.`}
+          </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`Welcome to the future of off-world coordination with MoonDAO.`}
+          </p>
           <StageButton
             onClick={async () => {
               try {
@@ -373,7 +394,7 @@ export function CreateEntity({
               }
             }}
           >
-            Mint
+            Mint Entity
           </StageButton>
         </StageContainer>
       )}

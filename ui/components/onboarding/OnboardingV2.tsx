@@ -47,7 +47,7 @@ function Tier({ label, description, points, onClick }: TierProps) {
             <p className="md:p-2 text-sm text-moon-orange rounded-full bg-red-600 bg-opacity-10">
               {description}
             </p>
-            <h1 className={'font-GoodTimes text-3xl'}>{label} CREATION</h1>
+            <h1 className={'font-GoodTimes text-3xl'}>{label}</h1>
             <div>
               {points.map((p: any, i: number) => (
                 <div
@@ -113,23 +113,23 @@ export function OnboardingV2({ selectedChain }: any) {
   return (
     <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white">
       <div className="flex flex-col space-y-7">
-        <h1 className={`page-title`}>Welcome to MoonDAO</h1>
-        <p className="text-2xl  antialiased">
-          Begin your journey with MoonDAO, participate in governance and
-          decision making by voting on projects, proposals, and treasury
-          spending.
-        </p>
         <div className="flex flex-col  space-y-7">
           <Tier
-            label="CITIZEN"
+            label="Become a citizen"
             description="Join the internet's space program today!"
-            points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
+            points={['Become a Citizen of the MoonDAO community.',
+                     'Access the biggest network of startups, nations, and individuals working to create a long-term presence on the lunar surface.',
+                     'Help govern the fate of the first off-world settlement.']}
             onClick={() => setSelectedTier('citizen')}
           />
           <Tier
-            label="ENTITY"
+            label="Register an entity"
             description="Bring your entity onchain today!"
-            points={['Lorem ipsum', 'Lorem ipsum', 'Lorem ipsum']}
+            points={['Bring your organization onchain by registering your entity with MoonDAO.',
+                     'Apply for funding from MoonDAO\'s multi-million dollar treasury.',
+                     'Recruit from our community and network with other cutting-edge organizations.',
+                     'Access the frontier of onchain tooling to manage your organization and interface with any other onchain contracts.',
+                     'List your products and services on the MoonDAO Marketplace.']}
             onClick={() => setSelectedTier('entity')}
           />
         </div>
