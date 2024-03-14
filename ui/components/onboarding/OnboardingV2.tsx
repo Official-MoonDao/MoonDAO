@@ -54,7 +54,7 @@ function Tier({ label, description, points, onClick }: TierProps) {
                   className="flex flex-row bg-[#FFFFFF08] bg-opacity-3 p-2 rounded-sm space-x-2"
                   key={`${label}-tier-point-${i}`}
                 >
-                  <p className="rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2 ">
+                  <p className="h-6 w-6 flex justify-center items-center rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2 ">
                     ✓
                   </p>
                   <p>{p}</p>
@@ -62,9 +62,9 @@ function Tier({ label, description, points, onClick }: TierProps) {
               ))}
             </div>
           </div>
-          <button className="self-start p-2 text-moon-orange rounded-full bg-moon-orange bg-opacity-10 after:content-['_↗']">
+          {/* <button className="self-start p-2 text-moon-orange rounded-full bg-moon-orange bg-opacity-10 after:content-['_↗']">
             See more
-          </button>
+          </button> */}
         </div>
       </div>
     </div>
@@ -117,19 +117,23 @@ export function OnboardingV2({ selectedChain }: any) {
           <Tier
             label="Become a citizen"
             description="Join the internet's space program today!"
-            points={['Become a Citizen of the MoonDAO community.',
-                     'Access the biggest network of startups, nations, and individuals working to create a long-term presence on the lunar surface.',
-                     'Help govern the fate of the first off-world settlement.']}
+            points={[
+              'Become a Citizen of the MoonDAO community.',
+              'Access the biggest network of startups, nations, and individuals working to create a long-term presence on the lunar surface.',
+              'Help govern the fate of the first off-world settlement.',
+            ]}
             onClick={() => setSelectedTier('citizen')}
           />
           <Tier
             label="Register an entity"
             description="Bring your entity onchain today!"
-            points={['Bring your organization onchain by registering your entity with MoonDAO.',
-                     'Apply for funding from MoonDAO\'s multi-million dollar treasury.',
-                     'Recruit from our community and network with other cutting-edge organizations.',
-                     'Access the frontier of onchain tooling to manage your organization and interface with any other onchain contracts.',
-                     'List your products and services on the MoonDAO Marketplace.']}
+            points={[
+              'Bring your organization onchain by registering your entity with MoonDAO.',
+              "Apply for funding from MoonDAO's multi-million dollar treasury.",
+              'Recruit from our community and network with other cutting-edge organizations.',
+              'Access the frontier of onchain tooling to manage your organization and interface with any other onchain contracts.',
+              'List your products and services on the MoonDAO Marketplace.',
+            ]}
             onClick={() => setSelectedTier('entity')}
           />
         </div>
