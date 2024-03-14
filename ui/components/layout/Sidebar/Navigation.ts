@@ -28,7 +28,7 @@ export const navigation = [
       { name: 'Lock $MOONEY', href: '/lock' },
       {
         name: 'Constitution',
-        href: 'https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution',
+        href: 'https://docs.moondao.com/Constitution',
       },
       {
         name: 'Submit Proposal',
