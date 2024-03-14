@@ -11,7 +11,7 @@ const externalLinks = [
   },
   {
     name: 'Documentation',
-    href: 'https://moondao.com/docs/introduction',
+    href: 'https://docs.moondao.com/',
   },
   {
     name: 'Newsletter',
