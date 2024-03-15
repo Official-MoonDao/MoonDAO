@@ -24,23 +24,25 @@ function Tier({ label, description, points, onClick }: TierProps) {
 
   return (
     <div
-      className="w-full md:w-2/3 transition-all duration-150 text-black cursor-pointer dark:text-white md:p-8 flex flex-col border-[2px] hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22] p-3"
+      className="w-full transition-all duration-150 text-black cursor-pointer dark:text-white md:p-8 flex flex-col border-[2px] hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[#0A0E22] p-3"
       onClick={() => {
         if (!user) login()
         else onClick()
       }}
     >
-      <div className="w-full h-full flex flex-col md:flex-row md:space-x-10">
-        <Image
-          src={
-            label === 'ENTITY'
-              ? '/onboarding-icons/entity-creation-icon.png'
-              : '/onboarding-icons/citizen-creation-icon.png'
-          }
-          width={254}
-          height={312}
-          alt=""
-        />
+      <div className="w-full h-full flex flex-col lg:flex-row justify-center items-center md:space-x-10">
+        <div className="flex justify-center items-center">
+          <Image
+            src={
+              label === 'ENTITY'
+                ? '/onboarding-icons/entity-creation-icon.png'
+                : '/onboarding-icons/citizen-creation-icon.png'
+            }
+            width={254}
+            height={312}
+            alt=""
+          />
+        </div>
 
         <div className="flex flex-col justify-between w-full items-start">
           <div className="flex flex-col space-y-5">
