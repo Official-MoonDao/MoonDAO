@@ -9,7 +9,6 @@ import {
 import { ENTITY_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
-import { useEntityMetadata } from '@/lib/entity/useEntityData'
 import Head from '../components/layout/Head'
 import { ArrowLeft, ArrowSide, SearchIcon } from '@/components/assets'
 
@@ -110,7 +109,10 @@ export default function Entities() {
     if (input !== '') {
       setCachedNFTs(
         cachedNFTs.filter((nft) => {
-          return nft.metadata.name?.toString().includes(input)
+          return nft.metadata.name
+            ?.toString()
+            .toLowerCase()
+            .includes(input.toLowerCase())
         })
       )
     } else if (nfts) {
