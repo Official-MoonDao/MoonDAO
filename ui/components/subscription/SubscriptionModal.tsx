@@ -4,10 +4,10 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 
-export function EntitySubscriptionModal({
+export function SubscriptionModal({
   setEnabled,
   nft,
-  entityContract,
+  subscriptionContract,
   validPass,
   expiresAt,
 }: any) {
@@ -18,7 +18,7 @@ export function EntitySubscriptionModal({
   const [subscriptionCost, setSubscriptionCost] = useState<string>()
 
   const { data: pricePerSecond } = useHandleRead(
-    entityContract,
+    subscriptionContract,
     'pricePerSecond'
   )
 
@@ -91,7 +91,7 @@ export function EntitySubscriptionModal({
               try {
                 const duration = years * 365 * 24 * 60 * 60
 
-                await entityContract.call(
+                await subscriptionContract.call(
                   'renewSubscription',
                   [nft.metadata.id, duration],
                   {

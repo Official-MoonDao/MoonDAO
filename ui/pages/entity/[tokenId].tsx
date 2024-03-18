@@ -34,8 +34,8 @@ import { CopyIcon, TwitterIcon } from '@/components/assets'
 import { CoordinapeLogo } from '@/components/assets/CoordinapeLogo'
 import { JuiceboxLogo } from '@/components/assets/JuiceboxLogo'
 import { EntityMetadataModal } from '@/components/entity/EntityMetadataModal'
-import { EntitySubscriptionModal } from '@/components/entity/EntitySubscriptionModal'
 import { HatWearers } from '@/components/hats/HatWearers'
+import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 
 function Card({ children, className = '', onClick }: any) {
   if (onClick)
@@ -201,12 +201,12 @@ export default function EntityDetailPage({ tokenId }: any) {
             </button>
           </div>
           {EntitySubscriptionModalEnabled && (
-            <EntitySubscriptionModal
+            <SubscriptionModal
               setEnabled={setEntitySubscriptionModalEnabled}
               nft={nft}
               validPass={validPass}
               expiresAt={expiresAt}
-              entityContract={entityContract}
+              subscriptionContract={entityContract}
             />
           )}
           {expiresAt && (
