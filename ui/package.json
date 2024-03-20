@@ -42,6 +42,7 @@
     "ethers": "5.7.2",
     "google-spreadsheet": "^3.3.0",
     "gsap": "^3.12.2",
+    "html2canvas": "^1.4.1",
     "jsbi": "3.2.5",
     "merkletreejs": "^0.3.11",
     "moment": "^2.29.4",
