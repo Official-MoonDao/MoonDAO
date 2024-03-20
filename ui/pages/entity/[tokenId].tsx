@@ -77,57 +77,53 @@ export default function EntityDetailPage({ tokenId }: any) {
   const [EntitySubscriptionModalEnabled, setEntitySubscriptionModalEnabled] =
     useState(false)
 
+  const { contract: hatsContract } = useContract(HATS_ADDRESS)
   //Entity Data
   const { contract: entityContract } = useContract(
     ENTITY_ADDRESSES[selectedChain.slug]
   )
   const { data: nft } = useNFT(entityContract, tokenId)
 
-  const {
-    multisigAddress,
-    socials,
-    isPublic,
-    hatTreeId,
-    admin,
-    updateMetadata,
-  } = useEntityData(entityContract, nft)
+  const { socials, isPublic, hatTreeId, admin, updateMetadata } = useEntityData(
+    entityContract,
+    hatsContract,
+    nft
+  )
+
+  //Hats
+  const hats = useHatTree(selectedChain, hatTreeId)
 
   //Entity Balances
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug]
   )
-  const { data: MOONEYBalance } = useMOONEYBalance(
-    mooneyContract,
-    multisigAddress
-  )
+  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner)
+
   const [nativeBalance, setNativeBalance] = useState<number>(0)
 
   async function getNativeBalance() {
     const sdk = initSDK(selectedChain)
     const provider = sdk.getProvider()
-    const balance: any = await provider.getBalance(multisigAddress)
+    const balance: any = await provider.getBalance(nft?.owner as string)
     setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
   }
 
   //Subscription Data
   const { data: expiresAt } = useHandleRead(entityContract, 'expiresAt', [
-    nft?.metadata?.id || '',
+    nft?.metadata?.id,
   ])
+
   const validPass = useValidPass(expiresAt)
 
   //Proposals
   const newestProposals = useNewestProposals(3)
 
-  //Hats
-  const hats = useHatTree(selectedChain, hatTreeId)
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
-
   // get native balance for multisig
   useEffect(() => {
-    if (wallets && multisigAddress) {
+    if (wallets && nft?.owner) {
       getNativeBalance()
     }
-  }, [wallets, multisigAddress])
+  }, [wallets, nft])
 
   useEffect(() => {
     setSelectedChain(Sepolia)
@@ -154,17 +150,15 @@ export default function EntityDetailPage({ tokenId }: any) {
               ) : (
                 <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
               )}
-              {multisigAddress ? (
+              {nft?.owner ? (
                 <button
                   className="mt-4 flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
                   onClick={() => {
-                    navigator.clipboard.writeText(multisigAddress)
+                    navigator.clipboard.writeText(nft.owner)
                     toast.success('Address copied to clipboard')
                   }}
                 >
-                  {multisigAddress?.slice(0, 6) +
-                    '...' +
-                    multisigAddress?.slice(-4)}
+                  {nft.owner?.slice(0, 6) + '...' + nft.owner?.slice(-4)}
                   <CopyIcon />
                 </button>
               ) : (
@@ -183,14 +177,12 @@ export default function EntityDetailPage({ tokenId }: any) {
                   twitter: socials?.twitter,
                   communications: socials?.communications,
                   isPublic,
-                  multisig: multisigAddress,
-                  hatsTreeId: hatTreeId,
                 }}
               />
             )}
             <button
               onClick={() => {
-                if (address != multisigAddress && address != admin)
+                if (address != nft?.owner && address != admin)
                   return toast.error(
                     'Connect the entity admin wallet or multisig to edit metadata.'
                   )
@@ -218,7 +210,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                     : 'border-moon-orange text-moon-orange'
                 } max-w-[175px] hover:scale-105 duration-300`}
                 onClick={() => {
-                  if (address != multisigAddress && address != admin)
+                  if (address != nft?.owner && address != admin)
                     return toast.error(
                       'Connect the entity admin wallet or multisig to extend subscription.'
                     )
@@ -291,9 +283,7 @@ export default function EntityDetailPage({ tokenId }: any) {
           <p className="text-3xl">{nativeBalance}</p>
           <Button
             onClick={() =>
-              window.open(
-                'https://app.safe.global/home?safe=eth:' + multisigAddress
-              )
+              window.open('https://app.safe.global/home?safe=eth:' + nft?.owner)
             }
           >
             <ArrowUpRightIcon height={20} width={20} />

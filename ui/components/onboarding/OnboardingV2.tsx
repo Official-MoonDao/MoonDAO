@@ -16,11 +16,7 @@ type TierProps = {
 function Tier({ label, description, points, onClick }: TierProps) {
   const { user } = usePrivy()
 
-  const { login } = useLogin({
-    onComplete: () => {
-      onClick()
-    },
-  })
+  const { login } = useLogin()
 
   return (
     <div

@@ -1,0 +1,78 @@
+/* Edited in 2024 for MoonDAO by Santiago Itzcoatl */
+
+body {
+  background: #071536;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+body form {
+  background-color: #d0d0d0;
+  font-family: monospace;
+  font-weight: 200;
+  font-size: 17px;
+}
+
+#html-container {
+  width: 100%;
+  height: 0;
+  padding-bottom: 100%;
+  position: relative;
+  min-width: 200px;
+  max-width: 900px;
+  margin: 0 auto;
+  overflow: visible;
+  display: flex;
+}
+
+#pfp {
+  width: 720px;
+  height: 720px;
+  position: absolute;
+  min-width: 200px;
+  max-width: 900px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+#process-image,
+#canvas-container {
+  width: 720px;
+  height: 720px;
+  min-width: 200px;
+  max-width: 900px;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  /*top: 50px;*/
+  left: 0;
+  overflow: visible;
+}
+
+#process-image {
+  /*filter:blur(40px);*/
+  display: none;
+  z-index: 0;
+}
+
+#canvas-container {
+  will-change: transform;
+  z-index: 1;
+}
+
+#defaultCanvas0 {
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  -webkit-transform: translate3d(0, 0, 0);
+  -moz-transform: translate3d(0, 0, 0);
+}
+
+.p5Canvas {
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  -webkit-transform: translate3d(0, 0, 0);
+  -moz-transform: translate3d(0, 0, 0);
+}
