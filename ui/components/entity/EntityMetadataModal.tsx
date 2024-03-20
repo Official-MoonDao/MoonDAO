@@ -100,10 +100,6 @@ export function EntityMetadataModal({
               image: imageIPFSLink,
               attributes: [
                 {
-                  trait_type: 'multisig',
-                  value: entityData.multisig,
-                },
-                {
                   trait_type: 'twitter',
                   value: entityTwitter,
                 },
@@ -118,10 +114,6 @@ export function EntityMetadataModal({
                 {
                   trait_type: 'view',
                   value: entityView ? 'public' : 'private',
-                },
-                {
-                  trait_type: 'hatsTreeId',
-                  value: entityData.hatsTreeId,
                 },
               ],
             }
