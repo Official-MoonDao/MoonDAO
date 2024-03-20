@@ -11,25 +11,30 @@ function getAttribute(attributes: any[], traitType: string) {
   )
 }
 
-export function useEntityData(entityContract: any, nft: any) {
+export function useEntityData(
+  entityContract: any,
+  hatsContract: any,
+  nft: any
+) {
   const address = useAddress()
   const { wallets } = useWallets()
 
-  const [multisigAddress, setMultisigAddress] = useState<any>()
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
-  const [hatTreeId, setHatTreeId] = useState<number>()
+  const [hatTreeId, setHatTreeId] = useState()
 
   const { data: admin } = useHandleRead(entityContract, 'getAdmin', [
     nft?.metadata?.id,
   ])
 
-  function getMultisigAddress() {
-    const entityMultisigAddress = getAttribute(
-      nft.metadata.attributes,
-      'multisig'
-    )
-    setMultisigAddress(entityMultisigAddress.value)
+  const { data: topHatId } = useHandleRead(entityContract, 'entityTopHat', [
+    nft?.metadata?.id || '',
+  ])
+
+  async function getHatTreeId() {
+    const hatTreeId = await hatsContract.call('getTopHatDomain', [topHatId])
+
+    setHatTreeId(hatTreeId)
   }
 
   function getView() {
@@ -51,13 +56,8 @@ export function useEntityData(entityContract: any, nft: any) {
     })
   }
 
-  function getHatTreeId() {
-    const entityHatTreeId = getAttribute(nft.metadata.attributes, 'hatsTreeId')
-    setHatTreeId(entityHatTreeId.value)
-  }
-
   async function updateMetadata(newMetadata: any) {
-    if (address != multisigAddress && address != admin)
+    if (address != nft?.owner && address != admin)
       return toast.error(
         `Connect the entity's admin wallet or multisig to update metadata`
       )
@@ -92,7 +92,7 @@ export function useEntityData(entityContract: any, nft: any) {
     const newMetadataIpfsHash = await pinMetadataToIPFS(
       JWT,
       newMetadata,
-      multisigAddress + ' Metadata'
+      nft?.metadata?.name + ' Metadata'
     )
 
     if (!newMetadataIpfsHash)
@@ -106,14 +106,15 @@ export function useEntityData(entityContract: any, nft: any) {
 
   useEffect(() => {
     if (!nft?.metadata?.attributes) return
-    getMultisigAddress()
     getEntitySocials()
     getView()
-    getHatTreeId()
   }, [nft])
 
+  useEffect(() => {
+    if (hatsContract && topHatId) getHatTreeId()
+  }, [topHatId, hatsContract])
+
   return {
-    multisigAddress,
     socials,
     isPublic,
     hatTreeId,
