@@ -159,6 +159,7 @@ export function CreateEntity({
           <ImageGenerator
             setImage={setEntityImage}
             nextStage={() => setStage(2)}
+            stage={stage}
           />
         </StageContainer>
       )}
