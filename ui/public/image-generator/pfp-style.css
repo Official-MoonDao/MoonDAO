@@ -27,25 +27,26 @@ body form {
 }
 
 #pfp {
-  width: 720px;
-  height: 720px;
+  width: 60vw;
+  height: 60vw;
   position: absolute;
   min-width: 200px;
-  max-width: 900px;
+  max-width: 60vw;
   margin: 0 auto;
   overflow: visible;
 }
 
 #process-image,
 #canvas-container {
-  width: 720px;
-  height: 720px;
+  width: 60vw;
+  height: 60vw;
   min-width: 200px;
-  max-width: 900px;
+  max-width: 60vw;
+  max-height: 60vw;
   margin: 0;
   padding: 0;
   position: absolute;
-  /*top: 50px;*/
+  top: 0%;
   left: 0;
   overflow: visible;
 }
@@ -61,12 +62,19 @@ body form {
   z-index: 1;
 }
 
+#canvas-container canvas {
+  width: 60vw;
+  height: 60vw;
+}
+
 #defaultCanvas0 {
   will-change: transform;
   -webkit-backface-visibility: hidden;
   -moz-backface-visibility: hidden;
   -webkit-transform: translate3d(0, 0, 0);
   -moz-transform: translate3d(0, 0, 0);
+  max-width: 60vw;
+  max-height: 60vw;
 }
 
 .p5Canvas {

@@ -1,7 +1,24 @@
 import html2canvas from 'html2canvas'
+import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import Script from 'next/script'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
+
+const loadScriptsSequentially = (scripts, index = 0) => {
+  if (index >= scripts.length) {
+    // All scripts have been loaded
+    return
+  }
+
+  const script = document.createElement('script')
+  script.src = scripts[index]
+
+  // Set the onload event to load the next script
+  script.onload = () => loadScriptsSequentially(scripts, index + 1)
+
+  // Append the script to the head of the document
+  document.head.appendChild(script)
+}
 
 export function ImageGenerator({ setImage, nextStage }: any) {
   const pfpRef = useRef<HTMLDivElement>()
@@ -35,9 +52,9 @@ export function ImageGenerator({ setImage, nextStage }: any) {
         <link href="/image-generator/pfp-style.css" rel="stylesheet" />
       </Head>
 
-      <Script src="/image-generator/init.js" />
-      <button onClick={submitImage}>Download</button>
-      <div id="html-container">
+      <Script defer src="/image-generator/init.js" />
+
+      <div id="html-container" className="pl-[15%] md:pl-0">
         <div id="pfp" ref={pfpRef}>
           <div id="celestial-map"></div>
           <div id="canvas-container"></div>
@@ -48,6 +65,13 @@ export function ImageGenerator({ setImage, nextStage }: any) {
           />
         </div>
       </div>
+
+      <button
+        className="absolute bottom-48 px-4 py-2 bg-moon-orange"
+        onClick={submitImage}
+      >
+        Submit Image
+      </button>
     </>
   )
 }

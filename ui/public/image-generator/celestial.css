@@ -7,13 +7,16 @@
   width: 720px;
   height: 720px;
   min-width: 200px;
-  max-width: 900px;
+  max-width: 60vw;
   margin: 0;
   padding: 0;
-  position: absolute;
   top: 10px;
   left: 0;
   overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 #celestial-map canvas {
@@ -49,19 +52,27 @@
 #celestial-form {
   color: #00f;
   display: block;
-  width: 720px;
+  width: 750px;
   height: 300px;
   min-width: 200px;
-  max-width: 900px;
+  max-width: 100%;
   margin: 0;
+  margin-top: 200px;
   padding: 0;
-  position: absolute;
-  top: 740px;
-  left: 500px;
-  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#celestial-form form {
+  background-color: #ffffff;
+  padding: 4px;
+  border-radius: 30px;
+  width: 100%;
 }
 
 #celestial-form .col {
+  display: flex;
   padding: 4px 6px;
   margin: 0 0 4px;
   clear: both;
