@@ -1,6 +1,8 @@
+//Hat wearers for a specific hat
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { useResolvedMediaType } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
+import { useHatData } from '@/lib/hats/useHatData'
 
 type HatWearersProps = {
   hatsContract: any
@@ -9,49 +11,9 @@ type HatWearersProps = {
 }
 
 export function HatWearers({ hatsContract, hatId, wearers }: HatWearersProps) {
-  const [hat, setHat] = useState<any>({})
   const [dropdownEnabled, setDropdownEnabled] = useState(false)
-  const [hatMetadataURI, setHatMetadataURI] = useState('')
-  const resolvedMetadata = useResolvedMediaType(hatMetadataURI)
-  const [hatData, setHatData] = useState({
-    name: '',
-    description: '',
-    supply: 0,
-    active: null,
-  })
 
-  async function getHatAndMetadata() {
-    const hat = await hatsContract.call('viewHat', [hatId])
-    setHat(hat)
-    setHatMetadataURI(hat.details)
-  }
-
-  async function getHatData() {
-    const { supply, active } = hat
-
-    try {
-      const metadataRes = await fetch(resolvedMetadata.url)
-      const { data } = await metadataRes.json()
-
-      setHatData({
-        name: data.name,
-        description: data.description,
-        supply: supply,
-        active: active,
-      })
-    } catch (err: any) {
-      console.error(err)
-    }
-  }
-
-  useEffect(() => {
-    if (hatsContract) {
-      getHatAndMetadata()
-      if (resolvedMetadata?.url) {
-        getHatData()
-      }
-    }
-  }, [hatsContract, hatId, wearers, resolvedMetadata])
+  const hatData = useHatData(hatsContract, hatId)
 
   return (
     <div className="px-4 flex flex-col ">

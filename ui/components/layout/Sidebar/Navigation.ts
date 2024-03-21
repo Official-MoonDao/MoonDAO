@@ -34,7 +34,7 @@ export const navigation = [
       { name: 'Lock $MOONEY', href: '/lock' },
       {
         name: 'Constitution',
-        href: 'https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution',
+        href: 'https://docs.moondao.com/Constitution',
       },
       {
         name: 'Submit Proposal',
@@ -51,7 +51,7 @@ export const navigation = [
     name: 'Marketplace',
     icon: RocketLaunchIcon,
     children: [
-      { name: 'Sweepstakes 🚀', href: '/sweepstakes' },
+      { name: 'Ticket To Space 🚀', href: '/sweepstakes' },
       { name: 'ZeroG', href: '/zero-g' },
       { name: 'Lifeship', href: '/lifeship' },
       {

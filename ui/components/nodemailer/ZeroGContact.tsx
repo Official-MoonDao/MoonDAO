@@ -106,7 +106,7 @@ export function ZeroGContact() {
 
         <Link
           className="mt-2"
-          href="https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy"
+          href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
           target="_blank"
           rel="noopener noreferrer"
         >

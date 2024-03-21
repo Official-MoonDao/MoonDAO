@@ -23,6 +23,19 @@ class WebsiteDocument extends Document {
           <meta name="theme-color" content="#54c3ff" />
 
           <link rel="icon" href="/favicon.ico" />
+
+          {/* Scripts for Image Generator */}
+          <script defer src="/image-generator/hsluv.min.js"></script>
+          <script defer src="/image-generator/d3.min.js"></script>
+          <script defer src="/image-generator/d3.delaunay.js"></script>
+          <script
+            defer
+            src="/image-generator/d3.geo.projection.min.js"
+          ></script>
+          <script defer src="/image-generator/html2canvas.min.js"></script>
+          <script defer src="/image-generator/p5js.min.js"></script>
+          <script defer src="/image-generator/celestial.js"></script>
+          <script defer src="/image-generator/weighted-voronoi.js"></script>
         </Head>
         <body className="overflow-hidden">
           <Main />

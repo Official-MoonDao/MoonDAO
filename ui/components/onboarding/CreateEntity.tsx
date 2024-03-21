@@ -1,6 +1,6 @@
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { ENTITY_ADDRESSES } from 'const/config'
+import { ENTITY_ADDRESSES, ENTITY_CREATOR_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ import { createSafe } from '../../lib/gnosis/createSafe'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import HatsABI from '../../const/abis/Hats.json'
 import { Steps } from '../layout/Steps'
+import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 
@@ -38,8 +39,6 @@ export function CreateEntity({
   const [multisigAddress, setMultisigAddress] = useState<string>()
   const [hatTreeId, setHatTreeId] = useState<number>()
 
-  const [pinataJWT, setPinataJWT] = useState<string>()
-
   const [entityData, setEntityData] = useState<EntityData>({
     name: '',
     description: '',
@@ -53,17 +52,24 @@ export function CreateEntity({
     ENTITY_ADDRESSES[selectedChain.slug]
   )
 
+  const { contract: entityCreatorContract } = useContract(
+    ENTITY_CREATOR_ADDRESSES[selectedChain.slug]
+  )
+
   return (
     <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
       <Steps
         className="mb-4 w-full lg:max-w-[900px] md:-ml-12"
-        steps={['Info', 'Design', 'Treasury ', 'Org', 'Mint']}
+        steps={['Info', 'Design', 'Mint']}
         currStep={stage}
       />
 
       {/* Typeform form */}
       {stage === 0 && (
-        <StageContainer title="Info" description="Input your information">
+        <StageContainer
+          title="Info"
+          description="Input your organization's information."
+        >
           <div className="w-full">
             <Widget
               className="w-[100%] md:w-[100%]"
@@ -114,9 +120,9 @@ export function CreateEntity({
       {stage === 1 && (
         <StageContainer
           title="Design"
-          description="Design an Image for your Entity."
+          description="Design your unique onchain registration certificate."
         >
-          {entityImage ? (
+          {/* {entityImage ? (
             <Image
               src={URL.createObjectURL(entityImage)}
               width={300}
@@ -124,14 +130,17 @@ export function CreateEntity({
               alt=""
             />
           ) : (
-            <div className="w-[300px] h-[300px] bg-[#ffffff50]"></div>
+            <div className="w-[350px] h-[350px] bg-[#ffffff50]"></div>
           )}
-          <div className="flex flex-col w-[300px]">
+          <div className="flex flex-col w-[400px]">
             <input
               onChange={(e: any) => setEntityImage(e.target.files[0])}
               type="file"
               accept="image/png, image/jpeg"
             />
+            <p className="mt-6 font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+              {`Upload your organization's logo to create a unique image that represents your Entity's certification onchain.`}
+            </p>
             <StageButton
               onClick={() => {
                 if (!entityImage) return toast.error('No file selected')
@@ -145,169 +154,62 @@ export function CreateEntity({
             >
               Submit Image
             </StageButton>
-          </div>
-        </StageContainer>
-      )}
-      {/* Create Gnosis Safe */}
-      {stage === 2 && (
-        <StageContainer
-          title="Treasury"
-          description="Create a treasury for your Entity"
-        >
-          {multisigAddress && (
-            <div className="flex flex-col">
-              <p>
-                <button
-                  className="text-moon-gold"
-                  onClick={() => {
-                    navigator.clipboard.writeText(multisigAddress)
-                    toast.success('Copied to clipboard')
-                  }}
-                >
-                  Copy
-                </button>
-                {` your safe address and import it `}
-                <Link
-                  className="text-moon-gold"
-                  href="https://app.safe.global/welcome/accounts"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  here
-                </Link>
-              </p>
-
-              <p>Safe Address: {multisigAddress}</p>
-            </div>
-          )}
-          <Image
-            src={'/onboarding-icons/safe.png'}
-            width={400}
-            height={400}
-            alt=""
+          </div> */}
+          <ImageGenerator
+            setImage={setEntityImage}
+            nextStage={() => setStage(2)}
           />
-          <StageButton
-            onClick={async () => {
-              const provider = await wallets[selectedWallet].getEthersProvider()
-              const signer = provider?.getSigner()
-
-              //create safe
-              try {
-                const safeSDK = await createSafe(signer, [address], 1)
-                const safeAddress = safeSDK.getAddress()
-                setMultisigAddress(safeAddress)
-
-                if (safeAddress) {
-                  setStage(3)
-                }
-              } catch (err) {
-                console.error(err)
-              }
-            }}
-          >
-            Create Safe
-          </StageButton>
-        </StageContainer>
-      )}
-      {/* Hats */}
-      {stage === 3 && (
-        <StageContainer
-          title="Organization"
-          description="Create a hat tree for your Entity"
-        >
-          <Image
-            src={'/onboarding-icons/hat.png'}
-            width={400}
-            height={400}
-            alt=""
-          />
-          <StageButton
-            onClick={async () => {
-              try {
-                //get signer
-                const provider = await wallets[
-                  selectedWallet
-                ].getEthersProvider()
-                const signer = provider?.getSigner()
-                //sign message
-                const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
-                const nonceData = await nonceRes.json()
-                const message = `Please sign to pin this entity to IPFS #`
-                const signature = await signer?.signMessage(
-                  message + nonceData.nonce
-                )
-
-                if (!signature) {
-                  return toast.error('Error signing message')
-                }
-
-                //get pinata jwt
-                const jwtRes = await fetch('/api/ipfs/upload', {
-                  method: 'POST',
-                  headers: {
-                    signature,
-                  },
-                  body: JSON.stringify({ address, message }),
-                })
-
-                const JWT = await jwtRes.text()
-
-                setPinataJWT(JWT)
-
-                const hatMetadata = {
-                  type: '1.0',
-                  data: {
-                    name: `${entityData.name} Admin`,
-                    description: entityData.description,
-                  },
-                }
-
-                const hatMetadataIpfsHash = await pinMetadataToIPFS(
-                  JWT,
-                  hatMetadata,
-                  entityData.name + ' Hat Metadata'
-                )
-
-                const tx = await hatsContract.call('mintTopHat', [
-                  address,
-                  'ipfs://' + hatMetadataIpfsHash,
-                  '',
-                ])
-
-                const hatsInterface = new ethers.utils.Interface(HatsABI)
-
-                const decoded = hatsInterface.decodeEventLog(
-                  'HatCreated',
-                  tx.receipt.logs[0].data
-                )
-
-                const treeId = await hatsContract.call('getTopHatDomain', [
-                  decoded.id.toString(),
-                ])
-
-                setHatTreeId(treeId)
-
-                if (treeId) setStage(4)
-              } catch (err) {
-                console.log(err)
-              }
-            }}
-          >
-            Create Hat Tree
-          </StageButton>
         </StageContainer>
       )}
       {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
-      {stage === 4 && (
-        <StageContainer title="Mint" description="Mint your Entity NFT!">
+      {stage === 2 && (
+        <StageContainer
+          title="Mint Entity"
+          description="Mint your Entity onchain!"
+        >
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`Make sure all your information is displayed correcly.`}
+          </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`Welcome to the future of off-world coordination with MoonDAO.`}
+          </p>
           <StageButton
             onClick={async () => {
+              //sign message
+              const provider = await wallets[selectedWallet].getEthersProvider()
+              const signer = provider?.getSigner()
+
+              const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
+              const nonceData = await nonceRes.json()
+
+              const message = `Please sign this message to mint this entity's NFT #`
+
+              const signature = await signer.signMessage(
+                message + nonceData.nonce
+              )
+
+              if (!signature) return toast.error('Error signing message')
+
+              //get pinata jwt
+              const jwtRes = await fetch('/api/ipfs/upload', {
+                method: 'POST',
+                headers: {
+                  signature,
+                },
+                body: JSON.stringify({
+                  address: wallets[selectedWallet].address,
+                  message,
+                }),
+              })
+
+              const pinataJWT = await jwtRes.text()
+
               try {
                 //pin image to IPFS
                 const newImageIpfsHash = await pinImageToIPFS(
                   pinataJWT || '',
                   entityImage,
-                  multisigAddress + ' Image'
+                  entityData.name + ' Image'
                 )
 
                 if (!newImageIpfsHash) {
@@ -324,10 +226,6 @@ export function CreateEntity({
                   description: `${entityData.name} : ${entityData.description}`,
                   image: `ipfs://${newImageIpfsHash}`,
                   attributes: [
-                    {
-                      trait_type: 'multisig',
-                      value: multisigAddress,
-                    },
                     {
                       trait_type: 'twitter',
                       value: entityData.twitter,
@@ -354,26 +252,27 @@ export function CreateEntity({
                 const newMetadataIpfsHash = await pinMetadataToIPFS(
                   pinataJWT || '',
                   metadata,
-                  multisigAddress + ' Metadata'
+                  entityData.name + ' Metadata'
                 )
 
                 if (!newMetadataIpfsHash)
                   return toast.error('Error pinning metadata to IPFS')
                 //mint NFT to safe
-                await entityContract?.call(
-                  'mintTo',
-                  [multisigAddress, 'ipfs://' + newMetadataIpfsHash],
+                await entityCreatorContract?.call(
+                  'createMoonDAOEntity',
+                  ['ipfs://' + newMetadataIpfsHash],
                   {
-                    value: ethers.utils.parseEther('0.1'),
+                    value: ethers.utils.parseEther('0.01'),
                   }
                 )
+
                 router.push(`/entity/${nextTokenId}`)
               } catch (err) {
                 console.error(err)
               }
             }}
           >
-            Mint
+            Mint Entity
           </StageButton>
         </StageContainer>
       )}
