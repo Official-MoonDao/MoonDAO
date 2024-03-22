@@ -7,6 +7,7 @@ import {
   useNFTs,
 } from '@thirdweb-dev/react'
 import { ENTITY_ADDRESSES } from 'const/config'
+import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import Head from '../components/layout/Head'
@@ -16,51 +17,53 @@ function EntityCard({ metadata, owner }: { metadata: any; owner: string }) {
   return (
     <div>
       {metadata && (
-        <div className="flex flex-col rounded w-[340px] bg-[#080C30] p-4">
-          <ThirdwebNftMedia
-            className="self-center"
-            metadata={metadata}
-            height={'280px'}
-            width={'280px'}
-          />
-          <p className="mt-3 text-white text-2xl">{metadata.name}</p>
-          <p className="flex items-center text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg">
-            {owner.slice(0, 6) + '...' + owner.slice(-4)}
-          </p>
-          <p className="mt-3 h-[100px] text-md text-ellipsis overflow-hidden">
-            {metadata.description || ''}
-          </p>
-          {/* <p className="mt-3 h-[100px] text-md text-ellipsis overflow-hidden">
+        <Link href={`/entity/${metadata.id}`}>
+          <div className="flex flex-col rounded w-[340px] bg-[#080C30] p-4">
+            <ThirdwebNftMedia
+              className="self-center"
+              metadata={metadata}
+              height={'280px'}
+              width={'280px'}
+            />
+            <p className="mt-3 text-white text-2xl">{metadata.name}</p>
+            <p className="flex items-center text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg">
+              {owner.slice(0, 6) + '...' + owner.slice(-4)}
+            </p>
+            <p className="mt-3 h-[100px] text-md text-ellipsis overflow-hidden">
+              {metadata.description || ''}
+            </p>
+            {/* <p className="mt-3 h-[100px] text-md text-ellipsis overflow-hidden">
             {
               'Qorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.'
             }
           </p> */}
-          <div className="flex flex-row space-x-5 mt-3">
-            <button
-              disabled={true}
-              className="px-4 py-2 text-amber-300 rounded-full bg-yellow-100 bg-opacity-10 flex items-center"
-              //   onClick={() =>
-              //     window.open(
-              //       'https://sepolia.etherscan.io/address/' + ENTITY_ADDRESSES
-              //     )
-              //   }
-            >
-              {'Ethereum'}
-            </button>
-            <button
-              disabled={true}
-              className="px-4 py-2 text-blue-500 rounded-full bg-blue-400 bg-opacity-10 flex items-center"
-              //   onClick={() =>
-              //     window.open(
-              //       'https://sepolia.etherscan.io/address/' +
-              //         ENTITY_ADDRESSES
-              //     )
-              //   }
-            >
-              ID: {metadata.id}
-            </button>
+            <div className="flex flex-row space-x-5 mt-3">
+              <button
+                disabled={true}
+                className="px-4 py-2 text-amber-300 rounded-full bg-yellow-100 bg-opacity-10 flex items-center"
+                //   onClick={() =>
+                //     window.open(
+                //       'https://sepolia.etherscan.io/address/' + ENTITY_ADDRESSES
+                //     )
+                //   }
+              >
+                {'Ethereum'}
+              </button>
+              <button
+                disabled={true}
+                className="px-4 py-2 text-blue-500 rounded-full bg-blue-400 bg-opacity-10 flex items-center"
+                //   onClick={() =>
+                //     window.open(
+                //       'https://sepolia.etherscan.io/address/' +
+                //         ENTITY_ADDRESSES
+                //     )
+                //   }
+              >
+                ID: {metadata.id}
+              </button>
+            </div>
           </div>
-        </div>
+        </Link>
       )}
     </div>
   )
@@ -99,11 +102,6 @@ export default function Entities() {
       process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
     )
   }, [])
-
-  useEffect(() => {
-    console.log(cachedNFTs)
-    console.log(nfts)
-  }, [cachedNFTs, nfts])
 
   useEffect(() => {
     if (input !== '') {
