@@ -8,10 +8,10 @@ body {
 }
 
 body form {
-  background-color: #d0d0d0;
-  font-family: monospace;
+  background-color: #111827;
+  font-family: 'Roboto Mono', 'sans-serif';
   font-weight: 200;
-  font-size: 17px;
+  font-size: 17px/1;
 }
 
 #html-container {
@@ -23,30 +23,28 @@ body form {
   max-width: 900px;
   margin: 0 auto;
   overflow: visible;
-  display: flex;
 }
 
 #pfp {
-  width: 60vw;
-  height: 60vw;
+  width: 720px;
+  height: 720px;
   position: absolute;
   min-width: 200px;
-  max-width: 60vw;
+  max-width: 900px;
   margin: 0 auto;
   overflow: visible;
 }
 
 #process-image,
 #canvas-container {
-  width: 60vw;
-  height: 60vw;
+  width: 720px;
+  height: 720px;
   min-width: 200px;
-  max-width: 60vw;
-  max-height: 60vw;
+  max-width: 900px;
   margin: 0;
   padding: 0;
   position: absolute;
-  top: 0%;
+  /*top: 50px;*/
   left: 0;
   overflow: visible;
 }
@@ -62,19 +60,12 @@ body form {
   z-index: 1;
 }
 
-#canvas-container canvas {
-  width: 60vw;
-  height: 60vw;
-}
-
 #defaultCanvas0 {
   will-change: transform;
   -webkit-backface-visibility: hidden;
   -moz-backface-visibility: hidden;
   -webkit-transform: translate3d(0, 0, 0);
   -moz-transform: translate3d(0, 0, 0);
-  max-width: 60vw;
-  max-height: 60vw;
 }
 
 .p5Canvas {

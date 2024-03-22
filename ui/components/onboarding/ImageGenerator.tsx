@@ -5,7 +5,8 @@ import Script from 'next/script'
 import { useEffect, useRef, useState } from 'react'
 
 export function ImageGenerator({ setImage, nextStage, stage }: any) {
-  const pfpRef = useRef<HTMLDivElement>()
+  const pfpRef = useRef<any>()
+  const [scriptLoaded, setScriptLoaded] = useState(false)
 
   function submitImage() {
     if (!pfpRef?.current) return console.error('pfpRef is not defined')
@@ -29,6 +30,22 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
     })
   }
 
+  useEffect(() => {
+    if (!scriptLoaded) {
+      window.passBlurValue = 3
+      fetch('/image-generator/init.js')
+        .then((response) => response.text())
+        .then((script) => {
+          const existingForm = document.getElementById('params')
+          if (existingForm) existingForm.remove()
+
+          const runScript = new Function(script)
+          runScript()
+          setScriptLoaded(true)
+        })
+    }
+  }, [])
+
   return (
     <>
       <Head>
@@ -36,11 +53,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
         <link href="/image-generator/pfp-style.css" rel="stylesheet" />
       </Head>
 
-      <Script
-        key={Date.now()} // Add this line
-        strategy="lazyOnload"
-        src="/image-generator/init.js"
-      />
+      {/* <Script strategy="afterInteractive" src="/image-generator/init.js" /> */}
 
       <div id="html-container" className="pl-[15%] md:pl-0">
         <div id="pfp" ref={pfpRef}>

@@ -2,26 +2,26 @@
 
 var mwColor = getRandomHSLuvColor(80)
 var mwOpacity = 0.35 // 0.35
-// const e = ' * MoonDAO * PFP Generator * ';
-// console.log("%c" + e, "background:" + mwColor + "; color: #fff");
+const e = ' * MoonDAO * PFP Generator * '
+console.log('%c' + e, 'background:' + mwColor + '; color: #fff')
 
 var defaultImages = [
-  './images/test-00.jpg',
-  './images/test-01.jpg',
-  './images/test-02.jpg',
-  './images/test-03.jpg',
+  'images/test-00.jpg',
+  'images/test-01.jpg',
+  'images/test-02.jpg',
+  'images/test-03.jpg',
 ]
 
 var randomIndex = Math.floor(Math.random() * defaultImages.length)
 var randomImage = defaultImages[randomIndex]
 
-console.log('hello')
-/*document.getElementById("process-image").src = randomImage;*/
+document.getElementById('process-image').src = randomImage
 
 // - - -
 
 Celestial.display({
   location: true,
+  moonDao: true,
   projection: 'airy',
   datapath: 'stars-data/', // Path/URL to data files
   controls: false, // zoom controls
@@ -70,14 +70,18 @@ Celestial.display({
   stars: {
     // Stars
     show: true,
-    limit: 4.9, // Show only stars brighter than limit magnitude
+    limit: 4.2, // Show only stars brighter than limit magnitude
     colors: false, // use style setting below if false
     style: {
       fill: '#ffffff',
       opacity: 1,
     },
+    size: 8,
+    exponent: -0.185,
     designation: false,
     designationType: 'desig',
+    propername: true,
+    propernameType: 'en',
   }, // ----------------------------------------------------------
   dsos: {
     // Deep Space Objects
@@ -112,7 +116,7 @@ Celestial.display({
       opacity: mwOpacity,
     },
   }, // ----------------------------------------------------------
-  advanced: true,
+  advanced: false,
   background: {
     fill: '#071536',
     opacity: 0,
