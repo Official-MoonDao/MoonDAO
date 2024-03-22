@@ -72,7 +72,7 @@ function Tier({ label, description, points, onClick }: TierProps) {
 function BackButton({ setSelectedTier }: any) {
   return (
     <button onClick={() => setSelectedTier(null)}>
-      <Image src={'/backIcon.png'} width={30} height={30} alt="" />
+      <Image src={'/x-white.png'} width={30} height={30} alt="" />
     </button>
   )
 }
@@ -96,13 +96,13 @@ export function OnboardingV2({ selectedChain }: any) {
   if (selectedTier === 'entity') {
     return (
       <div>
-        {/* <BackButton setSelectedTier={setSelectedTier} /> */}
         <CreateEntity
           address={address}
           selectedChain={selectedChain}
           selectedWallet={selectedWallet}
           wallets={wallets}
           hatsContract={hatsContract}
+          setSelectedTier={setSelectedTier}
         />
       </div>
     )

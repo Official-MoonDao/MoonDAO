@@ -1,14 +1,14 @@
 import html2canvas from 'html2canvas'
 import Head from 'next/head'
 import Script from 'next/script'
-import { useRef } from 'react'
+import { useEffect } from 'react'
 
-export function ImageGenerator({ setImage, nextStage }: any) {
-  const pfpRef = useRef<HTMLDivElement>()
-
+export function ImageGenerator({ setImage, nextStage, pfpRef }: any) {
   function submitImage() {
-    if (!pfpRef?.current) return console.error('pfpRef is not defined')
-    html2canvas(pfpRef?.current).then((canvas) => {
+    if (!document.getElementById('pfp'))
+      return console.error('pfpRef is not defined')
+    // @ts-expect-error
+    html2canvas(document.getElementById('pfp')).then((canvas) => {
       const img = canvas.toDataURL('image/png')
 
       //Convert from base64 to file
@@ -27,6 +27,14 @@ export function ImageGenerator({ setImage, nextStage }: any) {
       nextStage()
     })
   }
+  useEffect(() => {
+    fetch('/image-generator/init.js') // adjust the path to your init.js file
+      .then((response) => response.text())
+      .then((script) => {
+        const runScript = new Function(script)
+        runScript()
+      })
+  }, [])
 
   return (
     <>
@@ -35,7 +43,8 @@ export function ImageGenerator({ setImage, nextStage }: any) {
         <link href="/image-generator/pfp-style.css" rel="stylesheet" />
       </Head>
 
-      <Script src="/image-generator/init.js" />
+      <Script src="/image-generator/init.js" strategy="afterInteractive" />
+
       <button onClick={submitImage}>Download</button>
       <div id="html-container">
         <div id="pfp" ref={pfpRef}>
