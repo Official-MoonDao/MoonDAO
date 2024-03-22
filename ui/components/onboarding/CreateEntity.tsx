@@ -206,6 +206,21 @@ export function CreateEntity({
               const pinataJWT = await jwtRes.text()
 
               try {
+                //create hat metadata
+                const hatMetadata = {
+                  type: '1.0',
+                  data: {
+                    name: entityData.name + ' Admin Hat',
+                    description: entityData.description,
+                  },
+                }
+
+                const hatsMetadataIpfsHash = await pinMetadataToIPFS(
+                  pinataJWT || '',
+                  hatMetadata,
+                  entityData.name + ' Hat Metadata'
+                )
+
                 //pin image to IPFS
                 const newImageIpfsHash = await pinImageToIPFS(
                   pinataJWT || '',
@@ -261,7 +276,10 @@ export function CreateEntity({
                 //mint NFT to safe
                 await entityCreatorContract?.call(
                   'createMoonDAOEntity',
-                  ['ipfs://' + newMetadataIpfsHash],
+                  [
+                    'ipfs://' + newMetadataIpfsHash,
+                    'ipfs://' + hatsMetadataIpfsHash,
+                  ],
                   {
                     value: ethers.utils.parseEther('0.01'),
                   }
