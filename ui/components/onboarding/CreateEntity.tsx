@@ -210,7 +210,7 @@ export function CreateEntity({
                 const hatMetadata = {
                   type: '1.0',
                   data: {
-                    name: entityData.name + ' Admin Hat',
+                    name: 'Admin',
                     description: entityData.description,
                   },
                 }
@@ -221,12 +221,16 @@ export function CreateEntity({
                   entityData.name + ' Hat Metadata'
                 )
 
+                console.log(entityImage)
+
                 //pin image to IPFS
                 const newImageIpfsHash = await pinImageToIPFS(
                   pinataJWT || '',
                   entityImage,
                   entityData.name + ' Image'
                 )
+
+                console.log(newImageIpfsHash)
 
                 if (!newImageIpfsHash) {
                   return toast.error('Error pinning image to IPFS')

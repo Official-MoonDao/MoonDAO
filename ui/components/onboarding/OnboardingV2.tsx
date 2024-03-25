@@ -10,10 +10,11 @@ type TierProps = {
   label: string
   description: string
   points: string[]
+  price: number
   onClick: () => void
 }
 
-function Tier({ label, description, points, onClick }: TierProps) {
+function Tier({ label, description, points, price, onClick }: TierProps) {
   const { user } = usePrivy()
 
   const { login } = useLogin()
@@ -46,18 +47,29 @@ function Tier({ label, description, points, onClick }: TierProps) {
               {description}
             </p>
             <h1 className={'font-GoodTimes text-3xl'}>{label}</h1>
-            <div>
-              {points.map((p: any, i: number) => (
-                <div
-                  className="flex flex-row bg-[#FFFFFF08] bg-opacity-3 p-2 rounded-sm space-x-2"
-                  key={`${label}-tier-point-${i}`}
-                >
-                  <p className="h-6 w-6 flex justify-center items-center rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2 ">
-                    ✓
-                  </p>
-                  <p>{p}</p>
+            <div className="bg-[#FFFFFF08] bg-opacity-3">
+              <div className="p-4 flex flex-col xl:flex-row gap-4 justify-between">
+                <div className="flex items-center">
+                  <strong className="text-2xl">{price + ' ETH'}</strong>
+                  <p className="font-[75%] opacity-80">{' /Year'}</p>
                 </div>
-              ))}
+                <p className={`text-moon-green`}>✓ 12 Month Pass</p>
+              </div>
+              <hr className="mx-4 h-2 my-2 border-[#ffffff25]" />
+              <div>
+                <p className="p-4">Benefits</p>
+                {points.map((p: any, i: number) => (
+                  <div
+                    className="flex flex-row p-2 rounded-sm space-x-2"
+                    key={`${label}-tier-point-${i}`}
+                  >
+                    <p className="h-6 w-6 flex justify-center items-center rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2 ">
+                      ✓
+                    </p>
+                    <p>{p}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           {/* <button className="self-start p-2 text-moon-orange rounded-full bg-moon-orange bg-opacity-10 after:content-['_↗']">
@@ -120,6 +132,7 @@ export function OnboardingV2({ selectedChain }: any) {
               'Access the biggest network of startups, nations, and individuals working to create a long-term presence on the lunar surface.',
               'Help govern the fate of the first off-world settlement.',
             ]}
+            price={0.1}
             onClick={() => setSelectedTier('citizen')}
           />
           <Tier
@@ -132,6 +145,7 @@ export function OnboardingV2({ selectedChain }: any) {
               'Access the frontier of onchain tooling to manage your organization and interface with any other onchain contracts.',
               'List your products and services on the MoonDAO Marketplace.',
             ]}
+            price={0.5}
             onClick={() => setSelectedTier('entity')}
           />
         </div>
