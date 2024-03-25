@@ -54,10 +54,20 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
 
       <Script strategy="afterInteractive" src="/image-generator/init.js" />
 
-      <div id="html-container" className="pl-[15%] md:pl-0">
-        <div id="pfp" ref={pfpRef}>
+      <div id="html-container">
+        <div
+          id="pfp"
+          ref={pfpRef}
+          className="bg-black dark:bg-transparent rounded-lg"
+        >
           <div id="celestial-map"></div>
           <div id="canvas-container"></div>
+          <button
+            className="mt-8 px-4 py-2 h-12 bg-moon-orange max-w-[300px]"
+            onClick={submitImage}
+          >
+            Submit Image
+          </button>
           <img
             alt="default-img"
             id="process-image"
@@ -65,13 +75,6 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
           />
         </div>
       </div>
-
-      <button
-        className="absolute bottom-48 px-4 py-2 bg-moon-orange"
-        onClick={submitImage}
-      >
-        Submit Image
-      </button>
     </>
   )
 }

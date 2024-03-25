@@ -119,6 +119,7 @@ export function CreateEntity({
       {/* Upload & Create Image */}
       {stage === 1 && (
         <StageContainer
+          className="mb-[250px] md:mb-[500px] xl:mb-0"
           title="Design"
           description="Design your unique onchain registration certificate."
         >

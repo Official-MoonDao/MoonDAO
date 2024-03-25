@@ -3736,23 +3736,27 @@
     // Stars - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     col = frm.append('div').attr('class', 'col').attr('id', 'stars')
     col
+      .append('label')
+      .attr('class', 'header')
+      .attr('for', 'stars-show')
+      .html(' Stars')
+    col
       .append('input')
       .attr('type', 'checkbox')
       .attr('id', 'stars-show')
       .property('checked', config.stars.show)
       .on('change', apply)
-    col
-      .append('label')
-      .attr('class', 'header')
-      .attr('for', 'stars-show')
-      .html(' Stars')
 
+    col.append('br')
+    col.append('br')
     col
       .append('label')
       .attr('title', 'Stars Limit')
       .attr('for', 'stars-limit')
-      .attr('class', 'secondLabel')
-      .html(' Limit:')
+      .attr('class', 'header')
+      .html('Number of Stars')
+    // col.append('label').style('display', 'none')
+    col.append('br')
     col
       .append('input')
       .attr('type', 'range')
@@ -3763,6 +3767,7 @@
       .attr('value', config.stars.limit)
       .attr('step', '0.5')
       .on('change', apply)
+    col.append('br')
 
     var names = formats.starnames[config.culture] || formats.starnames.iau
 
@@ -3820,14 +3825,15 @@
       }
     }
 
-    // col.append("br");
+    col.append('br')
 
     col
       .append('label')
       .attr('title', 'Stars Size')
       .attr('for', 'stars-size')
-      .attr('class', 'secondLabel')
-      .html('Size:')
+      .attr('class', 'header')
+      .html('Size of Stars')
+    col.append('br')
     col
       .append('input')
       .attr('type', 'range')
@@ -4892,17 +4898,23 @@
 
     //MoonDAO PFP UI
     col.append('label').attr('title', 'Background Image').html('Image ')
+    col.append('br')
     col
       .append('input')
       .attr('type', 'file')
       .attr('name', 'UPLOAD')
       .attr('accept', 'image/*')
       .attr('id', 'upload')
+
+    col.append('br')
+    col.append('br')
+
     col
       .append('label')
       .attr('title', 'Blur Amount')
       .attr('for', 'blur')
       .html(' Blur ')
+    col.append('br')
     col
       .append('input')
       .attr('type', 'range')
@@ -4913,12 +4925,14 @@
       .attr('value', '70')
       .attr('step', '1')
       .attr('oninput', 'blurValue(this.value)')
-    col
-      .append('input')
-      .attr('type', 'button')
-      .attr('value', 'DOWNLOAD')
-      .attr('id', 'download')
-      .on('click', downloadImg)
+
+    col.append('br')
+    // col
+    //   .append('input')
+    //   .attr('type', 'button')
+    //   .attr('value', 'DOWNLOAD')
+    //   .attr('id', 'download')
+    //   .on('click', downloadImg)
     /*
 		col.append("input").attr("type", "button").attr("value", "DATA").attr("id", "imgData").on("click", passImgData);
 		*/
