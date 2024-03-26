@@ -1,8 +1,13 @@
 import { Chain } from '@thirdweb-dev/chains'
+import { BigNumber } from 'ethers'
 import { useEffect, useState } from 'react'
 import hatsSubgraphClient from './hatsSubgraphClient'
 
-export function useHatTree(selectedChain: Chain, treeId: number | undefined) {
+export function useHatTree(
+  selectedChain: Chain,
+  treeId: number | undefined,
+  topHatId: number
+) {
   const [hats, setHats] = useState<any>()
 
   async function getHatTree() {
@@ -21,7 +26,14 @@ export function useHatTree(selectedChain: Chain, treeId: number | undefined) {
           },
         },
       })
-      setHats(tree.hats)
+      if (tree.hats) {
+        const filteredHats = tree.hats.filter(
+          (hat: any) => !BigNumber.from(hat.id).eq(BigNumber.from(topHatId))
+        )
+        setHats(filteredHats)
+      } else {
+        throw new Error('No hats found')
+      }
     } catch (err) {
       console.log(err)
     }
