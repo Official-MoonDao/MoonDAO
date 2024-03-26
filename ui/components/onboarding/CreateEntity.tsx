@@ -2,14 +2,10 @@ import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { ENTITY_ADDRESSES, ENTITY_CREATOR_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
-import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { createSafe } from '../../lib/gnosis/createSafe'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
-import HatsABI from '../../const/abis/Hats.json'
 import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
@@ -119,43 +115,10 @@ export function CreateEntity({
       {/* Upload & Create Image */}
       {stage === 1 && (
         <StageContainer
-          className="mb-[250px] md:mb-[500px] xl:mb-0"
+          className="mb-[250px] md:mb-[500px] 2xl:mb-[200px]"
           title="Design"
           description="Design your unique onchain registration certificate."
         >
-          {/* {entityImage ? (
-            <Image
-              src={URL.createObjectURL(entityImage)}
-              width={300}
-              height={300}
-              alt=""
-            />
-          ) : (
-            <div className="w-[350px] h-[350px] bg-[#ffffff50]"></div>
-          )}
-          <div className="flex flex-col w-[400px]">
-            <input
-              onChange={(e: any) => setEntityImage(e.target.files[0])}
-              type="file"
-              accept="image/png, image/jpeg"
-            />
-            <p className="mt-6 font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-              {`Upload your organization's logo to create a unique image that represents your Entity's certification onchain.`}
-            </p>
-            <StageButton
-              onClick={() => {
-                if (!entityImage) return toast.error('No file selected')
-
-                const fileType = entityImage.type
-                if (fileType !== 'image/png' && fileType !== 'image/jpeg') {
-                  return toast.error('File type must be .png or .jpeg')
-                }
-                setStage(2)
-              }}
-            >
-              Submit Image
-            </StageButton>
-          </div> */}
           <ImageGenerator
             setImage={setEntityImage}
             nextStage={() => setStage(2)}

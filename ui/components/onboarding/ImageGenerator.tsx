@@ -1,8 +1,8 @@
 import html2canvas from 'html2canvas'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
 import Script from 'next/script'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { StageButton } from './StageButton'
 
 export function ImageGenerator({ setImage, nextStage, stage }: any) {
   const pfpRef = useRef<any>()
@@ -62,12 +62,12 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
         >
           <div id="celestial-map"></div>
           <div id="canvas-container"></div>
-          <button
-            className="mt-8 px-4 py-2 h-12 bg-moon-orange max-w-[300px]"
+          <StageButton
+            // className="mt-8 px-4 py-2 h-12 bg-moon-orange max-w-[300px]"
             onClick={submitImage}
           >
             Submit Image
-          </button>
+          </StageButton>
           <img
             alt="default-img"
             id="process-image"
