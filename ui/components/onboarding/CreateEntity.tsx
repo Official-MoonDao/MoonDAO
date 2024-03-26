@@ -2,15 +2,14 @@ import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { ENTITY_ADDRESSES, ENTITY_CREATOR_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
-import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+
 import useWindowSize from '../../lib/entity/use-window-size'
 import { createSafe } from '../../lib/gnosis/createSafe'
+
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
-import HatsABI from '../../const/abis/Hats.json'
 import { Steps } from '../layout/Steps'
 import ArrowButton from '../marketplace/Layout/ArrowButton'
 import { ImageGenerator } from './ImageGenerator'
@@ -73,7 +72,7 @@ export function CreateEntity({
   console.log(pfpRef)
 
   return (
-    <div className="flex flex-row">
+ <div className="flex flex-row">
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
         <div className="flex flex-row w-full justify-between md:pr-10">
           <Steps
@@ -231,12 +230,31 @@ export function CreateEntity({
               const pinataJWT = await jwtRes.text()
 
               try {
+                //create hat metadata
+                const hatMetadata = {
+                  type: '1.0',
+                  data: {
+                    name: 'Admin',
+                    description: entityData.description,
+                  },
+                }
+
+                const hatsMetadataIpfsHash = await pinMetadataToIPFS(
+                  pinataJWT || '',
+                  hatMetadata,
+                  entityData.name + ' Hat Metadata'
+                )
+
+                console.log(entityImage)
+
                 //pin image to IPFS
                 const newImageIpfsHash = await pinImageToIPFS(
                   pinataJWT || '',
                   entityImage,
                   entityData.name + ' Image'
                 )
+
+                console.log(newImageIpfsHash)
 
                 if (!newImageIpfsHash) {
                   return toast.error('Error pinning image to IPFS')
@@ -286,7 +304,10 @@ export function CreateEntity({
                 //mint NFT to safe
                 await entityCreatorContract?.call(
                   'createMoonDAOEntity',
-                  ['ipfs://' + newMetadataIpfsHash],
+                  [
+                    'ipfs://' + newMetadataIpfsHash,
+                    'ipfs://' + hatsMetadataIpfsHash,
+                  ],
                   {
                     value: ethers.utils.parseEther('0.01'),
                   }

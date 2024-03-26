@@ -12,6 +12,7 @@ import {
   ThirdwebNftMedia,
   useAddress,
   useContract,
+  useContractRead,
   useNFT,
 } from '@thirdweb-dev/react'
 import { ENTITY_ADDRESSES, HATS_ADDRESS, MOONEY_ADDRESSES } from 'const/config'
@@ -33,9 +34,11 @@ import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { CopyIcon, TwitterIcon } from '@/components/assets'
 import { CoordinapeLogo } from '@/components/assets/CoordinapeLogo'
 import { JuiceboxLogo } from '@/components/assets/JuiceboxLogo'
+import { EntityAdminModal } from '@/components/entity/EntityAdminModal'
 import { EntityMetadataModal } from '@/components/entity/EntityMetadataModal'
 import { HatWearers } from '@/components/hats/HatWearers'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
+import MoonDAOEntityABI from '../../const/abis/MoonDAOEntity.json'
 
 function Card({ children, className = '', onClick }: any) {
   if (onClick)
@@ -74,24 +77,23 @@ export default function EntityDetailPage({ tokenId }: any) {
 
   const [entityMetadataModalEnabled, setEntityMetadataModalEnabled] =
     useState(false)
-  const [EntitySubscriptionModalEnabled, setEntitySubscriptionModalEnabled] =
+  const [entitySubscriptionModalEnabled, setEntitySubscriptionModalEnabled] =
     useState(false)
+  const [entityAdminModalEnabled, setEntityAdminModalEnabled] = useState(false)
 
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
   //Entity Data
   const { contract: entityContract } = useContract(
-    ENTITY_ADDRESSES[selectedChain.slug]
+    ENTITY_ADDRESSES[selectedChain.slug],
+    MoonDAOEntityABI
   )
   const { data: nft } = useNFT(entityContract, tokenId)
 
-  const { socials, isPublic, hatTreeId, admin, updateMetadata } = useEntityData(
-    entityContract,
-    hatsContract,
-    nft
-  )
+  const { socials, isPublic, hatTreeId, topHatId, admin, updateMetadata } =
+    useEntityData(entityContract, hatsContract, nft)
 
   //Hats
-  const hats = useHatTree(selectedChain, hatTreeId)
+  const hats = useHatTree(selectedChain, hatTreeId, topHatId)
 
   //Entity Balances
   const { contract: mooneyContract } = useContract(
@@ -109,7 +111,7 @@ export default function EntityDetailPage({ tokenId }: any) {
   }
 
   //Subscription Data
-  const { data: expiresAt } = useHandleRead(entityContract, 'expiresAt', [
+  const { data: expiresAt } = useContractRead(entityContract, 'expiresAt', [
     nft?.metadata?.id,
   ])
 
@@ -129,8 +131,12 @@ export default function EntityDetailPage({ tokenId }: any) {
     setSelectedChain(Sepolia)
   }, [])
 
+  useEffect(() => {
+    console.log(socials)
+  }, [socials])
+
   return (
-    <div className="animate-fadeIn flex flex-col gap-6 max-w-[1080px]">
+    <div className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]">
       {/* Header and socials */}
       <Card>
         <div className="flex flex-col lg:flex-row md:items-center justify-between gap-8">
@@ -192,7 +198,7 @@ export default function EntityDetailPage({ tokenId }: any) {
               <PencilIcon width={35} height={35} />
             </button>
           </div>
-          {EntitySubscriptionModalEnabled && (
+          {entitySubscriptionModalEnabled && (
             <SubscriptionModal
               setEnabled={setEntitySubscriptionModalEnabled}
               nft={nft}
@@ -236,7 +242,7 @@ export default function EntityDetailPage({ tokenId }: any) {
         )}
         {/* Socials */}
         <div className="mt-4 flex items-center gap-12">
-          {socials && isPublic ? (
+          {socials ? (
             <>
               {socials.twitter && (
                 <Link href={socials.twitter} target="_blank" passHref>
@@ -245,7 +251,7 @@ export default function EntityDetailPage({ tokenId }: any) {
               )}
               {socials.communications && (
                 <Link href={socials.communications} target="_blank" passHref>
-                  <ChatBubbleLeftIcon />
+                  <ChatBubbleLeftIcon height={30} width={30} />
                 </Link>
               )}
               {socials.website && (
@@ -269,7 +275,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       <div className="flex flex-col xl:flex-row gap-6">
         <Card className="w-full xl:w-1/2 flex flex-col gap-4">
           <div className="flex justify-between">
-            <p>{`Total ETH`}</p>
+            <p>{`Native Balance`}</p>
             <p className="p-2 bg-[#ffffff25] flex gap-2">
               <Image
                 src="/icons/networks/ethereum.svg"
@@ -292,14 +298,14 @@ export default function EntityDetailPage({ tokenId }: any) {
         </Card>
         <Card className="w-full xl:w-1/2 flex flex-col">
           <div className="w-3/4">
-            <p>{`Total $MOONEY`}</p>
+            <p>{`$MOONEY`}</p>
             <p className="mt-8 text-3xl">
               {MOONEYBalance && isPublic
                 ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
                 : 0}
             </p>
           </div>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-col md:flex-row gap-2">
             <Button
               onClick={() =>
                 window.open(
@@ -321,7 +327,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Proposals */}
         <Card className="w-full lg:w-1/2">
-          <p>MoonDAO Proposals</p>
+          <p>Proposals</p>
           <div className="mt-2 flex flex-col gap-4">
             {newestProposals
               ? newestProposals.map((proposal: any) => (
@@ -358,8 +364,8 @@ export default function EntityDetailPage({ tokenId }: any) {
         {/* Members */}
         <Card className="w-full lg:w-1/2">
           <p>Members</p>
-          <div className="pb-8 h-full flex flex-col justify-between">
-            <div className="py-2 pr-4 flex flex-col gap-4 max-h-[150px] overflow-y-scroll">
+          <div className="pb-6 h-full flex flex-col justify-between">
+            <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-y-scroll">
               {hats?.map((hat: any, i: number) => (
                 <HatWearers
                   key={'hat-' + i}
@@ -369,17 +375,33 @@ export default function EntityDetailPage({ tokenId }: any) {
                 />
               ))}
             </div>
-
-            <Button
-              className="mt-2"
-              onClick={() => {
-                window.open(
-                  `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
-                )
-              }}
-            >
-              Manage members
-            </Button>
+            <div className="flex flex-col md:flex-row justify-start items-center gap-2">
+              <Button
+                onClick={() => {
+                  window.open(
+                    `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
+                  )
+                }}
+              >
+                Manage Members
+              </Button>
+              {entityAdminModalEnabled && (
+                <EntityAdminModal
+                  entityContract={entityContract}
+                  tokenId={nft?.metadata.id}
+                  setEnabled={setEntityAdminModalEnabled}
+                  adminAddress={admin}
+                />
+              )}
+              <Button
+                className=""
+                onClick={() => {
+                  setEntityAdminModalEnabled(true)
+                }}
+              >
+                Manage Admin
+              </Button>
+            </div>
           </div>
         </Card>
       </div>

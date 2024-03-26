@@ -108,6 +108,7 @@ export function useEntityData(
     if (!nft?.metadata?.attributes) return
     getEntitySocials()
     getView()
+    console.log(socials)
   }, [nft])
 
   useEffect(() => {
@@ -118,6 +119,7 @@ export function useEntityData(
     socials,
     isPublic,
     hatTreeId,
+    topHatId,
     admin,
     updateMetadata,
   }
