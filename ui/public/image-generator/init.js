@@ -30,7 +30,7 @@ Celestial.display({
     location: false,
     general: false,
     stars: true,
-    dsos: true,
+    dsos: false,
     constellations: false,
     lines: false,
     other: false,
@@ -64,6 +64,8 @@ Celestial.display({
     // Planets
     show: true,
     symbolType: 'symbol',
+    names: true,
+    namesType: 'en',
   }, // ----------------------------------------------------------
   stars: {
     // Stars
@@ -79,7 +81,7 @@ Celestial.display({
   }, // ----------------------------------------------------------
   dsos: {
     // Deep Space Objects
-    show: true,
+    show: false,
     limit: 6, // Show only DSOs brighter than limit magnitude
     colors: true, // use style setting below if false
     style: {
