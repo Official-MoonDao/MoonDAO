@@ -12,6 +12,7 @@ import { createSafe } from '../../lib/gnosis/createSafe'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import HatsABI from '../../const/abis/Hats.json'
 import { Steps } from '../layout/Steps'
+import ArrowButton from '../marketplace/Layout/ArrowButton'
 import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
@@ -41,6 +42,8 @@ export function CreateEntity({
   const [entityImage, setEntityImage] = useState<any>()
   const [multisigAddress, setMultisigAddress] = useState<string>()
   const [hatTreeId, setHatTreeId] = useState<number>()
+
+  const { isMobile } = useWindowSize()
 
   const [entityData, setEntityData] = useState<EntityData>({
     name: '',
@@ -72,9 +75,9 @@ export function CreateEntity({
   return (
     <div className="flex flex-row">
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
-        <div className="flex flex-row w-full justify-between pr-10">
+        <div className="flex flex-row w-full justify-between md:pr-10">
           <Steps
-            className="mb-4 w-full lg:max-w-[900px] md:-ml-12"
+            className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
             steps={['Info', 'Design', 'Mint']}
             currStep={stage}
             lastStep={lastStage}
@@ -140,6 +143,7 @@ export function CreateEntity({
         {/* Upload & Create Image */}
         {stage === 1 && (
           <StageContainer
+            className={`mb-[500px]`}
             title="Design"
             description="Design your unique onchain registration certificate."
           >
@@ -188,14 +192,89 @@ export function CreateEntity({
         {stage === 2 && (
           <StageContainer
             title="Mint Entity"
-            description="Mint your Entity onchain!"
+            description="Please review your onchain Entity before minting."
           >
-            <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {/* <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
               {`Make sure all your information is displayed correcly.`}
             </p>
             <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
               {`Welcome to the future of off-world coordination with MoonDAO.`}
-            </p>
+            </p> */}
+            <Image
+              src={URL.createObjectURL(entityImage)}
+              alt="entity-image"
+              width={600}
+              height={600}
+            />
+
+            <div className="flex flex-col bg-black w-full p-3 md:p-5 mt-10">
+              <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
+              <div className="flex flex-col bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
+                {isMobile ? (
+                  Object.keys(entityData).map((v, i) => {
+                    return (
+                      <div
+                        className="flex flex-col text-left"
+                        key={'entityData' + i}
+                      >
+                        <p className="text-xl capitalize">{v}:</p>
+
+                        <p className="text-md text-balance">
+                          {/**@ts-expect-error */}
+                          {entityData[v]!}
+                        </p>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <table className="table w-fit">
+                    <tbody>
+                      {Object.keys(entityData).map((v, i) => {
+                        return (
+                          <tr className="" key={'entityData' + i}>
+                            <th className="text-xl bg-[#0F152F]">{v}:</th>
+
+                            <th className="text-md bg-[#0F152F] text-pretty">
+                              {/**@ts-expect-error */}
+                              {entityData[v]!}
+                            </th>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col bg-black w-full p-3 md:p-5 mt-10">
+              <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT</h2>
+              <h2 className="font-GoodTimes text-3xl mb-2">INFORMATION</h2>
+              <div className="flex flex-col bg-[#0F152F] p-3 md:p-5">
+                <h3 className="font-GoodTimes text-2xl mb-2">TREASURY</h3>
+                <p className="mt-2">
+                  A self-custodied multisignature treasury will secure your
+                  organization’s assets, allowing to interact with any smart
+                  contracts within the Ethereum ecosystem. <br /> <br />
+                  You can add more signers later via your Entity management
+                  portal.
+                </p>
+              </div>
+              <div className="flex flex-col bg-[#0F152F] p-3 md:p-5 mt-5">
+                <h3 className="font-GoodTimes text-2xl mb-2">ADMINISTRATOR</h3>
+                <p className="mt-2">
+                  The admin can modify your organization’s information. To
+                  begin, the currently connected wallet will act as the
+                  Administrator.
+                  <br /> <br />
+                  You can change the admin or add more members to your
+                  organization using the Hats Protocol within your Entity
+                  Management Portal.
+                </p>
+              </div>
+              <p className="mt-4">
+                Welcome to the future of off-world coordination with MoonDAO!
+              </p>
+            </div>
             <StageButton
               onClick={async () => {
                 //sign message
@@ -304,27 +383,44 @@ export function CreateEntity({
 
         {/* Dev Buttons */}
 
-        <div className="ml-8 flex flex-row justify-between w-3/4 mt-8">
-          <button
-            className="p-3 bg-blue-500"
-            onClick={() => {
-              if (stage > 0) {
-                setStage((prev) => prev - 1)
-              }
-            }}
-          >
-            Back
-          </button>
-          <button
-            className="p-3 bg-red-500"
-            onClick={() => {
-              if (stage < 4) {
-                setStage((prev) => prev + 1)
-              }
-            }}
-          >
-            Next
-          </button>
+        <div className="flex flex-row justify-between w-full mt-8 lg:px-5">
+          {stage > 0 ? (
+            <button
+              className="p-3"
+              onClick={() => {
+                if (stage > 0) {
+                  setStage((prev) => prev - 1)
+                }
+              }}
+            >
+              <Image
+                alt="arrow left"
+                src="./arrow-left.svg"
+                height={50}
+                width={50}
+              />
+            </button>
+          ) : (
+            <p></p>
+          )}
+
+          {lastStage > stage && (
+            <button
+              className="p-3"
+              onClick={() => {
+                if (stage < 2) {
+                  setStage((prev) => prev + 1)
+                }
+              }}
+            >
+              <Image
+                alt="arrow right"
+                src="./arrow-right.svg"
+                height={50}
+                width={50}
+              />
+            </button>
+          )}
         </div>
       </div>
       {windowSize.width && windowSize.width >= 1835 && (
