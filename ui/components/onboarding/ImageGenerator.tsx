@@ -55,11 +55,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
       <Script strategy="afterInteractive" src="/image-generator/init.js" />
 
       <div id="html-container">
-        <div
-          id="pfp"
-          ref={pfpRef}
-          className="bg-black dark:bg-transparent rounded-lg"
-        >
+        <div id="pfp" ref={pfpRef}>
           <div id="celestial-map"></div>
           <div id="canvas-container"></div>
           <StageButton

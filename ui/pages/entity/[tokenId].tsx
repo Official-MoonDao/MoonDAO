@@ -275,7 +275,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       <div className="flex flex-col xl:flex-row gap-6">
         <Card className="w-full xl:w-1/2 flex flex-col gap-4">
           <div className="flex justify-between">
-            <p>{`Total ETH`}</p>
+            <p>{`Native Balance`}</p>
             <p className="p-2 bg-[#ffffff25] flex gap-2">
               <Image
                 src="/icons/networks/ethereum.svg"
@@ -298,7 +298,7 @@ export default function EntityDetailPage({ tokenId }: any) {
         </Card>
         <Card className="w-full xl:w-1/2 flex flex-col">
           <div className="w-3/4">
-            <p>{`Total $MOONEY`}</p>
+            <p>{`$MOONEY`}</p>
             <p className="mt-8 text-3xl">
               {MOONEYBalance && isPublic
                 ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
@@ -327,7 +327,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Proposals */}
         <Card className="w-full lg:w-1/2">
-          <p>MoonDAO Proposals</p>
+          <p>Proposals</p>
           <div className="mt-2 flex flex-col gap-4">
             {newestProposals
               ? newestProposals.map((proposal: any) => (

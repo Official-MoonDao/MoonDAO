@@ -138,7 +138,7 @@ export default function Entities() {
         {isLoading && <p className="text-center">Loading...</p>}
         <div
           className="grid grid-cols-1
-        lg:grid-cols-2 xl:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center place-items-center"
+        lg:grid-cols-2 2xl:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center place-items-center"
         >
           {cachedNFTs?.slice((pageIdx - 1) * 9, pageIdx * 9).map((nft) => {
             if (nft.metadata.name !== 'Failed to load NFT metadata') {

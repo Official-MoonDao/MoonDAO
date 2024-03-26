@@ -68,6 +68,13 @@
   text-align: left;
 }
 
+#celestial-form .hr {
+  margin-top: 4px;
+  margin-bottom: 8px;
+  border: 0 none;
+  border-top: 1px solid white;
+}
+
 #loc {
   text-align: left;
 }
@@ -176,6 +183,9 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 #celestial-form input[type='checkbox'] {
+  margin-left: 10px;
+  width: 20px;
+  height: 20px;
   vertical-align: 2px;
 }
 
@@ -187,7 +197,7 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 #celestial-form input[type='file'] {
-  width: 64px;
+  width: 100%;
   padding-bottom: 1px;
   color: #f9b95c;
   background: #071732;
@@ -232,7 +242,7 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 #celestial-form input#upload {
-  width: 250px;
+  width: 100%;
 }
 
 #celestial-form input#download {

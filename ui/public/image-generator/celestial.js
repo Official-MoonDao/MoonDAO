@@ -3734,6 +3734,8 @@
     setCenter(config.center, config.transform)
 
     // Stars - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    frm.append('div').attr('class', 'hr')
+    frm.append('br')
     col = frm.append('div').attr('class', 'col').attr('id', 'stars')
     col
       .append('label')
@@ -3754,7 +3756,7 @@
       .attr('title', 'Stars Limit')
       .attr('for', 'stars-limit')
       .attr('class', 'header')
-      .html('Number of Stars')
+      .html('Number')
     // col.append('label').style('display', 'none')
     col.append('br')
     col
@@ -3832,7 +3834,7 @@
       .attr('title', 'Stars Size')
       .attr('for', 'stars-size')
       .attr('class', 'header')
-      .html('Size of Stars')
+      .html('Size')
     col.append('br')
     col
       .append('input')
