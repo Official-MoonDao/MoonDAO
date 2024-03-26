@@ -3,7 +3,7 @@
 var mwColor = getRandomHSLuvColor(80)
 var mwOpacity = 0.35 // 0.35
 const e = ' * MoonDAO * PFP Generator * '
-console.log('%c' + e, 'background:' + mwColor + '; color: #fff')
+// console.log('%c' + e, 'background:' + mwColor + '; color: #fff')
 
 var defaultImages = [
   'images/test-00.jpg',

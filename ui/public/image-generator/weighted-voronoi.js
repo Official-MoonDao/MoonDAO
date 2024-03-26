@@ -8,13 +8,13 @@ let loadedIMG
 function preload() {
   urlIMG = document.getElementById('process-image').src
   loadedIMG = loadImage(urlIMG, imgLoadSuccess, imgLoadFailure)
-  console.log('— bg img loaded: ' + urlIMG)
-  console.log('waiting...')
+  // console.log('— bg img loaded: ' + urlIMG)
+  // console.log('waiting...')
 }
 
 function imgLoadSuccess() {
   loadedIMG.resize(720, 720)
-  console.log('— bg img resized')
+  // console.log('— bg img resized')
 }
 
 function imgLoadFailure(event) {
@@ -22,7 +22,7 @@ function imgLoadFailure(event) {
 }
 
 function setup() {
-  console.log(' ★★ ')
+  // console.log(' ★★ ')
   const canvas = createCanvas(loadedIMG.width, loadedIMG.height)
   canvas.parent('canvas-container')
   imageMode(CENTER)
