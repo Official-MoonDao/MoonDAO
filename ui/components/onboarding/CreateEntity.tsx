@@ -180,19 +180,123 @@ export function CreateEntity({
               Submit Image
             </StageButton>
           </div> */}
-            <ImageGenerator
-              setImage={setEntityImage}
-              nextStage={() => setStage(2)}
-              pfpRef={pfpRef}
-              currStep={stage}
-            />
-          </StageContainer>
-        )}
-        {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
-        {stage === 2 && (
-          <StageContainer
-            title="Mint Entity"
-            description="Please review your onchain Entity before minting."
+          <ImageGenerator
+            setImage={setEntityImage}
+            nextStage={() => setStage(2)}
+            stage={stage}
+          />
+        </StageContainer>
+      )}
+      {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
+      {stage === 2 && (
+        <StageContainer
+          title="Mint Entity"
+          description="Please review your onchain Entity before minting."
+        >
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`Make sure all your information is displayed correcly.`}
+          </p>
+          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
+            {`Welcome to the future of off-world coordination with MoonDAO.`}
+          </p>
+          <StageButton
+            onClick={async () => {
+              //sign message
+              const provider = await wallets[selectedWallet].getEthersProvider()
+              const signer = provider?.getSigner()
+
+              const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
+              const nonceData = await nonceRes.json()
+
+              const message = `Please sign this message to mint this entity's NFT #`
+
+              const signature = await signer.signMessage(
+                message + nonceData.nonce
+              )
+
+              if (!signature) return toast.error('Error signing message')
+
+              //get pinata jwt
+              const jwtRes = await fetch('/api/ipfs/upload', {
+                method: 'POST',
+                headers: {
+                  signature,
+                },
+                body: JSON.stringify({
+                  address: wallets[selectedWallet].address,
+                  message,
+                }),
+              })
+
+              const pinataJWT = await jwtRes.text()
+
+              try {
+                //pin image to IPFS
+                const newImageIpfsHash = await pinImageToIPFS(
+                  pinataJWT || '',
+                  entityImage,
+                  entityData.name + ' Image'
+                )
+
+                if (!newImageIpfsHash) {
+                  return toast.error('Error pinning image to IPFS')
+                }
+
+                //get the next token id of the nft collection
+                const totalSupply = await entityContract?.call('totalSupply')
+                const nextTokenId = totalSupply.toString()
+
+                // pin metadata to IPFS
+                const metadata = {
+                  name: `Entity #${nextTokenId}`,
+                  description: `${entityData.name} : ${entityData.description}`,
+                  image: `ipfs://${newImageIpfsHash}`,
+                  attributes: [
+                    {
+                      trait_type: 'twitter',
+                      value: entityData.twitter,
+                    },
+                    {
+                      trait_type: 'communications',
+                      value: entityData.communications,
+                    },
+                    {
+                      trait_type: 'website',
+                      value: entityData.website,
+                    },
+                    {
+                      trait_type: 'view',
+                      value: entityData.view,
+                    },
+                    {
+                      trait_type: 'hatsTreeId',
+                      value: hatTreeId,
+                    },
+                  ],
+                }
+
+                const newMetadataIpfsHash = await pinMetadataToIPFS(
+                  pinataJWT || '',
+                  metadata,
+                  entityData.name + ' Metadata'
+                )
+
+                if (!newMetadataIpfsHash)
+                  return toast.error('Error pinning metadata to IPFS')
+                //mint NFT to safe
+                await entityCreatorContract?.call(
+                  'createMoonDAOEntity',
+                  ['ipfs://' + newMetadataIpfsHash],
+                  {
+                    value: ethers.utils.parseEther('0.01'),
+                  }
+                )
+
+                router.push(`/entity/${nextTokenId}`)
+              } catch (err) {
+                console.error(err)
+              }
+            }}
           >
             {/* <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
               {`Make sure all your information is displayed correcly.`}

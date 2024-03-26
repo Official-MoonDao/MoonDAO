@@ -1,7 +1,11 @@
 import html2canvas from 'html2canvas'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import Script from 'next/script'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+export function ImageGenerator({ setImage, nextStage, stage }: any) {
+  const pfpRef = useRef<HTMLDivElement>()
 
 export function ImageGenerator({ setImage, nextStage, pfpRef }: any) {
   function submitImage() {
@@ -43,10 +47,13 @@ export function ImageGenerator({ setImage, nextStage, pfpRef }: any) {
         <link href="/image-generator/pfp-style.css" rel="stylesheet" />
       </Head>
 
-      <Script src="/image-generator/init.js" strategy="afterInteractive" />
+      <Script
+        key={Date.now()} // Add this line
+        strategy="lazyOnload"
+        src="/image-generator/init.js"
+      />
 
-      <button onClick={submitImage}>Download</button>
-      <div id="html-container">
+      <div id="html-container" className="pl-[15%] md:pl-0">
         <div id="pfp" ref={pfpRef}>
           <div id="celestial-map"></div>
           <div id="canvas-container"></div>
@@ -57,6 +64,13 @@ export function ImageGenerator({ setImage, nextStage, pfpRef }: any) {
           />
         </div>
       </div>
+
+      <button
+        className="absolute bottom-48 px-4 py-2 bg-moon-orange"
+        onClick={submitImage}
+      >
+        Submit Image
+      </button>
     </>
   )
 }
