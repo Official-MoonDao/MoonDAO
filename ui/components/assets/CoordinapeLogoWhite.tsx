@@ -1,4 +1,4 @@
-export function CoordinapeLogo() {
+export default function CoordinapeLogoWhite() {
   return (
     <svg
       width="180"

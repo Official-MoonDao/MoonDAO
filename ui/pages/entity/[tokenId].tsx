@@ -31,9 +31,12 @@ import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
+import { useLightMode } from '@/lib/utils/hooks'
 import { CopyIcon, TwitterIcon } from '@/components/assets'
-import { CoordinapeLogo } from '@/components/assets/CoordinapeLogo'
-import { JuiceboxLogo } from '@/components/assets/JuiceboxLogo'
+import CoordinapeLogoBlack from '@/components/assets/CoordinapeLogoBlack'
+import CoordinapeLogoWhite from '@/components/assets/CoordinapeLogoWhite'
+import GitcoinPassportLogoWhite from '@/components/assets/GitcoinPassportLogoWhite'
+import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
 import { EntityAdminModal } from '@/components/entity/EntityAdminModal'
 import { EntityMetadataModal } from '@/components/entity/EntityMetadataModal'
 import { HatWearers } from '@/components/hats/HatWearers'
@@ -43,7 +46,7 @@ import MoonDAOEntityABI from '../../const/abis/MoonDAOEntity.json'
 function Card({ children, className = '', onClick }: any) {
   return (
     <button
-      className={`p-4 bg-[white] dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
+      className={`p-4 dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
       onClick={onClick}
     >
       {children}
@@ -65,6 +68,8 @@ function Button({ children, onClick, className = '' }: any) {
 }
 
 export default function EntityDetailPage({ tokenId }: any) {
+  const [lightMode] = useLightMode()
+
   const router = useRouter()
   const address = useAddress()
 
@@ -130,9 +135,7 @@ export default function EntityDetailPage({ tokenId }: any) {
     setSelectedChain(Sepolia)
   }, [])
 
-  useEffect(() => {
-    console.log(socials)
-  }, [socials])
+  if (!nft?.metadata) return
 
   return (
     <div className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]">
@@ -415,10 +418,10 @@ export default function EntityDetailPage({ tokenId }: any) {
         <p className="p-4">General Actions</p>
         <div className="flex flex-col lg:flex-row gap-8">
           <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300"
+            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#dddddd]"
             onClick={() => window.open('https://coordinape.com/')}
           >
-            <CoordinapeLogo />
+            <CoordinapeLogoWhite />
             <p className="mt-2">{`Gorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.`}</p>
             <div className="mt-8 flex gap-4">
               <p className="py-2 px-4 bg-[#ffffff25] rounded-full">Give</p>
@@ -426,10 +429,10 @@ export default function EntityDetailPage({ tokenId }: any) {
             </div>
           </Card>
           <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300"
+            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#dddddd]"
             onClick={() => window.open('https://juicebox.money')}
           >
-            <JuiceboxLogo />
+            <JuiceboxLogoWhite />
             <p className="mt-2">{`Gorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.`}</p>
             <div className="mt-8 flex gap-4">
               <p className="py-2 px-4 bg-[#ffffff25] rounded-full">
@@ -439,7 +442,7 @@ export default function EntityDetailPage({ tokenId }: any) {
             </div>
           </Card>
           <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300"
+            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#dddddd]"
             onClick={() => window.open('https://passport.gitcoin.co/')}
           >
             <Image
