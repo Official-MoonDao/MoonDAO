@@ -9,8 +9,8 @@ const ArrowLeft = () => {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        transform="scale (-1, 1)"
-        transformOrigin="center"
+        transform="scale(-1,1)"
+        transform-origin="center"
         className="opacity-50 dark:stroke-white dark:opacity-100"
         d="M1 1.5L8 8.5L1 15.5"
         stroke="black"
