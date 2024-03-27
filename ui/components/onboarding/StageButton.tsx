@@ -10,12 +10,8 @@ export function StageButton({
 
   return (
     <button
-      className={`mt-8 px-12 py-4 w-fit text-lg bg-[#D7594F] text-white ${className}`}
-      onClick={async () => {
-        setIsLoading(true)
-        await onClick()
-        setIsLoading(false)
-      }}
+      className={`mt-8 px-12 py-4 w-fit text-lg bg-[#D7594F] text-white ${className} disabled:opacity-50`}
+      onClick={onClick}
       disabled={isDisabled || isLoading}
     >
       {isLoading ? 'loading...' : children}

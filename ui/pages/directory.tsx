@@ -84,8 +84,7 @@ export default function Entities() {
   const [maxPage, setMaxPage] = useState(1)
 
   useEffect(() => {
-    // setMaxPage(Math.ceil(totalNFTs?.toNumber() / 9))
-    setMaxPage(10)
+    setMaxPage(Math.ceil(totalNFTs?.toNumber() / 9))
   }, [totalNFTs])
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
@@ -163,15 +162,19 @@ export default function Entities() {
           })}
         </div>
         <div className="flex flex-row justify-center space-x-10">
-          <button
-            onClick={() => {
-              if (pageIdx > 1) {
-                setPageIdx(pageIdx - 1)
-              }
-            }}
-          >
-            <ArrowLeft />
-          </button>
+          {pageIdx === 1 ? (
+            <p></p>
+          ) : (
+            <button
+              onClick={() => {
+                if (pageIdx > 1) {
+                  setPageIdx(pageIdx - 1)
+                }
+              }}
+            >
+              <ArrowLeft />
+            </button>
+          )}
 
           <p>{pageIdx}</p>
           <button

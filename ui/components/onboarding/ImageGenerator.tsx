@@ -9,8 +9,10 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
   const [scriptLoaded, setScriptLoaded] = useState(false)
 
   function submitImage() {
-    if (!pfpRef?.current) return console.error('pfpRef is not defined')
-    html2canvas(pfpRef?.current).then((canvas) => {
+    if (!document.getElementById('pfp'))
+      return console.error('pfpRef is not defined')
+    // @ts-expect-error
+    html2canvas(document.getElementById('pfp')).then((canvas) => {
       const img = canvas.toDataURL('image/png')
 
       //Convert from base64 to file
@@ -29,6 +31,14 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
       nextStage()
     })
   }
+  useEffect(() => {
+    fetch('/image-generator/init.js') // adjust the path to your init.js file
+      .then((response) => response.text())
+      .then((script) => {
+        const runScript = new Function(script)
+        runScript()
+      })
+  }, [])
 
   // useEffect(() => {
   //   if (!scriptLoaded) {
