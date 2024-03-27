@@ -43,6 +43,10 @@ export function CreateEntity({
   const [multisigAddress, setMultisigAddress] = useState<string>()
   const [hatTreeId, setHatTreeId] = useState<number>()
 
+  const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
+
+  const checkboxRef = useRef(null)
+
   const { isMobile } = useWindowSize()
 
   const [entityData, setEntityData] = useState<EntityData>({
@@ -180,123 +184,18 @@ export function CreateEntity({
               Submit Image
             </StageButton>
           </div> */}
-          <ImageGenerator
-            setImage={setEntityImage}
-            nextStage={() => setStage(2)}
-            stage={stage}
-          />
-        </StageContainer>
-      )}
-      {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
-      {stage === 2 && (
-        <StageContainer
-          title="Mint Entity"
-          description="Please review your onchain Entity before minting."
-        >
-          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-            {`Make sure all your information is displayed correcly.`}
-          </p>
-          <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-            {`Welcome to the future of off-world coordination with MoonDAO.`}
-          </p>
-          <StageButton
-            onClick={async () => {
-              //sign message
-              const provider = await wallets[selectedWallet].getEthersProvider()
-              const signer = provider?.getSigner()
-
-              const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
-              const nonceData = await nonceRes.json()
-
-              const message = `Please sign this message to mint this entity's NFT #`
-
-              const signature = await signer.signMessage(
-                message + nonceData.nonce
-              )
-
-              if (!signature) return toast.error('Error signing message')
-
-              //get pinata jwt
-              const jwtRes = await fetch('/api/ipfs/upload', {
-                method: 'POST',
-                headers: {
-                  signature,
-                },
-                body: JSON.stringify({
-                  address: wallets[selectedWallet].address,
-                  message,
-                }),
-              })
-
-              const pinataJWT = await jwtRes.text()
-
-              try {
-                //pin image to IPFS
-                const newImageIpfsHash = await pinImageToIPFS(
-                  pinataJWT || '',
-                  entityImage,
-                  entityData.name + ' Image'
-                )
-
-                if (!newImageIpfsHash) {
-                  return toast.error('Error pinning image to IPFS')
-                }
-
-                //get the next token id of the nft collection
-                const totalSupply = await entityContract?.call('totalSupply')
-                const nextTokenId = totalSupply.toString()
-
-                // pin metadata to IPFS
-                const metadata = {
-                  name: `Entity #${nextTokenId}`,
-                  description: `${entityData.name} : ${entityData.description}`,
-                  image: `ipfs://${newImageIpfsHash}`,
-                  attributes: [
-                    {
-                      trait_type: 'twitter',
-                      value: entityData.twitter,
-                    },
-                    {
-                      trait_type: 'communications',
-                      value: entityData.communications,
-                    },
-                    {
-                      trait_type: 'website',
-                      value: entityData.website,
-                    },
-                    {
-                      trait_type: 'view',
-                      value: entityData.view,
-                    },
-                    {
-                      trait_type: 'hatsTreeId',
-                      value: hatTreeId,
-                    },
-                  ],
-                }
-
-                const newMetadataIpfsHash = await pinMetadataToIPFS(
-                  pinataJWT || '',
-                  metadata,
-                  entityData.name + ' Metadata'
-                )
-
-                if (!newMetadataIpfsHash)
-                  return toast.error('Error pinning metadata to IPFS')
-                //mint NFT to safe
-                await entityCreatorContract?.call(
-                  'createMoonDAOEntity',
-                  ['ipfs://' + newMetadataIpfsHash],
-                  {
-                    value: ethers.utils.parseEther('0.01'),
-                  }
-                )
-
-                router.push(`/entity/${nextTokenId}`)
-              } catch (err) {
-                console.error(err)
-              }
-            }}
+            <ImageGenerator
+              setImage={setEntityImage}
+              nextStage={() => setStage(2)}
+              stage={stage}
+            />
+          </StageContainer>
+        )}
+        {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
+        {stage === 2 && (
+          <StageContainer
+            title="Mint Entity"
+            description="Please review your onchain Entity before minting."
           >
             {/* <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
               {`Make sure all your information is displayed correcly.`}
@@ -304,6 +203,7 @@ export function CreateEntity({
             <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
               {`Welcome to the future of off-world coordination with MoonDAO.`}
             </p> */}
+
             <Image
               src={URL.createObjectURL(entityImage)}
               alt="entity-image"
@@ -379,7 +279,56 @@ export function CreateEntity({
                 Welcome to the future of off-world coordination with MoonDAO!
               </p>
             </div>
+            <div className="flex flex-row items-center mt-4">
+              <label
+                className="relative flex items-center p-3 rounded-full cursor-pointer"
+                htmlFor="link"
+              >
+                <input
+                  checked={agreedToCondition}
+                  onChange={(e) => setAgreedToCondition(e.target.checked)}
+                  type="checkbox"
+                  className="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-md border border-[#D7594F] transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-[#D7594F] checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
+                  id="link"
+                />
+                <span className="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-3.5 w-3.5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                </span>
+              </label>
+              <label
+                className="mt-px font-light text-gray-700  select-none"
+                htmlFor="link"
+              >
+                <p className="text-white">
+                  I have read and accepted the terms and conditions.
+                  <a
+                    rel="noopener noreferrer"
+                    className="text-sky-400"
+                    href="https://www.apple.com/pro-display-xdr/"
+                    target="_blank"
+                  >
+                    {' '}
+                    Learn more{' '}
+                  </a>{' '}
+                  about MoonDAO's terms and conditions
+                </p>
+              </label>
+            </div>
             <StageButton
+              isDisabled={!agreedToCondition}
               onClick={async () => {
                 //sign message
                 const provider = await wallets[

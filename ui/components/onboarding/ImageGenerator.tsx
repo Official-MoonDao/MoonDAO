@@ -5,9 +5,8 @@ import Script from 'next/script'
 import { useEffect, useRef, useState } from 'react'
 
 export function ImageGenerator({ setImage, nextStage, stage }: any) {
-  const pfpRef = useRef<HTMLDivElement>()
+  const pfpRef = useRef<HTMLDivElement>(null)
 
-export function ImageGenerator({ setImage, nextStage, pfpRef }: any) {
   function submitImage() {
     if (!document.getElementById('pfp'))
       return console.error('pfpRef is not defined')
