@@ -8,9 +8,9 @@ const TwitterIcon = () => (
     width="29"
     height="29"
     viewBox="0,0,256,256"
+    className="text-black dark:text-white fill-current"
   >
     <g
-      fill="#ffffff"
       fillRule="nonzero"
       stroke="none"
       strokeWidth="1"

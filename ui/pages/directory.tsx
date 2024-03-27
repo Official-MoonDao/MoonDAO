@@ -7,6 +7,7 @@ import {
   useNFTs,
 } from '@thirdweb-dev/react'
 import { ENTITY_ADDRESSES } from 'const/config'
+import { filter } from 'cypress/types/bluebird'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -18,14 +19,16 @@ function EntityCard({ metadata, owner }: { metadata: any; owner: string }) {
     <div>
       {metadata && (
         <Link href={`/entity/${metadata.id}`}>
-          <div className="flex flex-col rounded w-[340px] bg-[#080C30] p-4">
+          <div className="flex flex-col rounded w-[340px] border-2 dark:bg-[#080C30] p-4">
             <ThirdwebNftMedia
               className="self-center"
               metadata={metadata}
               height={'280px'}
               width={'280px'}
             />
-            <p className="mt-3 text-white text-2xl">{metadata.name}</p>
+            <p className="mt-3 text-black dark:text-white text-2xl">
+              {metadata.name}
+            </p>
             <p className="flex items-center text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg">
               {owner.slice(0, 6) + '...' + owner.slice(-4)}
             </p>
@@ -95,6 +98,8 @@ export default function Entities() {
     error,
   } = useNFTs(entityContract, { start: 0, count: 100 })
 
+  const [filteredNFTs, setFilteredNFTs] = useState<NFT[]>([])
+
   const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
@@ -102,6 +107,14 @@ export default function Entities() {
       process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
     )
   }, [])
+
+  //only show public nfts
+  useEffect(() => {
+    const filtered: any = nfts?.filter(
+      (nft: any) => nft.metadata.attributes[3].value === 'public'
+    )
+    setFilteredNFTs(filtered)
+  }, [nfts])
 
   useEffect(() => {
     if (input !== '') {
@@ -113,18 +126,17 @@ export default function Entities() {
             .includes(input.toLowerCase())
         })
       )
-    } else if (nfts) {
-      setCachedNFTs(nfts)
+    } else if (filteredNFTs) {
+      setCachedNFTs(filteredNFTs)
     }
-  }, [input, cachedNFTs, nfts])
+  }, [input, cachedNFTs, filteredNFTs])
 
-  console.log(input)
   return (
     <main className="animate-fadeIn">
       <Head title="Entity Directory" image="" />
-      <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-[#080C20] font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white">
+      <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-[white] dark:bg-[#080C20] font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white">
         <h1 className={`page-title`}>Directory</h1>
-        <div className="w-1/2 h-[30px] flex-row flex space-x-5">
+        <div className="w-1/2 h-[30px] flex-row flex space-x-5 text-black dark:text-white">
           <SearchIcon />
           <input
             className="w-full rounded-md px-2 dark:bg-[#ffffff25]"

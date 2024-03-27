@@ -266,8 +266,8 @@ export function CreateEntity({
 
                 // pin metadata to IPFS
                 const metadata = {
-                  name: `Entity #${nextTokenId}`,
-                  description: `${entityData.name} : ${entityData.description}`,
+                  name: entityData.name,
+                  description: entityData.description,
                   image: `ipfs://${newImageIpfsHash}`,
                   attributes: [
                     {
