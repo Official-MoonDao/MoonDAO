@@ -7,6 +7,7 @@ import {
   useNFTs,
 } from '@thirdweb-dev/react'
 import { ENTITY_ADDRESSES } from 'const/config'
+import { filter } from 'cypress/types/bluebird'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -97,6 +98,8 @@ export default function Entities() {
     error,
   } = useNFTs(entityContract, { start: 0, count: 100 })
 
+  const [filteredNFTs, setFilteredNFTs] = useState<NFT[]>([])
+
   const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
@@ -104,6 +107,14 @@ export default function Entities() {
       process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
     )
   }, [])
+
+  //only show public nfts
+  useEffect(() => {
+    const filtered: any = nfts?.filter(
+      (nft: any) => nft.metadata.attributes[3].value === 'public'
+    )
+    setFilteredNFTs(filtered)
+  }, [nfts])
 
   useEffect(() => {
     if (input !== '') {
@@ -115,12 +126,11 @@ export default function Entities() {
             .includes(input.toLowerCase())
         })
       )
-    } else if (nfts) {
-      setCachedNFTs(nfts)
+    } else if (filteredNFTs) {
+      setCachedNFTs(filteredNFTs)
     }
-  }, [input, cachedNFTs, nfts])
+  }, [input, cachedNFTs, filteredNFTs])
 
-  console.log(input)
   return (
     <main className="animate-fadeIn">
       <Head title="Entity Directory" image="" />
