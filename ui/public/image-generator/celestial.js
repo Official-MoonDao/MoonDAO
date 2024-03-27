@@ -41,15 +41,14 @@
     if (isNumber(cfg.zoomextend)) zoomextent = cfg.zoomextend
     if (isNumber(cfg.zoomlevel)) zoomlevel = cfg.zoomlevel
 
-    //var parent = document.getElementById(cfg.container);
     var parent = document.getElementById(cfg.container)
-    console.log('parent: ' + parent)
     if (parent) {
       parentElement = '#' + cfg.container
       var st = window.getComputedStyle(parent, null)
       if (!parseInt(st.width) && !cfg.width)
         parent.style.width = px(parent.parentNode.clientWidth)
     } else {
+      console.log('else?')
       parentElement = 'body'
       parent = null
     }
@@ -1135,7 +1134,7 @@
       var w = 0
       if (isNumber(cfg.width) && cfg.width > 0) w = cfg.width
       else if (parent) w = parent.getBoundingClientRect().width - margin[0] * 2
-      /*else w = window.getBoundingClientRect().width - margin[0] * 2;*/
+      else w = window.getBoundingClientRect().width - margin[0] * 2
       return w
     }
 
@@ -3550,6 +3549,11 @@
       (angle < -epsilon || (angle < epsilon && sum < -epsilon)) ^ (winding & 1)
     )
   }
+
+  /* -------------*/
+  //  - - FORM - -
+  /* -------------*/
+
   function form(cfg) {
     var config = settings.set(cfg)
     var prj = Celestial.projections(),
@@ -3730,30 +3734,41 @@
     setCenter(config.center, config.transform)
 
     // Stars - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    frm.append('div').attr('class', 'hr')
+    frm.append('br')
     col = frm.append('div').attr('class', 'col').attr('id', 'stars')
+    col
+      .append('label')
+      .attr('class', 'header')
+      .attr('for', 'stars-show')
+      .html(' Stars')
     col
       .append('input')
       .attr('type', 'checkbox')
       .attr('id', 'stars-show')
       .property('checked', config.stars.show)
       .on('change', apply)
+
+    col.append('br')
+    col.append('br')
     col
       .append('label')
+      .attr('title', 'Stars Limit')
+      .attr('for', 'stars-limit')
       .attr('class', 'header')
-      .attr('for', 'stars-show')
-      .html(' Stars')
-    col.append('label').attr('for', 'stars-limit').html('down to magnitude ')
+      .html('Number')
+    // col.append('label').style('display', 'none')
+    col.append('br')
     col
       .append('input')
-      .attr('type', 'number')
+      .attr('type', 'range')
       .attr('id', 'stars-limit')
-      .attr('title', 'Star display limit (magnitude)')
-      .attr('value', config.stars.limit)
+      .attr('name', 'StarsLimit')
+      .attr('min', '1')
       .attr('max', '6')
-      .attr('min', '-1')
-      .attr('step', '0.1')
+      .attr('value', config.stars.limit)
+      .attr('step', '0.5')
       .on('change', apply)
-
     col.append('br')
 
     var names = formats.starnames[config.culture] || formats.starnames.iau
@@ -3763,13 +3778,16 @@
       var keys = Object.keys(names[fld])
       if (keys.length > 1) {
         selected = 0
-        col.append('span').html(' ')
+        //col.append("span").html(" ");
+
         col
           .append('input')
           .attr('type', 'checkbox')
+          .attr('class', 'checkboxInput')
           .attr('id', 'stars-' + fld)
           .property('checked', config.stars[fld])
           .on('change', apply)
+
         sel = col
           .append('select')
           .attr('id', 'stars-' + fld + 'Type')
@@ -3777,13 +3795,14 @@
             return fld === 'propername' ? 'advanced' : ''
           })
           .on('change', apply)
+
         col
           .append('label')
           .attr('title', 'Type of star name')
           .attr('id', 'label-propername')
           .attr('for', 'stars-' + fld + 'Type')
           .html(function () {
-            return fld === 'propername' ? 'proper names' : ''
+            return fld === 'propername' ? '' : ''
           })
         list = keys.map(function (key, i) {
           if (key === config.stars[fld + 'Type']) selected = i
@@ -3807,40 +3826,28 @@
       } else if (keys.length === 1) {
       }
     }
+
     col.append('br')
+
     col
       .append('label')
+      .attr('title', 'Stars Size')
       .attr('for', 'stars-size')
-      .attr('class', 'advanced')
-      .html('Stellar disk size ')
-    col
-      .append('input')
-      .attr('type', 'number')
-      .attr('id', 'stars-size')
-      .attr('class', 'advanced')
-      .attr('title', 'Size of the displayed star disk; base')
-      .attr('value', config.stars.size)
-      .attr('max', '100')
-      .attr('min', '0')
-      .attr('step', '0.1')
-      .on('change', apply)
-    col
-      .append('label')
-      .attr('for', 'stars-exponent')
-      .attr('class', 'advanced')
-      .html(' * e^')
-    col
-      .append('input')
-      .attr('type', 'number')
-      .attr('id', 'stars-exponent')
-      .attr('class', 'advanced')
-      .attr('title', 'Size of the displayed star disk; exponent')
-      .attr('value', config.stars.exponent)
-      .attr('max', '3')
-      .attr('min', '-1')
-      .attr('step', '0.01')
-      .on('change', apply)
+      .attr('class', 'header')
+      .html('Size')
     col.append('br')
+    col
+      .append('input')
+      .attr('type', 'range')
+      .attr('id', 'stars-size')
+      .attr('name', 'StarsSize')
+      .attr('min', '5')
+      .attr('max', '15')
+      .attr('value', config.stars.size)
+      .attr('step', '0.25')
+      .on('change', apply)
+
+    //col.append("br");
 
     enable($form('stars-show'))
 
@@ -3870,8 +3877,6 @@
       .attr('min', '0')
       .attr('step', '0.1')
       .on('change', apply)
-
-    col.append('br')
 
     names = formats.dsonames[config.culture] || formats.dsonames.iau
 
@@ -3923,9 +3928,7 @@
       sel.property('selectedIndex', selected)
     }
 
-    col.append('br')
-    col.append('br')
-    col.append('span').attr('class', 'advanced').html(' * * * * * ') // unnecessary?
+    // col.append("br");
 
     enable($form('dsos-show'))
 
@@ -4071,7 +4074,7 @@
       .property('checked', config.advanced)
       .on('change', apply)
 
-    col.append('br')
+    // col.append("br");
 
     col.append('label').attr('for', 'background-fill').html('Background color')
     col
@@ -4149,25 +4152,25 @@
       })
     sel.property('selectedIndex', selected)
 
-    // col = frm.append('div').attr('class', 'col').attr('id', 'download')
-    // col.append('span').attr('class', 'header').html('Download')
+    col = frm.append('div').attr('class', 'col').attr('id', 'download')
+    col.append('span').attr('class', 'header').html('Download')
 
-    // col
-    //   .append('input')
-    //   .attr('type', 'button')
-    //   .attr('id', 'download-png')
-    //   .attr('value', 'PNG Image')
-    //   .on('click', function () {
-    //     var a = d3.select('body').append('a').node(),
-    //       canvas = document.querySelector(parentElement + ' canvas')
-    //     a.download = getFilename('.png')
-    //     a.rel = 'noopener'
-    //     a.href = canvas
-    //       .toDataURL('image/png')
-    //       .replace('image/png', 'image/octet-stream')
-    //     a.click()
-    //     d3.select(a).remove()
-    //   })
+    col
+      .append('input')
+      .attr('type', 'button')
+      .attr('id', 'download-png')
+      .attr('value', 'PNG Image')
+      .on('click', function () {
+        var a = d3.select('body').append('a').node(),
+          canvas = document.querySelector(parentElement + ' canvas')
+        a.download = getFilename('.png')
+        a.rel = 'noopener'
+        a.href = canvas
+          .toDataURL('image/png')
+          .replace('image/png', 'image/octet-stream')
+        a.click()
+        d3.select(a).remove()
+      })
 
     col
       .append('input')
@@ -4320,6 +4323,9 @@
         case 'checkbox':
           value = src.checked
           enable(src)
+          break
+        case 'range':
+          value = parseFloat(src.value)
           break
         case 'number':
           if (testNumber(src) === false) return
@@ -4893,19 +4899,24 @@
       .style('display', 'none')
 
     //MoonDAO PFP UI
-    col.append('span').attr('title', 'Background Image').html('Image ')
+    col.append('label').attr('title', 'Background Image').html('Image ')
+    col.append('br')
     col
       .append('input')
       .attr('type', 'file')
       .attr('name', 'UPLOAD')
       .attr('accept', 'image/*')
       .attr('id', 'upload')
+
     col.append('br')
+    col.append('br')
+
     col
       .append('label')
       .attr('title', 'Blur Amount')
       .attr('for', 'blur')
       .html(' Blur ')
+    col.append('br')
     col
       .append('input')
       .attr('type', 'range')
@@ -4916,119 +4927,110 @@
       .attr('value', '70')
       .attr('step', '1')
       .attr('oninput', 'blurValue(this.value)')
+
+    col.append('br')
     // col
     //   .append('input')
     //   .attr('type', 'button')
     //   .attr('value', 'DOWNLOAD')
     //   .attr('id', 'download')
     //   .on('click', downloadImg)
-    // col
-    //   .append('input')
-    //   .attr('type', 'button')
-    //   .attr('value', 'MINT')
-    //   .attr('id', 'mint')
-    //   .on('click', mintImg)
+    /*
+		col.append("input").attr("type", "button").attr("value", "DATA").attr("id", "imgData").on("click", passImgData);
+		*/
 
-    col.append('br')
-    col.append('br')
+    //col.append("br");
 
     //Latitude & longitude fields
-    // col
-    //   .append('label')
-    //   .attr('title', 'Location coordinates long/lat')
-    //   .attr('for', 'lat')
-    //   .html('Location ')
-    // col
-    //   .append('input')
-    //   .attr('type', 'number')
-    //   .attr('id', 'lat')
-    //   .attr('title', 'Latitude')
-    //   .attr('placeholder', 'Latitude')
-    //   .attr('max', '90')
-    //   .attr('min', '-90')
-    //   .attr('step', '0.0001')
-    //   .attr('value', geopos[0])
-    //   .on('change', function () {
-    //     if (testNumber(this) === true) go()
-    //   })
-    // col.append('span').html('\u00b0')
-    // col
-    //   .append('input')
-    //   .attr('type', 'number')
-    //   .attr('id', 'lon')
-    //   .attr('title', 'Longitude')
-    //   .attr('placeholder', 'Longitude')
-    //   .attr('max', '180')
-    //   .attr('min', '-180')
-    //   .attr('step', '0.0001')
-    //   .attr('value', geopos[1])
-    //   .on('change', function () {
-    //     if (testNumber(this) === true) go()
-    //   })
-    // col.append('span').html('\u00b0')
+    col
+      .append('label')
+      .attr('title', 'Location coordinates long/lat')
+      .attr('for', 'lat')
+      .attr('id', 'LocationLabel')
+      .html('Location ')
+    col
+      .append('input')
+      .attr('type', 'number')
+      .attr('id', 'lat')
+      .attr('title', 'Latitude')
+      .attr('placeholder', 'Latitude')
+      .attr('max', '90')
+      .attr('min', '-90')
+      .attr('step', '0.0001')
+      .attr('value', geopos[0])
+      .on('change', function () {
+        if (testNumber(this) === true) go()
+      })
+    // col.append("span").html("\u00b0");
+    col
+      .append('input')
+      .attr('type', 'number')
+      .attr('id', 'lon')
+      .attr('title', 'Longitude')
+      .attr('placeholder', 'Longitude')
+      .attr('max', '180')
+      .attr('min', '-180')
+      .attr('step', '0.0001')
+      .attr('value', geopos[1])
+      .on('change', function () {
+        if (testNumber(this) === true) go()
+      })
+    // col.append("span").html("\u00b0");
 
-    // //Here-button if supported
-    // if ('geolocation' in navigator) {
-    //   col
-    //     .append('input')
-    //     .attr('type', 'button')
-    //     .attr('value', 'HERE')
-    //     .attr('id', 'here')
-    //     .on('click', here)
-    // }
-
-    // col.append('br')
+    //Here-button if supported
+    if ('geolocation' in navigator) {
+      // col.append("input").attr("type", "button").attr("value", "HERE").attr("id", "here").on("click", here);
+    }
 
     //Datetime field with dtpicker-button
-    // col
-    //   .append('label')
-    //   .attr('title', 'Local date/time')
-    //   .attr('for', 'datetime')
-    //   .html(' Date/time ')
-    // col
-    //   .append('input')
-    //   .attr('type', 'button')
-    //   .attr('id', 'day-left')
-    //   .attr('title', 'One day back')
-    //   .on('click', function () {
-    //     date.setDate(date.getDate() - 1)
-    //     $form('datetime').value = dateFormat(date, timeZone)
-    //     go()
-    //   })
-    // col
-    //   .append('input')
-    //   .attr('type', 'text')
-    //   .attr('id', 'datetime')
-    //   .attr('title', 'Date and time')
-    //   .attr('value', dateFormat(date, timeZone))
-    //   .on('click', showpick, true)
-    //   .on('input', function () {
-    //     this.value = dateFormat(date, timeZone)
-    //     if (!dtpick.isVisible()) showpick()
-    //   })
-    // col.append('div').attr('id', 'datepick').on('click', showpick)
-    // col
-    //   .append('input')
-    //   .attr('type', 'button')
-    //   .attr('id', 'day-right')
-    //   .attr('title', 'One day forward')
-    //   .on('click', function () {
-    //     date.setDate(date.getDate() + 1)
-    //     $form('datetime').value = dateFormat(date, timeZone)
-    //     go()
-    //   })
-    // //Now -button sets current time & date of device
-    // col
-    //   .append('input')
-    //   .attr('type', 'button')
-    //   .attr('value', 'NOW')
-    //   .attr('id', 'now')
-    //   .on('click', now)
+    col
+      .append('label')
+      .attr('title', 'Local date/time')
+      .attr('for', 'datetime')
+      .attr('id', 'dateTimeLabel')
+      .html(' Date/time ')
 
-    col.append('br')
-    col.append('br')
+    col
+      .append('input')
+      .attr('type', 'button')
+      .attr('id', 'day-left')
+      .attr('title', 'One day back')
+      .on('click', function () {
+        date.setDate(date.getDate() - 1)
+        $form('datetime').value = dateFormat(date, timeZone)
+        go()
+      })
+    col
+      .append('input')
+      .attr('type', 'text')
+      .attr('id', 'datetime')
+      .attr('title', 'Date and time')
+      .attr('value', dateFormat(date, timeZone))
+      .on('click', showpick, true)
+      .on('input', function () {
+        this.value = dateFormat(date, timeZone)
+        if (!dtpick.isVisible()) showpick()
+      })
+
+    // col.append("div").attr("id", "datepick").on("click", showpick); // <-- DATE PICKER BUTTON
+
+    col
+      .append('input')
+      .attr('type', 'button')
+      .attr('id', 'day-right')
+      .attr('title', 'One day forward')
+      .on('click', function () {
+        date.setDate(date.getDate() + 1)
+        $form('datetime').value = dateFormat(date, timeZone)
+        go()
+      })
+    //Now -button sets current time & date of device
+    // col.append("input").attr("type", "button").attr("value", "NOW").attr("id", "now").on("click", now);
+
+    // col.append("br");
 
     //Show planets
+
     col
       .append('input')
       .attr('type', 'checkbox')
@@ -5039,7 +5041,8 @@
       .append('label')
       .attr('title', 'Show solar system objects')
       .attr('for', 'planets-show')
-      .html(' Planets, Sun and Moon')
+      .attr('id', 'planets-show-label')
+      .html(' Planets,Sun and Moon')
 
     //Planet names
     var names = formats.planets[config.culture] || formats.planets.iau
@@ -5049,7 +5052,7 @@
       var keys = Object.keys(names[fld])
       if (keys.length > 1) {
         //Select List
-        var txt = fld === 'symbol' ? 'as' : ' '
+        var txt = fld === 'symbol' ? ' ' : ' '
         col
           .append('label')
           .attr('for', 'planets-' + fld + 'Type')
@@ -5064,7 +5067,6 @@
             .on('change', apply)
         }
         var selected = 0
-        col.append('br')
         col
           .append('label')
           .attr('title', 'Type of planet name')
@@ -5082,7 +5084,6 @@
             n: names[fld][key],
           }
         })
-
         sel
           .selectAll('option')
           .data(list)
@@ -5097,7 +5098,7 @@
         sel.property('selectedIndex', selected)
       }
     }
-    col.append('br')
+    // col.append("br");
     enable($form('planets-show'))
     showAdvanced(config.advanced)
 
@@ -5177,8 +5178,8 @@
       })
     }
 
-    function mintImg() {
-      console.log('... minting pfp')
+    function passImgData() {
+      console.log('... passing pfp img data')
       const fileName = getRandomColor()
       const pfpElement = document.getElementById('pfp')
       html2canvas(pfpElement).then(function (canvas) {

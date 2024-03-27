@@ -1,0 +1,34 @@
+[
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_hats", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "_moonDAOEntity",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_gnosisSingleton",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_gnosisSafeProxyFactory",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "metaDataUri", "type": "string" },
+      { "internalType": "string", "name": "hatsUri", "type": "string" }
+    ],
+    "name": "createMoonDAOEntity",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]

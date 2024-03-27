@@ -10,7 +10,7 @@ const ArrowLeft = () => {
     >
       <path
         transform="scale (-1, 1)"
-        transform-origin="center"
+        transformOrigin="center"
         className="opacity-50 dark:stroke-white dark:opacity-100"
         d="M1 1.5L8 8.5L1 15.5"
         stroke="black"

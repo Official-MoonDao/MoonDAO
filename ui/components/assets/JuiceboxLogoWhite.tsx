@@ -1,4 +1,4 @@
-export function JuiceboxLogo() {
+export default function JuiceboxLogoWhite() {
   return (
     <svg
       width="140"

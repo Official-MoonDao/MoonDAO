@@ -146,6 +146,11 @@ a {
   visibility: hidden;
 }
 
+#p5_loading {
+  display: none;
+  visibility: hidden;
+}
+
 /*
 
 Contains Loading Skeleton utilities, link & component background.

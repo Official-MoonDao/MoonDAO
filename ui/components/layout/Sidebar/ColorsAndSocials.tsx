@@ -27,7 +27,7 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
         <DiscordIcon />
       </a>
       <a
-        className="ml-5"
+        className="ml-5 text-black"
         aria-label="Link to Twitter"
         href="https://twitter.com/OfficialMoonDAO"
         target="_blank"
