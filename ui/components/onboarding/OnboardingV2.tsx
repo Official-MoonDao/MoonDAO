@@ -12,13 +12,9 @@ type TierProps = {
   points: string[]
   price: number
   onClick: () => void
-  price: number
 }
 
-
-
 function Tier({ label, description, points, price, onClick }: TierProps) {
-
   const { user } = usePrivy()
 
   const { login } = useLogin()
@@ -51,7 +47,7 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
               {description}
             </p>
             <h1 className={'font-GoodTimes text-3xl'}>{label}</h1>
-  <div className="flex flex-col bg-[#FFFFFF08] px-4 w-full">
+            <div className="flex flex-col bg-[#FFFFFF08] px-4 w-full">
               <div className="flex flex-row justify-between py-4 items-center">
                 <div className="flex flex-row items-center md:space-x-2 space-x-1">
                   <p className="text-lg md:text-2xl">{price} ETH</p>
@@ -155,7 +151,6 @@ export function OnboardingV2({ selectedChain }: any) {
               'Access the biggest network of startups, nations, and individuals working to create a long-term presence on the lunar surface.',
               'Help govern the fate of the first off-world settlement.',
             ]}
-            price={0.1}
             onClick={() => setSelectedTier('citizen')}
           />
           <Tier
@@ -168,7 +163,6 @@ export function OnboardingV2({ selectedChain }: any) {
               'Access the frontier of onchain tooling to manage your organization and interface with any other onchain contracts.',
               'List your products and services on the MoonDAO Marketplace.',
             ]}
-            price={0.5}
             onClick={() => setSelectedTier('entity')}
           />
         </div>
