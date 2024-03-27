@@ -41,15 +41,14 @@ import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import MoonDAOEntityABI from '../../const/abis/MoonDAOEntity.json'
 
 function Card({ children, className = '', onClick }: any) {
-  if (onClick)
-    return (
-      <button
-        className={`p-4 bg-[#080C20] text-start ${className}`}
-        onClick={onClick}
-      >
-        {children}
-      </button>
-    )
+  return (
+    <button
+      className={`p-4 bg-[white] dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
 
   return <div className={`p-4 bg-[#080C20] ${className}`}>{children}</div>
 }
@@ -152,7 +151,9 @@ export default function EntityDetailPage({ tokenId }: any) {
             )}
             <div>
               {nft ? (
-                <h1 className="text-white text-3xl">{nft.metadata.name}</h1>
+                <h1 className="text-black dark:text-white text-3xl">
+                  {nft.metadata.name}
+                </h1>
               ) : (
                 <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
               )}
@@ -274,7 +275,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       {/* Mooney and Voting Power */}
       <div className="flex flex-col xl:flex-row gap-6">
         <Card className="w-full xl:w-1/2 flex flex-col gap-4">
-          <div className="flex justify-between">
+          <div className="w-full flex justify-between">
             <p>{`Native Balance`}</p>
             <p className="p-2 bg-[#ffffff25] flex gap-2">
               <Image
@@ -396,6 +397,10 @@ export default function EntityDetailPage({ tokenId }: any) {
               <Button
                 className=""
                 onClick={() => {
+                  if (address != nft?.owner && address != admin)
+                    return toast.error(
+                      'Connect the entity admin wallet or multisig to update the admin.'
+                    )
                   setEntityAdminModalEnabled(true)
                 }}
               >

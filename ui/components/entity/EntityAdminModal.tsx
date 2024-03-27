@@ -37,13 +37,17 @@ export function EntityAdminModal({
             if (
               newAdminAddress.length !== 42 ||
               !newAdminAddress.startsWith('0x')
-            )
-              return toast.error('Invalid address')
+            ) {
+              toast.error('Invalid address')
+              return setIsLoading(false)
+            }
 
-            if (newAdminAddress === adminAddress)
-              return toast.error(
+            if (newAdminAddress === adminAddress) {
+              toast.error(
                 'New admin address is the same as the current admin address'
               )
+              return setIsLoading(false)
+            }
 
             try {
               await entityContract.call('setAdmin', [tokenId, newAdminAddress])
