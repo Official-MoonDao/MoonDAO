@@ -16,11 +16,22 @@ import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Head from '../components/layout/Head'
 import { ArrowLeft, ArrowSide, SearchIcon } from '@/components/assets'
 
-function EntityCard({ metadata, owner }: { metadata: any; owner: string }) {
+function EntityCitizenCard({
+  metadata,
+  owner,
+  type,
+}: {
+  metadata: any
+  owner: string
+  type: string
+}) {
   return (
     <div>
       {metadata && (
-        <Link href={`/entity/${metadata.id}`}>
+        <Link
+          href={`/${type === 'entity' ? 'entity' : 'citizen'}/${metadata.id}`}
+          passHref
+        >
           <div className="flex flex-col rounded w-[340px] border-2 dark:bg-[#080C30] p-4">
             <ThirdwebNftMedia
               className="self-center"
@@ -42,6 +53,17 @@ function EntityCard({ metadata, owner }: { metadata: any; owner: string }) {
               'Qorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.'
             }
           </p> */}
+            <button
+              disabled={true}
+              className="w-1/2 px-4 py-2 text-[grey] rounded-full bg-[#e7e5e7] bg-opacity-10 flex items-center"
+              //   onClick={() =>
+              //     window.open(
+              //       'https://sepolia.etherscan.io/address/' + ENTITY_ADDRESSES
+              //     )
+              //   }
+            >
+              {type === 'entity' ? 'Entity' : 'Citizen'}
+            </button>
             <div className="flex flex-row space-x-5 mt-3">
               <button
                 disabled={true}
@@ -97,7 +119,7 @@ export default function Entities() {
       setMaxPage(
         Math.ceil((totalEntities.toNumber() + totalCitizens.toNumber()) / 9)
       )
-  }, [totalEntities, totalCitizens])
+  }, [totalEntities, totalCitizens, tab])
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
 
@@ -210,14 +232,32 @@ export default function Entities() {
           className="grid grid-cols-1
         xl:grid-cols-2 min-[1600px]:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center place-items-center"
         >
-          {cachedNFTs?.slice((pageIdx - 1) * 9, pageIdx * 9).map((nft) => {
+          {cachedNFTs?.slice((pageIdx - 1) * 9, pageIdx * 9).map((nft: any) => {
             if (nft.metadata.name !== 'Failed to load NFT metadata') {
-              return (
-                <div key={nft.metadata.id}>
-                  <EntityCard metadata={nft.metadata} owner={nft.owner} />
-                </div>
-              )
+              if (nft.metadata.attributes[4]?.trait_type === 'hatsTreeId') {
+                return (
+                  <div key={nft.metadata.id}>
+                    <EntityCitizenCard
+                      metadata={nft.metadata}
+                      owner={nft.owner}
+                      type="entity"
+                    />
+                  </div>
+                )
+              } else {
+                return (
+                  <div key={nft.metadata.id}>
+                    <EntityCitizenCard
+                      metadata={nft.metadata}
+                      owner={nft.owner}
+                      type="citizen"
+                    />
+                  </div>
+                )
+              }
             }
+
+            //if citizen address return citizen
           })}
         </div>
         <div className="flex flex-row justify-center space-x-10">
