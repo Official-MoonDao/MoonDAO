@@ -4,6 +4,7 @@ import { HATS_ADDRESS } from 'const/config'
 import Image from 'next/image'
 import { useContext, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { CreateCitizen } from './CreateCitizen'
 import { CreateEntity } from './CreateEntity'
 
 type TierProps = {
@@ -48,13 +49,13 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
             </p>
             <h1 className={'font-GoodTimes text-3xl'}>{label}</h1>
             <div className="flex flex-col bg-[#FFFFFF08] px-4 w-full">
-              <div className="flex flex-row justify-between py-4 items-center">
+              <div className="flex flex-col xl:flex-row justify-between py-4 items-center">
                 <div className="flex flex-row items-center md:space-x-2 space-x-1">
                   <p className="text-lg md:text-2xl">{price} ETH</p>
                   <p className="text-sm">/Year</p>
                 </div>
                 <p className="text-green-500 text-sm md:text-lg">
-                  &#10003;12 Months Pass
+                  &#10003; 12 Months Pass
                 </p>
               </div>
               <p className=" border-[1px] w-full h-[1px] border-white"></p>
@@ -114,12 +115,16 @@ export function OnboardingV2({ selectedChain }: any) {
   const { wallets } = useWallets()
   const [selectedTier, setSelectedTier] = useState<'entity' | 'citizen'>()
 
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
-
   if (selectedTier === 'citizen') {
     return (
       <div>
-        <BackButton setSelectedTier={setSelectedTier} />
+        <CreateCitizen
+          address={address}
+          selectedChain={selectedChain}
+          selectedWallet={selectedWallet}
+          wallets={wallets}
+          setSelectedTier={setSelectedTier}
+        />
       </div>
     )
   }
@@ -132,7 +137,6 @@ export function OnboardingV2({ selectedChain }: any) {
           selectedChain={selectedChain}
           selectedWallet={selectedWallet}
           wallets={wallets}
-          hatsContract={hatsContract}
           setSelectedTier={setSelectedTier}
         />
       </div>

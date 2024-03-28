@@ -31,29 +31,6 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
       nextStage()
     })
   }
-  useEffect(() => {
-    fetch('/image-generator/init.js') // adjust the path to your init.js file
-      .then((response) => response.text())
-      .then((script) => {
-        const runScript = new Function(script)
-        runScript()
-      })
-  }, [])
-
-  // useEffect(() => {
-  //   if (!scriptLoaded) {
-  //     fetch('/image-generator/init.js')
-  //       .then((response) => response.text())
-  //       .then((script) => {
-  //         const existingForm = document.getElementById('ctrl')
-  //         if (existingForm) existingForm.remove()
-
-  //         const runScript = new Function(script)
-  //         runScript()
-  //         setScriptLoaded(true)
-  //       })
-  //   }
-  // }, [])
 
   return (
     <>

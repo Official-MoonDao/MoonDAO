@@ -32,6 +32,7 @@ body form {
   position: absolute;
   min-width: 200px;
   max-width: 60vw;
+  max-height: 60vw;
   margin: 0 auto;
   overflow: visible;
   display: flex;

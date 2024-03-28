@@ -1,7 +1,11 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { ENTITY_ADDRESSES, ENTITY_CREATOR_ADDRESSES } from 'const/config'
+import {
+  CITIZEN_ADDRESSES,
+  ENTITY_ADDRESSES,
+  ENTITY_CREATOR_ADDRESSES,
+} from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -9,6 +13,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/entity/use-window-size'
 import { createSafe } from '../../lib/gnosis/createSafe'
+import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import { Steps } from '../layout/Steps'
 import ArrowButton from '../marketplace/Layout/ArrowButton'
@@ -16,16 +21,16 @@ import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 
-type EntityData = {
-  name: string
+type CitizenData = {
+  firstName: string
+  lastName: string
+  email: string
   description: string
-  twitter: string
-  communications: string
-  website: string
+  location: string
   view: string
 }
 
-export function CreateEntity({
+export function CreateCitizen({
   address,
   wallets,
   selectedWallet,
@@ -38,8 +43,6 @@ export function CreateEntity({
   const [lastStage, setLastStage] = useState<number>(0)
 
   const [entityImage, setEntityImage] = useState<any>()
-  const [multisigAddress, setMultisigAddress] = useState<string>()
-  const [hatTreeId, setHatTreeId] = useState<number>()
 
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
@@ -47,13 +50,13 @@ export function CreateEntity({
 
   const { isMobile } = useWindowSize()
 
-  const [entityData, setEntityData] = useState<EntityData>({
-    name: '',
+  const [citizenData, setCitizenData] = useState<CitizenData>({
+    firstName: '',
+    lastName: '',
+    email: '',
     description: '',
-    twitter: '',
-    communications: '',
-    website: '',
-    view: 'private',
+    location: '',
+    view: '',
   })
   const { windowSize } = useWindowSize()
 
@@ -63,16 +66,13 @@ export function CreateEntity({
     }
   }, [stage, lastStage])
 
-  const { contract: entityContract } = useContract(
-    ENTITY_ADDRESSES[selectedChain.slug]
+  const { contract: citizenContract } = useContract(
+    CITIZEN_ADDRESSES[selectedChain.slug]
   )
 
-  const { contract: entityCreatorContract } = useContract(
-    ENTITY_CREATOR_ADDRESSES[selectedChain.slug]
-  )
   const pfpRef = useRef<HTMLDivElement | null>(null)
 
-  console.log(pfpRef)
+  const subscribeToNewsletter = useNewsletterSub()
 
   return (
     <div className="flex flex-row">
@@ -99,7 +99,7 @@ export function CreateEntity({
             <div className="w-full">
               <Widget
                 className="w-[100%] md:w-[100%]"
-                id={process.env.NEXT_PUBLIC_TYPEFORM_ENTITY_FORM_ID as string}
+                id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
                 onSubmit={async (formResponse: any) => {
                   //get response from form
                   const { formId, responseId } = formResponse
@@ -108,19 +108,31 @@ export function CreateEntity({
                   )
                   const data = await responseRes.json()
 
-                  console.log(data)
+                  //subscribe to newsletter
+                  if (data.answers[6].boolean) {
+                    const subRes = await subscribeToNewsletter(
+                      data.answers[2].email
+                    )
+                    console.log(subRes)
+                    if (subRes.ok) {
+                      toast.success(
+                        'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
+                      )
+                    }
+                  }
 
-                  setEntityData({
-                    name: data.answers[0].text,
-                    description: data.answers[1].text,
-                    website: data.answers[2].url,
-                    twitter: data.answers[3].url,
-                    communications: data.answers[4].url,
+                  setCitizenData({
+                    firstName: data.answers[0].text,
+                    lastName: data.answers[1].text,
+                    email: data.answers[2].email,
+                    description: data.answers[3].text,
+                    location: data.answers[4].text,
                     view:
                       data.answers[5].choice.label === 'Yes'
                         ? 'public'
                         : 'private',
                   })
+
                   setStage(1)
                 }}
                 height={500}
@@ -128,12 +140,12 @@ export function CreateEntity({
               <button
                 className="p-2 border-2"
                 onClick={() => {
-                  setEntityData({
-                    name: 'Test Entity',
-                    description: 'Test Org description for testing',
-                    twitter: 'https://twitter.com/OfficialMoonDAO',
-                    communications: 'https://discord.com',
-                    website: 'https://google.com',
+                  setCitizenData({
+                    firstName: 'First',
+                    lastName: 'Last',
+                    email: 'colin@moondao.com',
+                    description: 'Test citizen description',
+                    location: 'Earth',
                     view: 'public',
                   })
                   setStage(1)
@@ -209,11 +221,11 @@ export function CreateEntity({
               height={600}
             />
 
-            <div className="flex flex-col dark:bg-black w-full p-3 md:p-5 mt-10">
+            <div className="flex flex-col border-2 dark:border-0 dark:bg-black w-full p-3 md:p-5 mt-10">
               <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
                 {isMobile ? (
-                  Object.keys(entityData).map((v, i) => {
+                  Object.keys(citizenData).map((v, i) => {
                     return (
                       <div
                         className="flex flex-col text-left"
@@ -231,16 +243,14 @@ export function CreateEntity({
                 ) : (
                   <table className="table w-fit">
                     <tbody>
-                      {Object.keys(entityData).map((v, i) => {
+                      {Object.keys(citizenData).map((v, i) => {
                         return (
                           <tr className="" key={'entityData' + i}>
-                            <th className="text-xl border-2 dark:border-0 dark:bg-[#0F152F]">
-                              {v}:
-                            </th>
+                            <th className="text-xl dark:bg-[#0F152F]">{v}:</th>
 
-                            <th className="text-md border-2 dark:border-0 dark:bg-[#0F152F] text-pretty">
+                            <th className="text-md dark:bg-[#0F152F] text-pretty">
                               {/**@ts-expect-error */}
-                              {entityData[v]!}
+                              {citizenData[v]!}
                             </th>
                           </tr>
                         )
@@ -250,29 +260,15 @@ export function CreateEntity({
                 )}
               </div>
             </div>
-            <div className="flex flex-col border-2 dark:border-0 dark:bg-black w-full p-3 md:p-5 mt-10">
+            <div className="flex flex-col border-2 dark:border-0  dark:bg-black w-full p-3 md:p-5 mt-10">
               <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT</h2>
               <h2 className="font-GoodTimes text-3xl mb-2">INFORMATION</h2>
-              <div className="flex flex-col border-2 dark:bg-[#0F152F] dark:border-0 p-3 md:p-5">
-                <h3 className="font-GoodTimes text-2xl mb-2">TREASURY</h3>
-                <p className="mt-2">
-                  A self-custodied multisignature treasury will secure your
-                  organization’s assets, allowing to interact with any smart
-                  contracts within the Ethereum ecosystem. <br /> <br />
-                  You can add more signers later via your Entity management
-                  portal.
-                </p>
-              </div>
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 mt-5">
-                <h3 className="font-GoodTimes text-2xl mb-2">ADMINISTRATOR</h3>
+                <h3 className="font-GoodTimes text-2xl mb-2">MEMBERSHIP</h3>
                 <p className="mt-2">
-                  The admin can modify your organization’s information. To
-                  begin, the currently connected wallet will act as the
-                  Administrator.
-                  <br /> <br />
-                  You can change the admin or add more members to your
-                  organization using the Hats Protocol within your Entity
-                  Management Portal.
+                  Memerships will last for one year, and can be renewed at any
+                  time. All funds are self-custodied, so even if your memership
+                  expires you still own those funds.
                 </p>
               </div>
               <p className="mt-4">
@@ -312,7 +308,7 @@ export function CreateEntity({
                 className="mt-px font-light text-gray-700  select-none"
                 htmlFor="link"
               >
-                <p className="text-black dark:text-white">
+                <p className="dark:text-white">
                   I have read and accepted the terms and conditions.
                   <a
                     rel="noopener noreferrer"
@@ -366,7 +362,7 @@ export function CreateEntity({
                   const newImageIpfsHash = await pinImageToIPFS(
                     pinataJWT || '',
                     entityImage,
-                    entityData.name + ' Image'
+                    citizenData.firstName + citizenData.lastName + ' Image'
                   )
 
                   if (!newImageIpfsHash) {
@@ -374,34 +370,22 @@ export function CreateEntity({
                   }
 
                   //get the next token id of the nft collection
-                  const totalSupply = await entityContract?.call('totalSupply')
+                  const totalSupply = await citizenContract?.call('totalSupply')
                   const nextTokenId = totalSupply.toString()
 
                   // pin metadata to IPFS
                   const metadata = {
-                    name: `Entity #${nextTokenId}`,
-                    description: `${entityData.name} : ${entityData.description}`,
+                    name: `${citizenData.firstName} ${citizenData.lastName}`,
+                    description: citizenData.description,
                     image: `ipfs://${newImageIpfsHash}`,
                     attributes: [
                       {
-                        trait_type: 'twitter',
-                        value: entityData.twitter,
-                      },
-                      {
-                        trait_type: 'communications',
-                        value: entityData.communications,
-                      },
-                      {
-                        trait_type: 'website',
-                        value: entityData.website,
+                        trait_type: 'location',
+                        value: citizenData.location,
                       },
                       {
                         trait_type: 'view',
-                        value: entityData.view,
-                      },
-                      {
-                        trait_type: 'hatsTreeId',
-                        value: hatTreeId,
+                        value: citizenData.view,
                       },
                     ],
                   }
@@ -409,27 +393,27 @@ export function CreateEntity({
                   const newMetadataIpfsHash = await pinMetadataToIPFS(
                     pinataJWT || '',
                     metadata,
-                    entityData.name + ' Metadata'
+                    citizenData.firstName + citizenData.lastName + ' Metadata'
                   )
 
                   if (!newMetadataIpfsHash)
                     return toast.error('Error pinning metadata to IPFS')
                   //mint NFT to safe
-                  await entityCreatorContract?.call(
-                    'createMoonDAOEntity',
-                    ['ipfs://' + newMetadataIpfsHash],
+                  await citizenContract?.call(
+                    'mintTo',
+                    [address, 'ipfs://' + newMetadataIpfsHash],
                     {
                       value: ethers.utils.parseEther('0.01'),
                     }
                   )
 
-                  router.push(`/entity/${nextTokenId}`)
+                  router.push(`/citizen/${nextTokenId}`)
                 } catch (err) {
                   console.error(err)
                 }
               }}
             >
-              Mint Entity
+              Mint Citizen
             </StageButton>
           </StageContainer>
         )}
