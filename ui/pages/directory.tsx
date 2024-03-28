@@ -6,11 +6,13 @@ import {
   useContractRead,
   useNFTs,
 } from '@thirdweb-dev/react'
-import { ENTITY_ADDRESSES } from 'const/config'
+import { CITIZEN_ADDRESSES, ENTITY_ADDRESSES } from 'const/config'
+import { approvedCitizens, approvedEntities } from 'const/whitelist'
 import { filter } from 'cypress/types/bluebird'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
+import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Head from '../components/layout/Head'
 import { ArrowLeft, ArrowSide, SearchIcon } from '@/components/assets'
 
@@ -75,29 +77,45 @@ function EntityCard({ metadata, owner }: { metadata: any; owner: string }) {
 export default function Entities() {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
+  const [tab, setTab] = useState('entities')
   const { contract: entityContract } = useContract(
     ENTITY_ADDRESSES[selectedChain.slug]
   )
+  const { contract: citizenContract } = useContract(
+    CITIZEN_ADDRESSES[selectedChain.slug]
+  )
 
-  const { data: totalNFTs } = useContractRead(entityContract, 'totalSupply')
+  const { data: totalEntities } = useHandleRead(entityContract, 'totalSupply')
+  const { data: totalCitizens } = useHandleRead(entityContract, 'totalSupply')
 
   const [maxPage, setMaxPage] = useState(1)
 
   useEffect(() => {
-    setMaxPage(Math.ceil(totalNFTs?.toNumber() / 9))
-  }, [totalNFTs])
+    if (tab === 'entities') setMaxPage(Math.ceil(totalEntities?.toNumber() / 9))
+    if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens?.toNumber() / 9))
+    if (tab === 'all')
+      setMaxPage(
+        Math.ceil((totalEntities.toNumber() + totalCitizens.toNumber()) / 9)
+      )
+  }, [totalEntities, totalCitizens])
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
 
   const [input, setInput] = useState('')
 
   const {
-    data: nfts,
-    isLoading,
+    data: entities,
+    isLoading: isLoadingEntities,
     error,
   } = useNFTs(entityContract, { start: 0, count: 100 })
 
-  const [filteredNFTs, setFilteredNFTs] = useState<NFT[]>([])
+  const { data: citizens, isLoading: isLoadingCitizens } = useNFTs(
+    citizenContract,
+    { start: 0, count: 100 }
+  )
+
+  const [filteredEntities, setFilteredEntities] = useState<NFT[]>([])
+  const [filteredCitizens, setFilteredCitizens] = useState<NFT[]>([])
 
   const [pageIdx, setPageIdx] = useState(1)
 
@@ -107,13 +125,24 @@ export default function Entities() {
     )
   }, [])
 
-  //only show public nfts
+  //only show public nfts that are whitelisted
   useEffect(() => {
-    const filtered: any = nfts?.filter(
-      (nft: any) => nft.metadata.attributes[3].value === 'public'
+    const filtered: any = entities?.filter(
+      (nft: any) =>
+        nft.metadata.attributes[3].value === 'public' &&
+        approvedEntities.includes(nft.metadata.id)
     )
-    setFilteredNFTs(filtered)
-  }, [nfts])
+    setFilteredEntities(filtered)
+  }, [entities])
+
+  useEffect(() => {
+    const filtered: any = citizens?.filter(
+      (nft: any) =>
+        nft.metadata.attributes[1].value === 'public' &&
+        approvedCitizens.includes(nft.metadata.id)
+    )
+    setFilteredCitizens(filtered)
+  }, [citizens])
 
   useEffect(() => {
     if (input !== '') {
@@ -125,10 +154,14 @@ export default function Entities() {
             .includes(input.toLowerCase())
         })
       )
-    } else if (filteredNFTs) {
-      setCachedNFTs(filteredNFTs)
+    } else if (tab === 'entities') {
+      setCachedNFTs(filteredEntities)
+    } else if (tab === 'citizens') {
+      setCachedNFTs(filteredCitizens)
+    } else {
+      setCachedNFTs([...filteredEntities, ...filteredCitizens])
     }
-  }, [input, cachedNFTs, filteredNFTs])
+  }, [input, cachedNFTs, tab, filteredEntities, filteredCitizens])
 
   return (
     <main className="animate-fadeIn">
@@ -146,10 +179,36 @@ export default function Entities() {
             placeholder="Search..."
           />
         </div>
-        {isLoading && <p className="text-center">Loading...</p>}
+        {isLoadingEntities && <p className="text-center">Loading...</p>}
+        <div className="flex gap-4">
+          <button
+            className={`px-4 py-2 border-2 rounded-lg ${
+              tab === 'entities' && 'border-moon-orange text-moon-orange'
+            }`}
+            onClick={() => setTab('entities')}
+          >
+            Entities
+          </button>
+          <button
+            className={`px-4 py-2 border-2 rounded-lg ${
+              tab === 'citizens' && 'border-moon-orange text-moon-orange'
+            }`}
+            onClick={() => setTab('citizens')}
+          >
+            Citizens
+          </button>
+          <button
+            className={`px-4 py-2 border-2 rounded-lg ${
+              tab === 'all' && 'border-moon-orange text-moon-orange'
+            }`}
+            onClick={() => setTab('all')}
+          >
+            All
+          </button>
+        </div>
         <div
           className="grid grid-cols-1
-        lg:grid-cols-2 2xl:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center place-items-center"
+        xl:grid-cols-2 min-[1600px]:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center place-items-center"
         >
           {cachedNFTs?.slice((pageIdx - 1) * 9, pageIdx * 9).map((nft) => {
             if (nft.metadata.name !== 'Failed to load NFT metadata') {
