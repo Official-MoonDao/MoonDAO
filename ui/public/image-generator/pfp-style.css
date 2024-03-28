@@ -31,8 +31,8 @@ body form {
   height: 720px;
   position: absolute;
   min-width: 200px;
-  max-width: 60vw;
-  max-height: 60vw;
+  max-width: 75vw;
+  max-height: 75vw;
   margin: 0 auto;
   overflow: visible;
   display: flex;
@@ -44,8 +44,8 @@ body form {
   width: 720px;
   height: 720px;
   min-width: 200px;
-  max-width: 60vw;
-  max-height: 60vw;
+  max-width: 75vw;
+  max-height: 75vw;
   margin: 0;
   padding: 0;
   position: absolute;
@@ -79,6 +79,6 @@ body form {
   -moz-backface-visibility: hidden;
   -webkit-transform: translate3d(0, 0, 0);
   -moz-transform: translate3d(0, 0, 0);
-  max-width: 60vw;
-  max-height: 60vw;
+  max-width: 75vw;
+  max-height: 75vw;
 }
