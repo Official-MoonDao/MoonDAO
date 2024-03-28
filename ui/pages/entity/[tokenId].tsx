@@ -8,7 +8,6 @@ import {
 import { useWallets } from '@privy-io/react-auth'
 import { Sepolia } from '@thirdweb-dev/chains'
 import {
-  MediaRenderer,
   ThirdwebNftMedia,
   useAddress,
   useContract,
@@ -33,9 +32,7 @@ import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useLightMode } from '@/lib/utils/hooks'
 import { CopyIcon, TwitterIcon } from '@/components/assets'
-import CoordinapeLogoBlack from '@/components/assets/CoordinapeLogoBlack'
 import CoordinapeLogoWhite from '@/components/assets/CoordinapeLogoWhite'
-import GitcoinPassportLogoWhite from '@/components/assets/GitcoinPassportLogoWhite'
 import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
 import { EntityAdminModal } from '@/components/entity/EntityAdminModal'
 import { EntityMetadataModal } from '@/components/entity/EntityMetadataModal'
@@ -45,15 +42,13 @@ import MoonDAOEntityABI from '../../const/abis/MoonDAOEntity.json'
 
 function Card({ children, className = '', onClick }: any) {
   return (
-    <button
+    <div
       className={`p-4 dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
       onClick={onClick}
     >
       {children}
-    </button>
+    </div>
   )
-
-  return <div className={`p-4 bg-[#080C20] ${className}`}>{children}</div>
 }
 
 function Button({ children, onClick, className = '' }: any) {
@@ -418,7 +413,7 @@ export default function EntityDetailPage({ tokenId }: any) {
         <p className="p-4">General Actions</p>
         <div className="flex flex-col lg:flex-row gap-8">
           <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#dddddd]"
+            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#e7e5e7]"
             onClick={() => window.open('https://coordinape.com/')}
           >
             <CoordinapeLogoWhite />
@@ -429,7 +424,7 @@ export default function EntityDetailPage({ tokenId }: any) {
             </div>
           </Card>
           <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#dddddd]"
+            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#e7e5e7]"
             onClick={() => window.open('https://juicebox.money')}
           >
             <JuiceboxLogoWhite />
@@ -442,7 +437,7 @@ export default function EntityDetailPage({ tokenId }: any) {
             </div>
           </Card>
           <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#dddddd]"
+            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#e7e5e7]"
             onClick={() => window.open('https://passport.gitcoin.co/')}
           >
             <Image
