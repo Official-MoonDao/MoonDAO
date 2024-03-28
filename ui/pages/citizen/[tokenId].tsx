@@ -1,22 +1,19 @@
 import {
   ArrowUpRightIcon,
-  ChatBubbleLeftIcon,
-  GlobeAltIcon,
   PencilIcon,
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import { Sepolia } from '@thirdweb-dev/chains'
 import {
-  MediaRenderer,
   ThirdwebNftMedia,
   useAddress,
   useContract,
   useNFT,
 } from '@thirdweb-dev/react'
 import {
+  CITIZEN_ADDRESSES,
   DISCORD_GUILD_ID,
-  ENTITY_ADDRESSES,
   HATS_ADDRESS,
   MOONEY_ADDRESSES,
 } from 'const/config'
@@ -27,9 +24,7 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useProjects } from '@/lib/discord/useProjects'
-import { useEntityData } from '@/lib/entity/useEntityData'
 import { useValidPass } from '@/lib/entity/useValidPass'
-import { useHatTree } from '@/lib/hats/useHatTree'
 import { useWearer } from '@/lib/hats/useWearer'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { useNewestProposals } from '@/lib/snapshot/useNewestProposals'
@@ -37,26 +32,22 @@ import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
-import { CopyIcon, TwitterIcon } from '@/components/assets'
-import { CoordinapeLogo } from '@/components/assets/CoordinapeLogo'
-import { JuiceboxLogo } from '@/components/assets/JuiceboxLogoWhite'
-import { EntityMetadataModal } from '@/components/entity/EntityMetadataModal'
+import { CopyIcon } from '@/components/assets'
+import CoordinapeLogoWhite from '@/components/assets/CoordinapeLogoWhite'
+import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
+import { CitizenMetadataModal } from '@/components/citizen/CitizenMetadataModal'
 import { Hat } from '@/components/hats/Hat'
-import { HatWearers } from '@/components/hats/HatWearers'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 
 function Card({ children, className = '', onClick }: any) {
-  if (onClick)
-    return (
-      <button
-        className={`p-4 bg-[#080C20] text-start ${className}`}
-        onClick={onClick}
-      >
-        {children}
-      </button>
-    )
-
-  return <div className={`p-4 bg-[#080C20] ${className}`}>{children}</div>
+  return (
+    <div
+      className={`p-4 dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
+      onClick={onClick}
+    >
+      {children}
+    </div>
+  )
 }
 
 function Button({ children, onClick, className = '' }: any) {
@@ -81,44 +72,34 @@ export default function CitizenDetailPage({ tokenId }: any) {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
 
   const [subModalEnabled, setSubModalEnabled] = useState(false)
+  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
+    useState(false)
 
-  // //Entity Data
-  // const { contract: entityContract } = useContract(
-  //   ENTITY_ADDRESSES[selectedChain.slug]
-  // )
-  // const { data: nft } = useNFT(entityContract, tokenId)
+  //Entity Data
+  const { contract: citizenContract } = useContract(
+    CITIZEN_ADDRESSES[selectedChain.slug]
+  )
+  const { data: nft } = useNFT(citizenContract, tokenId)
 
-  // const {
-  //   multisigAddress,
-  //   socials,
-  //   isPublic,
-  //   hatTreeId,
-  //   admin,
-  //   updateMetadata,
-  // } = useEntityData(entityContract, nft)
+  //Entity Balances
+  const { contract: mooneyContract } = useContract(
+    MOONEY_ADDRESSES[selectedChain.slug]
+  )
+  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner)
+  const [nativeBalance, setNativeBalance] = useState<number>(0)
 
-  // //Entity Balances
-  // const { contract: mooneyContract } = useContract(
-  //   MOONEY_ADDRESSES[selectedChain.slug]
-  // )
-  // const { data: MOONEYBalance } = useMOONEYBalance(
-  //   mooneyContract,
-  //   multisigAddress
-  // )
-  // const [nativeBalance, setNativeBalance] = useState<number>(0)
+  async function getNativeBalance() {
+    const sdk = initSDK(selectedChain)
+    const provider = sdk.getProvider()
+    const balance: any = await provider.getBalance(nft?.owner || '')
+    setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
+  }
 
-  // async function getNativeBalance() {
-  //   const sdk = initSDK(selectedChain)
-  //   const provider = sdk.getProvider()
-  //   const balance: any = await provider.getBalance(multisigAddress)
-  //   setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
-  // }
-
-  // //Subscription Data
-  // const { data: expiresAt } = useHandleRead(entityContract, 'expiresAt', [
-  //   nft?.metadata?.id || '',
-  // ])
-  // const validPass = useValidPass(expiresAt)
+  //Subscription Data
+  const { data: expiresAt } = useHandleRead(citizenContract, 'expiresAt', [
+    nft?.metadata?.id || '',
+  ])
+  const validPass = useValidPass(expiresAt)
 
   //Proposals
   const newestProposals = useNewestProposals(3)
@@ -127,12 +108,12 @@ export default function CitizenDetailPage({ tokenId }: any) {
   const hats = useWearer(selectedChain, address)
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
 
-  // // get native balance for multisig
-  // useEffect(() => {
-  //   if (wallets && multisigAddress) {
-  //     getNativeBalance()
-  //   }
-  // }, [wallets, multisigAddress])
+  // get native balance for multisig
+  useEffect(() => {
+    if (nft?.owner) {
+      getNativeBalance()
+    }
+  }, [nft])
 
   useEffect(() => {
     setSelectedChain(Sepolia)
@@ -140,8 +121,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
 
   const projects = useProjects()
 
-  let nft: any
-  let nftOwner: any
+  if (!nft?.metadata) return
 
   return (
     <div className="animate-fadeIn flex flex-col gap-6 max-w-[1080px]">
@@ -160,36 +140,42 @@ export default function CitizenDetailPage({ tokenId }: any) {
             )}
             <div>
               {nft ? (
-                <h1 className="text-white text-3xl">{nft.metadata.name}</h1>
+                <h1 className="text-black dark:text-white text-3xl">
+                  {nft.metadata.name}
+                </h1>
               ) : (
                 <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
               )}
-              {nftOwner ? (
-                <button
-                  className="mt-4 flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
-                  onClick={() => {
-                    navigator.clipboard.writeText(nftOwner)
-                    toast.success('Address copied to clipboard')
-                  }}
-                >
-                  {nftOwner?.slice(0, 6) + '...' + nftOwner?.slice(-4)}
-                  <CopyIcon />
-                </button>
-              ) : (
-                <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
-              )}
             </div>
+            {citizenMetadataModalEnabled && (
+              <CitizenMetadataModal
+                nft={nft}
+                citizenContract={citizenContract}
+                setEnabled={setCitizenMetadataModalEnabled}
+              />
+            )}
+            <button
+              onClick={() => {
+                if (address != nft?.owner)
+                  return toast.error(
+                    'Connect the entity admin wallet or multisig to edit metadata.'
+                  )
+                setCitizenMetadataModalEnabled(true)
+              }}
+            >
+              <PencilIcon width={35} height={35} />
+            </button>
           </div>
-          {/* {subModalEnabled && (
+          {subModalEnabled && (
             <SubscriptionModal
-              setEnabled={setEntitySubscriptionModalEnabled}
+              setEnabled={setSubModalEnabled}
               nft={nft}
               validPass={validPass}
               expiresAt={expiresAt}
-              entityContract={entityContract}
+              subscriptionContract={citizenContract}
             />
-          )} */}
-          {/* {expiresAt && (
+          )}
+          {expiresAt && (
             <div className="m-8 flex flex-col gap-4 items-center">
               <button
                 className={`py-2 px-4 border-2 rounded-full ${
@@ -198,9 +184,9 @@ export default function CitizenDetailPage({ tokenId }: any) {
                     : 'border-moon-orange text-moon-orange'
                 } max-w-[175px] hover:scale-105 duration-300`}
                 onClick={() => {
-                  if (address != multisigAddress && address != admin)
+                  if (address != nft?.owner)
                     return toast.error(
-                      'Connect the entity admin wallet or multisig to extend subscription.'
+                      `Connect the owner's wallet to extend subscription.`
                     )
                   setSubModalEnabled(true)
                 }}
@@ -214,7 +200,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
                 </p>
               )}
             </div>
-          )} */}
+          )}
         </div>
 
         {nft?.metadata.description ? (
@@ -228,7 +214,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
       {/* Mooney and Voting Power */}
       <div className="flex flex-col xl:flex-row gap-6">
         <Card className="w-full xl:w-1/2 flex flex-col gap-4">
-          <div className="flex justify-between">
+          <div className="w-full flex justify-between">
             <p>{`Total ETH`}</p>
             <p className="p-2 bg-[#ffffff25] flex gap-2">
               <Image
@@ -273,13 +259,13 @@ export default function CitizenDetailPage({ tokenId }: any) {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Proposals */}
         <Card className="w-full lg:w-1/2">
-          <p>MoonDAO Proposals</p>
+          <p>Proposals</p>
           <div className="mt-2 flex flex-col gap-4">
             {newestProposals
               ? newestProposals.map((proposal: any) => (
                   <div
                     key={proposal.id}
-                    className="p-2 flex justify-between bg-[#0f152f] rounded-sm"
+                    className="p-2 flex justify-between border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
                   >
                     <div className="flex flex-col gap-2">
                       <p>{proposal.title}</p>
@@ -315,7 +301,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
               projects.map((p: any, i: number) => (
                 <Link
                   key={`project-${i}`}
-                  className="flex items-center justify-between p-2 bg-[#0f152f]"
+                  className="flex items-center justify-between p-2 border-2 dark:border-0 dark:bg-[#0f152f]"
                   href={`https://discord.com/channels/${DISCORD_GUILD_ID}/${p.id}`}
                   target="_blank"
                   passHref
@@ -333,7 +319,10 @@ export default function CitizenDetailPage({ tokenId }: any) {
           <p>Roles</p>
           <div className="flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
             {hats.map((hat: any) => (
-              <div key={hat.id} className="py-2 bg-[#0f152f]">
+              <div
+                key={hat.id}
+                className="py-2 border-2 dark:border-0 dark:bg-[#0f152f]"
+              >
                 <Hat
                   selectedChain={selectedChain}
                   hatId={hat.id}
@@ -344,15 +333,27 @@ export default function CitizenDetailPage({ tokenId }: any) {
           </div>
         </Card>
         <Card className="w-full lg:w-1/2 flex flex-col gap-4">
-          <div className={'flex justify-between p-2 bg-[#0f152f]'}>
-            <JuiceboxLogo />
+          <div
+            className={
+              'w-full flex justify-between p-2 bg-[#e7e5e7] dark:bg-[#0f152f]'
+            }
+          >
+            <JuiceboxLogoWhite />
             <ArrowUpRightIcon className="text-moon-orange" height={24} />
           </div>
-          <div className={'flex justify-between p-2 bg-[#0f152f]'}>
-            <CoordinapeLogo />
+          <div
+            className={
+              'w-full flex justify-between p-2 bg-[#e7e5e7] dark:bg-[#0f152f]'
+            }
+          >
+            <CoordinapeLogoWhite />
             <ArrowUpRightIcon className="text-moon-orange" height={24} />
           </div>
-          <div className={'flex justify-between p-2 bg-[#0f152f]'}>
+          <div
+            className={
+              'w-full flex justify-between p-2 bg-[#e7e5e7] dark:bg-[#0f152f]'
+            }
+          >
             <Image
               src="/logos/gitcoin-passport-logo.png"
               width={150}
@@ -361,7 +362,11 @@ export default function CitizenDetailPage({ tokenId }: any) {
             />
             <ArrowUpRightIcon className="text-moon-orange" height={24} />
           </div>
-          <div className={'flex justify-between p-2 bg-[#0f152f]'}>
+          <div
+            className={
+              'w-full flex justify-between p-2 bg-[#e7e5e7] dark:bg-[#0f152f]'
+            }
+          >
             <Image src="/logos/hats-logo.png" width={70} height={50} alt="" />
             <ArrowUpRightIcon className="text-moon-orange" height={24} />
           </div>
