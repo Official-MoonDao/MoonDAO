@@ -24,19 +24,15 @@ export function SubscriptionModal({
 
   //calc duration and sub cost
   useEffect(() => {
-    if (years && years > 0) {
-      console.log(years)
+    if (years && years > 0 && pricePerSecond) {
       const duration = years * 365 * 24 * 60 * 60
       setSubscriptionCost(
         pricePerSecond.mul(ethers.BigNumber.from(duration)).toString()
       )
-      console.log(subscriptionCost)
     } else {
       setSubscriptionCost('0')
     }
-
-    // console.log(expiresAt.toString(), duration)
-  }, [years])
+  }, [years, pricePerSecond])
 
   return (
     <div
