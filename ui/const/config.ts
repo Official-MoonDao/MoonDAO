@@ -97,6 +97,11 @@ export const ENTITY_CREATOR_ADDRESSES: Index = {
   sepolia: '0xE360D4cca0D63620B4a6dB5b7084B77c21dD41D3',
 }
 
+export const CITIZEN_ADDRESSES: Index = {
+  ethereum: '',
+  sepolia: '0x355ef23f7e3Cec6f82C3C7bBfb711454FA0C4CB7',
+}
+
 export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
 
 export const DISCORD_GUILD_ID = '914720248140279868'
