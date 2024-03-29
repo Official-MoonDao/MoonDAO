@@ -1,5 +1,7 @@
 import { ethers } from 'ethers'
 import { NextApiRequest, NextApiResponse } from 'next'
+import Nonce from '@/lib/mongodb/models/Nonce'
+import dbConnect from '@/lib/mongodb/mongo'
 
 //https://github.com/mathio/nextjs-embed-demo/blob/main/pages/api/response.js
 
@@ -40,6 +42,29 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed')
+  }
+
+  await dbConnect()
+
+  const signature = req.headers.signature as string
+  const { address, message } = JSON.parse(req.body)
+
+  const nonceRecord = await Nonce.findOne({ address })
+
+  if (!nonceRecord?.nonce) {
+    return res.status(401).send('Unauthorized')
+  }
+
+  const recoveredAddress = ethers.utils.verifyMessage(
+    message + nonceRecord.nonce,
+    signature
+  )
+  if (recoveredAddress !== address) {
+    return res.status(401).send('Unauthorized')
+  }
+
   const { formId, responseId } = req.query
 
   const data = await retryGetResponse(formId as string, responseId as string)
