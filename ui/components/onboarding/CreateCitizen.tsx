@@ -22,6 +22,7 @@ type CitizenData = {
   description: string
   location: string
   view: string
+  formResponseId: string
 }
 
 export function CreateCitizen({
@@ -51,6 +52,7 @@ export function CreateCitizen({
     description: '',
     location: '',
     view: '',
+    formResponseId: '',
   })
   const { windowSize } = useWindowSize()
 
@@ -95,10 +97,38 @@ export function CreateCitizen({
                 className="w-[100%] md:w-[100%]"
                 id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
                 onSubmit={async (formResponse: any) => {
+                  const provider = await wallets[
+                    selectedWallet
+                  ].getEthersProvider()
+                  const signer = provider?.getSigner()
+
+                  const nonceRes = await fetch(
+                    `/api/db/nonce?address=${address}`
+                  )
+                  const nonceData = await nonceRes.json()
+
+                  const message = `Please sign this message to subit the form #`
+
+                  const signature = await signer.signMessage(
+                    message + nonceData.nonce
+                  )
+
+                  if (!signature) return toast.error('Error signing message')
+
                   //get response from form
                   const { formId, responseId } = formResponse
                   const responseRes = await fetch(
-                    `/api/typeform/response?formId=${formId}&responseId=${responseId}`
+                    `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        signature,
+                      },
+                      body: JSON.stringify({
+                        address,
+                        message,
+                      }),
+                    }
                   )
                   const data = await responseRes.json()
 
@@ -125,6 +155,7 @@ export function CreateCitizen({
                       data.answers[5].choice.label === 'Yes'
                         ? 'public'
                         : 'private',
+                    formResponseId: responseId,
                   })
 
                   setStage(1)
@@ -141,6 +172,7 @@ export function CreateCitizen({
                     description: 'Test citizen description',
                     location: 'Earth',
                     view: 'public',
+                    formResponseId: '1234',
                   })
                   setStage(1)
                 }}
@@ -349,6 +381,7 @@ export function CreateCitizen({
                         value: citizenData.view,
                       },
                     ],
+                    formResponseId: citizenData.formResponseId,
                   }
 
                   const newMetadataIpfsHash = await pinMetadataToIPFS(

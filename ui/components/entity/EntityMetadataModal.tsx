@@ -1,15 +1,24 @@
-import { useResolvedMediaType } from '@thirdweb-dev/react'
+import { useWallets } from '@privy-io/react-auth'
+import { useAddress, useResolvedMediaType } from '@thirdweb-dev/react'
+import { Widget } from '@typeform/embed-react'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
+import { pinMetadataToIPFS } from '@/lib/ipfs/pin'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 
 export function EntityMetadataModal({
   nft,
+  entityContract,
   entityData,
-  updateMetadata,
   setEnabled,
 }: any) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+
+  const address = useAddress()
+  const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
 
   const [entityName, setEntityName] = useState(entityData.name || '')
   const [entityDescription, setEntityDescription] = useState(
@@ -34,99 +43,104 @@ export function EntityMetadataModal({
     >
       <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl font-bold">Update Info</h1>
-        <h1 className="font-bold">Info</h1>
-        <div className="w-full flex flex-col gap-4 text-black">
-          <input
-            className="border-2 px-4 py-2 w-full"
-            placeholder="Entity Name"
-            value={entityName}
-            onChange={(e: any) => setEntityName(e.target.value)}
-          />
-          <input
-            className="border-2 px-4 py-2 w-full"
-            placeholder="Entity Description"
-            value={entityDescription}
-            onChange={(e: any) => setEntityDescription(e.target.value)}
-          />
-        </div>
-        <h1 className="font-bold">Socials</h1>
-        <div className="w-full flex flex-col gap-4 text-black">
-          <input
-            className="border-2 px-4 py-2 w-full"
-            placeholder="Entity Website"
-            value={entityWebsite}
-            onChange={(e: any) => setEntityWebsite(e.target.value)}
-          />
-          <input
-            className="border-2 px-4 py-2 w-full"
-            placeholder="Entity Twitter"
-            value={entityTwitter}
-            onChange={(e: any) => setEntityTwitter(e.target.value)}
-          />
-          <input
-            className="border-2 px-4 py-2 w-full"
-            placeholder="Entity Communications"
-            value={entityCommunications}
-            onChange={(e: any) => setEntityCommunications(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-4">
-          <p className="text-sm">{`Would you like this entity to be public?`}</p>
-          <input
-            className="border-2 px-4 py-2"
-            placeholder="Entity View"
-            type="checkbox"
-            defaultChecked={entityView}
-            onChange={(e: any) =>
-              e.target.checked
-                ? setEntityView('public')
-                : setEntityView('private')
-            }
-          />
-        </div>
+        <Widget
+          className="w-[100%] md:w-[100%]"
+          id={process.env.NEXT_PUBLIC_TYPEFORM_ENTITY_FORM_ID as string}
+          onSubmit={async (formResponse: any) => {
+            const provider = await wallets[selectedWallet].getEthersProvider()
+            const signer = provider?.getSigner()
 
-        <button
-          className="border-2 px-4 py-2"
-          disabled={isLoading}
-          onClick={async () => {
-            setIsLoading(true)
+            const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
+            const nonceData = await nonceRes.json()
+
+            const message = `Please sign this message to subit the form #`
+
+            const signature = await signer.signMessage(
+              message + nonceData.nonce
+            )
+
+            if (!signature) return toast.error('Error signing message')
+
+            //get response from form
+            const { formId, responseId } = formResponse
+            const responseRes = await fetch(
+              `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
+              {
+                method: 'POST',
+                headers: {
+                  signature,
+                },
+                body: JSON.stringify({
+                  address,
+                  message,
+                }),
+              }
+            )
+            const data = await responseRes.json()
+
             const rawMetadataRes = await fetch(resolvedMetadata.url)
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
 
             const metadata = {
-              name: entityName,
-              description: entityDescription,
+              name: data.answers[0].text,
+              description: data.answers[1].text,
               image: imageIPFSLink,
               attributes: [
                 {
                   trait_type: 'twitter',
-                  value: entityTwitter,
+                  value: data.answers[3].url,
                 },
                 {
                   trait_type: 'communications',
-                  value: entityCommunications,
+                  value: data.answers[4].url,
                 },
                 {
                   trait_type: 'website',
-                  value: entityWebsite,
+                  value: data.answers[2].url,
                 },
                 {
                   trait_type: 'view',
-                  value: entityView ? 'public' : 'private',
+                  value:
+                    data.answers[5].choice.label === 'Yes'
+                      ? 'public'
+                      : 'private',
                 },
               ],
+              formResponseId: responseId,
             }
 
-            await updateMetadata(metadata)
+            const jwtRes = await fetch('/api/ipfs/upload', {
+              method: 'POST',
+              headers: {
+                signature,
+              },
+              body: JSON.stringify({
+                address,
+                message,
+              }),
+            })
 
-            setIsLoading(false)
-            setEnabled(false)
+            const pinataJWT = await jwtRes.text()
+
+            const newMetadataIpfsHash = await pinMetadataToIPFS(
+              pinataJWT || '',
+              metadata,
+              data.answers[0].text + ' Metadata'
+            )
+
+            if (!newMetadataIpfsHash)
+              return toast.error('Error pinning metadata to IPFS')
+            //mint NFT to safe
+            await entityContract?.call('setTokenURI', [
+              nft.metadata.id,
+              'ipfs://' + newMetadataIpfsHash,
+            ])
+
             router.reload()
           }}
-        >
-          {isLoading ? 'Updating...' : 'Update'}
-        </button>
+          height={500}
+        />
       </div>
     </div>
   )

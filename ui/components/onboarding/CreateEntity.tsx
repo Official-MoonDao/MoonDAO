@@ -21,6 +21,7 @@ type EntityData = {
   communications: string
   website: string
   view: string
+  formResponseId: string
 }
 
 export function CreateEntity({
@@ -36,8 +37,6 @@ export function CreateEntity({
   const [lastStage, setLastStage] = useState<number>(0)
 
   const [entityImage, setEntityImage] = useState<any>()
-  const [multisigAddress, setMultisigAddress] = useState<string>()
-  const [hatTreeId, setHatTreeId] = useState<number>()
 
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
@@ -52,6 +51,7 @@ export function CreateEntity({
     communications: '',
     website: '',
     view: 'private',
+    formResponseId: '',
   })
   const { windowSize } = useWindowSize()
 
@@ -99,10 +99,38 @@ export function CreateEntity({
                 className="w-[100%] md:w-[100%]"
                 id={process.env.NEXT_PUBLIC_TYPEFORM_ENTITY_FORM_ID as string}
                 onSubmit={async (formResponse: any) => {
+                  const provider = await wallets[
+                    selectedWallet
+                  ].getEthersProvider()
+                  const signer = provider?.getSigner()
+
+                  const nonceRes = await fetch(
+                    `/api/db/nonce?address=${address}`
+                  )
+                  const nonceData = await nonceRes.json()
+
+                  const message = `Please sign this message to subit the form #`
+
+                  const signature = await signer.signMessage(
+                    message + nonceData.nonce
+                  )
+
+                  if (!signature) return toast.error('Error signing message')
+
                   //get response from form
                   const { formId, responseId } = formResponse
                   const responseRes = await fetch(
-                    `/api/typeform/response?formId=${formId}&responseId=${responseId}`
+                    `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        signature,
+                      },
+                      body: JSON.stringify({
+                        address,
+                        message,
+                      }),
+                    }
                   )
                   const data = await responseRes.json()
 
@@ -118,6 +146,7 @@ export function CreateEntity({
                       data.answers[5].choice.label === 'Yes'
                         ? 'public'
                         : 'private',
+                    formResponseId: responseId,
                   })
                   setStage(1)
                 }}
@@ -133,6 +162,7 @@ export function CreateEntity({
                     communications: 'https://discord.com',
                     website: 'https://google.com',
                     view: 'public',
+                    formResponseId: '123456789',
                   })
                   setStage(1)
                 }}
@@ -326,6 +356,18 @@ export function CreateEntity({
 
                 const pinataJWT = await jwtRes.text()
 
+                const hatsMetadataIpfsHash = await pinMetadataToIPFS(
+                  pinataJWT || '',
+                  {
+                    type: '1.0',
+                    data: {
+                      name: entityData.name + ' Admin',
+                      description: entityData.description,
+                    },
+                  },
+                  entityData.name + ' Hats Metadata'
+                )
+
                 try {
                   //pin image to IPFS
                   const newImageIpfsHash = await pinImageToIPFS(
@@ -344,8 +386,8 @@ export function CreateEntity({
 
                   // pin metadata to IPFS
                   const metadata = {
-                    name: `Entity #${nextTokenId}`,
-                    description: `${entityData.name} : ${entityData.description}`,
+                    name: entityData.name,
+                    description: entityData.description,
                     image: `ipfs://${newImageIpfsHash}`,
                     attributes: [
                       {
@@ -364,11 +406,8 @@ export function CreateEntity({
                         trait_type: 'view',
                         value: entityData.view,
                       },
-                      {
-                        trait_type: 'hatsTreeId',
-                        value: hatTreeId,
-                      },
                     ],
+                    formResponseId: entityData.formResponseId,
                   }
 
                   const newMetadataIpfsHash = await pinMetadataToIPFS(
@@ -382,7 +421,10 @@ export function CreateEntity({
                   //mint NFT to safe
                   await entityCreatorContract?.call(
                     'createMoonDAOEntity',
-                    ['ipfs://' + newMetadataIpfsHash],
+                    [
+                      'ipfs://' + newMetadataIpfsHash,
+                      'ipfs://' + hatsMetadataIpfsHash,
+                    ],
                     {
                       value: ethers.utils.parseEther('0.01'),
                     }

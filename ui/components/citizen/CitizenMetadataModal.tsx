@@ -1,5 +1,6 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress, useResolvedMediaType } from '@thirdweb-dev/react'
+import { Widget } from '@typeform/embed-react'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -34,105 +35,100 @@ export function CitizenMetadataModal({
     >
       <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
         <h1 className="text-2xl font-bold">Update Info</h1>
-        <h1 className="font-bold">Info</h1>
-        <div className="w-full flex flex-col gap-4 text-black">
-          <input
-            className="border-2 px-4 py-2 w-full"
-            placeholder="Entity Name"
-            value={name}
-            onChange={(e: any) => setName(e.target.value)}
-          />
-          <input
-            className="border-2 px-4 py-2 w-full"
-            placeholder="Entity Description"
-            value={description}
-            onChange={(e: any) => setDescription(e.target.value)}
-          />
-          <div className="flex gap-4">
-            <p className="text-sm text-black dark:text-white">{`Would you like this nft to be publicly listed?`}</p>
-            <input
-              className="border-2 px-4 py-2"
-              placeholder="Entity View"
-              type="checkbox"
-              defaultChecked={view}
-              onChange={(e: any) =>
-                e.target.checked ? setView('public') : setView('private')
-              }
-            />
-          </div>
-        </div>
-        <button
-          className="border-2 px-4 py-2"
-          onClick={async () => {
-            setIsLoading(true)
-            try {
-              const provider = await wallets[selectedWallet].getEthersProvider()
-              const signer = provider?.getSigner()
+        <Widget
+          className="w-[100%] md:w-[100%]"
+          id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
+          onSubmit={async (formResponse: any) => {
+            //sign message to get response
+            const provider = await wallets[selectedWallet].getEthersProvider()
+            const signer = provider?.getSigner()
 
-              const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
+            const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
+            const nonceData = await nonceRes.json()
 
-              const nonceData = await nonceRes.json()
+            const message = `Please sign this message to subit the form #`
 
-              const message = `Please sign this message to update this entity's metadata #`
+            const signature = await signer.signMessage(
+              message + nonceData.nonce
+            )
 
-              const signature = await signer.signMessage(
-                message + nonceData.nonce
-              )
+            if (!signature) return toast.error('Error signing message')
 
-              if (!signature) return toast.error('Error signing message')
-
-              const jwtRes = await fetch('/api/ipfs/upload', {
+            //get response from form
+            const { formId, responseId } = formResponse
+            const responseRes = await fetch(
+              `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
+              {
                 method: 'POST',
                 headers: {
                   signature,
                 },
-                body: JSON.stringify({ address: address, message }),
-              })
-
-              const JWT = await jwtRes.text()
-
-              const rawMetadataRes = await fetch(resolvedMetadata.url)
-              const rawMetadata = await rawMetadataRes.json()
-              const imageIPFSLink = rawMetadata.image
-
-              const metadata = {
-                name: name,
-                description: description,
-                image: imageIPFSLink,
-                attributes: [
-                  {
-                    trait_type: 'location',
-                    value: location,
-                  },
-                  {
-                    trait_type: 'view',
-                    value: view,
-                  },
-                ],
+                body: JSON.stringify({
+                  address,
+                  message,
+                }),
               }
+            )
+            const data = await responseRes.json()
 
-              const newMetadataIpfsHash = await pinMetadataToIPFS(
-                JWT,
-                metadata,
-                nft?.metadata?.name + ' Metadata'
-              )
+            const rawMetadataRes = await fetch(resolvedMetadata.url)
+            const rawMetadata = await rawMetadataRes.json()
+            const imageIPFSLink = rawMetadata.image
 
-              if (!newMetadataIpfsHash)
-                return toast.error('Error pinning metadata to IPFS')
-
-              await citizenContract.call('setTokenURI', [
-                nft.metadata.id,
-                'ipfs://' + newMetadataIpfsHash,
-              ])
-
-              router.reload()
-            } catch (err) {
-              console.log(err)
+            const metadata = {
+              name: `${data.answers[0].text} ${data.answers[1].text}`,
+              description: data.answers[3].text,
+              image: imageIPFSLink,
+              attributes: [
+                {
+                  trait_type: 'location',
+                  value: data.answers[4].text,
+                },
+                {
+                  trait_type: 'view',
+                  value:
+                    data.answers[5].choice.label === 'Yes'
+                      ? 'public'
+                      : 'private',
+                },
+              ],
+              formResponseId: responseId,
             }
+
+            //sign message for pinata
+
+            //get pinata jwt
+            const jwtRes = await fetch('/api/ipfs/upload', {
+              method: 'POST',
+              headers: {
+                signature,
+              },
+              body: JSON.stringify({
+                address,
+                message,
+              }),
+            })
+
+            const pinataJWT = await jwtRes.text()
+
+            const newMetadataIpfsHash = await pinMetadataToIPFS(
+              pinataJWT || '',
+              metadata,
+              data.answers[0].text + data.answers[1].text + ' Metadata'
+            )
+
+            if (!newMetadataIpfsHash)
+              return toast.error('Error pinning metadata to IPFS')
+            //mint NFT to safe
+            await citizenContract?.call('setTokenURI', [
+              nft.metadata.id,
+              'ipfs://' + newMetadataIpfsHash,
+            ])
+
+            router.reload()
           }}
-        >
-          Update
-        </button>
+          height={500}
+        />
       </div>
     </div>
   )

@@ -124,7 +124,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
   if (!nft?.metadata) return
 
   return (
-    <div className="animate-fadeIn flex flex-col gap-6 max-w-[1080px]">
+    <div className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]">
       {/* Header and socials */}
       <Card>
         <div className="flex flex-col lg:flex-row md:items-center justify-between gap-8">
@@ -208,14 +208,13 @@ export default function CitizenDetailPage({ tokenId }: any) {
         ) : (
           <div className="mt-4 w-full h-[30px] bg-[#ffffff25] animate-pulse" />
         )}
-        {/* Socials */}
       </Card>
 
       {/* Mooney and Voting Power */}
       <div className="flex flex-col xl:flex-row gap-6">
         <Card className="w-full xl:w-1/2 flex flex-col gap-4">
           <div className="w-full flex justify-between">
-            <p>{`Total ETH`}</p>
+            <p>{`Native Balance`}</p>
             <p className="p-2 bg-[#ffffff25] flex gap-2">
               <Image
                 src="/icons/networks/ethereum.svg"
@@ -237,7 +236,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
             <p>{`Total Voting Power`}</p>
             <p className="mt-4 text-3xl">{0}</p>
           </div>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-col md:flex-row gap-2">
             <Button
               onClick={() =>
                 window.open(
@@ -293,7 +292,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
             <Button>Vote on Proposals</Button>
           </div>
         </Card>
-        {/* Members */}
+        {/* Projects */}
         <Card className="w-full lg:w-1/2">
           <p>Projects</p>
           <div className="p-2 max-h-[300px] overflow-y-scroll flex flex-col gap-2">

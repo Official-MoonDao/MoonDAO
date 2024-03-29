@@ -174,7 +174,7 @@ export default function EntityDetailPage({ tokenId }: any) {
               <EntityMetadataModal
                 setEnabled={setEntityMetadataModalEnabled}
                 nft={nft}
-                updateMetadata={updateMetadata}
+                entityContract={entityContract}
                 entityData={{
                   name: nft?.metadata.name,
                   description: nft?.metadata.description,
