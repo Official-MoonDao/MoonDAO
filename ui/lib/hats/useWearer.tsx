@@ -25,7 +25,6 @@ export function useWearer(selectedChain: Chain, address: any) {
 
   useEffect(() => {
     getWearerHats()
-    console.log(hats)
   }, [selectedChain, address])
 
   return hats
