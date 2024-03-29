@@ -1,22 +1,16 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import {
-  CITIZEN_ADDRESSES,
-  ENTITY_ADDRESSES,
-  ENTITY_CREATOR_ADDRESSES,
-} from 'const/config'
+import { CITIZEN_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/entity/use-window-size'
-import { createSafe } from '../../lib/gnosis/createSafe'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import { Steps } from '../layout/Steps'
-import ArrowButton from '../marketplace/Layout/ArrowButton'
 import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
@@ -157,7 +151,7 @@ export function CreateCitizen({
         {/* Upload & Create Image */}
         {stage === 1 && (
           <StageContainer
-            className={`mb-[500px] 2xl:mb-0`}
+            className={`mb-[500px]`}
             title="Design"
             description="Design your unique onchain registration certificate."
           >

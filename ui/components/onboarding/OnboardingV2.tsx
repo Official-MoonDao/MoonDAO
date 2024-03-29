@@ -1,6 +1,5 @@
 import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
-import { useAddress, useContract } from '@thirdweb-dev/react'
-import { HATS_ADDRESS } from 'const/config'
+import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import { useContext, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
