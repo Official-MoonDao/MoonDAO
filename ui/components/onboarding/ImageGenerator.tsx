@@ -1,7 +1,7 @@
 import html2canvas from 'html2canvas'
 import Head from 'next/head'
 import Script from 'next/script'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { StageButton } from './StageButton'
 
 export function ImageGenerator({ setImage, nextStage, stage }: any) {
