@@ -142,6 +142,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
           <div className="flex flex-col md:flex-row items-center gap-8">
             {nft?.metadata.image ? (
               <ThirdwebNftMedia
+                className="rounded-full p-4"
                 metadata={nft.metadata}
                 height={'200px'}
                 width={'200px'}
@@ -150,32 +151,48 @@ export default function CitizenDetailPage({ tokenId }: any) {
               <div className="w-[200px] h-[200px] bg-[#ffffff25] animate-pulse" />
             )}
             <div>
-              {nft ? (
-                <h1 className="text-black dark:text-white text-3xl">
-                  {nft.metadata.name}
-                </h1>
+              <div className="flex gap-4">
+                {nft ? (
+                  <h1 className="text-black dark:text-white text-3xl">
+                    {nft.metadata.name}
+                  </h1>
+                ) : (
+                  <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
+                )}
+                {citizenMetadataModalEnabled && (
+                  <CitizenMetadataModal
+                    nft={nft}
+                    citizenContract={citizenContract}
+                    setEnabled={setCitizenMetadataModalEnabled}
+                  />
+                )}
+                <button
+                  onClick={() => {
+                    if (address != nft?.owner)
+                      return toast.error(
+                        'Connect the entity admin wallet or multisig to edit metadata.'
+                      )
+                    setCitizenMetadataModalEnabled(true)
+                  }}
+                >
+                  <PencilIcon width={35} height={35} />
+                </button>
+              </div>
+              {nft?.owner ? (
+                <button
+                  className="mt-4 flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
+                  onClick={() => {
+                    navigator.clipboard.writeText(nft.owner)
+                    toast.success('Address copied to clipboard')
+                  }}
+                >
+                  {nft.owner?.slice(0, 6) + '...' + nft.owner?.slice(-4)}
+                  <CopyIcon />
+                </button>
               ) : (
-                <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
+                <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
               )}
             </div>
-            {citizenMetadataModalEnabled && (
-              <CitizenMetadataModal
-                nft={nft}
-                citizenContract={citizenContract}
-                setEnabled={setCitizenMetadataModalEnabled}
-              />
-            )}
-            <button
-              onClick={() => {
-                if (address != nft?.owner)
-                  return toast.error(
-                    'Connect the entity admin wallet or multisig to edit metadata.'
-                  )
-                setCitizenMetadataModalEnabled(true)
-              }}
-            >
-              <PencilIcon width={35} height={35} />
-            </button>
           </div>
           {subModalEnabled && (
             <SubscriptionModal
@@ -188,12 +205,13 @@ export default function CitizenDetailPage({ tokenId }: any) {
           )}
           {expiresAt && (
             <div className="m-8 flex flex-col gap-4 items-center">
-              <button
-                className={`py-2 px-4 border-2 rounded-full ${
-                  validPass
-                    ? 'border-moon-green text-moon-green'
-                    : 'border-moon-orange text-moon-orange'
-                } max-w-[175px] hover:scale-105 duration-300`}
+              {validPass && (
+                <p className="opacity-50">
+                  {'Exp: '}
+                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                </p>
+              )}
+              <Button
                 onClick={() => {
                   if (address != nft?.owner)
                     return toast.error(
@@ -202,20 +220,14 @@ export default function CitizenDetailPage({ tokenId }: any) {
                   setSubModalEnabled(true)
                 }}
               >
-                {`${validPass ? '✓ Valid' : 'X Invalid'} Pass`}
-              </button>
-              {validPass && (
-                <p className="opacity-50">
-                  {'Exp: '}
-                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                </p>
-              )}
+                {'Extend Subscription'}
+              </Button>
             </div>
           )}
         </div>
 
         {nft?.metadata.description ? (
-          <p className="mt-4">{nft?.metadata.description || ''}</p>
+          <p className="mt-4 px-4">{nft?.metadata.description || ''}</p>
         ) : (
           <div className="mt-4 w-full h-[30px] bg-[#ffffff25] animate-pulse" />
         )}
@@ -223,35 +235,20 @@ export default function CitizenDetailPage({ tokenId }: any) {
 
       {/* Mooney and Voting Power */}
       <div className="flex flex-col xl:flex-row gap-6">
-        <Card className="w-full xl:w-1/2 flex flex-col gap-4">
-          <div className="w-full flex justify-between">
-            <p>{`Native Balance`}</p>
-            <p className="p-2 bg-[#ffffff25] flex gap-2">
-              <Image
-                src="/icons/networks/ethereum.svg"
-                width={10}
-                height={10}
-                alt=""
-              />
-              {`Ethereum`}
+        <Card className="w-full flex flex-col md:flex-row justify-between">
+          <div className="">
+            <p className="text-2xl">{`$MOONEY`}</p>
+            <p className="text-2xl">
+              {(MOONEYBalance?.toString() / 10 ** 18).toFixed(0) || 0}
             </p>
           </div>
-          <p className="text-3xl">{nativeBalance}</p>
-        </Card>
-        <Card className="w-full xl:w-1/2 flex flex-col">
-          <div className="w-3/4">
-            <p>{`Total $MOONEY`}</p>
-            <p className="mt-4 text-3xl">
-              {MOONEYBalance.toString() / 10 ** 18 || 0}
+          <div className="">
+            <p className="text-2xl">{`Voting Power`}</p>
+            <p className="text-2xl">
+              {(VMOONEYBalance?.toString() / 10 ** 18).toFixed(0) || 0}
             </p>
           </div>
-          <div className="w-3/4">
-            <p>{`Total Voting Power`}</p>
-            <p className="mt-4 text-3xl">
-              {VMOONEYBalance.toString() / 10 ** 18 || 0}
-            </p>
-          </div>
-          <div className="mt-4 flex flex-col md:flex-row gap-2">
+          <div className="mt-4 flex flex-col gap-2">
             <Button
               onClick={() =>
                 window.open(
@@ -272,8 +269,8 @@ export default function CitizenDetailPage({ tokenId }: any) {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Proposals */}
-        <Card className="w-full lg:w-1/2">
-          <p>Proposals</p>
+        <Card className="w-full lg:w-1/2 flex flex-col justify-between">
+          <p className="text-2xl">Governance</p>
           <div className="mt-2 flex flex-col gap-4">
             {newestProposals
               ? newestProposals.map((proposal: any) => (
@@ -309,7 +306,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
         </Card>
         {/* Projects */}
         <Card className="w-full lg:w-1/2">
-          <p>Projects</p>
+          <p className="text-2xl">Projects</p>
           <div className="p-2 max-h-[300px] overflow-y-scroll flex flex-col gap-2">
             {projects &&
               projects.map((p: any, i: number) => (
@@ -330,7 +327,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
       {/* General Actions */}
       <div className="flex flex-col lg:flex-row gap-6">
         <Card className="w-full lg:w-1/2">
-          <p>Roles</p>
+          <p className="text-2xl">Roles</p>
           <div className="flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
             {hats.map((hat: any) => (
               <div

@@ -106,6 +106,10 @@ export function EntityMetadataModal({
                       ? 'public'
                       : 'private',
                 },
+                {
+                  trait_type:'type',
+                  value: 'entity'
+                }
               ],
               formResponseId: responseId,
             }

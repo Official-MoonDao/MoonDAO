@@ -140,6 +140,7 @@ export default function EntityDetailPage({ tokenId }: any) {
           <div className="flex flex-col md:flex-row items-center gap-8">
             {nft?.metadata.image ? (
               <ThirdwebNftMedia
+                className="p-4 rounded-full"
                 metadata={nft.metadata}
                 height={'200px'}
                 width={'200px'}
@@ -206,36 +207,32 @@ export default function EntityDetailPage({ tokenId }: any) {
               subscriptionContract={entityContract}
             />
           )}
+
           {expiresAt && (
             <div className="m-8 flex flex-col gap-4 items-center">
-              <button
-                className={`py-2 px-4 border-2 rounded-full ${
-                  validPass
-                    ? 'border-moon-green text-moon-green'
-                    : 'border-moon-orange text-moon-orange'
-                } max-w-[175px] hover:scale-105 duration-300`}
-                onClick={() => {
-                  if (address != nft?.owner && address != admin)
-                    return toast.error(
-                      'Connect the entity admin wallet or multisig to extend subscription.'
-                    )
-                  setEntitySubscriptionModalEnabled(true)
-                }}
-              >
-                {`${validPass ? '✓ Valid' : 'X Invalid'} Pass`}
-              </button>
               {validPass && (
                 <p className="opacity-50">
                   {'Exp: '}
                   {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                 </p>
               )}
+              <Button
+                onClick={() => {
+                  if (address != nft?.owner)
+                    return toast.error(
+                      `Connect the entity admin wallet or multisig to extend the subscription.`
+                    )
+                  setEntitySubscriptionModalEnabled(true)
+                }}
+              >
+                {'Extend Subscription'}
+              </Button>
             </div>
           )}
         </div>
 
         {nft?.metadata.description ? (
-          <p className="mt-4">{nft?.metadata.description || ''}</p>
+          <p className="mt-4 px-4">{nft?.metadata.description || ''}</p>
         ) : (
           <div className="mt-4 w-full h-[30px] bg-[#ffffff25] animate-pulse" />
         )}
@@ -272,39 +269,26 @@ export default function EntityDetailPage({ tokenId }: any) {
 
       {/* Mooney and Voting Power */}
       <div className="flex flex-col xl:flex-row gap-6">
-        <Card className="w-full xl:w-1/2 flex flex-col gap-4">
-          <div className="w-full flex justify-between">
-            <p>{`Native Balance`}</p>
-            <p className="p-2 bg-[#ffffff25] flex gap-2">
-              <Image
-                src="/icons/networks/ethereum.svg"
-                width={10}
-                height={10}
-                alt=""
-              />
-              {`Ethereum`}
-            </p>
-          </div>
-          <p className="text-3xl">{nativeBalance}</p>
-          <Button
-            onClick={() =>
-              window.open('https://app.safe.global/home?safe=eth:' + nft?.owner)
-            }
-          >
-            <ArrowUpRightIcon height={20} width={20} />
-            {'Manage Treasury'}
-          </Button>
-        </Card>
-        <Card className="w-full xl:w-1/2 flex flex-col">
+        <Card className="w-full flex">
           <div className="w-3/4">
-            <p>{`$MOONEY`}</p>
-            <p className="mt-8 text-3xl">
+            <p className="text-2xl">{`$MOONEY`}</p>
+            <p className="mt-8 text-2xl">
               {MOONEYBalance && isPublic
                 ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
                 : 0}
             </p>
           </div>
-          <div className="mt-4 flex flex-col md:flex-row gap-2">
+          <div className="mt-4 flex flex-col gap-2">
+            <Button
+              onClick={() =>
+                window.open(
+                  'https://app.safe.global/home?safe=eth:' + nft?.owner
+                )
+              }
+            >
+              <ArrowUpRightIcon height={20} width={20} />
+              {'Manage Treasury'}
+            </Button>
             <Button
               onClick={() =>
                 window.open(
@@ -326,8 +310,8 @@ export default function EntityDetailPage({ tokenId }: any) {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Proposals */}
         <Card className="w-full lg:w-1/2">
-          <p>Proposals</p>
-          <div className="mt-2 flex flex-col gap-4">
+          <p className="text-2xl">Governance</p>
+          <div className="mt-2 flex flex-col gap-4 justify-between">
             {newestProposals
               ? newestProposals.map((proposal: any) => (
                   <div
@@ -362,7 +346,7 @@ export default function EntityDetailPage({ tokenId }: any) {
         </Card>
         {/* Members */}
         <Card className="w-full lg:w-1/2">
-          <p>Members</p>
+          <p className="text-2xl">Members</p>
           <div className="pb-6 h-full flex flex-col justify-between">
             <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-y-scroll">
               {hats?.map((hat: any, i: number) => (
@@ -410,7 +394,7 @@ export default function EntityDetailPage({ tokenId }: any) {
       </div>
       {/* General Actions */}
       <div className="flex flex-col gap-4">
-        <p className="p-4">General Actions</p>
+        <p className="p-4 text-2xl">General Actions</p>
         <div className="flex flex-col lg:flex-row gap-8">
           <Card
             className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#e7e5e7]"

@@ -73,7 +73,7 @@ export function CreateCitizen({
   return (
     <div className="flex flex-row">
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
-        <div className="flex flex-row w-full justify-between md:pr-10">
+        <div className="flex flex-row w-full justify-between items-start md:pr-10">
           <Steps
             className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
             steps={['Info', 'Design', 'Mint']}
@@ -81,7 +81,7 @@ export function CreateCitizen({
             lastStep={lastStage}
             setStep={setStage}
           />
-          <button onClick={() => setSelectedTier(null)}>
+          <button className="" onClick={() => setSelectedTier(null)}>
             <XMarkIcon width={50} height={50} />
           </button>
         </div>
@@ -214,7 +214,7 @@ export function CreateCitizen({
               height={600}
             />
 
-            <div className="flex flex-col border-2 dark:border-0 dark:bg-black w-full p-3 md:p-5 mt-10">
+            <div className="flex flex-col border-2 dark:border-0 dark:bg-black w-full p-3 md:p-5 mt-10 max-w-[600px]">
               <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
                 {isMobile ? (
@@ -253,7 +253,7 @@ export function CreateCitizen({
                 )}
               </div>
             </div>
-            <div className="flex flex-col border-2 dark:border-0  dark:bg-black w-full p-3 md:p-5 mt-10">
+            <div className="flex flex-col border-2 dark:border-0  dark:bg-black w-full p-3 md:p-5 mt-10 max-w-[600px]">
               <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT</h2>
               <h2 className="font-GoodTimes text-3xl mb-2">INFORMATION</h2>
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 mt-5">
@@ -298,7 +298,7 @@ export function CreateCitizen({
                 </span>
               </label>
               <label
-                className="mt-px font-light text-gray-700  select-none"
+                className="mt-px font-light text-gray-700  select-none max-w-[550px]"
                 htmlFor="link"
               >
                 <p className="dark:text-white">
@@ -379,6 +379,10 @@ export function CreateCitizen({
                       {
                         trait_type: 'view',
                         value: citizenData.view,
+                      },
+                      {
+                        trait_type: 'type',
+                        value: 'citizen',
                       },
                     ],
                     formResponseId: citizenData.formResponseId,

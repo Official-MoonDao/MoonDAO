@@ -91,6 +91,10 @@ export function CitizenMetadataModal({
                       ? 'public'
                       : 'private',
                 },
+                {
+                  trait_type: 'type',
+                  value: 'citizen',
+                },
               ],
               formResponseId: responseId,
             }

@@ -109,7 +109,7 @@ export function PrivyConnectWallet() {
           }}
         >
           {/*Address and Toggle open/close button*/}
-          <div className="flex items-center w-full h-full justify-between">
+          <div className="flex items-center w-full h-full justify-center">
             <p className="text-xs">{`${wallets?.[selectedWallet].address?.slice(
               0,
               6

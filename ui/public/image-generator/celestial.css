@@ -66,6 +66,7 @@
 #celestial-form .col {
   margin: 0 0 4px;
   text-align: left;
+  width: 100%;
 }
 
 #celestial-form .hr {
@@ -341,7 +342,8 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 #celestial-form input[type='range'] {
-  width: 100px;
+  width: 100%;
+  max-width: 800px;
   accent-color: white;
 }
 

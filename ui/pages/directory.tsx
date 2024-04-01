@@ -32,9 +32,9 @@ function EntityCitizenCard({
           href={`/${type === 'entity' ? 'entity' : 'citizen'}/${metadata.id}`}
           passHref
         >
-          <div className="flex flex-col rounded w-[340px] border-2 dark:bg-[#080C30] p-4">
+          <div className="p-4 flex flex-col rounded w-[310px] dark:bg-[#080C30]">
             <ThirdwebNftMedia
-              className="self-center"
+              className=""
               metadata={metadata}
               height={'280px'}
               width={'280px'}
@@ -53,28 +53,18 @@ function EntityCitizenCard({
               'Qorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.'
             }
           </p> */}
-            <button
-              disabled={true}
-              className="w-1/2 px-4 py-2 text-[grey] rounded-full bg-[#e7e5e7] bg-opacity-10 flex items-center"
-              //   onClick={() =>
-              //     window.open(
-              //       'https://sepolia.etherscan.io/address/' + ENTITY_ADDRESSES
-              //     )
-              //   }
-            >
-              {type === 'entity' ? 'Entity' : 'Citizen'}
-            </button>
+
             <div className="flex flex-row space-x-5 mt-3">
               <button
                 disabled={true}
-                className="px-4 py-2 text-amber-300 rounded-full bg-yellow-100 bg-opacity-10 flex items-center"
+                className="px-4 py-2 text-[grey] rounded-full bg-[#e7e5e7] bg-opacity-10 flex items-center"
                 //   onClick={() =>
                 //     window.open(
                 //       'https://sepolia.etherscan.io/address/' + ENTITY_ADDRESSES
                 //     )
                 //   }
               >
-                {'Ethereum'}
+                {type === 'entity' ? 'Entity' : 'Citizen'}
               </button>
               <button
                 disabled={true}
@@ -183,6 +173,8 @@ export default function Entities() {
     } else {
       setCachedNFTs([...filteredEntities, ...filteredCitizens])
     }
+
+    console.log(cachedNFTs)
   }, [input, cachedNFTs, tab, filteredEntities, filteredCitizens])
 
   return (
@@ -202,7 +194,8 @@ export default function Entities() {
           />
         </div>
 
-        <div className="flex gap-4">
+        {isLoadingEntities && <p className="text-center">Loading...</p>}
+        <div className="w-full flex justify-center xl:justify-start gap-4">
           <button
             className={`px-4 py-2 border-2 rounded-lg ${
               tab === 'entities' && 'border-moon-orange text-moon-orange'
@@ -228,34 +221,24 @@ export default function Entities() {
             All
           </button>
         </div>
-        {isLoadingEntities && <p className="text-center">Loading...</p>}
         <div
           className="grid grid-cols-1
         xl:grid-cols-2 min-[1600px]:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center place-items-center"
         >
           {cachedNFTs?.slice((pageIdx - 1) * 9, pageIdx * 9).map((nft: any) => {
             if (nft.metadata.name !== 'Failed to load NFT metadata') {
-              if (nft.metadata.attributes[4]?.trait_type === 'hatsTreeId') {
-                return (
-                  <div key={nft.metadata.id}>
-                    <EntityCitizenCard
-                      metadata={nft.metadata}
-                      owner={nft.owner}
-                      type="entity"
-                    />
-                  </div>
-                )
-              } else {
-                return (
-                  <div key={nft.metadata.id}>
-                    <EntityCitizenCard
-                      metadata={nft.metadata}
-                      owner={nft.owner}
-                      type="citizen"
-                    />
-                  </div>
-                )
-              }
+              const type = nft.metadata.attributes.find(
+                (attr: any) => attr.trait_type === 'type'
+              )?.value
+              return (
+                <div key={nft.metadata.id}>
+                  <EntityCitizenCard
+                    metadata={nft.metadata}
+                    owner={nft.owner}
+                    type={type}
+                  />
+                </div>
+              )
             }
 
             //if citizen address return citizen

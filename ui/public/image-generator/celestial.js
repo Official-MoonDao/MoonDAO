@@ -3734,7 +3734,6 @@
     setCenter(config.center, config.transform)
 
     // Stars - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    frm.append('div').attr('class', 'hr')
     frm.append('br')
     col = frm.append('div').attr('class', 'col').attr('id', 'stars')
     col
@@ -3742,21 +3741,22 @@
       .attr('class', 'header')
       .attr('for', 'stars-show')
       .html(' Stars')
+      .style('display', 'none')
     col
       .append('input')
       .attr('type', 'checkbox')
       .attr('id', 'stars-show')
       .property('checked', config.stars.show)
       .on('change', apply)
+      .style('display', 'none')
 
-    col.append('br')
-    col.append('br')
+    col.append('br').style('display', 'none')
+
     col
       .append('label')
       .attr('title', 'Stars Limit')
       .attr('for', 'stars-limit')
-      .attr('class', 'header')
-      .html('Number')
+      .html('Number of Stars')
     // col.append('label').style('display', 'none')
     col.append('br')
     col
@@ -3833,8 +3833,7 @@
       .append('label')
       .attr('title', 'Stars Size')
       .attr('for', 'stars-size')
-      .attr('class', 'header')
-      .html('Size')
+      .html(' Size of Stars')
     col.append('br')
     col
       .append('input')
@@ -4928,7 +4927,6 @@
       .attr('step', '1')
       .attr('oninput', 'blurValue(this.value)')
 
-    col.append('br')
     // col
     //   .append('input')
     //   .attr('type', 'button')
