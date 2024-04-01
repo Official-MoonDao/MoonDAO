@@ -89,17 +89,17 @@ export const TICKET_TO_SPACE_ADDRESS =
 
 export const ENTITY_ADDRESSES: Index = {
   ethereum: '',
-  sepolia: '0xC01F000a4D8082E648dEFe70b4013541C1F25855',
+  sepolia: '0xC4bE996774800f27965718779a3Db9455d0840dc',
 }
 
 export const ENTITY_CREATOR_ADDRESSES: Index = {
   ethereum: '',
-  sepolia: '0xE360D4cca0D63620B4a6dB5b7084B77c21dD41D3',
+  sepolia: '0x7270Ac6E739eb0B5F0D97a0121B9593A025E8d57',
 }
 
 export const CITIZEN_ADDRESSES: Index = {
   ethereum: '',
-  sepolia: '0x355ef23f7e3Cec6f82C3C7bBfb711454FA0C4CB7',
+  sepolia: '0x90b3A6B782b3234AF68424B5122880276Ea0e17A',
 }
 
 export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
