@@ -16,6 +16,7 @@ import {
   DISCORD_GUILD_ID,
   HATS_ADDRESS,
   MOONEY_ADDRESSES,
+  VMOONEY_ADDRESSES,
 } from 'const/config'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
@@ -32,6 +33,7 @@ import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
+import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
 import { CopyIcon } from '@/components/assets'
 import CoordinapeLogoWhite from '@/components/assets/CoordinapeLogoWhite'
 import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
@@ -86,6 +88,15 @@ export default function CitizenDetailPage({ tokenId }: any) {
     MOONEY_ADDRESSES[selectedChain.slug]
   )
   const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner)
+  const { contract: vMooneyContract } = useContract(
+    VMOONEY_ADDRESSES[selectedChain.slug]
+  )
+
+  const { data: VMOONEYBalance } = useVMOONEYBalance(
+    vMooneyContract,
+    nft?.owner
+  )
+
   const [nativeBalance, setNativeBalance] = useState<number>(0)
 
   async function getNativeBalance() {
@@ -105,7 +116,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
   const newestProposals = useNewestProposals(3)
 
   // //Hats
-  const hats = useWearer(selectedChain, address)
+  const hats = useWearer(selectedChain, nft?.owner)
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
 
   // get native balance for multisig
@@ -186,7 +197,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
                 onClick={() => {
                   if (address != nft?.owner)
                     return toast.error(
-                      `Connect the owner's wallet to extend subscription.`
+                      `Connect the entity admin wallet or multisig to extend the subscription.`
                     )
                   setSubModalEnabled(true)
                 }}
@@ -225,16 +236,20 @@ export default function CitizenDetailPage({ tokenId }: any) {
               {`Ethereum`}
             </p>
           </div>
-          <p className="text-3xl">{0}</p>
+          <p className="text-3xl">{nativeBalance}</p>
         </Card>
         <Card className="w-full xl:w-1/2 flex flex-col">
           <div className="w-3/4">
             <p>{`Total $MOONEY`}</p>
-            <p className="mt-4 text-3xl">{0}</p>
+            <p className="mt-4 text-3xl">
+              {MOONEYBalance.toString() / 10 ** 18 || 0}
+            </p>
           </div>
           <div className="w-3/4">
             <p>{`Total Voting Power`}</p>
-            <p className="mt-4 text-3xl">{0}</p>
+            <p className="mt-4 text-3xl">
+              {VMOONEYBalance.toString() / 10 ** 18 || 0}
+            </p>
           </div>
           <div className="mt-4 flex flex-col md:flex-row gap-2">
             <Button
