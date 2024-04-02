@@ -190,7 +190,6 @@ export default function Entities() {
           />
         </div>
 
-        {isLoadingEntities && <p className="text-center">Loading...</p>}
         <div className="px-4 w-full flex gap-4">
           <button
             className={`px-4 py-2 border-2 rounded-lg ${
@@ -217,6 +216,7 @@ export default function Entities() {
             All
           </button>
         </div>
+        {isLoadingEntities && <p className="text-center">Loading...</p>}
         <div
           className="grid grid-cols-1
       min-[1100px]:grid-cols-2 min-[1450px]:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-start place-items-center"

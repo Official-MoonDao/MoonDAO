@@ -340,8 +340,22 @@ export default function EntityDetailPage({ tokenId }: any) {
                 ))}
           </div>
           <div className="mt-4 flex flex-col md:flex-row gap-2">
-            <Button>Create Proposals</Button>
-            <Button>Vote on Proposals</Button>
+            <Button
+              onClick={() =>
+                window.open(
+                  'https://discord.com/channels/914720248140279868/1027658256706961509'
+                )
+              }
+            >
+              Create Proposals
+            </Button>
+            <Button
+              onClick={() =>
+                window.open('https://snapshot.org/#/tomoondao.eth')
+              }
+            >
+              Vote on Proposals
+            </Button>
           </div>
         </Card>
         {/* Members */}
@@ -358,7 +372,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                 />
               ))}
             </div>
-            <div className="flex flex-col md:flex-row justify-start items-center gap-2">
+            <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
               <Button
                 onClick={() => {
                   window.open(

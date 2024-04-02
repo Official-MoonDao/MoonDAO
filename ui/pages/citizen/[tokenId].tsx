@@ -235,16 +235,16 @@ export default function CitizenDetailPage({ tokenId }: any) {
 
       {/* Mooney and Voting Power */}
       <div className="flex flex-col xl:flex-row gap-6">
-        <Card className="w-full flex flex-col md:flex-row justify-between">
+        <Card className="w-full flex flex-row justify-between">
           <div className="">
             <p className="text-2xl">{`$MOONEY`}</p>
-            <p className="text-2xl">
+            <p className="text-xl">
               {(MOONEYBalance?.toString() / 10 ** 18).toLocaleString() || 0}
             </p>
           </div>
           <div className="">
             <p className="text-2xl">{`Voting Power`}</p>
-            <p className="text-2xl">
+            <p className="text-xl">
               {(VMOONEYBalance?.toString() / 10 ** 18).toLocaleString() || 0}
             </p>
           </div>
@@ -300,14 +300,28 @@ export default function CitizenDetailPage({ tokenId }: any) {
                 ))}
           </div>
           <div className="mt-4 flex flex-col md:flex-row gap-2">
-            <Button>Create Proposals</Button>
-            <Button>Vote on Proposals</Button>
+            <Button
+              onClick={() =>
+                window.open(
+                  'https://discord.com/channels/914720248140279868/1027658256706961509'
+                )
+              }
+            >
+              Create Proposals
+            </Button>
+            <Button
+              onClick={() =>
+                window.open('https://snapshot.org/#/tomoondao.eth')
+              }
+            >
+              Vote on Proposals
+            </Button>
           </div>
         </Card>
         {/* Projects */}
         <Card className="w-full lg:w-1/2">
           <p className="text-2xl">Projects</p>
-          <div className="p-2 max-h-[300px] overflow-y-scroll flex flex-col gap-2">
+          <div className="py-4 max-h-[300px] overflow-y-scroll flex flex-col gap-2">
             {projects &&
               projects.map((p: any, i: number) => (
                 <Link
@@ -328,7 +342,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
       <div className="flex flex-col lg:flex-row gap-6">
         <Card className="w-full lg:w-1/2">
           <p className="text-2xl">Roles</p>
-          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
+          <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
             {hats.map((hat: any) => (
               <div
                 key={hat.id}
