@@ -58,7 +58,7 @@ export function SubscriptionModal({
               </span>
             </p>
           </div>
-          <p>
+          <p className="opacity-75">
             Select the number of years you would like to extend your
             subscription for from now.
           </p>
@@ -78,7 +78,7 @@ export function SubscriptionModal({
             } ETH`}
           </p>
           <button
-            className="border-2 px-4 py-2"
+            className="px-4 py-2 bg-moon-orange"
             onClick={async () => {
               if (!years || !subscriptionCost) return
 

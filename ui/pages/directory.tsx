@@ -3,12 +3,10 @@ import {
   NFT,
   ThirdwebNftMedia,
   useContract,
-  useContractRead,
   useNFTs,
 } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, ENTITY_ADDRESSES } from 'const/config'
 import { approvedCitizens, approvedEntities } from 'const/whitelist'
-import { filter } from 'cypress/types/bluebird'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -173,8 +171,6 @@ export default function Entities() {
     } else {
       setCachedNFTs([...filteredEntities, ...filteredCitizens])
     }
-
-    console.log(cachedNFTs)
   }, [input, cachedNFTs, tab, filteredEntities, filteredCitizens])
 
   return (

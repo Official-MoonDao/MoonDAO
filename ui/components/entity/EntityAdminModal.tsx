@@ -30,7 +30,7 @@ export function EntityAdminModal({
           onChange={({ target }) => setNewAdminAddress(target.value)}
         />
         <button
-          className="border-2 px-4 py-2"
+          className="px-4 py-2 bg-moon-orange"
           disabled={isLoading}
           onClick={async () => {
             setIsLoading(true)

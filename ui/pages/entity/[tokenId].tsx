@@ -218,7 +218,7 @@ export default function EntityDetailPage({ tokenId }: any) {
               )}
               <Button
                 onClick={() => {
-                  if (address != nft?.owner)
+                  if (address != nft?.owner && address != admin)
                     return toast.error(
                       `Connect the entity admin wallet or multisig to extend the subscription.`
                     )
@@ -269,7 +269,7 @@ export default function EntityDetailPage({ tokenId }: any) {
 
       {/* Mooney and Voting Power */}
       <div className="flex flex-col xl:flex-row gap-6">
-        <Card className="w-full flex">
+        <Card className="w-full flex justify-between">
           <div className="w-3/4">
             <p className="text-2xl">{`$MOONEY`}</p>
             <p className="mt-8 text-2xl">
@@ -278,7 +278,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                 : 0}
             </p>
           </div>
-          <div className="mt-4 flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             <Button
               onClick={() =>
                 window.open(

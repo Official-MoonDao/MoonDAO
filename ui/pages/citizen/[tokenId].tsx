@@ -239,16 +239,16 @@ export default function CitizenDetailPage({ tokenId }: any) {
           <div className="">
             <p className="text-2xl">{`$MOONEY`}</p>
             <p className="text-2xl">
-              {(MOONEYBalance?.toString() / 10 ** 18).toFixed(0) || 0}
+              {(MOONEYBalance?.toString() / 10 ** 18).toLocaleString() || 0}
             </p>
           </div>
           <div className="">
             <p className="text-2xl">{`Voting Power`}</p>
             <p className="text-2xl">
-              {(VMOONEYBalance?.toString() / 10 ** 18).toFixed(0) || 0}
+              {(VMOONEYBalance?.toString() / 10 ** 18).toLocaleString() || 0}
             </p>
           </div>
-          <div className="mt-4 flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             <Button
               onClick={() =>
                 window.open(
