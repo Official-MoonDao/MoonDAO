@@ -85,6 +85,20 @@ export function PrivyConnectWallet() {
     else setNetworkMismatch(false)
   }, [walletChainId, selectedChain])
 
+  //detect outside click
+  function handleClickOutside({ target }: any) {
+    if (
+      target.closest('#privy-connect-wallet') ||
+      target.closest('#headlessui-dialog-panel')
+    )
+      return
+    setEnabled(false)
+  }
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   function NetworkIcon() {
     return (
       <>
@@ -119,7 +133,7 @@ export function PrivyConnectWallet() {
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="mt-4 w-[325px] text-sm font-RobotoMono absolute top-10 left-[-30%] md:left-[-50%] animate-fadeIn mt-2 px-2 py-2 flex flex-col bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2"
+              className="mt-4 w-[325px] text-sm font-RobotoMono absolute top-10 left-[-30%] md:left-[-65%] animate-fadeIn mt-2 px-2 py-2 flex flex-col bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2"
             >
               <div>
                 <div className="flex items-center">

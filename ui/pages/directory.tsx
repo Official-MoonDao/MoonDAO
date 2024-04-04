@@ -46,33 +46,17 @@ function EntityCitizenCard({
             <p className="mt-3 h-[100px] text-md text-ellipsis overflow-hidden">
               {metadata.description || ''}
             </p>
-            {/* <p className="mt-3 h-[100px] text-md text-ellipsis overflow-hidden">
-            {
-              'Qorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.'
-            }
-          </p> */}
 
-            <div className="flex flex-row space-x-5 mt-3">
+            <div className="flex flex-row space-x-5">
               <button
                 disabled={true}
                 className="px-4 py-2 text-[grey] rounded-full bg-[#e7e5e7] bg-opacity-10 flex items-center"
-                //   onClick={() =>
-                //     window.open(
-                //       'https://sepolia.etherscan.io/address/' + ENTITY_ADDRESSES
-                //     )
-                //   }
               >
                 {type === 'entity' ? 'Entity' : 'Citizen'}
               </button>
               <button
                 disabled={true}
                 className="px-4 py-2 text-blue-500 rounded-full bg-blue-400 bg-opacity-10 flex items-center"
-                //   onClick={() =>
-                //     window.open(
-                //       'https://sepolia.etherscan.io/address/' +
-                //         ENTITY_ADDRESSES
-                //     )
-                //   }
               >
                 ID: {metadata.id}
               </button>
@@ -84,7 +68,7 @@ function EntityCitizenCard({
   )
 }
 
-export default function Entities() {
+export default function Directory() {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
   const [tab, setTab] = useState('entities')
@@ -139,8 +123,8 @@ export default function Entities() {
   useEffect(() => {
     const filtered: any = entities?.filter(
       (nft: any) =>
-        nft.metadata.attributes[3].value === 'public' &&
-        approvedEntities.includes(nft.metadata.id)
+        nft.metadata.attributes.find((attr: any) => attr.trait_type === 'view')
+          .value === 'public' && approvedEntities.includes(nft.metadata.id)
     )
     setFilteredEntities(filtered)
   }, [entities])
@@ -148,8 +132,8 @@ export default function Entities() {
   useEffect(() => {
     const filtered: any = citizens?.filter(
       (nft: any) =>
-        nft.metadata.attributes[1].value === 'public' &&
-        approvedCitizens.includes(nft.metadata.id)
+        nft.metadata.attributes.find((attr: any) => attr.trait_type === 'view')
+          .value === 'public' && approvedCitizens.includes(nft.metadata.id)
     )
     setFilteredCitizens(filtered)
   }, [citizens])

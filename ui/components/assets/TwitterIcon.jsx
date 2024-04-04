@@ -1,12 +1,12 @@
 import * as React from 'react'
 
-const TwitterIcon = () => (
+const TwitterIcon = ({ width, height }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     x="0px"
     y="0px"
-    width="29"
-    height="29"
+    width={width}
+    height={height}
     viewBox="0,0,256,256"
     className="text-black dark:text-white fill-current"
   >

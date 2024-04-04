@@ -152,21 +152,6 @@ export function CreateEntity({
                 }}
                 height={500}
               />
-              <button
-                className="p-2 border-2"
-                onClick={() => {
-                  setEntityData({
-                    name: 'Test Entity',
-                    description: 'Test Org description for testing',
-                    twitter: 'https://twitter.com/OfficialMoonDAO',
-                    communications: 'https://discord.com',
-                    website: 'https://google.com',
-                    view: 'public',
-                    formResponseId: '123456789',
-                  })
-                  setStage(1)
-                }}
-              >{`Complete form (testing)`}</button>
             </div>
           </StageContainer>
         )}
@@ -444,48 +429,6 @@ export function CreateEntity({
             </StageButton>
           </StageContainer>
         )}
-
-        {/* Dev Buttons */}
-
-        <div className="flex flex-row justify-between w-full mt-8 lg:px-5">
-          {stage > 0 ? (
-            <button
-              className="p-3"
-              onClick={() => {
-                if (stage > 0) {
-                  setStage((prev) => prev - 1)
-                }
-              }}
-            >
-              <Image
-                alt="arrow left"
-                src="./arrow-left.svg"
-                height={50}
-                width={50}
-              />
-            </button>
-          ) : (
-            <p></p>
-          )}
-
-          {lastStage > stage && (
-            <button
-              className="p-3"
-              onClick={() => {
-                if (stage < 2) {
-                  setStage((prev) => prev + 1)
-                }
-              }}
-            >
-              <Image
-                alt="arrow right"
-                src="./arrow-right.svg"
-                height={50}
-                width={50}
-              />
-            </button>
-          )}
-        </div>
       </div>
       {windowSize.width && windowSize.width >= 1835 && (
         <Image

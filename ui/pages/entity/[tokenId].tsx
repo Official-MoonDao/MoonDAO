@@ -43,7 +43,7 @@ import MoonDAOEntityABI from '../../const/abis/MoonDAOEntity.json'
 function Card({ children, className = '', onClick }: any) {
   return (
     <div
-      className={`p-4 dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
+      className={`p-4 rounded-md dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
       onClick={onClick}
     >
       {children}
@@ -54,7 +54,7 @@ function Card({ children, className = '', onClick }: any) {
 function Button({ children, onClick, className = '' }: any) {
   return (
     <button
-      className={`w-[200px] h-[50px] px-4 py-2 text-moon-orange border-moon-orange border-2 flex items-center gap-2 hover:scale-105 duration-300 ${className}`}
+      className={`w-[200px] h-[50px] px-4 py-2 text-moon-orange border-moon-orange border-[1px] flex items-center gap-2 hover:scale-105 duration-300 ${className}`}
       onClick={onClick}
     >
       {children}
@@ -135,143 +135,162 @@ export default function EntityDetailPage({ tokenId }: any) {
   return (
     <div className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]">
       {/* Header and socials */}
-      <Card>
-        <div className="flex flex-col lg:flex-row md:items-center justify-between gap-8">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            {nft?.metadata.image ? (
-              <ThirdwebNftMedia
-                className="p-4 rounded-full"
-                metadata={nft.metadata}
-                height={'200px'}
-                width={'200px'}
-              />
-            ) : (
-              <div className="w-[200px] h-[200px] bg-[#ffffff25] animate-pulse" />
-            )}
-            <div>
-              {nft ? (
-                <h1 className="text-black dark:text-white text-3xl">
-                  {nft.metadata.name}
-                </h1>
+      <Card className="flex flex-col xl:flex-row justify-between dark:bg-gradient-to-tr from-[#080C20] to-[#111A46] from-60%">
+        <div>
+          <div className="w-full flex flex-col lg:flex-row items-start gap-8 justify-between">
+            <div className="flex gap-4">
+              {nft?.metadata.image ? (
+                <div className="w-[125px]">
+                  <ThirdwebNftMedia
+                    className="rounded-full"
+                    metadata={nft.metadata}
+                    height={'100%'}
+                    width={'100%'}
+                  />
+                </div>
               ) : (
-                <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
+                <div className="w-[200px] h-[200px] bg-[#ffffff25] animate-pulse" />
               )}
-              {nft?.owner ? (
-                <button
-                  className="mt-4 flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
+              <div>
+                <div className="flex gap-4">
+                  {nft ? (
+                    <h1 className="text-black dark:text-white text-3xl">
+                      {nft.metadata.name}
+                    </h1>
+                  ) : (
+                    <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
+                  )}
+                  {entityMetadataModalEnabled && (
+                    <EntityMetadataModal
+                      nft={nft}
+                      entityContract={entityContract}
+                      setEnabled={setEntityMetadataModalEnabled}
+                    />
+                  )}
+                  <button
+                    onClick={() => {
+                      if (address != nft?.owner)
+                        return toast.error(
+                          'Connect the entity admin wallet or multisig to edit metadata.'
+                        )
+                      setEntityMetadataModalEnabled(true)
+                    }}
+                  >
+                    <PencilIcon width={35} height={35} />
+                  </button>
+                </div>
+                {nft?.owner ? (
+                  <button
+                    className="mt-4 flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
+                    onClick={() => {
+                      navigator.clipboard.writeText(nft.owner)
+                      toast.success('Address copied to clipboard')
+                    }}
+                  >
+                    {nft.owner?.slice(0, 6) + '...' + nft.owner?.slice(-4)}
+                    <CopyIcon />
+                  </button>
+                ) : (
+                  <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
+                )}
+              </div>
+            </div>
+          </div>
+          <div>
+            {nft?.metadata.description ? (
+              <p className="mt-4">{nft?.metadata.description || ''}</p>
+            ) : (
+              <div className="mt-4 w-full h-[30px] bg-[#ffffff25] animate-pulse" />
+            )}
+            {socials ? (
+              <div className="mt-4 flex flex-col gap-2">
+                {socials.communications && (
+                  <Link
+                    className="flex gap-2"
+                    href={socials.communications}
+                    target="_blank"
+                    passHref
+                  >
+                    <ChatBubbleLeftIcon height={25} width={25} />
+                    {socials.communications}
+                  </Link>
+                )}
+                {socials.twitter && (
+                  <Link
+                    className="flex gap-2"
+                    href={socials.twitter}
+                    target="_blank"
+                    passHref
+                  >
+                    <TwitterIcon width={25} height={25} />
+                    {socials.twitter}
+                  </Link>
+                )}
+                {socials.website && (
+                  <Link
+                    className="flex gap-2"
+                    href={socials.website}
+                    target="_blank"
+                    passHref
+                  >
+                    <GlobeAltIcon height={25} width={25} />
+                    {socials.website}
+                  </Link>
+                )}
+              </div>
+            ) : (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-[30px] h-[30px] bg-[#ffffff25] animate-pulse rounded-full"
+                />
+              ))
+            )}
+          </div>
+        </div>
+        {address === admin || address === nft.owner ? (
+          <div className="mt-8 xl:mt-0">
+            {entitySubscriptionModalEnabled && (
+              <SubscriptionModal
+                setEnabled={setEntitySubscriptionModalEnabled}
+                nft={nft}
+                validPass={validPass}
+                expiresAt={expiresAt}
+                subscriptionContract={entityContract}
+              />
+            )}
+            {expiresAt && (
+              <div className="flex flex-col gap-4 items-start">
+                {validPass && (
+                  <p className="opacity-50">
+                    {'Exp: '}
+                    {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                  </p>
+                )}
+                <Button
                   onClick={() => {
-                    navigator.clipboard.writeText(nft.owner)
-                    toast.success('Address copied to clipboard')
+                    if (address != nft?.owner)
+                      return toast.error(
+                        `Connect the entity admin wallet or multisig to extend the subscription.`
+                      )
+                    setEntitySubscriptionModalEnabled(true)
                   }}
                 >
-                  {nft.owner?.slice(0, 6) + '...' + nft.owner?.slice(-4)}
-                  <CopyIcon />
-                </button>
-              ) : (
-                <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
-              )}
-            </div>
-            {entityMetadataModalEnabled && (
-              <EntityMetadataModal
-                setEnabled={setEntityMetadataModalEnabled}
-                nft={nft}
-                entityContract={entityContract}
-                entityData={{
-                  name: nft?.metadata.name,
-                  description: nft?.metadata.description,
-                  website: socials?.website,
-                  twitter: socials?.twitter,
-                  communications: socials?.communications,
-                  isPublic,
-                }}
-              />
+                  {'Extend Subscription'}
+                </Button>
+              </div>
             )}
-            <button
-              onClick={() => {
-                if (address != nft?.owner && address != admin)
-                  return toast.error(
-                    'Connect the entity admin wallet or multisig to edit metadata.'
-                  )
-                setEntityMetadataModalEnabled(true)
-              }}
-            >
-              <PencilIcon width={35} height={35} />
-            </button>
           </div>
-          {entitySubscriptionModalEnabled && (
-            <SubscriptionModal
-              setEnabled={setEntitySubscriptionModalEnabled}
-              nft={nft}
-              validPass={validPass}
-              expiresAt={expiresAt}
-              subscriptionContract={entityContract}
-            />
-          )}
-
-          {expiresAt && (
-            <div className="m-8 flex flex-col gap-4 items-center">
-              {validPass && (
-                <p className="opacity-50">
-                  {'Exp: '}
-                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                </p>
-              )}
-              <Button
-                onClick={() => {
-                  if (address != nft?.owner && address != admin)
-                    return toast.error(
-                      `Connect the entity admin wallet or multisig to extend the subscription.`
-                    )
-                  setEntitySubscriptionModalEnabled(true)
-                }}
-              >
-                {'Extend Subscription'}
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {nft?.metadata.description ? (
-          <p className="mt-4 px-4">{nft?.metadata.description || ''}</p>
         ) : (
-          <div className="mt-4 w-full h-[30px] bg-[#ffffff25] animate-pulse" />
+          <></>
         )}
-        {/* Socials */}
-        <div className="mt-4 flex items-center gap-12">
-          {socials ? (
-            <>
-              {socials.twitter && (
-                <Link href={socials.twitter} target="_blank" passHref>
-                  <TwitterIcon />
-                </Link>
-              )}
-              {socials.communications && (
-                <Link href={socials.communications} target="_blank" passHref>
-                  <ChatBubbleLeftIcon height={30} width={30} />
-                </Link>
-              )}
-              {socials.website && (
-                <Link href={socials.website} target="_blank" passHref>
-                  <GlobeAltIcon height={30} width={30} />
-                </Link>
-              )}
-            </>
-          ) : (
-            Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="w-[30px] h-[30px] bg-[#ffffff25] animate-pulse rounded-full"
-              />
-            ))
-          )}
-        </div>
       </Card>
 
       {/* Mooney and Voting Power */}
       <div className="flex flex-col xl:flex-row gap-6">
         <Card className="w-full flex justify-between">
           <div className="w-3/4">
-            <p className="text-2xl">{`$MOONEY`}</p>
+            <p className="text-xl">{`$MOONEY`}</p>
             <p className="mt-8 text-2xl">
               {MOONEYBalance && isPublic
                 ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
@@ -309,23 +328,23 @@ export default function EntityDetailPage({ tokenId }: any) {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Proposals */}
-        <Card className="w-full lg:w-1/2">
+        <Card className="w-full lg:w-1/2 flex flex-col justify-between">
           <p className="text-2xl">Governance</p>
-          <div className="mt-2 flex flex-col gap-4 justify-between">
+          <div className="mt-2 flex flex-col gap-4">
             {newestProposals
               ? newestProposals.map((proposal: any) => (
                   <div
                     key={proposal.id}
-                    className="p-2 flex justify-between bg-[#ffffff25] rounded-sm"
+                    className="p-2 flex justify-between border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
                   >
                     <div className="flex flex-col gap-2">
                       <p>{proposal.title}</p>
                     </div>
                     <p
-                      className={`${
+                      className={`flex items-center justify-center px-2 h-8 w-24 rounded-full bg-opacity-25 ${
                         proposal.state === 'closed'
-                          ? 'text-moon-orange'
-                          : 'text-[green]'
+                          ? 'text-moon-orange bg-red-400'
+                          : 'text-moon-green bg-moon-green'
                       }`}
                     >
                       {proposal.state}

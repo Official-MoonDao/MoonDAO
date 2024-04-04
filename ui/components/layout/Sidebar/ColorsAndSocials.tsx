@@ -33,7 +33,7 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
         target="_blank"
         rel="noreferrer"
       >
-        <TwitterIcon />
+        <TwitterIcon height={25} width={25} />
       </a>
     </div>
   )

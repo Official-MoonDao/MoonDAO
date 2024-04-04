@@ -2,6 +2,15 @@
 /* Edited in 2024 for MoonDAO by Santiago Itzcoatl */
 /* ---------------------------------------------- */
 
+/* import roboto mono font */
+
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/RobotoMono-Regular.ttf') format('truetype');
+}
+
 /* Celestial map */
 #celestial-map {
   width: 720px;
@@ -61,6 +70,7 @@
   padding: 0;
   position: relative;
   left: 0;
+  font-family: Roboto;
 }
 
 #celestial-form .col {
@@ -201,12 +211,10 @@ input[type='number']::-webkit-outer-spin-button {
   width: 100%;
   padding-bottom: 1px;
   color: #f9b95c;
-  background: #071732;
 }
 
 #file-upload-button input[type='button'] {
   color: #f9b95c;
-  background: #071732;
 }
 
 #celestial-form input[type='button'] {
@@ -214,7 +222,6 @@ input[type='number']::-webkit-outer-spin-button {
   padding-bottom: 1px;
   margin-top: 4px;
   color: #d97706;
-  background: #071732;
 }
 
 #celestial-form select option {

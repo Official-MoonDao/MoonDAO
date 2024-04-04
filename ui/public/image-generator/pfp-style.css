@@ -21,7 +21,7 @@ body form {
   position: relative;
   min-width: 200px;
   max-width: 900px;
-  margin: 0 auto;
+  margin: 0;
   overflow: visible;
   display: flex;
 }

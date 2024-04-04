@@ -82,12 +82,24 @@ export function CitizenMetadataModal({
               attributes: [
                 {
                   trait_type: 'location',
+                  value: data.answers[7].text,
+                },
+                {
+                  trait_type: 'discord',
                   value: data.answers[4].text,
+                },
+                {
+                  trait_type: 'website',
+                  value: data.answers[5].url,
+                },
+                {
+                  trait_type: 'twitter',
+                  value: data.answers[6].url,
                 },
                 {
                   trait_type: 'view',
                   value:
-                    data.answers[5].choice.label === 'Yes'
+                    data.answers[8].choice.label === 'Yes'
                       ? 'public'
                       : 'private',
                 },

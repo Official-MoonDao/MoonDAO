@@ -16,14 +16,13 @@ type TierProps = {
 
 function Tier({ label, description, points, price, onClick }: TierProps) {
   const address = useAddress()
-  const { user } = usePrivy()
-
-  const { login } = useLogin()
+  const { user, login, logout } = usePrivy()
 
   return (
     <div
       className="w-full transition-all duration-150 text-black cursor-pointer dark:text-white md:p-8 flex flex-col border-[2px] hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[white] dark:bg-[#0A0E22] p-3"
       onClick={() => {
+        if (!address && user) logout()
         if (!address) login()
         else onClick()
       }}
@@ -117,29 +116,25 @@ export function OnboardingV2({ selectedChain }: any) {
 
   if (selectedTier === 'citizen') {
     return (
-      <div>
-        <CreateCitizen
-          address={address}
-          selectedChain={selectedChain}
-          selectedWallet={selectedWallet}
-          wallets={wallets}
-          setSelectedTier={setSelectedTier}
-        />
-      </div>
+      <CreateCitizen
+        address={address}
+        selectedChain={selectedChain}
+        selectedWallet={selectedWallet}
+        wallets={wallets}
+        setSelectedTier={setSelectedTier}
+      />
     )
   }
 
   if (selectedTier === 'entity') {
     return (
-      <div>
-        <CreateEntity
-          address={address}
-          selectedChain={selectedChain}
-          selectedWallet={selectedWallet}
-          wallets={wallets}
-          setSelectedTier={setSelectedTier}
-        />
-      </div>
+      <CreateEntity
+        address={address}
+        selectedChain={selectedChain}
+        selectedWallet={selectedWallet}
+        wallets={wallets}
+        setSelectedTier={setSelectedTier}
+      />
     )
   }
 

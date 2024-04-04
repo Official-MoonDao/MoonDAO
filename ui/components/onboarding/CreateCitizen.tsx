@@ -21,6 +21,9 @@ type CitizenData = {
   email: string
   description: string
   location: string
+  discord: string
+  website: string
+  twitter: string
   view: string
   formResponseId: string
 }
@@ -52,6 +55,9 @@ export function CreateCitizen({
     description: '',
     location: '',
     view: '',
+    discord: '',
+    website: '',
+    twitter: '',
     formResponseId: '',
   })
   const { windowSize } = useWindowSize()
@@ -150,9 +156,12 @@ export function CreateCitizen({
                     lastName: data.answers[1].text,
                     email: data.answers[2].email,
                     description: data.answers[3].text,
-                    location: data.answers[4].text,
+                    discord: data.answers[4].text,
+                    website: data.answers[5].url,
+                    twitter: data.answers[6].url,
+                    location: data.answers[7].text,
                     view:
-                      data.answers[5].choice.label === 'Yes'
+                      data.answers[8].choice.label === 'Yes'
                         ? 'public'
                         : 'private',
                     formResponseId: responseId,
@@ -162,21 +171,6 @@ export function CreateCitizen({
                 }}
                 height={500}
               />
-              <button
-                className="p-2 border-2"
-                onClick={() => {
-                  setCitizenData({
-                    firstName: 'First',
-                    lastName: 'Last',
-                    email: 'colin@moondao.com',
-                    description: 'Test citizen description',
-                    location: 'Earth',
-                    view: 'public',
-                    formResponseId: '1234',
-                  })
-                  setStage(1)
-                }}
-              >{`Complete form (testing)`}</button>
             </div>
           </StageContainer>
         )}
@@ -377,6 +371,18 @@ export function CreateCitizen({
                         value: citizenData.location,
                       },
                       {
+                        trait_type: 'discord',
+                        value: citizenData.discord,
+                      },
+                      {
+                        trait_type: 'website',
+                        value: citizenData.website,
+                      },
+                      {
+                        trait_type: 'twitter',
+                        value: citizenData.twitter,
+                      },
+                      {
                         trait_type: 'view',
                         value: citizenData.view,
                       },
@@ -415,48 +421,6 @@ export function CreateCitizen({
             </StageButton>
           </StageContainer>
         )}
-
-        {/* Dev Buttons */}
-
-        <div className="flex flex-row justify-between w-full mt-8 lg:px-5">
-          {stage > 0 ? (
-            <button
-              className="p-3"
-              onClick={() => {
-                if (stage > 0) {
-                  setStage((prev) => prev - 1)
-                }
-              }}
-            >
-              <Image
-                alt="arrow left"
-                src="./arrow-left.svg"
-                height={50}
-                width={50}
-              />
-            </button>
-          ) : (
-            <p></p>
-          )}
-
-          {lastStage > stage && (
-            <button
-              className="p-3"
-              onClick={() => {
-                if (stage < 2) {
-                  setStage((prev) => prev + 1)
-                }
-              }}
-            >
-              <Image
-                alt="arrow right"
-                src="./arrow-right.svg"
-                height={50}
-                width={50}
-              />
-            </button>
-          )}
-        </div>
       </div>
       {windowSize.width && windowSize.width >= 1835 && (
         <Image
