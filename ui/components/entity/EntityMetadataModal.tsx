@@ -7,30 +7,13 @@ import toast from 'react-hot-toast'
 import { pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 
-export function EntityMetadataModal({
-  nft,
-  entityContract,
-  entityData,
-  setEnabled,
-}: any) {
+export function EntityMetadataModal({ nft, entityContract, setEnabled }: any) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   const address = useAddress()
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
-
-  const [entityName, setEntityName] = useState(entityData.name || '')
-  const [entityDescription, setEntityDescription] = useState(
-    entityData.description || ''
-  )
-  const [entityWebsite, setEntityWebsite] = useState(entityData.website || '')
-  const [entityTwitter, setEntityTwitter] = useState(entityData.twitter || '')
-  const [entityCommunications, setEntityCommunications] = useState(
-    entityData.communications || ''
-  )
-  const [entityView, setEntityView] = useState(entityData.isPublic || false)
-
   const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
 
   return (
@@ -78,6 +61,8 @@ export function EntityMetadataModal({
             )
             const data = await responseRes.json()
 
+            console.log(data)
+
             const rawMetadataRes = await fetch(resolvedMetadata.url)
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
@@ -107,9 +92,9 @@ export function EntityMetadataModal({
                       : 'private',
                 },
                 {
-                  trait_type:'type',
-                  value: 'entity'
-                }
+                  trait_type: 'type',
+                  value: 'entity',
+                },
               ],
               formResponseId: responseId,
             }

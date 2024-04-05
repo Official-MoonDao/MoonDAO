@@ -18,11 +18,6 @@ export function CitizenMetadataModal({
   const { selectedWallet } = useContext(PrivyWalletContext)
   const [isLoading, setIsLoading] = useState(false)
 
-  const [name, setName] = useState(nft.metadata.name)
-  const [description, setDescription] = useState(nft.metadata.description)
-  const [location, setLocation] = useState(nft.metadata.attributes[0].value)
-  const [view, setView] = useState(nft.metadata.attributes[1].value)
-
   const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
 
   return (
@@ -99,7 +94,7 @@ export function CitizenMetadataModal({
                 {
                   trait_type: 'view',
                   value:
-                    data.answers[8].choice.label === 'Yes'
+                    data.answers[7].choice.label === 'Yes'
                       ? 'public'
                       : 'private',
                 },
