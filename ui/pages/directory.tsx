@@ -72,6 +72,16 @@ export default function Directory() {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
   const [tab, setTab] = useState('entities')
+  function loadByTab(tab: string) {
+    if (tab === 'entities') {
+      setCachedNFTs(filteredEntities)
+    } else if (tab === 'citizens') {
+      setCachedNFTs(filteredCitizens)
+    } else {
+      setCachedNFTs([...filteredEntities, ...filteredCitizens])
+    }
+  }
+
   const { contract: entityContract } = useContract(
     ENTITY_ADDRESSES[selectedChain.slug]
   )
@@ -139,13 +149,7 @@ export default function Directory() {
   }, [citizens])
 
   useEffect(() => {
-    if (tab === 'entities') {
-      setCachedNFTs(filteredEntities)
-    } else if (tab === 'citizens') {
-      setCachedNFTs(filteredCitizens)
-    } else {
-      setCachedNFTs([...filteredEntities, ...filteredCitizens])
-    }
+    loadByTab(tab)
   }, [tab, filteredEntities, filteredCitizens])
 
   useEffect(() => {
@@ -158,6 +162,8 @@ export default function Directory() {
             .includes(input.toLowerCase())
         })
       )
+    } else {
+      loadByTab(tab)
     }
   }, [input, cachedNFTs])
 
