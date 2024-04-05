@@ -150,7 +150,7 @@ export function CreateEntity({
                   })
                   setStage(1)
                 }}
-                height={500}
+                height={700}
               />
             </div>
           </StageContainer>
@@ -430,14 +430,6 @@ export function CreateEntity({
           </StageContainer>
         )}
       </div>
-      {windowSize.width && windowSize.width >= 1835 && (
-        <Image
-          src={'/entity-bg-image.png'}
-          width={400}
-          height={windowSize.height}
-          alt=""
-        />
-      )}
     </div>
   )
 }

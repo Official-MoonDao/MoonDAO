@@ -45,10 +45,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
         <div id="pfp" ref={pfpRef}>
           <div id="celestial-map"></div>
           <div id="canvas-container"></div>
-          <StageButton
-            // className="mt-8 px-4 py-2 h-12 bg-moon-orange max-w-[300px]"
-            onClick={submitImage}
-          >
+          <StageButton className="" onClick={submitImage}>
             Submit Image
           </StageButton>
           <img

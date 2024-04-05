@@ -169,7 +169,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                   )}
                   <button
                     onClick={() => {
-                      if (address != nft?.owner)
+                      if (address != nft?.owner && address != admin)
                         return toast.error(
                           'Connect the entity admin wallet or multisig to edit metadata.'
                         )
@@ -290,14 +290,23 @@ export default function EntityDetailPage({ tokenId }: any) {
       <div className="flex flex-col xl:flex-row gap-6">
         <Card className="w-full flex justify-between">
           <div className="w-3/4">
-            <p className="text-xl">{`$MOONEY`}</p>
-            <p className="mt-8 text-2xl">
-              {MOONEYBalance && isPublic
-                ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
-                : 0}
-            </p>
+            <p className="text-2xl">Treasury</p>
+
+            <div className="mt-4 flex gap-4 items-center text-lg">
+              <p>{`MOONEY :`}</p>
+              <p>
+                {MOONEYBalance
+                  ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
+                  : 0}
+              </p>
+            </div>
+            <div className="flex gap-4 items-center text-lg">
+              <p>{`ETHER :`}</p>
+              <p className="pl-6">{nativeBalance ? nativeBalance : 0}</p>
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
+
+          <div className="flex flex-col xl:flex-row gap-2 items-end">
             <Button
               onClick={() =>
                 window.open(

@@ -1,4 +1,4 @@
-import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import { useContext, useState } from 'react'
@@ -9,7 +9,7 @@ import { CreateEntity } from './CreateEntity'
 type TierProps = {
   label: string
   description: string
-  points: string[]
+  points: any[]
   price: number
   onClick: () => void
 }
@@ -32,18 +32,18 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
           <Image
             src={
               label === 'Register an entity'
-                ? '/onboarding-icons/entity-creation-icon.png'
-                : '/onboarding-icons/citizen-creation-icon.png'
+                ? '/onboarding-icons/entity.png'
+                : '/onboarding-icons/citizen.png'
             }
             width={506}
-            height={670}
+            height={506}
             alt=""
           />
         </div>
 
         <div className="flex flex-col justify-between w-full items-start">
           <div className="flex flex-col space-y-5">
-            <p className="md:p-2 text-sm text-moon-orange bg-red-600 bg-opacity-10">
+            <p className="mt-4 md:mt-0 md:p-2 text-sm text-moon-orange bg-red-600 bg-opacity-10">
               {description}
             </p>
             <h1 className={'font-GoodTimes text-3xl'}>{label}</h1>
@@ -63,6 +63,7 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
                 className="collapse collapse-arrow -mx-4"
                 onClick={(e) => e.stopPropagation()}
               >
+                <input type="checkbox" checked={true} readOnly />
                 <div className="collapse-title">Benefits</div>
                 <div className="collapse-content">
                   {points.map((p, i) => (
@@ -147,6 +148,7 @@ export function OnboardingV2({ selectedChain }: any) {
             label="Become a citizen"
             description="Join the internet's space program today!"
             points={[
+              'Become a member of MoonDAO and design your Citizen NFT.',
               'Access the biggest network of startups, nations, and individuals working to create a long-term presence on the lunar surface.',
               'Help govern the fate of the first off-world settlement.',
             ]}
@@ -157,10 +159,10 @@ export function OnboardingV2({ selectedChain }: any) {
             label="Register an entity"
             description="Bring your entity onchain today!"
             points={[
-              "Apply for funding from MoonDAO's multi-million dollar treasury.",
-              'Recruit from our community and network with other cutting-edge organizations.',
               'Access the frontier of onchain tooling to manage your organization and interface with any other onchain contracts.',
-              'List your products and services on the MoonDAO Marketplace.',
+              'Recruit from our community and network with other cutting-edge organizations.',
+              ,
+              'Apply for funding from the MoonDAO community, list your products and services on the MoonDAO Marketplace, and compete on MoonDAO DePrizes.',
             ]}
             onClick={() => setSelectedTier('entity')}
           />

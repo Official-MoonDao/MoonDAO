@@ -94,10 +94,7 @@ export function CreateCitizen({
 
         {/* Typeform form */}
         {stage === 0 && (
-          <StageContainer
-            title="Info"
-            description="Input your organization's information."
-          >
+          <StageContainer description="Input your information.">
             <div className="w-full">
               <Widget
                 className="w-[100%] md:w-[100%]"
@@ -169,7 +166,7 @@ export function CreateCitizen({
 
                   setStage(1)
                 }}
-                height={500}
+                height={700}
               />
             </div>
           </StageContainer>
@@ -422,14 +419,6 @@ export function CreateCitizen({
           </StageContainer>
         )}
       </div>
-      {windowSize.width && windowSize.width >= 1835 && (
-        <Image
-          src={'/entity-bg-image.png'}
-          width={400}
-          height={windowSize.height}
-          alt=""
-        />
-      )}
     </div>
   )
 }

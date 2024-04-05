@@ -123,7 +123,7 @@ export default function Directory() {
   useEffect(() => {
     const filtered: any = entities?.filter(
       (nft: any) =>
-        nft.metadata.attributes.find((attr: any) => attr.trait_type === 'view')
+        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
           .value === 'public' && approvedEntities.includes(nft.metadata.id)
     )
     setFilteredEntities(filtered)
@@ -132,11 +132,21 @@ export default function Directory() {
   useEffect(() => {
     const filtered: any = citizens?.filter(
       (nft: any) =>
-        nft.metadata.attributes.find((attr: any) => attr.trait_type === 'view')
+        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
           .value === 'public' && approvedCitizens.includes(nft.metadata.id)
     )
     setFilteredCitizens(filtered)
   }, [citizens])
+
+  useEffect(() => {
+    if (tab === 'entities') {
+      setCachedNFTs(filteredEntities)
+    } else if (tab === 'citizens') {
+      setCachedNFTs(filteredCitizens)
+    } else {
+      setCachedNFTs([...filteredEntities, ...filteredCitizens])
+    }
+  }, [tab, filteredEntities, filteredCitizens])
 
   useEffect(() => {
     if (input !== '') {
@@ -148,24 +158,18 @@ export default function Directory() {
             .includes(input.toLowerCase())
         })
       )
-    } else if (tab === 'entities') {
-      setCachedNFTs(filteredEntities)
-    } else if (tab === 'citizens') {
-      setCachedNFTs(filteredCitizens)
-    } else {
-      setCachedNFTs([...filteredEntities, ...filteredCitizens])
     }
-  }, [input, cachedNFTs, tab, filteredEntities, filteredCitizens])
+  }, [input, cachedNFTs])
 
   return (
     <main className="animate-fadeIn">
       <Head title="Entity Directory" image="" />
       <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-[white] dark:bg-[#080C20] font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white">
         <h1 className={`page-title`}>Directory</h1>
-        <div className="px-4 w-full max-w-[350px] h-[30px] flex-row flex space-x-5 text-black dark:text-white">
+        <div className="px-4 w-full max-w-[350px] h-[30px] flex items-center space-x-5 text-black dark:text-white">
           <SearchIcon />
           <input
-            className="w-full rounded-md px-2 dark:bg-[#ffffff25]"
+            className="w-full rounded-sm px-4 py-2 bg-moon-orange bg-opacity-25 text-moon-orange placeholder:text-moon-orange"
             onChange={({ target }) => setInput(target.value)}
             value={input}
             type="text"
@@ -191,6 +195,7 @@ export default function Directory() {
           >
             Citizens
           </button>
+
           <button
             className={`px-4 py-2 border-2 rounded-lg ${
               tab === 'all' && 'border-moon-orange text-moon-orange'
