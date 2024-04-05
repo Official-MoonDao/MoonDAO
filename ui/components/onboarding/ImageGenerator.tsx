@@ -45,14 +45,17 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
         <div id="pfp" ref={pfpRef}>
           <div id="celestial-map"></div>
           <div id="canvas-container"></div>
-          <StageButton className="" onClick={submitImage}>
-            Submit Image
-          </StageButton>
           <img
             alt="default-img"
             id="process-image"
             src="/image-generator/images/test-00.jpg"
           />
+          <StageButton
+            className="absolute bottom-[-400px]"
+            onClick={submitImage}
+          >
+            Submit Image
+          </StageButton>
         </div>
       </div>
     </>
