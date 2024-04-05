@@ -63,7 +63,7 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
                 className="collapse collapse-arrow -mx-4"
                 onClick={(e) => e.stopPropagation()}
               >
-                <input type="checkbox" checked={true} readOnly />
+                <input type="checkbox" defaultChecked readOnly />
                 <div className="collapse-title">Benefits</div>
                 <div className="collapse-content">
                   {points.map((p, i) => (
@@ -79,33 +79,11 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
                   ))}
                 </div>
               </div>
-              {/* {points.map((p: any, i: number) => (
-                <div
-                  className="flex flex-row bg-opacity-3 py-2 rounded-sm space-x-2"
-                  key={`${label}-tier-point-${i}`}
-                >
-                  <p className="h-6 w-6 flex justify-center items-center rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2 ">
-                    ✓
-                  </p>
-                  <p>{p}</p>
-                </div>
-              ))} */}
             </div>
           </div>
-          {/* <button className="self-start p-2 text-moon-orange rounded-full bg-moon-orange bg-opacity-10 after:content-['_↗']">
-            See more
-          </button> */}
         </div>
       </div>
     </div>
-  )
-}
-
-function BackButton({ setSelectedTier }: any) {
-  return (
-    <button onClick={() => setSelectedTier(null)}>
-      <Image src={'/x-white.png'} width={30} height={30} alt="" />
-    </button>
   )
 }
 
