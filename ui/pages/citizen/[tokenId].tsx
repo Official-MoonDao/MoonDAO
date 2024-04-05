@@ -47,7 +47,7 @@ import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 function Card({ children, className = '', onClick }: any) {
   return (
     <div
-      className={`p-4 rounded-md dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
+      className={`p-8 md:p-4 rounded-md dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
       onClick={onClick}
     >
       {children}
@@ -309,7 +309,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
               </p>
             </div>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col xl:flex-row items-start xl:items-end gap-2">
             <Button
               onClick={() =>
                 window.open(

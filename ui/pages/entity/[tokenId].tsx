@@ -43,7 +43,7 @@ import MoonDAOEntityABI from '../../const/abis/MoonDAOEntity.json'
 function Card({ children, className = '', onClick }: any) {
   return (
     <div
-      className={`p-4 rounded-md dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
+      className={`p-8 md:p-4 rounded-md dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
       onClick={onClick}
     >
       {children}
@@ -288,7 +288,7 @@ export default function EntityDetailPage({ tokenId }: any) {
 
       {/* Mooney and Voting Power */}
       <div className="flex flex-col xl:flex-row gap-6">
-        <Card className="w-full flex justify-between">
+        <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
           <div className="w-3/4">
             <p className="text-2xl">Treasury</p>
 
@@ -389,7 +389,7 @@ export default function EntityDetailPage({ tokenId }: any) {
         {/* Members */}
         <Card className="w-full lg:w-1/2">
           <p className="text-2xl">Members</p>
-          <div className="pb-6 h-full flex flex-col justify-between">
+          <div className="pb-6 h-full flex flex-col items-start justify-between">
             <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-y-scroll">
               {hats?.map((hat: any, i: number) => (
                 <HatWearers
@@ -400,7 +400,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                 />
               ))}
             </div>
-            <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
+            <div className="my-2 flex flex-col xl:flex-row justify-start items-center gap-2">
               <Button
                 onClick={() => {
                   window.open(
