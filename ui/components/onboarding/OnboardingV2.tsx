@@ -27,7 +27,7 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
         else onClick()
       }}
     >
-      <div className="w-full h-full flex flex-col lg:flex-row justify-center  md:space-x-10">
+      <div className="w-full h-full flex flex-col lg:flex-row justify-center items-center md:space-x-10">
         <div className="flex justify-center items-center">
           <Image
             src={

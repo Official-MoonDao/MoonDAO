@@ -51,7 +51,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
             src="/image-generator/images/test-00.jpg"
           />
           <StageButton
-            className="absolute bottom-[-400px]"
+            className="absolute bottom-[-450px]"
             onClick={submitImage}
           >
             Submit Image
