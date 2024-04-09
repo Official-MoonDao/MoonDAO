@@ -38,7 +38,7 @@ export const navigation = [
         name: 'Vote',
         href: 'https://snapshot.org/#/tomoondao.eth',
       },
-      { name: 'More...', href: '/governance' },
+      { name: 'Dashboard', href: '/governance' },
     ],
   },
   {
