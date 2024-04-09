@@ -350,7 +350,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                       <p>{proposal.title}</p>
                     </div>
                     <p
-                      className={`flex items-center justify-center px-2 h-8 w-24 rounded-full bg-opacity-25 ${
+                      className={`flex items-center justify-center px-4 h-8 rounded-full bg-opacity-25 ${
                         proposal.state === 'closed'
                           ? 'text-moon-orange bg-red-400'
                           : 'text-moon-green bg-moon-green'

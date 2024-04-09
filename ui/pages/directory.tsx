@@ -30,7 +30,7 @@ function EntityCitizenCard({
           href={`/${type === 'entity' ? 'entity' : 'citizen'}/${metadata.id}`}
           passHref
         >
-          <div className="p-4 flex flex-col rounded w-[310px] dark:bg-[#080C30] hover:scale-105 ease-in-out duration-300">
+          <div className="p-4 flex flex-col rounded w-[310px] h-[600px] dark:bg-[#080C30] hover:scale-105 ease-in-out duration-300 justify-between">
             <ThirdwebNftMedia
               className=""
               metadata={metadata}
@@ -170,7 +170,7 @@ export default function Directory() {
   return (
     <main className="animate-fadeIn">
       <Head title="Entity Directory" image="" />
-      <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-[white] dark:bg-[#080C20] font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white">
+      <div className="flex flex-col items-center lg:items-start space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-[white] dark:bg-[#080C20] font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white page-border-and-color">
         <h1 className={`page-title`}>Directory</h1>
         <div className="px-4 w-full max-w-[350px] h-[30px] flex items-center space-x-5 text-black dark:text-white">
           <SearchIcon />
@@ -184,7 +184,7 @@ export default function Directory() {
           />
         </div>
 
-        <div className="px-4 w-full flex gap-4">
+        <div className="md:px-4 flex gap-4">
           <button
             className={`px-4 py-2 border-2 rounded-lg ${
               tab === 'entities' && 'border-moon-orange text-moon-orange'
@@ -214,7 +214,7 @@ export default function Directory() {
         {isLoadingEntities && <p className="text-center">Loading...</p>}
         <div
           className="grid grid-cols-1
-      min-[1100px]:grid-cols-2 min-[1450px]:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-start place-items-center"
+      min-[1100px]:grid-cols-2 min-[1450px]:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center lg:justify-items-start place-items-center"
         >
           {cachedNFTs
             ?.slice((pageIdx - 1) * 9, pageIdx * 9)
