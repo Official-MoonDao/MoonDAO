@@ -52,7 +52,7 @@ export function PageCards({
                       : page?.onClick
                   }
                   key={page.name}
-                  className="flex flex-col lg:flex-row items-left lg:items-center text-center inner-container-background rounded-[6px] p-4 gap-x-4 hover:scale-105 transition-all duration-150"
+                  className="w-full flex flex-col lg:flex-row items-left lg:items-center text-center inner-container-background rounded-[6px] p-4 gap-x-4 hover:scale-105 transition-all duration-150"
                 >
                   <dt className="flex min-w-max items-center justify-center mt-3 lg:mt-0 py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold font-RobotoMono lg:w-1/3">
                     <page.icon
