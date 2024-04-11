@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from '@heroicons/react/24/outline'
+import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { allChains } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { useHandleRead } from '../../lib/thirdweb/hooks'
+import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
 import ERC20 from '../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../const/config'
@@ -18,7 +19,6 @@ function EthIcon() {
   return (
     <div className="flex justify-center items-center p-4 rounded-full bg-[#0B3B8E] h-12 w-12">
       <Image
-        className="scale-2"
         src={'/icons/networks/ethereum.svg'}
         width={100}
         height={100}
@@ -48,6 +48,7 @@ export function PrivyConnectWallet() {
   const [networkMistmatch, setNetworkMismatch] = useState(false)
 
   const address = useAddress()
+  const ens = useENS(address)
   const [nativeBalance, setNativeBalance] = useState(0)
   const [walletChainId, setWalletChainId] = useState(1)
   const { login, logout, user, authenticated, connectWallet }: any = usePrivy()
@@ -88,6 +89,7 @@ export function PrivyConnectWallet() {
   //detect outside click
   function handleClickOutside({ target }: any) {
     if (
+      target.closest('#privy-connect-wallet-dropdown') ||
       target.closest('#privy-connect-wallet') ||
       target.closest('#headlessui-dialog-panel')
     )
@@ -114,29 +116,40 @@ export function PrivyConnectWallet() {
   return (
     <>
       {user && wallets?.[0] ? (
-        <div
-          id="privy-connect-wallet"
-          className={`w-[125px] md:w-[175px] md:full relative flex flex-col items-right justify-center px-3 md:px-5 py-2 md:py-3 bg-moon-orange font-RobotoMono z-[10] rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300`}
-          onClick={(e: any) => {
-            !e.target.closest('#privy-connect-wallet-dropdown') &&
+        <div className="w-full">
+          <div
+            id="privy-connect-wallet"
+            className={`w-[125px] md:w-[175px] md:full relative flex flex-col items-right justify-center px-3 md:px-5 py-2 md:py-3 bg-moon-orange font-RobotoMono z-[10] rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300`}
+            onClick={(e: any) => {
               setEnabled(!enabled)
-          }}
-        >
-          {/*Address and Toggle open/close button*/}
-          <div className="flex items-center w-full h-full justify-center">
-            <p className="text-xs">{`${wallets?.[selectedWallet].address?.slice(
-              0,
-              6
-            )}...${wallets?.[selectedWallet].address?.slice(-4)}`}</p>
+            }}
+          >
+            {/*Address and Toggle open/close button*/}
+            <div className="flex items-center w-full h-full justify-center">
+              <p className="text-xs">
+                {ens
+                  ? ens
+                  : `${wallets?.[selectedWallet].address?.slice(
+                      0,
+                      6
+                    )}...${wallets?.[selectedWallet].address?.slice(-4)}`}
+              </p>
+            </div>
+            {/*Menu that opens up*/}
           </div>
-          {/*Menu that opens up*/}
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="mt-4 w-[325px] text-sm font-RobotoMono absolute top-10 left-[-30%] md:left-[-65%] animate-fadeIn mt-2 px-2 py-2 flex flex-col bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2"
+              className="w-[225px] absolute left-[-10px] md:relative text-sm font-RobotoMono animate-fadeIn mt-2 p-4 flex flex-col bg-white text-black dark:text-white dark:bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2"
             >
-              <div>
-                <div className="flex items-center">
+              <div className="absolute right-2 w-full flex justify-end">
+                <XMarkIcon
+                  className="w-6 h-6 text-black dark:text-white cursor-pointer"
+                  onClick={() => setEnabled(false)}
+                />
+              </div>
+              <div className="mt-6">
+                <div className="mt-2 flex items-center">
                   <NetworkIcon />
                   <div className="ml-2">
                     <p className="uppercase font-normal inline-block">
@@ -163,18 +176,12 @@ export function PrivyConnectWallet() {
                   >
                     <CopyIcon />
                   </button>
-                  <button
-                    className="p-4 absolute right-0"
-                    onClick={() => setEnabled(false)}
-                  >
-                    <ChevronDownIcon height={20} width={20} />
-                  </button>
                 </div>
               </div>
               {networkMistmatch ? (
                 <div>
                   <button
-                    className="w-full mt-4 p-2 border text-white hover:scale-105 transition-all duration-150 border-white hover:bg-white hover:text-moon-orange"
+                    className="w-full mt-4 p-2 border text-black dark:text-white hover:scale-105 transition-all duration-150 dark:border-white dark:hover:bg-white dark:hover:text-moon-orange"
                     onClick={() => {
                       wallets[selectedWallet].switchChain(selectedChain.chainId)
                     }}
@@ -217,11 +224,11 @@ export function PrivyConnectWallet() {
 
               <div className="pt-1">
                 <p className="font-semibold">Wallets:</p>
-                <div className="mt-1 flex flex-col justify-between gap-2">
+                <div className="mt-1 flex flex-col justify-start gap-2">
                   {wallets?.map((wallet, i) => (
                     <div
                       key={`wallet-${i}`}
-                      className="flex gap-2 items-center text-[13px]"
+                      className="w-full flex gap-2 items-center text-[13px]"
                     >
                       {/*Button with tick */}
                       <button
@@ -265,14 +272,14 @@ export function PrivyConnectWallet() {
               <div className="pt-1">
                 <LinkAccounts user={user} />
                 <div className="flex justify-between">
-                  <button
+                  {/* <button
                     className="w-2/5 mt-4 p-1 border text-white hover:scale-105 transition-all duration-150 border-white hover:bg-white hover:text-moon-orange"
                     onClick={importToken}
                   >
                     <strong>Import Token</strong>
-                  </button>
+                  </button> */}
                   <button
-                    className="w-2/5 mt-4 p-1 border text-white transition-all duration-150 bg-moon-orange hover:bg-white hover:text-moon-orange"
+                    className="w-full mt-4 p-1 border text-white transition-all duration-150 bg-moon-orange hover:bg-white hover:text-moon-orange"
                     onClick={async () => {
                       wallets.forEach((wallet) => wallet.disconnect())
                       logout()
@@ -286,19 +293,21 @@ export function PrivyConnectWallet() {
           )}
         </div>
       ) : (
-        <button
-          onClick={async () => {
-            if (user) {
-              await logout()
-              login()
-            } else {
-              login()
-            }
-          }}
-          className="w-[125px] md:w-[175px] px-3 md:px-5 py-2 md:py-3 bg-moon-orange font-RobotoMono hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300"
-        >
-          Connect
-        </button>
+        <div className="w-full">
+          <button
+            onClick={async () => {
+              if (user) {
+                await logout()
+                login()
+              } else {
+                login()
+              }
+            }}
+            className="w-[125px] md:w-[175px] px-3 md:px-5 py-2 md:py-3 bg-moon-orange font-RobotoMono hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300"
+          >
+            Connect
+          </button>
+        </div>
       )}
     </>
   )

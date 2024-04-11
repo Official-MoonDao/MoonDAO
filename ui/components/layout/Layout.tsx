@@ -61,13 +61,16 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       {/* Static sidebar for desktop */}
       <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
         {/* Sidebar component*/}
-        <div className="flex flex-grow flex-col overflow-y-auto pt-5 sidebar-bg-light dark:sidebar-bg-dark">
+        <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col overflow-y-auto pt-5 sidebar-bg-light dark:sidebar-bg-dark">
           <a href="https://moondao.com">
             <div className="flex flex-shrink-0 items-center px-4 pl-6">
               {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
             </div>
           </a>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">
+            <div className="pl-6 mb-4 flex justify-center">
+              <PrivyConnectWallet />
+            </div>
             <nav className="flex-1 open space-y-1 px-4">
               {navigation.map((item, i) => (
                 <NavigationLink item={item} key={i} />
