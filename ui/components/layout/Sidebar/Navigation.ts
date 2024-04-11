@@ -2,6 +2,7 @@ import {
   BuildingLibraryIcon,
   FolderIcon,
   HomeIcon,
+  NewspaperIcon,
   PlusIcon,
   RocketLaunchIcon,
 } from '@heroicons/react/24/outline'
@@ -11,6 +12,11 @@ export const navigation = [
     name: 'Welcome',
     href: '/',
     icon: HomeIcon,
+  },
+  {
+    name: 'News',
+    href: '/news',
+    icon: NewspaperIcon,
   },
   {
     name: 'Join MoonDAO',
