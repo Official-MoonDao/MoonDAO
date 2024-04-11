@@ -28,7 +28,7 @@ const MobileMenuTop = ({
             aria-hidden="true"
           />
         </button>
-        <div className="w-full flex justify-center items-center">
+        <div className="px-4 w-full flex justify-center items-center">
           <PrivyConnectWallet />
         </div>
         <div className="flex items-center">
