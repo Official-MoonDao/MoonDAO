@@ -80,3 +80,5 @@ export const TICKET_TO_SPACE_ADDRESS =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
     : '0x5283b6035cfa7bb884b7f6a146fa6824ec9773c7' //mumbai
+
+export const NEWSLETTER_FORM_ID = '3715552'
