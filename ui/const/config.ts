@@ -87,4 +87,19 @@ export const TICKET_TO_SPACE_ADDRESS =
     ? '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
     : '0x5283b6035cfa7bb884b7f6a146fa6824ec9773c7' //mumbai
 
+export const ENTITY_ADDRESSES: Index = {
+  sepolia: '0xC4bE996774800f27965718779a3Db9455d0840dc',
+  ethereum: '',
+}
+
+export const ENTITY_CREATOR_ADDRESSES: Index = {
+  sepolia: '0x7270Ac6E739eb0B5F0D97a0121B9593A025E8d57',
+  ethereum: '',
+}
+
+export const CITIZEN_ADDRESSES: Index = {
+  sepolia: '0x90b3A6B782b3234AF68424B5122880276Ea0e17A',
+  ethereum: '',
+}
+
 export const NEWSLETTER_FORM_ID = '3715552'
