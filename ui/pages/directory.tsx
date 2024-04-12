@@ -1,3 +1,4 @@
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { Polygon, Sepolia } from '@thirdweb-dev/chains'
 import {
   NFT,
@@ -12,7 +13,7 @@ import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Head from '../components/layout/Head'
-import { ArrowLeft, ArrowSide, SearchIcon } from '@/components/assets'
+import { SearchIcon } from '@/components/assets'
 
 function EntityCitizenCard({
   metadata,
@@ -237,7 +238,7 @@ export default function Directory() {
               //if citizen address return citizen
             })}
         </div>
-        <div className="flex flex-row justify-center space-x-10">
+        <div className="w-full flex flex-row justify-center lg:justify-start space-x-8">
           {pageIdx === 1 ? (
             <p></p>
           ) : (
@@ -248,7 +249,7 @@ export default function Directory() {
                 }
               }}
             >
-              <ArrowLeft />
+              <ChevronLeftIcon height={25} width={25} />
             </button>
           )}
 
@@ -260,7 +261,7 @@ export default function Directory() {
               }
             }}
           >
-            <ArrowSide />
+            <ChevronRightIcon height={25} width={25} />
           </button>
         </div>
       </div>
