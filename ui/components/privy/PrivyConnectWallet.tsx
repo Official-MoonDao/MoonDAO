@@ -140,7 +140,7 @@ export function PrivyConnectWallet() {
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="w-[225px] absolute left-[-10px] md:relative text-sm font-RobotoMono animate-fadeIn mt-2 p-4 flex flex-col bg-white text-black dark:text-white dark:bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2"
+              className="w-[225px] absolute md:left-[-25px] md:relative text-sm font-RobotoMono animate-fadeIn mt-2 p-4 flex flex-col bg-white text-black dark:text-white dark:bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2"
             >
               <div className="absolute right-2 w-full flex justify-end">
                 <XMarkIcon
@@ -207,17 +207,11 @@ export function PrivyConnectWallet() {
                         ? (mooneyBalance?.toString() / 10 ** 18).toFixed(2)
                         : '...'}
                     </p>
-                    <p>$MOONEY</p>
                   </div>
 
                   <div className=" w-full flex justify-left items-center gap-4">
                     <NetworkIcon />
                     <p>{nativeBalance}</p>
-                    <p>
-                      {walletChainId === 1 || walletChainId === 5
-                        ? 'ETH'
-                        : 'MATIC'}
-                    </p>
                   </div>
                 </div>
               )}

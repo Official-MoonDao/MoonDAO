@@ -1,5 +1,6 @@
 import {
   BuildingLibraryIcon,
+  DocumentIcon,
   FolderIcon,
   HomeIcon,
   NewspaperIcon,
@@ -18,6 +19,11 @@ export const navigation = [
     name: 'News',
     href: '/news',
     icon: NewspaperIcon,
+  },
+  {
+    name: 'Docs',
+    href: '/docs',
+    icon: DocumentIcon,
   },
   {
     name: 'Join MoonDAO',
