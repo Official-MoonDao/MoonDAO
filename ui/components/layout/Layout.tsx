@@ -99,11 +99,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           className={`mt-4 flex flex-col md:w-[90%] lg:px-14 xl:px-16 2xl:px-20`}
         >
           {/*Connect Wallet and Preferred network warning*/}
-          <div
-            className={`md:max-h-full md:mb-4 lg:mb-2 flex flex-col items-end invisible md:visible lg:max-w-[1256px]`}
-          >
-            <PrivyConnectWallet />
-          </div>
           {children}
         </section>
       </main>
