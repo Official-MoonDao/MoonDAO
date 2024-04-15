@@ -21,19 +21,19 @@ const devConfigL1 =
   require(`../../contracts/deployments/goerli`) as DeploymentConfig
 
 const devConfigL2 =
-  require(`../../contracts/deployments/mumbai`) as DeploymentConfig
+  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
 
 export const MOONEY_ADDRESSES: Index = {
   ethereum: defaultConfigL1.MOONEYToken,
   polygon: defaultConfigL2.MOONEYToken,
   goerli: devConfigL1.MOONEYToken,
-  mumbai: devConfigL2.MOONEYToken,
+  sepolia: devConfigL2.MOONEYToken,
 }
 
 export const DAI_ADDRESSES: Index = {
   ethereum: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
   polygon: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063',
-  mumbai: '0xd393b1E02dA9831Ff419e22eA105aAe4c47E1253',
+  sepolia: '0xd393b1E02dA9831Ff419e22eA105aAe4c47E1253',
 }
 
 export const MOONEY_DECIMALS = 10 ** 18
@@ -42,7 +42,7 @@ export const VMOONEY_ADDRESSES: Index = {
   ethereum: defaultConfigL1.vMOONEYToken,
   polygon: defaultConfigL2.vMOONEYToken,
   goerli: devConfigL1.vMOONEYToken,
-  mumbai: devConfigL2.vMOONEYToken,
+  sepolia: devConfigL2.vMOONEYToken,
 }
 
 export const CITIZEN_NFT_ADDRESSES: Index = {

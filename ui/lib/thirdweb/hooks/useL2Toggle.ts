@@ -1,4 +1,4 @@
-import { Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
+import { Ethereum, Polygon, Sepolia } from '@thirdweb-dev/chains'
 import { useContext, useState } from 'react'
 import ChainContext from '../chain-context'
 
@@ -9,10 +9,10 @@ export function useL2Toggle() {
   function toggleLayer() {
     let newNetwork
     if (!isL2) {
-      newNetwork = selectedChain === Ethereum ? Polygon : Mumbai
+      newNetwork = selectedChain === Ethereum ? Polygon : Sepolia
       setSelectedChain(newNetwork)
     } else {
-      newNetwork = selectedChain === Polygon ? Ethereum : Goerli
+      newNetwork = selectedChain === Polygon ? Ethereum : Sepolia
       setSelectedChain(newNetwork)
     }
     setIsL2(!isL2)
