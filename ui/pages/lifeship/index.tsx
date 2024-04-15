@@ -113,14 +113,14 @@ export default function Lifeship({ products = [] }: any) {
                       setQuantities({ ...quantities, pet: q })
                     }
                   />
-                  <Product
+                  {/* <Product
                     product={products[2]}
                     label="Ashes Kit"
                     quantity={quantities.ashes}
                     setQuantity={(q: number) =>
                       setQuantities({ ...quantities, ashes: q })
                     }
-                  />
+                  /> */}
                 </div>
                 {notification === 'no-quantity' && (
                   <p className="text-moon-orange ease-in duration-300 backdropBlur">
@@ -160,11 +160,7 @@ export default function Lifeship({ products = [] }: any) {
                 </Button>
 
                 {/*Section after products*/}
-                <p className="mt-5 font-[Lato] max-w-2xl lg:max-w-3xl text-center lg:text-left w-full lg:self-start lg:text-lg">
-                  {
-                    'You are invited to participate in a historic decentralized space program. Choose your digital file to launch on a lunar lander with NFT ownership through Lifeship.'
-                  }
-                </p>
+
                 <Product
                   product={products[3]}
                   label="NFT kit"

@@ -21,19 +21,15 @@ export default function Product({
       <div className="mt-8 flex justify-center items-center">
         <div className="flex flex-col m-2">
           <div className="flex flex-col items-center justify-center my-3 text-center">
-            <h3 className="title-text-colors font-GoodTimes text-center text-4xl lg:text-left leading-relaxed w-full">
-              Lifeship NFT
-            </h3>
             <p className="lg:w-3/4 mt-2 md:mt-4 text-sm font-[Lato] leading-relaxed lg:text-base lg:text-left lg:self-start xl:text-lg text-gray-900 dark:text-white opacity-90">
-              MoonDAO is partnering with lifeship to send NFTs to space! Please
-              upload a file and complete the checkout. You will be emailed
-              instrucitons to claim your NFT.
+              MoonDAO is partnering with lifeship to send images to space!
+              Please upload a file and complete the checkout.
             </p>
           </div>
           {/*NFT kit */}
           <div className="p-5 flex flex-col  lg:items-start  inner-container-background lg:max-w-[700px] rounded">
             <h3 className="title-text-colors font-GoodTimes text-center text-3xl lg:text-left leading-relaxed w-full">
-              NFT KIT
+              IMAGE KIT
             </h3>
             <section className="flex flex-col items-center">
               <Image
