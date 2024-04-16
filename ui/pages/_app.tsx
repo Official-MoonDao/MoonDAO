@@ -1,6 +1,6 @@
 import { PrivyProvider } from '@privy-io/react-auth'
 import { Chain, Mumbai, Polygon, Sepolia } from '@thirdweb-dev/chains'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
@@ -14,6 +14,10 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
   )
 
   const [lightMode, setLightMode] = useLightMode()
+
+  useEffect(() => {
+    setLightMode(false)
+  })
 
   return (
     <>
