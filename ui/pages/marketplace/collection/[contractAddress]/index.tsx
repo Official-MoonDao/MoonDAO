@@ -1,4 +1,4 @@
-import { Mumbai, Polygon } from '@thirdweb-dev/chains'
+import { Mumbai, Polygon, Sepolia } from '@thirdweb-dev/chains'
 import {
   MediaRenderer,
   getAllDetectedExtensionNames,
@@ -163,7 +163,7 @@ export default function CollectionPage({
 
 export async function getStaticPaths() {
   const sdk = initSDK(
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
   )
   const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS)
   const acceptedCollections = await marketplace.roles.get('asset')
@@ -202,7 +202,7 @@ export async function getStaticPaths() {
 export async function getStaticProps({ params }: any) {
   const contractAddress = params?.contractAddress
   const sdk = initSDK(
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
   )
   const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS)
   const acceptedCollections = await marketplace.roles.get('asset')

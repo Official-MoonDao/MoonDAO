@@ -21,24 +21,19 @@ const devConfigL1 =
   require(`../../contracts/deployments/goerli`) as DeploymentConfig
 
 const devConfigL2 =
-  require(`../../contracts/deployments/mumbai`) as DeploymentConfig
-
-const devConfigSepolia =
   require(`../../contracts/deployments/sepolia`) as DeploymentConfig
 
 export const MOONEY_ADDRESSES: Index = {
   ethereum: defaultConfigL1.MOONEYToken,
   polygon: defaultConfigL2.MOONEYToken,
   goerli: devConfigL1.MOONEYToken,
-  mumbai: devConfigL2.MOONEYToken,
-  sepolia: devConfigSepolia.MOONEYToken,
+  sepolia: devConfigL2.MOONEYToken,
 }
 
 export const DAI_ADDRESSES: Index = {
   ethereum: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
   polygon: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063',
-  mumbai: '0xd393b1E02dA9831Ff419e22eA105aAe4c47E1253',
-  sepolia: '0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6',
+  sepolia: '0xd393b1E02dA9831Ff419e22eA105aAe4c47E1253',
 }
 
 export const MOONEY_DECIMALS = 10 ** 18
@@ -47,8 +42,7 @@ export const VMOONEY_ADDRESSES: Index = {
   ethereum: defaultConfigL1.vMOONEYToken,
   polygon: defaultConfigL2.vMOONEYToken,
   goerli: devConfigL1.vMOONEYToken,
-  mumbai: devConfigL2.vMOONEYToken,
-  sepolia: devConfigSepolia.vMOONEYToken,
+  sepolia: devConfigL2.vMOONEYToken,
 }
 
 export const CITIZEN_NFT_ADDRESSES: Index = {
@@ -77,7 +71,6 @@ const MONGO_USERNAME = process.env.MONGO_USERNAME || ''
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || ''
 const MONGO_PATH_SUFFIX = process.env.MONGO_PATH_SUFFIX || ''
 const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_PATH_SUFFIX}`
-
 export const mongoConfig = {
   url: MONGO_URL,
 }
@@ -87,23 +80,10 @@ export const TICKET_TO_SPACE_ADDRESS =
     ? '0x6434c90c9063F0Bed0800a23c75eBEdDF71b6c52' //polygon
     : '0x5283b6035cfa7bb884b7f6a146fa6824ec9773c7' //mumbai
 
-export const ENTITY_ADDRESSES: Index = {
-  sepolia: '0xC4bE996774800f27965718779a3Db9455d0840dc',
-  ethereum: '',
-}
-
-export const ENTITY_CREATOR_ADDRESSES: Index = {
-  sepolia: '0x7270Ac6E739eb0B5F0D97a0121B9593A025E8d57',
-  ethereum: '',
-}
-
-export const CITIZEN_ADDRESSES: Index = {
-  sepolia: '0x90b3A6B782b3234AF68424B5122880276Ea0e17A',
-  ethereum: '',
-}
-
-export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
-
-export const DISCORD_GUILD_ID = '914720248140279868'
-
 export const NEWSLETTER_FORM_ID = '3715552'
+
+export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
+  ethereum: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
+  polygon: '0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2',
+  sepolia: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
+}

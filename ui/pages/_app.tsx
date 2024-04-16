@@ -1,6 +1,6 @@
 import { PrivyProvider } from '@privy-io/react-auth'
-import { Chain, Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
-import React, { useState } from 'react'
+import { Chain, Mumbai, Polygon, Sepolia } from '@thirdweb-dev/chains'
+import React, { useEffect, useState } from 'react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
@@ -10,10 +10,14 @@ import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const [selectedChain, setSelectedChain]: any = useState<Chain>(
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Ethereum : Goerli
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
   )
 
   const [lightMode, setLightMode] = useLightMode()
+
+  useEffect(() => {
+    setLightMode(false)
+  })
 
   return (
     <>

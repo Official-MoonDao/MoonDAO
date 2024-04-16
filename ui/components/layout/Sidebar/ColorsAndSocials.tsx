@@ -9,16 +9,16 @@ interface ColorsAndSocials {
 const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
   return (
     <div className="flex items-center px-4 md:px-0">
-      <button
+      {/* <button
         aria-label="Toggle Light Mode"
         className="mr-5 h-6 w-6 fill-current text-black dark:text-white hover:scale-105"
         onClick={() => setLightMode(!lightMode)}
       >
-        {lightMode ? <MoonIcon /> : <SunIcon />}
-      </button>
-      <hr className="border-none rounded-sm w-[1px] inline-block h-6 bg-black dark:bg-gray-400" />
+        {lightMode ? <SunIcon /> : <MoonIcon />}
+      </button> */}
+      {/* <hr className="border-none rounded-sm w-[1px] inline-block h-6 bg-black dark:bg-gray-400" /> */}
       <a
-        className="ml-5"
+        className=""
         aria-label="Link to Discord"
         href="https://discord.gg/moondao"
         target="_blank"
