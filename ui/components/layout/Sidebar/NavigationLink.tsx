@@ -57,10 +57,7 @@ const Dropdown = ({ item, router }: any) => {
     <Disclosure
       className="tracking-tighter"
       as="div"
-      defaultOpen={
-        item?.children?.some((e: any) => e.href === router.pathname) ||
-        item.name !== 'Links'
-      }
+      defaultOpen={item?.children?.some((e: any) => e.href === router.pathname)}
     >
       {({ open }) => (
         <>
