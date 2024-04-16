@@ -10,7 +10,8 @@ import {
 } from '@uniswap/smart-order-router'
 import { SwapRouter, UniswapTrade } from '@uniswap/universal-router-sdk'
 import { ethers } from 'ethers'
-import { useContext, useMemo } from 'react'
+import { useContext } from 'react'
+import { UNIVERSAL_ROUTER_ADDRESSES } from '../../../const/config'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
 import ChainContext from '../../thirdweb/chain-context'
 
@@ -23,12 +24,6 @@ export function useUniversalRouter(
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { selectedChain } = useContext(ChainContext)
   const { wallets } = useWallets()
-
-  const UNIVERSAL_ROUTER_ADDRESS = useMemo(() => {
-    return +selectedChain.chainId === 1
-      ? '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD'
-      : '0x643770E279d5D0733F21d6DC03A8efbABf3255B4'
-  }, [selectedChain])
 
   async function generateRoute(tradeType: TradeType) {
     try {
@@ -76,14 +71,14 @@ export function useUniversalRouter(
 
     const gasLimit = await signer.estimateGas({
       data: params.calldata,
-      to: UNIVERSAL_ROUTER_ADDRESS,
+      to: UNIVERSAL_ROUTER_ADDRESSES[selectedChain.slug],
       value: params.value,
       from: wallets[selectedWallet].address,
     })
 
     const tx = await signer.sendTransaction({
       data: params.calldata,
-      to: UNIVERSAL_ROUTER_ADDRESS,
+      to: UNIVERSAL_ROUTER_ADDRESSES[selectedChain.slug],
       value: params.value,
       from: wallets[selectedWallet].address,
       gasLimit: gasLimit,

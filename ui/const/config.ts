@@ -71,7 +71,6 @@ const MONGO_USERNAME = process.env.MONGO_USERNAME || ''
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || ''
 const MONGO_PATH_SUFFIX = process.env.MONGO_PATH_SUFFIX || ''
 const MONGO_URL = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_PATH_SUFFIX}`
-
 export const mongoConfig = {
   url: MONGO_URL,
 }
@@ -82,3 +81,9 @@ export const TICKET_TO_SPACE_ADDRESS =
     : '0x5283b6035cfa7bb884b7f6a146fa6824ec9773c7' //mumbai
 
 export const NEWSLETTER_FORM_ID = '3715552'
+
+export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
+  ethereum: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
+  polygon: '0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2',
+  sepolia: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
+}
