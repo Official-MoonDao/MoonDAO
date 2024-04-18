@@ -9,12 +9,12 @@ type StepLoadingProps = {
 export function StepLoading({ stepNum, title, explanation }: StepLoadingProps) {
   return (
     <div className="mt-5 w-full h-full text-black dark:text-white">
-      <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18] animate-pulse">
-        <p className="block px-3 py-1 text-xl font-bold rounded-[9999px] bg-[grey]">
+      <div className="flex flex-col text-left lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-4 lg:p-6 border border-gray-500 dark:border-white dark:border-opacity-[0.18] animate-pulse">
+        <p className="block px-3 py-1 w-10 h-10 flex justify-center items-center text-xl font-bold rounded-[9999px] bg-[grey]">
           {stepNum}
         </p>
         <div className="flex-col justify-start items-start gap-4 inline-flex">
-          <div className="mt-[15px] text-center block lg:mt-0 xl:text-xl w-[150px]">
+          <div className="mt-[15px] text-left block lg:mt-0 xl:text-xl w-[150px]">
             {title}
           </div>
         </div>
