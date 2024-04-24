@@ -28,6 +28,8 @@ export const MOONEY_ADDRESSES: Index = {
   polygon: defaultConfigL2.MOONEYToken,
   goerli: devConfigL1.MOONEYToken,
   sepolia: devConfigL2.MOONEYToken,
+  arbitrum: '0x1Fa56414549BdccBB09916f61f0A5827f779a85c',
+  'arbitrum-sepolia': '0x0187951aeecDbB6d11D75E7aCe6aC290c6e70391',
 }
 
 export const DAI_ADDRESSES: Index = {
@@ -48,6 +50,21 @@ export const VMOONEY_ADDRESSES: Index = {
 export const CITIZEN_NFT_ADDRESSES: Index = {
   ethereum: '',
   polygon: '0xE8013d1B68FA9faF5C78DE4823f7F076A854407A',
+}
+
+export const CITIZEN_ADDRESSES: Index = {
+  arbitrum: '',
+  'arbitrum-sepolia': '0x6Df4d025cb2ee8CbC2263ce1CE91439f574a2a67',
+}
+
+export const ENTITY_ADDRESSES: Index = {
+  arbitrum: '',
+  'arbitrum-sepolia': '0xA2AC5bc748EeD541392d8f40720F81965738B1b6',
+}
+
+export const ENTITY_CREATOR_ADDRESSES: Index = {
+  arbitrum: '',
+  'arbitrum-sepolia': '0x1B4d6090Df479b9457882A565Cb0AAA6171A9Ae1',
 }
 
 export const VMOONEY_SWEEPSTAKES: string =
@@ -86,4 +103,10 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
   ethereum: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
   polygon: '0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2',
   sepolia: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
+  arbitrum: '0x5E325eDA8064b456f4781070C0738d849c824258',
+  'arbitrum-sepolia': '0x4A7b5Da61326A6379179b40d00F57E5bbDC962c2',
 }
+
+export const DISCORD_GUILD_ID = '914720248140279868'
+
+export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
