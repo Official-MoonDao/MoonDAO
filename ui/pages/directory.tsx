@@ -1,5 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
-import { Polygon, Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum,ArbitrumSepolia } from '@thirdweb-dev/chains'
 import {
   NFT,
   ThirdwebNftMedia,
@@ -126,7 +126,7 @@ export default function Directory() {
 
   useEffect(() => {
     setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
     )
   }, [])
 

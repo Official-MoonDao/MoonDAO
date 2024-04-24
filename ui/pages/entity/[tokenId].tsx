@@ -6,7 +6,7 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import {
   ThirdwebNftMedia,
   useAddress,
@@ -127,7 +127,9 @@ export default function EntityDetailPage({ tokenId }: any) {
   }, [wallets, nft])
 
   useEffect(() => {
-    setSelectedChain(Sepolia)
+    setSelectedChain(
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+    )
   }, [])
 
   if (!nft?.metadata) return

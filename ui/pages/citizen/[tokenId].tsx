@@ -6,7 +6,7 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import {
   ThirdwebNftMedia,
   useAddress,
@@ -132,7 +132,9 @@ export default function CitizenDetailPage({ tokenId }: any) {
   }, [nft])
 
   useEffect(() => {
-    setSelectedChain(Sepolia)
+    setSelectedChain(
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+    )
   }, [])
 
   const projects = useProjects()
@@ -299,13 +301,17 @@ export default function CitizenDetailPage({ tokenId }: any) {
             <div className="">
               <p className="text-xl">{`$MOONEY`}</p>
               <p className="text-3xl">
-                {(MOONEYBalance?.toString() / 10 ** 18).toLocaleString() || 0}
+                {MOONEYBalance
+                  ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
+                  : 0}
               </p>
             </div>
             <div className="">
               <p className="text-xl">{`Voting Power`}</p>
               <p className="text-2xl">
-                {(VMOONEYBalance?.toString() / 10 ** 18).toLocaleString() || 0}
+                {VMOONEYBalance
+                  ? (VMOONEYBalance?.toString() / 10 ** 18).toLocaleString()
+                  : 0}
               </p>
             </div>
           </div>
@@ -345,14 +351,14 @@ export default function CitizenDetailPage({ tokenId }: any) {
                           <p>{proposal.title}</p>
                         </div>
                         <p
-                      className={`flex items-center justify-center px-4 h-8 rounded-full bg-opacity-25 ${
-                        proposal.state === 'closed'
-                          ? 'text-moon-orange bg-red-400'
-                          : 'text-moon-green bg-moon-green'
-                      }`}
-                    >
-                      {proposal.state}
-                    </p>
+                          className={`flex items-center justify-center px-4 h-8 rounded-full bg-opacity-25 ${
+                            proposal.state === 'closed'
+                              ? 'text-moon-orange bg-red-400'
+                              : 'text-moon-green bg-moon-green'
+                          }`}
+                        >
+                          {proposal.state}
+                        </p>
                       </div>
                     ))
                   : Array.from({ length: 3 }).map((_, i) => (
