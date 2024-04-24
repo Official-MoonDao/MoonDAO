@@ -8,38 +8,13 @@ import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { useHandleRead } from '../../lib/thirdweb/hooks'
+import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
 import ERC20 from '../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import { CopyIcon } from '../assets'
 import { LinkAccounts } from './LinkAccounts'
-
-function EthIcon() {
-  return (
-    <div className="flex justify-center items-center p-4 rounded-full bg-[#0B3B8E] h-12 w-12">
-      <Image
-        src={'/icons/networks/ethereum.svg'}
-        width={100}
-        height={100}
-        alt=""
-      />
-    </div>
-  )
-}
-
-function PolygonIcon() {
-  return (
-    <div className="flex justify-center items-center p-4 rounded-full bg-[#8247E52B] h-12 w-12">
-      <Image
-        src={'/icons/networks/polygon.svg'}
-        width={50}
-        height={50}
-        alt=""
-      />
-    </div>
-  )
-}
 
 export function PrivyConnectWallet() {
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
@@ -49,7 +24,7 @@ export function PrivyConnectWallet() {
 
   const address = useAddress()
   const ens = useENS(address)
-  const [nativeBalance, setNativeBalance] = useState(0)
+  const nativeBalance = useNativeBalance()
   const [walletChainId, setWalletChainId] = useState(1)
   const { login, logout, user, authenticated, connectWallet }: any = usePrivy()
   const { wallets } = useWallets()
@@ -66,18 +41,21 @@ export function PrivyConnectWallet() {
   ])
 
   const importToken = useImportToken(selectedChain)
-  //get native balance
 
-  async function getNativeBalance() {
-    const provider = await wallets[selectedWallet].getEthersProvider()
-    const nB: any = await provider.getBalance(wallets[selectedWallet].address)
-    setNativeBalance(+(nB.toString() / 10 ** 18).toFixed(5))
+  function NetworkIcon() {
+    return (
+      <Image
+        src={`/icons/networks/${selectedChain.slug}.svg`}
+        width={30}
+        height={30}
+        alt="Network Icon"
+      />
+    )
   }
 
   useEffect(() => {
     if (wallets?.[0]) {
       setWalletChainId(+wallets?.[0]?.chainId.split(':')[1])
-      getNativeBalance()
     }
   }, [wallets, selectedWallet])
 
@@ -100,18 +78,6 @@ export function PrivyConnectWallet() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  function NetworkIcon() {
-    return (
-      <>
-        {selectedChain.chainId === 1 || selectedChain.chainId === 5 ? (
-          <EthIcon />
-        ) : (
-          <PolygonIcon />
-        )}
-      </>
-    )
-  }
 
   return (
     <>
