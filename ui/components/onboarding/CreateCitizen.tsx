@@ -40,7 +40,7 @@ export function CreateCitizen({
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
 
-  const [entityImage, setEntityImage] = useState<any>()
+  const [citizenImage, setCitizenImage] = useState<any>()
 
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
@@ -179,7 +179,7 @@ export function CreateCitizen({
             description="Design your unique onchain registration certificate."
           >
             <ImageGenerator
-              setImage={setEntityImage}
+              setImage={setCitizenImage}
               nextStage={() => setStage(2)}
               stage={stage}
             />
@@ -199,7 +199,7 @@ export function CreateCitizen({
             </p> */}
 
             <Image
-              src={URL.createObjectURL(entityImage)}
+              src={URL.createObjectURL(citizenImage)}
               alt="entity-image"
               width={600}
               height={600}
@@ -213,13 +213,13 @@ export function CreateCitizen({
                     return (
                       <div
                         className="flex flex-col text-left"
-                        key={'entityData' + i}
+                        key={'citizenData' + i}
                       >
                         <p className="text-xl capitalize">{v}:</p>
 
                         <p className="text-md text-balance">
                           {/**@ts-expect-error */}
-                          {entityData[v]!}
+                          {citizenData[v]!}
                         </p>
                       </div>
                     )
@@ -229,7 +229,7 @@ export function CreateCitizen({
                     <tbody>
                       {Object.keys(citizenData).map((v, i) => {
                         return (
-                          <tr className="" key={'entityData' + i}>
+                          <tr className="" key={'citizenData' + i}>
                             <th className="text-xl dark:bg-[#0F152F]">{v}:</th>
 
                             <th className="text-md dark:bg-[#0F152F] text-pretty">
@@ -345,7 +345,7 @@ export function CreateCitizen({
                   //pin image to IPFS
                   const newImageIpfsHash = await pinImageToIPFS(
                     pinataJWT || '',
-                    entityImage,
+                    citizenImage,
                     citizenData.firstName + citizenData.lastName + ' Image'
                   )
 
