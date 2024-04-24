@@ -67,7 +67,11 @@ export function PrivyWeb3Button({
 
   return (
     <>
-      {btnState === 0 && <Button onClick={login}>Connect</Button>}
+      {btnState === 0 && (
+        <Button className={className} onClick={login}>
+          Connect
+        </Button>
+      )}
       {btnState === 1 && (
         <Button
           className={className}

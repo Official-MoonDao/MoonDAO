@@ -151,12 +151,49 @@ a {
   visibility: hidden;
 }
 
-/*
+.hero {
+  background-image: linear-gradient(#282536, #000000 95%);
+  height: 125vh;
+}
 
-Contains Loading Skeleton utilities, link & component background.
+.mission {
+  background-image: linear-gradient(#000000 2%, #282536, #000000 95%);
+  width: 100%;
+}
+.constitution {
+  background-image: linear-gradient(#000000 2%, #381c2b, #000000 95%);
+}
 
-*/
+.slidebtn {
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  text-align: left;
+  font-family: Goodtimes;
+  letter-spacing: 1px;
+  width: 300px;
+  max-width: 325px;
+  height: 80px;
+  color: black;
+  padding-right: 20px;
+  background-color: #f2f2f2;
+  background-image: url('/home/slide-button-background.svg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: -1035px 0px;
+  -webkit-clip-path: polygon(0% 0%, 100% 0, 100% 70%, 90% 100%, 0% 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, calc(100% - 30px) 100%, 0 100%);
+  transition: 1s;
+  border-radius: 3px;
+}
 
+.slidebtn:hover {
+  padding-left: 20px;
+  width: 325px;
+  background-position: -1010px 0px;
+}
+
+/* Tailwind classes */
 @layer utilities {
   .loading-component {
     @apply cursor-wait select-none rounded-2xl bg-gray-100 shadow-none hover:scale-100 dark:bg-slate-800 !important;

@@ -274,9 +274,9 @@ export function Step({
 
   return (
     <div className="mt-5 w-full h-full text-black dark:text-white">
-      <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-2 lg:p-3 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
+      <div className="flex flex-col text-left lg:flex-row lg:text-left lg:gap-5 lg:w-full lg:h-full p-4 lg:p-6 border border-gray-500 dark:border-white dark:border-opacity-[0.18]">
         <p
-          className={`block px-3 py-1 text-xl font-bold rounded-[9999px] ${
+          className={`block px-3 py-1 h-10 w-10 flex justify-center items-center text-xl font-bold rounded-[9999px] ${
             realStep === stepNum
               ? 'bg-[grey] animate-pulse'
               : realStep > stepNum
