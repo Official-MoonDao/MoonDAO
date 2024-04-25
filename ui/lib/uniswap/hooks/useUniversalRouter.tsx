@@ -39,8 +39,6 @@ export function useUniversalRouter(
         type: SwapType.UNIVERSAL_ROUTER,
       }
 
-      console.log(tokenIn, tokenOut)
-
       const route = await router.route(
         CurrencyAmount.fromRawAmount(
           tokenIn,
