@@ -31,20 +31,18 @@ import { useProjects } from '@/lib/discord/useProjects'
 import { useValidPass } from '@/lib/entity/useValidPass'
 import { useWearer } from '@/lib/hats/useWearer'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import { useNewestProposals } from '@/lib/snapshot/useNewestProposals'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
 import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
-import CoordinapeLogoWhite from '@/components/assets/CoordinapeLogoWhite'
-import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
 import { CitizenMetadataModal } from '@/components/citizen/CitizenMetadataModal'
 import { Hat } from '@/components/hats/Hat'
 import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
 import GeneralActions from '@/components/subscription/GeneralActions'
+import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 
 export default function CitizenDetailPage({ tokenId }: any) {
@@ -97,9 +95,6 @@ export default function CitizenDetailPage({ tokenId }: any) {
     nft?.metadata?.id || '',
   ])
   const validPass = useValidPass(expiresAt)
-
-  //Proposals
-  const newestProposals = useNewestProposals(3)
 
   // //Hats
   const hats = useWearer(selectedChain, nft?.owner)
@@ -319,55 +314,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Proposals */}
-            <Card className="w-full flex flex-col justify-between">
-              <p className="text-2xl">Governance</p>
-              <div className="mt-2 flex flex-col gap-4">
-                {newestProposals
-                  ? newestProposals.map((proposal: any) => (
-                      <div
-                        key={proposal.id}
-                        className="p-2 flex justify-between border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                      >
-                        <div className="flex flex-col gap-2">
-                          <p>{proposal.title}</p>
-                        </div>
-                        <p
-                          className={`flex items-center justify-center px-4 h-8 rounded-full bg-opacity-25 ${
-                            proposal.state === 'closed'
-                              ? 'text-moon-orange bg-red-400'
-                              : 'text-moon-green bg-moon-green'
-                          }`}
-                        >
-                          {proposal.state}
-                        </p>
-                      </div>
-                    ))
-                  : Array.from({ length: 3 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-full h-20 bg-[#ffffff25] animate-pulse"
-                      />
-                    ))}
-              </div>
-              <div className="mt-4 flex flex-col md:flex-row gap-2">
-                <Button
-                  onClick={() =>
-                    window.open(
-                      'https://discord.com/channels/914720248140279868/1027658256706961509'
-                    )
-                  }
-                >
-                  Create Proposals
-                </Button>
-                <Button
-                  onClick={() =>
-                    window.open('https://snapshot.org/#/tomoondao.eth')
-                  }
-                >
-                  Vote on Proposals
-                </Button>
-              </div>
-            </Card>
+            <Proposals />
           </div>
 
           <Card className="w-full">

@@ -36,7 +36,7 @@ export function EntityMetadataModal({ nft, entityContract, setEnabled }: any) {
             const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
             const nonceData = await nonceRes.json()
 
-            const message = `Please sign this message to subit the form #`
+            const message = `Please sign this message to submit the form #`
 
             const signature = await signer.signMessage(
               message + nonceData.nonce
