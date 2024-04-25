@@ -15,6 +15,7 @@
     "cy:run-ct": "cypress run --component"
   },
   "dependencies": {
+    "@arbitrum/sdk": "^3.3.3",
     "@hatsprotocol/sdk-v1-subgraph": "^0.4.3",
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
