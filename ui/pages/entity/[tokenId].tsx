@@ -37,30 +37,11 @@ import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
 import { EntityAdminModal } from '@/components/entity/EntityAdminModal'
 import { EntityMetadataModal } from '@/components/entity/EntityMetadataModal'
 import { HatWearers } from '@/components/hats/HatWearers'
+import Button from '@/components/subscription/Button'
+import Card from '@/components/subscription/Card'
+import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import MoonDAOEntityABI from '../../const/abis/MoonDAOEntity.json'
-
-function Card({ children, className = '', onClick }: any) {
-  return (
-    <div
-      className={`p-8 md:p-4 rounded-md dark:bg-[#080C20] border-2 dark:border-0 text-start text-black dark:text-white ${className}`}
-      onClick={onClick}
-    >
-      {children}
-    </div>
-  )
-}
-
-function Button({ children, onClick, className = '' }: any) {
-  return (
-    <button
-      className={`w-[200px] h-[50px] px-4 py-2 text-moon-orange border-moon-orange border-[1px] flex items-center gap-2 hover:scale-105 duration-300 ${className}`}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  )
-}
 
 export default function EntityDetailPage({ tokenId }: any) {
   const [lightMode] = useLightMode()
@@ -437,55 +418,7 @@ export default function EntityDetailPage({ tokenId }: any) {
         </Card>
       </div>
       {/* General Actions */}
-      <div className="flex flex-col gap-4">
-        <p className="p-4 text-2xl">General Actions</p>
-        <div className="flex flex-col lg:flex-row gap-8">
-          <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#e7e5e7]"
-            onClick={() => window.open('https://coordinape.com/')}
-          >
-            <CoordinapeLogoWhite />
-            <p className="mt-2">{`Gorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.`}</p>
-            <div className="mt-8 flex gap-4">
-              <p className="py-2 px-4 bg-[#ffffff25] rounded-full">Give</p>
-              <p className="py-2 px-4 bg-[#ffffff25] rounded-full">Rewards</p>
-            </div>
-          </Card>
-          <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#e7e5e7]"
-            onClick={() => window.open('https://juicebox.money')}
-          >
-            <JuiceboxLogoWhite />
-            <p className="mt-2">{`Gorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.`}</p>
-            <div className="mt-8 flex gap-4">
-              <p className="py-2 px-4 bg-[#ffffff25] rounded-full">
-                Crowdfunding
-              </p>
-              <p className="py-2 px-4 bg-[#ffffff25] rounded-full">Payout</p>
-            </div>
-          </Card>
-          <Card
-            className="p-8 w-full lg:w-1/3 hover:scale-105 duration-300 bg-[#e7e5e7]"
-            onClick={() => window.open('https://passport.gitcoin.co/')}
-          >
-            <Image
-              src="/logos/gitcoin-passport-logo.png"
-              width={150}
-              height={50}
-              alt=""
-            />
-            <p className="mt-2">{`Gorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.`}</p>
-            <div className="mt-8 flex gap-4">
-              <p className="py-2 px-4 bg-[#ffffff25] rounded-full">
-                Reputation
-              </p>
-              <p className="py-2 px-4 bg-[#ffffff25] rounded-full">Privacy</p>
-            </div>
-          </Card>
-        </div>
-        {/* 2nd row of general actions */}
-        <div className="mt-2 lg:mr-16 flex flex-col md:flex-row gap-8"></div>
-      </div>
+      <GeneralActions />
     </div>
   )
 }

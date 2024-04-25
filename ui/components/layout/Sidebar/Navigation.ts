@@ -31,11 +31,6 @@ export const navigation = [
     icon: DocumentIcon,
   },
   {
-    name: 'Join MoonDAO',
-    href: '/join',
-    icon: PlusIcon,
-  },
-  {
     name: 'Directory',
     href: '/directory',
     icon: Squares2X2Icon,
