@@ -1,12 +1,5 @@
 import { PrivyProvider } from '@privy-io/react-auth'
-import {
-  Arbitrum,
-  ArbitrumSepolia,
-  Chain,
-  Mumbai,
-  Polygon,
-  Sepolia,
-} from '@thirdweb-dev/chains'
+import { Arbitrum, ArbitrumSepolia, Chain } from '@thirdweb-dev/chains'
 import React, { useEffect, useState } from 'react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -17,7 +10,7 @@ import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const [selectedChain, setSelectedChain]: any = useState<Chain>(
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
   )
 
   const [lightMode, setLightMode] = useLightMode()
