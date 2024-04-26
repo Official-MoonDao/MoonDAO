@@ -16,9 +16,9 @@ import {
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 const swapMinimums = {
-  MOONEY: '12,500',
+  MOONEY: '10,000',
   MATIC: '0.5',
-  ETH: '0.0025',
+  ETH: '0.001',
 }
 
 const nativeSymbols = {
@@ -123,10 +123,6 @@ export default function SwapTokens({ selectedChain, mooneyContract }: any) {
         action={async () => {
           if (!swapRoute) return toast.error('No route found')
 
-          console.log(
-            ethers.utils.parseEther(amount.toString()).gt(mooneyBalance)
-          )
-
           if (inputToken.symbol === 'MOONEY') {
             if (ethers.utils.parseEther(amount.toString()).gt(mooneyBalance)) {
               return toast.error('Insufficient balance')
@@ -150,7 +146,7 @@ export default function SwapTokens({ selectedChain, mooneyContract }: any) {
             }
           }
 
-          executeRoute(swapRoute)
+          await executeRoute(swapRoute)
         }}
       />
     </div>
