@@ -39,8 +39,6 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
         <link href="/image-generator/pfp-style.css" rel="stylesheet" />
       </Head>
 
-      <Script src="/image-generator/weighted-voronoi.js" />
-
       <Script strategy="afterInteractive" src="/image-generator/init.js" />
 
       <div id="html-container">

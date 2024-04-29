@@ -35,6 +35,7 @@ class WebsiteDocument extends Document {
           <script defer src="/image-generator/html2canvas.min.js"></script>
           <script defer src="/image-generator/p5js.min.js"></script>
           <script defer src="/image-generator/celestial.js"></script>
+          <script defer src="/image-generator/weighted-voronoi.js"></script>
         </Head>
         <body className="overflow-hidden">
           <Main />
