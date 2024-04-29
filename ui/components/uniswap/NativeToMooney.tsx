@@ -12,7 +12,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 const swapMinimums: any = {
   MOONEY: '10,000',
   MATIC: '0.5',
-  ETH: '0.001',
+  ETH: '0.0015',
 }
 
 const nativeSymbols: any = {
