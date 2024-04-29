@@ -20,14 +20,14 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
 
   return (
     <div
-      className="w-full transition-all duration-150 text-black cursor-pointer dark:text-white md:p-8 flex flex-col border-[2px] hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[white] dark:bg-[#0A0E22] p-3"
+      className="w-full transition-all duration-150 text-black cursor-pointer dark:text-white lg:p-8 flex flex-col border-[2px] hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[white] dark:bg-[#0A0E22] p-3"
       onClick={() => {
         if (!address && user) logout()
         if (!address) login()
         else onClick()
       }}
     >
-      <div className="w-full h-full flex flex-col lg:flex-row justify-center items-center md:space-x-10">
+      <div className="w-full h-full flex flex-col lg:flex-row justify-center items-center lg:space-x-10">
         <div className="flex justify-center items-center">
           <Image
             src={
