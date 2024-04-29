@@ -3,24 +3,32 @@ import { useWallets } from '@privy-io/react-auth'
 import { Arbitrum, Ethereum } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
+import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useHandleRead } from '../../lib/thirdweb/hooks'
 import { initSDK } from '../../lib/thirdweb/thirdweb'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function ArbitrumBridge({ setSelectedChain }: any) {
+  const router = useRouter()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [amount, setAmount] = useState<any>(0)
   const [inputToken, setInputToken] = useState('eth')
-  const [withdraw, setWithdraw] = useState(false)
+  const [withdraw, setWithdraw] = useState(
+    router.query.type === 'withdraw' ? true : false
+  )
 
   const [ethMooneyBalance, setEthMooneyBalance] = useState<any>()
   const [arbMooneyBalance, setArbMooneyBalance] = useState<any>()
-  const [nativeBalance, setNativeBalance] = useState<any>()
+  const nativeBalance = useNativeBalance()
+
+  const shallowQueryRoute = useShallowQueryRoute()
 
   async function getEthMooneyBalance() {
     const sdk = initSDK(Ethereum)
@@ -71,8 +79,14 @@ export default function ArbitrumBridge({ setSelectedChain }: any) {
     const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
 
+    const nativeAmount = ethers.utils.parseEther(amount)
+
+    if (+nativeAmount.toString() / 10 ** 18 > nativeBalance) {
+      return toast.error('Insufficient balance')
+    }
+
     const depositTx = await ethBridger.deposit({
-      amount: ethers.utils.parseEther(amount),
+      amount: nativeAmount,
       l1Signer: signer,
     })
 
@@ -128,8 +142,6 @@ export default function ArbitrumBridge({ setSelectedChain }: any) {
     const erc20Bridger = new Erc20Bridger(l2Network)
     const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
-    const l2SDK = initSDK(Arbitrum)
-    const l2Provider = l2SDK.getProvider()
 
     //withdraw mooney
     const withdrawTx = await erc20Bridger.withdraw({
@@ -150,6 +162,10 @@ export default function ArbitrumBridge({ setSelectedChain }: any) {
   }, [wallets])
 
   useEffect(() => {
+    setWithdraw(router.query.type === 'withdraw' ? true : false)
+  }, [router.query])
+
+  useEffect(() => {
     if (withdraw) {
       setSelectedChain(Arbitrum)
     } else {
@@ -158,10 +174,18 @@ export default function ArbitrumBridge({ setSelectedChain }: any) {
   }, [withdraw])
 
   return (
-    <div className="border-2 p-8 flex flex-col">
+    <div className="page-border-and-color p-8 flex flex-col">
       <p>{`$MOONEY(ETH) : ${ethMooneyBalance || 0}`}</p>
       <p>{`$MOONEY(ARB) : ${arbMooneyBalance || 0}`}</p>
-      <div className="flex gap-4" onClick={() => setWithdraw((prev) => !prev)}>
+      <div
+        className="flex gap-4"
+        onClick={() => {
+          setWithdraw((prev) => !prev)
+          shallowQueryRoute({
+            type: withdraw ? 'deposit' : 'withdraw',
+          })
+        }}
+      >
         <button className={`px-2 py-2 ${!withdraw && 'border-2'}`}>
           Deposit
         </button>
