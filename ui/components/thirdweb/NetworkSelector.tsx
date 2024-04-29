@@ -1,8 +1,12 @@
+import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import {
-  ChevronDoubleDownIcon,
-  ChevronDownIcon,
-} from '@heroicons/react/24/outline'
-import { Arbitrum, Ethereum, Polygon } from '@thirdweb-dev/chains'
+  Arbitrum,
+  ArbitrumSepolia,
+  Chain,
+  Ethereum,
+  Polygon,
+  Sepolia,
+} from '@thirdweb-dev/chains'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -10,6 +14,11 @@ import ChainContext from '../../lib/thirdweb/chain-context'
 export default function NetworkSelector() {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const [dropdown, setDropdown] = useState(false)
+
+  function selectChain(chain: Chain) {
+    setSelectedChain(chain)
+    setDropdown(false)
+  }
 
   function handleClickOutside({ target }: any) {
     if (target.closest('#network-selector')) return
@@ -41,7 +50,7 @@ export default function NetworkSelector() {
         <div className="flex flex-col items-start gap-2 text-black">
           <button
             className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-            onClick={() => setSelectedChain(Ethereum)}
+            onClick={() => selectChain(Ethereum)}
           >
             <Image
               src="/icons/networks/ethereum.svg"
@@ -53,7 +62,7 @@ export default function NetworkSelector() {
           </button>
           <button
             className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-            onClick={() => setSelectedChain(Polygon)}
+            onClick={() => selectChain(Polygon)}
           >
             <Image
               src="/icons/networks/polygon.svg"
@@ -65,7 +74,7 @@ export default function NetworkSelector() {
           </button>
           <button
             className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-            onClick={() => setSelectedChain(Arbitrum)}
+            onClick={() => selectChain(Arbitrum)}
           >
             <Image
               src="/icons/networks/arbitrum.svg"
@@ -74,6 +83,18 @@ export default function NetworkSelector() {
               alt="Arbitrumm"
             />
             {'Arbitrum'}
+          </button>
+          <button
+            className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
+            onClick={() => selectChain(Sepolia)}
+          >
+            <Image
+              src="/icons/networks/ethereum.svg"
+              width={13}
+              height={13}
+              alt="Sepolia"
+            />
+            {'Sepolia'}
           </button>
         </div>
       )}
