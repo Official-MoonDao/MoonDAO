@@ -11,10 +11,13 @@ export default function GetMooney() {
 
   return (
     <div className="animate-fadeIn">
-      <NetworkSelector />
-
-      <h1>Swap</h1>
-      <NativeToMooney selectedChain={selectedChain} />
+      <h1 className="page-title">Get Mooney</h1>
+      <div className="mt-8">
+        <NetworkSelector />
+        <div className="mt-8">
+          <NativeToMooney selectedChain={selectedChain} />
+        </div>
+      </div>
     </div>
   )
 }

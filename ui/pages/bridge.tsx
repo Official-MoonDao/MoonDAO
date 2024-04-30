@@ -16,8 +16,13 @@ export default function Bridge() {
 
   return (
     <div className="animate-fadeIn">
-      <h1>Arbitrum Bridge</h1>
-      <ArbitrumBridge setSelectedChain={setSelectedChain} />
+      <h1 className="page-title">Arbitrum Bridge</h1>
+      <div className="mt-8">
+        <ArbitrumBridge
+          selectedChain={selectedChain}
+          setSelectedChain={setSelectedChain}
+        />
+      </div>
     </div>
   )
 }

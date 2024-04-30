@@ -47,7 +47,7 @@ export default function NetworkSelector() {
         </button>
       </div>
       {dropdown && (
-        <div className="flex flex-col items-start gap-2 text-black">
+        <div className="w-[300px] absolute flex flex-col items-start gap-2 text-black z-10">
           <button
             className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
             onClick={() => selectChain(Ethereum)}
