@@ -54,7 +54,10 @@ export default function ZeroG() {
             {`Fill out the form below to get notified about ticket sales for future VIP training opportunities in zero gravity.`}
           </p>
           <div className="w-full">
-            <ZeroGContact />
+            <iframe
+              className="mt-[-50px] w-full h-[550px]"
+              src="https://moondao.ck.page/1e6e54ca0a/"
+            />
           </div>
         </section>
       </div>

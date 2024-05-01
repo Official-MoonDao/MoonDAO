@@ -2,7 +2,7 @@
 
 export function useNewsletterSub() {
   async function subscribe(userEmail: string) {
-    const res = await fetch('/api/convertkit/subscribe', {
+    const res = await fetch('/api/convertkit/newsletter', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
