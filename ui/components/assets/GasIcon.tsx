@@ -1,4 +1,4 @@
-export default function GasCan() {
+export default function GasIcon() {
   return (
     <svg
       width="14"

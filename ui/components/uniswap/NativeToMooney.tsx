@@ -1,4 +1,4 @@
-import { ArrowDownIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
+import { ArrowDownIcon } from '@heroicons/react/24/outline'
 import { useAddress } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import { Token } from '@uniswap/sdk-core'
@@ -9,8 +9,7 @@ import toast from 'react-hot-toast'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { MOONEY_ADDRESSES } from '../../const/config'
-import { ArrowDown } from '../assets'
-import GasCan from '../assets/GasCan'
+import GasIcon from '../assets/GasIcon'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 const swapMinimums: any = {
@@ -29,6 +28,8 @@ const nativeSymbols: any = {
 
 export default function NativeToMooney({ selectedChain }: any) {
   const nativeBalance = useNativeBalance()
+
+  const address = useAddress()
 
   const [amount, setAmount] = useState(0)
   const [inputToken, setInputToken] = useState<any>()
@@ -70,7 +71,7 @@ export default function NativeToMooney({ selectedChain }: any) {
         setEstimatedGasUsedUSD(estimatedGasUSD || 0)
       }
     })
-  }, [amount, selectedChain, inputToken])
+  }, [amount, selectedChain, inputToken, address])
 
   return (
     <div className="max-w-[500px] w-full flex flex-col gap-1">
@@ -98,7 +99,7 @@ export default function NativeToMooney({ selectedChain }: any) {
         <p className="opacity-50">{`Minimum: ${
           swapMinimums[inputToken?.symbol]
         } ${inputToken?.symbol}`}</p>
-        <p className="opacity-50">{`Balance: ${nativeBalance}`}</p>
+        {address && <p className="opacity-50">{`Balance: ${nativeBalance}`}</p>}
       </div>
       <div className="h-0 w-full flex justify-center items-center z-10">
         <div className="p-4 bg-[#29253f] rounded-full">
@@ -127,7 +128,7 @@ export default function NativeToMooney({ selectedChain }: any) {
       <div className="mt-2 p-2 w-full flex justify-between border-[1px] rounded-lg">
         <p>Network Cost</p>
         <div className="flex gap-2 items-center">
-          <GasCan />
+          <GasIcon />
           <p>{`$ ${estimatedGasUsedUSD}`}</p>
         </div>
       </div>
