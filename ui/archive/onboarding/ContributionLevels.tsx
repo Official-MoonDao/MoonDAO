@@ -208,7 +208,7 @@ export function ContributionLevels({
         usdQuote={usdQuotes[2]}
         points={[
           '250,000 $MOONEY which you own and can use as you wish, such as purchasing items in the MoonDAO Marketplace',
-          '250,000 $MOONEY staked for one year to co-govern MoonDAO. At the end of one year, your 50,000 $MOONEY unlocks to use as you wish',
+          '250,000 $MOONEY staked for one year to co-govern MoonDAO. At the end of one year, your 250,000 $MOONEY unlocks to use as you wish',
           'Everything in the Citizen Tier',
         ]}
         hasVotingPower

@@ -20,7 +20,7 @@ export default function ZeroG() {
 
         <div className="mt-3 lg:mt-4 font-Lato">
           <p className="mt-6 lg:mt-7 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg">
-            {`Fill out the form below to be contacted about future opportunities.`}
+            {`Fill out the form below to be contacted about future ticket sales.`}
           </p>
           <iframe
             className="mt-6 aspect-video object-cover w-full"
@@ -38,12 +38,12 @@ export default function ZeroG() {
               {'Space for a Better World '}
             </Link>
             {
-              'to bring these training opportunities to more people alongside experienced NASA astronauts. Our first flight out of Kennedy Space Center featured legendary Apollo 16 astronaut Charlie Duke, SpaceX Astronaut Doug Hurley, and NASA astronaut Nicole Stott in Zero Gravity.'
+              'to bring these VIP training opportunities to people alongside experienced NASA astronauts. Our first flight out of Kennedy Space Center featured legendary Apollo 16 Moonwalker Charlie Duke, NASA and SpaceX astronaut Doug Hurley, and NASA astronaut Nicole Stott in zero gravity.'
             }
           </p>
 
           <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-center text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-            {`A Boeing 727 flies in parabolic arcs to create a weightless environment, allowing you to float, flip, and soar as if you were in space. Start training for a journey to the Moon and experience the adventure of a lifetime with a Zero-G flight!`}
+            {`The airplane flies in parabolic arcs to create a weightless environment, allowing you to float, flip, and soar as if you were in space. Start training for a journey to the Moon and experience the adventure of a lifetime with a zero gravity flight!`}
           </p>
         </div>
 
@@ -51,7 +51,7 @@ export default function ZeroG() {
           {/* <PurchasePortal validVP={validVP} /> */}
           <h1 className="mt-4 font-bold text-2xl">{'Contact:'}</h1>
           <p className="mt-6 font-Lato text-base xl:text-lg lg:text-left text-center text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
-            {`Fill out the form below to get notified about any future training opportunities in zero gravity.`}
+            {`Fill out the form below to get notified about ticket sales for future VIP training opportunities in zero gravity.`}
           </p>
           <div className="w-full">
             <ZeroGContact />
