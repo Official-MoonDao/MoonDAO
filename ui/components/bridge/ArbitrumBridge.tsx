@@ -234,7 +234,7 @@ export default function ArbitrumBridge({
           />
           <div className="min-w-[125px] p-2 bg-black rounded-full">
             <div
-              className="flex items-center justify-between gap-2"
+              className="px-2 flex items-center justify-between gap-2"
               onClick={() => setInputTokenDropdown((prev) => !prev)}
             >
               {inputToken === 'eth' ? (
@@ -304,7 +304,7 @@ export default function ArbitrumBridge({
           <p className="md:text-2xl">{amount}</p>
           <div className="p-2 flex items-center gap-2 bg-black rounded-full">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2 bg-black rounded-full">
+              <div className="px-2 flex items-center gap-2 bg-black rounded-full">
                 {inputToken === 'mooney' ? (
                   <>
                     <Image

@@ -36,6 +36,7 @@ export default function NetworkSelector() {
         onClick={() => setDropdown((prev) => !prev)}
       >
         <Image
+          className="h-6 w-6"
           src={`/icons/networks/${selectedChain.slug}.svg`}
           width={24}
           height={24}
