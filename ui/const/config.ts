@@ -11,25 +11,31 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const defaultConfigL1 =
+const ethConfig =
   require(`../../contracts/deployments/ethereum`) as DeploymentConfig
 
-const defaultConfigL2 =
+const polygonConfig =
   require(`../../contracts/deployments/polygon`) as DeploymentConfig
 
-const devConfigL1 =
+const arbitrumConfig =
+  require('../../contracts/deployments/arbitrum') as DeploymentConfig
+
+const goerliConfig =
   require(`../../contracts/deployments/goerli`) as DeploymentConfig
 
-const devConfigL2 =
+const sepoliaConfig =
   require(`../../contracts/deployments/sepolia`) as DeploymentConfig
 
+const arbitrumSepoliaConfig =
+  require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
+
 export const MOONEY_ADDRESSES: Index = {
-  ethereum: defaultConfigL1.MOONEYToken,
-  polygon: defaultConfigL2.MOONEYToken,
-  goerli: devConfigL1.MOONEYToken,
-  sepolia: devConfigL2.MOONEYToken,
-  arbitrum: '0x1Fa56414549BdccBB09916f61f0A5827f779a85c',
-  'arbitrum-sepolia': '0x0187951aeecDbB6d11D75E7aCe6aC290c6e70391',
+  ethereum: ethConfig.MOONEYToken,
+  polygon: polygonConfig.MOONEYToken,
+  goerli: goerliConfig.MOONEYToken,
+  sepolia: sepoliaConfig.MOONEYToken,
+  arbitrum: arbitrumConfig.MOONEYToken,
+  'arbitrum-sepolia': arbitrumSepoliaConfig.MOONEYToken,
 }
 
 export const DAI_ADDRESSES: Index = {
@@ -43,10 +49,11 @@ export const DAI_ADDRESSES: Index = {
 export const MOONEY_DECIMALS = 10 ** 18
 
 export const VMOONEY_ADDRESSES: Index = {
-  ethereum: defaultConfigL1.vMOONEYToken,
-  polygon: defaultConfigL2.vMOONEYToken,
-  goerli: devConfigL1.vMOONEYToken,
-  sepolia: devConfigL2.vMOONEYToken,
+  ethereum: ethConfig.vMOONEYToken,
+  polygon: polygonConfig.vMOONEYToken,
+  goerli: goerliConfig.vMOONEYToken,
+  sepolia: sepoliaConfig.vMOONEYToken,
+  arbitrum: arbitrumConfig.vMOONEYToken,
 }
 
 export const CITIZEN_NFT_ADDRESSES: Index = {
@@ -69,16 +76,15 @@ export const ENTITY_CREATOR_ADDRESSES: Index = {
   'arbitrum-sepolia': '0x1B4d6090Df479b9457882A565Cb0AAA6171A9Ae1',
 }
 
-export const VMOONEY_SWEEPSTAKES: string =
-  defaultConfigL1.vMooneySweepstakesZeroG
+export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 
 export const MARKETPLACE_FEE_SPLIT: string =
-  defaultConfigL2.MarketplaceFeeSplit || ''
+  polygonConfig.MarketplaceFeeSplit || ''
 
 export const MARKETPLACE_ADDRESS: string =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? defaultConfigL2.Marketplace || ''
-    : devConfigL2.Marketplace || ''
+    ? polygonConfig.Marketplace || ''
+    : sepoliaConfig.Marketplace || ''
 
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
