@@ -44,11 +44,11 @@ export const navigation = [
       },
       {
         name: 'Submit Proposal',
-        href: 'https://discord.com/channels/914720248140279868/1027658256706961509',
+        href: '/newProposal',
       },
       {
         name: 'Vote',
-        href: 'https://snapshot.org/#/tomoondao.eth',
+        href: '/vote',
       },
       { name: 'Dashboard', href: '/governance' },
     ],
