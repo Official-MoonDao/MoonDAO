@@ -58,12 +58,20 @@ const Dropdown = ({ item, router }: any) => {
       className="tracking-tighter"
       as="div"
       defaultOpen={item?.children?.some((e: any) => e.href === router.pathname)}
+      onClick={({ target }: any) => {
+        if (item.href) {
+          const expanded = target.getAttribute('aria-expanded')
+          if (expanded === 'false') router.push(item.href)
+        }
+      }}
     >
       {({ open }) => (
         <>
           <Disclosure.Button
             className={`${
-              item?.children?.map((e: any) => e.href)?.includes(router.pathname)
+              item?.children
+                ?.map((e: any) => e.href)
+                ?.includes(router.pathname) || router.pathname == item.href
                 ? 'bg-blue-200 text-blue-950 dark:bg-gray-950 dark:text-moon-orange hover:scale-100 font-semibold'
                 : ' hover:bg-blue-100  dark:hover:bg-gray-900'
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150`}
