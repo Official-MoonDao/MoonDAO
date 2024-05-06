@@ -33,8 +33,7 @@ export default function Governance() {
       pages: [
         {
           name: 'Export Wallet',
-          description:
-            'Export your embedded wallet to an external wallet. All tokens and voting power will be sent to the specified wallet address.',
+          description: 'Export your embedded wallet to an external wallet.',
           onClick: () => {
             exportWallet().catch((reason: any) =>
               toast.error('Please select a privy wallet to export.')

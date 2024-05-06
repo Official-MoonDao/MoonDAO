@@ -1,9 +1,7 @@
 import {
   BuildingLibraryIcon,
-  DocumentIcon,
   FolderIcon,
   HomeIcon,
-  NewspaperIcon,
   PlusIcon,
   RocketLaunchIcon,
   Squares2X2Icon,
@@ -21,14 +19,15 @@ export const navigation = [
     icon: PlusIcon,
   },
   {
-    name: 'News',
-    href: '/news',
-    icon: NewspaperIcon,
-  },
-  {
-    name: 'About',
-    href: '/about',
-    icon: DocumentIcon,
+    name: 'Info',
+    icon: FolderIcon,
+    href: '/info',
+    children: [
+      { name: 'News', href: '/news' },
+      { name: 'About', href: '/about' },
+      { name: 'Events', href: '/events' },
+      { name: 'Analytics', href: '/analytics' },
+    ],
   },
   {
     name: 'Directory',
@@ -38,6 +37,7 @@ export const navigation = [
   {
     name: 'Governance',
     icon: BuildingLibraryIcon,
+    href: '/governance',
     children: [
       {
         name: 'Get $MOONEY',
@@ -56,29 +56,21 @@ export const navigation = [
         name: 'Vote',
         href: 'https://snapshot.org/#/tomoondao.eth',
       },
-      { name: 'Dashboard', href: '/governance' },
     ],
   },
   {
     name: 'Marketplace',
     icon: RocketLaunchIcon,
+    href: '/marketplace',
     children: [
       { name: 'Ticket To Space 🚀', href: '/sweepstakes' },
       { name: 'ZeroG', href: '/zero-g' },
-      { name: 'Lifeship', href: '/lifeship' },
+      { name: 'LifeShip', href: '/lifeship' },
       {
         name: 'MoonDAO Shields',
         href: '/marketplace/collection/0xE71f58663f80b61f5D127D9DE9d554ca66dED5f1',
         dynamicHref: '/marketplace/collection/[contractAddress]',
       },
-    ],
-  },
-  {
-    name: 'Links',
-    icon: FolderIcon,
-    children: [
-      { name: 'Events', href: '/events' },
-      { name: 'Analytics', href: '/analytics' },
     ],
   },
 ]

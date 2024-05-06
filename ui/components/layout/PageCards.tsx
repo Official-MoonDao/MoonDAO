@@ -26,7 +26,7 @@ export function PageCards({
       )}
       <h1 className="mt-2 lg:mt-3 leading-relaxed page-title">{title}</h1>
 
-      <div className="mt-4 lg:mt-5 text-center lg:text-left font-RobotoMono text-base lg:text-lg dark:text-white text-[#071732] opacity-60">
+      <div className="mt-4 lg:mt-5 text-center lg:text-left font-Lato text-base lg:text-lg dark:text-white text-[#071732] opacity-60">
         {description}
       </div>
       <div
@@ -54,7 +54,7 @@ export function PageCards({
                   key={page.name}
                   className="w-full flex flex-col lg:flex-row items-left lg:items-center text-center inner-container-background rounded-[6px] p-4 gap-x-4 hover:scale-105 transition-all duration-150"
                 >
-                  <dt className="flex min-w-max items-center justify-center mt-3 lg:mt-0 py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold font-RobotoMono lg:w-1/3">
+                  <dt className="flex w-full lg:min-w-max items-center justify-start mt-3 lg:mt-0 py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold font-RobotoMono lg:w-1/3">
                     <page.icon
                       className="h-5 w-5 stroke-2 flex-none text-[#1F212B]"
                       aria-hidden="true"
