@@ -1,29 +1,31 @@
 //@ts-nocheck
 import { parseISO } from 'date-fns'
 
-export function SeshEvent({ seshEvent }: any) {
-  const formattedISODate = parseISO(
-    seshEvent.date.replace(/(\r\n|\n|\r)/gm, '')
-  )
+export function DiscordEvent({ discordEvent }: any) {
+  const date = new Date(discordEvent.scheduled_start_time)
 
-  const date = new Intl.DateTimeFormat('en-US', {
+  const userLocale = navigator.language
+
+  const localDate = date.toLocaleDateString(userLocale, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+  })
+
+  const localTime = date.toLocaleTimeString(userLocale, {
     hour: 'numeric',
     minute: 'numeric',
     hour12: true,
-    timeZone: 'America/Chicago',
-  }).format(formattedISODate)
+  })
 
   return (
     <div className="bg-white dark:bg-slate-900 flex flex-col w-full items-center gap-2 p-2 font-RobotoMono border dark:border-white dark:border-opacity-20 text-center lg:text-left lg:items-start lg:px-4">
       <h1 className="text-orange-500 dark:text-moon-orange lg:text-lg xl:text-[20px]">
-        {seshEvent.title}
+        {discordEvent.name}
       </h1>
       <p className="text-gray-900 dark:text-white text-sm lg:text-base xl:text-lg">
-        {date}
+        {localDate + ' @ ' + localTime}
       </p>
     </div>
   )

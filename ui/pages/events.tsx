@@ -1,5 +1,6 @@
 import useTranslation from 'next-translate/useTranslation'
 import { useCalendarEvents } from '../lib/dashboard/hooks'
+import { DiscordEvent } from '../components/dashboard/calendar/DiscordEvent'
 import { SeshEvent } from '../components/dashboard/calendar/SeshEvent'
 import Head from '../components/layout/Head'
 
@@ -43,7 +44,7 @@ export default function Events() {
             ) : (
               <>
                 {events.map((event: any) => (
-                  <SeshEvent key={event.id} seshEvent={event} />
+                  <DiscordEvent key={event.id} discordEvent={event} />
                 ))}
               </>
             )}

@@ -76,13 +76,21 @@ const Dropdown = ({ item, router }: any) => {
                 : ' hover:bg-blue-100  dark:hover:bg-gray-900'
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150`}
           >
-            <item.icon
-              className={`mr-2 h-5 w-5  ${item?.children
-                ?.map((e: any) => e.href)
-                ?.includes(router.pathname)}`}
-              aria-hidden="true"
-            />
-            {item.name}
+            <div
+              className="flex"
+              onClick={(e) => {
+                open && e.stopPropagation()
+                item.href && router.push(item.href)
+              }}
+            >
+              <item.icon
+                className={`mr-2 h-5 w-5  ${item?.children
+                  ?.map((e: any) => e.href)
+                  ?.includes(router.pathname)}`}
+                aria-hidden="true"
+              />
+              {item.name}
+            </div>
             <span className="ml-4">
               <ChevronRightIcon
                 className={`
