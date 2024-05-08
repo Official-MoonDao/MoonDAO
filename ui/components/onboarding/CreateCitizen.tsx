@@ -358,51 +358,60 @@ export function CreateCitizen({
                   const nextTokenId = totalSupply.toString()
 
                   // pin metadata to IPFS
-                  const metadata = {
-                    name: `${citizenData.firstName} ${citizenData.lastName}`,
-                    description: citizenData.description,
-                    image: `ipfs://${newImageIpfsHash}`,
-                    attributes: [
-                      {
-                        trait_type: 'location',
-                        value: citizenData.location,
-                      },
-                      {
-                        trait_type: 'discord',
-                        value: citizenData.discord,
-                      },
-                      {
-                        trait_type: 'website',
-                        value: citizenData.website,
-                      },
-                      {
-                        trait_type: 'twitter',
-                        value: citizenData.twitter,
-                      },
-                      {
-                        trait_type: 'view',
-                        value: citizenData.view,
-                      },
-                      {
-                        trait_type: 'type',
-                        value: 'citizen',
-                      },
-                    ],
-                    formResponseId: citizenData.formResponseId,
-                  }
+                  // const metadata = {
+                  //   name: `${citizenData.firstName} ${citizenData.lastName}`,
+                  //   description: citizenData.description,
+                  //   image: `ipfs://${newImageIpfsHash}`,
+                  //   attributes: [
+                  //     {
+                  //       trait_type: 'location',
+                  //       value: citizenData.location,
+                  //     },
+                  //     {
+                  //       trait_type: 'discord',
+                  //       value: citizenData.discord,
+                  //     },
+                  //     {
+                  //       trait_type: 'website',
+                  //       value: citizenData.website,
+                  //     },
+                  //     {
+                  //       trait_type: 'twitter',
+                  //       value: citizenData.twitter,
+                  //     },
+                  //     {
+                  //       trait_type: 'view',
+                  //       value: citizenData.view,
+                  //     },
+                  //     {
+                  //       trait_type: 'type',
+                  //       value: 'citizen',
+                  //     },
+                  //   ],
+                  //   formResponseId: citizenData.formResponseId,
+                  // }
 
-                  const newMetadataIpfsHash = await pinMetadataToIPFS(
-                    pinataJWT || '',
-                    metadata,
-                    citizenData.firstName + citizenData.lastName + ' Metadata'
-                  )
+                  // const newMetadataIpfsHash = await pinMetadataToIPFS(
+                  //   pinataJWT || '',
+                  //   metadata,
+                  //   citizenData.firstName + citizenData.lastName + ' Metadata'
+                  // )
 
-                  if (!newMetadataIpfsHash)
-                    return toast.error('Error pinning metadata to IPFS')
-                  //mint NFT to safe
+                  // if (!newMetadataIpfsHash)
+                  //   return toast.error('Error pinning metadata to IPFS')
+
+                  //mint
                   await citizenContract?.call(
                     'mintTo',
-                    [address, 'ipfs://' + newMetadataIpfsHash],
+                    [
+                      address,
+                      `${citizenData.firstName} ${citizenData.lastName}`,
+                      citizenData.description,
+                      `ipfs://${newImageIpfsHash}`,
+                      citizenData.twitter,
+                      citizenData.website,
+                      citizenData.view,
+                    ],
                     {
                       value: ethers.utils.parseEther('0.01'),
                     }
