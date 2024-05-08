@@ -1,5 +1,6 @@
 import { MoonIcon, SunIcon } from '@heroicons/react/24/solid'
-import { DiscordIcon, TwitterIcon } from '../../assets'
+import Link from 'next/link'
+import { DiscordIcon, TwitterIcon, GithubIcon } from '../../assets'
 
 interface ColorsAndSocials {
   lightMode: boolean
@@ -17,24 +18,36 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
         {lightMode ? <SunIcon /> : <MoonIcon />}
       </button> */}
       {/* <hr className="border-none rounded-sm w-[1px] inline-block h-6 bg-black dark:bg-gray-400" /> */}
-      <a
-        className=""
+      <Link
+        className="hover:scale-105 duration-150 ease-in-out"
         aria-label="Link to Discord"
         href="https://discord.gg/moondao"
         target="_blank"
         rel="noreferrer"
+        passHref
       >
         <DiscordIcon />
-      </a>
-      <a
-        className="ml-5"
+      </Link>
+      <Link
+        className="ml-5 hover:scale-105 duration-150 ease-in-out"
+        aria-label="Link to Twitter"
+        href="https://github.com/Official-MoonDao"
+        target="_blank"
+        rel="noreferrer"
+        passHref
+      >
+        <GithubIcon />
+      </Link>
+      <Link
+        className="ml-5 hover:scale-105 duration-150 ease-in-out"
         aria-label="Link to Twitter"
         href="https://twitter.com/OfficialMoonDAO"
         target="_blank"
         rel="noreferrer"
+        passHref
       >
         <TwitterIcon />
-      </a>
+      </Link>
     </div>
   )
 }
