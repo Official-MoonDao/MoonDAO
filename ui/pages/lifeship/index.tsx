@@ -79,7 +79,7 @@ export default function Lifeship({ products = [] }: any) {
         {state === 0 && (
           <div className="mt-5 lg:mt-8 flex flex-col justify-center items-center text-left gap-4 md:w-full w-full">
             {/*Paragraph text */}
-            <p className="max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-lg lg:self-start font-[Lato]">
+            <p className="max-w-2xl lg:max-w-3xl font-RobotoMono lg:text-left lg:text-lg lg:self-start font-[Lato]">
               {`Send DNA or ashes to the moon, leaving your legacy in the universe! MoonDAO is partnering with`}{' '}
               <span>
                 <button

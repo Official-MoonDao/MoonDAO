@@ -20,7 +20,7 @@ export default function Product({
     return (
       <div className="mt-8 flex justify-center items-center">
         <div className="flex flex-col">
-          <div className="flex flex-col items-center justify-center my-3 text-center">
+          <div className="flex flex-col items-center justify-center my-3">
             <p className="lg:w-3/4 mt-2 md:mt-4 text-sm font-[Lato] leading-relaxed lg:text-base lg:text-left lg:self-start xl:text-lg text-gray-900 dark:text-white opacity-90">
               MoonDAO is partnering with lifeship to send images to space!
               Please upload a file and complete the checkout.
