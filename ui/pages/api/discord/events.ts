@@ -12,13 +12,13 @@ export default async function handler(req: any, res: any) {
     )
 
     if (!response.ok) {
-      throw new Error('Failed to fetch announcements')
+      throw new Error('Failed to fetch events')
     }
 
     const announcements = await response.json()
     res.status(200).json(announcements)
   } catch (error) {
-    console.error('Error fetching announcements:', error)
+    console.error('Error fetching events:', error)
     res.status(500).json({ error: 'An error occurred' })
   }
 }
