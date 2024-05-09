@@ -1,6 +1,8 @@
 import { PrivyProvider } from '@privy-io/react-auth'
 import { Chain, Mumbai, Polygon, Sepolia } from '@thirdweb-dev/chains'
+import NextAdapterApp from 'next-query-params/app'
 import React, { useEffect, useState } from 'react'
+import { QueryParamProvider } from 'use-query-params'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
@@ -43,7 +45,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
         >
           <PrivyThirdwebSDKProvider selectedChain={selectedChain}>
             <Layout lightMode={lightMode} setLightMode={setLightMode}>
-              <Component {...pageProps} />
+              <QueryParamProvider adapter={NextAdapterApp}>
+                <Component {...pageProps} />
+              </QueryParamProvider>
             </Layout>
           </PrivyThirdwebSDKProvider>
         </PrivyProvider>
