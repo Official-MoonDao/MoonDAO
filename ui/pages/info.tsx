@@ -37,7 +37,7 @@ export default function Info() {
           name: 'Analytics',
           description:
             'Transparent data and analytics related to our treasury, token, transactions, and more.',
-          href: '/events',
+          href: '/analytics',
           icon: ChartBarIcon,
         },
       ],

@@ -34,7 +34,7 @@ export default function Marketplace() {
           name: 'LifeShip',
           description:
             'Be a part of an off-world backup of life on Earth by sending your DNA to the surface on the Moon. Moondao has partnered with LifeShip.',
-          href: '/lock',
+          href: '/lifeship',
           icon: GlobeAmericasIcon,
         },
       ],
