@@ -44,7 +44,6 @@ module.exports = {
         n3nav: '#7395B2',
         moonBlue: '#0B3B8E',
         'moon-orange': '#D7594F',
-       
       },
       keyframes: {
         notification: {
@@ -90,7 +89,11 @@ module.exports = {
     },
   },
   darkMode: 'class',
-  plugins: [require('daisyui'), require('tailwind-scrollbar-hide')],
+  plugins: [
+    require('daisyui'),
+    require('tailwind-scrollbar-hide'),
+    require('@tailwindcss/typography'),
+  ],
   daisyui: {
     themes: [
       {
