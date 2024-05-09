@@ -20,9 +20,9 @@ const links = [
 
 export default function SpaceIndex() {
   return (
-    <div className="bg-white">
+    <div className="flex flex-col justify-center items-center animate-fadeIn lg:px-3 lg:pb-14 lg:mt-1 md:max-w-[1080px]">
       <Head title="Vote" />
-      <div className="mx-auto flex w-full max-w-7xl items-start px-4 py-2 sm:px-6 sm:py-4 lg:px-8 xl:gap-x-8">
+      <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full py-5 pl-10 pr-8">
         <main className="flex-1">
           <NanceProvider apiUrl="https://api.nance.app">
             <ProposalList />

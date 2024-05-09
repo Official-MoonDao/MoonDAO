@@ -7,10 +7,15 @@ import ProposalSummary from '../../components/nance/ProposalSummary'
 export default function Proposal() {
   const router = useRouter()
   const proposalId = router.query.proposal as string
-  const { data } = useProposal({ space: 'moondao', uuid: proposalId })
+  const { data, isLoading } = useProposal({
+    space: 'moondao',
+    uuid: proposalId,
+  })
   const proposalPacket = data?.data
 
-  if (!proposalPacket) {
+  if (isLoading) {
+    return <p>Loading</p>
+  } else if (!proposalPacket) {
     return <p>Proposal not found</p>
   }
 
@@ -23,7 +28,7 @@ export default function Proposal() {
   // )
 
   return (
-    <div className="bg-white">
+    <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full lg:px-10 bg-white">
       <header className="relative isolate">
         <div
           className="absolute inset-0 -z-10 overflow-hidden"
