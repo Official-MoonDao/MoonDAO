@@ -17,6 +17,8 @@
   "dependencies": {
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
+    "@nance/nance-hooks": "^2.0.1",
+    "@nance/nance-sdk": "^2.0.1",
     "@privy-io/react-auth": "^1.56.1",
     "@privy-io/wagmi-connector": "^0.1.12",
     "@react-three/drei": "^9.86.0",
@@ -42,6 +44,7 @@
     "moment": "^2.29.4",
     "mongoose": "^8.0.0",
     "next": "^13.4.10",
+    "next-query-params": "^5.0.0",
     "next-translate": "^1.6.0",
     "nodemailer": "^6.9.8",
     "numeral": "^2.0.6",
@@ -57,10 +60,12 @@
     "react-use": "^17.3.2",
     "sharp": "^0.32.3",
     "shopify-buy": "^2.18.0",
+    "swr": "^2.2.5",
     "tailwind-scrollbar-hide": "^1.1.7",
     "three": "^0.156.1",
     "typescript": "^5.1.6",
-    "urql": "^4.0.4"
+    "urql": "^4.0.4",
+    "use-query-params": "^2.2.1"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
