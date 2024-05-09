@@ -55,7 +55,7 @@ export default function ZeroGravity() {
           </p>
           <div className="w-full flex justify-center">
             <iframe
-              className=" w-full max-w-[550px] h-[550px]"
+              className="mt-[-50px] w-full max-w-[550px] h-[550px]"
               src="https://moondao.ck.page/1e6e54ca0a/"
             />
           </div>
