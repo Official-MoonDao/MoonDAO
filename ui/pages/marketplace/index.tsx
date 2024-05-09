@@ -24,10 +24,10 @@ export default function Marketplace() {
           icon: RocketLaunchIcon,
         },
         {
-          name: 'Zero-G',
+          name: 'Zero Gravity',
           description:
             "Experience lunar and zero gravity alongside NASA astronauts as part of MoonDAO's astronaut training program.",
-          href: '/zero-g',
+          href: '/zero-gravity',
           icon: TicketIcon,
         },
         {
