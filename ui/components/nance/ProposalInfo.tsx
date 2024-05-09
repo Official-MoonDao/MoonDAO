@@ -23,9 +23,9 @@ export default function ProposalInfo({
         <p className="text-base font-semibold text-gray-900">
           {!linkDisabled ? (
             <Link
-              href={
+              href={`/proposal/${
                 proposalPacket.proposalId?.toString() || proposalPacket.uuid
-              }
+              }`}
               passHref
             >
               <span className="absolute inset-x-0 -top-px bottom-0" />
