@@ -18,7 +18,7 @@ export function PageCards({
   const router = useRouter()
 
   return (
-    <div className="mt-3 px-5 lg:px-8 xl:px-9 py-12 lg:py-14 page-border-and-color w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] font-[Lato]">
+    <div className="mt-3 px-5 lg:px-8 xl:px-9 py-12 lg:py-14 page-border-and-color w-[336px] sm:w-[400px] lg:mt-10 lg:w-[600px] lg:max-w-[1080px] font-[Lato] flex flex-col">
       {header && (
         <p className="text-[#071732] dark:text-white font-RobotoMono font-semibold text-sm lg:text-base text-center lg:text-left">
           {header}
@@ -26,7 +26,7 @@ export function PageCards({
       )}
       <h1 className="mt-2 lg:mt-3 leading-relaxed page-title">{title}</h1>
 
-      <div className="mt-4 lg:mt-5 text-center lg:text-left font-RobotoMono text-base lg:text-lg dark:text-white text-[#071732] opacity-60">
+      <div className="mt-4 lg:mt-5 font-Lato text-base lg:text-lg dark:text-white text-[#071732] opacity-60">
         {description}
       </div>
       <div
@@ -38,10 +38,10 @@ export function PageCards({
             className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-4 lg:max-w-none mb-8"
             key={id + 'page-cards' + i}
           >
-            <p className="text-2xl text-center lg:text-left text-gray-950 dark:text-white font-RobotoMono">
+            <p className="text-2xl text-center lg:text-left text-gray-950 dark:text-white font-GoodTimes">
               {section.sectionName}
             </p>
-            <div id={id + '-pages'}>
+            <div className="flex flex-col gap-4" id={id + '-pages'}>
               {section.pages.map((page: any, i: number) => (
                 <button
                   onClick={
@@ -52,16 +52,16 @@ export function PageCards({
                       : page?.onClick
                   }
                   key={page.name}
-                  className="w-full flex flex-col lg:flex-row items-left lg:items-center text-center inner-container-background rounded-[6px] p-4 gap-x-4 hover:scale-105 transition-all duration-150"
+                  className="w-full max-w-[500px] min-h-[150px] flex flex-col items-left text-center inner-container-background rounded-[6px] p-4 gap-x-4 border-transparent border-[1px] hover:border-white transition-all duration-150"
                 >
-                  <dt className="flex min-w-max items-center justify-center mt-3 lg:mt-0 py-[10px] px-[16px] gap-x-3 bg-[#CBE4F7] text-[#1F212B] text-base font-bold font-RobotoMono lg:w-1/3">
+                  <dt className="flex w-full lg:min-w-max items-center justify-start mt-3 lg:mt-0 py-[10px] gap-x-3 text-white text-base font-bold font-RobotoMono lg:w-1/3">
                     <page.icon
-                      className="h-5 w-5 stroke-2 flex-none text-[#1F212B]"
+                      className="h-8 w-8 stroke-2 flex-none"
                       aria-hidden="true"
                     />
                     {page.name}
                   </dt>
-                  <dd className="text-sm leading-7 lg:w-2/3 mb-3 lg:mb-0 mt-2 lg:mt-0 lg:px-1 text-light-text dark:text-white font-medium text-left">
+                  <dd className="text-sm leading-7 mb-3 lg:mb-0 mt-2 lg:mt-0 lg:px-1 text-light-text dark:text-white font-medium text-left">
                     <p className="">
                       {page.description}{' '}
                       {page.hyperlink && page.hyperlinkText && (

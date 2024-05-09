@@ -1,9 +1,7 @@
 import {
   BuildingLibraryIcon,
-  DocumentIcon,
   FolderIcon,
   HomeIcon,
-  NewspaperIcon,
   PlusIcon,
   RocketLaunchIcon,
 } from '@heroicons/react/24/outline'
@@ -20,18 +18,20 @@ export const navigation = [
     icon: PlusIcon,
   },
   {
-    name: 'News',
-    href: '/news',
-    icon: NewspaperIcon,
-  },
-  {
-    name: 'About',
-    href: '/about',
-    icon: DocumentIcon,
+    name: 'Info',
+    icon: FolderIcon,
+    href: '/info',
+    children: [
+      { name: 'News', href: '/news' },
+      { name: 'About', href: '/about' },
+      { name: 'Events', href: '/events' },
+      { name: 'Analytics', href: '/analytics' },
+    ],
   },
   {
     name: 'Governance',
     icon: BuildingLibraryIcon,
+    href: '/governance',
     children: [
       {
         name: 'Get $MOONEY',
@@ -40,7 +40,7 @@ export const navigation = [
       { name: 'Lock $MOONEY', href: '/lock' },
       {
         name: 'Constitution',
-        href: 'https://docs.moondao.com/Constitution',
+        href: 'https://docs.moondao.com/Governance/Constitution',
       },
       {
         name: 'Submit Proposal',
@@ -50,29 +50,21 @@ export const navigation = [
         name: 'Vote',
         href: '/vote',
       },
-      { name: 'Dashboard', href: '/governance' },
     ],
   },
   {
     name: 'Marketplace',
     icon: RocketLaunchIcon,
+    href: '/marketplace',
     children: [
       { name: 'Ticket To Space 🚀', href: '/sweepstakes' },
-      { name: 'ZeroG', href: '/zero-g' },
-      { name: 'Lifeship', href: '/lifeship' },
+      { name: 'Zero Gravity', href: '/zero-gravity' },
+      { name: 'LifeShip', href: '/lifeship' },
       {
         name: 'MoonDAO Shields',
         href: '/marketplace/collection/0xE71f58663f80b61f5D127D9DE9d554ca66dED5f1',
         dynamicHref: '/marketplace/collection/[contractAddress]',
       },
-    ],
-  },
-  {
-    name: 'Links',
-    icon: FolderIcon,
-    children: [
-      { name: 'Events', href: '/events' },
-      { name: 'Analytics', href: '/analytics' },
     ],
   },
 ]

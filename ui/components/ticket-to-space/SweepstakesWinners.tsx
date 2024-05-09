@@ -22,7 +22,7 @@ const PRIZES = [
 function Winner({ number, tokenId, address, prize }: any) {
   return (
     <div
-      className={`flex items-center gap-4 px-5 lg:px-7 xl:px-10 py-6 border-2 dark:border-[#ffffff20] font-RobotoMono w-[300px] md:w-[400px] lg:mt-10 lg:w-3/4 lg:max-w-[1080px] text-slate-950 text-sm dark:text-white ${
+      className={`flex items-center gap-4 px-5 lg:px-7 xl:px-10 py-6 border-2 dark:border-[#ffffff20] font-RobotoMono w-full lg:mt-10 lg:max-w-[1080px] text-slate-950 text-sm dark:text-white ${
         number === 1 && 'border-moon-gold dark:border-moon-gold'
       }`}
     >
@@ -61,7 +61,7 @@ function Winner({ number, tokenId, address, prize }: any) {
 
 function WinnerSkeleton() {
   return (
-    <div className="flex w-[300px] md:w-[400px] gap-4 px-5 lg:px-7 xl:px-10 py-6 border-2 dark:border-[#ffffff20] font-RobotoMono h-[100px] lg:mt-10 lg:w-3/4 lg:max-w-[1080px] text-slate-950 text-sm dark:text-white animate-pulse"></div>
+    <div className="flex w-full gap-4 px-5 lg:px-7 xl:px-10 py-6 border-2 dark:border-[#ffffff20] font-RobotoMono h-[100px] lg:mt-10 text-slate-950 text-sm dark:text-white animate-pulse"></div>
   )
 }
 

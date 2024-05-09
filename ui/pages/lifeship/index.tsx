@@ -41,7 +41,7 @@ export default function Lifeship({ products = [] }: any) {
 
   return (
     <main className="animate-fadeIn">
-      <Head title="Lifeship" />
+      <Head title="LifeShip" />
 
       <div className="mt-3 lg:mt-10 px-5 lg:px-10 xl:px-10 py-10 w-[336px] sm:w-[400px] lg:w-full lg:max-w-[1080px] page-border-and-color text-gray-900 dark:text-white">
         {/*Title */}
@@ -79,14 +79,14 @@ export default function Lifeship({ products = [] }: any) {
         {state === 0 && (
           <div className="mt-5 lg:mt-8 flex flex-col justify-center items-center text-left gap-4 md:w-full w-full">
             {/*Paragraph text */}
-            <p className="max-w-2xl lg:max-w-3xl font-RobotoMono text-center lg:text-left lg:text-lg lg:self-start font-[Lato]">
+            <p className="max-w-2xl lg:max-w-3xl font-RobotoMono lg:text-left lg:text-lg lg:self-start font-[Lato]">
               {`Send DNA or ashes to the moon, leaving your legacy in the universe! MoonDAO is partnering with`}{' '}
               <span>
                 <button
                   className="text-moon-orange hover:scale-[1.025] ease-in-ease-out duration-300"
                   onClick={() => window.open('https://lifeship.com/')}
                 >
-                  {'Lifeship'}
+                  {'LifeShip'}
                 </button>
               </span>{' '}
               {`to send a time capsule of life on Earth to the Moon!`}
@@ -96,7 +96,7 @@ export default function Lifeship({ products = [] }: any) {
 
             {products[0] && (
               <div className="flex flex-col gap-[5%] w-full items-center justify-center mt-3 lg:mt-8">
-                <div className="w-full lg:min-h-[35vh] h-full flex flex-col lg:grid lg:grid-cols-2 2xl:grid-cols-3 gap-2 xl:gap-4">
+                <div className="w-full lg:min-h-[35vh] h-full flex flex-col lg:flex-row gap-2 xl:gap-4">
                   <Product
                     product={products[0]}
                     label="DNA Kit"
@@ -160,12 +160,13 @@ export default function Lifeship({ products = [] }: any) {
                 </Button>
 
                 {/*Section after products*/}
-
-                <Product
-                  product={products[3]}
-                  label="NFT kit"
-                  linkToStore={() => window.open(products[3].onlineStoreUrl)}
-                />
+                <div className="w-full flex">
+                  <Product
+                    product={products[3]}
+                    label="NFT kit"
+                    linkToStore={() => window.open(products[3].onlineStoreUrl)}
+                  />
+                </div>
               </div>
             )}
           </div>
