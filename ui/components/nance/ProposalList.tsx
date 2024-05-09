@@ -79,72 +79,73 @@ export default function ProposalList() {
   }
   const proposals = proposalsPacket?.proposals || []
 
-  if (proposals.length === 0) {
+  if (proposalsPacket === undefined || proposals.length === 0) {
     return <NoResults />
-  }
-
-  return (
-    <div>
-      <ul className="divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-        {proposals.map((proposal) => (
-          <li
-            key={proposal.uuid}
-            className="relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 sm:px-6"
-          >
-            <ProposalInfo
-              proposalPacket={{
-                ...proposal,
-                proposalInfo: proposalsPacket.proposalInfo,
-              }}
-            />
-            <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
-              <div className="flex sm:flex-col sm:items-end">
-                <p className="text-sm leading-6 text-gray-900">
-                  {proposal.status}
-                </p>
-                {['Voting', 'Temperature Check'].includes(proposal.status) ? (
-                  <div className="mt-1 flex items-center gap-x-1.5">
-                    <div className="flex-none rounded-full bg-emerald-500/20 p-1">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    </div>
-                    <p className="text-xs leading-5 text-gray-500">Voting</p>
-                  </div>
-                ) : (
-                  <p className="mt-1 text-xs leading-5 text-gray-500">
-                    <span className="sr-only">Last edited</span>
-                    <time dateTime={proposal.lastEditedTime}>
-                      {formatDistanceStrict(
-                        new Date(
-                          proposal.lastEditedTime || proposal.createdTime
-                        ),
-                        new Date(),
-                        { addSuffix: true }
-                      )}
-                    </time>
-                  </p>
-                )}
-              </div>
-              <ChevronRightIcon
-                className="h-5 w-5 flex-none text-gray-400"
-                aria-hidden="true"
+  } else {
+    const packet = proposalsPacket
+    return (
+      <div>
+        <ul className="divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+          {proposals.map((proposal) => (
+            <li
+              key={proposal.uuid}
+              className="relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 sm:px-6"
+            >
+              <ProposalInfo
+                proposalPacket={{
+                  ...proposal,
+                  proposalInfo: packet.proposalInfo,
+                }}
               />
-            </div>
-          </li>
-        ))}
-      </ul>
+              <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
+                <div className="flex sm:flex-col sm:items-end">
+                  <p className="text-sm leading-6 text-gray-900">
+                    {proposal.status}
+                  </p>
+                  {['Voting', 'Temperature Check'].includes(proposal.status) ? (
+                    <div className="mt-1 flex items-center gap-x-1.5">
+                      <div className="flex-none rounded-full bg-emerald-500/20 p-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      </div>
+                      <p className="text-xs leading-5 text-gray-500">Voting</p>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs leading-5 text-gray-500">
+                      <span className="sr-only">Last edited</span>
+                      <time dateTime={proposal.lastEditedTime}>
+                        {formatDistanceStrict(
+                          new Date(
+                            proposal.lastEditedTime || proposal.createdTime
+                          ),
+                          new Date(),
+                          { addSuffix: true }
+                        )}
+                      </time>
+                    </p>
+                  )}
+                </div>
+                <ChevronRightIcon
+                  className="h-5 w-5 flex-none text-gray-400"
+                  aria-hidden="true"
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
 
-      <div className="m-6 flex justify-center">
-        <LoadMoreButton
-          dataLength={proposals.length}
-          fetchMore={() => setSize(size + 1)}
-          // 2 pages with 5 limit will have 6 proposals loaded at least
-          // so we can safely assume that if the number of proposals loaded
-          loading={(size - 1) * limit + 1 > proposals.length}
-          hasMore={proposalsPacket?.hasMore}
-        />
+        <div className="m-6 flex justify-center">
+          <LoadMoreButton
+            dataLength={proposals.length}
+            fetchMore={() => setSize(size + 1)}
+            // 2 pages with 5 limit will have 6 proposals loaded at least
+            // so we can safely assume that if the number of proposals loaded
+            loading={(size - 1) * limit + 1 > proposals.length}
+            hasMore={proposalsPacket?.hasMore}
+          />
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 }
 
 function LoadMoreButton({
