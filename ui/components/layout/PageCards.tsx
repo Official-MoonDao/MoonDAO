@@ -26,7 +26,7 @@ export function PageCards({
       )}
       <h1 className="mt-2 lg:mt-3 leading-relaxed page-title">{title}</h1>
 
-      <div className="mt-4 lg:mt-5 text-center lg:text-left font-Lato text-base lg:text-lg dark:text-white text-[#071732] opacity-60">
+      <div className="mt-4 lg:mt-5 font-Lato text-base lg:text-lg dark:text-white text-[#071732] opacity-60">
         {description}
       </div>
       <div

@@ -83,14 +83,23 @@ export function useCalendarEvents(calendarLink: string) {
   //   getEventData()
   // }, [])
 
+  async function getEvents() {
+    const res = await fetch('/api/discord/events')
+    const data = await res.json()
+    setEvents(data)
+  }
+
   useEffect(() => {
-    ;(async () => {
-      const res = await fetch('/api/discord/events')
-      const data = await res.json()
-      setEvents(data)
-      console.log(data)
-    })()
+    getEvents()
   }, [])
 
-  return { events }
+  useEffect(() => {
+    if (events?.error === 'An error occurred') {
+      setTimeout(() => {
+        getEvents()
+      }, 3000)
+    }
+  }, [events])
+
+  return events
 }

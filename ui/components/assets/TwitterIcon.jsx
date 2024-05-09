@@ -1,33 +1,18 @@
 import * as React from 'react'
 
-const TwitterIcon = ({ width, height }) => (
+const TwitterIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     x="0px"
     y="0px"
-    width={width}
-    height={height}
-    viewBox="0,0,256,256"
-    className="text-black dark:text-white fill-current"
+    width="26"
+    height="26"
+    viewBox="0 0 32 32"
   >
-    <g
-      fillRule="nonzero"
-      stroke="none"
-      strokeWidth="1"
-      strokeLinecap="butt"
-      strokeLinejoin="miter"
-      strokeMiterlimit="10"
-      strokeDasharray=""
-      strokeDashoffset="0"
-      fontFamily="none"
-      fontWeight="none"
-      fontSize="none"
-      textAnchor="none"
-    >
-      <g transform="scale(5.12,5.12)">
-        <path d="M5.91992,6l14.66211,21.375l-14.35156,16.625h3.17969l12.57617,-14.57812l10,14.57813h12.01367l-15.31836,-22.33008l13.51758,-15.66992h-3.16992l-11.75391,13.61719l-9.3418,-13.61719zM9.7168,8h7.16406l23.32227,34h-7.16406z"></path>
-      </g>
-    </g>
+    <path
+      d="M 4.0175781 4 L 13.091797 17.609375 L 4.3359375 28 L 6.9511719 28 L 14.246094 19.34375 L 20.017578 28 L 20.552734 28 L 28.015625 28 L 18.712891 14.042969 L 27.175781 4 L 24.560547 4 L 17.558594 12.310547 L 12.017578 4 L 4.0175781 4 z M 7.7558594 6 L 10.947266 6 L 24.279297 26 L 21.087891 26 L 7.7558594 6 z"
+      fill="white"
+    ></path>
   </svg>
 )
 

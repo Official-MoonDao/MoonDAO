@@ -24,17 +24,17 @@ export default function Marketplace() {
           icon: RocketLaunchIcon,
         },
         {
-          name: 'Zero-G',
+          name: 'Zero Gravity',
           description:
             "Experience lunar and zero gravity alongside NASA astronauts as part of MoonDAO's astronaut training program.",
-          href: '/zero-g',
+          href: '/zero-gravity',
           icon: TicketIcon,
         },
         {
           name: 'LifeShip',
           description:
             'Be a part of an off-world backup of life on Earth by sending your DNA to the surface on the Moon. Moondao has partnered with LifeShip.',
-          href: '/lock',
+          href: '/lifeship',
           icon: GlobeAmericasIcon,
         },
       ],

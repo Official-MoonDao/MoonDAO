@@ -5,6 +5,7 @@ import ArrowUp from './ArrowUp'
 import CNAsset from './CNAsset'
 import CopyIcon from './CopyIcon'
 import DiscordIcon from './DiscordIcon'
+import GithubIcon from './GithubIcon'
 import GoldPaperArrow from './GoldPaperArrow'
 import LogoBlack from './LogoBlack'
 import LogoSidebar from './LogoSidebar'
@@ -38,4 +39,5 @@ export {
   CNAsset,
   LogoSmall,
   SolarConfetti,
+  GithubIcon,
 }
