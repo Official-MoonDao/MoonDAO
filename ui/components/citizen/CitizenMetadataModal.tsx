@@ -1,17 +1,18 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress, useResolvedMediaType } from '@thirdweb-dev/react'
+import {
+  useAddress,
+  useContract,
+  useResolvedMediaType,
+} from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
+import { CITIZEN_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 
-export function CitizenMetadataModal({
-  nft,
-  citizenContract,
-  setEnabled,
-}: any) {
+export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const router = useRouter()
   const address = useAddress()
   const { wallets } = useWallets()
@@ -19,6 +20,10 @@ export function CitizenMetadataModal({
   const [isLoading, setIsLoading] = useState(false)
 
   const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
+
+  const { contract: citizenTableContract } = useContract(
+    CITIZEN_TABLE_ADDRESSES[selectedChain.slug]
+  )
 
   return (
     <div
@@ -34,7 +39,7 @@ export function CitizenMetadataModal({
           className="w-[100%] md:w-[100%]"
           id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
           onSubmit={async (formResponse: any) => {
-            //sign message to get response
+            // sign message to get response
             const provider = await wallets[selectedWallet].getEthersProvider()
             const signer = provider?.getSigner()
 
@@ -94,7 +99,7 @@ export function CitizenMetadataModal({
                 {
                   trait_type: 'view',
                   value:
-                    data.answers[7].choice.label === 'Yes'
+                    data.answers[8].choice.label === 'Yes'
                       ? 'public'
                       : 'private',
                 },
@@ -106,34 +111,46 @@ export function CitizenMetadataModal({
               formResponseId: responseId,
             }
 
-            //sign message for pinata
+            // //sign message for pinata
 
-            //get pinata jwt
-            const jwtRes = await fetch('/api/ipfs/upload', {
-              method: 'POST',
-              headers: {
-                signature,
-              },
-              body: JSON.stringify({
-                address,
-                message,
-              }),
-            })
+            // //get pinata jwt
+            // const jwtRes = await fetch('/api/ipfs/upload', {
+            //   method: 'POST',
+            //   headers: {
+            //     signature,
+            //   },
+            //   body: JSON.stringify({
+            //     address,
+            //     message,
+            //   }),
+            // })
 
-            const pinataJWT = await jwtRes.text()
+            // const pinataJWT = await jwtRes.text()
 
-            const newMetadataIpfsHash = await pinMetadataToIPFS(
-              pinataJWT || '',
-              metadata,
-              data.answers[0].text + data.answers[1].text + ' Metadata'
-            )
+            // const newMetadataIpfsHash = await pinMetadataToIPFS(
+            //   pinataJWT || '',
+            //   metadata,
+            //   data.answers[0].text + data.answers[1].text + ' Metadata'
+            // )
 
-            if (!newMetadataIpfsHash)
-              return toast.error('Error pinning metadata to IPFS')
-            //mint NFT to safe
-            await citizenContract?.call('setTokenURI', [
+            // if (!newMetadataIpfsHash)
+            //   return toast.error('Error pinning metadata to IPFS')
+
+            // //Update row in tableland table
+            // await citizenContract?.call('setTokenURI', [
+            //   nft.metadata.id,
+            //   'ipfs://' + newMetadataIpfsHash,
+            // ])
+
+            await citizenTableContract?.call('updateTable', [
               nft.metadata.id,
-              'ipfs://' + newMetadataIpfsHash,
+              `${data.answers[0].text} ${data.answers[1].text}`,
+              data.answers[3].text,
+              imageIPFSLink,
+              data.answers[7].text,
+              data.answers[4].text,
+              data.answers[5].url,
+              data.answers[8].choice.label === 'Yes' ? 'public' : 'private',
             ])
 
             router.reload()

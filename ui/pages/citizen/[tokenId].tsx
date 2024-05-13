@@ -148,7 +148,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
                   {citizenMetadataModalEnabled && (
                     <CitizenMetadataModal
                       nft={nft}
-                      citizenContract={citizenContract}
+                      selectedChain={selectedChain}
                       setEnabled={setCitizenMetadataModalEnabled}
                     />
                   )}

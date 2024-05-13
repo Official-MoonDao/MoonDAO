@@ -408,7 +408,8 @@ export function CreateCitizen({
                       `${citizenData.firstName} ${citizenData.lastName}`,
                       citizenData.description,
                       `ipfs://${newImageIpfsHash}`,
-                      citizenData.twitter,
+                      citizenData.location,
+                      citizenData.discord,
                       citizenData.website,
                       citizenData.view,
                     ],
@@ -428,6 +429,8 @@ export function CreateCitizen({
           </StageContainer>
         )}
       </div>
+
+      <button onClick={() => setStage(stage + 1)}>{'NEXT =>'}</button>
     </div>
   )
 }
