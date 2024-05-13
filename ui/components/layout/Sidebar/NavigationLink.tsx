@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 
 //Checks if the navigation object has a property 'external' set to true, if so returns a link that opens another tab, otherwise checks if the navigation object has children. If it does, it returns the dropdown, if it doesn't it returns an internal navigation link.
 
-const NavigationLink = ({ item }: any) => {
+const NavigationLink = ({ item, setSidebarOpen }: any) => {
   const router = useRouter()
   const { t } = useTranslation('common')
   return (
@@ -34,6 +34,7 @@ const NavigationLink = ({ item }: any) => {
                 ? 'bg-blue-200 text-blue-950 dark:bg-slate-950 dark:text-moon-orange font-semibold'
                 : ' hover:bg-blue-100 dark:hover:bg-gray-900 '
             } group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150 cursor-pointer`}
+            onClick={() => setSidebarOpen && setSidebarOpen(false)}
           >
             <item.icon
               className={`mr-2 h-5 w-5 flex-shrink-0   ${
@@ -46,13 +47,13 @@ const NavigationLink = ({ item }: any) => {
           </div>
         </Link>
       ) : (
-        <Dropdown item={item} router={router} />
+        <Dropdown item={item} router={router} setSidebarOpen={setSidebarOpen} />
       )}
     </li>
   )
 }
 
-const Dropdown = ({ item, router }: any) => {
+const Dropdown = ({ item, router, setSidebarOpen }: any) => {
   return (
     <Disclosure
       className="tracking-tighter"
@@ -114,6 +115,7 @@ const Dropdown = ({ item, router }: any) => {
                 <li
                   key={subItem.name}
                   className="list-disc marker:text-blue-950 dark:marker:text-moon-orange group hover:scale-105 transition-all duration-150"
+                  onClick={() => setSidebarOpen && setSidebarOpen(false)}
                 >
                   <Link
                     href={subItem.href}
