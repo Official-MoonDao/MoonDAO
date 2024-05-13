@@ -88,7 +88,11 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
               <div className="mt-8 h-0 flex-1 overflow-y-auto">
                 <nav className="space-y-1 px-2">
                   {navigation.map((item, i) => (
-                    <NavigationLink item={item} key={i} />
+                    <NavigationLink
+                      key={i}
+                      item={item}
+                      setSidebarOpen={setSidebarOpen}
+                    />
                   ))}
                 </nav>
               </div>
