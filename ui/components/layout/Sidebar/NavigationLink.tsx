@@ -34,7 +34,7 @@ const NavigationLink = ({ item, setSidebarOpen }: any) => {
                 ? 'bg-blue-200 text-blue-950 dark:bg-slate-950 dark:text-moon-orange font-semibold'
                 : ' hover:bg-blue-100 dark:hover:bg-gray-900 '
             } group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150 cursor-pointer`}
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => setSidebarOpen && setSidebarOpen(false)}
           >
             <item.icon
               className={`mr-2 h-5 w-5 flex-shrink-0   ${
@@ -115,7 +115,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
                 <li
                   key={subItem.name}
                   className="list-disc marker:text-blue-950 dark:marker:text-moon-orange group hover:scale-105 transition-all duration-150"
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => setSidebarOpen && setSidebarOpen(false)}
                 >
                   <Link
                     href={subItem.href}
