@@ -106,7 +106,7 @@ export default function EntityDetailPage({ tokenId }: any) {
 
   useEffect(() => {
     setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
     )
   }, [])
 
@@ -143,7 +143,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                   {entityMetadataModalEnabled && (
                     <EntityMetadataModal
                       nft={nft}
-                      entityContract={entityContract}
+                      selectedChain={selectedChain}
                       setEnabled={setEntityMetadataModalEnabled}
                     />
                   )}

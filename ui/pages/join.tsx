@@ -1,6 +1,6 @@
-import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import useTranslation from 'next-translate/useTranslation'
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import Head from '../components/layout/Head'
 import { OnboardingV2 } from '../components/onboarding/OnboardingV2'
@@ -12,7 +12,7 @@ export default function Join() {
 
   useEffect(() => {
     setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
     )
   }, [])
 

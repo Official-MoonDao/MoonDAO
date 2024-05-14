@@ -107,13 +107,13 @@ export default function CitizenDetailPage({ tokenId }: any) {
     }
   }, [nft])
 
+  const projects = useProjects()
+
   useEffect(() => {
     setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
     )
   }, [])
-
-  const projects = useProjects()
 
   if (!nft?.metadata) return
 

@@ -1,5 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
-import { Arbitrum,ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, ArbitrumSepolia, Sepolia } from '@thirdweb-dev/chains'
 import {
   NFT,
   ThirdwebNftMedia,
@@ -124,12 +124,6 @@ export default function Directory() {
 
   const [pageIdx, setPageIdx] = useState(1)
 
-  useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
-    )
-  }, [])
-
   //only show public nfts that are whitelisted
   useEffect(() => {
     const filtered: any = entities?.filter(
@@ -167,6 +161,12 @@ export default function Directory() {
       loadByTab(tab)
     }
   }, [input, cachedNFTs])
+
+  useEffect(() => {
+    setSelectedChain(
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+    )
+  }, [])
 
   return (
     <main className="animate-fadeIn">
@@ -222,8 +222,10 @@ export default function Directory() {
             .map((nft: any, i: number) => {
               if (nft.metadata.name !== 'Failed to load NFT metadata') {
                 const type = nft.metadata.attributes.find(
-                  (attr: any) => attr.trait_type === 'type'
-                )?.value
+                  (attr: any) => attr.trait_type === 'communications'
+                )
+                  ? 'entity'
+                  : 'citizen'
                 return (
                   <div key={'entity-citizen-' + i}>
                     <EntityCitizenCard

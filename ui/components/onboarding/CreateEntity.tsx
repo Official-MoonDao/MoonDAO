@@ -134,8 +134,6 @@ export function CreateEntity({
                   )
                   const data = await responseRes.json()
 
-                  console.log(data)
-
                   setEntityData({
                     name: data.answers[0].text,
                     description: data.answers[1].text,
@@ -370,48 +368,54 @@ export function CreateEntity({
                   const nextTokenId = totalSupply.toString()
 
                   // pin metadata to IPFS
-                  const metadata = {
-                    name: entityData.name,
-                    description: entityData.description,
-                    image: `ipfs://${newImageIpfsHash}`,
-                    attributes: [
-                      {
-                        trait_type: 'twitter',
-                        value: entityData.twitter,
-                      },
-                      {
-                        trait_type: 'communications',
-                        value: entityData.communications,
-                      },
-                      {
-                        trait_type: 'website',
-                        value: entityData.website,
-                      },
-                      {
-                        trait_type: 'view',
-                        value: entityData.view,
-                      },
-                      {
-                        trait_type: 'type',
-                        value: 'entity',
-                      },
-                    ],
-                    formResponseId: entityData.formResponseId,
-                  }
+                  // const metadata = {
+                  //   name: entityData.name,
+                  //   description: entityData.description,
+                  //   image: `ipfs://${newImageIpfsHash}`,
+                  //   attributes: [
+                  //     {
+                  //       trait_type: 'twitter',
+                  //       value: entityData.twitter,
+                  //     },
+                  //     {
+                  //       trait_type: 'communications',
+                  //       value: entityData.communications,
+                  //     },
+                  //     {
+                  //       trait_type: 'website',
+                  //       value: entityData.website,
+                  //     },
+                  //     {
+                  //       trait_type: 'view',
+                  //       value: entityData.view,
+                  //     },
+                  //     {
+                  //       trait_type: 'type',
+                  //       value: 'entity',
+                  //     },
+                  //   ],
+                  //   formResponseId: entityData.formResponseId,
+                  // }
 
-                  const newMetadataIpfsHash = await pinMetadataToIPFS(
-                    pinataJWT || '',
-                    metadata,
-                    entityData.name + ' Metadata'
-                  )
+                  // const newMetadataIpfsHash = await pinMetadataToIPFS(
+                  //   pinataJWT || '',
+                  //   metadata,
+                  //   entityData.name + ' Metadata'
+                  // )
 
-                  if (!newMetadataIpfsHash)
-                    return toast.error('Error pinning metadata to IPFS')
+                  // if (!newMetadataIpfsHash)
+                  //   return toast.error('Error pinning metadata to IPFS')
                   //mint NFT to safe
                   await entityCreatorContract?.call(
                     'createMoonDAOEntity',
                     [
-                      'ipfs://' + newMetadataIpfsHash,
+                      entityData.name,
+                      entityData.description,
+                      `ipfs://${newImageIpfsHash}`,
+                      entityData.twitter,
+                      entityData.communications,
+                      entityData.website,
+                      entityData.view,
                       'ipfs://' + hatsMetadataIpfsHash,
                     ],
                     {

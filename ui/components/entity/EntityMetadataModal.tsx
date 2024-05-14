@@ -1,13 +1,18 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress, useResolvedMediaType } from '@thirdweb-dev/react'
+import {
+  useAddress,
+  useContract,
+  useResolvedMediaType,
+} from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
+import { ENTITY_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 
-export function EntityMetadataModal({ nft, entityContract, setEnabled }: any) {
+export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -15,6 +20,10 @@ export function EntityMetadataModal({ nft, entityContract, setEnabled }: any) {
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
+
+  const { contract: entityTableContract } = useContract(
+    ENTITY_TABLE_ADDRESSES[selectedChain.slug]
+  )
 
   return (
     <div
@@ -61,69 +70,20 @@ export function EntityMetadataModal({ nft, entityContract, setEnabled }: any) {
             )
             const data = await responseRes.json()
 
-            console.log(data)
-
             const rawMetadataRes = await fetch(resolvedMetadata.url)
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
 
-            const metadata = {
-              name: data.answers[0].text,
-              description: data.answers[1].text,
-              image: imageIPFSLink,
-              attributes: [
-                {
-                  trait_type: 'twitter',
-                  value: data.answers[3].url,
-                },
-                {
-                  trait_type: 'communications',
-                  value: data.answers[4].url,
-                },
-                {
-                  trait_type: 'website',
-                  value: data.answers[2].url,
-                },
-                {
-                  trait_type: 'view',
-                  value:
-                    data.answers[5].choice.label === 'Yes'
-                      ? 'public'
-                      : 'private',
-                },
-                {
-                  trait_type: 'type',
-                  value: 'entity',
-                },
-              ],
-              formResponseId: responseId,
-            }
-
-            const jwtRes = await fetch('/api/ipfs/upload', {
-              method: 'POST',
-              headers: {
-                signature,
-              },
-              body: JSON.stringify({
-                address,
-                message,
-              }),
-            })
-
-            const pinataJWT = await jwtRes.text()
-
-            const newMetadataIpfsHash = await pinMetadataToIPFS(
-              pinataJWT || '',
-              metadata,
-              data.answers[0].text + ' Metadata'
-            )
-
-            if (!newMetadataIpfsHash)
-              return toast.error('Error pinning metadata to IPFS')
             //mint NFT to safe
-            await entityContract?.call('setTokenURI', [
+            await entityTableContract?.call('updateTable', [
               nft.metadata.id,
-              'ipfs://' + newMetadataIpfsHash,
+              data.answers[0].text,
+              data.answers[1].text,
+              imageIPFSLink,
+              data.answers[3].url,
+              data.answers[4].url,
+              data.answers[2].url,
+              data.answers[5].choice.label === 'Yes' ? 'public' : 'private',
             ])
 
             router.reload()

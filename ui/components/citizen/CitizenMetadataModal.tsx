@@ -75,73 +75,6 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
 
-            const metadata = {
-              name: `${data.answers[0].text} ${data.answers[1].text}`,
-              description: data.answers[3].text,
-              image: imageIPFSLink,
-              attributes: [
-                {
-                  trait_type: 'location',
-                  value: data.answers[7].text,
-                },
-                {
-                  trait_type: 'discord',
-                  value: data.answers[4].text,
-                },
-                {
-                  trait_type: 'website',
-                  value: data.answers[5].url,
-                },
-                {
-                  trait_type: 'twitter',
-                  value: data.answers[6].url,
-                },
-                {
-                  trait_type: 'view',
-                  value:
-                    data.answers[8].choice.label === 'Yes'
-                      ? 'public'
-                      : 'private',
-                },
-                {
-                  trait_type: 'type',
-                  value: 'citizen',
-                },
-              ],
-              formResponseId: responseId,
-            }
-
-            // //sign message for pinata
-
-            // //get pinata jwt
-            // const jwtRes = await fetch('/api/ipfs/upload', {
-            //   method: 'POST',
-            //   headers: {
-            //     signature,
-            //   },
-            //   body: JSON.stringify({
-            //     address,
-            //     message,
-            //   }),
-            // })
-
-            // const pinataJWT = await jwtRes.text()
-
-            // const newMetadataIpfsHash = await pinMetadataToIPFS(
-            //   pinataJWT || '',
-            //   metadata,
-            //   data.answers[0].text + data.answers[1].text + ' Metadata'
-            // )
-
-            // if (!newMetadataIpfsHash)
-            //   return toast.error('Error pinning metadata to IPFS')
-
-            // //Update row in tableland table
-            // await citizenContract?.call('setTokenURI', [
-            //   nft.metadata.id,
-            //   'ipfs://' + newMetadataIpfsHash,
-            // ])
-
             await citizenTableContract?.call('updateTable', [
               nft.metadata.id,
               `${data.answers[0].text} ${data.answers[1].text}`,
@@ -149,6 +82,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
               imageIPFSLink,
               data.answers[7].text,
               data.answers[4].text,
+              data.answers[6].url,
               data.answers[5].url,
               data.answers[8].choice.label === 'Yes' ? 'public' : 'private',
             ])
