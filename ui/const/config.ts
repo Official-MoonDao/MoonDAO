@@ -63,22 +63,27 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 
 export const CITIZEN_ADDRESSES: Index = {
   arbitrum: '',
-  'arbitrum-sepolia': '0x866695D15C2Ee1FD5A5F8eC55284BAFe200B2671',
+  sepolia: '0x9deea6C5fac47eE1c4792D2740EA497aC4aA86e3',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  'arbitrum-sepolia': '0x8EE9754C5b0a170a094F6424C3e1328BE2C6643D',
+  sepolia: '0x97924581CD25a53F8CC37532B7dA8D14A787469f',
 }
 
 export const ENTITY_ADDRESSES: Index = {
   arbitrum: '',
-  'arbitrum-sepolia': '0xA2AC5bc748EeD541392d8f40720F81965738B1b6',
+  sepolia: '0x0aC93727B8657039dB07657650B727a5d9f498aC',
 }
 
 export const ENTITY_CREATOR_ADDRESSES: Index = {
   arbitrum: '',
-  'arbitrum-sepolia': '0x1B4d6090Df479b9457882A565Cb0AAA6171A9Ae1',
+  sepolia: '0x7E38EfEfe29edc59B2f3F4a389d9D43Ab199d998',
+}
+
+export const ENTITY_TABLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x6049f1C5ca7D70EDB14975B77f092D421c0422f1',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
