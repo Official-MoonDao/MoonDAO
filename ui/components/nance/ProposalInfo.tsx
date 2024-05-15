@@ -2,13 +2,18 @@ import { CalendarDaysIcon, BanknotesIcon } from '@heroicons/react/24/outline'
 import { Payout, ProposalPacket, Transfer } from '@nance/nance-sdk'
 import { formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Link from 'next/link'
+import { SnapshotGraphqlProposalVotingInfo } from '../../lib/snapshot'
+import { AddressLink } from './AddressLink'
 import ProposalStatusIcon from './ProposalStatusIcon'
+import VotingInfo from './VotingInfo'
 
 export default function ProposalInfo({
   proposalPacket,
+  votingInfo,
   linkDisabled = false,
 }: {
   proposalPacket: ProposalPacket
+  votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
   linkDisabled?: boolean
 }) {
   const { proposalIdPrefix } = proposalPacket?.proposalInfo || ''
@@ -47,13 +52,13 @@ export default function ProposalInfo({
             <div>
               <p className="text-gray-500">Author</p>
               <div className="text-center text-black">
-                {proposalPacket.authorAddress}
+                <AddressLink address={proposalPacket.authorAddress} />
               </div>
             </div>
           </div>
           {/* Due / Cycle */}
-          {/* <div className="flex items-center gap-x-1">
-            <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full bg-gray-50" />
+          <div className="flex items-center gap-x-1">
+            <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full bg-gray-50 text-gray-900" />
             {['Voting'].includes(proposalPacket.status) && votingInfo ? (
               <div>
                 <p className="text-gray-500">Due</p>
@@ -71,11 +76,11 @@ export default function ProposalInfo({
                 </div>
               </div>
             )}
-          </div> */}
+          </div>
         </div>
-        {/* <div className="mt-2">
+        <div className="mt-2">
           <VotingInfo votingInfo={votingInfo} />
-        </div> */}
+        </div>
       </div>
     </div>
   )

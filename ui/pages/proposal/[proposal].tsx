@@ -1,8 +1,10 @@
 import { useProposal } from '@nance/nance-hooks'
 import { useRouter } from 'next/router'
+import { useVotesOfProposal } from '../../lib/snapshot'
 import MarkdownWithTOC from '../../components/nance/MarkdownWithTOC'
 import ProposalInfo from '../../components/nance/ProposalInfo'
 import ProposalSummary from '../../components/nance/ProposalSummary'
+import VoteList from '../../components/nance/VoteList'
 
 export default function Proposal() {
   const router = useRouter()
@@ -13,19 +15,19 @@ export default function Proposal() {
   })
   const proposalPacket = data?.data
 
+  const { data: votes } = useVotesOfProposal(
+    proposalPacket?.voteURL,
+    1000,
+    0,
+    'created',
+    proposalPacket?.voteURL !== undefined
+  )
+
   if (isLoading) {
     return <p>Loading</p>
   } else if (!proposalPacket) {
     return <p>Proposal not found</p>
   }
-
-  // const { data } = useVotesOfProposal(
-  //   proposalPacket.voteURL,
-  //   1000,
-  //   0,
-  //   'created',
-  //   proposalPacket.voteURL !== undefined
-  // )
 
   return (
     <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full lg:px-10 bg-white">
@@ -48,7 +50,11 @@ export default function Proposal() {
 
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-10">
           <div className="flex flex-row justify-between">
-            <ProposalInfo proposalPacket={proposalPacket} linkDisabled />
+            <ProposalInfo
+              proposalPacket={proposalPacket}
+              votingInfo={votes?.proposal}
+              linkDisabled
+            />
             {/* <DropDownMenu proposalPacket={proposalPacket} /> */}
           </div>
         </div>
@@ -87,7 +93,7 @@ export default function Proposal() {
           </div>
 
           {/* Votes */}
-          {/* {proposalPacket.voteURL && (
+          {proposalPacket.voteURL && (
             <div className="lg:col-start-3">
               <h2
                 className="text-sm font-semibold leading-6 text-gray-900"
@@ -95,13 +101,13 @@ export default function Proposal() {
               >
                 Votes
               </h2>
-              <NewVote
+              {/* <NewVote
                 snapshotSpace={'jbdao.eth'}
                 proposalSnapshotId={proposalPacket.voteURL as string}
-              />
-              <VoteList votes={data?.votes} />
+              /> */}
+              <VoteList votes={votes?.votes} />
             </div>
-          )} */}
+          )}
         </div>
       </div>
     </div>

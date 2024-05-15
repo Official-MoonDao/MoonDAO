@@ -18,6 +18,10 @@ import {
   useQueryParams,
   withDefault,
 } from 'use-query-params'
+import {
+  SnapshotGraphqlProposalVotingInfo,
+  useVotingInfoOfProposals,
+} from '../../lib/snapshot'
 import ProposalInfo from './ProposalInfo'
 
 function NoResults() {
@@ -79,6 +83,13 @@ export default function ProposalList() {
   }
   const proposals = proposalsPacket?.proposals || []
 
+  const snapshotIds = proposals
+    .map((p) => p.voteURL)
+    .filter((v) => v !== undefined) as string[]
+  const { data: votingInfos } = useVotingInfoOfProposals(snapshotIds)
+  const votingInfoMap: { [key: string]: SnapshotGraphqlProposalVotingInfo } = {}
+  votingInfos?.forEach((info) => (votingInfoMap[info.id] = info))
+
   if (proposalsPacket === undefined || proposals.length === 0) {
     return <NoResults />
   } else {
@@ -117,6 +128,7 @@ export default function ProposalList() {
                     ...proposal,
                     proposalInfo: packet.proposalInfo,
                   }}
+                  votingInfo={votingInfoMap[proposal.voteURL || '']}
                 />
                 <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
                   <div className="flex sm:flex-col sm:items-end">
