@@ -16,7 +16,12 @@ const NavigationLink = ({ item, setSidebarOpen }: any) => {
       key={item.name}
     >
       {item.external ? (
-        <Link href={item.href} target="_blank" rel="noopener noreferrer">
+        <Link
+          href={item.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          passHref
+        >
           <div
             className={`
                hover:bg-blue-100   dark:hover:bg-gray-900 
@@ -27,7 +32,7 @@ const NavigationLink = ({ item, setSidebarOpen }: any) => {
           </div>
         </Link>
       ) : !item.children ? (
-        <Link href={item.href} legacyBehavior>
+        <Link href={item.href} passHref>
           <div
             className={`${
               router.pathname == item.href
