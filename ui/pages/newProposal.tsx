@@ -1,14 +1,46 @@
 import Head from '../components/layout/Head'
+import dynamic from "next/dynamic";
+import { GetMarkdown, SetMarkdown } from "@nance/nance-editor";
+import "@nance/nance-editor/lib/css/editor.css";
+import "@nance/nance-editor/lib/css/dark.css";
+import ProposalTitleInput from "../components/nance/ProposalTitleInput";
+import { TEMPLATE } from "../lib/nance";
 
 export default function NewProposal() {
+  let getMarkdown: GetMarkdown;
+  let setMarkdown: SetMarkdown;
+
+  const NanceEditor = dynamic(
+    async () => {
+      getMarkdown = (await import("@nance/nance-editor")).getMarkdown;
+      setMarkdown = (await import("@nance/nance-editor")).setMarkdown;
+      return import("@nance/nance-editor").then(mod => mod.NanceEditor);
+    }, {
+      ssr: false,
+    });
+
+  const fileUploadIPFS = {
+    gateway: process.env.NEXT_PUBLIC_INFURA_IPFS_GATEWAY as string,
+    auth: `Basic ${Buffer.from(
+      `${process.env.NEXT_PUBLIC_INFURA_IPFS_ID}:${process.env.NEXT_PUBLIC_INFURA_IPFS_SECRET}`,
+    ).toString("base64")}`
+  };
+
   return (
-    <div className="flex flex-col justify-center items-center animate-fadeIn lg:px-3 lg:pb-14 lg:mt-1 md:max-w-[1080px]">
+    <div className="flex flex-col justify-center items-center animate-fadeIn">
       <Head title="NewProposal" />
-      <iframe
-        className="absolute top-0 left-0 lg:left-[35px] h-[100vh] overflow-auto w-full"
-        src="https://nance.app/s/moondao/edit"
-        allowFullScreen
-      />
+      <div className="w-full sm:w-[90%] lg:w-3/4">
+        <h1 className="page-title py-10">New Proposal</h1>
+        <ProposalTitleInput />
+        <NanceEditor
+          initialValue={TEMPLATE}
+          onEditorChange={(markdown: string) => {
+            console.log(markdown);
+          }}
+          fileUploadIPFS={fileUploadIPFS}
+          darkMode={true}
+        />
+      </div>
     </div>
   )
 }
