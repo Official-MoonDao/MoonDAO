@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "next lint",
     "cy:open": "cypress open",
@@ -42,6 +43,7 @@
     "moment": "^2.29.4",
     "mongoose": "^8.0.0",
     "next": "^13.4.10",
+    "next-sitemap": "^4.2.3",
     "next-translate": "^1.6.0",
     "nodemailer": "^6.9.8",
     "numeral": "^2.0.6",
