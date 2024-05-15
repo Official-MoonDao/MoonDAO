@@ -6,7 +6,7 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
-import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, ArbitrumSepolia, Sepolia } from '@thirdweb-dev/chains'
 import {
   ThirdwebNftMedia,
   useAddress,
