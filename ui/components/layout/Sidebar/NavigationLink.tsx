@@ -116,25 +116,38 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
             leaveTo="transform scale-95 opacity-0"
           >
             <Disclosure.Panel as="ul" className="pl-10">
-              {item.children.map((subItem: any) => (
-                <li
-                  key={subItem.name}
-                  className="list-disc marker:text-blue-950 dark:marker:text-moon-orange group hover:scale-105 transition-all duration-150"
-                  onClick={() => setSidebarOpen && setSidebarOpen(false)}
-                >
-                  <Link
-                    href={subItem.href}
-                    className={`${
-                      router.pathname == subItem.href ||
-                      router.pathname == subItem.dynamicHref
-                        ? 'text-blue-950 dark:text-moon-orange font-semibold'
-                        : '  dark:text-white'
-                    } my-3 flex items-center`}
-                  >
-                    {subItem.name}
-                  </Link>
-                </li>
-              ))}
+              {item.children.map((subItem: any) => {
+                if (subItem.href) {
+                  return (
+                    <li
+                      key={subItem.name}
+                      className="list-disc marker:text-blue-950 dark:marker:text-moon-orange group hover:scale-105 transition-all duration-150"
+                      onClick={() => setSidebarOpen && setSidebarOpen(false)}
+                    >
+                      <Link
+                        href={subItem.href}
+                        className={`${
+                          router.pathname == subItem.href ||
+                          router.pathname == subItem.dynamicHref
+                            ? 'text-blue-950 dark:text-moon-orange font-semibold'
+                            : '  dark:text-white'
+                        } my-3 flex items-center`}
+                      >
+                        {subItem.name}
+                      </Link>
+                    </li>
+                  )
+                } else {
+                  return (
+                    <p
+                      className="relative right-[15%] text-[75%] opacity-75"
+                      key={subItem.name}
+                    >
+                      {subItem.name}
+                    </p>
+                  )
+                }
+              })}
             </Disclosure.Panel>
           </Transition>
         </>
