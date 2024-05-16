@@ -316,7 +316,7 @@ export function SweepstakesMinting({
         2024. FOR ALTERNATIVE METHOD OF ENTRY,{' '}
         <a
           className="underline"
-          href="https://publish.obsidian.md/moondao/MoonDAO/docs/Ticket+to+Space+NFT/Ticket+to+Space+Sweepstakes+Rules"
+          href="https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules"
         >
           CLICK HERE
         </a>
@@ -330,7 +330,7 @@ export function SweepstakesMinting({
           `}
         <a
           className="underline"
-          href="https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy"
+          href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
           target="_blank"
           rel="noreferrer"
         >

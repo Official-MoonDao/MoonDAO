@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Disallow: 
+
+# Host
+Host: app.moondao.com
+
+# Sitemaps
+Sitemap: app.moondao.com/sitemap.xml
