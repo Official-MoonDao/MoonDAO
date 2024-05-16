@@ -7,9 +7,8 @@ import {
 import { Widget } from '@typeform/embed-react'
 import { ENTITY_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
-import { pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 
 export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {

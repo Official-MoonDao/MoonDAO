@@ -1,12 +1,11 @@
 import {
   ArrowUpRightIcon,
-  ChatBubbleLeftIcon,
   GlobeAltIcon,
   PencilIcon,
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
-import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import {
   ThirdwebNftMedia,
   useAddress,
@@ -21,7 +20,6 @@ import {
   VMOONEY_ADDRESSES,
 } from 'const/config'
 import { GetServerSideProps } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'

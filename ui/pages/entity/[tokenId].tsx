@@ -6,7 +6,7 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
-import { Arbitrum, ArbitrumSepolia, Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import {
   ThirdwebNftMedia,
   useAddress,
@@ -16,7 +16,6 @@ import {
 } from '@thirdweb-dev/react'
 import { ENTITY_ADDRESSES, HATS_ADDRESS, MOONEY_ADDRESSES } from 'const/config'
 import { GetServerSideProps } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
@@ -26,13 +25,10 @@ import { useValidPass } from '@/lib/entity/useValidPass'
 import { useHatTree } from '@/lib/hats/useHatTree'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import ChainContext from '@/lib/thirdweb/chain-context'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useLightMode } from '@/lib/utils/hooks'
 import { CopyIcon, TwitterIcon } from '@/components/assets'
-import CoordinapeLogoWhite from '@/components/assets/CoordinapeLogoWhite'
-import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
 import { EntityAdminModal } from '@/components/entity/EntityAdminModal'
 import { EntityMetadataModal } from '@/components/entity/EntityMetadataModal'
 import { HatWearers } from '@/components/hats/HatWearers'
