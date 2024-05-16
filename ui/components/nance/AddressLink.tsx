@@ -1,4 +1,5 @@
 import { mainnet } from 'viem/chains'
+import { useENS } from '../../lib/utils/hooks/useENS'
 
 function shortenAddress(address: string | undefined) {
   if (address?.length !== 42) {
@@ -32,19 +33,15 @@ export function AddressLink({ address }: { address: string | undefined }) {
       default: { url },
     },
   } = mainnet
-  // const { data: ens } = useEnsName({
-  //   address: address as Address | undefined,
-  // })
+  const ens = useENS(address)
 
-  return <ShortAddressLink address={address} />
+  if (!address || !ens) {
+    return <ShortAddressLink address={address} />
+  }
 
-  // if (!address || !ens) {
-  //   return <ShortAddressLink address={address} />
-  // }
-
-  // return (
-  //   <a href={`${url}/address/${address}`} className="break-all hover:underline">
-  //     {ens}
-  //   </a>
-  // )
+  return (
+    <a href={`${url}/address/${address}`} className="break-all hover:underline">
+      {ens}
+    </a>
+  )
 }

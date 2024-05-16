@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { initSDK } from '../../thirdweb/thirdweb'
 
 export function useENS(address: string = '') {
-  const [ens, setENS] = useState<any>()
+  const [ens, setENS] = useState<string | null>()
 
   async function getENS() {
     const sdk = initSDK(Ethereum)
