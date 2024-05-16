@@ -27,6 +27,14 @@ export default function Info() {
           icon: DocumentIcon,
         },
         {
+          name: 'Constitution',
+          description:
+            'This foundational document guides our governance processes, including the roles of the Senate, Member House, Executive Branch, and more.',
+          href: 'https://docs.moondao.com/Governance/Constitution',
+          icon: DocumentIcon,
+          externalLink: true,
+        },
+        {
           name: 'Events',
           description:
             'Get started by attending one of our upcoming online events to find out how you can contribute to our plans by helping out on a project.',
