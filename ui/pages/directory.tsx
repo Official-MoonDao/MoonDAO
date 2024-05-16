@@ -101,6 +101,8 @@ export default function Directory() {
     } else {
       loadByTab(tab)
     }
+
+    console.log(cachedNFTs)
   }, [input, cachedNFTs])
 
   useEffect(() => {

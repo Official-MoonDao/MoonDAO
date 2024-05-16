@@ -15,7 +15,7 @@ export default defineConfig({
       bundler: 'webpack',
     },
     // excludeSpecPattern: [
-    //   'cypress/integration/layout/main-card.cy.tsx',
+    //   'cypress/integration/layout/**',
     //   'cypress/integration/lock/**',
     //   'cypress/integration/privy/**',
     //   'cypress/integration/shopify/**',
