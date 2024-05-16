@@ -50,7 +50,7 @@ export default function ProposalInfo({
               className="h-6 w-6 flex-none rounded-full bg-gray-50"
             />
             <div>
-              <p className="text-gray-500">Author</p>
+              <p className="text-gray-500 dark:text-gray-400">Author</p>
               <div className="text-center text-black dark:text-white">
                 <AddressLink address={proposalPacket.authorAddress} />
               </div>
@@ -61,7 +61,7 @@ export default function ProposalInfo({
             <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full text-gray-900 dark:text-white" />
             {['Voting'].includes(proposalPacket.status) && votingInfo ? (
               <div>
-                <p className="text-gray-500 dark:text-white">Due</p>
+                <p className="text-gray-500 dark:text-gray-400">Due</p>
                 <div className="text-center">
                   {formatDistanceToNow(fromUnixTime(votingInfo.end), {
                     addSuffix: true,
@@ -70,7 +70,7 @@ export default function ProposalInfo({
               </div>
             ) : (
               <div>
-                <p className="text-gray-500 dark:text-white">Cycle</p>
+                <p className="text-gray-500 dark:text-gray-400">Cycle</p>
                 <div className="text-center">
                   {proposalPacket.governanceCycle}
                 </div>

@@ -141,12 +141,12 @@ export default function ProposalList() {
                         <div className="flex-none rounded-full bg-emerald-500/20 p-1">
                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         </div>
-                        <p className="text-xs leading-5 text-gray-500">
+                        <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
                           Voting
                         </p>
                       </div>
                     ) : (
-                      <p className="mt-1 text-xs leading-5 text-gray-500">
+                      <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
                         <span className="sr-only">Last edited</span>
                         <time dateTime={proposal.lastEditedTime}>
                           {formatDistanceStrict(
