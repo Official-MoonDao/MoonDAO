@@ -19,7 +19,7 @@ const MobileMenuTop = ({
       <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 justify-between bg-white shadow dark:bg-slate-950">
         <button
           type="button"
-          className="border-r border-gray-200 px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:border-gray-600 dark:focus:ring-moon-gold  md:hidden"
+          className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:border-gray-600 dark:focus:ring-moon-gold  md:hidden"
           onClick={() => setSidebarOpen(true)}
         >
           <span className="sr-only">Open sidebar</span>
