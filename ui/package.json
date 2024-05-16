@@ -19,7 +19,7 @@
     "@heroicons/react": "^2.0.18",
     "@nance/nance-editor": "^1.7.0",
     "@nance/nance-hooks": "^2.0.2",
-    "@nance/nance-sdk": "^2.0.1",
+    "@nance/nance-sdk": "^2.3.0",
     "@privy-io/react-auth": "^1.56.1",
     "@privy-io/wagmi-connector": "^0.1.12",
     "@react-three/drei": "^9.86.0",

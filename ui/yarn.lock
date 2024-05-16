@@ -2339,6 +2339,14 @@
   dependencies:
     tslib "^2.6.2"
 
+"@nance/nance-sdk@^2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-2.3.0.tgz#1e02e97060441f7fd2e2ca82f4fe7bf6fcebad10"
+  integrity sha512-I8se/GWZKiYxyI48rnRZwMjyIOGEZu7uAkP8qH0E+cqAxJbmpaCy/5SLHUAFezdW69XqusiLbrTuoEqWt6krhA==
+  dependencies:
+    tslib "^2.6.2"
+    yaml "^2.4.2"
+
 "@next/env@13.4.10":
   version "13.4.10"
   resolved "https://registry.npmjs.org/@next/env/-/env-13.4.10.tgz"
@@ -14990,6 +14998,11 @@ yaml@^2.1.1, yaml@^2.3.1:
   version "2.3.1"
   resolved "https://registry.npmjs.org/yaml/-/yaml-2.3.1.tgz"
   integrity sha512-2eHWfjaoXgTBC2jNM1LRef62VQa0umtvRiDSk6HSzW7RvS5YtkabJrwYLLEKWBc8a5U2PTSCs+dJjUTJdlHsWQ==
+
+yaml@^2.4.2:
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.4.2.tgz#7a2b30f2243a5fc299e1f14ca58d475ed4bc5362"
+  integrity sha512-B3VqDZ+JAg1nZpaEmWtTXUlBneoGx6CPM9b0TENK6aoSu5t73dItudwdgmi6tHlIZZId4dZ9skcAQ2UbcyAeVA==
 
 yargs-parser@^13.1.2:
   version "13.1.2"
