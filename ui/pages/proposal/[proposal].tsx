@@ -30,7 +30,7 @@ export default function Proposal() {
   }
 
   return (
-    <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full lg:px-10 bg-white">
+    <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full lg:px-10 page-border-and-color font-[Lato]">
       <header className="relative isolate">
         <div
           className="absolute inset-0 -z-10 overflow-hidden"
@@ -63,7 +63,7 @@ export default function Proposal() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
           {/* Proposal */}
-          <div className="-mx-4 px-4 py-8 shadow-sm ring-1 ring-gray-900/5 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16">
+          <div className="inner-container-background -mx-4 px-4 py-8 shadow-sm ring-1 ring-gray-900/5 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16">
             {/* {proposalPacket.actions && proposalPacket.actions.length > 0 && (
               <div className="mb-4 break-words ">
                 <p className="text-gray-400">Proposed Transactions</p>
@@ -96,7 +96,7 @@ export default function Proposal() {
           {proposalPacket.voteURL && (
             <div className="lg:col-start-3">
               <h2
-                className="text-sm font-semibold leading-6 text-gray-900"
+                className="text-sm font-semibold leading-6 text-gray-900 dark:text-white"
                 id="votes"
               >
                 Votes

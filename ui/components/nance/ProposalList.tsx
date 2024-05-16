@@ -95,9 +95,9 @@ export default function ProposalList() {
   } else {
     const packet = proposalsPacket
     return (
-      <div>
+      <div className="page-border-and-color font-[Lato] mt-3 lg:mt-10">
         <ul
-          className="divide-y divide-gray-100 overflow-auto h-[900px] bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
+          className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           id="scrollableUl"
         >
           <InfiniteScroll
@@ -107,12 +107,10 @@ export default function ProposalList() {
             }}
             hasMore={packet.hasMore}
             loader={
-              <p className="text-gray-900 text-center my-2 animate-pulse">
-                Loading...
-              </p>
+              <p className="text-center my-2 animate-pulse">Loading...</p>
             }
             endMessage={
-              <p className="text-gray-900 text-center my-2">
+              <p className="text-center my-2">
                 <b>Yay! You have seen it all</b>
               </p>
             }
@@ -121,7 +119,7 @@ export default function ProposalList() {
             {proposals.map((proposal) => (
               <li
                 key={proposal.uuid}
-                className="relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 sm:px-6"
+                className="relative flex inner-container-background justify-between gap-x-6 px-4 py-5 border-transparent border-[1px] hover:border-white transition-all duration-150 sm:px-6"
               >
                 <ProposalInfo
                   proposalPacket={{
@@ -132,7 +130,7 @@ export default function ProposalList() {
                 />
                 <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
                   <div className="flex sm:flex-col sm:items-end">
-                    <p className="text-sm leading-6 text-gray-900">
+                    <p className="text-sm leading-6 text-gray-900 dark:text-white">
                       {proposal.status}
                     </p>
                     {['Voting', 'Temperature Check'].includes(

@@ -25,7 +25,7 @@ export default function ProposalInfo({
       <ProposalStatusIcon status={proposalPacket.status} />
       <div className="min-w-0 flex-auto">
         {/* Title */}
-        <p className="text-base font-semibold text-gray-900">
+        <p className="text-base font-semibold">
           {!linkDisabled ? (
             <Link
               href={`/proposal/${
@@ -51,18 +51,18 @@ export default function ProposalInfo({
             />
             <div>
               <p className="text-gray-500">Author</p>
-              <div className="text-center text-black">
+              <div className="text-center text-black dark:text-white">
                 <AddressLink address={proposalPacket.authorAddress} />
               </div>
             </div>
           </div>
           {/* Due / Cycle */}
           <div className="flex items-center gap-x-1">
-            <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full bg-gray-50 text-gray-900" />
+            <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full text-gray-900 dark:text-white" />
             {['Voting'].includes(proposalPacket.status) && votingInfo ? (
               <div>
-                <p className="text-gray-500">Due</p>
-                <div className="text-center text-black">
+                <p className="text-gray-500 dark:text-white">Due</p>
+                <div className="text-center">
                   {formatDistanceToNow(fromUnixTime(votingInfo.end), {
                     addSuffix: true,
                   })}
@@ -70,8 +70,8 @@ export default function ProposalInfo({
               </div>
             ) : (
               <div>
-                <p className="text-gray-500">Cycle</p>
-                <div className="text-center text-black">
+                <p className="text-gray-500 dark:text-white">Cycle</p>
+                <div className="text-center">
                   {proposalPacket.governanceCycle}
                 </div>
               </div>

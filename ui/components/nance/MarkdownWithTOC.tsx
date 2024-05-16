@@ -8,7 +8,7 @@ import remarkGfm from 'remark-gfm'
 
 export default function MarkdownWithTOC({ body }: { body: string }) {
   return (
-    <article className="prose dark:prose-headings:text-black dark:prose-a:text-blue-500 prose-table:table-fixed mx-auto break-words text-gray-500">
+    <article className="prose prose-table:table-fixed mx-auto break-words text-gray-500">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[

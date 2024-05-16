@@ -30,15 +30,15 @@ export default function VoteList({
               />
               <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
                 <div className="flex justify-between gap-x-4">
-                  <div className="py-0.5 text-xs leading-5 text-gray-500">
-                    <span className="font-medium text-gray-900">
+                  <div className="py-0.5 text-xs leading-5 text-gray-500 dark:text-white">
+                    <span className="font-medium text-gray-900 dark:text-white">
                       <AddressLink address={vote.voter} />
                     </span>{' '}
                     voted {vote.choiceLabel} with {formatNumberUSStyle(vote.vp)}
                   </div>
                   <time
                     dateTime={fromUnixTime(vote.created).toISOString()}
-                    className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                    className="flex-none py-0.5 text-xs leading-5 text-gray-500 dark:text-white"
                   >
                     {formatDistanceStrict(
                       fromUnixTime(vote.created),
@@ -49,7 +49,9 @@ export default function VoteList({
                     )}
                   </time>
                 </div>
-                <p className="text-sm leading-6 text-gray-500">{vote.reason}</p>
+                <p className="text-sm leading-6 text-gray-500 dark:text-white">
+                  {vote.reason}
+                </p>
               </div>
             </>
           ) : (
@@ -57,8 +59,8 @@ export default function VoteList({
               <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-white">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-100 ring-1 ring-gray-300" />
               </div>
-              <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500">
-                <span className="font-medium text-gray-900">
+              <p className="flex-auto py-0.5 text-xs leading-5 text-gray-500 dark:text-white">
+                <span className="font-medium text-gray-900 dark:text-white">
                   <AddressLink address={vote.voter} />
                 </span>{' '}
                 voted {vote.choiceLabel} with{' '}
@@ -66,7 +68,7 @@ export default function VoteList({
               </p>
               <time
                 dateTime={fromUnixTime(vote.created).toISOString()}
-                className="flex-none py-0.5 text-xs leading-5 text-gray-500"
+                className="flex-none py-0.5 text-xs leading-5 text-gray-500 dark:text-white"
               >
                 {formatDistanceStrict(fromUnixTime(vote.created), new Date(), {
                   addSuffix: true,
