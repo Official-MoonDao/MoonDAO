@@ -91,8 +91,11 @@ export default function Directory() {
   const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
-    setTab(router.query?.type || 'all')
-  }, [router.query])
+    const type = router.query.type
+    if (type) {
+      setTab(type)
+    }
+  }, [router])
 
   //only show public nfts that are whitelisted
   useEffect(() => {
@@ -118,7 +121,7 @@ export default function Directory() {
   }, [tab, input, filteredEntities, filteredCitizens, router.query])
 
   useEffect(() => {
-    shallowQueryRoute({ type: tab })
+    if (router.query.type) shallowQueryRoute({ type: tab })
   }, [tab])
 
   useEffect(() => {
