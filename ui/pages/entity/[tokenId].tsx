@@ -198,7 +198,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                     target="_blank"
                     passHref
                   >
-                    <TwitterIcon width={25} height={25} />
+                    <TwitterIcon />
                     {socials.twitter}
                   </Link>
                 )}
