@@ -3,25 +3,51 @@ import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT, useContract, useNFTs } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, ENTITY_ADDRESSES } from 'const/config'
 import { approvedCitizens, approvedEntities } from 'const/whitelist'
-import { useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+import { cache, useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import Head from '../components/layout/Head'
 import { SearchIcon } from '@/components/assets'
 import EntityCitizenCard from '@/components/directory/EntityCitizenCard'
 
 export default function Directory() {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
+  const router = useRouter()
+  const shallowQueryRoute = useShallowQueryRoute()
 
-  const [tab, setTab] = useState('entities')
+  const [input, setInput] = useState('')
+  function filterBySearch(nfts: NFT[]) {
+    return nfts.filter((nft) => {
+      return nft.metadata.name
+        ?.toString()
+        .toLowerCase()
+        .includes(input.toLowerCase())
+    })
+  }
+
+  const [tab, setTab] = useState('all')
   function loadByTab(tab: string) {
     if (tab === 'entities') {
-      setCachedNFTs(filteredEntities)
+      setCachedNFTs(
+        input != '' ? filterBySearch(filteredEntities) : filteredEntities
+      )
     } else if (tab === 'citizens') {
-      setCachedNFTs(filteredCitizens)
+      setCachedNFTs(
+        input != '' ? filterBySearch(filteredCitizens) : filteredCitizens
+      )
     } else {
-      setCachedNFTs([...filteredEntities, ...filteredCitizens])
+      setCachedNFTs(
+        input != ''
+          ? [
+              ...filterBySearch(filteredEntities),
+              ...filterBySearch(filteredCitizens),
+            ]
+          : [...filteredEntities, ...filteredCitizens]
+      )
     }
+    // shallowQueryRoute({ type: tab })
   }
 
   const { contract: entityContract } = useContract(
@@ -37,6 +63,7 @@ export default function Directory() {
   const [maxPage, setMaxPage] = useState(1)
 
   useEffect(() => {
+    if (!totalEntities || !totalCitizens) return
     if (tab === 'entities') setMaxPage(Math.ceil(totalEntities?.toNumber() / 9))
     if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens?.toNumber() / 9))
     if (tab === 'all')
@@ -46,8 +73,6 @@ export default function Directory() {
   }, [totalEntities, totalCitizens, tab])
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
-
-  const [input, setInput] = useState('')
 
   const {
     data: entities,
@@ -64,6 +89,10 @@ export default function Directory() {
   const [filteredCitizens, setFilteredCitizens] = useState<NFT[]>([])
 
   const [pageIdx, setPageIdx] = useState(1)
+
+  useEffect(() => {
+    setTab(router.query.type || 'all')
+  }, [router.query])
 
   //only show public nfts that are whitelisted
   useEffect(() => {
@@ -85,25 +114,12 @@ export default function Directory() {
   }, [citizens])
 
   useEffect(() => {
-    loadByTab(tab)
-  }, [tab, filteredEntities, filteredCitizens])
+    if (filteredEntities?.[0] && filteredCitizens?.[0]) loadByTab(tab)
+  }, [tab, input, filteredEntities, filteredCitizens, router.query])
 
   useEffect(() => {
-    if (input !== '') {
-      setCachedNFTs(
-        cachedNFTs.filter((nft) => {
-          return nft.metadata.name
-            ?.toString()
-            .toLowerCase()
-            .includes(input.toLowerCase())
-        })
-      )
-    } else {
-      loadByTab(tab)
-    }
-
-    console.log(cachedNFTs)
-  }, [input, cachedNFTs])
+    shallowQueryRoute({ type: tab })
+  }, [tab])
 
   useEffect(() => {
     setSelectedChain(
@@ -131,6 +147,14 @@ export default function Directory() {
         <div className="md:px-4 flex gap-4">
           <button
             className={`px-4 py-2 border-2 rounded-lg ${
+              tab === 'all' && 'border-moon-orange text-moon-orange'
+            }`}
+            onClick={() => setTab('all')}
+          >
+            All
+          </button>
+          <button
+            className={`px-4 py-2 border-2 rounded-lg ${
               tab === 'entities' && 'border-moon-orange text-moon-orange'
             }`}
             onClick={() => setTab('entities')}
@@ -144,15 +168,6 @@ export default function Directory() {
             onClick={() => setTab('citizens')}
           >
             Citizens
-          </button>
-
-          <button
-            className={`px-4 py-2 border-2 rounded-lg ${
-              tab === 'all' && 'border-moon-orange text-moon-orange'
-            }`}
-            onClick={() => setTab('all')}
-          >
-            All
           </button>
         </div>
         {isLoadingEntities && <p className="text-center">Loading...</p>}
@@ -213,3 +228,12 @@ export default function Directory() {
     </main>
   )
 }
+
+// export async function getServerSideProps({ query }: any) {
+//   const { type } = query
+//   return {
+//     props: {
+//       type: type || 'all',
+//     },
+//   }
+// }
