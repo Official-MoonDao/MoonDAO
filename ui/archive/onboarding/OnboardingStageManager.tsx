@@ -59,7 +59,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   const totalMooneyBalance = useTotalMooneyBalance(address)
   const { totalLocked } = useValidVP(address)
 
-  const { MOONEY, NATIVE_TOKEN, DAI } = useUniswapTokens()
+  const { MOONEY, NATIVE_TOKEN, DAI } = useUniswapTokens(selectedChain)
 
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price + 1,

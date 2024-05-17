@@ -42,7 +42,7 @@ export function OnboardingTransactions({
   const { wallets } = useWallets()
 
   //Uniswap
-  const { MOONEY, NATIVE_TOKEN } = useUniswapTokens()
+  const { MOONEY, NATIVE_TOKEN } = useUniswapTokens(selectedChain)
   const [mooneySwapRoute, setMooneySwapRoute] = useState<any>()
   const {
     generateRoute: generateMooneyRoute,

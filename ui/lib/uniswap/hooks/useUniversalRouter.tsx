@@ -17,8 +17,8 @@ import ChainContext from '../../thirdweb/chain-context'
 
 export function useUniversalRouter(
   swapAmnt: number,
-  tokenIn: Token,
-  tokenOut: Token
+  tokenIn: any,
+  tokenOut: any
 ) {
   const sdk = useSDK()
   const { selectedWallet } = useContext(PrivyWalletContext)

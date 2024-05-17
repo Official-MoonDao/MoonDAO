@@ -13,14 +13,15 @@ export function useNativeBalance() {
   const [nativeBalance, setNativeBalance] = useState<any>()
 
   async function getNativeBalance() {
-    const provider = await sdk.getProvider()
+    if (!sdk) return
+    const provider = sdk.getProvider()
     const balance = await provider.getBalance(wallets[selectedWallet].address)
     setNativeBalance((+balance / 10 ** 18).toFixed(5))
   }
 
   useEffect(() => {
-    if (wallets[selectedWallet]) getNativeBalance()
-  }, [wallets, selectedWallet, selectedChain])
+    if (sdk && wallets[selectedWallet]) getNativeBalance()
+  }, [wallets, selectedWallet, selectedChain, sdk])
 
   return nativeBalance
 }

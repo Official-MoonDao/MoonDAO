@@ -63,7 +63,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
     <Disclosure
       className="tracking-tighter"
       as="div"
-      defaultOpen={item?.children?.some((e: any) => e.href === router.pathname)}
+      defaultOpen={item?.children?.some((e: any) => e.href === router.asPath)}
       onClick={({ target }: any) => {
         if (item.href) {
           const expanded = target.getAttribute('aria-expanded')
@@ -77,7 +77,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
             className={`${
               item?.children
                 ?.map((e: any) => e.href)
-                ?.includes(router.pathname) || router.pathname == item.href
+                ?.includes(router.asPath) || router.asPath == item.href
                 ? 'bg-blue-200 text-blue-950 dark:bg-gray-950 dark:text-moon-orange hover:scale-100 font-semibold'
                 : ' hover:bg-blue-100  dark:hover:bg-gray-900'
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150`}
@@ -92,7 +92,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
               <item.icon
                 className={`mr-2 h-5 w-5  ${item?.children
                   ?.map((e: any) => e.href)
-                  ?.includes(router.pathname)}`}
+                  ?.includes(router.asPath)}`}
                 aria-hidden="true"
               />
               {item.name}
@@ -125,8 +125,8 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
                   <Link
                     href={subItem.href}
                     className={`${
-                      router.pathname == subItem.href ||
-                      router.pathname == subItem.dynamicHref
+                      router.asPath == subItem.href ||
+                      router.asPath == subItem.dynamicHref
                         ? 'text-blue-950 dark:text-moon-orange font-semibold'
                         : '  dark:text-white'
                     } my-3 flex items-center`}

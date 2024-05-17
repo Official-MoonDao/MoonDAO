@@ -1,9 +1,9 @@
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import Image from 'next/image'
 import { Dispatch, useEffect, useState } from 'react'
-import { calculateVMOONEY } from '../../lib/tokens/ve-token'
-import { useLightMode } from '../../lib/utils/hooks'
-import { ArrowSide } from '../assets'
+import { calculateVMOONEY } from '@/lib/tokens/ve-token'
+import { useLightMode } from '@/lib/utils/hooks'
+import { ArrowSide } from '@/components/assets'
 
 type ContributionLevelProps = {
   lightIcon: string
