@@ -121,7 +121,8 @@ export default function Directory() {
   }, [tab, input, filteredEntities, filteredCitizens, router.query])
 
   useEffect(() => {
-    if (router.query.type) shallowQueryRoute({ type: tab })
+    if (router.query.type || router.pathname === '/directory')
+      shallowQueryRoute({ type: tab })
   }, [tab])
 
   useEffect(() => {
