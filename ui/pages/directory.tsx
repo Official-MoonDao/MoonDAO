@@ -27,7 +27,7 @@ export default function Directory() {
     })
   }
 
-  const [tab, setTab] = useState('all')
+  const [tab, setTab] = useState<any>('all')
   function loadByTab(tab: string) {
     if (tab === 'entities') {
       setCachedNFTs(
@@ -91,7 +91,7 @@ export default function Directory() {
   const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
-    setTab(router.query.type || 'all')
+    setTab(router.query?.type || 'all')
   }, [router.query])
 
   //only show public nfts that are whitelisted
