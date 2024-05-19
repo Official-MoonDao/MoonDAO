@@ -8,11 +8,11 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
   const pfpRef = useRef<any>()
   const [scriptLoaded, setScriptLoaded] = useState(false)
 
-  function submitImage() {
+  async function submitImage() {
     if (!document.getElementById('pfp'))
       return console.error('pfpRef is not defined')
     // @ts-expect-error
-    html2canvas(document.getElementById('pfp')).then((canvas) => {
+    await html2canvas(document.getElementById('pfp')).then((canvas) => {
       const img = canvas.toDataURL('image/png')
 
       //Convert from base64 to file
