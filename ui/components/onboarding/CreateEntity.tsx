@@ -75,7 +75,7 @@ export function CreateEntity({
   return (
     <div className="flex flex-row">
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
-        <div className="flex flex-row w-full justify-between items-start md:pr-10">
+        <div className="flex flex-row w-full justify-between items-start">
           <Steps
             className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
             steps={['Info', 'Design', 'Mint']}

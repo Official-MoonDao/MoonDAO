@@ -79,7 +79,7 @@ export function CreateCitizen({
   return (
     <div className="flex flex-row">
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
-        <div className="flex flex-row w-full justify-between items-start md:pr-10">
+        <div className="flex flex-row w-full justify-between items-start">
           <Steps
             className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
             steps={['Info', 'Design', 'Mint']}
@@ -87,7 +87,7 @@ export function CreateCitizen({
             lastStep={lastStage}
             setStep={setStage}
           />
-          <button className="" onClick={() => setSelectedTier(null)}>
+          <button onClick={() => setSelectedTier(null)}>
             <XMarkIcon width={50} height={50} />
           </button>
         </div>
@@ -430,6 +430,8 @@ export function CreateCitizen({
           </StageContainer>
         )}
       </div>
+
+      <button onClick={() => setStage(stage + 1)}>{'Next =>'}</button>
     </div>
   )
 }
