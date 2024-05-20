@@ -40,7 +40,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     <div
       id="app-layout"
       className={`${
-        !lightMode ? 'dark background-dark' : 'background-light'
+        !lightMode ? ' sidebar-bg-dark' : 'background-light'
       } min-h-screen`}
     >
       <Script src="https://cdn.splitbee.io/sb.js" />
@@ -61,7 +61,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       {/* Static sidebar for desktop */}
       <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
         {/* Sidebar component*/}
-        <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col overflow-y-auto pt-5 sidebar-bg-light dark:sidebar-bg-dark">
+        <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col overflow-y-auto pt-5  dark:sidebar-bg-dark">
           <a href="https://moondao.com">
             <div className="flex flex-shrink-0 items-center px-4 pl-6">
               {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}

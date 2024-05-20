@@ -15,99 +15,36 @@ export default function Hero(props: any) {
   const splatterRef: any = useRef()
   const outlineCardRef: any = useRef()
   const astroRef: any = useRef()
-  useEffect(() => {
-    // if (cardRef?.current) {
-    //   cardRef.current.style.transform += `translateX(${mouseX}px)`
-    //   splatterRef.current.style.transform += `translateX(${mouseX}px)`
-    // }
-    // if (layer2Ref?.current) {
-    //   layer2Ref.current.style.transform += `translateX(${-mouseX}px)`
-    //   layer2Ref.current.style.filter = `blur(${blur}px)`
-    // }
-    // if (astroRef?.current) {
-    //   astroRef.current.style.transform = `rotate(${blur * 2}deg) translateY(${
-    //     blur * 2
-    //   }px)`
-    // }
-  }, [blur, mouseX])
-  return (
-    <div className="min-h-[650px] md:min-h-[1000px]">
-      {/* <Image
-          className="bg-hero"
-          src={'/home/brush-stroke-bottom-right2.svg'}
-          alt=""
-          width={1000}
-          height={1000}
-        /> */}
-      <div className="flex flex-col animate-fadeInLeft z-10">
-        <h1 className="text-4xl font-GoodTimes">
-          {'THE '}
-          <span className="bg-white text-black px-2 rounded-sm">
-            {"INTERNET'S"}
-          </span>
-          <br />
-          {'SPACE PROGRAM'}
-        </h1>
 
-        <p className="mt-4 w-full">
-          {
-            'MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement.'
-          }
-        </p>
-        <Link
-          href="https://discord.com/invite/moondao"
-          target="_blank"
-          rel="no refferer"
-          passHref
-        >
-          <SlideButton className="mt-4" onClick={() => setModal(true)}>
-            Join Our Community
-          </SlideButton>
-        </Link>
+  // Removing all useEffect hooks related to animation.
+  // useEffect(() => {
+  // }, [blur, mouseX])
+
+  return ( 
+  <div className="overflow-visible relative w-full]">
+    <div className="HERO-CONTAINER rounded-bl-[2vmax] overflow-hidden relative z-10 bg-white flex flex-col items-end justify-end md:items-start lg:items-start md:justify-end lg:justify-center gradient-1 p-5 mt-[-1px] pb-20 md:pr-10 md:pl-10 lg:pb-40 min-h-[675px] h-[80vh] md:h-[90vmin]">
+      <div className="TOP-LEFT-DIVIDER divider-1 absolute top-0 left-0 w-[45%] h-full"></div>
+      <div className="FEATURED-IMAGE-CONTAINER absolute w-[100%] h-[100%] top-0 left-0 overflow-hidden lg:max-w-[1400px]">
+        <div className="FEATURED-IMAGE feature-1 absolute top-0 right-0 w-[80vmin] md:w-[70%] lg:w-[50vmax] h-full mt-5"></div>
+      </div>  
+      <div className="gradient-3 w-full h-[50%] absolute bottom-0 left-0 overflow-visible"></div>
+      <div className="BOTTOM-RIGHT-DIVIDER divider-2 hidden md:block bg-bottom absolute bottom-[-2px] right-[-20%] md:right-0 w-[60%] md:w-[80%] lg:w-[60%] h-full "></div>
+      <div className="CONTENT relative pt-0 w-[100%] md:w-[70%] lg:w-[70%]">
+      <h1 className="HEADER text-4xl font-GoodTimes leading-none flex flex-col">
+        <span style={{fontSize: 'calc(min(4.5vmin, 30px))'}} className="mt-[5vmax]">The Internet's </span>
+        <span style={{fontSize: 'calc(max(12vmin, 30px))'}} className="mt-[1vmin]">Space </span>
+        <span style={{fontSize: 'calc(max(9vmin, 30px))'}} className="mt-[1vmin]">Program</span>
+      </h1>
+        <p className="PARAGRAPH w-full max-w-[350px] pt-2 pb-5 mr-5 text-lg w-[130%] md:w-[100%] lg:max-w-[500px]">MoonDAO is a decentralized space program where space dreamers and serious builders unite</p>
+        <form className="FORM-CONTAINER w-full max-w-[300px] md:mt-5 flex flex-col md:flex-row items-center rounded-md pb-10">
+          <input className="INPUT-FIELD w-full bg-dark-cool rounded-tl-[10px] rounded-bl-0 md:rounded-bl-[10px] px-3 py-2  focus:outline-none focus:ring-white-500" type="email" placeholder="Enter your email" />
+          <button className="BUTTON rounded-bl-[10px] md:rounded-bl-0 rounded-br-[10px] w-full px-4 py-2 bg-white md:bg-blue-500 lg:bg-white text-dark-cool font-GoodTimes hover:pl-5 duration-500 focus:outline-none " type="submit">Subscribe</button>
+        </form>
       </div>
-      <Suspense fallback={null}>
-        <div className="relative max-w-[1000px] flex justify-center items-center h-full">
-          <div>
-            <Image
-              ref={cardRef}
-              className="absolute top-0 left-0 z-0 w-full"
-              src="/home/card.svg"
-              alt=""
-              width={630}
-              height={500}
-            />
-            <Image
-              ref={splatterRef}
-              className="absolute top-0 left-0 w-full"
-              src="/home/splatter-orange-purple.svg"
-              alt=""
-              width={600}
-              height={600}
-              priority
-            />
-          </div>
-          <div className={'z-30'}>
-            <Image
-              ref={outlineCardRef}
-              className="absolute top-0 left-0 w-full blur-[0.8px]"
-              src="/home/outline-card.svg"
-              alt=""
-              width={520}
-              height={500}
-            />
-            <div className="z-30">
-              <Image
-                ref={astroRef}
-                className="absolute top-0 left-0 w-full rotate-0"
-                src="/home/astronaut2.svg"
-                alt=""
-                width={600}
-                height={600}
-              />
-            </div>
-          </div>
-        </div>
-      </Suspense>
     </div>
+    {/* This div exists to visually blend the border between sections*/}
+    <div className="z-10 hidden md:block absolute bottom-[-20px] right-0 bg-white w-[50%] h-[40px]"></div>
+  </div>
+    
   )
 }

@@ -148,11 +148,6 @@ a {
 
 /* Home styles */
 
-.hero {
-  background-image: linear-gradient(#282536, #000000 95%);
-  height: 125vh;
-}
-
 .mission {
   background-image: linear-gradient(#000000 2%, #282536, #000000 95%);
   width: 100%;
@@ -225,7 +220,7 @@ a {
   }
 
   .sidebar-bg-dark {
-    background: linear-gradient(172.32deg, #090d21 70.56%, #46161b 106.43%);
+    background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
   }
 
   .sidebar-bg-light {
@@ -247,3 +242,140 @@ a {
 }
 
 /* These two classes control the color of the sidebar*/
+
+
+
+
+
+/* New Design Classes*/
+/*Gradients*/
+  .text-gradient {
+    background: linear-gradient(220deg, #2D121A 5%, #080C20 30%, #182254 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .gradient-1 {
+    background: linear-gradient(220deg, #2D121A 5%, #080C20 30%, #182254 100%);
+  }
+
+  .gradient-2 {
+    background: linear-gradient(-220deg, #6D3F79,  5%, #3344A8 95%);
+  }
+
+  .gradient-3 {
+    background: linear-gradient(180deg, transparent 20%, #182254 100%);
+  }
+
+  .gradient-4 {
+    background: linear-gradient(180deg, #2D121A 5%, #080C20 30%, #182254 100%);
+  }
+
+  .gradient-5 {
+    background: linear-gradient(0deg, #2D121A 5%, #080C20 30%, #182254 100%);
+  }
+
+  .gradient-6 {
+    @media(max-width:768px) {
+      background-color:#fff;
+    }
+    @media(min-width:767px) {
+      background: linear-gradient(90deg, transparent 50%, #FFF 50%);
+    }
+  }
+
+  .gradient-7 {
+    background: linear-gradient(90deg, transparent 50%, #FFF 50%);
+  }
+
+  /*Dividers*/
+  .divider-1 {
+    background-repeat: no-repeat;
+    background-image: url('/assets/divider-5.svg');
+    @media(min-width:768px) {
+      background-image: url('/assets/divider-1.svg');
+    }
+  }
+
+  .divider-2 {
+    background-image: url('/assets/divider-2.svg');
+    background-repeat: no-repeat;
+  }
+
+  .divider-3 {
+    background-image: url('/assets/divider-3.svg');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+  }
+
+  .divider-4 {
+    background-image: url('/assets/divider-4.svg');
+    background-repeat: no-repeat;
+    background-position: bottom left;
+  }
+
+  .divider-5 {
+    background-image: url('/assets/divider-5.svg');
+    background-repeat: no-repeat;
+    background-position:top right;
+  }
+
+  .divider-6 {
+    background-image: url('/assets/divider-6.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
+  }
+
+  .divider-7 {
+    background-image: url('/assets/divider-7.svg');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+  }
+
+  /*Featured images*/
+  .feature-1 {
+    background-image: url('/assets/feature-1.svg');
+    background-repeat: no-repeat;
+    background-position: top right;
+    background-size: 100% auto;
+    background-clip: border-box;
+  }
+
+  .feature-2 {
+    background-image: url('/assets/feature-2.svg');
+    background-repeat: no-repeat;
+    background-position-x:cover;
+    background-position-y: center;
+  }
+
+  .feature-3 {
+    background-image: url('/assets/feature-3.svg');
+    background-repeat: no-repeat;
+    background-position: top right;
+    background-size: 100% auto;
+  }
+
+  
+
+  /*Dynamic card styling*/
+.card-tl {
+  border-top-left-radius: 20px;
+}
+
+.card-tr {
+  border-top-right-radius: 20px;
+}
+
+.card-bl {
+  border-bottom-left-radius: 20px;
+}
+
+.card-br {
+  border-bottom-right-radius: 20px;
+}
+
+/*Font*/
+.header {
+  font-size: calc(max(3vmax, 30px));
+  line-height: 1.2;
+}
