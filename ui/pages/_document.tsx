@@ -32,7 +32,6 @@ class WebsiteDocument extends Document {
             defer
             src="/image-generator/d3.geo.projection.min.js"
           ></script>
-          <script defer src="/image-generator/html2canvas.min.js"></script>
           <script defer src="/image-generator/p5js.min.js"></script>
           <script defer src="/image-generator/celestial.js"></script>
           <script defer src="/image-generator/weighted-voronoi.js"></script>
