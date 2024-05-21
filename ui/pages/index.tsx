@@ -4,8 +4,8 @@ import Callout2 from '../components/home/Callout2';
 import Callout3 from '../components/home/Callout3';
 import Video from '../components/home/Video'; 
 import Feature from '../components/home/Feature';
-import Footer from '../components/home/Footer'; 
-import Partners from '../components/home/Partners'; 
+import FooterSection from '../components/home/FooterSection'; 
+import PartnerSection from '../components/home/PartnerSection'; 
 
 export default function Home() {
   return (
@@ -17,8 +17,8 @@ export default function Home() {
         <Callout2 />
         <Feature />
         <Callout3 />
-        <Partners/>
-        <Footer />
+        <PartnerSection />
+        <FooterSection />
       </div>
   </div>  
   )

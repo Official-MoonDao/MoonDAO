@@ -264,11 +264,11 @@ a {
   }
 
   .gradient-3 {
-    background: linear-gradient(180deg, transparent 20%, #182254 100%);
+    background: linear-gradient(180deg, transparent 20%, #080C20 100%);
   }
 
   .gradient-4 {
-    background: linear-gradient(180deg, #2D121A 5%, #080C20 30%, #182254 100%);
+    background: linear-gradient(190deg, #2D121A 5%, #080C20 30%, #182254 100%);
   }
 
   .gradient-5 {
@@ -287,6 +287,10 @@ a {
   .gradient-7 {
     background: linear-gradient(90deg, transparent 50%, #FFF 50%);
   }
+
+  .gradient-8 {
+    background: linear-gradient(90deg, transparent 20%, #080C20 40%);
+  }  
 
   /*Dividers*/
   .divider-1 {
@@ -352,7 +356,7 @@ a {
     background-image: url('/assets/feature-3.svg');
     background-repeat: no-repeat;
     background-position: top right;
-    background-size: 100% auto;
+    background-size: contain;
   }
 
   
@@ -378,4 +382,10 @@ a {
 .header {
   font-size: calc(max(3vmax, 30px));
   line-height: 1.2;
+}
+
+.sub-header {
+  font-size: calc(max(2vmin, 20px));
+  line-height: 1.2;
+  padding-bottom:20px;
 }

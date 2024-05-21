@@ -1,9 +1,5 @@
-import gsap from 'gsap'
-import Image from 'next/image'
-import Link from 'next/link'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import useMouse from '../../lib/home/useMouse'
-import SlideButton from './SlideButton'
 
 export default function Hero(props: any) {
   const { mouseX, blur } = useMouse()
@@ -15,11 +11,6 @@ export default function Hero(props: any) {
   const splatterRef: any = useRef()
   const outlineCardRef: any = useRef()
   const astroRef: any = useRef()
-
-  // Removing all useEffect hooks related to animation.
-  // useEffect(() => {
-  // }, [blur, mouseX])
-
   return ( 
   <div className="overflow-visible relative w-full]">
     <div className="HERO-CONTAINER rounded-bl-[2vmax] overflow-hidden relative z-10 bg-white flex flex-col items-end justify-end md:items-start lg:items-start md:justify-end lg:justify-center gradient-1 p-5 mt-[-1px] pb-20 md:pr-10 md:pl-10 lg:pb-40 min-h-[675px] h-[80vh] md:h-[90vmin]">
@@ -35,7 +26,7 @@ export default function Hero(props: any) {
         <span style={{fontSize: 'calc(max(12vmin, 30px))'}} className="mt-[1vmin]">Space </span>
         <span style={{fontSize: 'calc(max(9vmin, 30px))'}} className="mt-[1vmin]">Program</span>
       </h1>
-        <p className="PARAGRAPH w-full max-w-[350px] pt-2 pb-5 mr-5 text-lg w-[130%] md:w-[100%] lg:max-w-[500px]">MoonDAO is a decentralized space program where space dreamers and serious builders unite</p>
+        <p className="PARAGRAPH w-full max-w-[350px] pt-2 pb-5 mr-5 text-lg w-[130%] md:w-[100%] lg:max-w-[500px]">MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement</p>
         <form className="FORM-CONTAINER w-full max-w-[300px] md:mt-5 flex flex-col md:flex-row items-center rounded-md pb-10">
           <input className="INPUT-FIELD w-full bg-dark-cool rounded-tl-[10px] rounded-bl-0 md:rounded-bl-[10px] px-3 py-2  focus:outline-none focus:ring-white-500" type="email" placeholder="Enter your email" />
           <button className="BUTTON rounded-bl-[10px] md:rounded-bl-0 rounded-br-[10px] w-full px-4 py-2 bg-white md:bg-blue-500 lg:bg-white text-dark-cool font-GoodTimes hover:pl-5 duration-500 focus:outline-none " type="submit">Subscribe</button>

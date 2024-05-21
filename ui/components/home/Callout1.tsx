@@ -28,8 +28,8 @@ export default function Mission(props: any) {
             <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500 leading-none">
                   MoonDAO is <br></br>Community-Built 
             </h1>
-            <p className="PARAGRAPH pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]">MoonDAO is where space dreamers and serious builders unite. We set ambitious, achievable goals and then work together to make them happen</p>
-            <button className="BUTTON rounded-br-[10px] px-4 py-2 bg-dark-cool md:bg-blue-500 lg:bg-dark-cool text-white font-GoodTimes hover:pl-5 duration-500 focus:outline-none " type="submit">Read The Consitution</button>
+            <p className="PARAGRAPH pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]">We are an open source space community where everything is proposed, governed, and created by our members. MoonDAO is where space dreamers and serious builders unite. We set ambitious, achievable goals and then work together to make them happen.</p>
+            <button className="BUTTON rounded-br-[10px] px-4 py-2 bg-dark-cool lg:bg-dark-cool text-white font-GoodTimes hover:pl-5 duration-500 focus:outline-none " type="submit">Join The Conversation</button>
           </div>  
         </div>
       </div>
