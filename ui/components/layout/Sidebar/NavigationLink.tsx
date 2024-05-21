@@ -127,8 +127,8 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
                       <Link
                         href={subItem.href}
                         className={`${
-                          router.pathname == subItem.href ||
-                          router.pathname == subItem.dynamicHref
+                          router.asPath == subItem.href ||
+                          router.asPath == subItem.dynamicHref
                             ? 'text-blue-950 dark:text-moon-orange font-semibold'
                             : '  dark:text-white'
                         } my-3 flex items-center`}
