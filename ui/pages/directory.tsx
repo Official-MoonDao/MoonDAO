@@ -134,7 +134,7 @@ export default function Directory() {
   return (
     <main className="animate-fadeIn">
       <Head title="Entity Directory" image="" />
-      <div className="flex flex-col items-center lg:items-start space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-[white] dark:bg-[#080C20] font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white page-border-and-color">
+      <div className="flex flex-col items-center lg:items-start space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-[white] dark:bg-[#080C20] font-RobotoMono w-[350px] sm:w-[400px] lg:w-full lg:max-w-[1080px] text-slate-950 dark:text-white page-border-and-color">
         <h1 className={`page-title`}>Directory</h1>
         <div className="px-4 w-full max-w-[350px] h-[30px] flex items-center space-x-5 text-black dark:text-white">
           <SearchIcon />
