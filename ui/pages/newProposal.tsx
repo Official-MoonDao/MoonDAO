@@ -1,11 +1,10 @@
 import { NanceProvider } from "@nance/nance-hooks";
 import ProposalEditor from "../components/nance/ProposalEditor";
-
-const apiUrl = process.env.NODE_ENV === "development" ? "http://localhost:3003" : "https://api.nance.app";
+import { NANCE_API_URL } from "../lib/nance/constants";
 
 export default function NewProposal() {
   return (
-    <NanceProvider apiUrl={apiUrl}>
+    <NanceProvider apiUrl={NANCE_API_URL}>
       <ProposalEditor />
     </NanceProvider>
   )

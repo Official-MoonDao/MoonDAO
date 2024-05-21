@@ -1,6 +1,6 @@
 import Head from "../../components/layout/Head"
 import dynamic from "next/dynamic";
-import { GetMarkdown, SetMarkdown } from "@nance/nance-editor";
+import { GetMarkdown } from "@nance/nance-editor";
 import "@nance/nance-editor/lib/css/editor.css";
 import "@nance/nance-editor/lib/css/dark.css";
 import ProposalTitleInput, { TITLE_ID } from "../../components/nance/ProposalTitleInput";
@@ -25,6 +25,7 @@ export default function ProposalEditor() {
   const spaceInfo = spaceInfoData?.data;
   const { nextEvents, currentEvent } = spaceInfo || {};
   let nextSnapshotVote = nextEvents?.find((event) => event.title === "Snapshot Vote");
+  const nextProposalId = spaceInfo?.nextProposalId;
   if (currentEvent?.title === "Temperature Check") {
     const days = differenceInDays(
       new Date(nextEvents?.slice(-1)[0]?.start || ""),
@@ -44,6 +45,7 @@ export default function ProposalEditor() {
   const loadedProposal = data?.data;
   
   const [status, setStatus] = useState<SignStatus>("idle");
+  const [initialValue, setInitialValue] = useState<string>(TEMPLATE);
 
   // proposal upload
   const { signProposalAsync, wallet } = useSignProposal();
@@ -52,12 +54,10 @@ export default function ProposalEditor() {
 
   // Nance Editor
   let getMarkdown: GetMarkdown;
-  let setMarkdown: SetMarkdown;
 
   const NanceEditor = dynamic(
     async () => {
       getMarkdown = (await import("@nance/nance-editor")).getMarkdown;
-      setMarkdown = (await import("@nance/nance-editor")).setMarkdown;
       return import("@nance/nance-editor").then(mod => mod.NanceEditor);
     }, {
       ssr: false,
@@ -74,9 +74,10 @@ export default function ProposalEditor() {
 
   const buildProposal = (status: ProposalStatus) => {
     const titleVal = (document?.getElementById(TITLE_ID) as HTMLInputElement).value;
+    const proposalId = loadedProposal?.proposalId || nextProposalId;
     return {
-      title: titleVal,
-      body: getMarkdown() || "",
+      title: `MDP-${proposalId}: ${titleVal}`,
+      body: getMarkdown(),
       status,
     } as Proposal
   }
@@ -88,11 +89,7 @@ export default function ProposalEditor() {
     }
     if (!nextSnapshotVote) return;
     setStatus("loading");
-    // HACK
-    // to prevent reloading of <NanceEditor initialValue={} .../>
-    // setting status causes a re-render which causes the editor to reload
-    if (loadedProposal) loadedProposal.body = getMarkdown() || loadedProposal.body;
-    // HACK
+    setInitialValue(proposal.body); // save the current proposal body to be used in case of error
     signProposalAsync(proposal, nextSnapshotVote).then((res) => {
       const { signature, address, message, domain, types } = res;
       trigger({
@@ -137,7 +134,7 @@ export default function ProposalEditor() {
         <h1 className="page-title py-10">{pageTitle}</h1>
         <ProposalTitleInput initialValue={loadedProposal?.title} />
         <NanceEditor
-          initialValue={loadedProposal?.body || TEMPLATE}
+          initialValue={initialValue}
           fileUploadIPFS={fileUploadIPFS}
           darkMode={true}
         />
