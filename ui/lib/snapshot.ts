@@ -132,7 +132,7 @@ export function useVotingInfoOfProposals(
   )
 }
 
-interface VotesOfProposal {
+export interface VotesOfProposal {
   votes: SnapshotGraphqlVote[]
   proposal: SnapshotGraphqlProposalVotingInfo
 }

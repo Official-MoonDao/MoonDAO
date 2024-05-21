@@ -2323,15 +2323,6 @@
   dependencies:
     "@toast-ui/react-editor" "^3.2.3"
 
-"@nance/nance-hooks@2.5.0-beta.7":
-  version "2.5.0-beta.7"
-  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-2.5.0-beta.7.tgz#cca66fd06c181d8702ee5fccd0153107ae3c4424"
-  integrity sha512-RaTJO7hktcAQer2CeQFumIPEgTQ8tH7OeV770lv2mwu3cibxMNrzAvS6dNrQe1Qq0M+/8slyvkHaT8IpzbTgog==
-  dependencies:
-    "@nance/nance-sdk" "^2.5.0-beta.7"
-    swr "^2.2.4"
-    tslib "^2.6.2"
-
 "@nance/nance-hooks@2.5.0-beta.8":
   version "2.5.0-beta.8"
   resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-2.5.0-beta.8.tgz#d96312f7c5356df85379582290b969cc0fcf06d9"
@@ -2345,14 +2336,6 @@
   version "2.5.0-beta.8"
   resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-2.5.0-beta.8.tgz#4c44582014ffa3e335102fb88bdf7d33e0cb7a84"
   integrity sha512-jEsqsdn+FUnI7i+bGp2UZGaBkF+rwQp5fhZueOK72R+ehHi+NDlWEw9I72HhVtK8tMZDbcred0n9cVjPyaraBQ==
-  dependencies:
-    tslib "^2.6.2"
-    yaml "^2.4.2"
-
-"@nance/nance-sdk@^2.5.0-beta.7":
-  version "2.5.0-beta.7"
-  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-2.5.0-beta.7.tgz#ec218d4ea83d0862f580056c65157fec89a35915"
-  integrity sha512-qsepIiuiiljZlrwyZrShttBu7MjMjC6bXCN4b1PlPUaDfrv8QUHoUXcg+aaqMu1fiGps8WlIuzgqxoP2uneE/A==
   dependencies:
     tslib "^2.6.2"
     yaml "^2.4.2"
@@ -11098,12 +11081,14 @@ neo-async@^2.5.0:
   resolved "https://registry.npmjs.org/neo-async/-/neo-async-2.6.2.tgz"
   integrity sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==
 
-next-query-params@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/next-query-params/-/next-query-params-5.0.0.tgz#326b2e20481d5833d6e7272bd1d6bf3c114a3a5d"
-  integrity sha512-Zm9nc0QgrTMaQwGdbICcTDaYS4oRcXo628Ye6JQGdp/9JzlhzDpzcGRqciK0S62yAyE3b5ozFpgzY0gDUEbLtw==
+next-query-params@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/next-query-params/-/next-query-params-3.0.0.tgz#58d1c1410c1795f20240dd06fd4e181c45f66d1d"
+  integrity sha512-PTtOPDOsI2XznNp1f/BDOT49xTBl9NbKEztWPWpFk6IjSXdrF0SBvwJkv+MEIUSGPZtYu9rI902WdyqRKtD9EA==
   dependencies:
+    query-string "7.1.1"
     tslib "^2.0.3"
+    use-query-params "1.2.3"
 
 next-tick@^1.1.0:
   version "1.1.0"
@@ -12085,6 +12070,16 @@ qs@~6.10.3:
   dependencies:
     side-channel "^1.0.4"
 
+query-string@7.1.1:
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/query-string/-/query-string-7.1.1.tgz#754620669db978625a90f635f12617c271a088e1"
+  integrity sha512-MplouLRDHBZSG9z7fpuAAcI7aAYjDLhtsiVZsevsfaHWDS2IDdORKbSd1kWUA+V4zyva/HZoSfpwnYMMQDhb0w==
+  dependencies:
+    decode-uri-component "^0.2.0"
+    filter-obj "^1.1.0"
+    split-on-first "^1.0.0"
+    strict-uri-encode "^2.0.0"
+
 query-string@7.1.3:
   version "7.1.3"
   resolved "https://registry.npmjs.org/query-string/-/query-string-7.1.3.tgz"
@@ -12885,10 +12880,10 @@ semver@^7.1.2, semver@^7.2.1, semver@^7.3.5, semver@^7.3.7, semver@^7.3.8, semve
   dependencies:
     lru-cache "^6.0.0"
 
-serialize-query-params@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/serialize-query-params/-/serialize-query-params-2.0.2.tgz#598a3fb9e13f4ea1c1992fbd20231aa16b31db81"
-  integrity sha512-1chMo1dST4pFA9RDXAtF0Rbjaut4is7bzFbI1Z26IuMub68pNCILku85aYmeFhvnY//BXUPUhoRMjYcsT93J/Q==
+serialize-query-params@^1.3.5:
+  version "1.3.6"
+  resolved "https://registry.yarnpkg.com/serialize-query-params/-/serialize-query-params-1.3.6.tgz#5dd5225db85ce747fe6fbc4897628504faafec6d"
+  integrity sha512-VlH7sfWNyPVZClPkRacopn6sn5uQMXBsjPVz1+pBHX895VpcYVznfJtZ49e6jymcrz+l/vowkepCZn/7xEAEdw==
 
 set-blocking@^2.0.0:
   version "2.0.0"
@@ -14289,12 +14284,12 @@ use-callback-ref@^1.3.0:
   dependencies:
     tslib "^2.0.0"
 
-use-query-params@^2.2.1:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/use-query-params/-/use-query-params-2.2.1.tgz#c558ab70706f319112fbccabf6867b9f904e947d"
-  integrity sha512-i6alcyLB8w9i3ZK3caNftdb+UnbfBRNPDnc89CNQWkGRmDrm/gfydHvMBfVsQJRq3NoHOM2dt/ceBWG2397v1Q==
+use-query-params@1.2.3:
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/use-query-params/-/use-query-params-1.2.3.tgz#306c31a0cbc714e8a3b4bd7e91a6a9aaccaa5e22"
+  integrity sha512-cdG0tgbzK+FzsV6DAt2CN8Saa3WpRnze7uC4Rdh7l15epSFq7egmcB/zuREvPNwO5Yk80nUpDZpiyHsoq50d8w==
   dependencies:
-    serialize-query-params "^2.0.2"
+    serialize-query-params "^1.3.5"
 
 use-sidecar@^1.1.2:
   version "1.1.2"

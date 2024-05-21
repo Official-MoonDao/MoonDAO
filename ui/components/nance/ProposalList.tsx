@@ -8,22 +8,22 @@ import { ArrowPathIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
 import { useProposalsInfinite } from '@nance/nance-hooks'
 import { ProposalsPacket } from '@nance/nance-sdk'
 import { formatDistanceStrict } from 'date-fns'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
-import InfiniteScroll from 'react-infinite-scroll-component'
 import {
   BooleanParam,
   NumberParam,
   StringParam,
   useQueryParams,
   withDefault,
-} from 'use-query-params'
+} from 'next-query-params'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import InfiniteScroll from 'react-infinite-scroll-component'
+import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import {
   SnapshotGraphqlProposalVotingInfo,
   useVotingInfoOfProposals,
 } from '../../lib/snapshot'
 import ProposalInfo from './ProposalInfo'
-import { NANCE_SPACE_NAME } from "../../lib/nance/constants"
 
 function NoResults() {
   return (

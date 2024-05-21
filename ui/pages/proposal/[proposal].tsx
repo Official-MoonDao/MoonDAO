@@ -1,11 +1,11 @@
 import { NanceProvider, useProposal } from '@nance/nance-hooks'
 import { useRouter } from 'next/router'
+import { NANCE_API_URL, NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import { useVotesOfProposal } from '../../lib/snapshot'
 import MarkdownWithTOC from '../../components/nance/MarkdownWithTOC'
 import ProposalInfo from '../../components/nance/ProposalInfo'
 import ProposalSummary from '../../components/nance/ProposalSummary'
-import VoteList from '../../components/nance/VoteList'
-import { NANCE_API_URL, NANCE_SPACE_NAME } from "../../lib/nance/constants"
+import ProposalVotes from '../../components/nance/ProposalVotes'
 
 function Proposal() {
   const router = useRouter()
@@ -94,7 +94,7 @@ function Proposal() {
           </div>
 
           {/* Votes */}
-          {proposalPacket.voteURL && (
+          {proposalPacket.voteURL && votes && (
             <div className="lg:col-start-3">
               <h2
                 className="text-sm font-semibold leading-6 text-gray-900 dark:text-white"
@@ -106,7 +106,7 @@ function Proposal() {
                 snapshotSpace={'jbdao.eth'}
                 proposalSnapshotId={proposalPacket.voteURL as string}
               /> */}
-              <VoteList votes={votes?.votes} />
+              <ProposalVotes votesOfProposal={votes} />
             </div>
           )}
         </div>
