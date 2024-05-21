@@ -32,6 +32,7 @@ export default function NetworkSelector() {
   return (
     <div id="network-selector" className="w-[300px] flex flex-col">
       <div
+        id="network-selector-dropdown-button"
         className="flex items-center gap-2"
         onClick={() => setDropdown((prev) => !prev)}
       >
@@ -48,7 +49,10 @@ export default function NetworkSelector() {
         </button>
       </div>
       {dropdown && (
-        <div className="w-[300px] absolute flex flex-col items-start gap-2 text-black z-10">
+        <div
+          id="network-selector-dropdown"
+          className="w-[300px] absolute flex flex-col items-start gap-2 text-black z-10"
+        >
           <button
             className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
             onClick={() => selectChain(Ethereum)}

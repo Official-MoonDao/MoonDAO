@@ -19,6 +19,7 @@ export default defineConfig({
     //   'cypress/integration/lock/**',
     //   'cypress/integration/privy/**',
     //   'cypress/integration/shopify/**',
+    //   'cypress/integration/directory/**',
     // ],
   },
 })

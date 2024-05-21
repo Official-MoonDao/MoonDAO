@@ -4,7 +4,7 @@ import { NFT, useContract, useNFTs } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, ENTITY_ADDRESSES } from 'const/config'
 import { approvedCitizens, approvedEntities } from 'const/whitelist'
 import { useRouter } from 'next/router'
-import { cache, useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -232,12 +232,3 @@ export default function Directory() {
     </main>
   )
 }
-
-// export async function getServerSideProps({ query }: any) {
-//   const { type } = query
-//   return {
-//     props: {
-//       type: type || 'all',
-//     },
-//   }
-// }
