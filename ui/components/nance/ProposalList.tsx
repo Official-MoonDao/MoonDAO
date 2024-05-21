@@ -23,6 +23,7 @@ import {
   useVotingInfoOfProposals,
 } from '../../lib/snapshot'
 import ProposalInfo from './ProposalInfo'
+import { NANCE_SPACE_NAME } from "../../lib/nance/constants"
 
 function NoResults() {
   return (
@@ -66,7 +67,7 @@ export default function ProposalList() {
     size,
     setSize,
   } = useProposalsInfinite(
-    { space: 'moondao', cycle, keyword, limit },
+    { space: NANCE_SPACE_NAME, cycle, keyword, limit },
     router.isReady
   )
 

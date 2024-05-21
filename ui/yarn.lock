@@ -2323,19 +2323,36 @@
   dependencies:
     "@toast-ui/react-editor" "^3.2.3"
 
-"@nance/nance-hooks@^2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-2.3.0.tgz#a2d148a8e6fb3b4de0258a59a52083a571e3b786"
-  integrity sha512-BSY5XI+0WhjZJVX2MTCUwVQoHp2fQ+VAdKpCCtAIaqA4XK7sfNmc5i1/QGSQKydJOTrWUH4d7ier0Uaaj2JVeA==
+"@nance/nance-hooks@2.5.0-beta.7":
+  version "2.5.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-2.5.0-beta.7.tgz#cca66fd06c181d8702ee5fccd0153107ae3c4424"
+  integrity sha512-RaTJO7hktcAQer2CeQFumIPEgTQ8tH7OeV770lv2mwu3cibxMNrzAvS6dNrQe1Qq0M+/8slyvkHaT8IpzbTgog==
   dependencies:
-    "@nance/nance-sdk" "^2.3.0"
+    "@nance/nance-sdk" "^2.5.0-beta.7"
     swr "^2.2.4"
     tslib "^2.6.2"
 
-"@nance/nance-sdk@^2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-2.3.0.tgz#1e02e97060441f7fd2e2ca82f4fe7bf6fcebad10"
-  integrity sha512-I8se/GWZKiYxyI48rnRZwMjyIOGEZu7uAkP8qH0E+cqAxJbmpaCy/5SLHUAFezdW69XqusiLbrTuoEqWt6krhA==
+"@nance/nance-hooks@2.5.0-beta.8":
+  version "2.5.0-beta.8"
+  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-2.5.0-beta.8.tgz#d96312f7c5356df85379582290b969cc0fcf06d9"
+  integrity sha512-9LGJeTbqbeHF98gpVSEYAJMBrDRcru2QhF1FYt/+VU4EQRkWUNeU8TCwgWr/RN4wbLSrdJaZ7bs8lR6Mfjbbug==
+  dependencies:
+    "@nance/nance-sdk" "^2.5.0-beta.8"
+    swr "^2.2.4"
+    tslib "^2.6.2"
+
+"@nance/nance-sdk@2.5.0-beta.8", "@nance/nance-sdk@^2.5.0-beta.8":
+  version "2.5.0-beta.8"
+  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-2.5.0-beta.8.tgz#4c44582014ffa3e335102fb88bdf7d33e0cb7a84"
+  integrity sha512-jEsqsdn+FUnI7i+bGp2UZGaBkF+rwQp5fhZueOK72R+ehHi+NDlWEw9I72HhVtK8tMZDbcred0n9cVjPyaraBQ==
+  dependencies:
+    tslib "^2.6.2"
+    yaml "^2.4.2"
+
+"@nance/nance-sdk@^2.5.0-beta.7":
+  version "2.5.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-2.5.0-beta.7.tgz#ec218d4ea83d0862f580056c65157fec89a35915"
+  integrity sha512-qsepIiuiiljZlrwyZrShttBu7MjMjC6bXCN4b1PlPUaDfrv8QUHoUXcg+aaqMu1fiGps8WlIuzgqxoP2uneE/A==
   dependencies:
     tslib "^2.6.2"
     yaml "^2.4.2"

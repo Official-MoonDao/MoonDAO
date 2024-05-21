@@ -1,16 +1,17 @@
-import { useProposal } from '@nance/nance-hooks'
+import { NanceProvider, useProposal } from '@nance/nance-hooks'
 import { useRouter } from 'next/router'
 import { useVotesOfProposal } from '../../lib/snapshot'
 import MarkdownWithTOC from '../../components/nance/MarkdownWithTOC'
 import ProposalInfo from '../../components/nance/ProposalInfo'
 import ProposalSummary from '../../components/nance/ProposalSummary'
 import VoteList from '../../components/nance/VoteList'
+import { NANCE_API_URL, NANCE_SPACE_NAME } from "../../lib/nance/constants"
 
-export default function Proposal() {
+function Proposal() {
   const router = useRouter()
   const proposalId = router.query.proposal as string
   const { data, isLoading } = useProposal({
-    space: 'moondao',
+    space: NANCE_SPACE_NAME,
     uuid: proposalId,
   })
   const proposalPacket = data?.data
@@ -111,5 +112,13 @@ export default function Proposal() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ProposalPage() {
+  return (
+    <NanceProvider apiUrl={NANCE_API_URL}>
+      <Proposal />
+    </NanceProvider>
   )
 }
