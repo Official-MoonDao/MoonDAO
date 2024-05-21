@@ -5,10 +5,12 @@ import {
   createEnumParam,
 } from 'next-query-params'
 import { formatNumberUSStyle } from '../../lib/nance'
+import { SNAPSHOT_SPACE_NAME } from '../../lib/nance/constants'
 import { VotesOfProposal } from '../../lib/snapshot'
 import { classNames } from '../../lib/utils/tailwind'
 import { AddressLink } from './AddressLink'
 import ColorBar from './ColorBar'
+import NewVoteButton from './NewVoteButton'
 
 const getColorOfChoice = (choice: string | undefined) => {
   if (choice == 'For') {
@@ -212,11 +214,11 @@ export default function ProposalVotes({
         </ul>
       </div>
 
-      {/* <NewVoteButton
-        snapshotSpace={snapshotSpace}
+      <NewVoteButton
+        snapshotSpace={SNAPSHOT_SPACE_NAME}
         snapshotProposal={proposalInfo}
-        refetch={refetch}
-      /> */}
+        refetch={() => null}
+      />
     </div>
   )
 }

@@ -34,6 +34,7 @@ const votesOfProposalQuery = gql`
 
     proposal(id: $id) {
       id
+      title
       state
       end
       type
@@ -58,6 +59,7 @@ const votingInfoOfProposalsQuery = gql`
       orderDirection: desc
     ) {
       id
+      title
       state
       end
       type
@@ -72,6 +74,16 @@ const votingInfoOfProposalsQuery = gql`
   }
 `
 
+const votingPowerQuery = gql`
+  query VotingPowerQuery($voter: String!, $space: String!, $proposal: String) {
+    vp(voter: $voter, space: $space, proposal: $proposal) {
+      vp
+      vp_by_strategy
+      vp_state
+    }
+  }
+`
+
 export type ProposalType =
   | 'approval'
   | 'ranked-choice' // choice = [1,2,3]
@@ -82,6 +94,7 @@ export type ProposalType =
 
 export type SnapshotGraphqlProposalVotingInfo = {
   id: string
+  title: string
   // active or
   state: string
   end: number
@@ -180,6 +193,42 @@ export function useVotesOfProposal(
   return useSWR(
     shouldFetch ? endpoint + '=> getVotesOfProposal' : null,
     async (url) => getVotesOfProposal(id, first, skip, orderBy)
+  )
+}
+
+interface SnapshotVotingPower {
+  vp: number
+  vp_by_strategy: number[]
+  vp_state: string
+}
+
+export async function getVotingPower(
+  voter: string | undefined,
+  space: string | undefined,
+  proposal: string | undefined
+): Promise<SnapshotVotingPower | undefined> {
+  if (!voter || !space || !proposal) {
+    return undefined
+  }
+
+  const variable = { voter, space, proposal }
+  const data = await graphQLClient.request<{ vp: SnapshotVotingPower }>(
+    votingPowerQuery,
+    variable
+  )
+
+  return data?.vp
+}
+
+export function useVotingPower(
+  voter: string | undefined,
+  space: string | undefined,
+  proposal: string | undefined,
+  shouldFetch: boolean = true
+) {
+  return useSWR(
+    shouldFetch ? endpoint + '=> getVotingPower' : null,
+    async (url) => getVotingPower(voter, space, proposal)
   )
 }
 
