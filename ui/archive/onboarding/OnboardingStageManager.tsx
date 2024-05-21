@@ -208,7 +208,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
         <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base font-[Lato]">
           <p>
             {`
-              Custom Membership: Not seeing what’s right for you? Advanced users can purchase any amount of $MOONEY via Uniswap and stake between one week and four years for voting power.
+              Custom Membership: Not seeing what’s right for you? Advanced users can purchase any amount of
               `}
             <Link
               className="text-moon-gold"
