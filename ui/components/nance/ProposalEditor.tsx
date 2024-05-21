@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import toastStyle from "../../lib/marketplace/marketplace-utils/toastConfig";
 import { useProposal, useProposalUpload, useSpaceInfo } from "@nance/nance-hooks";
 import { NANCE_SPACE_NAME } from "../../lib/nance/constants";
-import { StringParam, useQueryParams } from "use-query-params";
+import { StringParam, useQueryParams } from "next-query-params";
 import { add, differenceInDays } from "date-fns";
 import { useState } from "react";
 import { LoadingSpinner } from "../../components/layout/LoadingSpinner";
@@ -43,7 +43,7 @@ export default function ProposalEditor() {
   const shouldFetch = !!proposalId;
   const { data } = useProposal({ space: NANCE_SPACE_NAME, uuid: proposalId! }, shouldFetch)
   const loadedProposal = data?.data;
-  
+
   const [status, setStatus] = useState<SignStatus>("idle");
   const [initialValue, setInitialValue] = useState<string>(TEMPLATE);
 
