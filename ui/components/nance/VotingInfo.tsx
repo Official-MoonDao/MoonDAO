@@ -6,7 +6,7 @@ export default function VotingInfo({
 }: {
   votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
 }) {
-  if (votingInfo === undefined) return null
+  if (!votingInfo) return null
 
   const quorumProgress = (
     (votingInfo.scores_total * 100) /
