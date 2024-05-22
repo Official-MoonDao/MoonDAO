@@ -59,7 +59,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       />
 
       {/* Static sidebar for desktop */}
-      <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
+      <div className="relative z-10 hidden pr-5 md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
         {/* Sidebar component*/}
         <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col overflow-y-auto pt-5  dark:sidebar-bg-dark">
           <a href="https://moondao.com">

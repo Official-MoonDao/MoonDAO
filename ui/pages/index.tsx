@@ -10,7 +10,7 @@ import PartnerSection from '../components/home/PartnerSection';
 export default function Home() {
   return (
     <div className="z-10 overflow-x-hidden absolute flex justify-end w-full h-[100vh] overflow-auto top-0 right-0">
-      <div className="w-full md:w-[calc(100vw-250px)] lg:w-[calc(100vw-270px-3px)]">
+      <div className="w-full md:w-[calc(100vw-260px)] lg:w-[calc(100vw-290px)]">
         <Hero />
         <Video />
         <Callout1 />

@@ -15,7 +15,7 @@ export default function Hero(props: any) {
   const astroRef: any = useRef()
 
 return ( 
-        <div className="CALLOUT2-CONTAINER  m-5 mr-10 mb-20 relative items-start justify-end md:items-start lg:items-start md:justify-end lg:justify-center mt-[25vh]">
+        <section className="CALLOUT2-CONTAINER  m-5 mr-10 mb-20 relative items-start justify-end md:items-start lg:items-start md:justify-end lg:justify-center mt-[25vh]">
                 <div className="BACKGROUND-ELEMENTS overflow-visible">  
                 </div>
                 <div className="HISTORY-CONTAINER rounded-[5vmax] rounded-tr-[0px] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 overflow-hidden max-w-[1200px]">
@@ -62,6 +62,6 @@ return (
                                 />                 
                         </div>
                 </div>
-        </div>
+        </section>
 )
 }

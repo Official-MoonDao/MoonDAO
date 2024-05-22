@@ -13,7 +13,7 @@ export default function Hero(props: any) {
   const astroRef: any = useRef()
 
   return ( 
-  <div className="BOTTOM-BAR w-full flex items-center justify-center p-5 pb-10">
+  <div className="BOTTOM-BAR flex items-center justify-center p-5 pb-10">
     <a href="https://docs.moondao.com/Legal/Website-Privacy-Policy">Privacy policy </a>
     <span>&nbsp;|&nbsp;</span>
     <a href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions">Terms of Service</a>

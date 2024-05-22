@@ -220,7 +220,7 @@ export function PrivyConnectWallet() {
                     </div>
                   ))}
                   <button
-                    className="w-full p-1 border"
+                    className="w-full gradient-3 p-1 pr-2 pl-2 text-dark-cool"
                     onClick={async () => {
                       connectWallet()
                     }}
@@ -263,7 +263,7 @@ export function PrivyConnectWallet() {
                 login()
               }
             }}
-            className="w-[125px] md:w-[175px] px-3 md:px-5 py-2 md:py-3 bg-moon-orange font-RobotoMono hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300"
+            className="rounded-[30px] rounded-bl-[10px] w-[125px] md:w-[175px] px-3 md:px-5 py-2 md:py-3 gradient-2 font-GoodTimes hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300"
           >
             Connect
           </button>

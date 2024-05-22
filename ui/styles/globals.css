@@ -260,7 +260,7 @@ a {
   }
 
   .gradient-2 {
-    background: linear-gradient(-220deg, #6D3F79,  5%, #3344A8 95%);
+    background: linear-gradient(220deg, #6D3F79 5%, #3344A8 95%);
   }
 
   .gradient-3 {
@@ -291,6 +291,10 @@ a {
   .gradient-8 {
     background: linear-gradient(90deg, transparent 20%, #080C20 40%);
   }  
+
+  .gradient-9 {
+    background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
+  }
 
   /*Dividers*/
   .divider-1 {
@@ -328,6 +332,7 @@ a {
     background-image: url('/assets/divider-6.svg');
     background-repeat: no-repeat;
     background-position: top left;
+    background-size: contain;
   }
 
   .divider-7 {
@@ -358,25 +363,6 @@ a {
     background-position: top right;
     background-size: contain;
   }
-
-  
-
-  /*Dynamic card styling*/
-.card-tl {
-  border-top-left-radius: 20px;
-}
-
-.card-tr {
-  border-top-right-radius: 20px;
-}
-
-.card-bl {
-  border-bottom-left-radius: 20px;
-}
-
-.card-br {
-  border-bottom-right-radius: 20px;
-}
 
 /*Font*/
 .header {

@@ -12,12 +12,14 @@ export default function Card({ icon, header, paragraph }: CardProps) {
             <div className={`bg-dark-cool h-full p-10 pb-20`} >
                 <div>
                     <img src={icon} alt="icon" className="w-1/2 h-full p-5" />
-                    <h2 className="sub-header font-GoodTimes">
-                        {header}
-                    </h2>
-                    <p>
-                        {paragraph}
-                    </p>
+                    <div>
+                        <h2 className="sub-header font-GoodTimes">
+                            {header}
+                        </h2>
+                        <p>
+                            {paragraph}
+                        </p>
+                    </div>    
                 </div>
             </div>
         </div>

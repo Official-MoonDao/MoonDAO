@@ -12,8 +12,8 @@ export default function Hero(props: any) {
   const outlineCardRef: any = useRef()
   const astroRef: any = useRef()
   return ( 
-  <div className="overflow-visible relative w-full]">
-    <div className="HERO-CONTAINER rounded-bl-[2vmax] overflow-hidden relative z-10 bg-white flex flex-col items-end justify-end md:items-start lg:items-start md:justify-end lg:justify-center gradient-1 p-5 mt-[-1px] pb-20 md:pr-10 md:pl-10 lg:pb-40 min-h-[675px] h-[80vh] md:h-[90vmin]">
+  <section className="overflow-visible relative w-full]">
+    <div className="HERO-CONTAINER rounded-bl-[2vmax] overflow-hidden relative z-10 bg-white flex flex-col items-end justify-end md:items-start lg:items-start md:justify-end lg:justify-center gradient-1 p-5 mt-[-1px] pb-[10vmax] md:pr-10 md:pl-10 lg:pb-40 min-h-[675px] h-[80vh] md:h-[90vmin]">
       <div className="TOP-LEFT-DIVIDER divider-1 absolute top-0 left-0 w-[45%] h-full"></div>
       <div className="FEATURED-IMAGE-CONTAINER absolute w-[100%] h-[100%] top-0 left-0 overflow-hidden lg:max-w-[1400px]">
         <div className="FEATURED-IMAGE feature-1 absolute top-0 right-0 w-[80vmin] md:w-[70%] lg:w-[50vmax] h-full mt-5"></div>
@@ -35,7 +35,7 @@ export default function Hero(props: any) {
     </div>
     {/* This div exists to visually blend the border between sections*/}
     <div className="z-10 hidden md:block absolute bottom-[-20px] right-0 bg-white w-[50%] h-[40px]"></div>
-  </div>
+  </section>
     
   )
 }
