@@ -26,11 +26,13 @@ export default function FooterSection() {
                 </div>
             </div>
             <div className="BOTTOM-BAR gradient-8">
-                <div className="FOOTER-CONTAINER flex pt-5 flex-col justify-end max-w-[1200px]">
-                    <p className="opacity-[60%]">
+                <div className="FOOTER-CONTAINER flex pt-5 flex-col max-w-[1200px]">
+                    <p className="opacity-[60%] p-5">
                         Disclaimer: There is no expectation of profit with the $MOONEY token. It is a governance token. You are not receiving fractionalized ownership of the DAOs assets in exchange for the token, check our FAQs for more information and disclaimers.
                     </p>
-                    <Footer />
+                    <div className="min-h-[150px] md:min-h-[0px]">
+                        <Footer />
+                    </div>
                 </div>
             </div>    
         </section>

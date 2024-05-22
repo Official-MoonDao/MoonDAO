@@ -15,7 +15,7 @@ export default function Callout2() {
             </h1>
             <p className="PARAGRAPH pt-2 pb-5 text-lg w-[100%] md:w-[100%] lg:max-w-[500px]">Space should belong to the people, not the select few. We envision a future where space is by the people for the people, irrespective of borders. Our mission is to accelerate the development of a self-sustaining, self-governing settlement on the Moon. Want to help govern and create that future?</p>
             <Link href="https://app.moondao.com/join">
-              <button className="BUTTON rounded-br-[10px] px-4 py-2 bg-dark-cool md:bg-blue-500 lg:bg-dark-cool text-white font-GoodTimes hover:pl-5 duration-500 focus:outline-none " type="submit">Become A Member</button>
+              <button className="BUTTON rounded-br-[10px] px-4 py-2 bg-dark-cool lg:bg-dark-cool text-white font-GoodTimes hover:pl-5 duration-500 focus:outline-none " type="submit">Become A Member</button>
             </Link>
         </div>
         </div>
