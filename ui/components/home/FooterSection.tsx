@@ -5,7 +5,7 @@ export default function FooterSection() {
         <section>  
             <div className="CONTAINER relative flex md:min-h-[500px] lg:min-h-[0px]  ">
                 <div className="BACKGROUND">  
-                    <div className="BACKGROUND-GRADIENT gradient-1 w-full h-full absolute bottom-0 left-0 md:rounded-bl-[10vmax] overflow-hidden"></div>
+                    <div className="BACKGROUND-GRADIENT gradient-1 w-full h-full absolute bottom-0 left-0 md:rounded-bl-[5vmax] overflow-hidden"></div>
                     <div className="BOTTOM-RIGHT-DIVIDER divider-7 bg-bottom absolute bottom-[-2px] right-[-20%] md:right-0 w-[60%] md:w-[60%] lg:w-[40%] h-full "></div>
                 </div>
                 <div className="CONTENT-SECTION flex flex-col max-w-[1200px] w-full">
@@ -28,7 +28,7 @@ export default function FooterSection() {
             <div className="BOTTOM-BAR gradient-8">
                 <div className="FOOTER-CONTAINER flex pt-5 flex-col max-w-[1200px]">
                     <p className="opacity-[60%] p-5">
-                        Disclaimer: There is no expectation of profit with the $MOONEY token. It is a governance token. You are not receiving fractionalized ownership of the DAOs assets in exchange for the token, check our FAQs for more information and disclaimers.
+                        Disclaimer: There is no expectation of profit with the $MOONEY token. It is a governance token. <br></br>You are not receiving fractionalized ownership of the DAOs assets in exchange for the token, check our FAQs for more information and disclaimers.
                     </p>
                     <div className="min-h-[150px] md:min-h-[0px]">
                         <Footer />
