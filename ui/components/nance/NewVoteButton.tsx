@@ -21,7 +21,7 @@ export default function NewVoteButton({
   // external hook
   const { wallets, ready: isConnected } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const address = wallets[selectedWallet].address
+  const address = wallets[selectedWallet]?.address
   const { connectWallet: openConnectModal } = usePrivy()
 
   let buttonLabel = 'Vote'
