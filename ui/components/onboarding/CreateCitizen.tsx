@@ -135,8 +135,9 @@ export function CreateCitizen({
                   )
                   const data = await responseRes.json()
 
+                  console.log(data)
                   //subscribe to newsletter
-                  if (data.answers[6].boolean) {
+                  if (data.answers[9].boolean) {
                     const subRes = await subscribeToNewsletter(
                       data.answers[2].email
                     )
@@ -413,6 +414,7 @@ export function CreateCitizen({
                       citizenData.twitter,
                       citizenData.website,
                       citizenData.view,
+                      citizenData.formResponseId,
                     ],
                     {
                       value: ethers.utils.parseEther('0.01'),

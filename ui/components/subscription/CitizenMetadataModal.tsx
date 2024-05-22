@@ -9,6 +9,7 @@ import { CITIZEN_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 
@@ -24,6 +25,8 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const { contract: citizenTableContract } = useContract(
     CITIZEN_TABLE_ADDRESSES[selectedChain.slug]
   )
+
+  const subscribeToNewsletter = useNewsletterSub()
 
   return (
     <div
@@ -75,6 +78,16 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
 
+            if (data.answers[9].boolean) {
+              const subRes = await subscribeToNewsletter(data.answers[2].email)
+              console.log(subRes)
+              if (subRes.ok) {
+                toast.success(
+                  'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
+                )
+              }
+            }
+
             await citizenTableContract?.call('updateTable', [
               nft.metadata.id,
               `${data.answers[0].text} ${data.answers[1].text}`,
@@ -85,9 +98,12 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
               data.answers[6].url,
               data.answers[5].url,
               data.answers[8].choice.label === 'Yes' ? 'public' : 'private',
+              responseId,
             ])
 
-            router.reload()
+            setTimeout(() => {
+              router.reload()
+            }, 3000)
           }}
           height={500}
         />
