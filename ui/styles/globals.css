@@ -341,6 +341,12 @@ a {
     background-position: bottom right;
   }
 
+  .divider-8 {
+    background-image: url('/assets/divider-8.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
+  }
+
   /*Featured images*/
   .feature-1 {
     background-image: url('/assets/feature-1.svg');
@@ -374,4 +380,10 @@ a {
   font-size: calc(max(2vmin, 20px));
   line-height: 1.2;
   padding-bottom:20px;
+}
+
+/*Hide the scrollbar*/
+.no-bar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }

@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface CardProps {
     logo: string;
     alt: string;

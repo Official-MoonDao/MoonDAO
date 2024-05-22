@@ -1,23 +1,6 @@
-import Image from 'next/image'
 import Link from 'next/link'
-import { useRef, useEffect, useState, Suspense } from 'react'
-import useMouse from '../../lib/home/useMouse'
-import useOnScreen from '../../lib/utils/hooks/useOnScreen'
 
-export default function Mission(props: any) {
-  const { mouseX, blur } = useMouse()
-  const contentRef: any = useRef()
-  const contentRefValue = useOnScreen(contentRef)
-  const [isContentRef, setIsContentRef] = useState(false)
-  const layer1Ref: any = useRef()
-  const layer2Ref: any = useRef()
-  const satRef: any = useRef()
-
-  useEffect(() => {
-    if (!isContentRef) {
-      setIsContentRef(contentRefValue)
-    }
-  }, [contentRefValue])
+export default function Callout1() {
   return (
     <section className="bg-dark-warm md:bg-transparent"> 
       <div className="CALLOUT1-CONTAINER md:rounded-tl-[2vmax] rounded-bl-[5vmax] z-0 relative w-[100%] h-[100%] bg-white mt-[-2vmax] pt-[2vmax] pb-0 lg:pb-10">
@@ -29,7 +12,9 @@ export default function Mission(props: any) {
                   MoonDAO is <br></br>Community-Built 
             </h1>
             <p className="PARAGRAPH pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]">We are an open source space community where everything is proposed, governed, and created by our members. MoonDAO is where space dreamers and serious builders unite. We set ambitious, achievable goals and then work together to make them happen.</p>
-            <button className="BUTTON rounded-br-[10px] px-4 py-2 bg-dark-cool lg:bg-dark-cool text-white font-GoodTimes hover:pl-5 duration-500 focus:outline-none " type="submit">Join The Conversation</button>
+            <Link href="https://moondao.com/discord">
+              <button className="BUTTON rounded-br-[10px] px-4 py-2 bg-dark-cool lg:bg-dark-cool text-white font-GoodTimes hover:pl-5 duration-500 focus:outline-none " type="submit">Join The Conversation</button>
+            </Link>
           </div>  
         </div>
       </div>
