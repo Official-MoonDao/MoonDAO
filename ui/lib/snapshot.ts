@@ -140,7 +140,7 @@ export function useVotingInfoOfProposals(
   shouldFetch: boolean = true
 ) {
   return useSWR(
-    shouldFetch ? endpoint + '=> getVotingInfoOfProposals' : null,
+    shouldFetch ? [endpoint, 'useVotingInfoOfProposals', proposalIds] : null,
     async (url) => getVotingInfoOfProposals(proposalIds)
   )
 }
@@ -191,7 +191,9 @@ export function useVotesOfProposal(
   shouldFetch: boolean = true
 ) {
   return useSWR(
-    shouldFetch ? endpoint + '=> getVotesOfProposal' : null,
+    shouldFetch
+      ? [endpoint, 'useVotesOfProposal', id, first, skip, orderBy]
+      : null,
     async (url) => getVotesOfProposal(id, first, skip, orderBy)
   )
 }
@@ -227,7 +229,7 @@ export function useVotingPower(
   shouldFetch: boolean = true
 ) {
   return useSWR(
-    shouldFetch ? endpoint + '=> getVotingPower' : null,
+    shouldFetch ? [endpoint, 'useVotingPower', voter, space, proposal] : null,
     async (url) => getVotingPower(voter, space, proposal)
   )
 }
