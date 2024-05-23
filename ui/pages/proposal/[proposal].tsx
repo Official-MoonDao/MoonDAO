@@ -2,6 +2,7 @@ import { NanceProvider, useProposal } from '@nance/nance-hooks'
 import { useRouter } from 'next/router'
 import { NANCE_API_URL, NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import { useVotesOfProposal } from '../../lib/snapshot'
+import DropDownMenu from '../../components/nance/DropdownMenu'
 import MarkdownWithTOC from '../../components/nance/MarkdownWithTOC'
 import ProposalInfo from '../../components/nance/ProposalInfo'
 import ProposalSummary from '../../components/nance/ProposalSummary'
@@ -56,7 +57,7 @@ function Proposal() {
               votingInfo={votes?.proposal}
               linkDisabled
             />
-            {/* <DropDownMenu proposalPacket={proposalPacket} /> */}
+            <DropDownMenu proposalPacket={proposalPacket} />
           </div>
         </div>
       </header>
