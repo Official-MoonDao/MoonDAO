@@ -18,6 +18,19 @@ import { LoadingSpinner } from "../../components/layout/LoadingSpinner";
 
 type SignStatus = "idle" | "loading" | "success" | "error";
 
+  // Nance Editor
+  let getMarkdown: GetMarkdown;
+
+  const NanceEditor = dynamic(
+    async () => {
+      getMarkdown = (await import("@nance/nance-editor")).getMarkdown;
+      return import("@nance/nance-editor").then(mod => mod.NanceEditor);
+    }, {
+      ssr: false,
+      loading: () => <LoadingSpinner />,
+    }
+  );
+
 export default function ProposalEditor() {
   // get space info to find next Snapshot Vote
   // we need this to be compliant with the proposal signing format of Snapshot
@@ -51,19 +64,6 @@ export default function ProposalEditor() {
   const { signProposalAsync, wallet } = useSignProposal();
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid);
   const buttonsDisabled = !wallet?.linked || status === "loading";
-
-  // Nance Editor
-  let getMarkdown: GetMarkdown;
-
-  const NanceEditor = dynamic(
-    async () => {
-      getMarkdown = (await import("@nance/nance-editor")).getMarkdown;
-      return import("@nance/nance-editor").then(mod => mod.NanceEditor);
-    }, {
-      ssr: false,
-      loading: () => <LoadingSpinner />,
-    }
-  );
 
   const fileUploadIPFS = {
     gateway: process.env.NEXT_PUBLIC_INFURA_IPFS_GATEWAY as string,
