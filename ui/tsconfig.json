@@ -107,7 +107,8 @@
     "cypress/tsconfig.json",
     "components/marketplace/r3f/Profile/BannerScene.jsx",
     "components/marketplace/r3f/Profile/BannerScene.jsx",
-    "pages/api/nodemailer"
+    "pages/api/nodemailer",
+    "next-sitemap.config.js"
   ],
   "exclude": ["node_modules"]
 }

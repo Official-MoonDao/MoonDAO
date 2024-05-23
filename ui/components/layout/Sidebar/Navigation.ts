@@ -24,6 +24,10 @@ export const navigation = [
     children: [
       { name: 'News', href: '/news' },
       { name: 'About', href: '/about' },
+      {
+        name: 'Constitution',
+        href: 'https://docs.moondao.com/Governance/Constitution',
+      },
       { name: 'Events', href: '/events' },
       { name: 'Analytics', href: '/analytics' },
     ],
@@ -33,15 +37,13 @@ export const navigation = [
     icon: BuildingLibraryIcon,
     href: '/governance',
     children: [
+      { name: 'Tokens' },
       {
         name: 'Get $MOONEY',
         href: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
       },
       { name: 'Lock $MOONEY', href: '/lock' },
-      {
-        name: 'Constitution',
-        href: 'https://docs.moondao.com/Governance/Constitution',
-      },
+      { name: 'Proposals' },
       {
         name: 'Submit Proposal',
         href: '/newProposal',
