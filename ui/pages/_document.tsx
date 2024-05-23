@@ -5,6 +5,7 @@ class WebsiteDocument extends Document {
   render() {
     return (
       <Html>
+        <title>Welcome To MoonDAO</title>
         <Head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
 
