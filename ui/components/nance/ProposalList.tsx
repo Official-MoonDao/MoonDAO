@@ -23,7 +23,7 @@ import {
   SnapshotGraphqlProposalVotingInfo,
   useVotingInfoOfProposals,
 } from '../../lib/snapshot'
-import ProposalInfo from './ProposalInfo'
+import ProposalInfo, { ProposalInfoSkeleton } from './ProposalInfo'
 
 function NoResults() {
   return (
@@ -46,6 +46,36 @@ function NoResults() {
           Reset search
         </Link>
       </div>
+    </div>
+  )
+}
+
+function ProposalListSkeleton() {
+  return (
+    <div className="page-border-and-color font-[Lato] mt-3 lg:mt-10 flex flex-col gap-4">
+      <ul className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+        {[...Array(10).keys()].map((n) => (
+          <li
+            key={n}
+            className="relative flex inner-container-background justify-between gap-x-6 px-4 py-5 border-transparent border-[1px] hover:border-white transition-all duration-150 sm:px-6"
+          >
+            <ProposalInfoSkeleton />
+            <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
+              <div className="flex sm:flex-col sm:items-end">
+                <div className="dark:bg-white animate-pulse h-4 w-12"></div>
+                <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                  <span className="sr-only">Last edited</span>
+                  <span className="animate-pulse h-4 w-8 bg-white"></span>
+                </p>
+              </div>
+              <ChevronRightIcon
+                className="h-5 w-5 flex-none text-gray-400"
+                aria-hidden="true"
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
@@ -91,8 +121,12 @@ export default function ProposalList() {
   const votingInfoMap: { [key: string]: SnapshotGraphqlProposalVotingInfo } = {}
   votingInfos?.forEach((info) => (votingInfoMap[info.id] = info))
 
-  if (proposalsPacket === undefined || proposals.length === 0) {
-    return <NoResults />
+  if (
+    proposalsLoading ||
+    proposalsPacket === undefined ||
+    proposals.length === 0
+  ) {
+    return <ProposalListSkeleton />
   } else {
     const packet = proposalsPacket
     return (
