@@ -1,6 +1,6 @@
-import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { useContext, useState } from 'react'
-import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { usePrivy } from '@privy-io/react-auth'
+import { useState } from 'react'
+import useAccountAddress from '../../lib/nance/useAccountAddress'
 import { SnapshotGraphqlProposalVotingInfo } from '../../lib/snapshot'
 import { classNames } from '../../lib/utils/tailwind'
 import VotingModal from './VotingModal'
@@ -19,9 +19,7 @@ export default function NewVoteButton({
   // state
   const [modalIsOpen, setModalIsOpen] = useState(false)
   // external hook
-  const { wallets, ready: isConnected } = useWallets()
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const address = wallets[selectedWallet]?.address
+  const { address, isConnected } = useAccountAddress()
   const { connectWallet: openConnectModal } = usePrivy()
 
   let buttonLabel = 'Vote'
