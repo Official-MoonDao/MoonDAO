@@ -1,20 +1,23 @@
-import Head from "../../components/layout/Head"
 import dynamic from "next/dynamic";
+import { useState } from "react";
+import { useRouter } from "next/router";
+import { StringParam, useQueryParams } from "next-query-params";
+import { add, differenceInDays } from "date-fns";
+import toast from "react-hot-toast";
+
+import toastStyle from "../../lib/marketplace/marketplace-utils/toastConfig";
+import Head from "../../components/layout/Head"
+import { LoadingSpinner } from "../../components/layout/LoadingSpinner";
+import ProposalTitleInput, { TITLE_ID } from "../../components/nance/ProposalTitleInput";
+
+import { Proposal, ProposalStatus } from "@nance/nance-sdk";
+import { useProposal, useProposalUpload, useSpaceInfo } from "@nance/nance-hooks";
+import { NANCE_SPACE_NAME, proposalIdPrefix } from "../../lib/nance/constants";
+import { useSignProposal } from "../../lib/nance/useSignProposal";
+import { TEMPLATE } from "../../lib/nance";
 import { GetMarkdown } from "@nance/nance-editor";
 import "@nance/nance-editor/lib/css/editor.css";
 import "@nance/nance-editor/lib/css/dark.css";
-import ProposalTitleInput, { TITLE_ID } from "../../components/nance/ProposalTitleInput";
-import { useSignProposal } from "../../lib/nance/useSignProposal";
-import { TEMPLATE } from "../../lib/nance";
-import { Proposal, ProposalStatus } from "@nance/nance-sdk";
-import toast from "react-hot-toast";
-import toastStyle from "../../lib/marketplace/marketplace-utils/toastConfig";
-import { useProposal, useProposalUpload, useSpaceInfo } from "@nance/nance-hooks";
-import { NANCE_SPACE_NAME } from "../../lib/nance/constants";
-import { StringParam, useQueryParams } from "next-query-params";
-import { add, differenceInDays } from "date-fns";
-import { useState } from "react";
-import { LoadingSpinner } from "../../components/layout/LoadingSpinner";
 
 type SignStatus = "idle" | "loading" | "success" | "error";
 
@@ -32,6 +35,11 @@ type SignStatus = "idle" | "loading" | "success" | "error";
   );
 
 export default function ProposalEditor() {
+  const router = useRouter();
+
+  // signing status
+  const [status, setStatus] = useState<SignStatus>("idle");
+
   // get space info to find next Snapshot Vote
   // we need this to be compliant with the proposal signing format of Snapshot
   const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME });
@@ -57,9 +65,6 @@ export default function ProposalEditor() {
   const { data } = useProposal({ space: NANCE_SPACE_NAME, uuid: proposalId! }, shouldFetch)
   const loadedProposal = data?.data;
 
-  const [status, setStatus] = useState<SignStatus>("idle");
-  const [initialValue, setInitialValue] = useState<string>(TEMPLATE);
-
   // proposal upload
   const { signProposalAsync, wallet } = useSignProposal();
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid);
@@ -73,12 +78,15 @@ export default function ProposalEditor() {
   };
 
   const buildProposal = (status: ProposalStatus) => {
-    const titleVal = (document?.getElementById(TITLE_ID) as HTMLInputElement).value;
-    const proposalId = loadedProposal?.proposalId || nextProposalId;
+    const title = (document?.getElementById(TITLE_ID) as HTMLInputElement).value;
     return {
-      title: `MDP-${proposalId}: ${titleVal}`,
+      title,
       body: getMarkdown(),
       status,
+      voteSetup: {
+        type: "quadratic",                  // could make this dynamic in the future
+        choices: ["Yes", "No", "Abstain"],  // could make this dynamic in the future
+      }
     } as Proposal
   }
 
@@ -89,8 +97,10 @@ export default function ProposalEditor() {
     }
     if (!nextSnapshotVote) return;
     setStatus("loading");
-    setInitialValue(proposal.body); // save the current proposal body to be used in case of error
-    signProposalAsync(proposal, nextSnapshotVote).then((res) => {
+    // setInitialValue(proposal.body); // save the current proposal body to be used in case of error
+    const proposalId = loadedProposal?.proposalId || nextProposalId;
+    const preTitle = `${proposalIdPrefix}${proposalId}: `;
+    signProposalAsync(proposal, preTitle, nextSnapshotVote).then((res) => {
       const { signature, address, message, domain, types } = res;
       trigger({
         space: NANCE_SPACE_NAME,
@@ -104,10 +114,11 @@ export default function ProposalEditor() {
         if (res.success) {
           setStatus("success");
           toast.success(
-            "Draft saved successfully",
+            "Proposal submitted successfully!",
             { style: toastStyle }
           );
-          window.location.href = `/proposal/${res.data.uuid}`;
+          // next router push
+          router.push(`/proposal/${res.data.uuid}`);
         } else {
           setStatus("error");
           toast.error(
@@ -115,11 +126,17 @@ export default function ProposalEditor() {
             { style: toastStyle }
           );
         }
-      })
+      }).catch((error) => {
+        setStatus("error");
+        toast.error(
+          `[API] Error submitting proposal:\n${error}`,
+          { style: toastStyle }
+        );
+      });
     }).catch((error) => {
       setStatus("idle");
       toast.error(
-        `Error signing proposal:\n${error}`,
+        `[Wallet] Error signing proposal:\n${error}`,
         { style: toastStyle }
       );
     });
@@ -134,7 +151,7 @@ export default function ProposalEditor() {
         <h1 className="page-title py-10">{pageTitle}</h1>
         <ProposalTitleInput initialValue={loadedProposal?.title} />
         <NanceEditor
-          initialValue={initialValue}
+          initialValue={loadedProposal?.body || TEMPLATE}
           fileUploadIPFS={fileUploadIPFS}
           darkMode={true}
         />

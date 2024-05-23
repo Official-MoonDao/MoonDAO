@@ -55,13 +55,18 @@ function Proposal() {
     uuid: proposalId,
   })
   const proposalPacket = data?.data
+  const fetchVotes = proposalPacket?.voteURL !== undefined && (
+      proposalPacket?.status === "Voting" ||
+      proposalPacket?.status === "Approved" ||
+      proposalPacket?.status === "Cancelled"
+  );
 
   const { data: votes } = useVotesOfProposal(
     proposalPacket?.voteURL,
-    1000,
-    0,
-    'created',
-    proposalPacket?.voteURL !== undefined
+    1000,       // first
+    0,          // skip
+    'created',  // orderBy
+    fetchVotes  // shouldFetch
   )
 
   if (isLoading) {

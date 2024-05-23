@@ -1,10 +1,8 @@
-export const NANCE_SPACE_NAME = 'moondao'
-export const SNAPSHOT_SPACE_NAME = 'tomoondao.eth'
+const prod = process.env.NODE_ENV === 'production'
 
-// export const NANCE_SPACE_NAME = 'waterbox'
-// export const SNAPSHOT_SPACE_NAME = 'jigglyjams.eth'
+export const NANCE_SPACE_NAME = prod ? 'moondao' : 'waterbox'
+export const SNAPSHOT_SPACE_NAME = prod ? 'tomoondao.eth' : 'jigglyjams.eth'
 
-export const NANCE_API_URL = 'https://api.nance.app'
-// process.env.NODE_ENV === 'development'
-//   ? 'http://localhost:3003'
-//   : 'https://api.nance.app'
+export const proposalIdPrefix = 'MDP-';
+
+export const NANCE_API_URL = prod ? 'https://api.nance.app' : 'http://localhost:3003'
