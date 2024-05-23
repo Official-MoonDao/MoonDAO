@@ -2,6 +2,7 @@ import { PlusIcon, QueueListIcon } from '@heroicons/react/24/solid'
 import { NanceProvider } from '@nance/nance-hooks'
 import Head from '../components/layout/Head'
 import ProposalList from '../components/nance/ProposalList'
+import { NANCE_API_URL } from "../lib/nance/constants"
 
 const links = [
   {
@@ -24,7 +25,7 @@ export default function SpaceIndex() {
       <Head title="Vote" />
       <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full py-5 lg:pl-10 lg:pr-8">
         <main className="flex-1">
-          <NanceProvider apiUrl="https://api.nance.app">
+          <NanceProvider apiUrl={NANCE_API_URL}>
             <ProposalList />
           </NanceProvider>
         </main>
