@@ -289,7 +289,7 @@ a {
   }
 
   .gradient-8 {
-    background: linear-gradient(90deg, transparent 20%, #080C20 40%);
+    background: linear-gradient(60deg, transparent 10%, #080C20 40%);
   }  
 
   .gradient-9 {
@@ -384,6 +384,8 @@ a {
 
 /*Hide the scrollbar*/
 .no-bar {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  @media(max-width:768px) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
 }
