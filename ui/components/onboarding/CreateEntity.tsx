@@ -70,8 +70,6 @@ export function CreateEntity({
   )
   const pfpRef = useRef<HTMLDivElement | null>(null)
 
-  console.log(pfpRef)
-
   return (
     <div className="flex flex-row">
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
@@ -422,8 +420,9 @@ export function CreateEntity({
                       value: ethers.utils.parseEther('0.01'),
                     }
                   )
-
-                  router.push(`/entity/${nextTokenId}`)
+                  setTimeout(() => {
+                    router.push(`/entity/${nextTokenId}`)
+                  }, 3000)
                 } catch (err) {
                   console.error(err)
                 }

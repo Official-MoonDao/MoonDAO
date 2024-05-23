@@ -38,14 +38,15 @@ export default function Directory() {
         input != '' ? filterBySearch(filteredCitizens) : filteredCitizens
       )
     } else {
-      setCachedNFTs(
-        input != ''
-          ? [
-              ...filterBySearch(filteredEntities),
-              ...filterBySearch(filteredCitizens),
-            ]
-          : [...filteredEntities, ...filteredCitizens]
-      )
+      const nfts =
+        filteredEntities?.[0] && filteredCitizens?.[0]
+          ? [...filteredEntities, ...filteredCitizens]
+          : filteredCitizens?.[0]
+          ? filteredCitizens
+          : filteredEntities?.[0]
+          ? filteredEntities
+          : []
+      setCachedNFTs(input != '' ? filterBySearch(nfts) : nfts)
     }
     // shallowQueryRoute({ type: tab })
   }
@@ -117,7 +118,7 @@ export default function Directory() {
   }, [citizens])
 
   useEffect(() => {
-    if (filteredEntities?.[0] && filteredCitizens?.[0]) loadByTab(tab)
+    loadByTab(tab)
   }, [tab, input, filteredEntities, filteredCitizens, router.query])
 
   useEffect(() => {

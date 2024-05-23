@@ -135,13 +135,11 @@ export function CreateCitizen({
                   )
                   const data = await responseRes.json()
 
-                  console.log(data)
                   //subscribe to newsletter
                   if (data.answers[9].boolean) {
                     const subRes = await subscribeToNewsletter(
                       data.answers[2].email
                     )
-                    console.log(subRes)
                     if (subRes.ok) {
                       toast.success(
                         'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
@@ -421,7 +419,9 @@ export function CreateCitizen({
                     }
                   )
 
-                  router.push(`/citizen/${nextTokenId}`)
+                  setTimeout(() => {
+                    router.push(`/citizen/${nextTokenId}`)
+                  }, 3000)
                 } catch (err) {
                   console.error(err)
                 }
