@@ -2,6 +2,7 @@ import { Dialog, RadioGroup, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { useState, Fragment, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import toast from 'react-hot-toast'
 import { formatNumberUSStyle } from '../../lib/nance'
 import useVote from '../../lib/nance/useVote'
 import {
@@ -36,7 +37,6 @@ export default function VotingModal({
   proposal,
   refetch,
 }: VotingProps) {
-  console.debug('votingmodal', proposal)
   // state
   const [choice, setChoice] = useState()
   const [reason, setReason] = useState('')
@@ -44,7 +44,7 @@ export default function VotingModal({
   const { data: _vp } = useVotingPower(address, spaceId, proposal?.id || '')
   const vp = _vp?.vp || 0
 
-  const { trigger, value, loading, error, reset } = useVote(
+  const { trigger } = useVote(
     spaceId,
     proposal?.id,
     proposal?.type,
@@ -54,12 +54,14 @@ export default function VotingModal({
 
   // shorthand functions
   const submitVote = () => {
-    //setNotificationEnabled(true);
-    trigger().then(close).then(refetch)
-  }
-  const close = () => {
-    reset()
-    closeModal()
+    toast
+      .promise(trigger(), {
+        loading: 'Voting...',
+        success: <b>Vote submitted!</b>,
+        error: (e) => <b>Error: {e.message || e.error_description}</b>,
+      })
+      .then(closeModal)
+      .then(refetch)
   }
 
   if (proposal === undefined) {
@@ -78,8 +80,6 @@ export default function VotingModal({
 
     if (address == '') {
       label = 'Wallet not connected'
-    } else if (loading) {
-      label = 'Loading...'
     } else if (!SUPPORTED_VOTING_TYPES.includes(proposal.type)) {
       label = 'Not supported'
     } else if (choice === undefined) {
@@ -95,7 +95,7 @@ export default function VotingModal({
       <button
         type="button"
         disabled={!canVote}
-        onClick={canVote ? submitVote : close}
+        onClick={canVote ? submitVote : closeModal}
         className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 disabled:bg-gray-400"
       >
         {label}
@@ -109,7 +109,7 @@ export default function VotingModal({
         as="div"
         className="relative z-10"
         open={modalIsOpen}
-        onClose={close}
+        onClose={closeModal}
       >
         <Transition.Child
           as={Fragment}
@@ -139,7 +139,7 @@ export default function VotingModal({
                   <button
                     type="button"
                     className="absolute right-4 top-4 text-gray-400 hover:text-gray-500 sm:right-6 sm:top-8 md:right-6 md:top-6 lg:right-8 lg:top-8"
-                    onClick={close}
+                    onClick={closeModal}
                   >
                     <span className="sr-only">Close</span>
                     <XMarkIcon className="h-6 w-6" aria-hidden="true" />
@@ -213,25 +213,29 @@ export default function VotingModal({
                                 />
                               ))}
                           </div>
-                          <div className="mt-2">
-                            <label
-                              htmlFor="comment"
-                              className="block text-sm font-medium text-gray-700"
-                            >
-                              Reason
-                            </label>
-                            <div className="mt-1">
-                              <textarea
-                                rows={3}
-                                maxLength={140}
-                                name="reason"
-                                id="reason"
-                                className="block w-full resize-none rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:text-white dark:bg-gray-600 p-1"
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                              />
+
+                          {/* Votes under shutter mode won't have reason */}
+                          {proposal.privacy !== 'shutter' && (
+                            <div className="mt-2">
+                              <label
+                                htmlFor="comment"
+                                className="block text-sm font-medium text-gray-700"
+                              >
+                                Reason
+                              </label>
+                              <div className="mt-1">
+                                <textarea
+                                  rows={3}
+                                  maxLength={140}
+                                  name="reason"
+                                  id="reason"
+                                  className="block w-full resize-none rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:text-white dark:bg-gray-600 p-1"
+                                  value={reason}
+                                  onChange={(e) => setReason(e.target.value)}
+                                />
+                              </div>
                             </div>
-                          </div>
+                          )}
 
                           {/* Vote button and error info */}
                           <div className="mt-6">{renderVoteButton()}</div>

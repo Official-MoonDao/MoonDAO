@@ -43,6 +43,7 @@ const votesOfProposalQuery = gql`
       votes
       quorum
       scores_total
+      privacy
       ipfs
       snapshot
     }
@@ -68,6 +69,7 @@ const votingInfoOfProposalsQuery = gql`
       votes
       quorum
       scores_total
+      privacy
       ipfs
       snapshot
     }
@@ -107,6 +109,11 @@ export type SnapshotGraphqlProposalVotingInfo = {
   votes: number
   quorum: number
   scores_total: number
+  // privacy
+  privacy: 'shutter' | ''
+  // ipfs
+  ipfs: string
+  snapshot: string
 }
 
 export type SnapshotGraphqlVote = {
