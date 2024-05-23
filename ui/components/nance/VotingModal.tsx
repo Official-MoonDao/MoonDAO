@@ -49,7 +49,8 @@ export default function VotingModal({
     proposal?.id,
     proposal?.type,
     choice as any,
-    reason
+    reason,
+    proposal.privacy
   )
 
   // shorthand functions

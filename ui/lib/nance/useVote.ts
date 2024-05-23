@@ -19,7 +19,8 @@ export default function useVote(
     | {
         [key: string]: number
       },
-  reason: string = ''
+  reason: string = '',
+  privacy: string = ''
 ) {
   // external state
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -36,8 +37,9 @@ export default function useVote(
       choice: choice as number | number[] | string,
       reason,
       app: 'app.moondao.com',
+      privacy,
     })
-  }, [selectedWallet, space, proposal, type, choice, reason, wallets])
+  }, [selectedWallet, space, proposal, type, choice, reason, privacy, wallets])
 
   return { trigger }
 }
