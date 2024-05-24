@@ -334,26 +334,6 @@ export default function EntityDetailPage({ tokenId }: any) {
               >
                 Manage Members
               </Button>
-              {entityAdminModalEnabled && (
-                <EntityAdminModal
-                  entityContract={entityContract}
-                  tokenId={nft?.metadata.id}
-                  setEnabled={setEntityAdminModalEnabled}
-                  adminAddress={admin}
-                />
-              )}
-              <Button
-                className=""
-                onClick={() => {
-                  if (address != nft?.owner && address != admin)
-                    return toast.error(
-                      'Connect the entity admin wallet or multisig to update the admin.'
-                    )
-                  setEntityAdminModalEnabled(true)
-                }}
-              >
-                Manage Admin
-              </Button>
             </div>
           </div>
         </Card>
