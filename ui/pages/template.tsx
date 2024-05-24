@@ -1,6 +1,6 @@
 import Footer from '../pages/Footer'; 
 
-export default function Page() {
+export default function Template() {
   return ( 
     <section className="PAGE-SECTION overflow-visible z-10 animate-fadeIn w-full h-[100vh] overflow-auto no-bar">
       <div className="CONTAINER w-full h-[100vh]">
