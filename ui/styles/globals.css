@@ -347,6 +347,18 @@ a {
     background-position: top left;
   }
 
+  .divider-9 {
+    background-image: url('/assets/divider-9.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
+  }
+  
+  .divider-10 {
+    background-image: url('/assets/divider-10.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
+  }
+
   /*Featured images*/
   .feature-1 {
     background-image: url('/assets/feature-1.svg');
@@ -370,7 +382,7 @@ a {
     background-size: contain;
   }
 
-/*Font*/
+/*Typeface styles*/
 .header {
   font-size: calc(max(3vmax, 30px));
   line-height: 1.2;
@@ -382,7 +394,7 @@ a {
   padding-bottom:20px;
 }
 
-/*Hide the scrollbar*/
+/*Hide the scrollbar on mobile*/
 .no-bar {
   @media(max-width:768px) {
     scrollbar-width: none;
