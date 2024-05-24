@@ -22,10 +22,7 @@ export function useEntityData(
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState()
-
-  const { data: admin } = useHandleRead(entityContract, 'getAdmin', [
-    nft?.metadata?.id,
-  ])
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
 
   const { data: topHatId } = useHandleRead(entityContract, 'entityTopHat', [
     nft?.metadata?.id || '',
@@ -54,6 +51,18 @@ export function useEntityData(
       communications: entityCommunications?.value,
       website: entityWebsite?.value,
     })
+  }
+
+  async function checkAdmin() {
+    try {
+      const isAdmin = await entityContract.call('isAdmin', [
+        nft?.metadata?.id,
+        address,
+      ])
+      setIsAdmin(isAdmin)
+    } catch (err) {
+      setIsAdmin(false)
+    }
   }
 
   async function updateMetadata(newMetadata: any) {
@@ -108,8 +117,11 @@ export function useEntityData(
     if (!nft?.metadata?.attributes) return
     getEntitySocials()
     getView()
-    console.log(socials)
   }, [nft])
+
+  useEffect(() => {
+    if (entityContract && address && nft?.metadata?.id) checkAdmin()
+  }, [address, nft, entityContract])
 
   useEffect(() => {
     if (hatsContract && topHatId) getHatTreeId()
@@ -120,7 +132,7 @@ export function useEntityData(
     isPublic,
     hatTreeId,
     topHatId,
-    admin,
+    isAdmin,
     updateMetadata,
   }
 }
