@@ -1,4 +1,4 @@
-import Footer from '../../pages/Footer'; 
+import Footer from '../layout/Footer'; 
 
 export default function FooterSection() {
     return ( 
