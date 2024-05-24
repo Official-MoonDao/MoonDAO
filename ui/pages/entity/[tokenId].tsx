@@ -60,12 +60,11 @@ export default function EntityDetailPage({ tokenId }: any) {
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
   //Entity Data
   const { contract: entityContract } = useContract(
-    ENTITY_ADDRESSES[selectedChain.slug],
-    MoonDAOEntityABI
+    ENTITY_ADDRESSES[selectedChain.slug]
   )
   const { data: nft } = useNFT(entityContract, tokenId)
 
-  const { socials, isPublic, hatTreeId, topHatId, admin, updateMetadata } =
+  const { socials, isPublic, hatTreeId, topHatId, isAdmin, updateMetadata } =
     useEntityData(entityContract, hatsContract, nft)
 
   //Hats
@@ -145,11 +144,12 @@ export default function EntityDetailPage({ tokenId }: any) {
                   )}
                   <button
                     onClick={() => {
-                      if (address != nft?.owner && address != admin)
+                      if (address === nft?.owner || isAdmin)
+                        setEntityMetadataModalEnabled(true)
+                      else
                         return toast.error(
                           'Connect the entity admin wallet or multisig to edit metadata.'
                         )
-                      setEntityMetadataModalEnabled(true)
                     }}
                   >
                     <PencilIcon width={35} height={35} />
@@ -224,7 +224,7 @@ export default function EntityDetailPage({ tokenId }: any) {
             )}
           </div>
         </div>
-        {address === admin || address === nft.owner ? (
+        {isAdmin || address === nft.owner ? (
           <div className="mt-8 xl:mt-0">
             {entitySubscriptionModalEnabled && (
               <SubscriptionModal
@@ -245,11 +245,12 @@ export default function EntityDetailPage({ tokenId }: any) {
                 )}
                 <Button
                   onClick={() => {
-                    if (address != nft?.owner)
+                    if (address === nft?.owner || isAdmin)
+                      setEntitySubscriptionModalEnabled(true)
+                    else
                       return toast.error(
                         `Connect the entity admin wallet or multisig to extend the subscription.`
                       )
-                    setEntitySubscriptionModalEnabled(true)
                   }}
                 >
                   {'Extend Subscription'}

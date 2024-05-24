@@ -9,20 +9,11 @@ import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/entity/use-window-size'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
+import formatEntityFormData, { EntityData } from '@/lib/typeform/entityFormData'
 import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
-
-type EntityData = {
-  name: string
-  description: string
-  twitter: string
-  communications: string
-  website: string
-  view: string
-  formResponseId: string
-}
 
 export function CreateEntity({
   address,
@@ -132,18 +123,12 @@ export function CreateEntity({
                   )
                   const data = await responseRes.json()
 
-                  setEntityData({
-                    name: data.answers[0].text,
-                    description: data.answers[1].text,
-                    website: data.answers[2].url,
-                    twitter: data.answers[3].url,
-                    communications: data.answers[4].url,
-                    view:
-                      data.answers[5].choice.label === 'Yes'
-                        ? 'public'
-                        : 'private',
-                    formResponseId: responseId,
-                  })
+                  const entityFormData = formatEntityFormData(
+                    data.answers,
+                    responseId
+                  )
+
+                  setEntityData(entityFormData)
                   setStage(1)
                 }}
                 height={700}

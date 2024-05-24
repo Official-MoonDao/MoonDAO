@@ -10,6 +10,7 @@ import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import formatEntityFormData from '@/lib/typeform/entityFormData'
 
 export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const router = useRouter()
@@ -73,19 +74,24 @@ export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
 
+            const entityData = formatEntityFormData(data.answers, responseId)
+
             //mint NFT to safe
             await entityTableContract?.call('updateTable', [
               nft.metadata.id,
-              data.answers[0].text,
-              data.answers[1].text,
+              entityData.name,
+              entityData.description,
               imageIPFSLink,
-              data.answers[3].url,
-              data.answers[4].url,
-              data.answers[2].url,
-              data.answers[5].choice.label === 'Yes' ? 'public' : 'private',
+              entityData.twitter,
+              entityData.communications,
+              entityData.website,
+              entityData.view,
+              entityData.formResponseId,
             ])
 
-            router.reload()
+            setTimeout(() => {
+              router.reload()
+            }, 5000)
           }}
           height={500}
         />

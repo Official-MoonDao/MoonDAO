@@ -9,24 +9,14 @@ import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/entity/use-window-size'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
-import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
+import { pinImageToIPFS } from '@/lib/ipfs/pin'
+import formatCitizenFormData, {
+  CitizenData,
+} from '@/lib/typeform/citizenFormData'
 import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
-
-type CitizenData = {
-  firstName: string
-  lastName: string
-  email: string
-  description: string
-  location: string
-  discord: string
-  website: string
-  twitter: string
-  view: string
-  formResponseId: string
-}
 
 export function CreateCitizen({
   address,
@@ -41,13 +31,6 @@ export function CreateCitizen({
   const [lastStage, setLastStage] = useState<number>(0)
 
   const [citizenImage, setCitizenImage] = useState<any>()
-
-  const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
-
-  const checkboxRef = useRef(null)
-
-  const { isMobile } = useWindowSize()
-
   const [citizenData, setCitizenData] = useState<CitizenData>({
     firstName: '',
     lastName: '',
@@ -59,7 +42,14 @@ export function CreateCitizen({
     website: '',
     twitter: '',
     formResponseId: '',
+    newsletterSub: false,
   })
+  const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
+
+  const checkboxRef = useRef(null)
+
+  const { isMobile } = useWindowSize()
+
   const { windowSize } = useWindowSize()
 
   useEffect(() => {
@@ -135,10 +125,15 @@ export function CreateCitizen({
                   )
                   const data = await responseRes.json()
 
+                  const citizenFormData = formatCitizenFormData(
+                    data.answers,
+                    responseId
+                  )
+
                   //subscribe to newsletter
-                  if (data.answers[9].boolean) {
+                  if (citizenFormData.newsletterSub) {
                     const subRes = await subscribeToNewsletter(
-                      data.answers[2].email
+                      citizenFormData.email
                     )
                     if (subRes.ok) {
                       toast.success(
@@ -147,21 +142,31 @@ export function CreateCitizen({
                     }
                   }
 
-                  setCitizenData({
-                    firstName: data.answers[0].text,
-                    lastName: data.answers[1].text,
-                    email: data.answers[2].email,
-                    description: data.answers[3].text,
-                    discord: data.answers[4].text,
-                    website: data.answers[5].url,
-                    twitter: data.answers[6].url,
-                    location: data.answers[7].text,
-                    view:
-                      data.answers[8].choice.label === 'Yes'
-                        ? 'public'
-                        : 'private',
-                    formResponseId: responseId,
-                  })
+                  setCitizenData(citizenFormData)
+
+                  // setCitizenData({
+                  //   firstName: answerByFieldId(data.answers, 'Zj6QbNhOey3i')
+                  //     .text,
+                  //   lastName:
+                  //     answerByFieldId(data.answers, 'D8kNaAAjwBQt')?.text || '',
+                  //   email: answerByFieldId(data.answers, 'ggrOjApkLFMz').email,
+                  //   description:
+                  //     answerByFieldId(data.answers, 'PtIcC6l6F5bl')?.text || '',
+                  //   discord:
+                  //     answerByFieldId(data.answers, 'WzZ35V8MLS4J')?.url || '',
+                  //   website:
+                  //     answerByFieldId(data.answers, 'RXW5Ij2CH5g3')?.url || '',
+                  //   twitter:
+                  //     answerByFieldId(data.answers, 'oHfMqgeSg3sa')?.url || '',
+                  //   location:
+                  //     answerByFieldId(data.answers, 'pP6s24aIwEl7')?.text || '',
+                  //   view:
+                  //     answerByFieldId(data.answers, 'vv8LGLkyzIaO').choice
+                  //       .label === 'Yes'
+                  //       ? 'public'
+                  //       : 'private',
+                  //   formResponseId: responseId,
+                  // })
 
                   setStage(1)
                 }}
