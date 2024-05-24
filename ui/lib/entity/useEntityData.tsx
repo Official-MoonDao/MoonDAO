@@ -66,7 +66,7 @@ export function useEntityData(
   }
 
   async function updateMetadata(newMetadata: any) {
-    if (address != nft?.owner && address != admin)
+    if (address != nft?.owner && !isAdmin)
       return toast.error(
         `Connect the entity's admin wallet or multisig to update metadata`
       )
