@@ -2,7 +2,7 @@ import { useCallback, useContext } from 'react';
 import PrivyWalletContext from "../privy/privy-wallet-context";
 import { ConnectedWallet } from '@privy-io/react-auth';
 import { SNAPSHOT_SPACE_NAME } from "./constants";
-import { SnapshotTypes, domain, formatSnapshotDeleteProposalMessage } from "@nance/nance-sdk";
+import { domain, formatSnapshotDeleteProposalMessage, nanceSignatureMap } from "@nance/nance-sdk";
 
 export const useSignDeleteProposal = (wallet: ConnectedWallet) => {
   const { selectedWallet } = useContext(PrivyWalletContext);
@@ -20,7 +20,7 @@ export const useSignDeleteProposal = (wallet: ConnectedWallet) => {
           snapshotId
         );
 
-        const types = SnapshotTypes.cancelProposal2Types;
+        const { types } = nanceSignatureMap["SnapshotCancelProposal"];
         if (signer) {
           const signature = await signer._signTypedData(domain, types, message);
           return { signature, message, address, domain, types };

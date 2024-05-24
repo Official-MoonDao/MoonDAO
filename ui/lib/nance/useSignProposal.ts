@@ -7,8 +7,8 @@ import {
   DateEvent,
   formatSnapshotProposalMessage,
   Proposal,
-  SnapshotTypes,
-  domain
+  domain,
+  nanceSignatureMap
 } from "@nance/nance-sdk";
 
 const AVERAGE_BLOCK_SECONDS = 12.08;
@@ -33,7 +33,7 @@ export const useSignProposal = (wallet: ConnectedWallet) => {
         const snapshot = currentBlock + Math.floor((new Date(event.start).getTime() - Date.now()) / 1000 / AVERAGE_BLOCK_SECONDS);
         message.snapshot = snapshot;
         message.title = preTitle + proposal.title;
-        const types = SnapshotTypes.proposalTypes;
+        const { types } = nanceSignatureMap["SnapshotSubmitProposal"];
         if (signer) {
           const signature = await signer._signTypedData(domain, types, message);
           return { signature, message, address, domain, types };
