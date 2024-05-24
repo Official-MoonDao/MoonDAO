@@ -215,12 +215,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                 )}
               </div>
             ) : (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-[30px] h-[30px] bg-[#ffffff25] animate-pulse rounded-full"
-                />
-              ))
+              <div className="mt-4 w-[200px] h-[30px] bg-[#ffffff25] animate-pulse" />
             )}
           </div>
         </div>
