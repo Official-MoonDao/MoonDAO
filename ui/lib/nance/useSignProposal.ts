@@ -1,6 +1,5 @@
-import { useCallback, useContext } from 'react';
-import PrivyWalletContext from "../privy/privy-wallet-context";
-import { useWallets } from '@privy-io/react-auth';
+import { useCallback } from 'react';
+import { ConnectedWallet } from '@privy-io/react-auth';
 import { SNAPSHOT_SPACE_NAME } from "./constants";
 import { Ethereum } from "@thirdweb-dev/chains";
 import { initSDK } from "../thirdweb/thirdweb";
@@ -14,14 +13,11 @@ import {
 
 const AVERAGE_BLOCK_SECONDS = 12.08;
 
-export const useSignProposal = () => {
-  const { selectedWallet } = useContext(PrivyWalletContext);
-  const { wallets } = useWallets();
-
+export const useSignProposal = (wallet: ConnectedWallet) => {
   const signProposalAsync = useCallback(
     async (proposal: Proposal, preTitle: string, event: DateEvent) => {
       try {
-        const provider = await wallets[selectedWallet].getEthersProvider();
+        const provider = await wallet.getEthersProvider();
         const signer = provider?.getSigner();
         const address = await signer.getAddress();
         const message = formatSnapshotProposalMessage(
@@ -48,8 +44,8 @@ export const useSignProposal = () => {
         throw error;
       }
     },
-    [selectedWallet, wallets]
+    [wallet]
   );
 
-  return { signProposalAsync, wallet: wallets[selectedWallet] };
+  return { signProposalAsync };
 };

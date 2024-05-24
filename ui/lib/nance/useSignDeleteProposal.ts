@@ -1,17 +1,16 @@
 import { useCallback, useContext } from 'react';
 import PrivyWalletContext from "../privy/privy-wallet-context";
-import { useWallets } from '@privy-io/react-auth';
+import { ConnectedWallet } from '@privy-io/react-auth';
 import { SNAPSHOT_SPACE_NAME } from "./constants";
 import { SnapshotTypes, domain, formatSnapshotDeleteProposalMessage } from "@nance/nance-sdk";
 
-export const useSignDeleteProposal = () => {
+export const useSignDeleteProposal = (wallet: ConnectedWallet) => {
   const { selectedWallet } = useContext(PrivyWalletContext);
-  const { wallets } = useWallets();
 
   const signDeleteProposalAsync = useCallback(
     async (snapshotId: string) => {
       try {
-        const provider = await wallets[selectedWallet].getEthersProvider();
+        const provider = await wallet.getEthersProvider();
         const signer = provider?.getSigner();
         const address = await signer.getAddress();
 
@@ -31,9 +30,8 @@ export const useSignDeleteProposal = () => {
       } catch (error) {
         throw error;
       }
-    },
-    [selectedWallet, wallets]
+    }, [wallet]
   );
 
-  return { signDeleteProposalAsync, wallet: wallets[selectedWallet] };
+  return { signDeleteProposalAsync };
 };

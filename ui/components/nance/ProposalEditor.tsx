@@ -18,6 +18,7 @@ import { TEMPLATE } from "../../lib/nance";
 import { GetMarkdown } from "@nance/nance-editor";
 import "@nance/nance-editor/lib/css/editor.css";
 import "@nance/nance-editor/lib/css/dark.css";
+import useAccount from "../../lib/nance/useAccountAddress";
 
 type SignStatus = "idle" | "loading" | "success" | "error";
 
@@ -66,7 +67,8 @@ export default function ProposalEditor() {
   const loadedProposal = data?.data;
 
   // proposal upload
-  const { signProposalAsync, wallet } = useSignProposal();
+  const { wallet } = useAccount();
+  const { signProposalAsync } = useSignProposal(wallet);
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid);
   const buttonsDisabled = !wallet?.linked || status === "loading";
 
