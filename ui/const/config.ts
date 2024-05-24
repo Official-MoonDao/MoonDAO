@@ -73,17 +73,17 @@ export const CITIZEN_TABLE_ADDRESSES: Index = {
 
 export const ENTITY_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xB542aF8E1821D7d0B5358f3E883Ee2bc235Ee14e',
+  sepolia: '0x242eb7F536F97c0A86DC41BEc46e80637cD7A628',
 }
 
 export const ENTITY_CREATOR_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x04460b5947eb18FCB9FBD87cf62A0CD9e5A1AD5e',
+  sepolia: '0x83d4fbd3086a83850652B5b84881d88f235c9465',
 }
 
 export const ENTITY_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x158B3f2E060846202C3c429D468cDf3CF9e51ff5',
+  sepolia: '0x22e72595f5b82F66f8c9FCD5D60d0934721694bC',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
