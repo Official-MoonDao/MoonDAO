@@ -1,15 +1,16 @@
 import { useCallback, useContext } from 'react';
 import PrivyWalletContext from "../privy/privy-wallet-context";
 import { useWallets } from '@privy-io/react-auth';
-import { DateEvent, formatSnapshotProposalMessage, Proposal, SnapshotTypes } from "@nance/nance-sdk";
 import { SNAPSHOT_SPACE_NAME } from "./constants";
 import { Ethereum } from "@thirdweb-dev/chains";
 import { initSDK } from "../thirdweb/thirdweb";
-
-const domain = {
-  name: "snapshot",
-  version: "0.1.4"
-}
+import {
+  DateEvent,
+  formatSnapshotProposalMessage,
+  Proposal,
+  SnapshotTypes,
+  domain
+} from "@nance/nance-sdk";
 
 const AVERAGE_BLOCK_SECONDS = 12.08;
 

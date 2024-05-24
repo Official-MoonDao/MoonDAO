@@ -101,14 +101,14 @@ export default function ProposalEditor() {
     const proposalId = loadedProposal?.proposalId || nextProposalId;
     const preTitle = `${proposalIdPrefix}${proposalId}: `;
     signProposalAsync(proposal, preTitle, nextSnapshotVote).then((res) => {
-      const { signature, address, message, domain, types } = res;
+      const { signature, message, address } = res;
       trigger({
-        space: NANCE_SPACE_NAME,
         proposal,
-        envelope: { // Snapshot data envelope
+        envelope: {
+          type: "SnapshotSubmitProposal",
           address,
-          sig: signature,
-          data: { message, domain, types }
+          signature,
+          message,
         }
       }).then((res) => {
         if (res.success) {

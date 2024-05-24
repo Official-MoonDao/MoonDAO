@@ -5,6 +5,7 @@ import {
   PencilIcon,
   ChevronDownIcon,
   TrashIcon,
+  ArchiveBoxArrowDownIcon,
 } from '@heroicons/react/24/outline'
 import { ProposalPacket } from '@nance/nance-sdk'
 import Link from 'next/link'
@@ -12,6 +13,8 @@ import { Fragment } from 'react'
 import toast from 'react-hot-toast'
 import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import useAccountAddress from '../../lib/nance/useAccountAddress'
+import { useSignDeleteProposal } from "../../lib/nance/useSignDeleteProposal"
+import { useProposalDelete } from "@nance/nance-hooks"
 
 export default function DropDownMenu({
   proposalPacket,
@@ -19,8 +22,9 @@ export default function DropDownMenu({
   proposalPacket: ProposalPacket
 }) {
   const space = NANCE_SPACE_NAME
-  //const { trigger } = useSignProposalAction()
-  const { address } = useAccountAddress()
+  const { signDeleteProposalAsync, wallet } = useSignDeleteProposal();
+  const { trigger } = useProposalDelete(space, proposalPacket.uuid, !!wallet);
+
   return (
     <>
       <Menu as="div" className="relative inline-block">
@@ -107,7 +111,7 @@ export default function DropDownMenu({
               </Menu.Item>
             </div> */}
 
-            {/* <div className="px-1 py-1">
+            <div className="px-1 py-1">
               <Menu.Item>
                 {({ active }) => (
                   <button
@@ -115,26 +119,23 @@ export default function DropDownMenu({
                       active ? 'bg-red-400 text-white' : 'text-gray-900'
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                     onClick={() => {
-                      const data = { uuid: proposalPacket.uuid }
-                      toast.promise(trigger(data, 'DeleteProposal'), {
-                        loading: 'Deleting...',
-                        success: (deleterSignature) => {
-                          if (deleterSignature && address && space) {
-                            deleteProposal(space, {
-                              uuid: proposalPacket.uuid,
-                              deleterAddress: address,
-                              deleterSignature: deleterSignature,
-                            }).then((res) => {
-                              if (res.success) {
-                                window.location.href = `/s/${space}`
-                              }
+                      const snapshotId = proposalPacket?.voteURL as string;
+                      const uuid = proposalPacket?.uuid as string;
+                      if (!snapshotId || !uuid) toast.error('Something is wrong with this proposal and cannot be deleted.');
+                      toast.promise(
+                        signDeleteProposalAsync(snapshotId),
+                        {
+                          loading: 'Signing...',
+                          success: (nanceSignature) => {
+                            const { address, signature, message } = nanceSignature;
+                            trigger({
+                              uuid, envelope: { type: "SnapshotCancelProposal", address, signature, message }
                             })
-                          }
-                          return 'Delete successful!'
-                        },
-                        error: (err) =>
-                          `${err?.error_description || err.toString()}`,
-                      })
+                            return 'Proposal deleted!';
+                          },
+                          error: (err) => `${err?.error_description || err.toString()}`,
+                        }
+                      );
                     }}
                   >
                     <TrashIcon className="mr-2 h-5 w-5" aria-hidden="true" />
@@ -142,7 +143,7 @@ export default function DropDownMenu({
                   </button>
                 )}
               </Menu.Item>
-            </div> */}
+            </div>
           </Menu.Items>
         </Transition>
       </Menu>
