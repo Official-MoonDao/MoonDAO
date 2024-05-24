@@ -36,7 +36,7 @@ export default function Callout3() {
                                 </div>
                                 <div className="p-0 pb-5 md:p-2.5 md:pl-0 md:pb-0 lg:pl-2.5">                  
                                         <Card 
-                                                icon="/assets/icon-governance.svg" 
+                                                icon="/assets/icon-lander.svg" 
                                                 header="First Moon Mission Planned" 
                                                 paragraph="Established a constitution for self-governance, which will be sent to the surface of the Moon in late-2024 as part of a LifeShip capsule alongside the DNA of MoonDAO members."
                                         />      
