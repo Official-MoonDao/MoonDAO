@@ -118,13 +118,6 @@ export default function NativeToMooney({ selectedChain }: any) {
         </div>
       </div>
 
-      <div className="mt-2 p-2 w-full flex justify-between border-[1px] border-moon-orange rounded-lg">
-        <p>Price Impact</p>
-        <p className="text-moon-orange">
-          {`~ ${swapRoute ? swapRoute.trade.priceImpact.toFixed(2) : 0}%`}
-        </p>
-      </div>
-
       <div className="mt-2 p-2 w-full flex justify-between border-[1px] rounded-lg">
         <p>Network Cost</p>
         <div className="flex gap-2 items-center">
@@ -132,6 +125,20 @@ export default function NativeToMooney({ selectedChain }: any) {
           <p>{`$ ${estimatedGasUsedUSD}`}</p>
         </div>
       </div>
+
+      <div className="mt-2 p-2 w-full flex justify-between border-[1px] border-moon-orange rounded-lg text-moon-orange">
+        <p>Price Impact</p>
+        <p>{`~ ${swapRoute ? swapRoute.trade.priceImpact.toFixed(2) : 0}%`}</p>
+      </div>
+
+      {selectedChain.slug === 'arbitrum' && (
+        <div className="mt-2 p-2 w-full flex justify-between border-[1px] border-moon-orange rounded-lg text-moon-orange">
+          <div className="flex gap-2 items-center">
+            <p>{`Please note that due to low liquidity in the Arbitrum L2 pool, swapping ETH for $MOONEY may result in receiving fewer $MOONEY than expected. We recommend reviewing current liquidity conditions and potential slippage before proceeding with your swap.
+`}</p>
+          </div>
+        </div>
+      )}
 
       <PrivyWeb3Button
         className="bg-moon-orange mt-2"
