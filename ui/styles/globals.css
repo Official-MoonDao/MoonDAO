@@ -296,6 +296,10 @@ a {
     background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
   }
 
+  .gradient-10 {
+    background: linear-gradient(90deg, #3344A8 0%, transparent 90%);
+  }
+
   /*Dividers*/
   .divider-1 {
     background-repeat: no-repeat;
@@ -379,6 +383,13 @@ a {
     background-image: url('/assets/feature-3.svg');
     background-repeat: no-repeat;
     background-position: top right;
+    background-size: contain;
+  }
+
+  .feature-4 {
+    background-image: url('/assets/feature-4.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
     background-size: contain;
   }
 

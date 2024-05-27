@@ -26,7 +26,7 @@ class WebsiteDocument extends Document {
           <link rel="icon" href="/favicon.ico" />
         </Head>
         <body className="overflow-hidden relative">
-        <div className="w-full sidebar-bg-dark max-h-[100vh] h-full fixed top-0 left-0"></div>  
+        <div className="w-full gradient-9 max-h-[100vh] h-full fixed top-0 left-0"></div>  
           <Main />
           <NextScript />
         </body>
