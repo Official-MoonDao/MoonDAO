@@ -61,7 +61,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       {/* Static sidebar for desktop */}
       <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
         {/* Sidebar component*/}
-        <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col pt-5 sidebar-bg-light dark:sidebar-bg-dark pb-24">
+        <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col pt-5 sidebar-bg-light dark:sidebar-bg-dark">
           <a href="https://moondao.com">
             <div className="flex flex-shrink-0 items-center px-4 pl-6">
               {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
@@ -71,7 +71,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
             <div className="pl-6 mb-4 flex justify-center">
               <PrivyConnectWallet />
             </div>
-            <nav className="flex flex-col px-4 overflow-y-auto h-[calc(80vh-4rem)]">
+            <nav className="flex flex-col px-4 overflow-y-auto h-[calc(75vh-2rem)] pb-[4rem]">
               {navigation.map((item, i) => (
                 <NavigationLink item={item} key={i} />
               ))}
@@ -85,7 +85,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
           {/*Color mode and Social links*/}
           <div
-            className={`flex flex-col justify-center w-[250px] lg:w-[275px] p-4 pl-7 lg:pl-9`}
+            className={`fixed bottom-0 flex flex-col justify-center w-[240px] lg:w-[265px] p-4 pl-7 lg:pl-9 backdrop-blur-lg`}
           >
             <ColorsAndSocials
               lightMode={lightMode}
