@@ -30,10 +30,10 @@ export default function NetworkSelector() {
   }, [])
 
   return (
-    <div id="network-selector" className="w-[300px] flex flex-col">
+    <div id="network-selector" className="w-[250px] flex flex-col">
       <div
         id="network-selector-dropdown-button"
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 p-2 bg-[#121020] rounded-lg"
         onClick={() => setDropdown((prev) => !prev)}
       >
         <Image
@@ -51,7 +51,7 @@ export default function NetworkSelector() {
       {dropdown && (
         <div
           id="network-selector-dropdown"
-          className="w-[300px] absolute flex flex-col items-start gap-2 text-black z-10"
+          className="w-[250px] absolute flex flex-col items-start gap-2 text-black z-10"
         >
           <button
             className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
