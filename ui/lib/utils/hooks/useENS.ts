@@ -1,20 +1,24 @@
 import { Ethereum } from '@thirdweb-dev/chains'
+import { useSDK } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 import { initSDK } from '../../thirdweb/thirdweb'
 
 export function useENS(address: string = '') {
   const [ens, setENS] = useState<any>()
+  const sdk = useSDK()
 
   async function getENS() {
-    const sdk = initSDK(Ethereum)
+    if (!sdk || !address) return
     const provider = sdk.getProvider()
-    const ensLookup = await provider.lookupAddress(address)
-    setENS(ensLookup)
+    try {
+      const ensLookup = await provider.lookupAddress(address)
+      setENS(ensLookup)
+    } catch (err) {}
   }
 
   useEffect(() => {
-    if (address) getENS()
-  }, [address])
+    getENS()
+  }, [address, sdk])
 
   return ens
 }
