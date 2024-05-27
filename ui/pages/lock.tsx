@@ -25,6 +25,7 @@ import { LockData } from '../components/lock/LockData'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import LockPresets from '../components/thirdweb/LockPresets'
+import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrow from '../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
@@ -187,7 +188,7 @@ export default function Lock() {
         />
 
         <div className="my-7 lg:my-5 justify-center xl:mt-8 flex xl:w-3/4 lg:justify-normal">
-          <L2Toggle />
+          <NetworkSelector />
         </div>
         {/*Available to Lock*/}
         {!hasExpired && (
