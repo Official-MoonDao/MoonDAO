@@ -10,12 +10,11 @@ interface ContainerProps {
 const ThankYou: React.FC = () => {
     return (
         <section>
-            <Body>
+            <Body fullWidth>
                 <Content
                     header="Almost There..."
-                    headerSize="max(25px, 3vw)" 
-                    subHeader="Check your email to confirm your subscription"
-                    children={<Container>Check your email to confirm your subscription.</Container>}
+                    headerSize="max(25px, 2.5vw)" 
+                    description="Check your email to confirm your subscription. Check your email to confirm your subscription. Check your email to confirm your subscription. Check your email to confirm your subscription. Check your email to confirm your subscription. Check your email to confirm your subscription. "
                 />
             </Body>
         </section>    
