@@ -26,9 +26,11 @@ const getColorOfChoice = (choice: string | undefined) => {
 
 export default function ProposalVotes({
   votesOfProposal,
+  refetch,
   threshold = 0,
 }: {
   votesOfProposal: VotesOfProposal
+  refetch: () => void
   threshold?: number
 }) {
   //const [selectedVoter, setSelectedVoter] = useState<string>('')
@@ -217,7 +219,7 @@ export default function ProposalVotes({
       <NewVoteButton
         snapshotSpace={SNAPSHOT_SPACE_NAME}
         snapshotProposal={proposalInfo}
-        refetch={() => null}
+        refetch={refetch}
       />
     </div>
   )

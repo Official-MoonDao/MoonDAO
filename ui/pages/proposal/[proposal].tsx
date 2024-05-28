@@ -55,18 +55,18 @@ function Proposal() {
     uuid: proposalId,
   })
   const proposalPacket = data?.data
-  const fetchVotes = proposalPacket?.voteURL !== undefined && (
-      proposalPacket?.status === "Voting" ||
-      proposalPacket?.status === "Approved" ||
-      proposalPacket?.status === "Cancelled"
-  );
+  const fetchVotes =
+    proposalPacket?.voteURL !== undefined &&
+    (proposalPacket?.status === 'Voting' ||
+      proposalPacket?.status === 'Approved' ||
+      proposalPacket?.status === 'Cancelled')
 
-  const { data: votes } = useVotesOfProposal(
+  const { data: votes, mutate } = useVotesOfProposal(
     proposalPacket?.voteURL,
-    1000,       // first
-    0,          // skip
-    'created',  // orderBy
-    fetchVotes  // shouldFetch
+    1000, // first
+    0, // skip
+    'created', // orderBy
+    fetchVotes // shouldFetch
   )
 
   if (isLoading) {
@@ -151,7 +151,7 @@ function Proposal() {
                 snapshotSpace={'jbdao.eth'}
                 proposalSnapshotId={proposalPacket.voteURL as string}
               /> */}
-              <ProposalVotes votesOfProposal={votes} />
+              <ProposalVotes votesOfProposal={votes} refetch={() => mutate()} />
             </div>
           )}
         </div>
