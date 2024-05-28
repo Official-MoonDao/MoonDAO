@@ -106,7 +106,7 @@ export function PrivyConnectWallet() {
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="w-[250px] lg:w-[275px] absolute left-0 text-sm font-RobotoMono animate-fadeIn mt-2 p-4 flex flex-col bg-white text-black dark:text-white dark:bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2"
+              className="w-[250px] lg:w-[275px] absolute left-0 text-sm font-RobotoMono animate-fadeIn mt-2 p-4 flex flex-col bg-white text-black dark:text-white dark:bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2 z-[100]"
             >
               <div className="absolute right-2 w-full flex justify-end">
                 <XMarkIcon
