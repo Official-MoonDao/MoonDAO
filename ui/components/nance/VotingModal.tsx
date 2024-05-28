@@ -59,7 +59,9 @@ export default function VotingModal({
       .promise(trigger(), {
         loading: 'Voting...',
         success: <b>Vote submitted!</b>,
-        error: (e) => <b>Error: {e.message || e.error_description}</b>,
+        error: (e) => (
+          <b>Error: {e.message || e.error_description || JSON.stringify(e)}</b>
+        ),
       })
       .then(closeModal)
       .then(refetch)
