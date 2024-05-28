@@ -12,7 +12,7 @@ const DudePerfect: React.FC = () => {
                     headerSize="max(20px, 2vw)"
                     description={
                         <>
-                           Launching Coby Cotton to space was only the beginning! MoonDAO’s mission is to create a self-sustaining, self-governing colony on the Moon to act as a launch point for humanity to explore the cosmos.
+                           Launching Coby Cotton to space was only the beginning! MoonDAO’s mission is to create a self-sustaining, self-governing colony on the Moon to act as a launch point for humanity to explore the cosmos. 
                         </>
                     }
                 >

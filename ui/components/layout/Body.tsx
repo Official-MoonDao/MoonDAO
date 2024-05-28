@@ -12,7 +12,7 @@ function Body({ children, fullWidth }: BodyProps) {
       <div id="content-container-section" className="flex-grow">
         {children}
       </div>  
-      <div id="footer-container" className="min-h-[120px] lg:min-h-[70px]">
+      <div id="footer-container" className="min-h-[120px] md:min-h-[70px]">
         <Footer />
       </div>
     </div>
