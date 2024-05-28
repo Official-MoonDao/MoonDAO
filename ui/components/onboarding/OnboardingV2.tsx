@@ -1,8 +1,10 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { CreateCitizen } from './CreateCitizen'
 import { CreateEntity } from './CreateEntity'
 
@@ -18,13 +20,18 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
   const address = useAddress()
   const { user, login, logout } = usePrivy()
 
+  const nativeBalance = useNativeBalance()
+
   return (
     <div
       className="w-full transition-all duration-150 text-black cursor-pointer dark:text-white lg:p-8 flex flex-col border-[2px] hover:border-moon-orange hover:border-moon-orange border-opacity-100 bg-[white] dark:bg-[#0A0E22] p-3"
       onClick={() => {
         if (!address && user) logout()
         if (!address) login()
-        else onClick()
+        else {
+          if (+nativeBalance < 0.01) return toast.error('Insufficient balance')
+          onClick()
+        }
       }}
     >
       <div className="w-full h-full flex flex-col lg:flex-row justify-center items-center lg:space-x-10">
