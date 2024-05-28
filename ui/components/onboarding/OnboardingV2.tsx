@@ -42,7 +42,7 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
         </div>
 
         <div className="flex flex-col justify-between w-full items-start">
-          <div className="flex flex-col space-y-5">
+          <div className="w-full flex flex-col space-y-5">
             <p className="mt-4 md:mt-0 md:p-2 text-sm text-moon-orange bg-red-600 bg-opacity-10">
               {description}
             </p>
@@ -57,35 +57,26 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
                   &#10003; 12 Months Pass
                 </p>
               </div>
-              <p className=" border-[1px] w-full h-[1px] border-white"></p>
-              <div
-                tabIndex={0}
-                className="collapse collapse-arrow -mx-4"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <input type="checkbox" defaultChecked readOnly />
-                <div className="collapse-title">Benefits</div>
-                <div className="collapse-content">
-                  {points.map((p, i) => (
-                    <div
-                      key={`${label}-tier-point-${i}`}
-                      className="flex flex-row bg-opacity-3 py-2 rounded-sm space-x-2"
-                    >
-                      <p className="h-6 w-6 flex justify-center items-center rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2 ">
-                        ✓
-                      </p>
-                      <p>{p}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
-          <button className="my-6 w-full border-2 border-moon-orange text-moon-orange rounded-full p-2 hover:scale-105 ease-in-out duration-300">
-            Register Now
-          </button>
         </div>
       </div>
+      <div className="mt-4">
+        {points.map((p, i) => (
+          <div
+            key={`${label}-tier-point-${i}`}
+            className="flex flex-row bg-opacity-3 py-2 rounded-sm space-x-2"
+          >
+            <p className="h-6 w-6 flex justify-center items-center rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2 ">
+              ✓
+            </p>
+            <p>{p}</p>
+          </div>
+        ))}
+      </div>
+      <button className="my-6 w-full border-2 border-moon-orange text-moon-orange rounded-full p-2 hover:scale-105 ease-in-out duration-300">
+        Register Now
+      </button>
     </div>
   )
 }
