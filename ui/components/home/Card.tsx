@@ -10,7 +10,7 @@ export default function Card({ icon, header, paragraph }: CardProps) {
             <div className="divider-8 absolute w-[80%] h-full"></div>
             <div className="bg-dark-cool h-full p-5 pb-10 md:pb-20 rounded-[20px] overflow-hidden" >
                 <div className="relative flex md:flex-col md:items-center max-w-[450px]">
-                    <img src={icon} alt="icon" className="w-[20%] pr-5 md:w-1/2 md:ml-[-20%] h-full md:p-5" />
+                    <img src={icon} alt="icon" className="pt-2.5 md:pt-0 w-[20%] pr-5 md:w-1/2 md:ml-[-20%] h-full md:p-5" />
                     <div>
                         <h2 className="sub-header min-h-[80px] font-GoodTimes flex items-center">
                             {header}

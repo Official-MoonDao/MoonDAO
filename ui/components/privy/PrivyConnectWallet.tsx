@@ -263,9 +263,9 @@ export function PrivyConnectWallet() {
                 login()
               }
             }}
-            className="rounded-[40px] rounded-bl-[10px] p-5 py-2 hover:pl-10 gradient-2 font-GoodTimes text-dark-cool transition-all duration-150"
+            className="text-[9px] rounded-[40px] rounded-bl-[10px] p-5 py-2 hover:pl-10 gradient-2 transition-all duration-150"
           >
-            Connect
+            LOG IN / SIGN UP
           </button>
         </div>
       )}

@@ -19,7 +19,7 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
       </button> */}
       {/* <hr className="border-none rounded-sm w-[1px] inline-block h-6 bg-black dark:bg-gray-400" /> */}
       <Link
-        className="hover:scale-105 duration-150 ease-in-out"
+        className="opacity-[50%] hover:opacity-[100%] hover:scale-105 duration-150 ease-in-out"
         aria-label="Link to Discord"
         href="https://discord.gg/moondao"
         target="_blank"
@@ -29,7 +29,7 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
         <DiscordIcon />
       </Link>
       <Link
-        className="ml-5 hover:scale-105 duration-150 ease-in-out"
+        className="ml-5 opacity-[50%] hover:opacity-[100%] hover:scale-105 duration-150 ease-in-out"
         aria-label="Link to Twitter"
         href="https://github.com/Official-MoonDao"
         target="_blank"
@@ -39,9 +39,9 @@ const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
         <GithubIcon />
       </Link>
       <Link
-        className="ml-5 hover:scale-105 duration-150 ease-in-out"
+        className="ml-5 opacity-[50%] hover:opacity-[100%] hover:scale-105 duration-150 ease-in-out"
         aria-label="Link to Twitter"
-        href="https://twitter.com/OfficialMoonDAO"
+        href="https://x.com/OfficialMoonDAO"
         target="_blank"
         rel="noreferrer"
         passHref

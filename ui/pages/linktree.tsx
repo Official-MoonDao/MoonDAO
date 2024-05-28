@@ -3,11 +3,12 @@ import Body from '../components/layout/Body';
 import Content from '../components/layout/Content';
 import FooterSection from '../components/home/FooterSection';
 import WebsiteHead from '../components/layout/Head'; 
+import MailingList from '../components/layout/MailingList';
 
-const DudePerfect: React.FC = () => {
-    const title = "MoonDAO sends Dude Perfect to SPACE! 🪐";
-    const description = "🚀 Launching Coby Cotton to space was only the beginning! MoonDAO’s mission is to create a self-sustaining, self-governing colony on the Moon!";
-    const image = "../public/assets/dp-og.jpg"; 
+const LinkTree: React.FC = () => {
+    const title = "Linktree";
+    const description = "🚀 Get the latest news and updates from MoonDAO";
+    const image = "../public/assets/MoonDAO-OG.png"; 
 
     return (
         <>
@@ -15,11 +16,14 @@ const DudePerfect: React.FC = () => {
             <section className="w-[calc(100vw-20px)]">
                 <Body>
                     <Content
-                        header="Hey Dude Perfect frens, let's go to space together!"
-                        headerSize="max(20px, 2vw)"
+                        header="News & Updates"
+                        headerSize="max(20px, 3vmax)"
                         description={
                             <>
-                               Launching Coby Cotton to space was only the beginning! MoonDAO’s mission is to create a self-sustaining, self-governing colony on the Moon to act as a launch point for humanity to explore the cosmos. 
+                                <p className="pb-5 md:pb-0">
+                                    Get the latest news and updates from MoonDAO
+                                </p>
+                                <MailingList /> 
                             </>
                         }
                         callout={
@@ -39,4 +43,4 @@ const DudePerfect: React.FC = () => {
     );
 }
 
-export default DudePerfect;
+export default LinkTree;

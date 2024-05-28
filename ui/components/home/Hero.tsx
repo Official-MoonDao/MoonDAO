@@ -1,3 +1,5 @@
+import MailingList from '../layout/MailingList'; 
+
 export default function Hero() {
   return ( 
     <section id="hero-section" className="overflow-visible relative w-full">
@@ -15,10 +17,7 @@ export default function Hero() {
           <span style={{fontSize: 'calc(max(9vmin, 30px))'}} className="mt-[1vmin]">Program</span>
         </h1>
           <p id="paragraph-content" className="mr-5 max-w-[350px] pb-5 pt-2 text-lg w-full md:w-[100%] md:max-w-[350px] lg:max-w-[500px]">MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement.</p>
-          <form id="mailinglist-form" className="flex flex-col items-center max-w-[500px] md:flex-row md:mt-5 pb-10 rounded-md w-full">
-            <input id="email-field" className="bg-dark-cool focus:outline-none focus:ring-white-500 px-3 py-2 rounded-tl-[10px] md:rounded-bl-[10px] rounded-bl-0 w-full" type="email" placeholder="Enter your email" />
-            <button id="button" className="bg-white duration-500 focus:outline-none font-GoodTimes hover:pl-5 md:rounded-bl-0 px-4 py-2 rounded-bl-[10px] rounded-br-[10px] text-dark-cool w-full lg:bg-white" type="submit">Learn More</button>
-          </form>
+          <MailingList />
         </div>
       </div>
       <div id="section-divider" className="absolute bg-white bottom-[-20px] hidden h-[40px] md:block right-0 w-[50%] z-10"></div>
