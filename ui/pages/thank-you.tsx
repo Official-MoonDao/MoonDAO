@@ -2,6 +2,10 @@ import React, { ReactNode } from 'react';
 import Body from '../components/layout/Body';
 import Content from '../components/layout/Content';
 
+interface ThankProps {
+    children: ReactNode;
+}
+
 const ThankYou: React.FC = () => {
     return (
         <section className="overflow-auto">
@@ -9,7 +13,15 @@ const ThankYou: React.FC = () => {
                 <Content
                     header="Thank You"
                     headerSize="max(25px, 4vw)"
-                    subHeader="We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. "
+                    description={
+                        <>
+                            We've received your response. <br></br>
+                            <a href="/" className="text-white underline">
+                                CLICK HERE
+                            </a> 
+                            &nbsp; for more information.
+                        </>
+                    }
                 />
             </Body>
         </section>    

@@ -11,10 +11,10 @@ interface ContentProps {
 
 const Content: React.FC<ContentProps> = ({ titleSection, header, subHeader, description, headerSize, children }) => {
     return (
-        <div className="overflow-x-hidden">
+        <div className="">
             
             <div className="z-0 p-0 pt-0 pb-0"> 
-                <div id="title-section-container" className="">
+                <div id="title-section-container" className="overflow-x-hidden">
                     <div className="relative z-0">
                         <div id="z-0 gradient-bg" className="gradient-10 w-full h-full rounded-bl-[5vmax] absolute top-0 left-0 "></div>        
                         <section className={`flex flex-col lg:flex-row h-full relative max-w-[1200px] ${children ? "lg:items-center" : "lg:items-start " } `}>  
