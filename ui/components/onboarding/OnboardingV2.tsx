@@ -43,7 +43,7 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
 
         <div className="flex flex-col justify-between w-full items-start">
           <div className="w-full flex flex-col space-y-5">
-            <h1 className={'font-GoodTimes text-3xl'}>{label}</h1>
+            <h1 className={'mt-6 font-GoodTimes text-3xl'}>{label}</h1>
             <p className="mt-4 md:mt-0 md:p-2 text-sm text-moon-orange bg-red-600 bg-opacity-10">
               {description}
             </p>
