@@ -20,7 +20,7 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
 
   return (
     <div
-      className="w-full transition-all duration-150 text-black cursor-pointer dark:text-white lg:p-8 flex flex-col border-[2px] hover:border-orange-500 hover:border-moon-orange border-opacity-100 bg-[white] dark:bg-[#0A0E22] p-3"
+      className="w-full transition-all duration-150 text-black cursor-pointer dark:text-white lg:p-8 flex flex-col border-[2px] hover:border-moon-orange hover:border-moon-orange border-opacity-100 bg-[white] dark:bg-[#0A0E22] p-3"
       onClick={() => {
         if (!address && user) logout()
         if (!address) login()
@@ -81,6 +81,9 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
               </div>
             </div>
           </div>
+          <button className="my-6 w-full border-2 border-moon-orange text-moon-orange rounded-full p-2 hover:scale-105 ease-in-out duration-300">
+            Register Now
+          </button>
         </div>
       </div>
     </div>
@@ -118,7 +121,11 @@ export function OnboardingV2({ selectedChain }: any) {
   }
 
   return (
-    <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1256px] text-slate-950 dark:text-white">
+    <div className="space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 font-RobotoMono w-screen sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] text-slate-950 dark:text-white page-border-and-color">
+      <h1 className="mt-2 lg:mt-3 leading-relaxed page-title">Join MoonDAO</h1>
+      <p className="mt-5">
+        {`Join the Internet's Space Program as a citizen or an entity to unlock access to a global network working to create a long-term presence on the lunar surface.`}
+      </p>
       <div className="flex flex-col space-y-7">
         <div className="flex flex-col  space-y-7">
           <Tier
@@ -126,7 +133,7 @@ export function OnboardingV2({ selectedChain }: any) {
             label="Become a citizen"
             description="Join the internet's space program today!"
             points={[
-              'Become a member of MoonDAO and design your Citizen NFT.',
+              'Become a citizen of MoonDAO and design your NFT.',
               'Access the biggest network of startups, nations, and individuals working to create a long-term presence on the lunar surface.',
               'Help govern the fate of the first off-world settlement.',
             ]}

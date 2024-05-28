@@ -437,8 +437,6 @@ export function CreateCitizen({
           </StageContainer>
         )}
       </div>
-
-      <button onClick={() => setStage(stage + 1)}>{'Next =>'}</button>
     </div>
   )
 }
