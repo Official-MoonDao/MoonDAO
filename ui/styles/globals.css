@@ -148,11 +148,6 @@ a {
 
 /* Home styles */
 
-.hero {
-  background-image: linear-gradient(#282536, #000000 95%);
-  height: 125vh;
-}
-
 .mission {
   background-image: linear-gradient(#000000 2%, #282536, #000000 95%);
   width: 100%;
@@ -225,7 +220,7 @@ a {
   }
 
   .sidebar-bg-dark {
-    background: linear-gradient(172.32deg, #090d21 70.56%, #46161b 106.43%);
+    background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
   }
 
   .sidebar-bg-light {
@@ -247,3 +242,193 @@ a {
 }
 
 /* These two classes control the color of the sidebar*/
+
+
+
+
+
+/* New Design Classes*/
+/*Gradients*/
+  .text-gradient {
+    background: linear-gradient(220deg, #2D121A 5%, #080C20 30%, #182254 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .gradient-1 {
+    background: linear-gradient(220deg, #2D121A 5%, #080C20 30%, #182254 100%);
+  }
+
+  .gradient-2 {
+    background: linear-gradient(220deg, #6D3F79 5%, #3344A8 95%);
+  }
+
+  .gradient-3 {
+    background: linear-gradient(180deg, transparent 20%, #080C20 100%);
+  }
+
+  .gradient-4 {
+    background: linear-gradient(190deg, #2D121A 5%, #080C20 30%, #182254 100%);
+  }
+
+  .gradient-5 {
+    background: linear-gradient(0deg, #2D121A 5%, #080C20 30%, #182254 100%);
+  }
+
+  .gradient-6 {
+    @media(max-width:768px) {
+      background-color:#fff;
+    }
+    @media(min-width:767px) {
+      background: linear-gradient(90deg, transparent 50%, #FFF 50%);
+    }
+  }
+
+  .gradient-7 {
+    background: linear-gradient(90deg, transparent 50%, #FFF 50%);
+  }
+
+  .gradient-8 {
+    background: linear-gradient(60deg, transparent 10%, #080C20 40%);
+  }  
+
+  .gradient-9 {
+    background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
+  }
+
+  .gradient-10 {
+    background: linear-gradient(90deg, #3344A8 0%, transparent 90%);
+  }
+
+  /*Dividers*/
+  .divider-1 {
+    background-repeat: no-repeat;
+    background-image: url('/assets/divider-5.svg');
+    @media(min-width:768px) {
+      background-image: url('/assets/divider-1.svg');
+    }
+  }
+
+  .divider-2 {
+    background-image: url('/assets/divider-2.svg');
+    background-repeat: no-repeat;
+  }
+
+  .divider-3 {
+    background-image: url('/assets/divider-3.svg');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+  }
+
+  .divider-4 {
+    background-image: url('/assets/divider-4.svg');
+    background-repeat: no-repeat;
+    background-position: bottom left;
+  }
+
+  .divider-5 {
+    background-image: url('/assets/divider-5.svg');
+    background-repeat: no-repeat;
+    background-position:top right;
+  }
+
+  .divider-6 {
+    background-image: url('/assets/divider-6.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
+    background-size: contain;
+  }
+
+  .divider-7 {
+    background-image: url('/assets/divider-7.svg');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+  }
+
+  .divider-8 {
+    background-image: url('/assets/divider-8.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
+  }
+
+  .divider-9 {
+    background-image: url('/assets/divider-9.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
+  }
+  
+  .divider-10 {
+    background-image: url('/assets/divider-10.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
+  }
+
+  /*Featured images*/
+  .feature-1 {
+    background-image: url('/assets/feature-1.svg');
+    background-repeat: no-repeat;
+    background-position: top right;
+    background-size: 100% auto;
+    background-clip: border-box;
+  }
+
+  .feature-2 {
+    background-image: url('/assets/feature-2.svg');
+    background-repeat: no-repeat;
+    background-position-x:cover;
+    background-position-y: center;
+  }
+
+  .feature-3 {
+    background-image: url('/assets/feature-3.svg');
+    background-repeat: no-repeat;
+    background-position: top right;
+    background-size: contain;
+  }
+
+  .feature-4 {
+    background-image: url('/assets/feature-4.svg');
+    background-repeat: no-repeat;
+    background-position: top left;
+    background-size: contain;
+  }
+
+/*Typeface styles*/
+.header {
+  font-size: calc(max(3vmax, 30px));
+  line-height: 1.2;
+}
+
+.sub-header {
+  font-size: calc(max(2vmin, 20px));
+  line-height: 1.2;
+  padding-bottom:20px;
+}
+
+/*Hide the scrollbar on mobile*/
+.no-bar {
+  @media(max-width:768px) {
+    scrollbar-width: none;
+  }
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.5); 
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.8); 
+  border-radius: 10px; 
+}
+
+/* For Firefox */
+html {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(255,255,255,.8) rgba(0,0,0,0.5); /* thumb and track color */
+}

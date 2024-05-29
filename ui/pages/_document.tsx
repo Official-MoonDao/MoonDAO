@@ -5,6 +5,7 @@ class WebsiteDocument extends Document {
   render() {
     return (
       <Html>
+        <title>Welcome To MoonDAO</title>
         <Head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
 
@@ -24,7 +25,8 @@ class WebsiteDocument extends Document {
 
           <link rel="icon" href="/favicon.ico" />
         </Head>
-        <body className="overflow-hidden">
+        <body className="overflow-hidden relative">
+        <div className="w-full gradient-9 max-h-[100vh] h-full fixed top-0 left-0"></div>  
           <Main />
           <NextScript />
         </body>

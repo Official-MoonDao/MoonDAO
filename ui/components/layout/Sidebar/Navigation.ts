@@ -1,17 +1,11 @@
 import {
   BuildingLibraryIcon,
   FolderIcon,
-  HomeIcon,
   PlusIcon,
   RocketLaunchIcon,
 } from '@heroicons/react/24/outline'
 
 export const navigation = [
-  {
-    name: 'Welcome',
-    href: '/',
-    icon: HomeIcon,
-  },
   {
     name: 'Join MoonDAO',
     href: '/join',
