@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 509.31 509.2">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #fff;
+        stroke-width: 0px;
+      }
+    </style>
+  </defs>
+  <g id="Ethereum">
+    <polygon class="cls-1" points="105.56 261.86 263.51 3.89 421.46 261.86 263.51 353.87 105.56 261.86"/>
+    <polygon class="cls-1" points="265.31 382.86 418.2 287.94 265.31 505.31 108.82 287.94 265.31 382.86"/>
+  </g>
+</svg>

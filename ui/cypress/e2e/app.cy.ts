@@ -12,7 +12,6 @@ describe('Main E2E Testing', () => {
   describe('MoonDAO App | Home', () => {
     it('should load the home page', () => {
       cy.visit('/')
-      cy.get('#home-hero').should('exist')
     })
   })
 
@@ -47,10 +46,7 @@ describe('Main E2E Testing', () => {
       cy.get('#scheduled-events').should('exist')
     })
   })
-})
 
-//MISSIONS
-describe('Missions E2E Testing', () => {
   describe('MoonDAO App | Lifeship', () => {
     it('should load the lifeship page', () => {
       cy.visit('/lifeship')

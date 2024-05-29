@@ -80,7 +80,7 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
                   </button>
                 </div>
               </Transition.Child>
-              <a href="https://moondao.com">
+              <a href="/">
                 <div className="flex flex-shrink-0 items-center px-4">
                   {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
                 </div>

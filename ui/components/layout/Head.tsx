@@ -1,19 +1,17 @@
 import Head from 'next/head'
 
-const defaultDescription = "Let's decentralize access to space!"
-
-const defaultImage = 'https://dweb.link/ipfs/QmVyGXVwnWUSCFY2vtYpcVryVyDdLKx4Wi7k57dSoo9Bpf'
+const defaultTitle = 'Mission Control'
+const defaultDescription = "The Internet's Space Program"
+const defaultImage = '/assets/MoonDAO-OG.png'
 
 export default function WebsiteHead({
-  title,
+  title = defaultTitle,
   description = defaultDescription,
   image = defaultImage,
 }: any) {
-
-
   return (
     <Head>
-      <title key="meta-title">{'Mission Control | ' + title}</title>
+      <title key="meta-title">{title}</title>
       <link rel="icon" href="/favicon.ico" key="link-favicon" />
       <meta
         name="viewport"
