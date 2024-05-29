@@ -8,10 +8,11 @@ const DudePerfect: React.FC = () => {
   const title = 'MoonDAO sends Dude Perfect to SPACE! 🪐'
   const description =
     '🚀 Launching Coby Cotton to space was only the beginning! MoonDAO’s mission is to create a self-sustaining, self-governing colony on the Moon!'
+  const image = '/assets/dp-og.jpg'
 
   return (
     <>
-      <WebsiteHead title={title} description={description} />
+      <WebsiteHead title={title} description={description} image={image} />
       <section className="w-[calc(100vw-20px)]">
         <Body>
           <Content
