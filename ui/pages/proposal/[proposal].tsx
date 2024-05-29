@@ -1,4 +1,5 @@
 import { NanceProvider, useProposal } from '@nance/nance-hooks'
+import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
 import { useRouter } from 'next/router'
 import { NANCE_API_URL, NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import { useVotesOfProposal } from '../../lib/snapshot'
@@ -48,6 +49,10 @@ function ProposalSkeleton() {
 }
 
 function Proposal() {
+  const [query, setQuery] = useQueryParams({
+    sortBy: withDefault(createEnumParam(['time', 'vp']), 'time'),
+  })
+
   const router = useRouter()
   const proposalId = router.query.proposal as string
   const { data, isLoading } = useProposal({
@@ -65,7 +70,7 @@ function Proposal() {
     proposalPacket?.voteURL,
     1000, // first
     0, // skip
-    'created', // orderBy
+    query.sortBy as 'created' | 'vp', // orderBy
     fetchVotes // shouldFetch
   )
 
@@ -141,12 +146,22 @@ function Proposal() {
           {/* Votes */}
           {proposalPacket.voteURL && votes && (
             <div className="lg:col-start-3">
-              <h2
-                className="text-sm font-semibold leading-6 text-gray-900 dark:text-white"
+              <button
+                className="text-lg font-semibold leading-6 text-gray-900 dark:text-white"
                 id="votes"
+                onClick={() => {
+                  if (query.sortBy === 'time') {
+                    setQuery({ sortBy: 'vp' })
+                  } else {
+                    setQuery({ sortBy: 'time' })
+                  }
+                }}
               >
                 Votes
-              </h2>
+                <span className="ml-2 text-center text-xs text-gray-300">
+                  sort by {query.sortBy === 'vp' ? 'voting power' : 'time'}
+                </span>
+              </button>
               {/* <NewVote
                 snapshotSpace={'jbdao.eth'}
                 proposalSnapshotId={proposalPacket.voteURL as string}
