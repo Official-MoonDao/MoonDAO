@@ -1,16 +1,14 @@
 import Head from 'next/head'
 
-const defaultTitle = "Mission Control"
+const defaultTitle = 'Mission Control'
 const defaultDescription = "The Internet's Space Program"
-const defaultImage = "../public/assets/MoonDAO-OG.png"
+const defaultImage = '/assets/MoonDAO-OG.png'
 
 export default function WebsiteHead({
   title = defaultTitle,
   description = defaultDescription,
   image = defaultImage,
 }: any) {
-
-
   return (
     <Head>
       <title key="meta-title">{title}</title>
