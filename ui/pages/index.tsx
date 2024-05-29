@@ -14,7 +14,6 @@ export default function Home() {
       <WebsiteHead
         title="Welcome to MoonDAO"
         description="Welcome to MoonDAO's Mission Control!"
-        image="../public/assets/MoonDAO-OG.png"
       />
       <div className="w-full md:w-[calc(100vw-260px)] lg:w-[calc(100vw-290px)]">
         <Hero />

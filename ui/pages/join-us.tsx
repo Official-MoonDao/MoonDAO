@@ -9,11 +9,10 @@ import RoundedFrame from '../components/layout/RoundedFrame'
 const JoinUs: React.FC = () => {
   const title = 'Linktree'
   const description = '🚀 Get the latest news and updates from MoonDAO'
-  const image = '../public/assets/dp-og.jpg'
 
   return (
     <>
-      <WebsiteHead title={title} description={description} image={image} />
+      <WebsiteHead title={title} description={description} />
       <section className="w-[calc(100vw-20px)]">
         <Body>
           <Content
