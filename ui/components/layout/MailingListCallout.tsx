@@ -1,4 +1,5 @@
 import MailingList from '../layout/MailingList'; 
+import Footer from './Footer';
 
 
 function MailingListCallout() {
