@@ -423,12 +423,12 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: white; 
+  background: rgba(255,255,255,.8); 
   border-radius: 10px; 
 }
 
 /* For Firefox */
 html {
-  scrollbar-width: thin; /* "auto" or "thin" */
-  scrollbar-color: white rgba(0,0,0,0.5); /* thumb and track color */
+  scrollbar-width: auto;
+  scrollbar-color: rgba(255,255,255,.8) rgba(0,0,0,0.5); /* thumb and track color */
 }
