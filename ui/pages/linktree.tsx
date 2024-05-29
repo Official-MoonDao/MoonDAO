@@ -34,7 +34,7 @@ const LinkTree: React.FC = () => {
                     >
                     <>
                         <img className="mb-5 rounded-[5vmax] rounded-tl-[20px]" src="../assets/dude-perfect.jpg" alt="Dude Perfect" />
-                        <p>MoonDAO is an international collective of people united by the mission of decentralizing access to space research and exploration. Find out how to get involved and learn more about some of the exciting stuff we've got in the works...</p>
+                        <p>MoonDAO is an international collective of people united by the mission of decentralizing access to space research and exploration. Find out how to get involved and learn more about some of the exciting stuff we've got in the works!</p>
                     </>
                     </Content>
                 </Body>
