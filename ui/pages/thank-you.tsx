@@ -2,10 +2,6 @@ import React, { ReactNode } from 'react';
 import Body from '../components/layout/Body';
 import Content from '../components/layout/Content';
 
-interface ThankProps {
-    children: ReactNode;
-}
-
 const ThankYou: React.FC = () => {
     return (
         <section className="overflow-auto">

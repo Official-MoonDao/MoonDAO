@@ -3,7 +3,6 @@ import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
 
 //Checks if the navigation object has a property 'external' set to true, if so returns a link that opens another tab, otherwise checks if the navigation object has children. If it does, it returns the dropdown, if it doesn't it returns an internal navigation link.
 

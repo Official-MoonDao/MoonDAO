@@ -2,15 +2,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 export default function StandardButton({
-  className = '',
-  children,
-  onClick = () => {},
-  backgroundColor = 'dark-cool',
-  hoverColor = 'mid-cool',
-  borderRadius = 'rounded',
-  link = '#',
-  paddingOnHover = 'pl-5',
-  textColor = 'text-white',
+    className = '',
+    children,
+    onClick = () => {},
+    backgroundColor = 'dark-cool',
+    hoverColor = 'mid-cool',
+    borderRadius = 'rounded',
+    link = '#',
+    paddingOnHover = 'pl-5',
+    textColor = 'text-white',
 }) {
   return (
     <a href={link}>

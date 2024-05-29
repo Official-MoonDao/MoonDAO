@@ -1,7 +1,9 @@
+import { ReactNode } from "react";
+
 interface CardProps {
     icon: string;
     header: string;
-    paragraph: string;
+    paragraph: ReactNode;
 }
 
 export default function Card({ icon, header, paragraph }: CardProps) {

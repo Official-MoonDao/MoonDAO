@@ -7,8 +7,7 @@ import MailingList from '../components/layout/MailingList';
 
 const LinkTree: React.FC = () => {
     const title = "Linktree";
-    const description = "🚀 Get the latest news and updates from MoonDAO";
-    const image = "../public/assets/MoonDAO-OG.png"; 
+    const description = "🚀 Get the latest news and updates from MoonDAO"; 
 
     return (
         <>

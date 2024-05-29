@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import StandardButton from '../layout/StandardButton'
 
 export default function Callout1() {
@@ -6,9 +5,9 @@ export default function Callout1() {
     <section id="callout1-section" className="bg-dark-warm md:bg-transparent"> 
       <div id="callout1-container" className="md:rounded-tl-[2vmax] rounded-bl-[5vmax] z-0 relative w-[100%] h-[100%] bg-white mt-[-2vmax] pt-[2vmax] pb-0 lg:pb-10">
         <div id="bottom-right-divider" className="divider-3 absolute bottom-[-2px] right-0 w-[250px] md:w-[350px] h-full overflow-visible"></div>
-        <div id="content-container" className="flex flex-col-reverse justify-end lg:flex-row items-start lg:items-center min-h-[250px] md:min-h-[400px] p-5 pt-10 pb-10 md:pb-0 md:p-10 md:pt-10 lg:max-w-[1200px]">
+        <div id="content-container" className="flex flex-col-reverse justify-end lg:flex-row items-start lg:items-center min-h-[250px] md:min-h-[400px] p-5 pt-10 pb-0 md:p-10 md:pt-10 lg:max-w-[1200px]">
           <div id="featured-image" className="hidden lg:block feature-2 lg:min-h-[450px] mt-5 md:mr-10 w-[100%] h-[250px] md:h-[70vmax] lg:h-[70vh]"></div>
-          <div id="content" className="overflow-visible relative pb-20 md:pb-10 w-[100%]">
+          <div id="content" className="overflow-visible relative pb-10 md:pb-10 w-[100%]">
             <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold bg-clip-text text-dark-cool bg-gradient-to-r from-red-500 to-blue-500 leading-none">
                   MoonDAO is <br></br>Community-Built 
             </h1>
@@ -21,7 +20,7 @@ export default function Callout1() {
               link="https://moondao.com/discord"
               paddingOnHover="pl-5"
             >
-              Join The Conversation
+              Join Our Discord
             </StandardButton>
           </div>  
         </div>

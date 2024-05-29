@@ -1,4 +1,3 @@
-import { MoonIcon, SunIcon } from '@heroicons/react/24/solid'
 import Link from 'next/link'
 import { DiscordIcon, TwitterIcon, GithubIcon } from '../../assets'
 
