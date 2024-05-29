@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 export default function StandardButton({
     className = '',
-    children,
+    children = 'ReactNode',
     onClick = () => {},
     backgroundColor = 'dark-cool',
     hoverColor = 'mid-cool',
