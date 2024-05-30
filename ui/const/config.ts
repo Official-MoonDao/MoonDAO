@@ -63,12 +63,12 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 
 export const CITIZEN_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xA98A07E78282342E701Bba95143a87b262519217',
+  sepolia: '0x806B5B992141c537e96dE1B3fDa93aF0Bd5C33B4',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xd2636C7A3CC8060aC25f3b5237F0b5ad1a9D012f',
+  sepolia: '0xdcEf5079CaeCb924f04869Df296d7C0C2EB82c7F',
 }
 
 export const ENTITY_ADDRESSES: Index = {
