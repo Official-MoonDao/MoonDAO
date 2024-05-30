@@ -125,7 +125,7 @@ export default function ProposalList() {
     return <NoResults />
   }
 
-  if (proposalsLoading) {
+  if (proposalsLoading || !proposalsPacket) {
     return <ProposalListSkeleton />
   } else {
     const packet = proposalsPacket
