@@ -12,14 +12,14 @@ export function ProposalInfoSkeleton() {
     <div className="flex min-w-0 flex-col gap-x-4 sm:flex-row">
       <>
         <div
-          className="hidden h-6 w-6 shrink-0 sm:block animate-pulse dark:bg-white rounded-full"
+          className="hidden h-6 w-6 shrink-0 sm:block animate-pulse dark:bg-gray-700 rounded-full"
           aria-hidden="true"
         />
-        <p className="mb-1 block h-6 w-10 items-center rounded-md animate-pulse dark:bg-white bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20 sm:hidden"></p>
+        <p className="mb-1 block h-6 w-10 items-center rounded-md animate-pulse dark:bg-gray-700 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20 sm:hidden"></p>
       </>
       <div className="min-w-0 flex-auto">
         {/* Title */}
-        <p className="h-6 w-15 animate-pulse dark:bg-white"></p>
+        <p className="h-6 w-15 animate-pulse dark:bg-gray-700 rounded-md"></p>
         {/* Metadata */}
         <div className="mt-2 flex flex-wrap items-center gap-x-6 text-xs">
           {/* Author */}
@@ -31,7 +31,7 @@ export function ProposalInfoSkeleton() {
             />
             <div>
               <p className="text-gray-500 dark:text-gray-400">Author</p>
-              <div className="text-center text-black dark:text-white animate-pulse dark:bg-white h-4 w-20"></div>
+              <div className="text-center text-black dark:text-white animate-pulse dark:bg-gray-700 rounded-md h-4 w-20"></div>
             </div>
           </div>
           {/* Due / Cycle */}
@@ -39,7 +39,7 @@ export function ProposalInfoSkeleton() {
             <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full text-gray-900 dark:text-white" />
             <div>
               <p className="text-gray-500 dark:text-gray-400">Cycle</p>
-              <div className="text-center animate-pulse dark:bg-white h-4 w-6"></div>
+              <div className="text-center animate-pulse dark:bg-gray-700 rounded-md h-4 w-6"></div>
             </div>
           </div>
         </div>

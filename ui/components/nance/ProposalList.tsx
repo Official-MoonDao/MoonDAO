@@ -62,7 +62,7 @@ function ProposalListSkeleton() {
             <ProposalInfoSkeleton />
             <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
               <div className="flex sm:flex-col sm:items-end">
-                <div className="dark:bg-white animate-pulse h-4 w-12"></div>
+                <div className="dark:bg-gray-700 rounded-md animate-pulse h-4 w-12"></div>
                 <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
                   <span className="sr-only">Last edited</span>
                   <span className="animate-pulse h-4 w-8 bg-white"></span>
