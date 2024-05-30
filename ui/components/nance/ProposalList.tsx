@@ -121,16 +121,16 @@ export default function ProposalList() {
   const votingInfoMap: { [key: string]: SnapshotGraphqlProposalVotingInfo } = {}
   votingInfos?.forEach((info) => (votingInfoMap[info.id] = info))
 
-  if (
-    proposalsLoading ||
-    proposalsPacket === undefined ||
-    proposals.length === 0
-  ) {
+  if (!proposalsLoading && proposals.length === 0) {
+    return <NoResults />
+  }
+
+  if (proposalsLoading) {
     return <ProposalListSkeleton />
   } else {
     const packet = proposalsPacket
     return (
-      <div className="page-border-and-color font-[Lato] mt-3 lg:mt-10">
+      <div className="page-border-and-color font-[Lato] mt-1 lg:mt-5">
         <ul
           className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           id="scrollableUl"
