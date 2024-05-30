@@ -13,7 +13,7 @@ export default function Callout3() {
                         paragraph={
                             <>
                                 Sent the first crowdraised astronaut to space, through a democratically governed onchain vote. Randomly chose a second regular, everyday person who will be flying in the near future. 
-                                <br></br><a className="underline" href="https://www.youtube.com/watch?v=YXXlSG-du7c">See The Video</a>
+                                <br></br><a className="underline" href="https://www.youtube.com/watch?v=YXXlSG-du7c">Watch the Video</a>
                             </>
                         }
                     />   
@@ -25,7 +25,7 @@ export default function Callout3() {
                         paragraph={
                             <>
                                 Allocated $100,000+ (50+ ETH) to space R&D projects through community governance, like open source time standards for PNT on the Moon (shortlisted by DARPA for a grant).
-                                <br></br><a className="underline" href="https://docs.moondao.com/Projects/Project-System?_gl=1*6w9m8t*_ga*MTA3OTYwMTM0My4xNzAxNzQzMjE4*_ga_QPFCD9VH46*MTcxNjkzNDQ0MC44NS4xLjE3MTY5MzUyNjEuMC4wLjA.">Apply Here</a>
+                                <br></br><a className="underline" href="https://docs.moondao.com/Projects/Project-System?_gl=1*6w9m8t*_ga*MTA3OTYwMTM0My4xNzAxNzQzMjE4*_ga_QPFCD9VH46*MTcxNjkzNDQ0MC44NS4xLjE3MTY5MzUyNjEuMC4wLjA.">Learn More</a>
                             </>  
                         }                           
                     />
@@ -37,7 +37,7 @@ export default function Callout3() {
                         paragraph={
                             <>
                                 Training future space travelers with innovative programs, like chartering an entire zero gravity flight alongside three NASA astronauts, Charlie Duke, Nicole Stott, and Doug Hurley. 
-                                <br></br><a className="underline" href="/zero-gravity">Learn More</a>
+                                <br></br><a className="underline" href="/zero-gravity">Train With Us</a>
                             </> 
                         }                            
                     /> 
@@ -48,7 +48,7 @@ export default function Callout3() {
                         header="Borderless Space Participation" 
                         paragraph={
                             <>
-                                Developed a first-of-its-kind open-source DAO operating system to improve community governance, onboarding, and coordination, making it possible for global participation in space. 
+                                Developed a first-of-its-kind open-source DAO operating system to improve community governance, onboarding, and coordination, making it possible for global participation. 
                                 <br></br><a className="underline" href="/join">Join Today</a>
                             </>   
                         }                          
@@ -61,7 +61,7 @@ export default function Callout3() {
                         paragraph={
                             <>
                                 Established a constitution for self-governance, which will be sent to the surface of the Moon in late-2024 as part of a LifeShip capsule alongside the DNA of MoonDAO members. 
-                                <br></br><a className="underline" href="https://docs.moondao.com/Governance/Constitution">Read The Constitution</a>
+                                <br></br><a className="underline" href="https://docs.moondao.com/Governance/Constitution">Read the Constitution</a>
                             </>
                         }                             
                     />      

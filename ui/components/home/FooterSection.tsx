@@ -27,10 +27,10 @@ export default function FooterSection() {
                 <div id="footer-container" className="flex pt-5 flex-col max-w-[1200px]">
                     <p className="p-5">
                         <span className="opacity-[60%]">
-                            Disclaimer: There is no expectation of profit with the $MOONEY token. It is a governance token. You are not receiving fractionalized ownership of the DAO's assets in exchange for the token, check &nbsp;
+                            Disclaimer: There is no expectation of profit with the $MOONEY token. It is a governance token. You are not receiving fractionalized ownership of the DAO's assets in exchange for the token, check the &nbsp;
                         </span>
                             <u>
-                                <a className="opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/About/FAQ">the FAQ</a>
+                                <a className="opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/About/FAQ">FAQ</a>
                             </u> 
                         <span className="opacity-[60%]">
                             &nbsp;for more information and disclaimers.

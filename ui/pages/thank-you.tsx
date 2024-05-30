@@ -5,7 +5,7 @@ import Content from '../components/layout/Content';
 const ThankYou: React.FC = () => {
     return (
         <section className="overflow-auto">
-            <Body fullWidth>
+            <Body>
                 <Content
                     header="Thank You"
                     headerSize="max(25px, 4vw)"

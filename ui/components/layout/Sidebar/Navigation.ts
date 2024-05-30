@@ -53,7 +53,7 @@ export const navigation = [
     icon: RocketLaunchIcon,
     href: '/marketplace',
     children: [
-      { name: 'Ticket To Space 🚀', href: '/sweepstakes' },
+      { name: 'Ticket to Space 🚀', href: '/sweepstakes' },
       { name: 'Zero Gravity', href: '/zero-gravity' },
       { name: 'LifeShip', href: '/lifeship' },
       {
