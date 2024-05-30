@@ -185,7 +185,7 @@ export default function ProposalVotes({
                         <AddressLink address={vote.voter} />
                       </div>
 
-                      <div className="text-xs font-semibold text-slate-700">
+                      <div className="text-sm text-slate-500">
                         {`${formatNumberUSStyle(vote.vp, true)} (${(
                           (vote.vp * 100) /
                           (proposalInfo?.scores_total ?? 1)
