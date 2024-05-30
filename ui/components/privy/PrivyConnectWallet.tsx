@@ -85,7 +85,7 @@ export function PrivyConnectWallet() {
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className={`w-[125px] md:w-[175px] md:full relative flex flex-col items-right justify-center px-3 md:px-5 py-2 md:py-3 bg-moon-orange font-RobotoMono z-[10] rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300`}
+            className={`w-[125px] md:w-[175px] md:full relative flex flex-col items-right justify-center px-3 md:px-5 py-2 md:py-3 gradient-2 font-RobotoMono z-[10] rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300`}
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}
@@ -106,7 +106,7 @@ export function PrivyConnectWallet() {
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="w-[250px] lg:w-[275px] absolute left-0 text-sm font-RobotoMono animate-fadeIn mt-2 p-4 flex flex-col bg-white text-black dark:text-white dark:bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2 z-[100]"
+              className="w-[245px] lg:w-[270px] absolute left-0 text-sm font-RobotoMono animate-fadeIn mt-2 p-4 flex flex-col bg-white text-black dark:text-white dark:bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2 z-[100]"
             >
               <div className="absolute right-2 w-full flex justify-end">
                 <XMarkIcon
@@ -239,7 +239,7 @@ export function PrivyConnectWallet() {
                     <strong>Import Token</strong>
                   </button> */}
                   <button
-                    className="w-full mt-4 p-1 border text-white transition-all duration-150 bg-moon-orange hover:bg-white hover:text-moon-orange"
+                    className="w-full mt-4 p-1 rounded-sm text-white transition-all duration-150 gradient-2 hover:bg-white hover:text-moon-orange"
                     onClick={async () => {
                       wallets.forEach((wallet) => wallet.disconnect())
                       logout()
