@@ -352,11 +352,11 @@ function WeightedChoiceSelector({
       {choices.map((choice, index) => (
         <div
           key={choice}
-          className="border-1 flex gap-2 rounded-lg border-gray-300 p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="flex gap-2 rounded-lg p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
         >
           <label className="w-3/5">{choice}</label>
           <input
-            className="w-1/5 rounded-lg dark:text-white dark:bg-gray-600 p-1"
+            className="w-1/5 rounded-lg dark:text-white dark:bg-[#071732] p-1 pl-2 border border-gray-300 dark:border-[#CBE4F7]"
             type="number"
             placeholder="0"
             min={0}
