@@ -85,7 +85,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
           {/*Color mode and Social links*/}
           <div
-            className={`fixed bottom-0 flex flex-col justify-center w-[240px] lg:w-[265px] p-4 pl-7 lg:pl-9 backdrop-blur-lg`}
+            className={`fixed bottom-0 flex flex-col justify-center w-[230px] lg:w-[258px] p-4 pl-7 lg:pl-9 backdrop-blur-md`}
           >
             <ColorsAndSocials
               lightMode={lightMode}
