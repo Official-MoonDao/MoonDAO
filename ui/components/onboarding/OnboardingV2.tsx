@@ -1,9 +1,11 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
+import { useAddress, useContract } from '@thirdweb-dev/react'
+import { CITIZEN_ADDRESSES } from 'const/config'
 import Image from 'next/image'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { CreateCitizen } from './CreateCitizen'
 import { CreateEntity } from './CreateEntity'
@@ -14,9 +16,17 @@ type TierProps = {
   points: any[]
   price: number
   onClick: () => void
+  hasCitizen?: boolean
 }
 
-function Tier({ label, description, points, price, onClick }: TierProps) {
+function Tier({
+  label,
+  description,
+  points,
+  price,
+  onClick,
+  hasCitizen = false,
+}: TierProps) {
   const address = useAddress()
   const { user, login, logout } = usePrivy()
 
@@ -27,11 +37,12 @@ function Tier({ label, description, points, price, onClick }: TierProps) {
       className="w-full transition-all duration-150 text-black cursor-pointer dark:text-white lg:p-8 flex flex-col border-[2px] hover:border-moon-orange hover:border-moon-orange border-opacity-100 bg-[white] dark:bg-[#0A0E22] p-3"
       onClick={() => {
         if (!address && user) logout()
-        if (!address) login()
-        else {
-          if (+nativeBalance < 0.01) return toast.error('Insufficient balance')
-          onClick()
-        }
+        if (!address) return login()
+        if (hasCitizen) return toast.error('You already have a citizen nft')
+
+        if (+nativeBalance < 0.01) return toast.error('Insufficient balance')
+
+        onClick()
       }}
     >
       <div className="w-full h-full flex flex-col lg:flex-row justify-center items-center lg:space-x-10">
@@ -94,6 +105,14 @@ export function OnboardingV2({ selectedChain }: any) {
   const { wallets } = useWallets()
   const [selectedTier, setSelectedTier] = useState<'entity' | 'citizen'>()
 
+  const { contract: citizenContract } = useContract(
+    CITIZEN_ADDRESSES[selectedChain.slug]
+  )
+
+  const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
+    address,
+  ])
+
   if (selectedTier === 'citizen') {
     return (
       <CreateCitizen
@@ -136,6 +155,7 @@ export function OnboardingV2({ selectedChain }: any) {
               'Help govern the fate of the first off-world settlement.',
             ]}
             onClick={() => setSelectedTier('citizen')}
+            hasCitizen={+citizenBalance > 0}
           />
           <Tier
             price={0.5}
