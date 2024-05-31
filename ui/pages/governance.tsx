@@ -148,7 +148,7 @@ export default function Governance() {
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
               onClick={() =>
                 window.open(
-                  'https://publish.obsidian.md/moondao/MoonDAO/docs/Constitution'
+                  'https://docs.moondao.com/Governance/Constitution'
                 )
               }
             >

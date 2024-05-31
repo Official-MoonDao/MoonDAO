@@ -7,8 +7,8 @@ import MailingList from '../components/layout/MailingList'
 import RoundedFrame from '../components/layout/RoundedFrame'
 
 const JoinUs: React.FC = () => {
-  const title = 'Linktree'
-  const description = '🚀 Get the latest news and updates from MoonDAO'
+  const title = '🚀 Get the latest news and updates from MoonDAO'
+  const description = 'Sign up for the MoonDAO newsletter to learn more about how you can participate.'
   const image = '/assets/dp-og.jpg'
 
   return (

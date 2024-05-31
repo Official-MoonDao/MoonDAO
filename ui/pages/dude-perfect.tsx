@@ -5,7 +5,7 @@ import Content from '../components/layout/Content'
 import WebsiteHead from '../components/layout/Head'
 
 const DudePerfect: React.FC = () => {
-  const title = 'MoonDAO sends Dude Perfect to SPACE! 🪐'
+  const title = 'MoonDAO sent Dude Perfect to SPACE! 🪐'
   const description =
     '🚀 Launching Coby Cotton to space was only the beginning! MoonDAO’s mission is to create a self-sustaining, self-governing colony on the Moon!'
   const image = '/assets/dp-og.jpg'
@@ -14,7 +14,7 @@ const DudePerfect: React.FC = () => {
     <>
       <WebsiteHead title={title} description={description} image={image} />
       <section className="w-[calc(100vw-20px)]">
-        <Body>
+        <Body fullWidth>
           <Content
             header="Hey Dude Perfect frens, let's go to space together!"
             headerSize="max(20px, 2vw)"
