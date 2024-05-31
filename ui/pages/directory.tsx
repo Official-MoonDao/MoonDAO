@@ -2,7 +2,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT, useContract, useNFTs } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, ENTITY_ADDRESSES } from 'const/config'
-import { approvedCitizens, approvedEntities } from 'const/whitelist'
+import { blockedCitizens, blockedEntities } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -103,7 +103,7 @@ export default function Directory() {
     const filtered: any = entities?.filter(
       (nft: any) =>
         nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && approvedEntities.includes(nft.metadata.id)
+          .value === 'public' && !blockedEntities.includes(nft.metadata.id)
     )
     setFilteredEntities(filtered)
   }, [entities])
@@ -112,7 +112,7 @@ export default function Directory() {
     const filtered: any = citizens?.filter(
       (nft: any) =>
         nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && approvedCitizens.includes(nft.metadata.id)
+          .value === 'public' && !blockedCitizens.includes(nft.metadata.id)
     )
     setFilteredCitizens(filtered)
   }, [citizens])
