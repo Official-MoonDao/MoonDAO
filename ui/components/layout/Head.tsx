@@ -1,6 +1,6 @@
 import Head from 'next/head'
 
-const defaultTitle = 'Mission Control'
+const defaultTitle = "MoonDAO: The Internet's Space Program"
 const defaultDescription = "The Internet's Space Program"
 const defaultImage = '/assets/MoonDAO-OG.png'
 
@@ -22,7 +22,7 @@ export default function WebsiteHead({
       <meta name="description" content={description} key="meta-desc" />
       <meta
         property="og:title"
-        content={`Mission Control | ${title}`}
+        content={`${title} | MoonDAO: The Internet's Space Program`}
         key="meta-ogtitle"
       />
       <meta property="og:description" content={description} key="meta-ogdesc" />
@@ -36,7 +36,7 @@ export default function WebsiteHead({
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta
         name="twitter:title"
-        content={`Mission Control | ${title}`}
+        content={`${title} | MoonDAO: The Internet's Space Program`}
         key="meta-twtitle"
       />
       <meta
