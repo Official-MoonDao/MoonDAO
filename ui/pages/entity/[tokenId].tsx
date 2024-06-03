@@ -33,6 +33,7 @@ import { HatWearers } from '@/components/hats/HatWearers'
 import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
 import { EntityAdminModal } from '@/components/subscription/EntityAdminModal'
+import EntityJobs from '@/components/subscription/EntityJobs'
 import { EntityMetadataModal } from '@/components/subscription/EntityMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import Proposals from '@/components/subscription/Proposals'
@@ -337,6 +338,9 @@ export default function EntityDetailPage({ tokenId }: any) {
             </div>
           </div>
         </Card>
+      </div>
+      <div>
+        <EntityJobs entityId={tokenId} />
       </div>
       {/* General Actions */}
       <GeneralActions />
