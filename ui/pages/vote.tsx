@@ -74,7 +74,7 @@ export default function SpaceIndex() {
       <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full py-5 lg:pl-10 lg:pr-8">
         <main className="flex-1">
           <NanceProvider apiUrl={NANCE_API_URL}>
-            <div className="w-full px-2">
+            <div className="w-full px-2 lg:w-1/2 lg:ml-auto lg:mr-auto">
               <label htmlFor="search" className="sr-only">
                 Search
               </label>

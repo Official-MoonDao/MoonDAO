@@ -1,11 +1,13 @@
-import { CalendarDaysIcon, BanknotesIcon } from '@heroicons/react/24/outline'
-import { Payout, ProposalPacket, Transfer } from '@nance/nance-sdk'
+import { CalendarDaysIcon } from '@heroicons/react/24/outline'
+import { ProposalPacket } from '@nance/nance-sdk'
 import { formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Link from 'next/link'
 import { SnapshotGraphqlProposalVotingInfo } from '../../lib/snapshot'
 import { AddressLink } from './AddressLink'
 import ProposalStatusIcon from './ProposalStatusIcon'
 import VotingInfo from './VotingInfo'
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 export function ProposalInfoSkeleton() {
   return (
@@ -52,10 +54,12 @@ export default function ProposalInfo({
   proposalPacket,
   votingInfo,
   linkDisabled = false,
+  sponsorDisabled = true,
 }: {
   proposalPacket: ProposalPacket
   votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
   linkDisabled?: boolean
+  sponsorDisabled?: boolean
 }) {
   const { proposalIdPrefix } = proposalPacket?.proposalInfo || ''
   const preTitleDisplay = proposalIdPrefix
@@ -82,11 +86,11 @@ export default function ProposalInfo({
           )}
         </p>
         {/* Metadata */}
-        <div className="mt-2 flex flex-wrap items-center gap-x-6 text-xs">
+        <div className="mt-2 flex flex-row items-center gap-x-6 text-xs">
           {/* Author */}
           <div className="flex items-center gap-x-1">
             <img
-              src={`https://cdn.stamp.fyi/avatar/${proposalPacket.authorAddress}`}
+              src={`https://cdn.stamp.fyi/avatar/${proposalPacket.authorAddress || ZERO_ADDRESS}`}
               alt=""
               className="h-6 w-6 flex-none rounded-full bg-gray-50"
             />
@@ -118,6 +122,16 @@ export default function ProposalInfo({
               </div>
             )}
           </div>
+          {/* Delegate this proposal if it doesn't have an author */}
+          {!proposalPacket.authorAddress && !sponsorDisabled && (
+            <button
+              type="button"
+              className={`px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40`}
+              onClick={() => {}}
+            >
+              Sponsor Proposal
+            </button>
+          )}
         </div>
         <div className="mt-2">
           <VotingInfo votingInfo={votingInfo} />

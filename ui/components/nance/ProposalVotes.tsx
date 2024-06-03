@@ -131,7 +131,7 @@ export default function ProposalVotes({
           <div className="flex justify-between">
             <p className="text-sm">QUORUM {formatNumberUSStyle(threshold)}</p>
             <p className="text-sm">
-              VOTER {formatNumberUSStyle(proposalInfo?.votes || 0, true)}
+              VOTERS {formatNumberUSStyle(proposalInfo?.votes || 0, true)}
             </p>
           </div>
         </div>

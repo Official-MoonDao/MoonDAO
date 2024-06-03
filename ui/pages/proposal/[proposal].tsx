@@ -105,6 +105,7 @@ function Proposal() {
               proposalPacket={proposalPacket}
               votingInfo={votes?.proposal}
               linkDisabled
+              sponsorDisabled={false}
             />
             <DropDownMenu proposalPacket={proposalPacket} />
           </div>
