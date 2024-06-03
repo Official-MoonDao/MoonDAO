@@ -56,11 +56,11 @@ export const navigation = [
       { name: 'Ticket to Space 🚀', href: '/sweepstakes' },
       { name: 'Zero Gravity', href: '/zero-gravity' },
       { name: 'LifeShip', href: '/lifeship' },
-      {
-        name: 'MoonDAO Shields',
-        href: '/marketplace/collection/0xE71f58663f80b61f5D127D9DE9d554ca66dED5f1',
-        dynamicHref: '/marketplace/collection/[contractAddress]',
-      },
+      // {
+      //   name: 'MoonDAO Shields',
+      //   href: '/marketplace/collection/0xE71f58663f80b61f5D127D9DE9d554ca66dED5f1',
+      //   dynamicHref: '/marketplace/collection/[contractAddress]',
+      // },
     ],
   },
 ]
