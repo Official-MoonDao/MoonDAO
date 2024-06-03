@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import Job from '../jobs/Job'
+import Button from './Button'
 import Card from './Card'
 
 type EntityJobsProps = {
   entityId: string
+  setEntityJobModalEnabled: Function
 }
 
 const dummyJobs = [
@@ -32,9 +34,18 @@ const dummyJobs = [
     description: 'We are looking for a designer to join our team',
     contact: 'info@moondao.com',
   },
+  {
+    entityId: '2',
+    title: 'Software Engineer',
+    description: 'We are looking for a software engineer to join our team',
+    contact: 'info@moondao.com',
+  },
 ]
 
-export default function EntityJobs({ entityId }: EntityJobsProps) {
+export default function EntityJobs({
+  entityId,
+  setEntityJobModalEnabled,
+}: EntityJobsProps) {
   const [jobs, setJobs] = useState(dummyJobs)
 
   function getEntityJobs() {}
@@ -48,6 +59,13 @@ export default function EntityJobs({ entityId }: EntityJobsProps) {
         {jobs &&
           jobs.map((job, i) => <Job key={`entity-job-${i}`} job={job} />)}
       </div>
+      <Button
+        onClick={() => {
+          setEntityJobModalEnabled(true)
+        }}
+      >
+        Add a Job
+      </Button>
     </Card>
   )
 }

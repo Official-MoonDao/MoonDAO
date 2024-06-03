@@ -33,6 +33,7 @@ import { HatWearers } from '@/components/hats/HatWearers'
 import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
 import { EntityAdminModal } from '@/components/subscription/EntityAdminModal'
+import EntityJobModal from '@/components/subscription/EntityJobModal'
 import EntityJobs from '@/components/subscription/EntityJobs'
 import { EntityMetadataModal } from '@/components/subscription/EntityMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
@@ -56,7 +57,7 @@ export default function EntityDetailPage({ tokenId }: any) {
     useState(false)
   const [entitySubscriptionModalEnabled, setEntitySubscriptionModalEnabled] =
     useState(false)
-  const [entityAdminModalEnabled, setEntityAdminModalEnabled] = useState(false)
+  const [entityJobModalEnabled, setEntityJobModalEnabled] = useState(false)
 
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
   //Entity Data
@@ -339,8 +340,17 @@ export default function EntityDetailPage({ tokenId }: any) {
           </div>
         </Card>
       </div>
-      <div>
-        <EntityJobs entityId={tokenId} />
+      <div className="">
+        <EntityJobs
+          entityId={tokenId}
+          setEntityJobModalEnabled={setEntityJobModalEnabled}
+        />
+        {entityJobModalEnabled && (
+          <EntityJobModal
+            setEnabled={setEntityJobModalEnabled}
+            entityId={tokenId}
+          />
+        )}
       </div>
       {/* General Actions */}
       <GeneralActions />
