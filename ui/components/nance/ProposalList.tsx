@@ -27,7 +27,7 @@ import ProposalInfo, { ProposalInfoSkeleton } from './ProposalInfo'
 
 function NoResults() {
   return (
-    <div className="text-center">
+    <div className="text-center mt-3 lg:mt-10">
       <div className="flex justify-center">
         <DocumentMagnifyingGlassIcon className="h-10 w-10 text-gray-400" />
       </div>
@@ -121,12 +121,12 @@ export default function ProposalList() {
   const votingInfoMap: { [key: string]: SnapshotGraphqlProposalVotingInfo } = {}
   votingInfos?.forEach((info) => (votingInfoMap[info.id] = info))
 
-  if (!proposalsLoading && proposals.length === 0) {
-    return <NoResults />
+  if (!router.isReady || proposalsLoading) {
+    return <ProposalListSkeleton />
   }
 
-  if (proposalsLoading || !proposalsPacket) {
-    return <ProposalListSkeleton />
+  if (!proposalsPacket || proposals.length === 0) {
+    return <NoResults />
   } else {
     const packet = proposalsPacket
     return (
