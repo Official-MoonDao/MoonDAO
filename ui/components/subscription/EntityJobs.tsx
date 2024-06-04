@@ -1,63 +1,53 @@
+import { TABLELAND_ENDPOINT } from 'const/config'
 import { useEffect, useState } from 'react'
-import Job from '../jobs/Job'
+import Job, { Job as JobType } from '../jobs/Job'
 import Button from './Button'
 import Card from './Card'
+import EntityJobModal from './EntityJobModal'
 
 type EntityJobsProps = {
   entityId: string
-  setEntityJobModalEnabled: Function
+  jobTableContract: any
+  isAdmin: boolean
 }
-
-const dummyJobs = [
-  {
-    entityId: '2',
-    title: 'Software Engineer',
-    description:
-      'We are looking for a software engineer to join our team.We are looking for a software engineer to join our team.We are looking for a software engineer to join our team.We are looking for a software engineer to join our team.We are looking for a software engineer to join our team',
-    contact: 'info@moondao.com',
-  },
-  {
-    entityId: '2',
-    title: 'Community Manager',
-    description: 'We are looking for a community manager to join our team',
-    contact: 'info@moondao.com',
-  },
-  {
-    entityId: '2',
-    title: 'Product Manager',
-    description: 'We are looking for a product manager to join our team',
-    contact: 'info@moondao.com',
-  },
-  {
-    entityId: '2',
-    title: 'Designer',
-    description: 'We are looking for a designer to join our team',
-    contact: 'info@moondao.com',
-  },
-  {
-    entityId: '2',
-    title: 'Software Engineer',
-    description: 'We are looking for a software engineer to join our team',
-    contact: 'info@moondao.com',
-  },
-]
 
 export default function EntityJobs({
   entityId,
-  setEntityJobModalEnabled,
+  jobTableContract,
+  isAdmin,
 }: EntityJobsProps) {
-  const [jobs, setJobs] = useState(dummyJobs)
+  const [jobs, setJobs] = useState<JobType[]>()
+  const [entityJobModalEnabled, setEntityJobModalEnabled] = useState(false)
 
-  function getEntityJobs() {}
+  async function getEntityJobs() {
+    const jobBoardTableName = await jobTableContract.call('getTableName')
+    const statement = `SELECT * FROM ${jobBoardTableName} WHERE entityId = ${entityId}`
 
-  useEffect(() => {}, [entityId])
+    const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
+    const data = await res.json()
+
+    setJobs(data)
+  }
+
+  useEffect(() => {
+    if (jobTableContract) getEntityJobs()
+  }, [entityId, jobTableContract])
 
   return (
     <Card className="w-full flex flex-col justify-between gap-4">
       <p className="text-2xl">Jobs</p>
       <div className="flex flex-col max-h-[500px] overflow-auto gap-4">
         {jobs &&
-          jobs.map((job, i) => <Job key={`entity-job-${i}`} job={job} />)}
+          jobs.map((job, i) => (
+            <Job
+              key={`entity-job-${i}`}
+              job={job}
+              jobTableContract={jobTableContract}
+              entityId={entityId}
+              editable={isAdmin}
+              refreshJobs={getEntityJobs}
+            />
+          ))}
       </div>
       <Button
         onClick={() => {
@@ -66,6 +56,14 @@ export default function EntityJobs({
       >
         Add a Job
       </Button>
+      {entityJobModalEnabled && (
+        <EntityJobModal
+          setEnabled={setEntityJobModalEnabled}
+          entityId={entityId}
+          jobTableContract={jobTableContract}
+          refreshJobs={getEntityJobs}
+        />
+      )}
     </Card>
   )
 }

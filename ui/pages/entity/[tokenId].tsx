@@ -14,7 +14,12 @@ import {
   useContractRead,
   useNFT,
 } from '@thirdweb-dev/react'
-import { ENTITY_ADDRESSES, HATS_ADDRESS, MOONEY_ADDRESSES } from 'const/config'
+import {
+  ENTITY_ADDRESSES,
+  HATS_ADDRESS,
+  JOBS_TABLE_ADDRESSES,
+  MOONEY_ADDRESSES,
+} from 'const/config'
 import { GetServerSideProps } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -56,13 +61,17 @@ export default function EntityDetailPage({ tokenId }: any) {
     useState(false)
   const [entitySubscriptionModalEnabled, setEntitySubscriptionModalEnabled] =
     useState(false)
-  const [entityJobModalEnabled, setEntityJobModalEnabled] = useState(false)
 
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
   //Entity Data
   const { contract: entityContract } = useContract(
     ENTITY_ADDRESSES[selectedChain.slug]
   )
+
+  const { contract: jobTableContract } = useContract(
+    JOBS_TABLE_ADDRESSES[selectedChain.slug]
+  )
+
   const { data: nft } = useNFT(entityContract, tokenId)
 
   const { socials, isPublic, hatTreeId, topHatId, isAdmin, updateMetadata } =
@@ -342,14 +351,9 @@ export default function EntityDetailPage({ tokenId }: any) {
       <div className="">
         <EntityJobs
           entityId={tokenId}
-          setEntityJobModalEnabled={setEntityJobModalEnabled}
+          jobTableContract={jobTableContract}
+          isAdmin={isAdmin}
         />
-        {entityJobModalEnabled && (
-          <EntityJobModal
-            setEnabled={setEntityJobModalEnabled}
-            entityId={tokenId}
-          />
-        )}
       </div>
       {/* General Actions */}
       <GeneralActions />
