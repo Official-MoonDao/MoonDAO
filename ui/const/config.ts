@@ -86,6 +86,11 @@ export const ENTITY_TABLE_ADDRESSES: Index = {
   sepolia: '0x22e72595f5b82F66f8c9FCD5D60d0934721694bC',
 }
 
+export const JOBS_TABLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x336CbcB1A2e19bA79E1D2Dd720fCD9B5a555C642',
+}
+
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 
 export const MARKETPLACE_FEE_SPLIT: string =
@@ -128,3 +133,7 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
 export const DISCORD_GUILD_ID = '914720248140279868'
 
 export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
+
+export const TABLELAND_ENDPOINT = `https://${
+  process.env.NEXT_PUBLIC_CHAIN != 'mainnet' && 'testnets.'
+}tableland.network/api/v1/query`
