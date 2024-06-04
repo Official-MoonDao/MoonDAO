@@ -12,8 +12,7 @@ export default function Home() {
   return (
     <div className="animate-fadeIn overflow-x-hidden absolute flex justify-end w-full h-[100vh] overflow-auto no-bar top-0 right-0">
       <WebsiteHead
-        title="Welcome to MoonDAO: The Internet's Space Program"
-        description="Welcome to MoonDAO's Mission Control!"
+        description="MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement."
       />
       <div className="w-full md:w-[calc(100vw-260px)] lg:w-[calc(100vw-290px)]">
         <Hero />
