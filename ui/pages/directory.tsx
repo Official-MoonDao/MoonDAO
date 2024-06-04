@@ -11,6 +11,7 @@ import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import Head from '../components/layout/Head'
 import { SearchIcon } from '@/components/assets'
 import EntityCitizenCard from '@/components/directory/EntityCitizenCard'
+import Tab from '@/components/layout/Tab'
 
 export default function Directory() {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
@@ -27,7 +28,7 @@ export default function Directory() {
     })
   }
 
-  const [tab, setTab] = useState<any>('all')
+  const [tab, setTab] = useState<string>('all')
   function loadByTab(tab: string) {
     if (tab === 'entities') {
       setCachedNFTs(
@@ -51,6 +52,7 @@ export default function Directory() {
     // shallowQueryRoute({ type: tab })
   }
 
+  // Citizen and Entity Data
   const { contract: entityContract } = useContract(
     ENTITY_ADDRESSES[selectedChain.slug]
   )
@@ -149,37 +151,23 @@ export default function Directory() {
           />
         </div>
 
-        <div className="md:px-4 flex gap-4">
-          <button
-            className={`px-4 py-2 border-2 rounded-lg ${
-              tab === 'all' && 'border-moon-orange text-moon-orange'
-            }`}
-            onClick={() => setTab('all')}
-          >
+        <div className="md:px-4 grid grid-cols-3 gap-4 text-sm">
+          <Tab tab="all" currentTab={tab} setTab={setTab}>
             All
-          </button>
-          <button
-            className={`px-4 py-2 border-2 rounded-lg ${
-              tab === 'entities' && 'border-moon-orange text-moon-orange'
-            }`}
-            onClick={() => setTab('entities')}
-          >
+          </Tab>
+          <Tab tab="entities" currentTab={tab} setTab={setTab}>
             Entities
-          </button>
-          <button
-            className={`px-4 py-2 border-2 rounded-lg ${
-              tab === 'citizens' && 'border-moon-orange text-moon-orange'
-            }`}
-            onClick={() => setTab('citizens')}
-          >
+          </Tab>
+          <Tab tab="citizens" currentTab={tab} setTab={setTab}>
             Citizens
-          </button>
+          </Tab>
         </div>
-        {isLoadingEntities && <p className="text-center">Loading...</p>}
+
         <div
           className="grid grid-cols-1
       min-[1100px]:grid-cols-2 min-[1450px]:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center lg:justify-items-start place-items-center"
         >
+          {isLoadingEntities && <p className="text-center">Loading...</p>}
           {cachedNFTs
             ?.slice((pageIdx - 1) * 9, pageIdx * 9)
             .map((nft: any, i: number) => {
@@ -203,6 +191,7 @@ export default function Directory() {
               //if citizen address return citizen
             })}
         </div>
+
         <div className="w-full flex flex-row justify-center lg:justify-start space-x-8">
           {pageIdx === 1 ? (
             <p></p>
