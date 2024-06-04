@@ -96,7 +96,7 @@ export default function Directory() {
   useEffect(() => {
     const type = router.query.type
     if (type) {
-      setTab(type)
+      setTab(type as string)
     }
   }, [router])
 
