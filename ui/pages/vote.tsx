@@ -34,8 +34,6 @@ export default function SpaceIndex() {
     query.keyword
   )
 
-  console.debug('awed', query, keywordInput)
-
   useDebounce(
     () => {
       if (keywordInput !== query.keyword) {
