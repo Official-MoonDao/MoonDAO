@@ -49,13 +49,16 @@ export default function EntityJobs({
             />
           ))}
       </div>
-      <Button
-        onClick={() => {
-          setEntityJobModalEnabled(true)
-        }}
-      >
-        Add a Job
-      </Button>
+      {isAdmin && (
+        <Button
+          onClick={() => {
+            console.log(isAdmin)
+            setEntityJobModalEnabled(true)
+          }}
+        >
+          Add a Job
+        </Button>
+      )}
       {entityJobModalEnabled && (
         <EntityJobModal
           setEnabled={setEntityJobModalEnabled}
