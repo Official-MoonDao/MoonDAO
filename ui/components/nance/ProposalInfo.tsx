@@ -1,13 +1,22 @@
+import { useState } from 'react'
 import { CalendarDaysIcon } from '@heroicons/react/24/outline'
 import { ProposalPacket } from '@nance/nance-sdk'
-import { formatDistanceToNow, fromUnixTime } from 'date-fns'
+import { add, differenceInDays, formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Link from 'next/link'
 import { SnapshotGraphqlProposalVotingInfo } from '../../lib/snapshot'
 import { AddressLink } from './AddressLink'
 import ProposalStatusIcon from './ProposalStatusIcon'
 import VotingInfo from './VotingInfo'
+import useAccount from '../../lib/nance/useAccountAddress'
+import { useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
+import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
+import toast from 'react-hot-toast'
+import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
+import { useSignProposal } from '../../lib/nance/useSignProposal'
+import { useRouter } from 'next/router'
 
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 export function ProposalInfoSkeleton() {
   return (
@@ -55,16 +64,100 @@ export default function ProposalInfo({
   votingInfo,
   linkDisabled = false,
   sponsorDisabled = true,
+  coauthorsDisabled = true,
 }: {
   proposalPacket: ProposalPacket
   votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
   linkDisabled?: boolean
   sponsorDisabled?: boolean
+  coauthorsDisabled?: boolean
 }) {
   const { proposalIdPrefix } = proposalPacket?.proposalInfo || ''
   const preTitleDisplay = proposalIdPrefix
     ? `${proposalIdPrefix}${proposalPacket.proposalId}: `
     : ''
+  const router = useRouter();
+  const { proposalInfo, ...proposal } = proposalPacket;
+  proposal.voteSetup = {
+    type: 'quadratic', // could make this dynamic in the future
+    choices: ['Yes', 'No', 'Abstain'], // could make this dynamic in the future
+  };
+  const { isLinked, wallet } = useAccount();
+  const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
+
+  // get space info to find next Snapshot Vote
+  // we need this to be compliant with the proposal signing format of Snapshot
+  const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
+  const spaceInfo = spaceInfoData?.data
+  const { nextEvents, currentEvent } = spaceInfo || {}
+  let nextSnapshotVote = nextEvents?.find(
+    (event) => event.title === 'Snapshot Vote'
+  )
+  const nextProposalId = spaceInfo?.nextProposalId
+  if (currentEvent?.title === 'Temperature Check') {
+    const days = differenceInDays(
+      new Date(nextEvents?.slice(-1)[0]?.start || ''),
+      new Date(currentEvent.start)
+    )
+    nextSnapshotVote = {
+      title: 'Snapshot Vote',
+      start: add(new Date(nextSnapshotVote?.start || ''), {
+        days,
+      }).toISOString(),
+      end: add(new Date(nextSnapshotVote?.end || ''), { days }).toISOString(),
+    }
+  }
+
+  // proposal upload
+  const { signProposalAsync } = useSignProposal(wallet)
+  const { trigger } = useProposalUpload(NANCE_SPACE_NAME, proposal?.uuid)
+  const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
+
+  async function signAndSendProposal() {
+    if (!nextSnapshotVote) return
+    setSigningStatus('loading')
+    const proposalId = proposal.proposalId || nextProposalId
+    const preTitle = `${proposalIdPrefix}${proposalId}: `
+    signProposalAsync(proposal, preTitle, nextSnapshotVote)
+      .then((res) => {
+        const { signature, message, address } = res
+        trigger({
+          proposal,
+          envelope: {
+            type: 'SnapshotSubmitProposal',
+            address,
+            signature,
+            message,
+          },
+        })
+          .then((res) => {
+            if (res.success) {
+              setSigningStatus('success')
+              toast.success('Proposal submitted successfully!', {
+                style: toastStyle,
+              })
+              // next router push
+              router.push(`/proposal/${res.data.uuid}`)
+            } else {
+              setSigningStatus('error')
+              toast.error('Error saving draft', { style: toastStyle })
+            }
+          })
+          .catch((error) => {
+            setSigningStatus('error')
+            toast.error(`[API] Error submitting proposal:\n${error}`, {
+              style: toastStyle,
+            })
+          })
+      })
+      .catch((error) => {
+        setSigningStatus('idle')
+        toast.error(`[Wallet] Error signing proposal:\n${error}`, {
+          style: toastStyle,
+        })
+      })
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-x-4 sm:flex-row">
       <ProposalStatusIcon status={proposalPacket.status} />
@@ -123,16 +216,31 @@ export default function ProposalInfo({
             )}
           </div>
           {/* Delegate this proposal if it doesn't have an author */}
-          {!proposalPacket.authorAddress && !sponsorDisabled && (
+          {!proposalPacket.authorAddress && isLinked && !sponsorDisabled && (
             <button
-              type="button"
+              type='button'
               className={`px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40`}
-              onClick={() => {}}
+              disabled={buttonsDisabled}
+              onClick={() => {
+                signAndSendProposal();
+              }}
             >
-              Sponsor Proposal
+              {signingStatus === "loading" ? "Sponsor Proposal..." : "Sponsor Proposal"}
             </button>
           )}
         </div>
+        {/* Coauthor */}
+        {!coauthorsDisabled && proposal.coauthors && (
+          <div className="text-xs ml-7">
+            <p className="text-gray-500 dark:text-gray-400">Coauthors</p>
+            {proposal.coauthors.map((coauthor, index) => {
+              return (
+                <p key={index}><AddressLink address={coauthor} /></p>
+              )
+            })}
+          </div>
+        )}
+        {/* Votes */}
         <div className="mt-2">
           <VotingInfo votingInfo={votingInfo} />
         </div>

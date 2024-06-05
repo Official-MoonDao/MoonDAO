@@ -47,8 +47,7 @@ export default function ProposalEditor() {
   // temp - discord handle
   const [discordUserId, setDiscordUserId] = useState<string>('')
 
-  // signing status
-  const [status, setStatus] = useState<SignStatus>('idle')
+  const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
 
   // get space info to find next Snapshot Vote
   // we need this to be compliant with the proposal signing format of Snapshot
@@ -86,7 +85,7 @@ export default function ProposalEditor() {
   const { wallet } = useAccount()
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
-  const buttonsDisabled = !wallet?.linked || status === 'loading'
+  const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
 
   const fileUploadIPFS = {
     gateway: process.env.NEXT_PUBLIC_INFURA_IPFS_GATEWAY as string,
@@ -116,8 +115,7 @@ export default function ProposalEditor() {
       return
     }
     if (!nextSnapshotVote) return
-    setStatus('loading')
-    // setInitialValue(proposal.body); // save the current proposal body to be used in case of error
+    setSigningStatus('loading')
     const proposalId = loadedProposal?.proposalId || nextProposalId
     const preTitle = `${proposalIdPrefix}${proposalId}: `
     signProposalAsync(proposal, preTitle, nextSnapshotVote)
@@ -134,26 +132,26 @@ export default function ProposalEditor() {
         })
           .then((res) => {
             if (res.success) {
-              setStatus('success')
+              setSigningStatus('success')
               toast.success('Proposal submitted successfully!', {
                 style: toastStyle,
               })
               // next router push
               router.push(`/proposal/${res.data.uuid}`)
             } else {
-              setStatus('error')
+              setSigningStatus('error')
               toast.error('Error saving draft', { style: toastStyle })
             }
           })
           .catch((error) => {
-            setStatus('error')
+            setSigningStatus('error')
             toast.error(`[API] Error submitting proposal:\n${error}`, {
               style: toastStyle,
             })
           })
       })
       .catch((error) => {
-        setStatus('idle')
+        setSigningStatus('idle')
         toast.error(`[Wallet] Error signing proposal:\n${error}`, {
           style: toastStyle,
         })
@@ -195,7 +193,7 @@ export default function ProposalEditor() {
               }}
               disabled={buttonsDisabled}
             >
-              {status === 'loading' ? 'Signing...' : 'Save Draft'}
+              {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
             </button>
             {/* SUBMIT */}
             <button
@@ -211,7 +209,7 @@ export default function ProposalEditor() {
               }}
               disabled={buttonsDisabled}
             >
-              {status === 'loading' ? 'Signing...' : 'Submit'}
+              {signingStatus === 'loading' ? 'Signing...' : 'Submit'}
             </button>
           </div>
         </div>
