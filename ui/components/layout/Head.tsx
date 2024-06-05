@@ -1,7 +1,8 @@
 import Head from 'next/head'
 
 const defaultTitle = "MoonDAO: The Internet's Space Program"
-const defaultDescription = "Join MoonDAO and be part of the future of space exploration. Learn more about our mission and how you can get involved."
+const defaultDescription =
+  'Join MoonDAO and be part of the future of space exploration. Learn more about our mission and how you can get involved.'
 const defaultImage = '/assets/MoonDAO-OG.png'
 
 export default function WebsiteHead({
@@ -11,7 +12,7 @@ export default function WebsiteHead({
 }: any) {
   return (
     <Head>
-      <title key="meta-title">{title} | MoonDAO</title>
+      <title key="meta-title">{`${title} | MoonDAO`}</title>
       <link rel="icon" href="/favicon.ico" key="link-favicon" />
       <meta
         name="viewport"
