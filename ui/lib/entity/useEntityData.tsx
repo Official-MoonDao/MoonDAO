@@ -55,11 +55,15 @@ export function useEntityData(
 
   async function checkAdmin() {
     try {
-      const isAdmin = await entityContract.call('isAdmin', [
-        nft?.metadata?.id,
-        address,
-      ])
-      setIsAdmin(isAdmin)
+      if (address) {
+        const isAdmin = await entityContract.call('isAdmin', [
+          nft?.metadata?.id,
+          address,
+        ])
+        setIsAdmin(isAdmin)
+      } else {
+        setIsAdmin(false)
+      }
     } catch (err) {
       setIsAdmin(false)
     }
@@ -120,7 +124,7 @@ export function useEntityData(
   }, [nft])
 
   useEffect(() => {
-    if (entityContract && address && nft?.metadata?.id) checkAdmin()
+    if (entityContract && nft?.metadata?.id) checkAdmin()
   }, [address, nft, entityContract])
 
   useEffect(() => {
