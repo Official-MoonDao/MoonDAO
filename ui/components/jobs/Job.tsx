@@ -1,4 +1,5 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
 import { useState } from 'react'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import EntityJobModal from '../subscription/EntityJobModal'
@@ -78,9 +79,14 @@ export default function Job({
         )}
       </div>
       <p>{job.description}</p>
-      <button className="px-2 w-[100px] border-2 border-moon-orange text-moon-orange rounded-full">
+      <Link
+        href={job.contactInfo}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="px-2 w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"
+      >
         Link to Job
-      </button>
+      </Link>
     </div>
   )
 }
