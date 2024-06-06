@@ -41,7 +41,7 @@ export function AddressLink({ address }: { address: string | undefined }) {
 
   return (
     <a href={`${url}/address/${address}`} className="break-all hover:underline">
-      {data.name}
+      {data.displayName}
     </a>
   )
 }

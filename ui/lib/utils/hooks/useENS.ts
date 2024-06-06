@@ -16,7 +16,7 @@ export function useENS(
     !!addressOrEns &&
       (isAddress(addressOrEns) || addressOrEns.endsWith('.eth')) &&
       shouldFetch
-      ? `https://api.ensideas.com/ens/resolve/${addressOrEns}`
+      ? `https://api.ensideas.com/ens/resolve/${addressOrEns.toLowerCase()}`
       : null,
     (url) =>
       fetch(url)
