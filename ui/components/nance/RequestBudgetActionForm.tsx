@@ -7,6 +7,7 @@ import {
 } from 'react-hook-form'
 import AddressForm from './form/AddressForm'
 import DiscordUserIdForm from './form/DiscordUserIdForm'
+import SafeTokenForm from './form/SafeTokenForm'
 
 interface RequestBudgetAction {
   projectTeam: {
@@ -20,15 +21,11 @@ interface RequestBudgetAction {
     address: string
   }[]
   budget: {
-    flex: {
-      token: string
-      amount: string
-    }
-    justification: {
-      token: string
-      amount: string
-    }
-  }
+    token: string
+    amount: string
+    // justification is the reason/memo
+    justification: string
+  }[]
 }
 
 export default function RequestBudgetActionForm() {
@@ -72,6 +69,10 @@ export default function RequestBudgetActionForm() {
           address: '',
         },
       ],
+      budget: [
+        { token: '', amount: '', justification: 'dev cost' },
+        { token: '', amount: '', justification: 'flex' },
+      ],
     },
   })
   const { register, handleSubmit, control, formState, getValues, setValue } =
@@ -92,6 +93,14 @@ export default function RequestBudgetActionForm() {
   } = useFieldArray({
     control,
     name: 'multisigTeam',
+  })
+  const {
+    fields: budgetFields,
+    append: budgetAppend,
+    remove: budgetRemove,
+  } = useFieldArray({
+    control,
+    name: 'budget',
   })
 
   const onSubmit: SubmitHandler<RequestBudgetAction> = async (formData) => {
@@ -242,41 +251,42 @@ export default function RequestBudgetActionForm() {
               Tokens will be sent to the newly created multisig.
             </p>
 
-            <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-              <div className="sm:col-span-3 sm:col-start-1">
-                <label
-                  htmlFor="discordUsername"
-                  className="block text-sm font-medium leading-6 text-white"
-                >
-                  Amount
-                </label>
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    name="discordUsername"
-                    id="discordUsername"
-                    className="block w-full rounded-md border-0 bg-white/5 py-1.5 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+            {budgetFields.map((field, index) => (
+              <div
+                key={field.id}
+                className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-5"
+              >
+                <div className="sm:col-span-2">
+                  <SafeTokenForm
+                    address="0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
+                    fieldName={`budget.${index}.token`}
                   />
                 </div>
-              </div>
 
-              <div className="sm:col-span-3">
-                <label
-                  htmlFor="address"
-                  className="block text-sm font-medium leading-6 text-white"
-                >
-                  Token
-                </label>
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    name="payoutAddress"
-                    id="payoutAddress"
-                    className="block w-full rounded-md border-0 bg-white/5 py-1.5 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
-                  />
+                <div className="sm:col-span-1 flex items-center">
+                  <button
+                    className="btn btn-circle btn-outline btn-sm"
+                    onClick={() => budgetRemove(index)}
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
-            </div>
+            ))}
+
+            <button
+              className="btn gap-2 mt-4"
+              onClick={() =>
+                budgetAppend({
+                  token: '',
+                  amount: '',
+                  justification: 'flex',
+                })
+              }
+            >
+              <PlusIcon className="w-5 h-5" />
+              Add budget
+            </button>
           </div>
         </div>
       </form>
