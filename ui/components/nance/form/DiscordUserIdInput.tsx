@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { useDebounce } from 'react-use'
 import useDiscordUserSearch, {
   DiscordUser,
-} from '../../lib/nance/DiscordUserSearch'
-import { classNames } from '../../lib/utils/tailwind'
+} from '../../../lib/nance/DiscordUserSearch'
+import { classNames } from '../../../lib/utils/tailwind'
 
 export interface ProjectOption {
   id: string
@@ -63,7 +63,7 @@ export default function DiscordUserIdInput({
       <div className="relative">
         <Combobox.Input
           className={classNames(
-            'w-full rounded-md dark:bg-black border border-gray-300 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm',
+            'w-full input dark:bg-black',
             loading && 'animate-pulse',
             inputStyle,
             disabled && 'bg-gray-100'

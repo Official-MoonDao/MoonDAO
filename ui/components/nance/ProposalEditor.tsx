@@ -23,7 +23,7 @@ import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
 import ProposalTitleInput, {
   TITLE_ID,
 } from '../../components/nance/ProposalTitleInput'
-import DiscordUserIdInput from './DiscordUserIdInput'
+import RequestBudgetActionForm from './RequestBudgetActionForm'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -43,9 +43,6 @@ const NanceEditor = dynamic(
 
 export default function ProposalEditor() {
   const router = useRouter()
-
-  // temp - discord handle
-  const [discordUserId, setDiscordUserId] = useState<string>('')
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
 
@@ -172,12 +169,8 @@ export default function ProposalEditor() {
           darkMode={true}
         />
 
-        <div className="my-4">
-          <label>Search Discord username</label>
-          <DiscordUserIdInput
-            val={discordUserId}
-            setVal={(v) => setDiscordUserId(v || '')}
-          />
+        <div className="my-10">
+          <RequestBudgetActionForm />
         </div>
 
         <div className="mt-3 flex justify-end">
