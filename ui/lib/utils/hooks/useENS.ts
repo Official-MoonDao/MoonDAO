@@ -8,9 +8,14 @@ interface ENSIdeaResponse {
   avatar: string
 }
 
-export function useENS(addressOrEns: string = '', shouldFetch: boolean = true) {
+export function useENS(
+  addressOrEns: string | null | undefined,
+  shouldFetch: boolean = true
+) {
   return useSWR(
-    (isAddress(addressOrEns) || addressOrEns.endsWith('.eth')) && shouldFetch
+    !!addressOrEns &&
+      (isAddress(addressOrEns) || addressOrEns.endsWith('.eth')) &&
+      shouldFetch
       ? `https://api.ensideas.com/ens/resolve/${addressOrEns}`
       : null,
     (url) =>
