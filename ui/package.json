@@ -16,7 +16,7 @@
     "cy:run-ct": "cypress run --component"
   },
   "dependencies": {
-    "@headlessui/react": "^1.7.15",
+    "@headlessui/react": "^2.0.4",
     "@heroicons/react": "^2.0.18",
     "@hookform/error-message": "^2.0.1",
     "@nance/nance-editor": "^1.7.0",
