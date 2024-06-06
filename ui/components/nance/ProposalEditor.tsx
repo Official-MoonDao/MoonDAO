@@ -1,3 +1,4 @@
+import { Field, Label, Switch } from '@headlessui/react'
 import { GetMarkdown } from '@nance/nance-editor'
 import {
   useProposal,
@@ -16,6 +17,7 @@ import { TEMPLATE } from '../../lib/nance'
 import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
 import useAccount from '../../lib/nance/useAccountAddress'
 import { useSignProposal } from '../../lib/nance/useSignProposal'
+import { classNames } from '../../lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
 import Head from '../../components/layout/Head'
@@ -45,6 +47,7 @@ export default function ProposalEditor() {
   const router = useRouter()
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
+  const [attachBudget, setAttachBudget] = useState<boolean>(false)
 
   // get space info to find next Snapshot Vote
   // we need this to be compliant with the proposal signing format of Snapshot
@@ -169,9 +172,35 @@ export default function ProposalEditor() {
           darkMode={true}
         />
 
-        <div className="my-10">
-          <RequestBudgetActionForm />
-        </div>
+        <Field as="div" className="flex items-center mt-5">
+          <Switch
+            checked={attachBudget}
+            onChange={setAttachBudget}
+            className={classNames(
+              attachBudget ? 'bg-indigo-600' : 'bg-gray-200',
+              'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
+            )}
+          >
+            <span
+              aria-hidden="true"
+              className={classNames(
+                attachBudget ? 'translate-x-5' : 'translate-x-0',
+                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
+              )}
+            />
+          </Switch>
+          <Label as="span" className="ml-3 text-sm">
+            <span className="font-medium text-gray-900 dark:text-white">
+              Attach Budget
+            </span>{' '}
+          </Label>
+        </Field>
+
+        {attachBudget && (
+          <div className="my-10">
+            <RequestBudgetActionForm />
+          </div>
+        )}
 
         <div className="mt-3 flex justify-end">
           {/* Submit buttons */}
