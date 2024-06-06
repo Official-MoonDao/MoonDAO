@@ -1,4 +1,9 @@
-import { Combobox } from '@headlessui/react'
+import {
+  Combobox,
+  ComboboxButton,
+  ComboboxInput,
+  ComboboxOption,
+  ComboboxOptions} from '@headlessui/react'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/solid'
 import { useEffect, useState } from 'react'
 import { useDebounce } from 'react-use'
@@ -61,7 +66,7 @@ export default function DiscordUserIdInput({
       className="w-full"
     >
       <div className="relative">
-        <Combobox.Input
+        <ComboboxInput
           className={classNames(
             'w-full input dark:bg-black',
             loading && 'animate-pulse',
@@ -75,30 +80,30 @@ export default function DiscordUserIdInput({
               : ''
           }
         />
-        <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+        <ComboboxButton className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
           <ChevronDownIcon
             className="h-5 w-5 text-gray-400"
             aria-hidden="true"
           />
-        </Combobox.Button>
+        </ComboboxButton>
 
-        <Combobox.Options className="absolute inner-container-background z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+        <ComboboxOptions className="absolute inner-container-background z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
           {data
             ?.map((d) => d.user)
             .map((u) => (
-              <Combobox.Option
+              <ComboboxOption
                 key={u.id}
                 value={u}
-                className={({ active }) =>
+                className={({ focus }) =>
                   classNames(
                     'relative cursor-default select-none py-2 pl-3 pr-9',
-                    active
+                    focus
                       ? 'bg-indigo-600 text-white'
                       : 'text-gray-900 dark:text-gray-400'
                   )
                 }
               >
-                {({ active, selected }) => (
+                {({ focus, selected }) => (
                   <>
                     <DiscordUserInfoEntry user={u} />
 
@@ -106,7 +111,7 @@ export default function DiscordUserIdInput({
                       <span
                         className={classNames(
                           'absolute inset-y-0 right-0 flex items-center pr-4',
-                          active ? 'text-white' : 'text-indigo-600'
+                          focus ? 'text-white' : 'text-indigo-600'
                         )}
                       >
                         <CheckIcon className="h-5 w-5" aria-hidden="true" />
@@ -114,9 +119,9 @@ export default function DiscordUserIdInput({
                     )}
                   </>
                 )}
-              </Combobox.Option>
+              </ComboboxOption>
             ))}
-        </Combobox.Options>
+        </ComboboxOptions>
       </div>
     </Combobox>
   )

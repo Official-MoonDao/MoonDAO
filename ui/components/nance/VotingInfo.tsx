@@ -24,7 +24,7 @@ export default function VotingInfo({
 
   return (
     <p className="flex flex-wrap gap-x-1 text-xs text-gray-500">
-      {`${quorumLabel}${scoresLabel}`}
+      {`${quorumLabel}${scoresLabel} (${votingInfo.votes} voters)`}
     </p>
   )
 }

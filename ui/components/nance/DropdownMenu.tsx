@@ -1,5 +1,5 @@
 import { useRouter } from "next/router"
-import { Menu, Transition } from '@headlessui/react'
+import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import {
   ShareIcon,
   EllipsisVerticalIcon,
@@ -111,20 +111,20 @@ export default function DropDownMenu({
     <>
       <Menu as="div" className="relative inline-block">
         <div>
-          <Menu.Button className="inline-flex w-full justify-end rounded-md sm:hidden">
+          <MenuButton className="inline-flex w-full justify-end rounded-md sm:hidden">
             <EllipsisVerticalIcon
               className="h-7 w-7 text-indigo-600 hover:text-gray-900"
               aria-hidden="true"
             />
-          </Menu.Button>
+          </MenuButton>
 
-          <Menu.Button className="hidden w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:inline-flex">
+          <MenuButton className="hidden w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:inline-flex">
             Options
             <ChevronDownIcon
               className="-mr-1 h-5 w-5 text-gray-400"
               aria-hidden="true"
             />
-          </Menu.Button>
+          </MenuButton>
         </div>
         <Transition
           as={Fragment}
@@ -135,13 +135,13 @@ export default function DropDownMenu({
           leaveFrom="transform opacity-100 scale-100"
           leaveTo="transform opacity-0 scale-95"
         >
-          <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+          <MenuItems className="absolute z-20 right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
             <div className="px-1 py-1">
-              <Menu.Item>
-                {({ active }) => (
+              <MenuItem>
+                {({ focus }) => (
                   <button
                     className={`${
-                      active ? 'bg-moonBlue text-white' : 'text-gray-900'
+                      focus ? 'bg-moonBlue text-white' : 'text-gray-900'
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                     onClick={() => {
                       toast.promise(
@@ -159,15 +159,15 @@ export default function DropDownMenu({
                     Copy Link
                   </button>
                 )}
-              </Menu.Item>
+              </MenuItem>
             </div>
             {showVariableActions && (
               <div className="px-1 py-1">
-                <Menu.Item>
-                {({ active }) => (
+                <MenuItem>
+                {({ focus }) => (
                   <Link
                     className={`${
-                      active ? 'bg-moon-blue text-white' : 'text-gray-900'
+                      focus ? 'bg-moon-blue text-white' : 'text-gray-900'
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                     href={`/newProposal?proposalId=${proposalPacket.uuid}`}
                     passHref
@@ -176,12 +176,12 @@ export default function DropDownMenu({
                     Edit
                   </Link>
                 )}
-              </Menu.Item>
-              <Menu.Item>
-                {({ active }) => (
+              </MenuItem>
+              <MenuItem>
+                {({ focus }) => (
                   <button
                     className={`${
-                      active ? "bg-moon-gold text-white" : "text-gray-900"
+                      focus ? "bg-moon-gold text-white" : "text-gray-900"
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                     onClick={() => {
                       const snapshotId = proposalPacket?.voteURL as string;
@@ -196,12 +196,12 @@ export default function DropDownMenu({
                     Archive
                   </button>
                 )}
-              </Menu.Item>
-              <Menu.Item>
-                {({ active }) => (
+              </MenuItem>
+              <MenuItem>
+                {({ focus }) => (
                   <button
                     className={`${
-                      active ? 'bg-moon-orange text-white' : 'text-gray-900'
+                      focus ? 'bg-moon-orange text-white' : 'text-gray-900'
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                     onClick={() => {
                       const snapshotId = proposalPacket?.voteURL as string;
@@ -213,10 +213,10 @@ export default function DropDownMenu({
                     Delete
                   </button>
                 )}
-              </Menu.Item>
+              </MenuItem>
             </div>
             )}
-            </Menu.Items>
+            </MenuItems>
         </Transition>
       </Menu>
     </>

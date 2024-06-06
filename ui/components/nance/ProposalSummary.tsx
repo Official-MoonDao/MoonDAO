@@ -1,7 +1,7 @@
-import { Disclosure } from '@headlessui/react'
+import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react'
 import {
-  ArrowsPointingOutIcon,
-  ArrowsPointingInIcon,
+  PlusIcon,
+  MinusIcon,
 } from '@heroicons/react/24/outline'
 import MarkdownWithTOC from './MarkdownWithTOC'
 
@@ -14,7 +14,7 @@ export default function ProposalSummary({
 }) {
   if (!proposalSummary && !threadSummary) return null
   return (
-    <div className="rounded-md border bg-gray-100">
+    <div className="rounded-md border bg-dark-background">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mx-auto max-w-4xl divide-y divide-gray-900/10">
           <dl className="divide-y divide-gray-900/10">
@@ -37,26 +37,26 @@ const Summary = ({ type, markdown }: { type: string; markdown: string }) => {
       {({ open }) => (
         <>
           <dt>
-            <Disclosure.Button className="flex w-full items-start justify-between text-left text-gray-900">
+            <DisclosureButton className="flex w-full items-start justify-between text-left text-white">
               <span className="">{`${type} Summary `}</span>
               <span className="ml-6 flex h-7 items-center">
                 {open ? (
-                  <ArrowsPointingInIcon
+                  <MinusIcon
                     className="h-6 w-6"
                     aria-hidden="true"
                   />
                 ) : (
-                  <ArrowsPointingOutIcon
+                  <PlusIcon
                     className="h-6 w-6"
                     aria-hidden="true"
                   />
                 )}
               </span>
-            </Disclosure.Button>
+            </DisclosureButton>
           </dt>
-          <Disclosure.Panel as="dd" className="p-2">
+          <DisclosurePanel as="dd" className="p-2">
             <MarkdownWithTOC body={markdown.replace(/^#/gm, '###')} />
-          </Disclosure.Panel>
+          </DisclosurePanel>
         </>
       )}
     </Disclosure>

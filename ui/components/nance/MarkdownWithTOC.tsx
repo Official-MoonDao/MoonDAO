@@ -6,7 +6,11 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import ReactMarkdown from "react-markdown";
 import { h } from "hastscript";
 import { getActionYamlFromBody, trimActionsFromBody } from "@nance/nance-sdk";
-import { Disclosure } from "@headlessui/react";
+import {
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel
+} from "@headlessui/react";
 
 export default function MarkdownWithTOC({ body }: { body: string }) {
   return (
@@ -49,19 +53,19 @@ export default function MarkdownWithTOC({ body }: { body: string }) {
           {({ open }) => (
             <>
               <dt>
-                <Disclosure.Button className="flex w-fit p-2 font-mono text-sm">
+                <DisclosureButton className="flex w-fit p-2 font-mono text-sm">
                   {open ? (
                     "(hide trimmed action text) ↑"
                   ) : (
                     "(show trimmed action text) ↓"
                   )}
-                </Disclosure.Button>
+                </DisclosureButton>
               </dt>
-              <Disclosure.Panel as="dd" className="pr-4 pb-4">
+              <DisclosurePanel as="dd" className="pr-4 pb-4">
                 <pre>
                   {getActionYamlFromBody(body)}
                 </pre>
-              </Disclosure.Panel>
+              </DisclosurePanel>
             </>
           )}
         </Disclosure>
