@@ -23,7 +23,8 @@ export function PrivyConnectWallet() {
   const [networkMistmatch, setNetworkMismatch] = useState(false)
 
   const address = useAddress()
-  const ens = useENS(address)
+  const { data: _ensData } = useENS(address)
+  const ens = _ensData?.name
   const nativeBalance = useNativeBalance()
   const [walletChainId, setWalletChainId] = useState(1)
   const { login, logout, user, authenticated, connectWallet }: any = usePrivy()

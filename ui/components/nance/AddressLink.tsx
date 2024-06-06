@@ -33,15 +33,15 @@ export function AddressLink({ address }: { address: string | undefined }) {
       default: { url },
     },
   } = mainnet
-  const ens = useENS(address)
+  const { data } = useENS(address)
 
-  if (!address || !ens) {
+  if (!address || !data) {
     return <ShortAddressLink address={address} />
   }
 
   return (
     <a href={`${url}/address/${address}`} className="break-all hover:underline">
-      {ens}
+      {data.name}
     </a>
   )
 }
