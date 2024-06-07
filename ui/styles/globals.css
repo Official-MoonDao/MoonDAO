@@ -26,6 +26,7 @@ body {
   margin: 0;
   font-family: 'Lato';
   overflow: auto;
+  overscroll-behavior: none;
 }
 
 .font-acme {
