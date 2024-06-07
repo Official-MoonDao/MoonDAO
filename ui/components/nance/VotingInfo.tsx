@@ -15,10 +15,10 @@ export default function VotingInfo({
   const quorumLabel =
     votingInfo.quorum !== 0 ? `${quorumProgress}% of quorum, ` : ''
   const scoresLabel = votingInfo.choices
-    .map(
-      (choice, index) =>
-        `${choice} ${formatNumberUSStyle(votingInfo.scores[index], true)}`
-    )
+    .map((choice, index) => {
+      const score = votingInfo.state !== "closed" ? "🔐" : formatNumberUSStyle(votingInfo.scores[index], true);
+      return `${choice} ${score}`
+    })
     .slice(0, 3)
     .join(', ')
 
