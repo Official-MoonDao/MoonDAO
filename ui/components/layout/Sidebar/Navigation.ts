@@ -30,7 +30,7 @@ export const navigation = [
   },
   {
     name: 'Directory',
-    href: '/directory?type=all',
+    href: '/directory',
     icon: Squares2X2Icon,
   },
   {
