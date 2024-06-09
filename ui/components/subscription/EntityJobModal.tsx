@@ -127,6 +127,9 @@ export default function EntityJobModal({
         >
           {isLoading ? '...loading' : edit ? 'Edit Job' : 'Add Job'}
         </button>
+        {isLoading && (
+          <p className="opacity-60">{`This action may take up to 60 seconds. You can close this modal at any time.`}</p>
+        )}
       </form>
     </div>
   )
