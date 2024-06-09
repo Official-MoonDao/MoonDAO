@@ -1,5 +1,6 @@
 import {
   BuildingLibraryIcon,
+  ClipboardDocumentListIcon,
   FolderIcon,
   PlusIcon,
   RocketLaunchIcon,
@@ -31,16 +32,11 @@ export const navigation = [
     name: 'Directory',
     href: '/directory?type=all',
     icon: Squares2X2Icon,
-    children: [
-      {
-        name: 'Entities',
-        href: '/directory?type=entities',
-      },
-      {
-        name: 'Citizens',
-        href: '/directory?type=citizens',
-      },
-    ],
+  },
+  {
+    name: 'Jobs',
+    href: '/jobs',
+    icon: ClipboardDocumentListIcon,
   },
   {
     name: 'Governance',
