@@ -83,7 +83,7 @@ export default function Job({
         href={job.contactInfo}
         target="_blank"
         rel="noopener noreferrer"
-        className="px-2 w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"
+        className="px-2 w-[150px] text-center border-2 border-moon-orange text-moon-orange rounded-full"
       >
         Link to Job
       </Link>
