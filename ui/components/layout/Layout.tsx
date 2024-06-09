@@ -63,7 +63,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         {/* Sidebar component*/}
         <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col pt-5">
           <a href="/">
-            <div className="ml-7 lg:ml-9 flex flex-shrink-0 items-center px-4 pl-6">
+            <div className="mt-2 ml-7 lg:ml-9 flex flex-shrink-0 items-center px-4 pl-6">
               {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
             </div>
           </a>
