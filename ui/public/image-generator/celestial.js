@@ -4151,9 +4151,6 @@
       })
     sel.property('selectedIndex', selected)
 
-    col = frm.append('div').attr('class', 'col').attr('id', 'download')
-    col.append('span').attr('class', 'header').html('Download')
-
     col
       .append('input')
       .attr('type', 'button')
@@ -4898,34 +4895,35 @@
       .style('display', 'none')
 
     //MoonDAO PFP UI
-    col.append('label').attr('title', 'Background Image').html('Image ')
-    col.append('br')
+    // col.append('label').attr('title', 'Background Image').html('Image ')
+    // col.append('br')
     col
       .append('input')
       .attr('type', 'file')
       .attr('name', 'UPLOAD')
       .attr('accept', 'image/*')
       .attr('id', 'upload')
+      .style('display', 'none')
 
-    col.append('br')
-    col.append('br')
+    // col.append('br')
+    // col.append('br')
 
-    col
-      .append('label')
-      .attr('title', 'Blur Amount')
-      .attr('for', 'blur')
-      .html(' Blur ')
-    col.append('br')
-    col
-      .append('input')
-      .attr('type', 'range')
-      .attr('id', 'blur')
-      .attr('name', 'blur')
-      .attr('min', '0')
-      .attr('max', '90')
-      .attr('value', '70')
-      .attr('step', '1')
-      .attr('oninput', 'blurValue(this.value)')
+    // col
+    //   .append('label')
+    //   .attr('title', 'Blur Amount')
+    //   .attr('for', 'blur')
+    //   .html(' Blur ')
+    // col.append('br')
+    // col
+    //   .append('input')
+    //   .attr('type', 'range')
+    //   .attr('id', 'blur')
+    //   .attr('name', 'blur')
+    //   .attr('min', '0')
+    //   .attr('max', '90')
+    //   .attr('value', '70')
+    //   .attr('step', '1')
+    //   .attr('oninput', 'blurValue(this.value)')
 
     // col
     //   .append('input')

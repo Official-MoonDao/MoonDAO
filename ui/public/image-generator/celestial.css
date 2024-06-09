@@ -88,6 +88,7 @@
 
 #loc {
   text-align: left;
+  display: none;
 }
 
 #params {
@@ -98,11 +99,15 @@
 
 #celestial-form #general,
 #celestial-form #location,
-#celestial-form #stars,
 #celestial-form #dsos,
 #celestial-form #constellations,
 #celestial-form #lines,
 #celestial-form #other {
+  display: none;
+  visibility: hidden;
+}
+
+#celestial-form #stars {
   display: flex;
   flex-direction: column;
   align-items: flex-start;

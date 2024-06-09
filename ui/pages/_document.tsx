@@ -27,14 +27,11 @@ class WebsiteDocument extends Document {
           {/* Scripts for Image Generator */}
           <script defer src="/image-generator/hsluv.min.js"></script>
           <script defer src="/image-generator/d3.min.js"></script>
-          <script defer src="/image-generator/d3.delaunay.js"></script>
           <script
             defer
             src="/image-generator/d3.geo.projection.min.js"
           ></script>
-          <script defer src="/image-generator/p5js.min.js"></script>
           <script defer src="/image-generator/celestial.js"></script>
-          <script defer src="/image-generator/weighted-voronoi.js"></script>
         </Head>
         <body className="overflow-hidden relative">
           <div className="w-full gradient-9 max-h-[100vh] h-full fixed top-0 left-0"></div>
