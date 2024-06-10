@@ -1,7 +1,6 @@
 import html2canvas from 'html2canvas'
 import Head from 'next/head'
 import Image from 'next/image'
-import Script from 'next/script'
 import { useEffect, useRef, useState } from 'react'
 import { StageButton } from './StageButton'
 
@@ -29,7 +28,6 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
       const file = new File([blob], 'pfp.png', { type: mimeString })
 
       setImage(file)
-
       nextStage()
     })
   }
@@ -56,8 +54,6 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
         <link href="/image-generator/pfp-style.css" rel="stylesheet" />
       </Head>
 
-      <Script strategy="afterInteractive" src="/image-generator/init.js" />
-
       <div className="mb-12 flex items-start md:items-center flex-col gap-4 md:flex-row">
         <input
           className="text-moon-orange"
@@ -77,7 +73,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
           <img alt="default-img" id="process-image" src="" />
           {userImage && (
             <Image
-              className="absolute w-full h-full"
+              className="absolute w-full h-full p-2"
               src={URL.createObjectURL(userImage as any)}
               width={500}
               height={500}
