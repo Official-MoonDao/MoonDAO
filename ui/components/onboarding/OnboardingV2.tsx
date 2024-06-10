@@ -50,8 +50,8 @@ function Tier({
           <Image
             src={
               label === 'Register an entity'
-                ? '/onboarding-icons/entity.png'
-                : '/onboarding-icons/citizen.png'
+                ? '/image-generator/images/org-example.png'
+                : '/image-generator/images/passport-example.png'
             }
             width={506}
             height={506}
