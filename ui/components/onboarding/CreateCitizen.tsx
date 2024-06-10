@@ -178,7 +178,7 @@ export function CreateCitizen({
         {/* Upload & Create Image */}
         {stage === 1 && (
           <StageContainer
-            className={`mb-[500px]`}
+            className={`mb-[350px]`}
             title="Design"
             description="Design your unique onchain registration certificate."
           >
