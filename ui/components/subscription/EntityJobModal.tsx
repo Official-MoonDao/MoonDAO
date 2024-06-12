@@ -109,6 +109,7 @@ export default function EntityJobModal({
           }}
           value={jobData.description}
           style={{ resize: 'none' }}
+          maxLength={256}
         />
         <input
           type="text"
