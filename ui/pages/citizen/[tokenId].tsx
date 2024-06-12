@@ -26,7 +26,6 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useProjects } from '@/lib/discord/useProjects'
-import { useValidPass } from '@/lib/entity/useValidPass'
 import { useWearer } from '@/lib/hats/useWearer'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import ChainContext from '@/lib/thirdweb/chain-context'
@@ -63,7 +62,12 @@ export default function CitizenDetailPage({ tokenId }: any) {
   )
   const { data: nft } = useNFT(citizenContract, tokenId)
 
-  const { socials, isPublic } = useCitizenData(nft)
+  const {
+    socials,
+    isPublic,
+    subIsValid,
+    isLoading: isLoadingCitizenData,
+  } = useCitizenData(nft, citizenContract)
 
   //Balances
   const { contract: mooneyContract } = useContract(
@@ -92,7 +96,6 @@ export default function CitizenDetailPage({ tokenId }: any) {
   const { data: expiresAt } = useHandleRead(citizenContract, 'expiresAt', [
     nft?.metadata?.id || '',
   ])
-  const validPass = useValidPass(expiresAt)
 
   // //Hats
   const hats = useWearer(selectedChain, nft?.owner)
@@ -113,7 +116,47 @@ export default function CitizenDetailPage({ tokenId }: any) {
     )
   }, [])
 
-  if (!nft?.metadata) return
+  if (!nft?.metadata || isLoadingCitizenData) return
+
+  if (!subIsValid) {
+    return (
+      <Card>
+        <p>The pass has expired, please connect the owner's wallet to renew.</p>
+        <div className="mt-8 xl:mt-0">
+          {subModalEnabled && (
+            <SubscriptionModal
+              setEnabled={setSubModalEnabled}
+              nft={nft}
+              validPass={subIsValid}
+              expiresAt={expiresAt}
+              subscriptionContract={citizenContract}
+            />
+          )}
+          {expiresAt && (
+            <div className="flex flex-col gap-4 items-start">
+              {subIsValid && (
+                <p className="opacity-50">
+                  {'Exp: '}
+                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                </p>
+              )}
+              <Button
+                onClick={() => {
+                  if (address != nft?.owner)
+                    return toast.error(
+                      `Connect the entity admin wallet or multisig to extend the subscription.`
+                    )
+                  setSubModalEnabled(true)
+                }}
+              >
+                {'Extend Subscription'}
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card>
+    )
+  }
 
   return (
     <div className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]">
@@ -233,19 +276,18 @@ export default function CitizenDetailPage({ tokenId }: any) {
               <SubscriptionModal
                 setEnabled={setSubModalEnabled}
                 nft={nft}
-                validPass={validPass}
+                validPass={subIsValid}
                 expiresAt={expiresAt}
                 subscriptionContract={citizenContract}
               />
             )}
             {expiresAt && (
               <div className="flex flex-col gap-4 items-start">
-                {validPass && (
-                  <p className="opacity-50">
-                    {'Exp: '}
-                    {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                  </p>
-                )}
+                <p className="opacity-50">
+                  {'Exp: '}
+                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                </p>
+
                 <Button
                   onClick={() => {
                     if (address != nft?.owner)
@@ -263,93 +305,108 @@ export default function CitizenDetailPage({ tokenId }: any) {
         )}
       </Card>
 
-      {/* Mooney and Voting Power */}
-      <div className="flex flex-col xl:flex-row gap-6">
-        <Card className="w-full flex flex-col md:flex-row gap-4  justify-between">
-          <div className="flex flex-col gap-4">
-            <div className="">
-              <p className="text-xl">{`$MOONEY`}</p>
-              <p className="text-3xl">
-                {MOONEYBalance
-                  ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
-                  : 0}
-              </p>
-            </div>
-            <div className="">
-              <p className="text-xl">{`Voting Power`}</p>
-              <p className="text-2xl">
-                {VMOONEYBalance
-                  ? (VMOONEYBalance?.toString() / 10 ** 18).toLocaleString()
-                  : 0}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col xl:flex-row items-start xl:items-end gap-2">
-            <Button
-              onClick={() =>
-                window.open(
-                  'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
-                )
-              }
-            >
-              <PlusCircleIcon height={30} width={30} />
-              {'Get $MOONEY'}
-            </Button>
-            <Button onClick={() => router.push('/lock')}>
-              <ArrowUpRightIcon height={20} width={20} />
-              {'Stake $MOONEY'}
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      <div className="flex flex-col 2xl:flex-row gap-6">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Proposals */}
-            <Proposals />
-          </div>
-
-          <Card className="w-full">
-            <p className="text-2xl">Roles</p>
-            <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
-              {hats.map((hat: any) => (
-                <div
-                  key={hat.id}
-                  className="py-2 border-2 dark:border-0 dark:bg-[#0f152f]"
-                >
-                  <Hat
-                    selectedChain={selectedChain}
-                    hatId={hat.id}
-                    hatsContract={hatsContract}
-                  />
+      {subIsValid ? (
+        <div>
+          {/* Mooney and Voting Power */}
+          <div className="flex flex-col xl:flex-row gap-6">
+            <Card className="w-full flex flex-col md:flex-row gap-4  justify-between">
+              <div className="flex flex-col gap-4">
+                <div className="">
+                  <p className="text-xl">{`$MOONEY`}</p>
+                  <p className="text-3xl">
+                    {MOONEYBalance
+                      ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
+                      : 0}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-        {/* Projects */}
-        <Card className="w-full">
-          <p className="text-2xl">Projects</p>
-          <div className="py-4 max-h-[600px] overflow-y-scroll flex flex-col gap-2">
-            {projects &&
-              projects.map((p: any, i: number) => (
-                <Link
-                  key={`project-${i}`}
-                  className="flex items-center justify-between p-2 border-2 dark:border-0 dark:bg-[#0f152f]"
-                  href={`https://discord.com/channels/${DISCORD_GUILD_ID}/${p.id}`}
-                  target="_blank"
-                  passHref
+                <div className="">
+                  <p className="text-xl">{`Voting Power`}</p>
+                  <p className="text-2xl">
+                    {VMOONEYBalance
+                      ? (VMOONEYBalance?.toString() / 10 ** 18).toLocaleString()
+                      : 0}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col xl:flex-row items-start xl:items-end gap-2">
+                <Button
+                  onClick={() =>
+                    window.open(
+                      'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
+                    )
+                  }
                 >
-                  <div className={'flex justify-between p-2 '}>{p.name}</div>
-                  <ArrowUpRightIcon className="text-moon-orange" height={24} />
-                </Link>
-              ))}
+                  <PlusCircleIcon height={30} width={30} />
+                  {'Get $MOONEY'}
+                </Button>
+                <Button onClick={() => router.push('/lock')}>
+                  <ArrowUpRightIcon height={20} width={20} />
+                  {'Stake $MOONEY'}
+                </Button>
+              </div>
+            </Card>
           </div>
+
+          <div className="flex flex-col 2xl:flex-row gap-6">
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Proposals */}
+                <Proposals />
+              </div>
+
+              <Card className="w-full">
+                <p className="text-2xl">Roles</p>
+                <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
+                  {hats.map((hat: any) => (
+                    <div
+                      key={hat.id}
+                      className="py-2 border-2 dark:border-0 dark:bg-[#0f152f]"
+                    >
+                      <Hat
+                        selectedChain={selectedChain}
+                        hatId={hat.id}
+                        hatsContract={hatsContract}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+            {/* Projects */}
+            <Card className="w-full">
+              <p className="text-2xl">Projects</p>
+              <div className="py-4 max-h-[600px] overflow-y-scroll flex flex-col gap-2">
+                {projects &&
+                  projects.map((p: any, i: number) => (
+                    <Link
+                      key={`project-${i}`}
+                      className="flex items-center justify-between p-2 border-2 dark:border-0 dark:bg-[#0f152f]"
+                      href={`https://discord.com/channels/${DISCORD_GUILD_ID}/${p.id}`}
+                      target="_blank"
+                      passHref
+                    >
+                      <div className={'flex justify-between p-2 '}>
+                        {p.name}
+                      </div>
+                      <ArrowUpRightIcon
+                        className="text-moon-orange"
+                        height={24}
+                      />
+                    </Link>
+                  ))}
+              </div>
+            </Card>
+            {/* General Actions */}
+          </div>
+          <GeneralActions />
+        </div>
+      ) : (
+        <Card>
+          <p className="text-moon-orange">
+            {`The pass has expired, please connect the owner's wallet to renew.`}
+          </p>
         </Card>
-        {/* General Actions */}
-      </div>
-      <GeneralActions />
+      )}
     </div>
   )
 }

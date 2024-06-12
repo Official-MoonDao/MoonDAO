@@ -26,8 +26,8 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useEntityData } from '@/lib/entity/useEntityData'
-import { useValidPass } from '@/lib/entity/useValidPass'
 import { useHatTree } from '@/lib/hats/useHatTree'
+import { useSubHats } from '@/lib/hats/useSubHats'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
@@ -37,13 +37,11 @@ import { CopyIcon, TwitterIcon } from '@/components/assets'
 import { HatWearers } from '@/components/hats/HatWearers'
 import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
-import EntityJobModal from '@/components/subscription/EntityJobModal'
 import EntityJobs from '@/components/subscription/EntityJobs'
 import { EntityMetadataModal } from '@/components/subscription/EntityMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
-import MoonDAOEntityABI from '../../const/abis/MoonDAOEntity.json'
 
 export default function EntityDetailPage({ tokenId }: any) {
   const [lightMode] = useLightMode()
@@ -74,11 +72,18 @@ export default function EntityDetailPage({ tokenId }: any) {
 
   const { data: nft } = useNFT(entityContract, tokenId)
 
-  const { socials, isPublic, hatTreeId, topHatId, isAdmin, updateMetadata } =
-    useEntityData(entityContract, hatsContract, nft)
+  const {
+    socials,
+    isPublic,
+    hatTreeId,
+    topHatId,
+    isAdmin,
+    subIsValid,
+    isLoading: isLoadingEntityData,
+  } = useEntityData(entityContract, hatsContract, nft)
 
   //Hats
-  const hats = useHatTree(selectedChain, hatTreeId, topHatId)
+  const hats = useSubHats(selectedChain, topHatId)
 
   //Entity Balances
   const { contract: mooneyContract } = useContract(
@@ -100,8 +105,6 @@ export default function EntityDetailPage({ tokenId }: any) {
     nft?.metadata?.id,
   ])
 
-  const validPass = useValidPass(expiresAt)
-
   // get native balance for multisig
   useEffect(() => {
     if (wallets && nft?.owner) {
@@ -115,7 +118,7 @@ export default function EntityDetailPage({ tokenId }: any) {
     )
   }, [])
 
-  if (!nft?.metadata) return
+  if (!nft?.metadata || isLoadingEntityData) return
 
   return (
     <div className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]">
@@ -152,18 +155,20 @@ export default function EntityDetailPage({ tokenId }: any) {
                       setEnabled={setEntityMetadataModalEnabled}
                     />
                   )}
-                  <button
-                    onClick={() => {
-                      if (address === nft?.owner || isAdmin)
-                        setEntityMetadataModalEnabled(true)
-                      else
-                        return toast.error(
-                          'Connect the entity admin wallet or multisig to edit metadata.'
-                        )
-                    }}
-                  >
-                    <PencilIcon width={35} height={35} />
-                  </button>
+                  {subIsValid && isAdmin && (
+                    <button
+                      onClick={() => {
+                        if (address === nft?.owner || isAdmin)
+                          setEntityMetadataModalEnabled(true)
+                        else
+                          return toast.error(
+                            'Connect the entity admin wallet or multisig to edit metadata.'
+                          )
+                      }}
+                    >
+                      <PencilIcon width={35} height={35} />
+                    </button>
+                  )}
                 </div>
                 {nft?.owner ? (
                   <button
@@ -235,19 +240,18 @@ export default function EntityDetailPage({ tokenId }: any) {
               <SubscriptionModal
                 setEnabled={setEntitySubscriptionModalEnabled}
                 nft={nft}
-                validPass={validPass}
+                validPass={subIsValid}
                 expiresAt={expiresAt}
                 subscriptionContract={entityContract}
               />
             )}
             {expiresAt && (
               <div className="flex flex-col gap-4 items-start">
-                {validPass && (
-                  <p className="opacity-50">
-                    {'Exp: '}
-                    {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                  </p>
-                )}
+                <p className="opacity-50">
+                  {'Exp: '}
+                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                </p>
+
                 <Button
                   onClick={() => {
                     if (address === nft?.owner || isAdmin)
@@ -268,95 +272,115 @@ export default function EntityDetailPage({ tokenId }: any) {
         )}
       </Card>
 
-      {/* Mooney and Voting Power */}
-      <div className="flex flex-col xl:flex-row gap-6">
-        <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
-          <div className="w-3/4">
-            <p className="text-2xl">Treasury</p>
+      {subIsValid ? (
+        <div className="flex flex-col gap-6">
+          {/* Mooney and Voting Power */}
+          <div className="flex flex-col xl:flex-row gap-6">
+            <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
+              <div className="w-3/4">
+                <p className="text-2xl">Treasury</p>
 
-            <div className="mt-4 flex gap-4 items-center text-lg">
-              <p>{`MOONEY :`}</p>
-              <p>
-                {MOONEYBalance
-                  ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
-                  : 0}
-              </p>
-            </div>
-            <div className="flex gap-4 items-center text-lg">
-              <p>{`ETHER :`}</p>
-              <p className="pl-6">{nativeBalance ? nativeBalance : 0}</p>
-            </div>
+                <div className="mt-4 flex gap-4 items-center text-lg">
+                  <p>{`MOONEY :`}</p>
+                  <p>
+                    {MOONEYBalance
+                      ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
+                      : 0}
+                  </p>
+                </div>
+                <div className="flex gap-4 items-center text-lg">
+                  <p>{`ETHER :`}</p>
+                  <p className="pl-6">{nativeBalance ? nativeBalance : 0}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col xl:flex-row gap-2 items-end">
+                <Button
+                  onClick={() =>
+                    window.open(
+                      'https://app.safe.global/home?safe=sep:' + nft?.owner
+                    )
+                  }
+                >
+                  <ArrowUpRightIcon height={20} width={20} />
+                  {'Manage Treasury'}
+                </Button>
+                <Button
+                  onClick={() =>
+                    window.open(
+                      'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
+                    )
+                  }
+                >
+                  <PlusCircleIcon height={30} width={30} />
+                  {'Get $MOONEY'}
+                </Button>
+                <Button onClick={() => router.push('/lock')}>
+                  <ArrowUpRightIcon height={20} width={20} />
+                  {'Stake $MOONEY'}
+                </Button>
+              </div>
+            </Card>
           </div>
 
-          <div className="flex flex-col xl:flex-row gap-2 items-end">
-            <Button
-              onClick={() =>
-                window.open(
-                  'https://app.safe.global/home?safe=eth:' + nft?.owner
-                )
-              }
-            >
-              <ArrowUpRightIcon height={20} width={20} />
-              {'Manage Treasury'}
-            </Button>
-            <Button
-              onClick={() =>
-                window.open(
-                  'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
-                )
-              }
-            >
-              <PlusCircleIcon height={30} width={30} />
-              {'Get $MOONEY'}
-            </Button>
-            <Button onClick={() => router.push('/lock')}>
-              <ArrowUpRightIcon height={20} width={20} />
-              {'Stake $MOONEY'}
-            </Button>
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Proposals */}
+            <Proposals />
+            {/* Members */}
+            <Card className="w-full lg:w-1/2">
+              <p className="text-2xl">Members</p>
+              <div className="pb-6 h-full flex flex-col items-start justify-between">
+                <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-auto">
+                  {hats?.map((hat: any, i: number) => (
+                    <HatWearers
+                      key={'hat-' + i}
+                      hatId={hat.id}
+                      hatsContract={hatsContract}
+                      wearers={hat.wearers}
+                    />
+                  ))}
+                </div>
+                <div className="my-2 flex flex-col xl:flex-row justify-start items-center gap-2">
+                  <Button
+                    onClick={() => {
+                      window.open(
+                        `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
+                      )
+                    }}
+                  >
+                    Manage Members
+                  </Button>
+                </div>
+              </div>
+            </Card>
           </div>
+          <div className="">
+            <EntityJobs
+              entityId={tokenId}
+              jobTableContract={jobTableContract}
+              isAdmin={isAdmin}
+            />
+          </div>
+          {/* General Actions */}
+          <GeneralActions />
+        </div>
+      ) : (
+        <Card>
+          <p className="text-moon-orange">
+            {`The pass has expired, please connect the owner or admin wallet to
+            renew.`}
+          </p>
+          <Button
+            className="mt-4"
+            onClick={() =>
+              window.open('https://app.safe.global/home?safe=eth:' + nft?.owner)
+            }
+          >
+            <ArrowUpRightIcon height={20} width={20} />
+            {'Manage Treasury'}
+          </Button>
         </Card>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Proposals */}
-        <Proposals />
-        {/* Members */}
-        <Card className="w-full lg:w-1/2">
-          <p className="text-2xl">Members</p>
-          <div className="pb-6 h-full flex flex-col items-start justify-between">
-            <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-y-scroll">
-              {hats?.map((hat: any, i: number) => (
-                <HatWearers
-                  key={'hat-' + i}
-                  hatId={hat.id}
-                  hatsContract={hatsContract}
-                  wearers={hat.wearers}
-                />
-              ))}
-            </div>
-            <div className="my-2 flex flex-col xl:flex-row justify-start items-center gap-2">
-              <Button
-                onClick={() => {
-                  window.open(
-                    `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
-                  )
-                }}
-              >
-                Manage Members
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
-      <div className="">
-        <EntityJobs
-          entityId={tokenId}
-          jobTableContract={jobTableContract}
-          isAdmin={isAdmin}
-        />
-      </div>
-      {/* General Actions */}
-      <GeneralActions />
+      )}
     </div>
   )
 }
