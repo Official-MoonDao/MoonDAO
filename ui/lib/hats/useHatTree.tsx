@@ -3,11 +3,7 @@ import { BigNumber } from 'ethers'
 import { useEffect, useState } from 'react'
 import hatsSubgraphClient from './hatsSubgraphClient'
 
-export function useHatTree(
-  selectedChain: Chain,
-  treeId: number | undefined,
-  topHatId: number
-) {
+export function useHatTree(selectedChain: Chain, treeId: any, topHatId: any) {
   const [hats, setHats] = useState<any>()
 
   async function getHatTree() {
