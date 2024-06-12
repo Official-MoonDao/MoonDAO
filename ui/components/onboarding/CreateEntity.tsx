@@ -31,6 +31,8 @@ export function CreateEntity({
 
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
+  const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
+
   const checkboxRef = useRef(null)
 
   const { isMobile } = useWindowSize()
@@ -122,6 +124,8 @@ export function CreateEntity({
                     }
                   )
                   const data = await responseRes.json()
+
+                  console.log(data.answers)
 
                   const entityFormData = formatEntityFormData(
                     data.answers,
@@ -289,7 +293,7 @@ export function CreateEntity({
               </label>
             </div>
             <StageButton
-              isDisabled={!agreedToCondition}
+              isDisabled={!agreedToCondition || isLoadingMint}
               onClick={async () => {
                 //sign message
                 const provider = await wallets[
@@ -388,6 +392,8 @@ export function CreateEntity({
 
                   // if (!newMetadataIpfsHash)
                   //   return toast.error('Error pinning metadata to IPFS')
+
+                  setIsLoadingMint(true)
                   //mint NFT to safe
                   await entityCreatorContract?.call(
                     'createMoonDAOEntity',
@@ -406,17 +412,21 @@ export function CreateEntity({
                     }
                   )
                   setTimeout(() => {
+                    setIsLoadingMint(false)
                     router.push(`/entity/${nextTokenId}`)
-                  }, 3000)
+                  }, 30000)
                 } catch (err) {
                   console.error(err)
+                  setIsLoadingMint(false)
                 }
               }}
             >
-              Mint Entity
+              {isLoadingMint ? 'loading...' : 'Mint'}
             </StageButton>
           </StageContainer>
         )}
+        <button onClick={() => setStage(stage - 1)}>Back</button>
+        <button onClick={() => setStage(stage + 1)}>Next</button>
       </div>
     </div>
   )

@@ -46,6 +46,8 @@ export function CreateCitizen({
   })
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
+  const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
+
   const checkboxRef = useRef(null)
 
   const { isMobile } = useWindowSize()
@@ -71,7 +73,7 @@ export function CreateCitizen({
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
         <div className="flex flex-row w-full justify-between items-start">
           <Steps
-            className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
+            className="mb-4 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16 -ml-10"
             steps={['Info', 'Design', 'Mint']}
             currStep={stage}
             lastStep={lastStage}
@@ -312,7 +314,7 @@ export function CreateCitizen({
               </label>
             </div>
             <StageButton
-              isDisabled={!agreedToCondition}
+              isDisabled={!agreedToCondition || isLoadingMint}
               onClick={async () => {
                 //sign message
                 const provider = await wallets[
@@ -405,6 +407,7 @@ export function CreateCitizen({
                   //   return toast.error('Error pinning metadata to IPFS')
 
                   //mint
+                  setIsLoadingMint(true)
                   await citizenContract?.call(
                     'mintTo',
                     [
@@ -425,14 +428,16 @@ export function CreateCitizen({
                   )
 
                   setTimeout(() => {
+                    setIsLoadingMint(false)
                     router.push(`/citizen/${nextTokenId}`)
-                  }, 3000)
+                  }, 30000)
                 } catch (err) {
                   console.error(err)
+                  setIsLoadingMint(false)
                 }
               }}
             >
-              Mint Citizen
+              {isLoadingMint ? 'loading...' : 'Mint'}
             </StageButton>
           </StageContainer>
         )}
