@@ -43,9 +43,6 @@ body form {
 #canvas-container {
   width: 720px;
   height: 720px;
-  min-width: 200px;
-  max-width: 75vw;
-  max-height: 75vw;
   margin: 0;
   padding: 0;
   position: absolute;
