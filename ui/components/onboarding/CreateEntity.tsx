@@ -82,6 +82,20 @@ export function CreateEntity({
         {/* Typeform form */}
         {stage === 0 && (
           <StageContainer
+            className={`mb-[350px]`}
+            title="Design"
+            description="Design your unique onchain registration certificate."
+          >
+            <ImageGenerator
+              setImage={setEntityImage}
+              nextStage={() => setStage(1)}
+              stage={stage}
+            />
+          </StageContainer>
+        )}
+        {/* Upload & Create Image */}
+        {stage === 1 && (
+          <StageContainer
             title="Info"
             description="Input your organization's information."
           >
@@ -133,25 +147,11 @@ export function CreateEntity({
                   )
 
                   setEntityData(entityFormData)
-                  setStage(1)
+                  setStage(2)
                 }}
                 height={700}
               />
             </div>
-          </StageContainer>
-        )}
-        {/* Upload & Create Image */}
-        {stage === 1 && (
-          <StageContainer
-            className={`mb-[350px]`}
-            title="Design"
-            description="Design your unique onchain registration certificate."
-          >
-            <ImageGenerator
-              setImage={setEntityImage}
-              nextStage={() => setStage(2)}
-              stage={stage}
-            />
           </StageContainer>
         )}
         {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}

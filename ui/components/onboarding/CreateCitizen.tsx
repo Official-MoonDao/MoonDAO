@@ -86,6 +86,20 @@ export function CreateCitizen({
 
         {/* Typeform form */}
         {stage === 0 && (
+          <StageContainer
+            className={`mb-[350px]`}
+            title="Design"
+            description="Design your unique onchain registration certificate."
+          >
+            <ImageGenerator
+              setImage={setCitizenImage}
+              nextStage={() => setStage(1)}
+              stage={stage}
+            />
+          </StageContainer>
+        )}
+        {/* Upload & Create Image */}
+        {stage === 1 && (
           <StageContainer description="Input your information.">
             <div className="w-full">
               <Widget
@@ -146,49 +160,11 @@ export function CreateCitizen({
 
                   setCitizenData(citizenFormData)
 
-                  // setCitizenData({
-                  //   firstName: answerByFieldId(data.answers, 'Zj6QbNhOey3i')
-                  //     .text,
-                  //   lastName:
-                  //     answerByFieldId(data.answers, 'D8kNaAAjwBQt')?.text || '',
-                  //   email: answerByFieldId(data.answers, 'ggrOjApkLFMz').email,
-                  //   description:
-                  //     answerByFieldId(data.answers, 'PtIcC6l6F5bl')?.text || '',
-                  //   discord:
-                  //     answerByFieldId(data.answers, 'WzZ35V8MLS4J')?.url || '',
-                  //   website:
-                  //     answerByFieldId(data.answers, 'RXW5Ij2CH5g3')?.url || '',
-                  //   twitter:
-                  //     answerByFieldId(data.answers, 'oHfMqgeSg3sa')?.url || '',
-                  //   location:
-                  //     answerByFieldId(data.answers, 'pP6s24aIwEl7')?.text || '',
-                  //   view:
-                  //     answerByFieldId(data.answers, 'vv8LGLkyzIaO').choice
-                  //       .label === 'Yes'
-                  //       ? 'public'
-                  //       : 'private',
-                  //   formResponseId: responseId,
-                  // })
-
-                  setStage(1)
+                  setStage(2)
                 }}
                 height={700}
               />
             </div>
-          </StageContainer>
-        )}
-        {/* Upload & Create Image */}
-        {stage === 1 && (
-          <StageContainer
-            className={`mb-[350px]`}
-            title="Design"
-            description="Design your unique onchain registration certificate."
-          >
-            <ImageGenerator
-              setImage={setCitizenImage}
-              nextStage={() => setStage(2)}
-              stage={stage}
-            />
           </StageContainer>
         )}
         {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
