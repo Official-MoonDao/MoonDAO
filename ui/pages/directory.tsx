@@ -2,7 +2,11 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT, useContract, useNFTs } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, ENTITY_ADDRESSES } from 'const/config'
-import { blockedCitizens, blockedEntities } from 'const/whitelist'
+import {
+  blockedCitizens,
+  blockedEntities,
+  featuredEntities,
+} from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -102,22 +106,52 @@ export default function Directory() {
 
   //only show public nfts that are whitelisted
   useEffect(() => {
-    const filtered: any = entities?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !blockedEntities.includes(nft.metadata.id)
-    )
-    setFilteredEntities(filtered)
-  }, [entities])
+    if (entityContract) {
+      const filteredPublicEntities: any = entities?.filter(
+        (nft: any) =>
+          nft.metadata.attributes?.find(
+            (attr: any) => attr.trait_type === 'view'
+          ).value === 'public' && !blockedEntities.includes(nft.metadata.id)
+      )
+
+      const now = Math.floor(Date.now() / 1000)
+
+      const filteredValidEntities: any = filteredPublicEntities?.filter(
+        async (nft: any) => {
+          const expiresAt = await entityContract.call('expiresAt', [
+            nft?.metadata?.id,
+          ])
+
+          return expiresAt.toNumber() > now
+        }
+      )
+
+      setFilteredEntities(filteredValidEntities)
+    }
+  }, [entities, entityContract])
 
   useEffect(() => {
-    const filtered: any = citizens?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !blockedCitizens.includes(nft.metadata.id)
-    )
-    setFilteredCitizens(filtered)
-  }, [citizens])
+    if (citizenContract) {
+      const filteredPublicCitizens: any = citizens?.filter(
+        (nft: any) =>
+          nft.metadata.attributes?.find(
+            (attr: any) => attr.trait_type === 'view'
+          ).value === 'public' && !blockedCitizens.includes(nft.metadata.id)
+      )
+      const now = Math.floor(Date.now() / 1000)
+
+      const filteredValidCitizens: any = filteredPublicCitizens?.filter(
+        async (nft: any) => {
+          const expiresAt = await citizenContract.call('expiresAt', [
+            nft?.metadata?.id,
+          ])
+
+          return expiresAt.toNumber() > now
+        }
+      )
+      setFilteredCitizens(filteredValidCitizens)
+    }
+  }, [citizens, citizenContract])
 
   useEffect(() => {
     loadByTab(tab)
