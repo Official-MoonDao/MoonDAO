@@ -18,7 +18,7 @@ export default function formatEntityFormData(
     name: answerByFieldId(answers, 'aYPTOtKo0en0').text,
     description: answerByFieldId(answers, 'TGICeck61q0r')?.text || '',
     twitter: answerByFieldId(answers, 'ti5k7RkHB6kD')?.url || '',
-    communications: answerByFieldId(answers, '0TKNKT8IKsqN')?.text || '',
+    communications: answerByFieldId(answers, '0TKNKT8IKsqN')?.url || '',
     website: answerByFieldId(answers, 'Nx3JEhTiY2se')?.url || '',
     view:
       answerByFieldId(answers, 'fOKwAkJnJuQH').choice.label === 'Yes'
