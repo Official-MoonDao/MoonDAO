@@ -296,11 +296,15 @@ export default function EntityDetailPage({ tokenId }: any) {
 
               <div className="flex flex-col xl:flex-row gap-2 items-end">
                 <Button
-                  onClick={() =>
+                  onClick={() => {
+                    const safeNetwork =
+                      process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+                        ? 'arb1'
+                        : 'sep'
                     window.open(
-                      'https://app.safe.global/home?safe=sep:' + nft?.owner
+                      `https://app.safe.global/home?safe=${safeNetwork}:${nft?.owner}`
                     )
-                  }
+                  }}
                 >
                   <ArrowUpRightIcon height={20} width={20} />
                   {'Manage Treasury'}
@@ -372,9 +376,13 @@ export default function EntityDetailPage({ tokenId }: any) {
           </p>
           <Button
             className="mt-4"
-            onClick={() =>
-              window.open('https://app.safe.global/home?safe=eth:' + nft?.owner)
-            }
+            onClick={() => {
+              const safeNetwork =
+                process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+              window.open(
+                `https://app.safe.global/home?safe=${safeNetwork}:${nft?.owner}`
+              )
+            }}
           >
             <ArrowUpRightIcon height={20} width={20} />
             {'Manage Treasury'}
