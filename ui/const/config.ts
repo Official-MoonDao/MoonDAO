@@ -73,17 +73,22 @@ export const CITIZEN_TABLE_ADDRESSES: Index = {
 
 export const ENTITY_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x242eb7F536F97c0A86DC41BEc46e80637cD7A628',
+  sepolia: '0xE4913Bd81fD901ebB58baF690dE57209d97f3b56',
 }
 
 export const ENTITY_CREATOR_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x83d4fbd3086a83850652B5b84881d88f235c9465',
+  sepolia: '0x514904Eb4A4117E78E5be1a86a5f8Bb8d0A4f089',
 }
 
 export const ENTITY_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x22e72595f5b82F66f8c9FCD5D60d0934721694bC',
+  sepolia: '0x4E8b94e92e8d8e5794FE829Fbd6F5ea4A04EAAd3',
+}
+
+export const MOONDAO_HAT_TREE_IDS: Index = {
+  arbitrum: '',
+  sepolia: '0x00000134',
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
