@@ -73,7 +73,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
           <img alt="default-img" id="process-image" src="" />
           {userImage && (
             <Image
-              className="absolute w-full h-full p-2"
+              className="absolute w-full h-full"
               src={URL.createObjectURL(userImage as any)}
               width={500}
               height={500}
