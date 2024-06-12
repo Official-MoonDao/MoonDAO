@@ -6,9 +6,11 @@ function getAttribute(attributes: any[], traitType: string) {
   )
 }
 
-export function useCitizenData(nft: any) {
+export function useCitizenData(nft: any, citizenContract: any) {
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
+  const [subIsValid, setSubIsValid] = useState<boolean>(false)
 
   function getView() {
     const entityView: any = getAttribute(nft.metadata.attributes, 'view')
@@ -26,14 +28,35 @@ export function useCitizenData(nft: any) {
     })
   }
 
+  async function checkSubscription() {
+    //get unix timestamp for now
+    const now = Math.floor(Date.now() / 1000)
+
+    try {
+      const expiresAt = await citizenContract.call('expiresAt', [
+        nft?.metadata?.id,
+      ])
+      setSubIsValid(expiresAt.toNumber() > now)
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
   useEffect(() => {
     if (!nft?.metadata?.attributes) return
-    getCitizenSocials()
-    getView()
+    ;(async () => {
+      setIsLoading(true)
+      getCitizenSocials()
+      getView()
+      await checkSubscription()
+      setIsLoading(false)
+    })()
   }, [nft])
 
   return {
     socials,
     isPublic,
+    subIsValid,
+    isLoading,
   }
 }

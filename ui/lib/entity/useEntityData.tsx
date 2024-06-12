@@ -19,10 +19,12 @@ export function useEntityData(
   const address = useAddress()
   const { wallets } = useWallets()
 
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState()
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
+  const [subIsValid, setSubIsValid] = useState<boolean>(false)
 
   const { data: topHatId } = useHandleRead(entityContract, 'entityTopHat', [
     nft?.metadata?.id || '',
@@ -66,6 +68,20 @@ export function useEntityData(
       }
     } catch (err) {
       setIsAdmin(false)
+    }
+  }
+
+  async function checkSubscription() {
+    //get unix timestamp for now
+    const now = Math.floor(Date.now() / 1000)
+
+    try {
+      const expiresAt = await entityContract.call('expiresAt', [
+        nft?.metadata?.id,
+      ])
+      setSubIsValid(expiresAt.toNumber() > now)
+    } catch (err) {
+      console.log(err)
     }
   }
 
@@ -119,8 +135,13 @@ export function useEntityData(
 
   useEffect(() => {
     if (!nft?.metadata?.attributes) return
-    getEntitySocials()
-    getView()
+    ;(async () => {
+      setIsLoading(true)
+      getEntitySocials()
+      getView()
+      await checkSubscription()
+      setIsLoading(false)
+    })()
   }, [nft])
 
   useEffect(() => {
@@ -137,6 +158,8 @@ export function useEntityData(
     hatTreeId,
     topHatId,
     isAdmin,
+    isLoading,
+    subIsValid,
     updateMetadata,
   }
 }
