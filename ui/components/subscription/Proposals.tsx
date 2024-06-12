@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { useNewestProposals } from '@/lib/snapshot/useNewestProposals'
 import Button from './Button'
 import Card from './Card'
@@ -10,9 +11,13 @@ export default function Proposals({ numberOfProposals = 3 }) {
       <div className="mt-2 flex flex-col gap-4">
         {newestProposals
           ? newestProposals.map((proposal: any) => (
-              <div
+              <Link
                 key={proposal.id}
-                className="p-2 flex justify-between border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                className="w-[95%] p-2 flex justify-between border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm hover:scale-105 duration-300 ease-in-out"
+                href={`https://snapshot.org/#/tomoondao.eth/proposal/${proposal.id}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                passHref
               >
                 <div className="flex flex-col gap-2">
                   <p>{proposal.title}</p>
@@ -26,7 +31,7 @@ export default function Proposals({ numberOfProposals = 3 }) {
                 >
                   {proposal.state}
                 </p>
-              </div>
+              </Link>
             ))
           : Array.from({ length: 3 }).map((_, i) => (
               <div
