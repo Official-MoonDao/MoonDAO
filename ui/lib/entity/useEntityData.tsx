@@ -4,12 +4,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinMetadataToIPFS } from '../ipfs/pin'
 import { useHandleRead } from '../thirdweb/hooks'
-
-function getAttribute(attributes: any[], traitType: string) {
-  return Object.values(attributes).find(
-    (attr: any) => attr.trait_type === traitType
-  )
-}
+import { getAttribute } from '../utils/nft'
 
 export function useEntityData(
   entityContract: any,
@@ -23,7 +18,7 @@ export function useEntityData(
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState()
-  const [isAdmin, setIsAdmin] = useState<boolean>(false)
+  const [isManager, setIsManager] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(false)
 
   const { data: topHatId } = useHandleRead(entityContract, 'entityTopHat', [
@@ -55,19 +50,19 @@ export function useEntityData(
     })
   }
 
-  async function checkAdmin() {
+  async function checkManager() {
     try {
       if (address) {
-        const isAdmin = await entityContract.call('isAdmin', [
+        const isAddressManager = await entityContract.call('isManager', [
           nft?.metadata?.id,
           address,
         ])
-        setIsAdmin(isAdmin)
+        setIsManager(isAddressManager)
       } else {
-        setIsAdmin(false)
+        setIsManager(false)
       }
     } catch (err) {
-      setIsAdmin(false)
+      setIsManager(false)
     }
   }
 
@@ -85,54 +80,6 @@ export function useEntityData(
     }
   }
 
-  async function updateMetadata(newMetadata: any) {
-    if (address != nft?.owner && !isAdmin)
-      return toast.error(
-        `Connect the entity's admin wallet or multisig to update metadata`
-      )
-
-    const EOAWallet = wallets.find((w: any) => w.walletClientType != 'safe')
-
-    if (!EOAWallet) return toast.error('No EOAWallet found')
-
-    const provider = await EOAWallet.getEthersProvider()
-    const signer = provider?.getSigner()
-
-    const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
-
-    const nonceData = await nonceRes.json()
-
-    const message = `Please sign this message to update this entity's metadata #`
-
-    const signature = await signer.signMessage(message + nonceData.nonce)
-
-    if (!signature) return toast.error('Error signing message')
-
-    const jwtRes = await fetch('/api/ipfs/upload', {
-      method: 'POST',
-      headers: {
-        signature,
-      },
-      body: JSON.stringify({ address: EOAWallet.address, message }),
-    })
-
-    const JWT = await jwtRes.text()
-
-    const newMetadataIpfsHash = await pinMetadataToIPFS(
-      JWT,
-      newMetadata,
-      nft?.metadata?.name + ' Metadata'
-    )
-
-    if (!newMetadataIpfsHash)
-      return toast.error('Error pinning metadata to IPFS')
-
-    await entityContract.call('setTokenURI', [
-      nft.metadata.id,
-      'ipfs://' + newMetadataIpfsHash,
-    ])
-  }
-
   useEffect(() => {
     if (!nft?.metadata?.attributes) return
     ;(async () => {
@@ -145,7 +92,7 @@ export function useEntityData(
   }, [nft])
 
   useEffect(() => {
-    if (entityContract && nft?.metadata?.id) checkAdmin()
+    if (entityContract && nft?.metadata?.id) checkManager()
   }, [address, nft, entityContract])
 
   useEffect(() => {
@@ -157,9 +104,8 @@ export function useEntityData(
     isPublic,
     hatTreeId,
     topHatId,
-    isAdmin,
+    isManager,
     isLoading,
     subIsValid,
-    updateMetadata,
   }
 }
