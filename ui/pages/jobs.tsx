@@ -53,7 +53,7 @@ export default function Jobs() {
         <div className="w-full flex flex-col gap-4">
           {filteredJobs &&
             filteredJobs.map((job: JobType, i: number) => (
-              <Job key={`job-${i}`} job={job} />
+              <Job key={`job-${i}`} job={job} showEntityId />
             ))}
         </div>
       </div>
