@@ -34,14 +34,18 @@ import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useLightMode } from '@/lib/utils/hooks'
 import { CopyIcon, TwitterIcon } from '@/components/assets'
-import { HatWearers } from '@/components/hats/HatWearers'
 import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
+import EntityActions from '@/components/subscription/EntityActions'
+import EntityDonation from '@/components/subscription/EntityDonation'
 import EntityJobs from '@/components/subscription/EntityJobs'
+import EntityMarketplace from '@/components/subscription/EntityMarketplace'
 import { EntityMetadataModal } from '@/components/subscription/EntityMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
+import TeamMembers from '@/components/subscription/TeamMembers'
+import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
 
 export default function EntityDetailPage({ tokenId }: any) {
   const [lightMode] = useLightMode()
@@ -66,8 +70,13 @@ export default function EntityDetailPage({ tokenId }: any) {
     ENTITY_ADDRESSES[selectedChain.slug]
   )
 
+  const { contract: citizenConract } = useContract(
+    ENTITY_ADDRESSES[selectedChain.slug]
+  )
+
   const { contract: jobTableContract } = useContract(
-    JOBS_TABLE_ADDRESSES[selectedChain.slug]
+    JOBS_TABLE_ADDRESSES[selectedChain.slug],
+    JobBoardTableABI
   )
 
   const { data: nft } = useNFT(entityContract, tokenId)
@@ -77,7 +86,7 @@ export default function EntityDetailPage({ tokenId }: any) {
     isPublic,
     hatTreeId,
     topHatId,
-    isAdmin,
+    isManager,
     subIsValid,
     isLoading: isLoadingEntityData,
   } = useEntityData(entityContract, hatsContract, nft)
@@ -155,10 +164,10 @@ export default function EntityDetailPage({ tokenId }: any) {
                       setEnabled={setEntityMetadataModalEnabled}
                     />
                   )}
-                  {subIsValid && isAdmin && (
+                  {subIsValid && isManager && (
                     <button
                       onClick={() => {
-                        if (address === nft?.owner || isAdmin)
+                        if (address === nft?.owner || isManager)
                           setEntityMetadataModalEnabled(true)
                         else
                           return toast.error(
@@ -170,20 +179,6 @@ export default function EntityDetailPage({ tokenId }: any) {
                     </button>
                   )}
                 </div>
-                {nft?.owner ? (
-                  <button
-                    className="mt-4 flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
-                    onClick={() => {
-                      navigator.clipboard.writeText(nft.owner)
-                      toast.success('Address copied to clipboard')
-                    }}
-                  >
-                    {nft.owner?.slice(0, 6) + '...' + nft.owner?.slice(-4)}
-                    <CopyIcon />
-                  </button>
-                ) : (
-                  <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
-                )}
               </div>
             </div>
           </div>
@@ -194,7 +189,7 @@ export default function EntityDetailPage({ tokenId }: any) {
               <div className="mt-4 w-full h-[30px] bg-[#ffffff25] animate-pulse" />
             )}
             {socials ? (
-              <div className="mt-4 flex flex-col gap-2">
+              <div className="mt-4 inline-flex flex-col gap-2">
                 {socials.communications && (
                   <Link
                     className="flex gap-2"
@@ -234,7 +229,7 @@ export default function EntityDetailPage({ tokenId }: any) {
             )}
           </div>
         </div>
-        {isAdmin || address === nft.owner ? (
+        {isManager || address === nft.owner ? (
           <div className="mt-8 xl:mt-0">
             {entitySubscriptionModalEnabled && (
               <SubscriptionModal
@@ -254,7 +249,7 @@ export default function EntityDetailPage({ tokenId }: any) {
 
                 <Button
                   onClick={() => {
-                    if (address === nft?.owner || isAdmin)
+                    if (address === nft?.owner || isManager)
                       setEntitySubscriptionModalEnabled(true)
                     else
                       return toast.error(
@@ -274,11 +269,77 @@ export default function EntityDetailPage({ tokenId }: any) {
 
       {subIsValid ? (
         <div className="flex flex-col gap-6">
+          {/* Team Actions */}
+
+          {isManager || address === nft.owner ? (
+            <EntityActions
+              entityId={tokenId}
+              jobTableContract={jobTableContract}
+            />
+          ) : (
+            <EntityDonation multisigAddress={nft.owner} />
+          )}
+
+          {/* Team */}
+          <Card className="w-full">
+            <p className="text-2xl">Team</p>
+            <div className="pb-6 h-full flex flex-col items-start justify-between">
+              <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-auto">
+                {hats?.map((hat: any, i: number) => (
+                  <TeamMembers
+                    key={'hat-' + i}
+                    selectedChain={selectedChain}
+                    hatId={hat.id}
+                    hatsContract={hatsContract}
+                    citizenConract={citizenConract}
+                    wearers={hat.wearers}
+                  />
+                ))}
+              </div>
+              {isManager && (
+                <div className="my-2 flex flex-col xl:flex-row justify-start items-center gap-2">
+                  <Button
+                    onClick={() => {
+                      window.open(
+                        `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
+                      )
+                    }}
+                  >
+                    Manage Members
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
+          {/* Jobs */}
+          <EntityJobs
+            entityId={tokenId}
+            jobTableContract={jobTableContract}
+            isManager={isManager}
+          />
+
+          <EntityMarketplace entityId={tokenId} />
           {/* Mooney and Voting Power */}
           <div className="flex flex-col xl:flex-row gap-6">
             <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
               <div className="w-3/4">
-                <p className="text-2xl">Treasury</p>
+                <div className="flex items-center gap-4">
+                  <p className="text-2xl">Treasury</p>
+                  {nft?.owner ? (
+                    <button
+                      className="flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
+                      onClick={() => {
+                        navigator.clipboard.writeText(nft.owner)
+                        toast.success('Address copied to clipboard')
+                      }}
+                    >
+                      {nft.owner?.slice(0, 6) + '...' + nft.owner?.slice(-4)}
+                      <CopyIcon />
+                    </button>
+                  ) : (
+                    <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
+                  )}
+                </div>
 
                 <div className="mt-4 flex gap-4 items-center text-lg">
                   <p>{`MOONEY :`}</p>
@@ -294,7 +355,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                 </div>
               </div>
 
-              <div className="flex flex-col xl:flex-row gap-2 items-end">
+              <div className="flex flex-col 2xl:flex-row gap-2 items-end">
                 <Button
                   onClick={() => {
                     const safeNetwork =
@@ -307,68 +368,35 @@ export default function EntityDetailPage({ tokenId }: any) {
                   }}
                 >
                   <ArrowUpRightIcon height={20} width={20} />
-                  {'Manage Treasury'}
+                  {'Treasury'}
                 </Button>
-                <Button
-                  onClick={() =>
-                    window.open(
-                      'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
-                    )
-                  }
-                >
-                  <PlusCircleIcon height={30} width={30} />
-                  {'Get $MOONEY'}
-                </Button>
-                <Button onClick={() => router.push('/lock')}>
-                  <ArrowUpRightIcon height={20} width={20} />
-                  {'Stake $MOONEY'}
-                </Button>
+                {isManager && (
+                  <>
+                    <Button
+                      onClick={() =>
+                        window.open(
+                          'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
+                        )
+                      }
+                    >
+                      <PlusCircleIcon height={30} width={30} />
+                      {'Get $MOONEY'}
+                    </Button>
+                    <Button onClick={() => router.push('/lock')}>
+                      <ArrowUpRightIcon height={20} width={20} />
+                      {'Stake $MOONEY'}
+                    </Button>
+                  </>
+                )}
               </div>
             </Card>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Proposals */}
-            <Proposals />
-            {/* Members */}
-            <Card className="w-full lg:w-1/2">
-              <p className="text-2xl">Members</p>
-              <div className="pb-6 h-full flex flex-col items-start justify-between">
-                <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-auto">
-                  {hats?.map((hat: any, i: number) => (
-                    <HatWearers
-                      key={'hat-' + i}
-                      hatId={hat.id}
-                      hatsContract={hatsContract}
-                      wearers={hat.wearers}
-                    />
-                  ))}
-                </div>
-                <div className="my-2 flex flex-col xl:flex-row justify-start items-center gap-2">
-                  <Button
-                    onClick={() => {
-                      window.open(
-                        `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
-                      )
-                    }}
-                  >
-                    Manage Members
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-          <div className="">
-            <EntityJobs
-              entityId={tokenId}
-              jobTableContract={jobTableContract}
-              isAdmin={isAdmin}
-            />
-          </div>
           {/* General Actions */}
-          <GeneralActions />
+          {isManager && <GeneralActions />}
         </div>
       ) : (
+        // Subscription Expired
         <Card>
           <p className="text-moon-orange">
             {`The pass has expired, please connect the owner or admin wallet to
@@ -385,7 +413,7 @@ export default function EntityDetailPage({ tokenId }: any) {
             }}
           >
             <ArrowUpRightIcon height={20} width={20} />
-            {'Manage Treasury'}
+            {'Treasury'}
           </Button>
         </Card>
       )}
