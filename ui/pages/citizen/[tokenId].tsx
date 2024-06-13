@@ -401,6 +401,7 @@ export default function CitizenDetailPage({ tokenId }: any) {
           <GeneralActions />
         </div>
       ) : (
+        // Subscription expired
         <Card>
           <p className="text-moon-orange">
             {`The pass has expired, please connect the owner's wallet to renew.`}
