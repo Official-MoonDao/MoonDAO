@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react'
-
-function getAttribute(attributes: any[], traitType: string) {
-  return Object.values(attributes).find(
-    (attr: any) => attr.trait_type === traitType
-  )
-}
+import { getAttribute } from '../utils/nft'
 
 export function useCitizenData(nft: any, citizenContract: any) {
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -43,11 +38,13 @@ export function useCitizenData(nft: any, citizenContract: any) {
   }
 
   useEffect(() => {
-    if (!nft?.metadata?.attributes) return
+    console.log(nft)
     ;(async () => {
       setIsLoading(true)
-      getCitizenSocials()
-      getView()
+      if (nft?.metdata?.attributes) {
+        getCitizenSocials()
+        getView()
+      }
       await checkSubscription()
       setIsLoading(false)
     })()
