@@ -74,7 +74,7 @@ export function CreateCitizen({
         <div className="flex flex-row w-full justify-between items-start">
           <Steps
             className="mb-4 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16 -ml-10"
-            steps={['Info', 'Design', 'Mint']}
+            steps={['Design', 'Info', 'Mint']}
             currStep={stage}
             lastStep={lastStage}
             setStep={setStage}
@@ -141,6 +141,8 @@ export function CreateCitizen({
                   )
                   const data = await responseRes.json()
 
+                  console.log(data.answers)
+
                   const citizenFormData = formatCitizenFormData(
                     data.answers,
                     responseId
@@ -159,6 +161,20 @@ export function CreateCitizen({
                   }
 
                   setCitizenData(citizenFormData)
+
+                  //check for emojis
+                  const hasEmojis = Object.values(citizenFormData).some(
+                    (v: any) => /\p{Extended_Pictographic}/u.test(v)
+                  )
+
+                  if (hasEmojis) {
+                    return toast.error(
+                      'Emojis are not allowed, please restart',
+                      {
+                        duration: 10000,
+                      }
+                    )
+                  }
 
                   setStage(2)
                 }}
@@ -191,36 +207,42 @@ export function CreateCitizen({
               <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
                 {isMobile ? (
-                  Object.keys(citizenData).map((v, i) => {
-                    return (
-                      <div
-                        className="flex flex-col text-left"
-                        key={'citizenData' + i}
-                      >
-                        <p className="text-xl capitalize">{v}:</p>
+                  Object.keys(citizenData)
+                    .filter((v) => v != 'newsletterSub')
+                    .map((v, i) => {
+                      return (
+                        <div
+                          className="flex flex-col text-left"
+                          key={'citizenData' + i}
+                        >
+                          <p className="text-xl capitalize">{v}:</p>
 
-                        <p className="text-md text-balance">
-                          {/**@ts-expect-error */}
-                          {citizenData[v]!}
-                        </p>
-                      </div>
-                    )
-                  })
+                          <p className="text-md text-balance">
+                            {/**@ts-expect-error */}
+                            {citizenData[v]!}
+                          </p>
+                        </div>
+                      )
+                    })
                 ) : (
                   <table className="table w-fit">
                     <tbody>
-                      {Object.keys(citizenData).map((v, i) => {
-                        return (
-                          <tr className="" key={'citizenData' + i}>
-                            <th className="text-xl dark:bg-[#0F152F]">{v}:</th>
+                      {Object.keys(citizenData)
+                        .filter((v) => v != 'newsletterSub')
+                        .map((v, i) => {
+                          return (
+                            <tr className="" key={'citizenData' + i}>
+                              <th className="text-xl dark:bg-[#0F152F]">
+                                {v}:
+                              </th>
 
-                            <th className="text-md dark:bg-[#0F152F] text-pretty">
-                              {/**@ts-expect-error */}
-                              {citizenData[v]!}
-                            </th>
-                          </tr>
-                        )
-                      })}
+                              <th className="text-md dark:bg-[#0F152F] text-pretty">
+                                {/**@ts-expect-error */}
+                                {citizenData[v]!}
+                              </th>
+                            </tr>
+                          )
+                        })}
                     </tbody>
                   </table>
                 )}

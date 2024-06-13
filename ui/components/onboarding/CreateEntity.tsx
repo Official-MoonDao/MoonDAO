@@ -69,7 +69,7 @@ export function CreateEntity({
         <div className="flex flex-row w-full justify-between items-start">
           <Steps
             className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
-            steps={['Info', 'Design', 'Mint']}
+            steps={['Design', 'Info', 'Mint']}
             currStep={stage}
             lastStep={lastStage}
             setStep={setStage}
@@ -139,12 +139,24 @@ export function CreateEntity({
                   )
                   const data = await responseRes.json()
 
-                  console.log(data.answers)
-
                   const entityFormData = formatEntityFormData(
                     data.answers,
                     responseId
                   )
+
+                  //check for emojis
+                  const hasEmojis = Object.values(entityFormData).some(
+                    (v: any) => /\p{Extended_Pictographic}/u.test(v)
+                  )
+
+                  if (hasEmojis) {
+                    return toast.error(
+                      'Emojis are not allowed, please restart',
+                      {
+                        duration: 10000,
+                      }
+                    )
+                  }
 
                   setEntityData(entityFormData)
                   setStage(2)
@@ -326,7 +338,7 @@ export function CreateEntity({
 
                 const pinataJWT = await jwtRes.text()
 
-                const hatsMetadataIpfsHash = await pinMetadataToIPFS(
+                const adminHatMetadataIpfsHash = await pinMetadataToIPFS(
                   pinataJWT || '',
                   {
                     type: '1.0',
@@ -335,7 +347,19 @@ export function CreateEntity({
                       description: entityData.description,
                     },
                   },
-                  entityData.name + ' Hats Metadata'
+                  entityData.name + 'Admin Hat Metadata'
+                )
+
+                const managerHatMetadataIpfsHash = await pinMetadataToIPFS(
+                  pinataJWT || '',
+                  {
+                    type: '1.0',
+                    data: {
+                      name: entityData.name + ' Manager',
+                      description: entityData.description,
+                    },
+                  },
+                  entityData.name + 'Manager Hat Metadata'
                 )
 
                 try {
@@ -354,50 +378,13 @@ export function CreateEntity({
                   const totalSupply = await entityContract?.call('totalSupply')
                   const nextTokenId = totalSupply.toString()
 
-                  // pin metadata to IPFS
-                  // const metadata = {
-                  //   name: entityData.name,
-                  //   description: entityData.description,
-                  //   image: `ipfs://${newImageIpfsHash}`,
-                  //   attributes: [
-                  //     {
-                  //       trait_type: 'twitter',
-                  //       value: entityData.twitter,
-                  //     },
-                  //     {
-                  //       trait_type: 'communications',
-                  //       value: entityData.communications,
-                  //     },
-                  //     {
-                  //       trait_type: 'website',
-                  //       value: entityData.website,
-                  //     },
-                  //     {
-                  //       trait_type: 'view',
-                  //       value: entityData.view,
-                  //     },
-                  //     {
-                  //       trait_type: 'type',
-                  //       value: 'entity',
-                  //     },
-                  //   ],
-                  //   formResponseId: entityData.formResponseId,
-                  // }
-
-                  // const newMetadataIpfsHash = await pinMetadataToIPFS(
-                  //   pinataJWT || '',
-                  //   metadata,
-                  //   entityData.name + ' Metadata'
-                  // )
-
-                  // if (!newMetadataIpfsHash)
-                  //   return toast.error('Error pinning metadata to IPFS')
-
                   setIsLoadingMint(true)
                   //mint NFT to safe
                   await entityCreatorContract?.call(
                     'createMoonDAOEntity',
                     [
+                      'ipfs://' + adminHatMetadataIpfsHash,
+                      'ipfs://' + managerHatMetadataIpfsHash,
                       entityData.name,
                       entityData.description,
                       `ipfs://${newImageIpfsHash}`,
@@ -405,7 +392,7 @@ export function CreateEntity({
                       entityData.communications,
                       entityData.website,
                       entityData.view,
-                      'ipfs://' + hatsMetadataIpfsHash,
+                      entityData.formResponseId,
                     ],
                     {
                       value: ethers.utils.parseEther('0.01'),
@@ -425,8 +412,6 @@ export function CreateEntity({
             </StageButton>
           </StageContainer>
         )}
-        <button onClick={() => setStage(stage - 1)}>Back</button>
-        <button onClick={() => setStage(stage + 1)}>Next</button>
       </div>
     </div>
   )
