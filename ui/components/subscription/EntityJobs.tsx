@@ -8,13 +8,13 @@ import EntityJobModal from './EntityJobModal'
 type EntityJobsProps = {
   entityId: string
   jobTableContract: any
-  isAdmin: boolean
+  isManager: boolean
 }
 
 export default function EntityJobs({
   entityId,
   jobTableContract,
-  isAdmin,
+  isManager,
 }: EntityJobsProps) {
   const [jobs, setJobs] = useState<JobType[]>()
   const [entityJobModalEnabled, setEntityJobModalEnabled] = useState(false)
@@ -37,22 +37,24 @@ export default function EntityJobs({
     <Card className="w-full flex flex-col justify-between gap-4">
       <p className="text-2xl">Jobs</p>
       <div className="flex flex-col max-h-[500px] overflow-auto gap-4">
-        {jobs &&
+        {jobs?.[0] ? (
           jobs.map((job, i) => (
             <Job
               key={`entity-job-${i}`}
               job={job}
               jobTableContract={jobTableContract}
               entityId={entityId}
-              editable={isAdmin}
+              editable={isManager}
               refreshJobs={getEntityJobs}
             />
-          ))}
+          ))
+        ) : (
+          <p>{`This team hasn't listed any open roles yet.`}</p>
+        )}
       </div>
-      {isAdmin && (
+      {isManager && (
         <Button
           onClick={() => {
-            console.log(isAdmin)
             setEntityJobModalEnabled(true)
           }}
         >
