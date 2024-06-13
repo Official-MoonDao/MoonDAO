@@ -70,7 +70,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
         <div id="pfp" ref={pfpRef}>
           <div id="celestial-map"></div>
           <div id="canvas-container"></div>
-          <img alt="default-img" id="process-image" src="" />
+          <Image alt="default-img" id="process-image" src="" />
           {userImage && (
             <Image
               className="absolute w-full h-full"

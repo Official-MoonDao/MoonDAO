@@ -18,20 +18,19 @@ function GeneralAction({
   href,
 }: GeneralActionProps) {
   return (
-    <Card
-      className="flex flex-col justify-between p-8 w-full hover:scale-105 duration-300 bg-[#e7e5e7]"
-      onClick={() => window.open(href)}
-    >
-      <div className="h-[50px]">{logo}</div>
-      <p className="mt-2 h-full">{description}</p>
-      <div className="mt-8 flex gap-4">
-        {points.map((p, i) => (
-          <p key={p + i} className="py-2 px-4 bg-[#ffffff25] rounded-full">
-            {p}
-          </p>
-        ))}
-      </div>
-    </Card>
+    <button onClick={() => window.open(href)}>
+      <Card className="flex flex-col justify-between p-8 w-full hover:scale-105 duration-300 bg-[#e7e5e7]">
+        <div className="h-[50px]">{logo}</div>
+        <p className="mt-2 h-full">{description}</p>
+        <div className="mt-8 flex gap-4">
+          {points.map((p, i) => (
+            <p key={p + i} className="py-2 px-4 bg-[#ffffff25] rounded-full">
+              {p}
+            </p>
+          ))}
+        </div>
+      </Card>
+    </button>
   )
 }
 
@@ -39,7 +38,7 @@ export default function GeneralActions() {
   return (
     <div className="flex flex-col gap-4">
       <p className="p-4 text-2xl">General Actions</p>
-      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8">
+      <div className="flex flex-col lg:grid xl:grid-cols-3 gap-8">
         <GeneralAction
           logo={<CoordinapeLogoWhite />}
           description={`Coordinape is a collaborative platform that enables teams to allocate tokens (GIVE) to recognize each other's contributions.`}

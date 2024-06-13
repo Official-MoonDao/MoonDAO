@@ -18,6 +18,7 @@ type JobProps = {
   refreshJobs?: any
   editable?: boolean
   entityId?: string
+  showEntityId?: boolean
 }
 
 export default function Job({
@@ -26,6 +27,7 @@ export default function Job({
   refreshJobs,
   editable,
   entityId,
+  showEntityId,
 }: JobProps) {
   const [enabledEditJobModal, setEnabledEditJobModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -34,59 +36,67 @@ export default function Job({
     <div className="p-2 flex flex-col justify-between border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm gap-2">
       <div className="flex justify-between">
         <p className="font-bold">{job.title}</p>
-        {editable && (
-          <div className="flex gap-4">
-            <button onClick={() => setEnabledEditJobModal(true)}>
-              {!isDeleting && (
-                <PencilIcon className="h-6 w-6 text-moon-orange" />
-              )}
-            </button>
-            {isDeleting ? (
-              <LoadingSpinner className="scale-[75%]" />
-            ) : (
-              <button
-                onClick={async () => {
-                  setIsDeleting(true)
-                  try {
-                    await jobTableContract.call('deleteFromTable', [
-                      job.id,
-                      entityId,
-                    ])
-                    setTimeout(() => {
-                      refreshJobs()
-                      setIsDeleting(false)
-                    }, 25000)
-                  } catch (err) {
-                    console.log(err)
-                    setIsDeleting(false)
-                  }
-                }}
-              >
-                <TrashIcon className="h-6 w-6 text-moon-orange" />
+        <div className="flex gap-2">
+          {showEntityId && (
+            <Link
+              href={`/entity/${job.entityId}`}
+              className="text-moon-orange"
+            >{`Entity #${job.entityId}`}</Link>
+          )}
+          <Link
+            href={job.contactInfo}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-2 w-[100px] text-center border-2 border-moon-orange text-moon-orange rounded-full"
+          >
+            Apply
+          </Link>
+          {editable && (
+            <div className="flex gap-4">
+              <button onClick={() => setEnabledEditJobModal(true)}>
+                {!isDeleting && (
+                  <PencilIcon className="h-6 w-6 text-moon-orange" />
+                )}
               </button>
-            )}
-            {enabledEditJobModal && (
-              <EntityJobModal
-                entityId={entityId as any}
-                setEnabled={setEnabledEditJobModal}
-                jobTableContract={jobTableContract}
-                job={job}
-                edit
-                refreshJobs={refreshJobs}
-              />
-            )}
-          </div>
-        )}
+              {isDeleting ? (
+                <LoadingSpinner className="scale-[75%]" />
+              ) : (
+                <button
+                  onClick={async () => {
+                    setIsDeleting(true)
+                    try {
+                      await jobTableContract.call('deleteFromTable', [
+                        job.id,
+                        entityId,
+                      ])
+                      setTimeout(() => {
+                        refreshJobs()
+                        setIsDeleting(false)
+                      }, 25000)
+                    } catch (err) {
+                      console.log(err)
+                      setIsDeleting(false)
+                    }
+                  }}
+                >
+                  <TrashIcon className="h-6 w-6 text-moon-orange" />
+                </button>
+              )}
+              {enabledEditJobModal && (
+                <EntityJobModal
+                  entityId={entityId as any}
+                  setEnabled={setEnabledEditJobModal}
+                  jobTableContract={jobTableContract}
+                  job={job}
+                  edit
+                  refreshJobs={refreshJobs}
+                />
+              )}
+            </div>
+          )}
+        </div>
       </div>
       <p>{job.description}</p>
-      <Link
-        href={job.contactInfo}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="px-2 w-[150px] text-center border-2 border-moon-orange text-moon-orange rounded-full"
-      >
-        Link to Job
-      </Link>
     </div>
   )
 }
