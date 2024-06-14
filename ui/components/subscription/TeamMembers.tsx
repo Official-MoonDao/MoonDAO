@@ -1,9 +1,11 @@
 import { useNFT } from '@thirdweb-dev/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useHatData } from '@/lib/hats/useHatData'
+import { useHandleRead } from '@/lib/thirdweb/hooks'
 
 type TeamMemberProps = {
   address: string
+  hatData: any
   citizenContract: any
 }
 
@@ -15,9 +17,15 @@ type TeamMembersProps = {
   wearers: any[]
 }
 
-function TeamMember({ address, citizenContract }: TeamMemberProps) {
-  const { data: nft } = useNFT(citizenContract, 0)
-  return <div></div>
+function TeamMember({ address, hatData, citizenContract }: TeamMemberProps) {
+  return (
+    <div className="bg-[#10162e]">
+      <p>
+        <strong>{`${hatData.name} : `}</strong>
+        {`${address.slice(0, 6)}...${address.slice(-4)}`}
+      </p>
+    </div>
+  )
 }
 
 export default function TeamMembers({
@@ -33,8 +41,13 @@ export default function TeamMembers({
     <div className="px-4 flex flex-col ">
       <div className="flex gap-2 justify-between">
         <div className="flex flex-col gap-2">
-          {wearers.map(({ id }) => (
-            <></>
+          {wearers.map(({ id }, i) => (
+            <TeamMember
+              key={`${hatData.name}-wearer-${i}`}
+              hatData={hatData}
+              address={id}
+              citizenContract={citizenConract}
+            />
           ))}
         </div>
       </div>

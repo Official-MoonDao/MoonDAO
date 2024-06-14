@@ -15,6 +15,7 @@ import {
   useNFT,
 } from '@thirdweb-dev/react'
 import {
+  CITIZEN_ADDRESSES,
   ENTITY_ADDRESSES,
   HATS_ADDRESS,
   JOBS_TABLE_ADDRESSES,
@@ -71,7 +72,7 @@ export default function EntityDetailPage({ tokenId }: any) {
   )
 
   const { contract: citizenConract } = useContract(
-    ENTITY_ADDRESSES[selectedChain.slug]
+    CITIZEN_ADDRESSES[selectedChain.slug]
   )
 
   const { contract: jobTableContract } = useContract(
@@ -85,14 +86,14 @@ export default function EntityDetailPage({ tokenId }: any) {
     socials,
     isPublic,
     hatTreeId,
-    topHatId,
+    adminHatId,
     isManager,
     subIsValid,
     isLoading: isLoadingEntityData,
   } = useEntityData(entityContract, hatsContract, nft)
 
   //Hats
-  const hats = useSubHats(selectedChain, topHatId)
+  const hats = useSubHats(selectedChain, adminHatId)
 
   //Entity Balances
   const { contract: mooneyContract } = useContract(
