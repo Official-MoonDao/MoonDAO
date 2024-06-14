@@ -43,7 +43,7 @@ export default function Job({
               className="text-moon-orange"
             >{`Entity #${job.entityId}`}</Link>
           )}
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col lg:flex-row items-center gap-2 lg:gap-4">
             <Link
               href={job.contactInfo}
               target="_blank"
