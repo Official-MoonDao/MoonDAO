@@ -23,13 +23,19 @@ export function Hat({ selectedChain, hatsContract, hatId }: HatProps) {
       rel="noreferrer"
       passHref
     >
-      <div className="flex justify-between items-center gap-4">
+      <div className="flex items-center gap-4">
         <p>
           <strong>{hatData.name}</strong>
           {' | '}
           {hatData.description}
         </p>
-        <ArrowUpRightIcon height={20} width={20} className="text-moon-orange" />
+        <div>
+          <ArrowUpRightIcon
+            height={20}
+            width={20}
+            className="text-moon-orange"
+          />
+        </div>
       </div>
     </Link>
   )

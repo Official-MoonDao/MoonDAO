@@ -43,57 +43,59 @@ export default function Job({
               className="text-moon-orange"
             >{`Entity #${job.entityId}`}</Link>
           )}
-          <Link
-            href={job.contactInfo}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-2 w-[100px] text-center border-2 border-moon-orange text-moon-orange rounded-full"
-          >
-            Apply
-          </Link>
-          {editable && (
-            <div className="flex gap-4">
-              <button onClick={() => setEnabledEditJobModal(true)}>
-                {!isDeleting && (
-                  <PencilIcon className="h-6 w-6 text-moon-orange" />
-                )}
-              </button>
-              {isDeleting ? (
-                <LoadingSpinner className="scale-[75%]" />
-              ) : (
-                <button
-                  onClick={async () => {
-                    setIsDeleting(true)
-                    try {
-                      await jobTableContract.call('deleteFromTable', [
-                        job.id,
-                        entityId,
-                      ])
-                      setTimeout(() => {
-                        refreshJobs()
-                        setIsDeleting(false)
-                      }, 25000)
-                    } catch (err) {
-                      console.log(err)
-                      setIsDeleting(false)
-                    }
-                  }}
-                >
-                  <TrashIcon className="h-6 w-6 text-moon-orange" />
+          <div className="flex flex-col items-center gap-2">
+            <Link
+              href={job.contactInfo}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 flex items-center justify-center min-w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"
+            >
+              Apply
+            </Link>
+            {editable && (
+              <div className="flex gap-4">
+                <button onClick={() => setEnabledEditJobModal(true)}>
+                  {!isDeleting && (
+                    <PencilIcon className="h-6 w-6 text-moon-orange" />
+                  )}
                 </button>
-              )}
-              {enabledEditJobModal && (
-                <EntityJobModal
-                  entityId={entityId as any}
-                  setEnabled={setEnabledEditJobModal}
-                  jobTableContract={jobTableContract}
-                  job={job}
-                  edit
-                  refreshJobs={refreshJobs}
-                />
-              )}
-            </div>
-          )}
+                {isDeleting ? (
+                  <LoadingSpinner className="scale-[75%]" />
+                ) : (
+                  <button
+                    onClick={async () => {
+                      setIsDeleting(true)
+                      try {
+                        await jobTableContract.call('deleteFromTable', [
+                          job.id,
+                          entityId,
+                        ])
+                        setTimeout(() => {
+                          refreshJobs()
+                          setIsDeleting(false)
+                        }, 25000)
+                      } catch (err) {
+                        console.log(err)
+                        setIsDeleting(false)
+                      }
+                    }}
+                  >
+                    <TrashIcon className="h-6 w-6 text-moon-orange" />
+                  </button>
+                )}
+                {enabledEditJobModal && (
+                  <EntityJobModal
+                    entityId={entityId as any}
+                    setEnabled={setEnabledEditJobModal}
+                    jobTableContract={jobTableContract}
+                    job={job}
+                    edit
+                    refreshJobs={refreshJobs}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <p>{job.description}</p>
