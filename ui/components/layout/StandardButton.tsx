@@ -11,22 +11,23 @@ export default function StandardButton({
     link = '#',
     paddingOnHover = 'pl-5',
     textColor = 'text-white',
+    styleOnly = false, // New prop
 }) {
-  return (
-    <a href={link}>
-      <button
-        className={`${backgroundColor} ${borderRadius} ${className} standardbutton transition-all duration-200`}
-        onClick={onClick || null}
-        style={{ paddingLeft: '0' }}
-        onMouseEnter={(e) => (e.currentTarget.style.paddingLeft = '20px')}
-        onMouseLeave={(e) => (e.currentTarget.style.paddingLeft = '0')}
-      >
-        <div className={`p-5 pr-10 pl-10 font-GoodTimes ${textColor}`}>
-          {children}
-        </div>
-      </button>
-    </a>
+  const buttonContent = (
+    <button
+      className={`${backgroundColor} ${borderRadius} ${className} standardbutton transition-all duration-200`}
+      onClick={onClick || null}
+      style={{ paddingLeft: '0' }}
+      onMouseEnter={(e) => (e.currentTarget.style.paddingLeft = '20px')}
+      onMouseLeave={(e) => (e.currentTarget.style.paddingLeft = '0')}
+    >
+      <div className={` p-2 pb-3 pr-5 pl-5 ${textColor}`}>
+        {children}
+      </div>
+    </button>
   );
+
+  return styleOnly ? buttonContent : <a href={link}>{buttonContent}</a>;
 }
 
 StandardButton.propTypes = {
@@ -39,4 +40,5 @@ StandardButton.propTypes = {
   link: PropTypes.string,
   paddingOnHover: PropTypes.string,
   textColor: PropTypes.string,
+  styleOnly: PropTypes.bool, // New prop type
 };

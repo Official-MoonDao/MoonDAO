@@ -1,7 +1,7 @@
 import React from 'react'
-import FooterSection from '../components/home/FooterSection'
-import Body from '../components/layout/Body'
-import Content from '../components/layout/Content'
+import PageEnder from '../components/layout/PageEnder'
+import Container from '../components/layout/Container'
+import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import MailingList from '../components/layout/MailingList'
 
@@ -13,8 +13,8 @@ const LinkTree: React.FC = () => {
     <>
       <WebsiteHead title={title} description={description} />
       <section className="w-[calc(100vw-20px)]">
-        <Body>
-          <Content
+        <Container>
+          <ContentLayout
             header="News & Updates"
             headerSize="max(20px, 3vmax)"
             description={
@@ -27,7 +27,7 @@ const LinkTree: React.FC = () => {
             }
             callout={
               <>
-                <FooterSection />
+                <PageEnder />
               </>
             }
           >
@@ -44,8 +44,8 @@ const LinkTree: React.FC = () => {
                 some of the exciting stuff we've got in the works!
               </p>
             </>
-          </Content>
-        </Body>
+          </ContentLayout>
+        </Container>
       </section>
     </>
   )
