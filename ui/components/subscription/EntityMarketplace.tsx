@@ -15,7 +15,7 @@ function CollectionCard({ name, description, image = '', floorPrice }: any) {
       />
       <p className="font-bold h-[25px]">{name}</p>
 
-      <p className="h-[100px] overflow-y-scroll pr-2">{description}</p>
+      <p className="h-[150px] overflow-auto pr-2">{description}</p>
       <p className="font-bold">{`Floor Price: ${floorPrice}`}</p>
     </SubCard>
   )
@@ -25,7 +25,7 @@ export default function EntityMarketplace({ entityId }: any) {
   return (
     <Card>
       <p className="text-2xl">Marketplace</p>
-      <div className="mt-4 max-h-[500px] overflow-auto flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="mt-4 max-h-[600px] overflow-auto flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {entityId === '0' && (
           <>
             <CollectionCard
