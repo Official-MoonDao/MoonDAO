@@ -19,7 +19,7 @@ function GeneralAction({
 }: GeneralActionProps) {
   return (
     <button onClick={() => window.open(href)}>
-      <Card className="flex flex-col justify-between p-8 w-full hover:scale-105 duration-300 bg-[#e7e5e7]">
+      <Card className="flex flex-col justify-between p-8 w-full h-full hover:scale-105 duration-300 bg-[#e7e5e7]">
         <div className="h-[50px]">{logo}</div>
         <p className="mt-2 h-full">{description}</p>
         <div className="mt-8 flex gap-4">
