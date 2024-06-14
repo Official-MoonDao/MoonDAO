@@ -1,5 +1,5 @@
 import React from 'react'
-import FooterSection from '../components/home/FooterSection'
+import PageEnder from '../components/layout/PageEnder'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -27,7 +27,7 @@ const JoinUs: React.FC = () => {
             }
             callout={
               <>
-                <FooterSection mode='compact'/>
+                <PageEnder mode='compact'/>
               </>
             }
           >

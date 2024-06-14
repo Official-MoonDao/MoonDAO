@@ -34,7 +34,7 @@ const DudePerfect: React.FC = () => {
           }
         >
           <Frame backgroundColor='#090D21'>
-            <Frame noPadding>
+            <Frame noPadding marginBottom='0px'>
               <Image
                 className="mb-5 rounded-[5vmax] rounded-tl-[20px]"
                 src="/assets/dude-perfect.jpg"
@@ -43,7 +43,7 @@ const DudePerfect: React.FC = () => {
                 height="1366"
               />
             </Frame>  
-            <p>
+            <p className="pb-10 md:pb-20">
               MoonDAO is an international collective of people united by the
               mission of decentralizing access to space research and
               exploration. Find out how to get involved and learn more about

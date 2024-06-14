@@ -71,10 +71,12 @@ const ContentLayout: React.FC<ContentProps> = ({
                     >
                         <div
                             id="main-section"
-                            className={`relative z-10 ${isCompact ? 'md:ml-0' : 'md:m-10'} ${popOverEffect ? ' pb-0 mb-0 md:mb-[-160px]':''} ${fullWidth ? 'p-5' : ''}`} 
+                            className={`relative z-10 ${isCompact ? 'md:ml-0' : 'md:m-10'} ${popOverEffect ? ' pb-0 mb-0 md:mb-[-160px]':''} ${fullWidth ? 'p-0' : ''}`} 
                         >
-                            <Frame noPadding>
-                                {children}
+                            <Frame noPadding marginBottom='0px'>
+                                <div className={`m-5 ${isCompact ? 'md:m-10' : 'md:m-0'}`}>
+                                    {children}
+                                </div>
                             </Frame>
                         </div>
                     </div>
