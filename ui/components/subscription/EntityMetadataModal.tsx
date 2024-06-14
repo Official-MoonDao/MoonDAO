@@ -10,6 +10,7 @@ import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import isTextInavlid from '@/lib/tableland/isTextValid'
 import formatEntityFormData from '@/lib/typeform/entityFormData'
 
 export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {
@@ -75,6 +76,14 @@ export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {
             const imageIPFSLink = rawMetadata.image
 
             const entityData = formatEntityFormData(data.answers, responseId)
+
+            const invalidText = Object.values(entityData).some((v: any) =>
+              isTextInavlid(v)
+            )
+
+            if (invalidText) {
+              return
+            }
 
             //mint NFT to safe
             await entityTableContract?.call('updateTable', [

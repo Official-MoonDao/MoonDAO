@@ -11,6 +11,7 @@ import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import isTextInavlid from '@/lib/tableland/isTextValid'
 import formatCitizenFormData from '@/lib/typeform/citizenFormData'
 
 export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
@@ -78,6 +79,14 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
             const rawMetadataRes = await fetch(resolvedMetadata.url)
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
+
+            const invalidText = Object.values(citizenData).some((v: any) =>
+              isTextInavlid(v)
+            )
+
+            if (invalidText) {
+              return
+            }
 
             if (citizenData.newsletterSub) {
               const subRes = await subscribeToNewsletter(citizenData.email)

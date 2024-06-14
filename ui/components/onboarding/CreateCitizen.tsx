@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/entity/use-window-size'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
+import isTextInavlid from '@/lib/tableland/isTextValid'
 import formatCitizenFormData, {
   CitizenData,
 } from '@/lib/typeform/citizenFormData'
@@ -163,17 +164,12 @@ export function CreateCitizen({
                   setCitizenData(citizenFormData)
 
                   //check for emojis
-                  const hasEmojis = Object.values(citizenFormData).some(
-                    (v: any) => /\p{Extended_Pictographic}/u.test(v)
+                  const invalidText = Object.values(citizenFormData).some(
+                    (v: any) => isTextInavlid(v)
                   )
 
-                  if (hasEmojis) {
-                    return toast.error(
-                      'Emojis are not allowed, please restart',
-                      {
-                        duration: 10000,
-                      }
-                    )
+                  if (invalidText) {
+                    return
                   }
 
                   setStage(2)

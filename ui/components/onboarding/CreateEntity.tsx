@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/entity/use-window-size'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
+import isTextInavlid from '@/lib/tableland/isTextValid'
 import formatEntityFormData, { EntityData } from '@/lib/typeform/entityFormData'
 import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './ImageGenerator'
@@ -144,18 +145,13 @@ export function CreateEntity({
                     responseId
                   )
 
-                  //check for emojis
-                  const hasEmojis = Object.values(entityFormData).some(
-                    (v: any) => /\p{Extended_Pictographic}/u.test(v)
+                  //check for invalid text
+                  const invalidText = Object.values(entityFormData).some(
+                    (v: any) => isTextInavlid(v)
                   )
 
-                  if (hasEmojis) {
-                    return toast.error(
-                      'Emojis are not allowed, please restart',
-                      {
-                        duration: 10000,
-                      }
-                    )
+                  if (invalidText) {
+                    return
                   }
 
                   setEntityData(entityFormData)

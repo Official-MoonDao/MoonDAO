@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import isTextInavlid from '@/lib/tableland/isTextValid'
 import { Job } from '../jobs/Job'
 
 type JobData = {
@@ -60,6 +61,14 @@ export default function EntityJobModal({
             return toast.error('Please fill out all fields')
 
           setIsLoading(true)
+
+          const invalidText = Object.values(jobData).some((v: any) =>
+            isTextInavlid(v)
+          )
+
+          if (invalidText) {
+            return setIsLoading(false)
+          }
 
           try {
             if (edit) {
