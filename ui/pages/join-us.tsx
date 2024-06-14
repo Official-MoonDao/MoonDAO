@@ -1,10 +1,10 @@
 import React from 'react'
 import FooterSection from '../components/home/FooterSection'
-import Body from '../components/layout/Body'
-import Content from '../components/layout/Content'
+import Container from '../components/layout/Container'
+import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import MailingList from '../components/layout/MailingList'
-import RoundedFrame from '../components/layout/RoundedFrame'
+import Frame from '../components/layout/Frame'
 
 const JoinUs: React.FC = () => {
   const title = '🚀 Get the latest news and updates from MoonDAO'
@@ -15,8 +15,8 @@ const JoinUs: React.FC = () => {
     <>
       <WebsiteHead title={title} description={description} image={image} />
       <section className="w-[calc(100vw-20px)]">
-        <Body>
-          <Content
+        <Container>
+          <ContentLayout
             header="Let's go to space together!"
             sub-header="Follow @OfficialMoonDAO"
             headerSize="max(20px, 3vmax)"
@@ -27,24 +27,24 @@ const JoinUs: React.FC = () => {
             }
             callout={
               <>
-                <FooterSection />
+                <FooterSection mode='compact'/>
               </>
             }
           >
-            <>
+            <Frame backgroundColor='#090D21'>
               <h1 className="pb-5 header font-GoodTimes">
-                We were the first DAO to send someone into space...
+                MoonDAO makes HISTORY!
               </h1>
               <p className="pb-5">
-                Join 12,000+ subscribers and find out how we can revolutionize
+                We were the first DAO to send someone to space! Join 12,000+ subscribers and find out how we can revolutionize
                 the space industry together. MoonDAO is an international
                 collective of people united by the mission of decentralizing
                 access to space research and exploration and making space
                 accessible to everyone, not just the rich and well-connected.
               </p>
-              <RoundedFrame>
+              <Frame noPadding>
                 <img src="../assets/dp-og.jpg"></img>
-              </RoundedFrame>
+              </Frame>
               <p className="pt-5">
                 Launching Coby Cotton of Dude Perfect to space was only the
                 beginning! MoonDAO aims to make space accessible to anyone in
@@ -57,9 +57,9 @@ const JoinUs: React.FC = () => {
                 launch point for humanity to explore the cosmos. Yes, we're
                 serious -- and the Moon parties are going to be epic.
               </p>
-            </>
-          </Content>
-        </Body>
+            </Frame>
+          </ContentLayout>
+        </Container>
       </section>
     </>
   )

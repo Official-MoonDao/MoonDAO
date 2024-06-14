@@ -37,6 +37,7 @@ module.exports = {
         'dark-highlight': '#f9fafb',
         'light-highlight': '#030712',
 
+        'darkest-cool':'#020617',
         'dark-cool': '#090D21',
         'mid-cool': '#182254',
         'light-cool': '#425EEB',

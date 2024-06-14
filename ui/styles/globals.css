@@ -290,7 +290,7 @@ a {
   }
 
   .gradient-8 {
-    background: linear-gradient(60deg, transparent 10%, #080C20 40%);
+    background: linear-gradient(60deg, transparent 25%, #080C20 60%);
   }  
 
   .gradient-9 {
@@ -469,5 +469,43 @@ html {
   .hide-lg {
     display:none !important;
   }
+}
+
+/*Apply parental border radius to groups of cards*/
+.clipped-div {
+  clip-path: inset(0 0 0 0 round 20px 5vmax 5vmax 5vmax);
+}
+
+/*Hover effect for cards*/
+.clip {
+  transition: width .5s ease-in-out;
+  background-image: url('/assets/divider-8.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+  width:80%;
+  max-height:220%;
+
+}
+
+@media (min-width: 768px) {
+
+  .card-container:hover .clip {
+    width: 1000%;
+    height:220%;
+  }
+
+  .hovertext {
+    margin-bottom:-60px;
+    transition: .5s ease-in-out .25s;
+    opacity: 0%;
+  }
+  .card-container:hover .hovertext {
+    margin-bottom:0px;
+    opacity: 100%;
+  }
+  .hovertext-bg {
+    background: linear-gradient(220deg, #6D3F79 5%, #3344A8 95%);
+  }
+
 }
 
