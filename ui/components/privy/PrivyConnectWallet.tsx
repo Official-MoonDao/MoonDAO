@@ -263,9 +263,17 @@ export function PrivyConnectWallet() {
                 login()
               }
             }}
-            className="text-[12px] md:text-[18px] font-bold rounded-[40px] rounded-bl-[10px] p-5 py-2 md:hover:pl-10 gradient-2 transition-all duration-150"
+            className="text-[12px] md:text-[18px] font-bold rounded-[40px] rounded-bl-[10px] p-5 py-2 md:hover:pl-[25px] gradient-2 transition-all duration-150"
           >
-            SIGN IN
+            <div className="flex">
+              <Image
+                src="/assets/icon-user.svg"
+                alt="Sign in with your wallet"
+                width="20"
+                height="20"
+              ></Image>
+              <p className="pl-2">Sign In</p>  
+            </div>
           </button>
         </div>
       )}
