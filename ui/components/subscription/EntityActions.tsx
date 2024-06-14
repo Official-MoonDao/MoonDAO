@@ -11,6 +11,7 @@ import SubCard from './SubCard'
 
 type EntityActionProps = {
   title: string
+  description: string
   icon: any
   onClick?: () => void
 }
@@ -20,12 +21,20 @@ type EntityActionsProps = {
   jobTableContract: any
 }
 
-function EntityAction({ title, icon, onClick }: EntityActionProps) {
+function EntityAction({
+  title,
+  description,
+  icon,
+  onClick,
+}: EntityActionProps) {
   return (
     <button onClick={onClick}>
-      <SubCard className="flex gap-2 hover:scale-105 ease-in-out duration-300">
-        {icon}
-        <p className="font-bold">{title}</p>
+      <SubCard className="xl:h-[150px] flex flex-col gap-2 hover:scale-105 ease-in-out duration-300">
+        <div className="flex gap-2">
+          {icon}
+          <p className="font-bold text-xl">{title}</p>
+        </div>
+        <p className="">{description}</p>
       </SubCard>
     </button>
   )
@@ -40,17 +49,20 @@ export default function EntityActions({ entityId, jobTableContract }: any) {
       {/* <p className="text-2xl">Actions</p> */}
       <div className="mt-2 grid grid-cols-1 xl:grid-cols-3 gap-4">
         <EntityAction
-          title="Get Funding from MoonDAO"
-          icon={<BanknotesIcon height={24} width={24} />}
+          title="Fund"
+          description="Submit a proposal to secure funding from the MoonDAO community for your space project."
+          icon={<BanknotesIcon height={30} width={30} />}
         />
         <EntityAction
-          title="Post a Job"
-          icon={<ClipboardDocumentListIcon height={24} width={24} />}
+          title="Hire"
+          description="List job openings, contracts, and bounties to a global talent pool passionate about space."
+          icon={<ClipboardDocumentListIcon height={30} width={30} />}
           onClick={() => setEntityJobModalEnabled(true)}
         />
         <EntityAction
-          title="List a Product or Service"
-          icon={<BuildingStorefrontIcon height={24} width={24} />}
+          title="Sell"
+          description="List products, services, or ticketed events for sale in ETH within the MoonDAO marketplace."
+          icon={<BuildingStorefrontIcon height={30} width={30} />}
         />
       </div>
       {entityJobModalEnabled && (
