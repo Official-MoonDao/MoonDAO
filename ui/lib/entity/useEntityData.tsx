@@ -1,8 +1,6 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
-import { pinMetadataToIPFS } from '../ipfs/pin'
 import { useHandleRead } from '../thirdweb/hooks'
 import { getAttribute } from '../utils/nft'
 
@@ -21,12 +19,12 @@ export function useEntityData(
   const [isManager, setIsManager] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(false)
 
-  const { data: topHatId } = useHandleRead(entityContract, 'entityTopHat', [
+  const { data: adminHatId } = useHandleRead(entityContract, 'entityAdminHat', [
     nft?.metadata?.id || '',
   ])
 
   async function getHatTreeId() {
-    const hatTreeId = await hatsContract.call('getTopHatDomain', [topHatId])
+    const hatTreeId = await hatsContract.call('getTopHatDomain', [adminHatId])
 
     setHatTreeId(hatTreeId)
   }
@@ -96,14 +94,14 @@ export function useEntityData(
   }, [address, nft, entityContract])
 
   useEffect(() => {
-    if (hatsContract && topHatId) getHatTreeId()
-  }, [topHatId, hatsContract])
+    if (hatsContract && adminHatId) getHatTreeId()
+  }, [adminHatId, hatsContract])
 
   return {
     socials,
     isPublic,
     hatTreeId,
-    topHatId,
+    adminHatId,
     isManager,
     isLoading,
     subIsValid,

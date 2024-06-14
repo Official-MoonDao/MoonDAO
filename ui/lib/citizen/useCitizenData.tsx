@@ -38,17 +38,16 @@ export function useCitizenData(nft: any, citizenContract: any) {
   }
 
   useEffect(() => {
-    console.log(nft)
     ;(async () => {
       setIsLoading(true)
-      if (nft?.metdata?.attributes) {
-        getCitizenSocials()
-        getView()
-      }
+      getCitizenSocials()
+      getView()
       await checkSubscription()
       setIsLoading(false)
     })()
   }, [nft])
+
+  useEffect(() => {}, [])
 
   return {
     socials,
