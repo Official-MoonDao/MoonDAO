@@ -51,7 +51,7 @@ function Tier({
             src={
               label === 'Register an entity'
                 ? '/image-generator/images/org-example.png'
-                : '/image-generator/images/passport-example.png'
+                : '/image-generator/images/citizen_image.png'
             }
             width={506}
             height={506}
