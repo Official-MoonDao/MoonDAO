@@ -62,7 +62,10 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
     <Disclosure
       className="tracking-tighter"
       as="div"
-      defaultOpen={item?.children?.some((e: any) => e.href === router.pathname)}
+      defaultOpen={
+        item?.children?.some((e: any) => e.href === router.pathname) ||
+        item.href === '/info'
+      }
       onClick={({ target }: any) => {
         if (item.href) {
           const expanded = target.getAttribute('aria-expanded')
