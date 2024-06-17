@@ -2,6 +2,7 @@ import { useNFT } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 import { useHatData } from '@/lib/hats/useHatData'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
+import EntityCitizenCard from '../directory/EntityCitizenCard'
 
 type TeamMemberProps = {
   address: string
@@ -18,12 +19,55 @@ type TeamMembersProps = {
 }
 
 function TeamMember({ address, hatData, citizenContract }: TeamMemberProps) {
+  const { data: ownedToken } = useHandleRead(citizenContract, 'getOwnedToken', [
+    address,
+  ])
+
+  const { data: nft, isLoading: isLoadingNft } = useNFT(
+    citizenContract,
+    ownedToken?.toString() || 100000000
+  )
+
+  const [metadata, setMetadata] = useState<any>({
+    name: undefined,
+    description: undefined,
+    image: undefined,
+    attributes: [
+      {
+        trait_type: '',
+        value: '',
+      },
+    ],
+  })
+
+  useEffect(() => {
+    if (isLoadingNft) return
+    if (
+      nft?.metadata &&
+      nft?.metadata?.name !== 'Failed to load NFT metadata'
+    ) {
+      setMetadata(nft.metadata)
+    } else {
+      setMetadata({
+        name: undefined,
+        description: undefined,
+        image: '/image-generator/images/citizen_image.png',
+        attributes: [
+          {
+            trait_type: '',
+            value: '',
+          },
+        ],
+      })
+    }
+  }, [nft])
+
   return (
-    <div className="bg-[#10162e]">
-      <p>
-        <strong>{`${hatData.name} : `}</strong>
-        {`${address.slice(0, 6)}...${address.slice(-4)}`}
+    <div className="p-4">
+      <p className="my-2 px-4 py-2">
+        <strong>{`${hatData.name}`}</strong>
       </p>
+      <EntityCitizenCard metadata={metadata} owner={address} type="citizen" />
     </div>
   )
 }
@@ -38,19 +82,15 @@ export default function TeamMembers({
   const hatData = useHatData(selectedChain, hatsContract, hatId)
 
   return (
-    <div className="px-4 flex flex-col ">
-      <div className="flex gap-2 justify-between">
-        <div className="flex flex-col gap-2">
-          {wearers.map(({ id }, i) => (
-            <TeamMember
-              key={`${hatData.name}-wearer-${i}`}
-              hatData={hatData}
-              address={id}
-              citizenContract={citizenConract}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+    <>
+      {wearers.map(({ id }, i) => (
+        <TeamMember
+          key={`${hatData.name}-wearer-${i}`}
+          hatData={hatData}
+          address={id}
+          citizenContract={citizenConract}
+        />
+      ))}
+    </>
   )
 }
