@@ -285,7 +285,7 @@ export default function EntityDetailPage({ tokenId }: any) {
           <Card className="w-full">
             <p className="text-2xl">Team</p>
             <div className="pb-6 h-full flex flex-col items-start justify-between">
-              <div className="py-2 pr-4 flex flex-col gap-2 max-h-[150px] overflow-auto">
+              <div className="w-full py-2 pr-4 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-2 h-[800px] overflow-auto">
                 {hats?.map((hat: any, i: number) => (
                   <TeamMembers
                     key={'hat-' + i}
@@ -298,7 +298,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                 ))}
               </div>
               {isManager && (
-                <div className="my-2 flex flex-col xl:flex-row justify-start items-center gap-2">
+                <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
                   <Button
                     onClick={() => {
                       window.open(
@@ -371,24 +371,6 @@ export default function EntityDetailPage({ tokenId }: any) {
                   <ArrowUpRightIcon height={20} width={20} />
                   {'Treasury'}
                 </Button>
-                {isManager && (
-                  <>
-                    <Button
-                      onClick={() =>
-                        window.open(
-                          'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
-                        )
-                      }
-                    >
-                      <PlusCircleIcon height={30} width={30} />
-                      {'Get $MOONEY'}
-                    </Button>
-                    <Button onClick={() => router.push('/lock')}>
-                      <ArrowUpRightIcon height={20} width={20} />
-                      {'Stake $MOONEY'}
-                    </Button>
-                  </>
-                )}
               </div>
             </Card>
           </div>
