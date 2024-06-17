@@ -38,6 +38,7 @@ export function useCitizenData(nft: any, citizenContract: any) {
   }
 
   useEffect(() => {
+    if (!nft?.metadata?.attributes) return
     ;(async () => {
       setIsLoading(true)
       getCitizenSocials()
