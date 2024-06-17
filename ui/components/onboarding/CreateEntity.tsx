@@ -376,7 +376,7 @@ export function CreateEntity({
 
                   setIsLoadingMint(true)
                   //mint NFT to safe
-                  await entityCreatorContract?.call(
+                  const mintTx = await entityCreatorContract?.call(
                     'createMoonDAOEntity',
                     [
                       'ipfs://' + adminHatMetadataIpfsHash,
@@ -394,9 +394,15 @@ export function CreateEntity({
                       value: ethers.utils.parseEther('0.01'),
                     }
                   )
+
+                  const mintedTokenId = parseInt(
+                    mintTx.receipt.logs[7].topics[3],
+                    16
+                  ).toString()
+
                   setTimeout(() => {
                     setIsLoadingMint(false)
-                    router.push(`/entity/${nextTokenId}`)
+                    router.push(`/entity/${mintedTokenId}`)
                   }, 30000)
                 } catch (err) {
                   console.error(err)

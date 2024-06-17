@@ -357,52 +357,9 @@ export function CreateCitizen({
                   const totalSupply = await citizenContract?.call('totalSupply')
                   const nextTokenId = totalSupply.toString()
 
-                  // pin metadata to IPFS
-                  // const metadata = {
-                  //   name: `${citizenData.firstName} ${citizenData.lastName}`,
-                  //   description: citizenData.description,
-                  //   image: `ipfs://${newImageIpfsHash}`,
-                  //   attributes: [
-                  //     {
-                  //       trait_type: 'location',
-                  //       value: citizenData.location,
-                  //     },
-                  //     {
-                  //       trait_type: 'discord',
-                  //       value: citizenData.discord,
-                  //     },
-                  //     {
-                  //       trait_type: 'website',
-                  //       value: citizenData.website,
-                  //     },
-                  //     {
-                  //       trait_type: 'twitter',
-                  //       value: citizenData.twitter,
-                  //     },
-                  //     {
-                  //       trait_type: 'view',
-                  //       value: citizenData.view,
-                  //     },
-                  //     {
-                  //       trait_type: 'type',
-                  //       value: 'citizen',
-                  //     },
-                  //   ],
-                  //   formResponseId: citizenData.formResponseId,
-                  // }
-
-                  // const newMetadataIpfsHash = await pinMetadataToIPFS(
-                  //   pinataJWT || '',
-                  //   metadata,
-                  //   citizenData.firstName + citizenData.lastName + ' Metadata'
-                  // )
-
-                  // if (!newMetadataIpfsHash)
-                  //   return toast.error('Error pinning metadata to IPFS')
-
                   //mint
                   setIsLoadingMint(true)
-                  await citizenContract?.call(
+                  const mintTx = await citizenContract?.call(
                     'mintTo',
                     [
                       address,
@@ -421,9 +378,14 @@ export function CreateCitizen({
                     }
                   )
 
+                  const mintedTokenId = parseInt(
+                    mintTx.receipt.logs[0].topics[3],
+                    16
+                  ).toString()
+
                   setTimeout(() => {
                     setIsLoadingMint(false)
-                    router.push(`/citizen/${nextTokenId}`)
+                    router.push(`/citizen/${mintedTokenId}`)
                   }, 30000)
                 } catch (err) {
                   console.error(err)
