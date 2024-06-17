@@ -193,17 +193,19 @@ export default function CitizenDetailPage({ tokenId }: any) {
                       setEnabled={setCitizenMetadataModalEnabled}
                     />
                   )}
-                  <button
-                    onClick={() => {
-                      if (address != nft?.owner)
-                        return toast.error(
-                          'Connect the entity admin wallet or multisig to edit metadata.'
-                        )
-                      setCitizenMetadataModalEnabled(true)
-                    }}
-                  >
-                    <PencilIcon width={35} height={35} />
-                  </button>
+                  {address === nft?.owner && (
+                    <button
+                      onClick={() => {
+                        if (address != nft?.owner)
+                          return toast.error(
+                            'Connect the entity admin wallet or multisig to edit metadata.'
+                          )
+                        setCitizenMetadataModalEnabled(true)
+                      }}
+                    >
+                      <PencilIcon width={35} height={35} />
+                    </button>
+                  )}
                 </div>
                 {nft?.owner ? (
                   <button
