@@ -1,5 +1,5 @@
 import { useContract } from '@thirdweb-dev/react'
-import { MARKETPLACE_ADDRESSES } from 'const/config'
+import { MARKETPLACE_ADDRESS } from 'const/config'
 import Image from 'next/image'
 import { useState } from 'react'
 import Button from './Button'
@@ -45,12 +45,10 @@ function CollectionCard({ name, description, image = '', floorPrice }: any) {
   )
 }
 
-export default function EntityMarketplace({ selectedChain, entityId }: any) {
+export default function EntityMarketplace({ entityId }: any) {
   const [marketplaceModalEnabled, setMarketplaceModalEnabled] = useState(false)
 
-  const { contract: marketplace } = useContract(
-    MARKETPLACE_ADDRESSES[selectedChain.slug]
-  )
+  const { contract: marketplace } = useContract(MARKETPLACE_ADDRESS)
 
   return (
     <Card>

@@ -101,11 +101,10 @@ export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 export const MARKETPLACE_FEE_SPLIT: string =
   polygonConfig.MarketplaceFeeSplit || ''
 
-export const MARKETPLACE_ADDRESSES: Index = {
-  polygon: polygonConfig.Marketplace || '',
-  sepolia: sepoliaConfig.Marketplace || '',
-  arbitrum: '',
-}
+export const MARKETPLACE_ADDRESS =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? polygonConfig.Marketplace
+    : sepoliaConfig.Marketplace
 
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
