@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/entity/use-window-size'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import isTextInavlid from '@/lib/tableland/isTextValid'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatEntityFormData, { EntityData } from '@/lib/typeform/entityFormData'
 import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './ImageGenerator'
@@ -63,6 +64,8 @@ export function CreateEntity({
     ENTITY_CREATOR_ADDRESSES[selectedChain.slug]
   )
   const pfpRef = useRef<HTMLDivElement | null>(null)
+
+  const nativeBalance = useNativeBalance()
 
   return (
     <div className="flex flex-row">
@@ -303,6 +306,10 @@ export function CreateEntity({
             <StageButton
               isDisabled={!agreedToCondition || isLoadingMint}
               onClick={async () => {
+                if (nativeBalance < 0.01) {
+                  return toast.error('Insufficient balance')
+                }
+
                 //sign message
                 const provider = await wallets[
                   selectedWallet

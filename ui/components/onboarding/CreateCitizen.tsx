@@ -11,6 +11,7 @@ import useWindowSize from '../../lib/entity/use-window-size'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import isTextInavlid from '@/lib/tableland/isTextValid'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatCitizenFormData, {
   CitizenData,
 } from '@/lib/typeform/citizenFormData'
@@ -68,6 +69,8 @@ export function CreateCitizen({
   const pfpRef = useRef<HTMLDivElement | null>(null)
 
   const subscribeToNewsletter = useNewsletterSub()
+
+  const nativeBalance = useNativeBalance()
 
   return (
     <div className="flex flex-row">
@@ -311,6 +314,10 @@ export function CreateCitizen({
               isDisabled={!agreedToCondition || isLoadingMint}
               onClick={async () => {
                 //sign message
+                if (nativeBalance < 0.01) {
+                  return toast.error('Insufficient balance')
+                }
+
                 const provider = await wallets[
                   selectedWallet
                 ].getEthersProvider()
