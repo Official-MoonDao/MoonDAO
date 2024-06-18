@@ -1,7 +1,31 @@
+import { useContract } from '@thirdweb-dev/react'
+import { MARKETPLACE_ADDRESSES } from 'const/config'
 import Image from 'next/image'
+import { useState } from 'react'
 import Button from './Button'
 import Card from './Card'
 import SubCard from './SubCard'
+
+function ListingModal({ setEnabled }: any) {
+  const [stage, setStage] = useState(0)
+
+  return (
+    <div
+      onMouseDown={(e: any) => {
+        if (e.target.id === 'entity-marketplace-modal-backdrop')
+          setEnabled(false)
+      }}
+      id="entity-marketplace-modal-backdrop"
+      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
+    >
+      {' '}
+      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
+        <p className="text-2xl">List on Marketplace</p>
+        {stage === 0 && <div className="flex flex-col gap-2"></div>}
+      </div>
+    </div>
+  )
+}
 
 function CollectionCard({ name, description, image = '', floorPrice }: any) {
   return (
@@ -21,7 +45,13 @@ function CollectionCard({ name, description, image = '', floorPrice }: any) {
   )
 }
 
-export default function EntityMarketplace({ entityId }: any) {
+export default function EntityMarketplace({ selectedChain, entityId }: any) {
+  const [marketplaceModalEnabled, setMarketplaceModalEnabled] = useState(false)
+
+  const { contract: marketplace } = useContract(
+    MARKETPLACE_ADDRESSES[selectedChain.slug]
+  )
+
   return (
     <Card>
       <p className="text-2xl">Marketplace</p>
@@ -101,7 +131,12 @@ export default function EntityMarketplace({ entityId }: any) {
           </>
         )}
       </div>
-      <Button className="mt-4">Create a Listing</Button>
+      {marketplaceModalEnabled && (
+        <ListingModal setEnabled={setMarketplaceModalEnabled} />
+      )}
+      <Button className="mt-4" onClick={() => setMarketplaceModalEnabled(true)}>
+        Create a Listing
+      </Button>
     </Card>
   )
 }
