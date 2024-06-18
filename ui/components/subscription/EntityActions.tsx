@@ -29,7 +29,7 @@ function EntityAction({
 }: EntityActionProps) {
   return (
     <button onClick={onClick}>
-      <SubCard className="xl:h-[150px] flex flex-col gap-2 hover:scale-105 ease-in-out duration-300">
+      <SubCard className="xl:h-[175px] flex flex-col gap-2 hover:scale-105 ease-in-out duration-300">
         <div className="flex gap-2">
           {icon}
           <p className="font-bold text-xl">{title}</p>

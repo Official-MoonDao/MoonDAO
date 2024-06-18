@@ -20,7 +20,7 @@ export default function EntityCitizenCard({
     if (type === 'citizen') {
       setCitizenDiscord(getAttribute(metadata.attributes, 'discord')?.value)
     }
-  }, [type])
+  }, [type, metadata])
 
   return (
     <div>
@@ -91,7 +91,7 @@ export default function EntityCitizenCard({
                     disabled={true}
                     className="mt-4 w-1/2 px-4 py-2 text-blue-500 rounded-full bg-blue-400 bg-opacity-10 flex items-center"
                   >
-                    Undefined
+                    Not registered
                   </button>
                 )}
               </div>
