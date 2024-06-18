@@ -208,19 +208,30 @@ export default function ProposalEditor() {
             {/*  DRAFT */}
             <button
               type="button"
-              className={`text-sm px-5 py-3 border border-dashed border-moon-orange font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40`}
+              className={classNames(
+                buttonsDisabled && 'tooltip',
+                'text-sm px-5 py-3 border border-dashed border-moon-orange font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+              )}
               onClick={() => {
                 const proposal = buildProposal('Draft')
                 signAndSendProposal(proposal)
               }}
               disabled={buttonsDisabled}
+              data-tip={
+                signingStatus === 'loading'
+                  ? 'Signing...'
+                  : 'You need to connect wallet first.'
+              }
             >
               {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
             </button>
             {/* SUBMIT */}
             <button
               type="button"
-              className={`px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40`}
+              className={classNames(
+                buttonsDisabled && 'tooltip',
+                'px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+              )}
               onClick={() => {
                 const status =
                   loadedProposal?.status === 'Temperature Check'
@@ -230,6 +241,11 @@ export default function ProposalEditor() {
                 signAndSendProposal(proposal)
               }}
               disabled={buttonsDisabled}
+              data-tip={
+                signingStatus === 'loading'
+                  ? 'Signing...'
+                  : 'You need to connect wallet first.'
+              }
             >
               {signingStatus === 'loading' ? 'Signing...' : 'Submit'}
             </button>
