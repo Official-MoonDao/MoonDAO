@@ -30,8 +30,6 @@ function Tier({
   const address = useAddress()
   const { user, login, logout } = usePrivy()
 
-  const nativeBalance = useNativeBalance()
-
   return (
     <div
       className="w-full transition-all duration-150 text-black cursor-pointer dark:text-white lg:p-8 flex flex-col border-[2px] hover:border-moon-orange hover:border-moon-orange border-opacity-100 bg-[white] dark:bg-[#0A0E22] p-3"
@@ -39,8 +37,6 @@ function Tier({
         if (!address && user) logout()
         if (!address) return login()
         if (hasCitizen) return toast.error('You already have a citizen nft')
-
-        if (+nativeBalance < 0.01) return toast.error('Insufficient balance')
 
         onClick()
       }}
