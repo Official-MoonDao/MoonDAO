@@ -26,7 +26,7 @@ export function useSubHats(selectedChain: any, hatId: any) {
   }
 
   useEffect(() => {
-    getSubHats()
+    if (hatId) getSubHats()
   }, [selectedChain, hatId])
 
   return subHats
