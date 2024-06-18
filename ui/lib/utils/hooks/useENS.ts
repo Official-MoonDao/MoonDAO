@@ -12,10 +12,12 @@ export function useENS(
   addressOrEns: string | null | undefined,
   shouldFetch: boolean = true
 ) {
+  const addressIsValid =
+    !!addressOrEns && (isAddress(addressOrEns) || addressOrEns.endsWith('.eth'))
+  const _shouldFetch = shouldFetch && addressIsValid
+
   return useSWR(
-    !!addressOrEns &&
-      (isAddress(addressOrEns) || addressOrEns.endsWith('.eth')) &&
-      shouldFetch
+    _shouldFetch
       ? `https://api.ensideas.com/ens/resolve/${addressOrEns.toLowerCase()}`
       : null,
     (url) =>

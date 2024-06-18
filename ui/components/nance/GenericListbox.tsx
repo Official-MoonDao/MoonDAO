@@ -13,7 +13,7 @@ import { classNames } from '../../lib/utils/tailwind'
 
 interface Includes {
   name?: string
-  id?: string
+  id: string
   icon?: string
 }
 interface GenericListboxProps<T> {
@@ -53,10 +53,10 @@ export default function GenericListbox<T extends Includes>({
     <Listbox value={value} onChange={onChange} disabled={disabled}>
       {({ open }) => (
         <>
-          <Label className="block text-sm font-medium leading-6 text-gray-900">
-            {label}
-          </Label>
-          <div className="relative">
+          <label className="label">
+            <span className="label-text">{label}</span>
+          </label>
+          <div className="relative mt-1">
             <ListboxButton className="relative w-full cursor-default rounded-md bg-white dark:bg-black py-2 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 sm:text-sm sm:leading-6">
               <span className="flex items-center dark:text-white">
                 {value?.icon?.includes('https://') && (

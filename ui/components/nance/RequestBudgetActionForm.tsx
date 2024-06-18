@@ -8,6 +8,7 @@ import {
 import AddressForm from './form/AddressForm'
 import DiscordUserIdForm from './form/DiscordUserIdForm'
 import SafeTokenForm from './form/SafeTokenForm'
+import StringForm from './form/StringForm'
 
 interface RequestBudgetAction {
   projectTeam: {
@@ -254,12 +255,26 @@ export default function RequestBudgetActionForm() {
             {budgetFields.map((field, index) => (
               <div
                 key={field.id}
-                className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-5"
+                className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-8"
               >
                 <div className="sm:col-span-2">
+                  <StringForm
+                    label="Amount"
+                    fieldName={`budget.${index}.amount`}
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
                   <SafeTokenForm
                     address="0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
                     fieldName={`budget.${index}.token`}
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <StringForm
+                    label="Justification"
+                    fieldName={`budget.${index}.justification`}
                   />
                 </div>
 
