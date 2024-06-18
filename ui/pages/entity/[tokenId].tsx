@@ -319,7 +319,7 @@ export default function EntityDetailPage({ tokenId }: any) {
             isManager={isManager}
           />
 
-          <EntityMarketplace entityId={tokenId} />
+          <EntityMarketplace selectedChain={selectedChain} entityId={tokenId} />
           {/* Mooney and Voting Power */}
           <div className="flex flex-col xl:flex-row gap-6">
             <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
