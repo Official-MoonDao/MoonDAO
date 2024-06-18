@@ -3,7 +3,8 @@ import {
   ComboboxButton,
   ComboboxInput,
   ComboboxOption,
-  ComboboxOptions} from '@headlessui/react'
+  ComboboxOptions,
+} from '@headlessui/react'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/solid'
 import { useEffect, useState } from 'react'
 import { useDebounce } from 'react-use'
@@ -59,8 +60,8 @@ export default function DiscordUserIdInput({
       disabled={disabled}
       as="div"
       value={selectedUser}
-      onChange={(u: DiscordUser) => {
-        setVal(u.id)
+      onChange={(u: DiscordUser | null) => {
+        setVal(u?.id || '')
         setSelectedUser(u)
       }}
       className="w-full"
@@ -75,9 +76,7 @@ export default function DiscordUserIdInput({
           )}
           onChange={(event) => setQuery(event.target.value)}
           displayValue={(selectedUser: DiscordUser | undefined) =>
-            selectedUser
-              ? `${selectedUser.username} @${selectedUser.global_name}`
-              : ''
+            selectedUser ? `@${selectedUser.global_name}` : ''
           }
         />
         <ComboboxButton className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">

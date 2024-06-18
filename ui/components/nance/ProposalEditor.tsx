@@ -5,12 +5,19 @@ import {
   useProposalUpload,
   useSpaceInfo,
 } from '@nance/nance-hooks'
-import { Proposal, ProposalStatus } from '@nance/nance-sdk'
+import {
+  Action,
+  Proposal,
+  ProposalStatus,
+  RequestBudget,
+  actionsToYaml,
+} from '@nance/nance-sdk'
 import { add, differenceInDays } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
 import { TEMPLATE } from '../../lib/nance'
@@ -43,11 +50,56 @@ const NanceEditor = dynamic(
   }
 )
 
+const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
+  projectTeam: [
+    {
+      discordUserId: '',
+      payoutAddress: '',
+      votingAddress: '',
+      isRocketeer: true,
+    },
+    {
+      discordUserId: '',
+      payoutAddress: '',
+      votingAddress: '',
+      isRocketeer: false,
+    },
+  ],
+  multisigTeam: [
+    {
+      discordUserId: '',
+      address: '',
+    },
+    {
+      discordUserId: '',
+      address: '',
+    },
+    {
+      discordUserId: '',
+      address: '',
+    },
+    {
+      discordUserId: '',
+      address: '',
+    },
+    {
+      discordUserId: '',
+      address: '',
+    },
+  ],
+  budget: [
+    { token: '', amount: '', justification: 'dev cost' },
+    { token: '', amount: '', justification: 'flex' },
+  ],
+}
+
 export default function ProposalEditor() {
   const router = useRouter()
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
+  const [proposalStatus, setProposalStatus] =
+    useState<ProposalStatus>('Discussion')
 
   // get space info to find next Snapshot Vote
   // we need this to be compliant with the proposal signing format of Snapshot
@@ -80,6 +132,34 @@ export default function ProposalEditor() {
     shouldFetch
   )
   const loadedProposal = data?.data
+
+  // request budget form
+  const methods = useForm<RequestBudget>({
+    mode: 'onBlur',
+  })
+  const { register, handleSubmit, formState, reset } = methods
+  const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
+    let proposal = buildProposal(proposalStatus)
+
+    if (attachBudget) {
+      const action: Action = {
+        type: 'Request Budget',
+        payload: formData,
+      }
+      const body = `${proposal.body}\n\n${actionsToYaml([action])}`
+      proposal = {
+        ...proposal,
+        body,
+      }
+    }
+
+    console.debug('RequestBudget.submit', {
+      formData,
+      proposalStatus,
+      proposal,
+    })
+    signAndSendProposal(proposal)
+  }
 
   // proposal upload
   const { wallet } = useAccount()
@@ -163,94 +243,102 @@ export default function ProposalEditor() {
   return (
     <div className="flex flex-col justify-center items-center animate-fadeIn">
       <Head title={pageTitle} />
+
       <div className="w-full sm:w-[90%] lg:w-3/4">
-        <h1 className="page-title py-10">{pageTitle}</h1>
-        <ProposalTitleInput initialValue={loadedProposal?.title} />
-        <NanceEditor
-          initialValue={loadedProposal?.body || TEMPLATE}
-          fileUploadIPFS={fileUploadIPFS}
-          darkMode={true}
-        />
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <h1 className="page-title py-10">{pageTitle}</h1>
+          <ProposalTitleInput initialValue={loadedProposal?.title} />
+          <NanceEditor
+            initialValue={loadedProposal?.body || TEMPLATE}
+            fileUploadIPFS={fileUploadIPFS}
+            darkMode={true}
+          />
 
-        <Field as="div" className="flex items-center mt-5">
-          <Switch
-            checked={attachBudget}
-            onChange={setAttachBudget}
-            className={classNames(
-              attachBudget ? 'bg-indigo-600' : 'bg-gray-200',
-              'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
-            )}
-          >
-            <span
-              aria-hidden="true"
-              className={classNames(
-                attachBudget ? 'translate-x-5' : 'translate-x-0',
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
-              )}
-            />
-          </Switch>
-          <Label as="span" className="ml-3 text-sm">
-            <span className="font-medium text-gray-900 dark:text-white">
-              Attach Budget
-            </span>{' '}
-          </Label>
-        </Field>
-
-        {attachBudget && (
-          <div className="my-10">
-            <RequestBudgetActionForm />
-          </div>
-        )}
-
-        <div className="mt-3 flex justify-end">
-          {/* Submit buttons */}
-          <div className="flex justify-end space-x-5">
-            {/*  DRAFT */}
-            <button
-              type="button"
-              className={classNames(
-                buttonsDisabled && 'tooltip',
-                'text-sm px-5 py-3 border border-dashed border-moon-orange font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
-              )}
-              onClick={() => {
-                const proposal = buildProposal('Draft')
-                signAndSendProposal(proposal)
+          <Field as="div" className="flex items-center mt-5">
+            <Switch
+              checked={attachBudget}
+              onChange={(checked) => {
+                setAttachBudget(checked)
+                if (checked) {
+                  reset(DEFAULT_REQUEST_BUDGET_VALUES)
+                }
               }}
-              disabled={buttonsDisabled}
-              data-tip={
-                signingStatus === 'loading'
-                  ? 'Signing...'
-                  : 'You need to connect wallet first.'
-              }
-            >
-              {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
-            </button>
-            {/* SUBMIT */}
-            <button
-              type="button"
               className={classNames(
-                buttonsDisabled && 'tooltip',
-                'px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                attachBudget ? 'bg-indigo-600' : 'bg-gray-200',
+                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
               )}
-              onClick={() => {
-                const status =
-                  loadedProposal?.status === 'Temperature Check'
-                    ? 'Temperature Check'
-                    : 'Discussion'
-                const proposal = buildProposal(status || 'Discussion')
-                signAndSendProposal(proposal)
-              }}
-              disabled={buttonsDisabled}
-              data-tip={
-                signingStatus === 'loading'
-                  ? 'Signing...'
-                  : 'You need to connect wallet first.'
-              }
             >
-              {signingStatus === 'loading' ? 'Signing...' : 'Submit'}
-            </button>
+              <span
+                aria-hidden="true"
+                className={classNames(
+                  attachBudget ? 'translate-x-5' : 'translate-x-0',
+                  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
+                )}
+              />
+            </Switch>
+            <Label as="span" className="ml-3 text-sm">
+              <span className="font-medium text-gray-900 dark:text-white">
+                Attach Budget
+              </span>{' '}
+            </Label>
+          </Field>
+
+          {attachBudget && (
+            <FormProvider {...methods}>
+              <div className="my-10">
+                <RequestBudgetActionForm />
+              </div>
+            </FormProvider>
+          )}
+
+          <div className="mt-3 flex justify-end">
+            {/* Submit buttons */}
+            <div className="flex justify-end space-x-5">
+              {/*  DRAFT */}
+              <button
+                type="submit"
+                className={classNames(
+                  buttonsDisabled && 'tooltip',
+                  'text-sm px-5 py-3 border border-dashed border-moon-orange font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                )}
+                onClick={() => {
+                  setProposalStatus('Draft')
+                }}
+                disabled={buttonsDisabled}
+                data-tip={
+                  signingStatus === 'loading'
+                    ? 'Signing...'
+                    : 'You need to connect wallet first.'
+                }
+              >
+                {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
+              </button>
+              {/* SUBMIT */}
+              <button
+                type="submit"
+                className={classNames(
+                  buttonsDisabled && 'tooltip',
+                  'px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                )}
+                onClick={() => {
+                  const status =
+                    loadedProposal?.status === 'Temperature Check'
+                      ? 'Temperature Check'
+                      : 'Discussion'
+                  setProposalStatus(status || 'Discussion')
+                }}
+                disabled={buttonsDisabled}
+                data-tip={
+                  signingStatus === 'loading'
+                    ? 'Signing...'
+                    : 'You need to connect wallet first.'
+                }
+              >
+                {signingStatus === 'loading' ? 'Signing...' : 'Submit'}
+              </button>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   )

@@ -2377,19 +2377,19 @@
   dependencies:
     "@toast-ui/react-editor" "^3.2.3"
 
-"@nance/nance-hooks@3.0.2":
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-3.0.2.tgz#715025d58a2af54c2cda5cc9d22fb4a3b39922e9"
-  integrity sha512-aRT/vNtLXs1fpdQobvrqd0jQ2b2PTLumuN+PaxdjRQf/tUEBP4lL82zIIflkf60PrWhiCK1QEvJWbxIUFk4ddA==
+"@nance/nance-hooks@^3.0.5":
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-3.0.5.tgz#ea1ab146f5d97974ab51aa3a40fdd377593a5a6e"
+  integrity sha512-WeKAdoJl9g+RoWe2PP+4nzNW55Wu+ErhCUiLc6I0kmXWW4qry4tqGtN9jlkloP9J5mRLMEQuux4iNlLznb6UEQ==
   dependencies:
-    "@nance/nance-sdk" "^3.0.2"
+    "@nance/nance-sdk" "^3.0.5"
     swr "^2.2.4"
     tslib "^2.6.2"
 
-"@nance/nance-sdk@3.0.2", "@nance/nance-sdk@^3.0.2":
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-3.0.2.tgz#6bbed8636f0f9dcc17f470728bb159244aaa7544"
-  integrity sha512-U4aCuL7MhTUPjJy1utXJak5iktIKVvvTIgLQr9h8QjAtRQopCkXTlT++EWoXw+NwFglMSHc5HZSQUCGgcjtGAw==
+"@nance/nance-sdk@^3.0.5":
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-3.0.5.tgz#518cede687acf43cf1eceb584af00a75df3bb581"
+  integrity sha512-QTed66ToYD/13jb3lPl+ZKkI27+EeNpyu4h1YHbqpcYFZVTjBiTG0BYok4RQskLf7YEXNygnqIRYSgeW7HOfEQ==
   dependencies:
     tslib "^2.6.2"
     yaml "^2.4.2"
