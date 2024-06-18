@@ -12,6 +12,8 @@ type ListBoxItems = {
   name?: string
 }
 
+const ETH_ADDRESS = '0x000000000000000000000000000000000000EEEe'
+
 const safeBalanceToItems = (b: SafeBalanceUsdResponse[]): ListBoxItems[] => {
   return (
     b
@@ -27,7 +29,7 @@ const safeBalanceToItems = (b: SafeBalanceUsdResponse[]): ListBoxItems[] => {
       )
       .map((b) => {
         return {
-          id: (b.tokenAddress as string) || b.balance,
+          id: (b.tokenAddress as string) || ETH_ADDRESS,
           name:
             (b.token?.symbol || 'ETH') +
             ` (${formatNumberUSStyle(
