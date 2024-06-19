@@ -1,8 +1,10 @@
 import { NanceProvider, useProposal } from '@nance/nance-hooks'
+import { getActionsFromBody } from '@nance/nance-sdk'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
 import { useRouter } from 'next/router'
 import { NANCE_API_URL, NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import { useVotesOfProposal } from '../../lib/snapshot'
+import ActionLabel from '../../components/nance/ActionLabel'
 import DropDownMenu from '../../components/nance/DropdownMenu'
 import MarkdownWithTOC from '../../components/nance/MarkdownWithTOC'
 import ProposalInfo, {
@@ -59,7 +61,17 @@ function Proposal() {
     space: NANCE_SPACE_NAME,
     uuid: proposalId,
   })
-  const proposalPacket = data?.data
+  let proposalPacket = data?.data
+  if (proposalPacket) {
+    proposalPacket = {
+      ...proposalPacket,
+      actions:
+        proposalPacket.actions.length > 0
+          ? proposalPacket.actions
+          : getActionsFromBody(proposalPacket.body) || [],
+    }
+  }
+
   const fetchVotes =
     proposalPacket?.voteURL !== undefined &&
     (proposalPacket?.status === 'Voting' ||
@@ -117,21 +129,17 @@ function Proposal() {
         <div className="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
           {/* Proposal */}
           <div className="inner-container-background -mx-4 px-4 py-8 shadow-sm ring-1 ring-gray-900/5 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16">
-            {/* {proposalPacket.actions && proposalPacket.actions.length > 0 && (
+            {proposalPacket.actions && proposalPacket.actions.length > 0 && (
               <div className="mb-4 break-words ">
                 <p className="text-gray-400">Proposed Transactions</p>
                 <div className="mt-2 space-y-2 text-sm">
                   {proposalPacket.actions?.map((action) => (
-                    <ActionLabel
-                      action={action}
-                      key={action.uuid}
-                      proposalCycle={proposalPacket.governanceCycle}
-                    />
+                    <ActionLabel action={action} key={action.uuid} />
                   ))}
                 </div>
                 <div className="mt-2 w-full border-t border-gray-300" />
               </div>
-            )} */}
+            )}
 
             <div className="mb-6">
               <ProposalSummary

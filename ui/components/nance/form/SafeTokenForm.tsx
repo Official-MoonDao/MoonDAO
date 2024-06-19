@@ -12,7 +12,7 @@ type ListBoxItems = {
   name?: string
 }
 
-const ETH_ADDRESS = '0x000000000000000000000000000000000000EEEe'
+const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 
 const safeBalanceToItems = (b: SafeBalanceUsdResponse[]): ListBoxItems[] => {
   return (

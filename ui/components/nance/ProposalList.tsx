@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { ArrowPathIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
 import { useProposalsInfinite } from '@nance/nance-hooks'
-import { ProposalsPacket } from '@nance/nance-sdk'
+import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
 import { formatDistanceStrict } from 'date-fns'
 import {
   BooleanParam,
@@ -108,7 +108,19 @@ export default function ProposalList() {
     proposalsPacket = {
       proposalInfo: firstRes.proposalInfo,
       proposals:
-        proposalDataArray.map((data) => data?.data.proposals).flat() || [],
+        proposalDataArray
+          .map((data) =>
+            data?.data.proposals.map((p) => {
+              return {
+                ...p,
+                actions:
+                  p.actions.length > 0
+                    ? p.actions
+                    : getActionsFromBody(p.body) || [],
+              }
+            })
+          )
+          .flat() || [],
       hasMore: proposalDataArray[proposalDataArray.length - 1].data.hasMore,
     }
   }

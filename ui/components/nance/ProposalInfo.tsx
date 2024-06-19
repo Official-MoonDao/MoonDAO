@@ -1,21 +1,27 @@
-import { useState } from 'react'
 import { CalendarDaysIcon } from '@heroicons/react/24/outline'
+import { useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
 import { ProposalPacket } from '@nance/nance-sdk'
-import { add, differenceInDays, formatDistanceToNow, fromUnixTime } from 'date-fns'
+import {
+  add,
+  differenceInDays,
+  formatDistanceToNow,
+  fromUnixTime,
+} from 'date-fns'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
+import toast from 'react-hot-toast'
+import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
+import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
+import useAccount from '../../lib/nance/useAccountAddress'
+import { useSignProposal } from '../../lib/nance/useSignProposal'
 import { SnapshotGraphqlProposalVotingInfo } from '../../lib/snapshot'
 import { AddressLink } from './AddressLink'
 import ProposalStatusIcon from './ProposalStatusIcon'
+import RequestingTokensOfProposal from './RequestingTokensOfProposal'
 import VotingInfo from './VotingInfo'
-import useAccount from '../../lib/nance/useAccountAddress'
-import { useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
-import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
-import toast from 'react-hot-toast'
-import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
-import { useSignProposal } from '../../lib/nance/useSignProposal'
-import { useRouter } from 'next/router'
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 export function ProposalInfoSkeleton() {
@@ -76,13 +82,13 @@ export default function ProposalInfo({
   const preTitleDisplay = proposalIdPrefix
     ? `${proposalIdPrefix}${proposalPacket.proposalId}: `
     : ''
-  const router = useRouter();
-  const { proposalInfo, ...proposal } = proposalPacket;
+  const router = useRouter()
+  const { proposalInfo, ...proposal } = proposalPacket
   proposal.voteSetup = {
     type: 'quadratic', // could make this dynamic in the future
     choices: ['Yes', 'No', 'Abstain'], // could make this dynamic in the future
-  };
-  const { isLinked, wallet } = useAccount();
+  }
+  const { isLinked, wallet } = useAccount()
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
 
   // get space info to find next Snapshot Vote
@@ -183,7 +189,9 @@ export default function ProposalInfo({
           {/* Author */}
           <div className="flex items-center gap-x-1">
             <img
-              src={`https://cdn.stamp.fyi/avatar/${proposalPacket.authorAddress || ZERO_ADDRESS}`}
+              src={`https://cdn.stamp.fyi/avatar/${
+                proposalPacket.authorAddress || ZERO_ADDRESS
+              }`}
               alt=""
               className="h-6 w-6 flex-none rounded-full bg-gray-50"
             />
@@ -215,17 +223,21 @@ export default function ProposalInfo({
               </div>
             )}
           </div>
+          {/* Tokens */}
+          <RequestingTokensOfProposal actions={proposalPacket.actions} />
           {/* Delegate this proposal if it doesn't have an author */}
           {!proposalPacket.authorAddress && isLinked && !sponsorDisabled && (
             <button
-              type='button'
+              type="button"
               className={`px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40`}
               disabled={buttonsDisabled}
               onClick={() => {
-                signAndSendProposal();
+                signAndSendProposal()
               }}
             >
-              {signingStatus === "loading" ? "Sponsor Proposal..." : "Sponsor Proposal"}
+              {signingStatus === 'loading'
+                ? 'Sponsor Proposal...'
+                : 'Sponsor Proposal'}
             </button>
           )}
         </div>
@@ -235,7 +247,9 @@ export default function ProposalInfo({
             <p className="text-gray-500 dark:text-gray-400">Coauthors</p>
             {proposal.coauthors.map((coauthor, index) => {
               return (
-                <p key={index}><AddressLink address={coauthor} /></p>
+                <p key={index}>
+                  <AddressLink address={coauthor} />
+                </p>
               )
             })}
           </div>
