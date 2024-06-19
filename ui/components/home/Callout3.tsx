@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Card from './Card';
+import Card from '../layout/Card';
 import CardGrid from "../layout/CardGrid";
 
 const cardData = [
