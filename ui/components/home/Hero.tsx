@@ -1,113 +1,27 @@
-import gsap from 'gsap'
-import Image from 'next/image'
-import Link from 'next/link'
-import { Suspense, useEffect, useRef, useState } from 'react'
-import useMouse from '../../lib/home/useMouse'
-import SlideButton from './SlideButton'
+import MailingList from '../layout/MailingList'; 
 
-export default function Hero(props: any) {
-  const { mouseX, blur } = useMouse()
-  const [modal, setModal] = useState(false)
-  const layer1Ref: any = useRef()
-  const layer2Ref: any = useRef()
-
-  const cardRef: any = useRef()
-  const splatterRef: any = useRef()
-  const outlineCardRef: any = useRef()
-  const astroRef: any = useRef()
-  useEffect(() => {
-    // if (cardRef?.current) {
-    //   cardRef.current.style.transform += `translateX(${mouseX}px)`
-    //   splatterRef.current.style.transform += `translateX(${mouseX}px)`
-    // }
-    // if (layer2Ref?.current) {
-    //   layer2Ref.current.style.transform += `translateX(${-mouseX}px)`
-    //   layer2Ref.current.style.filter = `blur(${blur}px)`
-    // }
-    // if (astroRef?.current) {
-    //   astroRef.current.style.transform = `rotate(${blur * 2}deg) translateY(${
-    //     blur * 2
-    //   }px)`
-    // }
-  }, [blur, mouseX])
-  return (
-    <div className="min-h-[650px] md:min-h-[1000px]">
-      {/* <Image
-          className="bg-hero"
-          src={'/home/brush-stroke-bottom-right2.svg'}
-          alt=""
-          width={1000}
-          height={1000}
-        /> */}
-      <div className="flex flex-col animate-fadeInLeft z-10">
-        <h1 className="text-4xl font-GoodTimes">
-          {'THE '}
-          <span className="bg-white text-black px-2 rounded-sm">
-            {"INTERNET'S"}
-          </span>
-          <br />
-          {'SPACE PROGRAM'}
-        </h1>
-
-        <p className="mt-4 w-full">
-          {
-            'MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement.'
-          }
-        </p>
-        <Link
-          href="https://discord.com/invite/moondao"
-          target="_blank"
-          rel="no refferer"
-          passHref
-        >
-          <SlideButton className="mt-4" onClick={() => setModal(true)}>
-            Join Our Community
-          </SlideButton>
-        </Link>
-      </div>
-      <Suspense fallback={null}>
-        <div className="relative max-w-[1000px] flex justify-center items-center h-full">
-          <div>
-            <Image
-              ref={cardRef}
-              className="absolute top-0 left-0 z-0 w-full"
-              src="/home/card.svg"
-              alt=""
-              width={630}
-              height={500}
-            />
-            <Image
-              ref={splatterRef}
-              className="absolute top-0 left-0 w-full"
-              src="/home/splatter-orange-purple.svg"
-              alt=""
-              width={600}
-              height={600}
-              priority
-            />
-          </div>
-          <div className={'z-30'}>
-            <Image
-              ref={outlineCardRef}
-              className="absolute top-0 left-0 w-full blur-[0.8px]"
-              src="/home/outline-card.svg"
-              alt=""
-              width={520}
-              height={500}
-            />
-            <div className="z-30">
-              <Image
-                ref={astroRef}
-                className="absolute top-0 left-0 w-full rotate-0"
-                src="/home/astronaut2.svg"
-                alt=""
-                width={600}
-                height={600}
-              />
-            </div>
-          </div>
+export default function Hero() {
+  return ( 
+    <section id="hero-section" className="overflow-visible relative w-full">
+      <div id="hero-container" className="flex flex-col h-[80vh] items-end justify-end lg:items-start lg:justify-center md:h-[90vmin] md:items-start md:justify-end md:pl-10 md:pr-10 min-h-[675px] mt-[-1px] p-5 pb-[80px] lg:pb-40 relative z-10">
+      <div className="gradient-1 w-full h-full absolute top-0 right-0 rounded-bl-[2vmax] overflow-hidden z-0"></div>
+        <div id="tl-divider" className="divider-1 absolute h-[90%] left-[-2px] top-0 w-[45%]"></div>
+        <div id="featured-image-container" className="absolute h-[100%] left-0 overflow-hidden top-0 w-[100%] ">
+          <div id="feature-below-1400" className="hide-xl absolute feature-1 h-full mt-5 right-0 top-0 w-[80vmin] lg:w-[50vmax] md:w-[70%]"></div>
+          <div id="feature-above-1200" className="show-xl absolute feature-1 h-full mt-5 right-0 top-0 w-[850px]"></div>
+        </div>  
+        <div id="bottom-right-divider-below-1400" className="hide-xl absolute bottom-[-2px] divider-2 h-full hidden md:block md:right-0 md:w-[80%] right-[-20%] w-[60%] lg:w-[60%]"></div>
+        <div id="bottom-right-divider-above-1400" className="show-xl absolute bottom-[-2px] right-0 divider-2 h-full w-[900px]"></div>
+        <div id="content" className="relative w-[100%] pt-0 md:w-[90%] lg:w-[70%]">
+          <h1 id="header" className="flex flex-col font-GoodTimes leading-none text-4xl">
+            <span style={{fontSize: 'calc(min(4.5vmin, 30px))'}} className="mt-[5vmax]">The Internet's </span>
+            <span style={{fontSize: 'calc(max(12vmin, 30px))'}} className="mt-[1vmin]">Space </span>
+            <span style={{fontSize: 'calc(max(9vmin, 30px))'}} className="mt-[1vmin]">Program</span>
+          </h1>
+          <p id="paragraph-content" className="mr-5 max-w-[350px] pb-5 pt-2 text-lg w-full md:w-[100%] md:max-w-[350px] lg:max-w-[500px]">MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement.</p>
+          <MailingList />
         </div>
-      </Suspense>
-    </div>
+      </div>
+    </section>
   )
 }

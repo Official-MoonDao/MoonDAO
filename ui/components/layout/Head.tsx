@@ -1,19 +1,18 @@
 import Head from 'next/head'
 
-const defaultDescription = "Let's decentralize access to space!"
-
-const defaultImage = 'https://dweb.link/ipfs/QmVyGXVwnWUSCFY2vtYpcVryVyDdLKx4Wi7k57dSoo9Bpf'
+const defaultTitle = "MoonDAO: The Internet's Space Program"
+const defaultDescription =
+  'Join MoonDAO and be part of the future of space exploration. Learn more about our mission and how you can get involved.'
+const defaultImage = '/assets/MoonDAO-OG.png'
 
 export default function WebsiteHead({
-  title,
+  title = defaultTitle,
   description = defaultDescription,
   image = defaultImage,
 }: any) {
-
-
   return (
     <Head>
-      <title key="meta-title">{'Mission Control | ' + title}</title>
+      <title key="meta-title">{`${title} | MoonDAO`}</title>
       <link rel="icon" href="/favicon.ico" key="link-favicon" />
       <meta
         name="viewport"
@@ -24,7 +23,7 @@ export default function WebsiteHead({
       <meta name="description" content={description} key="meta-desc" />
       <meta
         property="og:title"
-        content={`Mission Control | ${title}`}
+        content={`${title} | MoonDAO: The Internet's Space Program`}
         key="meta-ogtitle"
       />
       <meta property="og:description" content={description} key="meta-ogdesc" />
@@ -38,7 +37,7 @@ export default function WebsiteHead({
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta
         name="twitter:title"
-        content={`Mission Control | ${title}`}
+        content={`${title} | MoonDAO: The Internet's Space Program`}
         key="meta-twtitle"
       />
       <meta

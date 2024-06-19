@@ -3,7 +3,6 @@ import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
 
 //Checks if the navigation object has a property 'external' set to true, if so returns a link that opens another tab, otherwise checks if the navigation object has children. If it does, it returns the dropdown, if it doesn't it returns an internal navigation link.
 
@@ -36,7 +35,7 @@ const NavigationLink = ({ item, setSidebarOpen }: any) => {
           <div
             className={`${
               router.pathname == item.href
-                ? 'bg-blue-200 text-blue-950 dark:bg-slate-950 dark:text-moon-orange font-semibold'
+                ? 'bg-blue-200 text-blue-950 dark:bg-slate-950 dark:text-white font-semibold'
                 : ' hover:bg-blue-100 dark:hover:bg-gray-900 '
             } group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150 cursor-pointer`}
             onClick={() => setSidebarOpen && setSidebarOpen(false)}
@@ -44,7 +43,7 @@ const NavigationLink = ({ item, setSidebarOpen }: any) => {
             <item.icon
               className={`mr-2 h-5 w-5 flex-shrink-0   ${
                 router.pathname == item.href
-                  ? 'text-blue-950 dark:text-moon-orange'
+                  ? 'text-blue-950 dark:text-white'
                   : 'text-black dark:text-white'
               }`}
             />
@@ -63,7 +62,10 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
     <Disclosure
       className="tracking-tighter"
       as="div"
-      defaultOpen={item?.children?.some((e: any) => e.href === router.pathname)}
+      defaultOpen={
+        item?.children?.some((e: any) => e.href === router.pathname) ||
+        item.href === '/info'
+      }
       onClick={({ target }: any) => {
         if (item.href) {
           const expanded = target.getAttribute('aria-expanded')
@@ -78,7 +80,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
               item?.children
                 ?.map((e: any) => e.href)
                 ?.includes(router.pathname) || router.pathname == item.href
-                ? 'bg-blue-200 text-blue-950 dark:bg-gray-950 dark:text-moon-orange hover:scale-100 font-semibold'
+                ? 'bg-blue-200 text-blue-950 dark:bg-gray-950 dark:text-white hover:scale-100 font-semibold'
                 : ' hover:bg-blue-100  dark:hover:bg-gray-900'
             } w-full group flex items-center rounded-md px-2 py-2 font-medium hover:scale-105 transition-all duration-150`}
           >
@@ -121,7 +123,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
                   return (
                     <li
                       key={subItem.name}
-                      className="list-disc marker:text-blue-950 dark:marker:text-moon-orange group hover:scale-105 transition-all duration-150"
+                      className="list-disc marker:text-blue-950 dark:marker:text-white group hover:scale-105 transition-all duration-150"
                       onClick={() => setSidebarOpen && setSidebarOpen(false)}
                     >
                       <Link
@@ -129,7 +131,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
                         className={`${
                           router.asPath == subItem.href ||
                           router.asPath == subItem.dynamicHref
-                            ? 'text-blue-950 dark:text-moon-orange font-semibold'
+                            ? 'text-blue-950 dark:text-white font-semibold'
                             : '  dark:text-white'
                         } my-3 flex items-center`}
                       >

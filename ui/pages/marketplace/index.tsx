@@ -39,18 +39,18 @@ export default function Marketplace() {
         },
       ],
     },
-    {
-      sectionName: 'Digital Assets',
-      pages: [
-        {
-          name: 'MoonDAO Shields',
-          description:
-            'Grab these one of a kind digital collectibles and be a part of the FIRST MoonDAO collection.',
-          icon: ShieldCheckIcon,
-          href: '/marketplace/collection/0xE71f58663f80b61f5D127D9DE9d554ca66dED5f1',
-        },
-      ],
-    },
+    // {
+    //   sectionName: 'Digital Assets',
+    //   pages: [
+    //     {
+    //       name: 'MoonDAO Shields',
+    //       description:
+    //         'Grab these one of a kind digital collectibles and be a part of the FIRST MoonDAO collection.',
+    //       icon: ShieldCheckIcon,
+    //       href: '/marketplace/collection/0xE71f58663f80b61f5D127D9DE9d554ca66dED5f1',
+    //     },
+    //   ],
+    // },
   ]
 
   const { t } = useTranslation('common')

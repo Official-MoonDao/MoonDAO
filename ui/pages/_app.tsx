@@ -36,9 +36,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
             },
             legal: {
               termsAndConditionsUrl:
-                'https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Terms+and+Conditions',
+                'https://docs.moondao.com/Legal/Website-Terms-and-Conditions',
               privacyPolicyUrl:
-                'https://publish.obsidian.md/moondao/MoonDAO/docs/Legal/Website+Privacy+Policy',
+                'https://docs.moondao.com/Legal/Website-Privacy-Policy',
             },
           }}
         >
