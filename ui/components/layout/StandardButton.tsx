@@ -15,13 +15,23 @@ export default function StandardButton({
 }) {
   const buttonContent = (
     <button
-      className={`${backgroundColor} ${borderRadius} ${className} standardbutton transition-all duration-200`}
+      className={`
+        standardbutton transition-all duration-200       
+        ${backgroundColor} 
+        ${borderRadius} 
+        ${className} 
+      `}
       onClick={onClick || null}
       style={{ paddingLeft: '0' }}
       onMouseEnter={(e) => (e.currentTarget.style.paddingLeft = '20px')}
       onMouseLeave={(e) => (e.currentTarget.style.paddingLeft = '0')}
     >
-      <div className={` p-2 pb-3 pr-5 pl-5 ${textColor}`}>
+      <div id="button=content" 
+        className={` 
+          p-2 pb-3 pr-5 pl-5 
+          ${textColor}
+        `}
+        >
         {children}
       </div>
     </button>
@@ -40,5 +50,5 @@ StandardButton.propTypes = {
   link: PropTypes.string,
   paddingOnHover: PropTypes.string,
   textColor: PropTypes.string,
-  styleOnly: PropTypes.bool, // New prop type
+  styleOnly: PropTypes.bool, 
 };
