@@ -4,7 +4,7 @@ import { useNewsletterSub } from '../../lib/convert-kit/useNewsletterSub'
 
 export default function MailingList() {
   const [userEmail, setUserEmail] = useState<any>('')
-
+  const [isEmailFocused, setIsEmailFocused] = useState(false)
   const subscribe = useNewsletterSub()
 
   return (
@@ -22,23 +22,40 @@ export default function MailingList() {
           setUserEmail('')
         }
       }}
-    >
-      <div className="flex flex-col bg-dark-cool items-center max-w-[450px] md:flex-row rounded-[2vmax] rounded-tl-[10px] mb-[60px] lg:mb-0 overflow-hidden">
-        <input
-          id="email-field"
-          className="pt-4 pb-4 px-5 bg-dark-cool focus:outline-none focus:ring-white-500 px-3 py-2 w-full"
-          type="email"
-          placeholder="Enter your email"
-          onChange={({ target }) => setUserEmail(target.value)}
-          value={userEmail}
-        />
-        <button
-          id="mailinglist-form-button"
-          type="submit"
-          className="pt-4 pb-4 px-5 w-full md:w-[auto] bg-white duration-500 focus:outline-none text-white text-center md:text-left gradient-2 min-w-[150px] rounded-tr-[20px]"
+      >
+      <div id="mailing-list-form-container" 
+        className="mb-[60px] lg:mb-0 overflow-hidden"
         >
-          Learn More
-        </button>
+        <div id="mailing-list-form" 
+          className="flex flex-col md:flex-row md:inline-flex rounded-[3vmax] md:rounded-[5vmax] rounded-tl-[10px] md:rounded-tl-[20px] overflow-hidden"
+          >
+          <div id="email-field-container" 
+            className="mailinglist-bg flex min-w-[200px] md:min-w-[260px] overflow-hidden"
+            >
+            <input id="email-field"
+              className={`
+                flex-grow overflow-hidden text-clip single-input pt-4 pb-4 px-5 bg-dark-cool focus:outline-none 
+              `}
+              type="email"
+              placeholder="Enter your email"
+              onFocus={() => setIsEmailFocused(true)}
+              onBlur={() => setIsEmailFocused(false)}
+              onChange={({ target }) => setUserEmail(target.value)}
+              value={userEmail}
+            />
+          </div>
+          <div id="button-container" 
+            className="bg-dark-cool"
+            >
+            <button id="button"
+              type="submit"
+              className={`single-submit pt-4 pb-4 px-5 w-full md:w-[auto] bg-white focus:outline-none text-white text-center md:text-left gradient-12 min-w-[150px] 
+              ${isEmailFocused ? 'rounded-tr-[20px] md:rounded-tl-[20px]' : ''}`}
+              >
+              Learn More
+            </button>
+          </div>
+        </div>
       </div>
     </form>
   )
