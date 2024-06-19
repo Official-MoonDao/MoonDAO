@@ -1,5 +1,5 @@
 import React from 'react'
-import PageEnder from '../components/layout/PageEnder'
+import PageEnder from '../components/layout/PreFooter'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'

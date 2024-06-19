@@ -81,12 +81,17 @@ export default function Callout3() {
     const [singleCol, setSingleCol] = useState(false);
 
     return ( 
-        <section id="callout2-container" className="relative items-start justify-end md:items-start lg:items-start md:justify-end lg:justify-center mt-[25vh]">
-            <div id="background-elements" className="overflow-visible">  
-            </div>
-            <div id="history-container" className="rounded-[5vmax] pb-10 rounded-tr-[0px] p-5 md:p-10 overflow-hidden max-w-[1200px]">
-              <CardGrid cards={cardData} />
-            </div>
+        <section id="callout2-container" 
+          className="relative items-start justify-end md:items-start lg:items-start md:justify-end lg:justify-center mt-[25vh]"
+          >
+          <div id="background-elements" 
+            className="overflow-visible"
+          ></div>
+          <div id="cards-container" 
+            className="rounded-[5vmax] pb-10 rounded-tr-[0px] p-5 md:p-10 overflow-hidden max-w-[1200px]"
+            >
+            <CardGrid cards={cardData} />
+          </div>
         </section>
     )
 }
