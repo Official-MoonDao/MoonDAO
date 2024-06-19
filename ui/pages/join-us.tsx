@@ -1,5 +1,5 @@
 import React from 'react'
-import PageEnder from '../components/layout/PreFooter'
+import PreFooter from '../components/layout/PreFooter'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -25,27 +25,33 @@ const JoinUs: React.FC = () => {
                 <MailingList />
               </>
             }
-            callout={
+            preFooter={
               <>
-                <PageEnder mode='compact'/>
+                <PreFooter 
+                  mode='compact'
+                />
               </>
             }
-          >
+            >
             <Frame backgroundColor='#090D21'>
               <h1 className="pb-5 header font-GoodTimes">
                 MoonDAO makes HISTORY!
               </h1>
-              <p className="pb-5">
+              <p className="pb-5"
+                >
                 We were the first DAO to send someone to space! Join 12,000+ subscribers and find out how we can revolutionize
                 the space industry together. MoonDAO is an international
                 collective of people united by the mission of decentralizing
                 access to space research and exploration and making space
                 accessible to everyone, not just the rich and well-connected.
               </p>
-              <Frame noPadding>
+              <Frame 
+                noPadding
+                >
                 <img src="../assets/dp-og.jpg"></img>
               </Frame>
-              <p className="pt-5">
+              <p className="pt-5"
+                >
                 Launching Coby Cotton of Dude Perfect to space was only the
                 beginning! MoonDAO aims to make space accessible to anyone in
                 the world, regardless of their financial means, and Coby’s

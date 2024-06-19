@@ -1,5 +1,5 @@
 import React from 'react'
-import PageEnder from '../components/layout/PreFooter'
+import PreFooter from '../components/layout/PreFooter'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -27,9 +27,9 @@ const DudePerfect: React.FC = () => {
               cosmos.
             </>
           }
-          callout={
+          preFooter={
             <>
-              <PageEnder />
+              <PreFooter />
             </>
           }
         >
