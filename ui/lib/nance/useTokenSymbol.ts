@@ -13,6 +13,13 @@ export function useTokenSymbol(address: string | undefined) {
   async function getValue() {
     const isValidAddress = address !== undefined && isAddress(address)
 
+    if (address === '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE') {
+      setValue('ETH')
+      setIsLoading(false)
+      setError(undefined)
+      return
+    }
+
     if (isValidAddress) {
       try {
         setIsLoading(true)
