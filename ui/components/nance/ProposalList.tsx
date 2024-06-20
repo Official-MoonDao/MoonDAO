@@ -52,7 +52,7 @@ function NoResults() {
 
 function ProposalListSkeleton() {
   return (
-    <div className="page-border-and-color font-[Lato] mt-3 lg:mt-10 flex flex-col gap-4">
+    <div className="font-[Lato] mt-4 lg:mt-8">
       <ul className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
         {[...Array(10).keys()].map((n) => (
           <li

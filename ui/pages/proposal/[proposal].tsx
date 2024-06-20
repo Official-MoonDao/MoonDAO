@@ -15,7 +15,7 @@ import ProposalVotes from '../../components/nance/ProposalVotes'
 
 function ProposalSkeleton() {
   return (
-    <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full lg:px-10 page-border-and-color font-[Lato]">
+    <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full lg:px-10 py-5 dark:bg-[#040C1A] shadow-[0px_4px_29px_0px_rgba(0,0,0,0.03)] dark:shadow-none font-[Lato]">
       <header className="relative isolate">
         <div
           className="absolute inset-0 -z-10 overflow-hidden"
