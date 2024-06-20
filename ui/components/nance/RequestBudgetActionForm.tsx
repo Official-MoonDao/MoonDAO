@@ -83,15 +83,17 @@ export default function RequestBudgetActionForm() {
                 </div>
               </div>
 
-              <div className="sm:col-span-1 flex items-center">
-                <button
-                  className="btn btn-circle btn-outline btn-sm"
-                  type="button"
-                  onClick={() => projectTeamRemove(index)}
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
+              {index !== 0 && (
+                <div className="sm:col-span-1 flex items-center">
+                  <button
+                    className="mt-7 btn btn-circle btn-outline btn-sm hover:text-black"
+                    type="button"
+                    onClick={() => projectTeamRemove(index)}
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
 
@@ -182,7 +184,7 @@ export default function RequestBudgetActionForm() {
 
               <div className="sm:col-span-1 flex items-center">
                 <button
-                  className="btn btn-circle btn-outline btn-sm"
+                  className="mt-10 btn btn-circle btn-outline btn-sm hover:text-black"
                   type="button"
                   onClick={() => budgetRemove(index)}
                 >
