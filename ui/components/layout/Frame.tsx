@@ -12,6 +12,7 @@ interface RoundedFrameProps {
     marginRight?: string;
     marginBottom?: string;
     marginLeft?: string;
+    className?: string; 
 }
 
 export default function RoundedFrame({
@@ -26,6 +27,7 @@ export default function RoundedFrame({
     marginRight = "0px",
     marginBottom = "20px",
     marginLeft = "0px",
+    className = "", 
 }: RoundedFrameProps) {
     const frameStyle: CSSProperties = {
         backgroundColor,
@@ -37,10 +39,14 @@ export default function RoundedFrame({
     };
 
     return (
-        <div
+        <div id="frame-container"
             style={frameStyle}
-            className={`overflow-hidden w-full ${noPadding ? "" : "p-5 pb-0 md:p-10"}`}
-        >
+            className={`
+                overflow-hidden w-full
+                ${noPadding ? "" : "p-5 pb-0 md:p-10"} 
+                ${className}
+            `} 
+            >
             {children}
         </div>
     );

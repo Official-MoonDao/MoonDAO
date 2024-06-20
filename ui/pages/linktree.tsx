@@ -1,5 +1,5 @@
 import React from 'react'
-import PageEnder from '../components/layout/PageEnder'
+import PreFooter from '../components/layout/PreFooter'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -13,7 +13,8 @@ const LinkTree: React.FC = () => {
     <>
       <WebsiteHead title={title} description={description} />
       <section className="w-[calc(100vw-20px)]">
-        <Container>
+        <Container
+          >
           <ContentLayout
             header="News & Updates"
             headerSize="max(20px, 3vmax)"
@@ -25,9 +26,9 @@ const LinkTree: React.FC = () => {
                 <MailingList />
               </>
             }
-            callout={
+            preFooter={
               <>
-                <PageEnder />
+                <PreFooter/>
               </>
             }
           >

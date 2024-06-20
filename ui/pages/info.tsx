@@ -1,5 +1,5 @@
 import React from 'react';
-import PageEnder from '../components/layout/PageEnder';
+import PreFooter from '../components/layout/PreFooter';
 import Container from '../components/layout/Container';
 import ContentLayout from '../components/layout/ContentLayout';
 import WebsiteHead from '../components/layout/Head';
@@ -84,7 +84,8 @@ const Info: React.FC = () => {
     <>
       <WebsiteHead title={title} description={description} image={image} />
       <section className="w-[calc(100vw-20px)]">
-        <Container >
+        <Container 
+          >
           <ContentLayout
             header="Info Center"
             headerSize="max(20px, 3vw)"
@@ -93,9 +94,11 @@ const Info: React.FC = () => {
                 Learn more about the Internet's Space Program with the latest news and project updates, dive into the documentation, join an upcoming online event, or explore transparent analytics about our treasury and transactions.
               </>
             }
-            callout={
+            preFooter={
               <>
-                <PageEnder mode='compact'/>
+                <PreFooter 
+                  mode='compact'
+                />
               </>
             }
             mainPadding
@@ -103,7 +106,10 @@ const Info: React.FC = () => {
             popOverEffect={false}
           >
             <>
-              <CardGrid cards={cardData} singleCol={false} />
+              <CardGrid 
+                cards={cardData} 
+                singleCol={false}
+              />
             </>
           </ContentLayout>
         </Container>
