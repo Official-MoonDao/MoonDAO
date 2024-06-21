@@ -21,6 +21,7 @@
     "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.0.18",
     "@privy-io/react-auth": "^1.59.2",
+    "@privy-io/server-auth": "^1.7.3",
     "@privy-io/wagmi-connector": "^0.1.12",
     "@react-three/drei": "^9.86.0",
     "@react-three/fiber": "^8.14.3",
