@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer'
 
-const opEmail = 'info@moondao.com'
+export const opEmail = 'info@moondao.com'
 
 const emailList = [
   process.env.NODEMAILER_MOONDAO_PRIMARY_EMAIL,

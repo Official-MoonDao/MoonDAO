@@ -20,12 +20,8 @@ import { PageCards } from '../components/layout/PageCards'
 
 export default function Governance() {
   const router = useRouter()
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
 
   const { exportWallet } = usePrivy()
-
-  const [enableBridgeModal, setEnableBridgeModal] = useState(false)
 
   const sections: any = [
     {
@@ -147,9 +143,7 @@ export default function Governance() {
             <button
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
               onClick={() =>
-                window.open(
-                  'https://docs.moondao.com/Governance/Constitution'
-                )
+                window.open('https://docs.moondao.com/Governance/Constitution')
               }
             >
               Constitution
