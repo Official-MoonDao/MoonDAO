@@ -1,9 +1,8 @@
-import { Sepolia } from '@thirdweb-dev/chains'
 import { ethers } from 'ethers'
 import { NextApiRequest, NextApiResponse } from 'next'
 import Nonce from '@/lib/mongodb/models/Nonce'
 import dbConnect from '@/lib/mongodb/mongo'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
+import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 
 const keyRestrictions = {
   keyName: 'Signed Upload JWT',
@@ -30,23 +29,9 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === 'POST') {
-    await dbConnect()
-
-    const signature = req.headers.signature as string
-    const { address, message } = JSON.parse(req.body)
-
-    const nonceRecord = await Nonce.findOne({ address })
-
-    if (!nonceRecord?.nonce) {
-      return res.status(401).send('Unauthorized')
-    }
-
-    const recoveredAddress = ethers.utils.verifyMessage(
-      message + nonceRecord.nonce,
-      signature
-    )
-    if (recoveredAddress !== address) {
-      return res.status(401).send('Unauthorized')
+    const auth = await verifyPrivyAuth(req.headers.authorization)
+    if (!auth) {
+      return res.status(401).json('Unauthorized')
     }
 
     const jwtResponse = await fetch(

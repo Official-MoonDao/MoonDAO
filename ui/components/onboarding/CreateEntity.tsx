@@ -1,4 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { ENTITY_ADDRESSES, ENTITY_CREATOR_ADDRESSES } from 'const/config'
@@ -12,6 +13,7 @@ import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import isTextInavlid from '@/lib/tableland/isTextValid'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatEntityFormData, { EntityData } from '@/lib/typeform/entityFormData'
+import MoonDAOEntityCreatorABI from '../../const/abis/MoonDAOEntityCreator.json'
 import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
@@ -25,6 +27,8 @@ export function CreateEntity({
   setSelectedTier,
 }: any) {
   const router = useRouter()
+
+  const { getAccessToken } = usePrivy()
 
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
@@ -61,7 +65,8 @@ export function CreateEntity({
   )
 
   const { contract: entityCreatorContract } = useContract(
-    ENTITY_CREATOR_ADDRESSES[selectedChain.slug]
+    ENTITY_CREATOR_ADDRESSES[selectedChain.slug],
+    MoonDAOEntityCreatorABI
   )
   const pfpRef = useRef<HTMLDivElement | null>(null)
 
@@ -108,23 +113,7 @@ export function CreateEntity({
                 className="w-[100%] md:w-[100%]"
                 id={process.env.NEXT_PUBLIC_TYPEFORM_ENTITY_FORM_ID as string}
                 onSubmit={async (formResponse: any) => {
-                  const provider = await wallets[
-                    selectedWallet
-                  ].getEthersProvider()
-                  const signer = provider?.getSigner()
-
-                  const nonceRes = await fetch(
-                    `/api/db/nonce?address=${address}`
-                  )
-                  const nonceData = await nonceRes.json()
-
-                  const message = `Please sign this message to subit the form #`
-
-                  const signature = await signer.signMessage(
-                    message + nonceData.nonce
-                  )
-
-                  if (!signature) return toast.error('Error signing message')
+                  const accessToken = await getAccessToken()
 
                   //get response from form
                   const { formId, responseId } = formResponse
@@ -133,12 +122,8 @@ export function CreateEntity({
                     {
                       method: 'POST',
                       headers: {
-                        signature,
+                        Authorization: `Bearer ${accessToken}`,
                       },
-                      body: JSON.stringify({
-                        address,
-                        message,
-                      }),
                     }
                   )
                   const data = await responseRes.json()
@@ -310,33 +295,14 @@ export function CreateEntity({
                   return toast.error('Insufficient balance')
                 }
 
-                //sign message
-                const provider = await wallets[
-                  selectedWallet
-                ].getEthersProvider()
-                const signer = provider?.getSigner()
-
-                const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
-                const nonceData = await nonceRes.json()
-
-                const message = `Please sign this message to mint this entity's NFT #`
-
-                const signature = await signer.signMessage(
-                  message + nonceData.nonce
-                )
-
-                if (!signature) return toast.error('Error signing message')
+                const accessToken = await getAccessToken()
 
                 //get pinata jwt
                 const jwtRes = await fetch('/api/ipfs/upload', {
                   method: 'POST',
                   headers: {
-                    signature,
+                    Authorization: `Bearer ${accessToken}`,
                   },
-                  body: JSON.stringify({
-                    address: wallets[selectedWallet].address,
-                    message,
-                  }),
                 })
 
                 const pinataJWT = await jwtRes.text()

@@ -1,4 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { CITIZEN_ADDRESSES } from 'const/config'
@@ -28,6 +29,8 @@ export function CreateCitizen({
   setSelectedTier,
 }: any) {
   const router = useRouter()
+
+  const { getAccessToken } = usePrivy()
 
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
@@ -110,42 +113,20 @@ export function CreateCitizen({
                 className="w-[100%] md:w-[100%]"
                 id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
                 onSubmit={async (formResponse: any) => {
-                  const provider = await wallets[
-                    selectedWallet
-                  ].getEthersProvider()
-                  const signer = provider?.getSigner()
-
-                  const nonceRes = await fetch(
-                    `/api/db/nonce?address=${address}`
-                  )
-                  const nonceData = await nonceRes.json()
-
-                  const message = `Please sign this message to subit the form #`
-
-                  const signature = await signer.signMessage(
-                    message + nonceData.nonce
-                  )
-
-                  if (!signature) return toast.error('Error signing message')
-
                   //get response from form
+                  const accessToken = await getAccessToken()
+
                   const { formId, responseId } = formResponse
                   const responseRes = await fetch(
                     `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
                     {
                       method: 'POST',
                       headers: {
-                        signature,
+                        Authorization: `Bearer ${accessToken}`,
                       },
-                      body: JSON.stringify({
-                        address,
-                        message,
-                      }),
                     }
                   )
                   const data = await responseRes.json()
-
-                  console.log(data.answers)
 
                   const citizenFormData = formatCitizenFormData(
                     data.answers,
@@ -318,32 +299,14 @@ export function CreateCitizen({
                   return toast.error('Insufficient balance')
                 }
 
-                const provider = await wallets[
-                  selectedWallet
-                ].getEthersProvider()
-                const signer = provider?.getSigner()
-
-                const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
-                const nonceData = await nonceRes.json()
-
-                const message = `Please sign this message to mint this entity's NFT #`
-
-                const signature = await signer.signMessage(
-                  message + nonceData.nonce
-                )
-
-                if (!signature) return toast.error('Error signing message')
+                const accessToken = await getAccessToken()
 
                 //get pinata jwt
                 const jwtRes = await fetch('/api/ipfs/upload', {
                   method: 'POST',
                   headers: {
-                    signature,
+                    Authorization: `Bearer ${accessToken}`,
                   },
-                  body: JSON.stringify({
-                    address: wallets[selectedWallet].address,
-                    message,
-                  }),
                 })
 
                 const pinataJWT = await jwtRes.text()
@@ -359,10 +322,6 @@ export function CreateCitizen({
                   if (!newImageIpfsHash) {
                     return toast.error('Error pinning image to IPFS')
                   }
-
-                  //get the next token id of the nft collection
-                  const totalSupply = await citizenContract?.call('totalSupply')
-                  const nextTokenId = totalSupply.toString()
 
                   //mint
                   setIsLoadingMint(true)

@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 import { NextApiRequest, NextApiResponse } from 'next'
 import Nonce from '@/lib/mongodb/models/Nonce'
 import dbConnect from '@/lib/mongodb/mongo'
+import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 
 //https://github.com/mathio/nextjs-embed-demo/blob/main/pages/api/response.js
 
@@ -46,23 +47,10 @@ export default async function handler(
     return res.status(405).send('Method Not Allowed')
   }
 
-  await dbConnect()
+  const auth = await verifyPrivyAuth(req.headers.authorization)
 
-  const signature = req.headers.signature as string
-  const { address, message } = JSON.parse(req.body)
-
-  const nonceRecord = await Nonce.findOne({ address })
-
-  if (!nonceRecord?.nonce) {
-    return res.status(401).send('Unauthorized')
-  }
-
-  const recoveredAddress = ethers.utils.verifyMessage(
-    message + nonceRecord.nonce,
-    signature
-  )
-  if (recoveredAddress !== address) {
-    return res.status(401).send('Unauthorized')
+  if (!auth) {
+    return res.status(401).json('Unauthorized')
   }
 
   const { formId, responseId } = req.query

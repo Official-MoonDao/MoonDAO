@@ -1,4 +1,4 @@
-import { useWallets } from '@privy-io/react-auth'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
 import {
   useAddress,
   useContract,
@@ -16,6 +16,7 @@ import formatCitizenFormData from '@/lib/typeform/citizenFormData'
 
 export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const router = useRouter()
+  const { getAccessToken } = usePrivy()
   const address = useAddress()
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -43,19 +44,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
           id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
           onSubmit={async (formResponse: any) => {
             // sign message to get response
-            const provider = await wallets[selectedWallet].getEthersProvider()
-            const signer = provider?.getSigner()
-
-            const nonceRes = await fetch(`/api/db/nonce?address=${address}`)
-            const nonceData = await nonceRes.json()
-
-            const message = `Please sign this message to submit the form #`
-
-            const signature = await signer.signMessage(
-              message + nonceData.nonce
-            )
-
-            if (!signature) return toast.error('Error signing message')
+            const accessToken = await getAccessToken()
 
             //get response from form
             const { formId, responseId } = formResponse
@@ -64,12 +53,8 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
               {
                 method: 'POST',
                 headers: {
-                  signature,
+                  Authorization: `Bearer ${accessToken}`,
                 },
-                body: JSON.stringify({
-                  address,
-                  message,
-                }),
               }
             )
             const data = await responseRes.json()
