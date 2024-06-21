@@ -1,5 +1,3 @@
-import { useContract } from '@thirdweb-dev/react'
-import { MARKETPLACE_ADDRESS } from 'const/config'
 import Image from 'next/image'
 import { useState } from 'react'
 import Button from './Button'
@@ -46,9 +44,7 @@ function CollectionCard({ name, description, image = '', floorPrice }: any) {
 }
 
 export default function EntityMarketplace({ entityId }: any) {
-  const [marketplaceModalEnabled, setMarketplaceModalEnabled] = useState(false)
-
-  const { contract: marketplace } = useContract(MARKETPLACE_ADDRESS)
+  const [listingModalEnabled, setListingModalEnabled] = useState(false)
 
   return (
     <Card>
@@ -129,10 +125,8 @@ export default function EntityMarketplace({ entityId }: any) {
           </>
         )}
       </div>
-      {marketplaceModalEnabled && (
-        <ListingModal setEnabled={setMarketplaceModalEnabled} />
-      )}
-      <Button className="mt-4" onClick={() => setMarketplaceModalEnabled(true)}>
+      {listingModalEnabled && <ListingModal setEnabled={listingModalEnabled} />}
+      <Button className="mt-4" onClick={() => setListingModalEnabled(true)}>
         Create a Listing
       </Button>
     </Card>
