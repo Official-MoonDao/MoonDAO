@@ -5,7 +5,7 @@ export function useCitizenData(nft: any, citizenContract: any) {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
-  const [subIsValid, setSubIsValid] = useState<boolean>(false)
+  const [subIsValid, setSubIsValid] = useState<boolean>(true)
 
   function getView() {
     const entityView: any = getAttribute(nft.metadata.attributes, 'view')
@@ -41,9 +41,9 @@ export function useCitizenData(nft: any, citizenContract: any) {
     if (!nft?.metadata?.attributes) return
     ;(async () => {
       setIsLoading(true)
+      await checkSubscription()
       getCitizenSocials()
       getView()
-      await checkSubscription()
       setIsLoading(false)
     })()
   }, [nft])

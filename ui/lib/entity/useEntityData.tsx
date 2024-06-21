@@ -17,7 +17,7 @@ export function useEntityData(
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState()
   const [isManager, setIsManager] = useState<boolean>(false)
-  const [subIsValid, setSubIsValid] = useState<boolean>(false)
+  const [subIsValid, setSubIsValid] = useState<boolean>(true)
 
   const { data: adminHatId } = useHandleRead(entityContract, 'entityAdminHat', [
     nft?.metadata?.id || '',
@@ -82,9 +82,9 @@ export function useEntityData(
     if (!nft?.metadata?.attributes) return
     ;(async () => {
       setIsLoading(true)
+      await checkSubscription()
       getEntitySocials()
       getView()
-      await checkSubscription()
       setIsLoading(false)
     })()
   }, [nft])
