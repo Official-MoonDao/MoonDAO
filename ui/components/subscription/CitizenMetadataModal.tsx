@@ -1,3 +1,4 @@
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import {
   useAddress,
@@ -38,7 +39,16 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
-        <h1 className="text-2xl font-bold">Update Info</h1>
+        <div className="w-full flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Update Info</h1>
+          <button
+            type="button"
+            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            onClick={() => setEnabled(false)}
+          >
+            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+          </button>
+        </div>
         <Widget
           className="w-[100%] md:w-[100%]"
           id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}

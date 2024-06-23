@@ -1,3 +1,4 @@
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { sub } from 'date-fns'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
@@ -44,7 +45,16 @@ export function SubscriptionModal({
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
-        <h1 className="text-2xl font-bold">Extend Subscription</h1>
+        <div className="w-full flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Extend Subscription</h1>
+          <button
+            type="button"
+            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            onClick={() => setEnabled(false)}
+          >
+            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+          </button>
+        </div>
         <div className="w-full flex flex-col gap-4">
           <div className="w-full flex gap-4">
             <p>
@@ -78,7 +88,7 @@ export function SubscriptionModal({
             } ETH`}
           </p>
           <button
-            className="px-4 py-2 bg-moon-orange"
+            className="mt-4 px-2 w-[200px] border-2 border-moon-orange text-moon-orange rounded-full"
             onClick={async () => {
               if (!years || !subscriptionCost) return
 

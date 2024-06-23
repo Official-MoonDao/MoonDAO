@@ -1,3 +1,4 @@
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import isTextInavlid from '@/lib/tableland/isTextValid'
@@ -99,7 +100,16 @@ export default function EntityJobModal({
           }
         }}
       >
-        <p>{edit ? 'Edit a Job' : 'Add a Job'}</p>
+        <div className="w-full flex items-center justify-between">
+          <p>{edit ? 'Edit a Job' : 'Add a Job'}</p>
+          <button
+            type="button"
+            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            onClick={() => setEnabled(false)}
+          >
+            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+          </button>
+        </div>
 
         <input
           type="text"
