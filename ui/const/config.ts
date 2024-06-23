@@ -41,9 +41,16 @@ export const MOONEY_ADDRESSES: Index = {
 export const DAI_ADDRESSES: Index = {
   ethereum: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
   polygon: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063',
-  sepolia: '0xd393b1E02dA9831Ff419e22eA105aAe4c47E1253',
+  sepolia: '0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6',
   arbitrum: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
   'arbtirum-sepolia': '0x8B90f054565718097BD583C2dF4260c9E8fb6464',
+}
+
+export const USDC_ADDRESSES: Index = {
+  ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+  polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
+  sepolia: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+  arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
 }
 
 export const MOONEY_DECIMALS = 10 ** 18
@@ -96,15 +103,15 @@ export const JOBS_TABLE_ADDRESSES: Index = {
   sepolia: '0xa935179A87Ebf963aC4Fa463e2B1A9191FC75E30',
 }
 
+export const MARKETPLACE_TABLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xc7a679818934444E8dC49B27C8425bC6B63A469e',
+}
+
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 
 export const MARKETPLACE_FEE_SPLIT: string =
   polygonConfig.MarketplaceFeeSplit || ''
-
-export const MARKETPLACE_ADDRESS =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? polygonConfig.Marketplace
-    : sepoliaConfig.Marketplace
 
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
