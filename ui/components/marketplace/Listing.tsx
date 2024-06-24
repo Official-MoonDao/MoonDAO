@@ -108,7 +108,7 @@ export default function Listing({
           </div>
         </div>
       </div>
-      <p className="h-[200px] overflow-auto">{listing.description}</p>
+      <p className="py-2 h-[200px] overflow-auto">{listing.description}</p>
       <p>{`${listing.price} ${listing.currency}`}</p>
       {enabledBuyListingModal && (
         <BuyListingModal
