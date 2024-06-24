@@ -1,31 +1,13 @@
+import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import Listing, { Listing as ListingType } from '../marketplace/Listing'
 import Button from './Button'
 import Card from './Card'
+import EntityMarketplaceListingModal from './EntityMarketplaceListingModal'
 import SubCard from './SubCard'
 
-function ListingModal({ setEnabled }: any) {
-  const [stage, setStage] = useState(0)
-
-  return (
-    <div
-      onMouseDown={(e: any) => {
-        if (e.target.id === 'entity-marketplace-modal-backdrop')
-          setEnabled(false)
-      }}
-      id="entity-marketplace-modal-backdrop"
-      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
-    >
-      {' '}
-      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
-        <p className="text-2xl">List on Marketplace</p>
-        {stage === 0 && <div className="flex flex-col gap-2"></div>}
-      </div>
-    </div>
-  )
-}
-
-function CollectionCard({ name, description, image = '', floorPrice }: any) {
+function CollectionCard({ name, description, image = '', price }: any) {
   return (
     <SubCard className="flex flex-col gap-4">
       <Image
@@ -38,19 +20,42 @@ function CollectionCard({ name, description, image = '', floorPrice }: any) {
       <p className="font-bold h-[25px]">{name}</p>
 
       <p className="h-[150px] overflow-auto pr-2">{description}</p>
-      <p className="font-bold">{`Floor Price: ${floorPrice}`}</p>
+      <p className="font-bold">{`Price : ${price}`}</p>
     </SubCard>
   )
 }
 
-export default function EntityMarketplace({ entityId }: any) {
+export default function EntityMarketplace({
+  selectedChain,
+  marketplaceTableContract,
+  entityContract,
+  entityId,
+  isManager,
+}: any) {
+  const [listings, setListings] = useState<ListingType[]>()
   const [listingModalEnabled, setListingModalEnabled] = useState(false)
+
+  async function getEntityMarketplaceListings() {
+    const marketplaceTableName = await marketplaceTableContract.call(
+      'getTableName'
+    )
+    const statement = `SELECT * FROM ${marketplaceTableName} WHERE entityId = ${entityId}`
+
+    const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
+    const data = await res.json()
+
+    setListings(data)
+  }
+
+  useEffect(() => {
+    if (marketplaceTableContract) getEntityMarketplaceListings()
+  }, [marketplaceTableContract, entityId])
 
   return (
     <Card>
       <p className="text-2xl">Marketplace</p>
-      <div className="mt-4 max-h-[600px] overflow-auto flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {entityId === '0' && (
+      <div className="mt-4 max-h-[700px] overflow-auto grid xs:grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {/* {entityId === '0' && (
           <>
             <CollectionCard
               name="Lunar Cargo Transport"
@@ -123,12 +128,37 @@ export default function EntityMarketplace({ entityId }: any) {
               floorPrice="10 ETH"
             />
           </>
+        )} */}
+
+        {listings?.[0] ? (
+          listings.map((listing, i) => (
+            <Listing
+              key={`entity-marketplace-listing-${i}`}
+              selectedChain={selectedChain}
+              listing={listing}
+              marketplaceTableContract={marketplaceTableContract}
+              entityContract={entityContract}
+              editable={isManager}
+              refreshListings={getEntityMarketplaceListings}
+            />
+          ))
+        ) : (
+          <p>{`This entity hasn't listed any items for sale yet.`}</p>
         )}
       </div>
-      {listingModalEnabled && <ListingModal setEnabled={listingModalEnabled} />}
-      <Button className="mt-4" onClick={() => setListingModalEnabled(true)}>
-        Create a Listing
-      </Button>
+      {listingModalEnabled && (
+        <EntityMarketplaceListingModal
+          entityId={entityId}
+          refreshListings={getEntityMarketplaceListings}
+          marketplaceTableContract={marketplaceTableContract}
+          setEnabled={setListingModalEnabled}
+        />
+      )}
+      {isManager && (
+        <Button className="mt-4" onClick={() => setListingModalEnabled(true)}>
+          Create a Listing
+        </Button>
+      )}
     </Card>
   )
 }

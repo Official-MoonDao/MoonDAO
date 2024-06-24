@@ -19,6 +19,7 @@ import {
   ENTITY_ADDRESSES,
   HATS_ADDRESS,
   JOBS_TABLE_ADDRESSES,
+  MARKETPLACE_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
 } from 'const/config'
 import { GetServerSideProps } from 'next'
@@ -78,6 +79,10 @@ export default function EntityDetailPage({ tokenId }: any) {
   const { contract: jobTableContract } = useContract(
     JOBS_TABLE_ADDRESSES[selectedChain.slug],
     JobBoardTableABI
+  )
+
+  const { contract: marketplaceTableContract } = useContract(
+    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug]
   )
 
   const { data: nft } = useNFT(entityContract, tokenId)
@@ -319,7 +324,13 @@ export default function EntityDetailPage({ tokenId }: any) {
             isManager={isManager}
           />
 
-          <EntityMarketplace entityId={tokenId} />
+          <EntityMarketplace
+            selectedChain={selectedChain}
+            entityId={tokenId}
+            marketplaceTableContract={marketplaceTableContract}
+            entityContract={entityContract}
+            isManager={isManager}
+          />
           {/* Mooney and Voting Power */}
           <div className="flex flex-col xl:flex-row gap-6">
             <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
