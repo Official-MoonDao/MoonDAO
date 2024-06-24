@@ -103,6 +103,11 @@ export const JOBS_TABLE_ADDRESSES: Index = {
   sepolia: '0xa935179A87Ebf963aC4Fa463e2B1A9191FC75E30',
 }
 
+export const MARKETPLACE_ADDRESS =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? polygonConfig.Marketplace
+    : sepoliaConfig.Marketplace
+
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0xc7a679818934444E8dC49B27C8425bC6B63A469e',
