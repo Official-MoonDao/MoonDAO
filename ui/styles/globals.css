@@ -26,6 +26,7 @@ body {
   margin: 0;
   font-family: 'Lato';
   overflow: auto;
+  overscroll-behavior: none;
 }
 
 .font-acme {
@@ -260,7 +261,7 @@ a {
   }
 
   .gradient-2 {
-    background: linear-gradient(220deg, #6D3F79 5%, #3344A8 95%);
+    background: linear-gradient(220deg, #6D3F79 5%, #425EEB 95%);
   }
 
   .gradient-3 {
@@ -289,7 +290,7 @@ a {
   }
 
   .gradient-8 {
-    background: linear-gradient(60deg, transparent 10%, #080C20 40%);
+    background: linear-gradient(60deg, transparent 25%, #080C20 60%);
   }  
 
   .gradient-9 {
@@ -302,6 +303,14 @@ a {
 
   .gradient-11 {
     background: linear-gradient(180deg, #090d21 20%, transparent 100%);
+  }
+
+  .gradient-12 {
+    background: linear-gradient(260deg, #6D3F79 5%, #425EEB 95%);
+  }
+
+  .gradient-13 {
+    background: linear-gradient(0deg, #425EEB 50%,  #090d21 50%);
   }
 
   /*Dividers*/
@@ -469,4 +478,103 @@ html {
     display:none !important;
   }
 }
+
+/*Handling of minimum heights for sections on large screens*/
+/*Remove height minimums over 1200px*/
+@media(min-width:1200px) {
+  .compact-lg {
+    min-height:500px !important;
+    height:auto !important;
+  }
+}
+
+/*Handling of minimum heights for sections on double extra large screens*/
+/*Remove height minimums over 1920px*/  
+@media(min-width:1920px) {
+  .compact-xxl {
+    min-height:500px !important;
+    height:auto !important;
+  }
+}
+
+/*Apply parental border radius to groups of cards*/
+.clipped-div {
+  clip-path: inset(0 0 0 0 round 20px 5vmax 5vmax 5vmax);
+}
+
+/*Hover effect for cards*/
+.clip {
+  transition: width .5s ease-in-out;
+  background-image: url('/assets/divider-8.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+  width:80%;
+  max-height:220%;
+
+}
+
+@media (min-width: 768px) {
+
+  .card-container .clip {
+    transition: all 0.5s ease-in-out;
+  }
+
+  .card-container:hover .clip {
+    width: 1000%;
+    height:220%;
+    transition: all 0.5s ease-in-out .25s;
+  }
+
+  .card-container .description {
+    opacity: 100%;
+    transition: opacity 0.25s ease-in-out 0.25s; /* Transition with delay on the return */
+  }
+  
+  .card-container:hover .description {
+    opacity: 0%;
+    transition: opacity 0.25s ease-in-out; /* Immediate transition on hover */
+    transition-delay: 0.25s; /* Delay before the opacity change starts on hover */
+  }
+
+  .card-container .hovertext {
+    margin-bottom:-60px;
+    transition: .5s ease-in-out .25s;
+    opacity: 0%;
+  }
+  .card-container:hover .hovertext {
+    margin-bottom:0px;
+    opacity: 100%;
+    transition: .5s ease-in-out .25s;
+  }
+
+  .hovertext-bg {
+    background: linear-gradient(220deg, #6D3F79 5%, #3344A8 95%);
+  }
+}
+
+@media (max-width:768px ){
+.mailinglist-bg {
+  background:linear-gradient(90deg, transparent 20%, #090d21 20%), linear-gradient(180deg, #090d21 50%, transparent 50%),  linear-gradient(90deg, #425EEB 50%,  #090d21 50%);
+}
+
+}
+
+@media (min-width:768px ){
+.mailinglist-bg {
+  background: linear-gradient(0deg, #425EEB 50%,  #090d21 50%);
+}
+}
+
+/*Hover effect for single input field forms*/
+.single-input {
+  border-radius: 20px 0px 20px 20px;
+  transition: border-radius 0.5s ease-out;
+}
+
+.single-input:focus {
+  border-radius: 0px 0px 0px 0px;
+  transition: border-radius 0.25s ease-in-out;
+}
+
+
 
