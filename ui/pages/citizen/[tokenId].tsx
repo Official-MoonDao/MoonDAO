@@ -42,9 +42,11 @@ import GeneralActions from '@/components/subscription/GeneralActions'
 import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 
-export default function CitizenDetailPage({ tokenId }: any) {
+export default function CitizenDetailPage() {
   const router = useRouter()
   const address = useAddress()
+
+  const [tokenId, setTokenId] = useState<any>(router.query.tokenId)
 
   // //privy
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -412,14 +414,4 @@ export default function CitizenDetailPage({ tokenId }: any) {
       )}
     </div>
   )
-}
-
-export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  const tokenId = params?.tokenId
-
-  return {
-    props: {
-      tokenId,
-    },
-  }
 }

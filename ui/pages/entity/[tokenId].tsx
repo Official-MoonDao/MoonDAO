@@ -49,11 +49,13 @@ import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
 
-export default function EntityDetailPage({ tokenId }: any) {
+export default function EntityDetailPage() {
   const [lightMode] = useLightMode()
 
   const router = useRouter()
   const address = useAddress()
+
+  const [tokenId, setTokenId] = useState<any>(router.query.tokenId)
 
   //privy
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -413,14 +415,4 @@ export default function EntityDetailPage({ tokenId }: any) {
       )}
     </div>
   )
-}
-
-export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  const tokenId = params?.tokenId
-
-  return {
-    props: {
-      tokenId,
-    },
-  }
 }
