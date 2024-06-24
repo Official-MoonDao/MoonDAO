@@ -1,20 +1,28 @@
-import { Ethereum } from '@thirdweb-dev/chains'
-import { useEffect, useState } from 'react'
-import { initSDK } from '../../thirdweb/thirdweb'
+import useSWR from 'swr'
+import { isAddress } from 'ethers/lib/utils'
 
-export function useENS(address: string = '') {
-  const [ens, setENS] = useState<any>()
+interface ENSIdeaResponse {
+  address: string
+  name: string
+  displayName: string
+  avatar: string
+}
 
-  async function getENS() {
-    const sdk = initSDK(Ethereum)
-    const provider = sdk.getProvider()
-    const ensLookup = await provider.lookupAddress(address)
-    setENS(ensLookup)
-  }
+export function useENS(
+  addressOrEns: string | null | undefined,
+  shouldFetch: boolean = true
+) {
+  const addressIsValid =
+    !!addressOrEns && (isAddress(addressOrEns) || addressOrEns.endsWith('.eth'))
+  const _shouldFetch = shouldFetch && addressIsValid
 
-  useEffect(() => {
-    if (address) getENS()
-  }, [address])
-
-  return ens
+  return useSWR(
+    _shouldFetch
+      ? `https://api.ensideas.com/ens/resolve/${addressOrEns.toLowerCase()}`
+      : null,
+    (url) =>
+      fetch(url)
+        .then((r) => r.json())
+        .then((j) => j as ENSIdeaResponse)
+  )
 }
