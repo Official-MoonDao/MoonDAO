@@ -11,13 +11,14 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import Head from '../components/layout/Head'
 import { SearchIcon } from '@/components/assets'
 import EntityCitizenCard from '@/components/directory/EntityCitizenCard'
 import Tab from '@/components/layout/Tab'
 
-export default function Directory() {
+export default function Directory({ _citizens, _entities }: any) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -81,16 +82,37 @@ export default function Directory() {
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
 
-  const {
-    data: entities,
-    isLoading: isLoadingEntities,
-    error,
-  } = useNFTs(entityContract, { start: 0, count: 100 })
+  // const {
+  //   data: entities,
+  //   isLoading: isLoadingEntities,
+  //   error,
+  // } = useNFTs(entityContract, { start: 0, count: 100 })
 
-  const { data: citizens, isLoading: isLoadingCitizens } = useNFTs(
-    citizenContract,
-    { start: 0, count: 100 }
-  )
+  // const { data: citizens, isLoading: isLoadingCitizens } = useNFTs(
+  //   citizenContract,
+  //   { start: 0, count: 100 }
+  // )
+
+  const [entities, setEntities] = useState(_entities)
+  const [citizens, setCitizens] = useState(_citizens)
+
+  useEffect(() => {
+    if (entityContract) {
+      ;(async () => {
+        const entities = await entityContract.erc721.getAll()
+        setEntities(entities)
+      })()
+    }
+  }, [entityContract])
+
+  useEffect(() => {
+    if (citizenContract) {
+      ;(async () => {
+        const citizens = await citizenContract.erc721.getAll()
+        setCitizens(citizens)
+      })()
+    }
+  }, [citizenContract])
 
   const [filteredEntities, setFilteredEntities] = useState<NFT[]>([])
   const [filteredCitizens, setFilteredCitizens] = useState<NFT[]>([])
@@ -201,7 +223,6 @@ export default function Directory() {
           className="grid grid-cols-1
       min-[1100px]:grid-cols-2 min-[1450px]:grid-cols-3 mt-5 gap-y-5 justify-evenly items-center justify-items-center lg:justify-items-start place-items-center"
         >
-          {isLoadingEntities && <p className="text-center">Loading...</p>}
           {cachedNFTs
             ?.slice((pageIdx - 1) * 9, pageIdx * 9)
             .map((nft: any, i: number) => {
@@ -255,4 +276,23 @@ export default function Directory() {
       </div>
     </main>
   )
+}
+
+export async function getStaticProps() {
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
+
+  const entityContract = await sdk.getContract(ENTITY_ADDRESSES[chain.slug])
+  const entities = await entityContract.erc721.getAll()
+
+  const citizenContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
+  const citizens = await citizenContract.erc721.getAll()
+
+  return {
+    props: {
+      _entities: entities,
+      _citizens: citizens,
+    },
+    revalidate: 60,
+  }
 }
