@@ -7,6 +7,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import Card from './Card'
 import EntityJobModal from './EntityJobModal'
+import EntityMarketplaceListingModal from './EntityMarketplaceListingModal'
 import SubCard from './SubCard'
 
 type EntityActionProps = {
@@ -40,9 +41,15 @@ function EntityAction({
   )
 }
 
-export default function EntityActions({ entityId, jobTableContract }: any) {
+export default function EntityActions({
+  entityId,
+  jobTableContract,
+  marketplaceTableContract,
+}: any) {
   const router = useRouter()
   const [entityJobModalEnabled, setEntityJobModalEnabled] = useState(false)
+  const [entityListingModalEnabled, setEntityListingModalEnabled] =
+    useState(false)
 
   return (
     <Card>
@@ -63,6 +70,7 @@ export default function EntityActions({ entityId, jobTableContract }: any) {
           title="Sell"
           description="List products, services, or ticketed events for sale in ETH within the MoonDAO marketplace."
           icon={<BuildingStorefrontIcon height={30} width={30} />}
+          onClick={() => setEntityListingModalEnabled(true)}
         />
       </div>
       {entityJobModalEnabled && (
@@ -71,6 +79,14 @@ export default function EntityActions({ entityId, jobTableContract }: any) {
           jobTableContract={jobTableContract}
           setEnabled={setEntityJobModalEnabled}
           refreshJobs={() => router.reload()}
+        />
+      )}
+      {entityListingModalEnabled && (
+        <EntityMarketplaceListingModal
+          entityId={entityId}
+          marketplaceTableContract={marketplaceTableContract}
+          setEnabled={setEntityListingModalEnabled}
+          refreshListings={() => router.reload()}
         />
       )}
     </Card>
