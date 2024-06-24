@@ -39,13 +39,13 @@ module.exports = {
         'dark-highlight': '#f9fafb',
         'light-highlight': '#030712',
 
-        'darkest-cool':'#020617',
+        'darkest-cool': '#020617',
         'dark-cool': '#090D21',
         'mid-cool': '#182254',
         'light-cool': '#425EEB',
         'dark-warm': '#2D121A',
         'light-warm': '#753F73',
-        
+
         n3blue: '#ffbc5c',
         n3green: '#d85c4c',
         'n3blue-100': '#DCFFFF',
@@ -53,6 +53,7 @@ module.exports = {
         n3bg: '#F4FAFF',
         n3nav: '#7395B2',
         moonBlue: '#0B3B8E',
+        'moon-orange': '#D7594F',
       },
       keyframes: {
         notification: {
@@ -98,7 +99,11 @@ module.exports = {
     },
   },
   darkMode: 'class',
-  plugins: [require('daisyui'), require('tailwind-scrollbar-hide')],
+  plugins: [
+    require('daisyui'),
+    require('tailwind-scrollbar-hide'),
+    require('@tailwindcss/typography'),
+  ],
   daisyui: {
     themes: [
       {
@@ -111,7 +116,7 @@ module.exports = {
           'primary-content': '#ffffff',
           'base-100': '#ffffff',
           'base-content': '#ffffff',
-          "moon": "#D7594F"
+          moon: '#D7594F',
         },
       },
     ],

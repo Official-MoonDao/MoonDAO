@@ -1,5 +1,6 @@
 import { PrivyProvider } from '@privy-io/react-auth'
-import { Arbitrum, Chain, Sepolia } from '@thirdweb-dev/chains'
+import { Chain, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -43,7 +44,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
         >
           <PrivyThirdwebSDKProvider selectedChain={selectedChain}>
             <Layout lightMode={lightMode} setLightMode={setLightMode}>
-              <Component {...pageProps} />
+              <NextQueryParamProvider>
+                <Component {...pageProps} />
+              </NextQueryParamProvider>
             </Layout>
           </PrivyThirdwebSDKProvider>
         </PrivyProvider>
