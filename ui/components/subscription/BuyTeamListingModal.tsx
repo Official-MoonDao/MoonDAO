@@ -19,16 +19,16 @@ import toast from 'react-hot-toast'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
 import useEntityEmail from '@/lib/entity/useEntityEmail'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
-import { Listing } from '@/components/marketplace/Listing'
+import { TeamListing } from '@/components/subscription/TeamListing'
 
 type BuyListingModalProps = {
   selectedChain: any
-  listing: Listing
+  listing: TeamListing
   recipient: string
   setEnabled: Function
 }
 
-export default function BuyListingModal({
+export default function BuyTeamListingModal({
   selectedChain,
   listing,
   recipient,
@@ -51,6 +51,13 @@ export default function BuyListingModal({
   const entityEmail = useEntityEmail(entityNft)
 
   const [email, setEmail] = useState<string>()
+  const [shippingInfo, setShippingInfo] = useState({
+    streetAddress: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+  })
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const { data: owns } = useHandleRead(citizenContract, 'getOwnedToken')
@@ -86,7 +93,9 @@ export default function BuyListingModal({
     setIsLoading(true)
     let receipt
     try {
-      if (listing.currency === 'ETH') {
+      if (+listing.price <= 0) {
+        receipt = true
+      } else if (listing.currency === 'ETH') {
         // buy with eth
         const signer = sdk?.getSigner()
         const tx = await signer?.sendTransaction({
@@ -104,12 +113,18 @@ export default function BuyListingModal({
       }
 
       if (receipt) {
+        console.log(receipt)
         const accessToken = await getAccessToken()
 
         const etherscanUrl =
           process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
             ? 'https://arbiscan.io/tx/'
             : 'https://sepolia.etherscan.io/tx/'
+
+        const transactionLink =
+          +listing.price <= 0 ? 'none' : etherscanUrl + receipt.transactionHash
+
+        const shipping = Object.values(shippingInfo).join(', ')
 
         //send email to entity w/ purchase details
         const res = await fetch('/api/nodemailer/marketplace-purchase', {
@@ -121,8 +136,10 @@ export default function BuyListingModal({
             address,
             email,
             item: listing.title,
+            value: listing.price + ' ' + listing.currency,
             quantity: 1,
-            tx: etherscanUrl + receipt.transactionHash,
+            tx: transactionLink,
+            shipping,
             teamEmail: entityEmail,
           }),
         })
@@ -186,8 +203,8 @@ export default function BuyListingModal({
           <p>{`${listing.price} ${listing.currency}`}</p>
         </div>
         <p className="opacity-60">
-          Enter your email, confirm the transaction and wait to receive an email
-          from the vendor.
+          Enter your information, confirm the transaction and wait to receive an
+          email from the vendor.
         </p>
         <input
           className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
@@ -195,6 +212,57 @@ export default function BuyListingModal({
           value={email}
           onChange={({ target }) => setEmail(target.value)}
         />
+        {listing.shipping === 'true' && (
+          <div className="w-full flex flex-col gap-2">
+            <input
+              className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+              placeholder="Street Address"
+              value={shippingInfo.streetAddress}
+              onChange={({ target }) =>
+                setShippingInfo({
+                  ...shippingInfo,
+                  streetAddress: target.value,
+                })
+              }
+            />
+            <div className="w-full flex gap-2">
+              <input
+                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                placeholder="City"
+                value={shippingInfo.city}
+                onChange={({ target }) =>
+                  setShippingInfo({ ...shippingInfo, city: target.value })
+                }
+              />
+              <input
+                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                placeholder="State"
+                value={shippingInfo.state}
+                onChange={({ target }) =>
+                  setShippingInfo({ ...shippingInfo, state: target.value })
+                }
+              />
+            </div>
+            <div className="w-full flex gap-2">
+              <input
+                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                placeholder="Postal Code"
+                value={shippingInfo.postalCode}
+                onChange={({ target }) =>
+                  setShippingInfo({ ...shippingInfo, postalCode: target.value })
+                }
+              />
+              <input
+                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                placeholder="Country"
+                value={shippingInfo.country}
+                onChange={({ target }) =>
+                  setShippingInfo({ ...shippingInfo, country: target.value })
+                }
+              />
+            </div>
+          </div>
+        )}
         <button
           type="submit"
           className="mt-4 px-2 w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"

@@ -4,10 +4,10 @@ import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import EntityMarketplaceListingModal from '../subscription/EntityMarketplaceListingModal'
-import BuyListingModal from './BuyListingModal'
+import BuyTeamListingModal from './BuyTeamListingModal'
+import EntityMarketplaceListingModal from './EntityMarketplaceListingModal'
 
-export type Listing = {
+export type TeamListing = {
   id: number
   entityId: number
   title: string
@@ -15,11 +15,12 @@ export type Listing = {
   image: string
   price: string
   currency: string
+  shipping: string
 }
 
-type ListingProps = {
+type TeamListingProps = {
   selectedChain: any
-  listing: Listing
+  listing: TeamListing
   entityContract: any
   marketplaceTableContract?: any
   refreshListings?: any
@@ -27,7 +28,7 @@ type ListingProps = {
   showEntityId?: boolean
 }
 
-export default function Listing({
+export default function TeamListing({
   selectedChain,
   listing,
   entityContract,
@@ -35,7 +36,7 @@ export default function Listing({
   refreshListings,
   editable,
   showEntityId,
-}: ListingProps) {
+}: TeamListingProps) {
   const address = useAddress()
 
   const [enabledMarketplaceListingModal, setEnabledMarketplaceListingModal] =
@@ -111,7 +112,7 @@ export default function Listing({
       <p className="py-2 h-[200px] overflow-auto">{listing.description}</p>
       <p>{`${listing.price} ${listing.currency}`}</p>
       {enabledBuyListingModal && (
-        <BuyListingModal
+        <BuyTeamListingModal
           selectedChain={selectedChain}
           listing={listing}
           recipient={nft?.owner}
