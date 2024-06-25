@@ -110,7 +110,7 @@ export const MARKETPLACE_ADDRESS =
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xdeEE3286A5509d4D2Fd79371d247A0Fa6834Be79',
+  sepolia: '0x50722c52C6d97f1FFd0493047E86fD5613F9BB02',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
