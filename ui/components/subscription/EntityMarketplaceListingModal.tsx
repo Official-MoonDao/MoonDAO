@@ -6,7 +6,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import isTextInavlid from '@/lib/tableland/isTextValid'
-import { Listing } from '../marketplace/Listing'
+import { TeamListing } from './TeamListing'
 
 type ListingData = {
   title: string
@@ -14,6 +14,7 @@ type ListingData = {
   image: any
   price: any
   currency: string
+  shipping: string
 }
 
 type EntityMarketplaceListingModalProps = {
@@ -22,7 +23,7 @@ type EntityMarketplaceListingModalProps = {
   refreshListings: Function
   marketplaceTableContract: any
   edit?: boolean
-  listing?: Listing
+  listing?: TeamListing
 }
 
 export default function EntityMarketplaceListingModal({
@@ -43,6 +44,7 @@ export default function EntityMarketplaceListingModal({
           image: listing?.image || '',
           price: listing?.price || '',
           currency: listing?.currency || 'ETH',
+          shipping: listing?.shipping || 'false',
         }
       : {
           title: '',
@@ -50,6 +52,7 @@ export default function EntityMarketplaceListingModal({
           image: '',
           price: '',
           currency: 'ETH',
+          shipping: 'false',
         }
   )
 
@@ -119,6 +122,7 @@ export default function EntityMarketplaceListingModal({
                 entityId,
                 listingData.price,
                 listingData.currency,
+                listingData.shipping,
               ])
             } else {
               await marketplaceTableContract?.call('insertIntoTable', [
@@ -128,6 +132,7 @@ export default function EntityMarketplaceListingModal({
                 entityId,
                 listingData.price,
                 listingData.currency,
+                listingData.shipping,
               ])
             }
 
@@ -138,6 +143,10 @@ export default function EntityMarketplaceListingModal({
             }, 25000)
           } catch (err: any) {
             console.log(err)
+            toast.error(
+              'Something went wrong, please contact support if this issue persists.',
+              { duration: 10000 }
+            )
             setIsLoading(false)
           }
         }}
@@ -192,7 +201,7 @@ export default function EntityMarketplaceListingModal({
         />
         <textarea
           placeholder="Description"
-          className="w-full h-[250px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+          className="w-full h-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
           onChange={(e) => {
             setListingData({ ...listingData, description: e.target.value })
           }}
@@ -218,14 +227,27 @@ export default function EntityMarketplaceListingModal({
             }
             value={listingData.currency}
           >
-            <option selected value="ETH">
-              ETH
-            </option>
+            <option value="ETH">ETH</option>
             <option value="MOONEY">MOONEY</option>
             <option value="DAI">DAI</option>
             <option value="USDC">USDC</option>
           </select>
         </div>
+        <div className="w-full flex gap-2">
+          <p className="p-2">Require shipping address</p>
+          <input
+            className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+            type="checkbox"
+            checked={listingData.shipping === 'true'}
+            onChange={({ target }) =>
+              setListingData({
+                ...listingData,
+                shipping: String(target.checked),
+              })
+            }
+          />
+        </div>
+
         <button
           type="submit"
           disabled={isLoading}

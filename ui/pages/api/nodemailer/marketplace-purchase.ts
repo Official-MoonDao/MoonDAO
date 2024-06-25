@@ -15,7 +15,8 @@ const generateEmailContent = (data: any) => {
     ''
   )
 
-  const { address, email, item, quantity, tx } = JSON.parse(data)
+  const { address, email, item, value, quantity, shipping, tx } =
+    JSON.parse(data)
 
   const htmlData = `
     <div>
@@ -23,10 +24,14 @@ const generateEmailContent = (data: any) => {
     <p>${address}</p>
     <label for="email"><strong>Email</strong></label>
     <p>${email}</p>
-    <label for="phone"><strong>Item</strong></label>
+    <label for="item"><strong>Item</strong></label>
     <p>${item}</p>
+    <label for="value"><strong>Value</strong></label>
+    <p>${value}</p>
     <label for="quantity"><strong>Quantity</strong></label>
     <p>${quantity}</p>
+    <label for="shipping"><strong>Shipping Address</strong></label>
+    <p>${shipping}</p>
     <label for="tx"><strong>Transaction</strong></label>
     <p>${tx}</p>
     </div>
@@ -51,8 +56,6 @@ const handler = async (req: any, res: any) => {
     }
 
     const { teamEmail } = JSON.parse(data)
-
-    console.log(teamEmail)
 
     try {
       await transporter.sendMail({
