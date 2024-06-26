@@ -23,20 +23,17 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
 } from 'const/config'
-import { GetServerSideProps } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useEntityData } from '@/lib/entity/useEntityData'
 import useEntitySplit from '@/lib/entity/useEntitySplit'
-import { useHatTree } from '@/lib/hats/useHatTree'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
-import { useLightMode } from '@/lib/utils/hooks'
 import { CopyIcon, TwitterIcon } from '@/components/assets'
 import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
@@ -46,7 +43,6 @@ import EntityJobs from '@/components/subscription/EntityJobs'
 import EntityMarketplace from '@/components/subscription/EntityMarketplace'
 import { EntityMetadataModal } from '@/components/subscription/EntityMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
-import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
@@ -355,8 +351,8 @@ export default function EntityDetailPage() {
           />
           {/* Mooney and Voting Power */}
           <div className="flex flex-col xl:flex-row gap-6">
-            <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
-              <div className="w-3/4">
+            <Card className="w-full flex flex-col md:flex-row justify-between items-start gap-4">
+              <div className="w-3/4 flex flex-col">
                 <div className="flex items-center gap-4">
                   <p className="text-2xl">Treasury</p>
                   {nft?.owner ? (
@@ -387,9 +383,29 @@ export default function EntityDetailPage() {
                   <p>{`ETHER :`}</p>
                   <p className="pl-6">{nativeBalance ? nativeBalance : 0}</p>
                 </div>
+                <div>
+                  <p className="text-2xl mt-4">Pending Disbursement</p>
+                  <div className="mt-4 flex gap-4 items-center text-lg">
+                    <p>{`MOONEY :`}</p>
+                    <p>
+                      {splitMOONEYBalance
+                        ? (
+                            splitMOONEYBalance?.toString() /
+                            10 ** 18
+                          ).toLocaleString()
+                        : 0}
+                    </p>
+                  </div>
+                  <div className="flex gap-4 items-center text-lg">
+                    <p>{`ETHER :`}</p>
+                    <p className="pl-6">
+                      {splitNativeBalance ? splitNativeBalance : 0}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex flex-col 2xl:flex-row gap-2 items-end">
+              <div className="flex flex-col xl:flex-row gap-2 items-end">
                 <Button
                   onClick={() => {
                     const safeNetwork =
@@ -404,50 +420,6 @@ export default function EntityDetailPage() {
                   <ArrowUpRightIcon height={20} width={20} />
                   {'Treasury'}
                 </Button>
-              </div>
-            </Card>
-            <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
-              <div className="w-3/4">
-                <div className="flex items-center gap-4">
-                  <p className="text-2xl">Split</p>
-                  {splitAddress ? (
-                    <button
-                      className="flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
-                      onClick={() => {
-                        navigator.clipboard.writeText(splitAddress)
-                        toast.success('Address copied to clipboard')
-                      }}
-                    >
-                      {splitAddress?.slice(0, 6) +
-                        '...' +
-                        splitAddress?.slice(-4)}
-                      <CopyIcon />
-                    </button>
-                  ) : (
-                    <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
-                  )}
-                </div>
-
-                <div className="mt-4 flex gap-4 items-center text-lg">
-                  <p>{`MOONEY :`}</p>
-                  <p>
-                    {splitMOONEYBalance
-                      ? (
-                          splitMOONEYBalance?.toString() /
-                          10 ** 18
-                        ).toLocaleString()
-                      : 0}
-                  </p>
-                </div>
-                <div className="flex gap-4 items-center text-lg">
-                  <p>{`ETHER :`}</p>
-                  <p className="pl-6">
-                    {splitNativeBalance ? splitNativeBalance : 0}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col 2xl:flex-row gap-2 items-end">
                 <Button
                   onClick={async () => {
                     if (!address)
@@ -466,7 +438,7 @@ export default function EntityDetailPage() {
                     }
                   }}
                 >
-                  <ArrowUpRightIcon height={20} width={20} />
+                  <PlusCircleIcon height={20} width={20} />
                   {'Release to Treasury'}
                 </Button>
               </div>
