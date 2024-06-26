@@ -1,6 +1,7 @@
 import React from 'react';
 import MailingList from './MailingList';
 import Footer from './Footer';
+import Link from 'next/link';
 
 export default function PreFooter({ mode = 'Default' }) {
     return (
@@ -72,9 +73,9 @@ export default function PreFooter({ mode = 'Default' }) {
                             <p>
                                 <strong>Disclaimer:</strong> There is no expectation of profit with the $MOONEY token. It is a governance token. You are not receiving fractionalized ownership of the DAO's assets in exchange for the token, check the&nbsp;
                                 <u>
-                                    <a id="FAQ-link" className="opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/About/FAQ">FAQ</a>
+                                    <Link id="FAQ-link" className="opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/About/FAQ">FAQ</Link>
                                 </u>
-                                . Always make sure you are interacting with our official token address on the Ethereum mainnet: <a id="FAQ-link" className="opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/Governance/Governance-Tokens">0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395</a>.
+                                . Always make sure you are interacting with our official token address on the Ethereum mainnet: <Link id="FAQ-link" className="opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/Governance/Governance-Tokens">0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395</Link>.
                             </p>
                         </span>
                     </div>
