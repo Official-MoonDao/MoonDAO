@@ -13,6 +13,7 @@ import {
   useContract,
   useContractRead,
   useNFT,
+  useSDK,
 } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
@@ -28,6 +29,7 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useEntityData } from '@/lib/entity/useEntityData'
+import useEntitySplit from '@/lib/entity/useEntitySplit'
 import { useHatTree } from '@/lib/hats/useHatTree'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -48,9 +50,10 @@ import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
+import TeamSplitABI from '../../const/abis/TeamSplit.json'
 
 export default function EntityDetailPage() {
-  const [lightMode] = useLightMode()
+  const sdk = useSDK()
 
   const router = useRouter()
   const address = useAddress()
@@ -99,6 +102,7 @@ export default function EntityDetailPage() {
     isLoading: isLoadingEntityData,
   } = useEntityData(entityContract, hatsContract, nft)
 
+  const splitAddress = useEntitySplit(entityContract, tokenId)
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
 
@@ -108,13 +112,26 @@ export default function EntityDetailPage() {
   )
   const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner)
 
+  const { data: splitMOONEYBalance } = useMOONEYBalance(
+    mooneyContract,
+    splitAddress
+  )
+
   const [nativeBalance, setNativeBalance] = useState<number>(0)
+
+  const [splitNativeBalance, setSplitNativeBalance] = useState<number>(0)
 
   async function getNativeBalance() {
     const sdk = initSDK(selectedChain)
     const provider = sdk.getProvider()
     const balance: any = await provider.getBalance(nft?.owner as string)
     setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
+  }
+  async function getSplitNativeBalance() {
+    const sdk = initSDK(selectedChain)
+    const provider = sdk.getProvider()
+    const balance: any = await provider.getBalance(splitAddress as string)
+    setSplitNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
   }
 
   //Subscription Data
@@ -127,7 +144,10 @@ export default function EntityDetailPage() {
     if (wallets && nft?.owner) {
       getNativeBalance()
     }
-  }, [wallets, nft])
+    if (splitAddress) {
+      getSplitNativeBalance()
+    }
+  }, [wallets, nft, splitAddress])
 
   useEffect(() => {
     setSelectedChain(
@@ -285,7 +305,7 @@ export default function EntityDetailPage() {
               jobTableContract={jobTableContract}
             />
           ) : (
-            <EntityDonation multisigAddress={nft.owner} />
+            <EntityDonation splitAddress={splitAddress} />
           )}
 
           {/* Team */}
@@ -383,6 +403,71 @@ export default function EntityDetailPage() {
                 >
                   <ArrowUpRightIcon height={20} width={20} />
                   {'Treasury'}
+                </Button>
+              </div>
+            </Card>
+            <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
+              <div className="w-3/4">
+                <div className="flex items-center gap-4">
+                  <p className="text-2xl">Split</p>
+                  {splitAddress ? (
+                    <button
+                      className="flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
+                      onClick={() => {
+                        navigator.clipboard.writeText(splitAddress)
+                        toast.success('Address copied to clipboard')
+                      }}
+                    >
+                      {splitAddress?.slice(0, 6) +
+                        '...' +
+                        splitAddress?.slice(-4)}
+                      <CopyIcon />
+                    </button>
+                  ) : (
+                    <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
+                  )}
+                </div>
+
+                <div className="mt-4 flex gap-4 items-center text-lg">
+                  <p>{`MOONEY :`}</p>
+                  <p>
+                    {splitMOONEYBalance
+                      ? (
+                          splitMOONEYBalance?.toString() /
+                          10 ** 18
+                        ).toLocaleString()
+                      : 0}
+                  </p>
+                </div>
+                <div className="flex gap-4 items-center text-lg">
+                  <p>{`ETHER :`}</p>
+                  <p className="pl-6">
+                    {splitNativeBalance ? splitNativeBalance : 0}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col 2xl:flex-row gap-2 items-end">
+                <Button
+                  onClick={async () => {
+                    if (!address)
+                      return toast.error('Please connect your wallet')
+                    if (!splitAddress)
+                      return toast.error('No split address found')
+
+                    const splitContract = await sdk?.getContract(
+                      splitAddress,
+                      TeamSplitABI
+                    )
+                    const tx = await splitContract?.call('release', [nft.owner])
+
+                    if (tx.receipt) {
+                      toast.success('Funds Released')
+                    }
+                  }}
+                >
+                  <ArrowUpRightIcon height={20} width={20} />
+                  {'Release to Treasury'}
                 </Button>
               </div>
             </Card>

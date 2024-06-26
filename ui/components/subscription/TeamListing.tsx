@@ -22,6 +22,7 @@ type TeamListingProps = {
   selectedChain: any
   listing: TeamListing
   entityContract: any
+  entitySplitAddress: string | undefined
   marketplaceTableContract?: any
   refreshListings?: any
   editable?: boolean
@@ -32,6 +33,7 @@ export default function TeamListing({
   selectedChain,
   listing,
   entityContract,
+  entitySplitAddress,
   marketplaceTableContract,
   refreshListings,
   editable,
@@ -115,7 +117,7 @@ export default function TeamListing({
         <BuyTeamListingModal
           selectedChain={selectedChain}
           listing={listing}
-          recipient={nft?.owner}
+          recipient={entitySplitAddress}
           setEnabled={setEnabledBuyListingModal}
         />
       )}

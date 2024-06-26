@@ -167,15 +167,15 @@ export default function EntityMarketplaceListingModal({
             {typeof listingData.image === 'string' ? (
               <MediaRenderer
                 src={listingData.image}
-                height="200px"
-                width="200px"
+                height="150px"
+                width="150px"
                 alt=""
               />
             ) : (
               <Image
                 src={URL.createObjectURL(listingData.image)}
-                width={200}
-                height={200}
+                width={150}
+                height={150}
                 alt=""
               />
             )}

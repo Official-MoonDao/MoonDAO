@@ -1,5 +1,6 @@
 import { TABLELAND_ENDPOINT } from 'const/config'
 import { useEffect, useState } from 'react'
+import useEntitySplit from '@/lib/entity/useEntitySplit'
 import Button from './Button'
 import Card from './Card'
 import EntityMarketplaceListingModal from './EntityMarketplaceListingModal'
@@ -14,6 +15,8 @@ export default function EntityMarketplace({
 }: any) {
   const [listings, setListings] = useState<TeamListingType[]>()
   const [listingModalEnabled, setListingModalEnabled] = useState(false)
+
+  const entitySplitAddress = useEntitySplit(entityContract, entityId)
 
   async function getEntityMarketplaceListings() {
     const marketplaceTableName = await marketplaceTableContract.call(
@@ -43,6 +46,7 @@ export default function EntityMarketplace({
               listing={listing}
               marketplaceTableContract={marketplaceTableContract}
               entityContract={entityContract}
+              entitySplitAddress={entitySplitAddress}
               editable={isManager}
               refreshListings={getEntityMarketplaceListings}
             />

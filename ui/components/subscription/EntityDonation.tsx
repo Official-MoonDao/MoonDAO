@@ -1,5 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
+import { useAddress, useSDK } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -9,29 +9,23 @@ import Button from './Button'
 import Card from './Card'
 
 type EntityDonationProps = {
-  multisigAddress: string
+  splitAddress: string | undefined
 }
 
-export default function EntityDonation({
-  multisigAddress,
-}: EntityDonationProps) {
+export default function EntityDonation({ splitAddress }: EntityDonationProps) {
   const address = useAddress()
-  const { wallets } = useWallets()
-  const { selectedWallet } = useContext(PrivyWalletContext)
+  const sdk = useSDK()
   const [donationAmount, setDonationAmount] = useState(0)
-
-  const nativeBalance = useNativeBalance()
 
   async function donate() {
     try {
-      if (!address) return toast.error('Please connect your wallet')
+      const signer = sdk?.getSigner()
+
+      if (!address || !signer) return toast.error('Please connect your wallet')
       if (donationAmount <= 0) return toast.error('Please enter a valid amount')
-      console.log(nativeBalance)
-      const provider = await wallets[selectedWallet].getEthersProvider()
-      const signer = provider.getSigner()
 
       await signer.sendTransaction({
-        to: multisigAddress,
+        to: splitAddress,
         value: String(+donationAmount * 10 ** 18),
       })
     } catch (err: any) {
@@ -46,7 +40,13 @@ export default function EntityDonation({
     <Card className="flex flex-col lg:flex-row justify-between gap-4">
       <p className="text-2xl">Contribute</p>
       <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex gap-4 items-center">
+        <form
+          className="flex gap-4 items-center"
+          onSubmit={(e) => {
+            e.preventDefault()
+            donate()
+          }}
+        >
           <input
             className="w-[100px] bg-[#0f152f] px-2 h-full"
             type="number"
@@ -55,8 +55,8 @@ export default function EntityDonation({
             step={0.001}
           />
           <p>ETH</p>
-        </div>
-        <Button onClick={donate}>Donate</Button>
+          <Button type="submit">Donate</Button>
+        </form>
       </div>
     </Card>
   )
