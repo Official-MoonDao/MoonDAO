@@ -96,12 +96,12 @@ export default function Governance() {
       sectionName: 'Participate',
       pages: [
         {
-          name: 'Vote on Snapshot',
+          name: 'Vote on Nance',
           description:
-            'Our community uses Snapshot to vote. Click here to navigate and view active proposals.',
-          href: 'https://snapshot.org/#/tomoondao.eth',
+            'Our community uses Nance to vote. Click here to navigate and view active proposals.',
+          href: '/vote',
           icon: HandRaisedIcon,
-          externalLink: true,
+          externalLink: false,
         },
         {
           name: 'City Hall',
@@ -115,9 +115,9 @@ export default function Governance() {
           name: 'Submit a Proposal',
           description:
             'Proposals start in our “Ideation” channel in the Discord. Post your idea there to get feedback and start the submission process!',
-          href: 'https://discord.com/channels/914720248140279868/1027658256706961509',
+          href: '/newProposal',
           icon: DocumentIcon,
-          externalLink: true,
+          externalLink: false,
         },
       ],
     },
