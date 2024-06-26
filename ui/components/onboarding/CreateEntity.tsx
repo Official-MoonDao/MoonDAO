@@ -291,47 +291,56 @@ export function CreateEntity({
             <StageButton
               isDisabled={!agreedToCondition || isLoadingMint}
               onClick={async () => {
-                if (nativeBalance < 0.01) {
-                  return toast.error('Insufficient balance')
-                }
-
-                const accessToken = await getAccessToken()
-
-                //get pinata jwt
-                const jwtRes = await fetch('/api/ipfs/upload', {
-                  method: 'POST',
-                  headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                  },
-                })
-
-                const pinataJWT = await jwtRes.text()
-
-                const adminHatMetadataIpfsHash = await pinMetadataToIPFS(
-                  pinataJWT || '',
-                  {
-                    type: '1.0',
-                    data: {
-                      name: entityData.name + ' Admin',
-                      description: entityData.description,
-                    },
-                  },
-                  entityData.name + 'Admin Hat Metadata'
-                )
-
-                const managerHatMetadataIpfsHash = await pinMetadataToIPFS(
-                  pinataJWT || '',
-                  {
-                    type: '1.0',
-                    data: {
-                      name: entityData.name + ' Manager',
-                      description: entityData.description,
-                    },
-                  },
-                  entityData.name + 'Manager Hat Metadata'
-                )
-
                 try {
+                  const cost = await entityContract?.call('getRenewalPrice', [
+                    address,
+                    365 * 24 * 60 * 60,
+                  ])
+
+                  const formattedCost = ethers.utils
+                    .formatEther(cost.toString())
+                    .toString()
+
+                  if (nativeBalance < formattedCost) {
+                    return toast.error('Insufficient balance')
+                  }
+
+                  const accessToken = await getAccessToken()
+
+                  //get pinata jwt
+                  const jwtRes = await fetch('/api/ipfs/upload', {
+                    method: 'POST',
+                    headers: {
+                      Authorization: `Bearer ${accessToken}`,
+                    },
+                  })
+
+                  const pinataJWT = await jwtRes.text()
+
+                  const adminHatMetadataIpfsHash = await pinMetadataToIPFS(
+                    pinataJWT || '',
+                    {
+                      type: '1.0',
+                      data: {
+                        name: entityData.name + ' Admin',
+                        description: entityData.description,
+                      },
+                    },
+                    entityData.name + 'Admin Hat Metadata'
+                  )
+
+                  const managerHatMetadataIpfsHash = await pinMetadataToIPFS(
+                    pinataJWT || '',
+                    {
+                      type: '1.0',
+                      data: {
+                        name: entityData.name + ' Manager',
+                        description: entityData.description,
+                      },
+                    },
+                    entityData.name + 'Manager Hat Metadata'
+                  )
+
                   //pin image to IPFS
                   const newImageIpfsHash = await pinImageToIPFS(
                     pinataJWT || '',
@@ -342,10 +351,6 @@ export function CreateEntity({
                   if (!newImageIpfsHash) {
                     return toast.error('Error pinning image to IPFS')
                   }
-
-                  //get the next token id of the nft collection
-                  const totalSupply = await entityContract?.call('totalSupply')
-                  const nextTokenId = totalSupply.toString()
 
                   setIsLoadingMint(true)
                   //mint NFT to safe
@@ -364,12 +369,12 @@ export function CreateEntity({
                       entityData.formResponseId,
                     ],
                     {
-                      value: ethers.utils.parseEther('0.01'),
+                      value: cost,
                     }
                   )
 
                   const mintedTokenId = parseInt(
-                    mintTx.receipt.logs[7].topics[3],
+                    mintTx.receipt.logs[9].topics[3],
                     16
                   ).toString()
 

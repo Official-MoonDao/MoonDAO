@@ -295,23 +295,33 @@ export function CreateCitizen({
               isDisabled={!agreedToCondition || isLoadingMint}
               onClick={async () => {
                 //sign message
-                if (nativeBalance < 0.01) {
-                  return toast.error('Insufficient balance')
-                }
-
-                const accessToken = await getAccessToken()
-
-                //get pinata jwt
-                const jwtRes = await fetch('/api/ipfs/upload', {
-                  method: 'POST',
-                  headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                  },
-                })
-
-                const pinataJWT = await jwtRes.text()
 
                 try {
+                  const cost = await citizenContract?.call('getRenewalPrice', [
+                    address,
+                    365 * 24 * 60 * 60,
+                  ])
+
+                  const formattedCost = ethers.utils
+                    .formatEther(cost.toString())
+                    .toString()
+
+                  if (nativeBalance < formattedCost) {
+                    return toast.error('Insufficient balance')
+                  }
+
+                  const accessToken = await getAccessToken()
+
+                  //get pinata jwt
+                  const jwtRes = await fetch('/api/ipfs/upload', {
+                    method: 'POST',
+                    headers: {
+                      Authorization: `Bearer ${accessToken}`,
+                    },
+                  })
+
+                  const pinataJWT = await jwtRes.text()
+
                   //pin image to IPFS
                   const newImageIpfsHash = await pinImageToIPFS(
                     pinataJWT || '',
@@ -340,7 +350,7 @@ export function CreateCitizen({
                       citizenData.formResponseId,
                     ],
                     {
-                      value: ethers.utils.parseEther('0.01'),
+                      value: cost,
                     }
                   )
 
