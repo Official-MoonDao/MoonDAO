@@ -18,13 +18,14 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
 import useEntityEmail from '@/lib/entity/useEntityEmail'
+import useEntitySplit from '@/lib/entity/useEntitySplit'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { TeamListing } from '@/components/subscription/TeamListing'
 
 type BuyListingModalProps = {
   selectedChain: any
   listing: TeamListing
-  recipient: string
+  recipient: string | undefined
   setEnabled: Function
 }
 
@@ -181,6 +182,16 @@ export default function BuyTeamListingModal({
           e.preventDefault()
           if (!email || email.trim() === '' || !email.includes('@'))
             return toast.error('Please enter a valid email')
+          if (listing.shipping === 'true') {
+            if (
+              shippingInfo.streetAddress.trim() === '' ||
+              shippingInfo.city.trim() === '' ||
+              shippingInfo.state.trim() === '' ||
+              shippingInfo.postalCode.trim() === '' ||
+              shippingInfo.country.trim() === ''
+            )
+              return toast.error('Please fill out all fields')
+          }
           buyListing()
         }}
       >
@@ -266,9 +277,9 @@ export default function BuyTeamListingModal({
         <button
           type="submit"
           className="mt-4 px-2 w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"
-          disabled={isLoading || !entityEmail}
+          disabled={isLoading || !entityEmail || !recipient}
         >
-          {isLoading || !entityEmail ? 'Loading...' : 'Buy'}
+          {isLoading || !entityEmail || !recipient ? 'Loading...' : 'Buy'}
         </button>
         {isLoading && (
           <p>Do not leave the page until the transaction is complete.</p>
