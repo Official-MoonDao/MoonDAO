@@ -59,6 +59,7 @@ export default function EntityActions({
           title="Fund"
           description="Submit a proposal to secure funding from the MoonDAO community for your space project."
           icon={<BanknotesIcon height={30} width={30} />}
+          onClick={() => router.push('/newProposal')}
         />
         <EntityAction
           title="Hire"

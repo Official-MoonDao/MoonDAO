@@ -70,32 +70,32 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 
 export const CITIZEN_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xBcBefF607a02aBb0e9c2F10a8dc0d33d7c88b004',
+  sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xf885EF57367e5C78ac698ADAf92eA6Fb85Ccb500',
+  sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
 export const ENTITY_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x241A6e3c7341A994E6c0ff9F043AC78041352E64',
+  sepolia: '0xc235E23D983C1F871d792406cd291e43Ca08AD67',
 }
 
 export const ENTITY_CREATOR_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x38CBacd0DB09F040895F1c4A2dAbb1BF2AFD2d8b',
+  sepolia: '0x112f6D690da78c32A074a9D4Fe302D10Dcfb2997',
 }
 
 export const ENTITY_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x7d63bD8DE90D449D6693f116E0aC201eB38C95fe',
+  sepolia: '0x316D472c1730A6fcD7a369E95C8F74FA821D98f6',
 }
 
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '',
-  sepolia: '0x00000137',
+  sepolia: '0x0000013f',
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
@@ -110,7 +110,7 @@ export const MARKETPLACE_ADDRESS =
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xc7a679818934444E8dC49B27C8425bC6B63A469e',
+  sepolia: '0x50722c52C6d97f1FFd0493047E86fD5613F9BB02',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
