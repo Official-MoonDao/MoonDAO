@@ -11,7 +11,7 @@ const ThankYou: React.FC = () => {
                     headerSize="max(25px, 4vw)"
                     description={
                         <>
-                            We've received your response. <br></br>
+                            We've received your response <br></br>
                             <a href="/" className="text-white underline">
                                 CLICK HERE
                             </a> 
