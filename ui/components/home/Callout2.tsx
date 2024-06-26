@@ -38,10 +38,10 @@ export default function Callout2() {
               backgroundColor="bg-white"
               textColor="text-dark-cool"
               borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-              link="https://app.moondao.com/join"
+              link="/join"
               paddingOnHover="pl-5"
               >
-              Become A Member
+              Become a Member
             </StandardButton>
           </div>
         </div>

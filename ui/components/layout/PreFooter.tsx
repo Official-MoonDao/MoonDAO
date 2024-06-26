@@ -1,6 +1,7 @@
 import React from 'react';
 import MailingList from './MailingList';
 import Footer from './Footer';
+import Link from 'next/link';
 
 export default function PreFooter({ mode = 'Default' }) {
     return (
@@ -65,45 +66,25 @@ export default function PreFooter({ mode = 'Default' }) {
                     </div>
                 </div>
             </div>
-            <div id="bottom-bar" 
-                className="gradient-8"
-                >
-                <div id="footer-container" 
-                    className="flex pt-5 flex-col max-w-[1200px]"
-                    >
-                    <div id="disclaimer-container"
-                        className="p-5 md:pl-[45px] lg:pl-[80px]"
-                        >
-                        <span id="disclaimer-part-1"
-                            className="opacity-[60%]"
-                            >
+            <div id="bottom-bar" className="gradient-8">
+                <div id="footer-container" className="flex pt-5 flex-col max-w-[1200px]">
+                    <div id="disclaimer-container" className="p-5 md:pl-[45px] lg:pl-[80px]">
+                        <span className="opacity-[50%]">
                             <p>
-                                Disclaimer: There is no expectation of profit with the $MOONEY token. It is a governance token. You are not receiving fractionalized ownership of the DAO's assets in exchange for the token, check &nbsp;    
+                                <strong>Disclaimer:</strong> There is no expectation of profit with the $MOONEY token. It is a governance token. You are not receiving fractionalized ownership of the DAO's assets in exchange for the token, check the&nbsp;
+                                <u>
+                                    <Link id="FAQ-link" className="opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/About/FAQ" target="_blank">FAQ</Link>
+                                </u>
+                                . Always make sure you are interacting with our official token address on the Ethereum mainnet: <Link id="FAQ-link" className="opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/Governance/Governance-Tokens" target="_blank">0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395</Link>.
                             </p>
                         </span>
-                        <span id="disclaimer-part-2">
-                            <u>
-                                <a id="FAQ-link" 
-                                    className="opacity-[60%] hover:opacity-[100%]" 
-                                    href="https://docs.moondao.com/About/FAQ"
-                                    >
-                                    the FAQ
-                                </a>
-                            </u>            
-                        </span>
-                        <span id="disclaimer-part-3"
-                            className="opacity-[60%]"
-                            >
-                            &nbsp;for more information and disclaimers.
-                        </span>
                     </div>
-                    <div id="footer-container" 
-                        className="min-h-[150px] md:min-h-[0px]"
-                        >
+                    <div id="footer-container" className="min-h-[150px] md:min-h-[0px]">
                         <Footer />
                     </div>
                 </div>
             </div>
+
         </section>
     );
 }
