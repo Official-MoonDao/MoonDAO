@@ -1,9 +1,11 @@
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useNewestProposals } from '@/lib/snapshot/useNewestProposals'
 import Button from './Button'
 import Card from './Card'
 
 export default function Proposals({ numberOfProposals = 3 }) {
+  const router = useRouter()
   const newestProposals = useNewestProposals(numberOfProposals)
   return (
     <Card className="w-full flex flex-col justify-between">
@@ -41,20 +43,10 @@ export default function Proposals({ numberOfProposals = 3 }) {
             ))}
       </div>
       <div className="mt-4 flex flex-col md:flex-row gap-2">
-        <Button
-          onClick={() =>
-            window.open(
-              'https://discord.com/channels/914720248140279868/1027658256706961509'
-            )
-          }
-        >
-          Create Proposals
+        <Button onClick={() => router.push('/newProposal')}>
+          Create a Proposal
         </Button>
-        <Button
-          onClick={() => window.open('https://snapshot.org/#/tomoondao.eth')}
-        >
-          Vote on Proposals
-        </Button>
+        <Button onClick={() => router.push('/vote')}>Vote on Proposals</Button>
       </div>
     </Card>
   )
