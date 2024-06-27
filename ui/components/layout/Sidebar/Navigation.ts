@@ -7,6 +7,8 @@ import {
   Squares2X2Icon,
 } from '@heroicons/react/24/outline'
 
+import IconOrg from '../../assets/IconOrg'
+
 export const navigation = [
   {
     name: 'Join MoonDAO',
@@ -29,9 +31,9 @@ export const navigation = [
     ],
   },
   {
-    name: 'Directory',
-    href: '/directory',
-    icon: Squares2X2Icon,
+    name: 'Network',
+    href: '/network',
+    icon: IconOrg,
   },
   {
     name: 'Jobs',

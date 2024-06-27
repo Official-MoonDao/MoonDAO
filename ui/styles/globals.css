@@ -264,7 +264,7 @@ a {
   }
 
   .gradient-2 {
-    background: linear-gradient(220deg, #6D3F79 5%, #425EEB 95%);
+    background: linear-gradient(90deg,#425EEB 5%, #6D3F79 90%);
   }
 
   .gradient-3 {
@@ -301,7 +301,7 @@ a {
   }
 
   .gradient-10 {
-    background: linear-gradient(90deg, #3344A8 0%, transparent 90%);
+    background: linear-gradient(90deg, #3344A8 0%, transparent 90%), #090d21;
   }
 
   .gradient-11 {
@@ -403,13 +403,6 @@ a {
     background-size: contain;
   }
 
-  .feature-4 {
-    background-image: url('/assets/feature-4.svg');
-    background-repeat: no-repeat;
-    background-position: top left;
-    background-size: contain;
-  }
-
 /*Typeface styles*/
 @media(max-width:1399px) {
   .header {
@@ -429,6 +422,12 @@ a {
   font-size: calc(max(2vmin, 20px));
   line-height: 1.2;
   padding-bottom:20px;
+}
+
+.static-sub-header {
+  font-size: 15px;
+  line-height: 1;
+
 }
 
 /*Hide the scrollbar on mobile*/
@@ -512,7 +511,7 @@ html {
   background-repeat: no-repeat;
   background-position: top left;
   width:80%;
-  max-height:220%;
+  max-height:300%;
 
 }
 
@@ -524,7 +523,7 @@ html {
 
   .card-container:hover .clip {
     width: 1000%;
-    height:220%;
+    height:300%;
     transition: all 0.5s ease-in-out .25s;
   }
 
@@ -551,7 +550,7 @@ html {
   }
 
   .hovertext-bg {
-    background: linear-gradient(220deg, #6D3F79 5%, #3344A8 95%);
+    background: linear-gradient(90deg,#3344A8 5%, #6D3F79 90%);
   }
 }
 
@@ -579,5 +578,62 @@ html {
   transition: border-radius 0.25s ease-in-out;
 }
 
+/*Background for the main section of the ContentLayout component*/
+@media(min-width:1100px) {
+  .popout-base-bg {
+    background: linear-gradient(90deg, transparent 40%, rgba(9, 13, 33, 1) 40%);
+  }
 
+  .popout-bg{
+    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+  }
+
+  .innerprefooter-popout-bg {
+    background: linear-gradient(90deg, transparent 50%, #090D21 0%);
+  }
+
+}
+
+@media(min-width:1100px) {
+  .popout-base-bg {
+    background: linear-gradient(90deg, transparent 30%, rgba(9, 13, 33, 1) 30%);
+  }
+}
+
+/*Backgrounds for the title section of the ContentLayout component*/
+.branded {
+  background-image: url('/assets/feature-4.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+  background-size: contain;
+}
+
+.unbranded {
+  background-image: url('/assets/feature-5.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+  background-size: contain;
+}
+
+/*Search and filter button backgrounds*/
+.bg-filter {
+background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 95%);
+}
+
+.bg-search {
+background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
+}
+
+/*Profile page cards background*/
+  .bg-slide-section {
+    background: linear-gradient(90deg, #020617 60%, #090D21 85% )
+  }
+
+  .left-fadeout {
+    background: linear-gradient(90deg, #020617 5%, transparent);
+  }
+
+  .right-fadein {
+    background: linear-gradient(90deg, transparent 5%, #090D21 75%);
+  }
 
