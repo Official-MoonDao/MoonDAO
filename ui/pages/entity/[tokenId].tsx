@@ -331,7 +331,9 @@ export default function EntityDetailPage({ tokenId }: any) {
                 marketplaceTableContract={marketplaceTableContract}
               />
               ) : (
-''
+
+                ''
+
               )
             }
             {entityMetadataModalEnabled && (
