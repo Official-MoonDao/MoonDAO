@@ -331,9 +331,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                 marketplaceTableContract={marketplaceTableContract}
               />
               ) : (
-              <div className="max-w-[290px]">
-                <EntityDonation splitAddress={splitAddress} />
-              </div>
+''
               )
             }
             {entityMetadataModalEnabled && (

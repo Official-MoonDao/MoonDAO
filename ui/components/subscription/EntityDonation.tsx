@@ -39,7 +39,6 @@ export default function EntityDonation({ splitAddress }: EntityDonationProps) {
 
   return (
     <Card className="flex flex-col lg:flex-row justify-between gap-4">
-      <p className="text-2xl">Contribute</p>
         <div className="flex flex-col lg:flex-row gap-4">
         <Frame noPadding>
           <form
