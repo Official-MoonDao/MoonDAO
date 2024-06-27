@@ -1,8 +1,9 @@
 import { TABLELAND_ENDPOINT } from 'const/config'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import useEntitySplit from '@/lib/entity/useEntitySplit'
-import Button from './Button'
-import Card from './Card'
+import SlidingCardMenu from '../layout/SlidingCardMenu'
+import StandardButton from '../layout/StandardButton'
 import EntityMarketplaceListingModal from './EntityMarketplaceListingModal'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
 
@@ -35,26 +36,46 @@ export default function EntityMarketplace({
   }, [marketplaceTableContract, entityId])
 
   return (
-    <Card>
-      <p className="text-2xl">Marketplace</p>
-      <div className="mt-4 max-h-[700px] overflow-auto grid xs:grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {listings?.[0] ? (
-          listings.map((listing, i) => (
-            <TeamListing
-              key={`entity-marketplace-listing-${i}`}
-              selectedChain={selectedChain}
-              listing={listing}
-              marketplaceTableContract={marketplaceTableContract}
-              entityContract={entityContract}
-              entitySplitAddress={entitySplitAddress}
-              editable={isManager}
-              refreshListings={getEntityMarketplaceListings}
-            />
-          ))
-        ) : (
-          <p>{`This entity hasn't listed any items for sale yet.`}</p>
+    <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+      <div className="flex justify-between items-center">
+        <div className="flex gap-5 opacity-[50%]">
+          <Image
+            src={'/assets/icon-marketplace.svg'}
+            alt="Marketplace icon"
+            width={30}
+            height={30}
+          />
+          <h2 className="header font-GoodTimes">Meet Our Team</h2>
+        </div>
+        {isManager && (
+          <StandardButton
+            className="w-full gradient-2 rounded-[5vmax]"
+            onClick={() => setListingModalEnabled(true)}
+          >
+            Create a Listing
+          </StandardButton>
         )}
       </div>
+      <SlidingCardMenu>
+        <div className="flex gap-4">
+          {listings?.[0] ? (
+            listings.map((listing, i) => (
+              <TeamListing
+                key={`entity-marketplace-listing-${i}`}
+                selectedChain={selectedChain}
+                listing={listing}
+                marketplaceTableContract={marketplaceTableContract}
+                entityContract={entityContract}
+                entitySplitAddress={entitySplitAddress}
+                editable={isManager}
+                refreshListings={getEntityMarketplaceListings}
+              />
+            ))
+          ) : (
+            <p>{`This entity hasn't listed any items for sale yet.`}</p>
+          )}
+        </div>
+      </SlidingCardMenu>
       {listingModalEnabled && (
         <EntityMarketplaceListingModal
           entityId={entityId}
@@ -63,11 +84,6 @@ export default function EntityMarketplace({
           setEnabled={setListingModalEnabled}
         />
       )}
-      {isManager && (
-        <Button className="mt-4" onClick={() => setListingModalEnabled(true)}>
-          Create a Listing
-        </Button>
-      )}
-    </Card>
+    </div>
   )
 }
