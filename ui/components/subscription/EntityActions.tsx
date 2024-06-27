@@ -30,7 +30,7 @@ function EntityAction({
 }: EntityActionProps) {
   return (
     <button onClick={onClick}>
-      <SubCard className="xl:h-[175px] flex flex-col gap-2 hover:scale-105 ease-in-out duration-300">
+      <SubCard className="xl:h-[175px] flex flex-col gap-2 hover:ml-2 ease-in-out duration-300">
         <div className="flex gap-2">
           {icon}
           <p className="font-bold text-xl">{title}</p>
@@ -53,7 +53,6 @@ export default function EntityActions({
 
   return (
     <Card>
-      {/* <p className="text-2xl">Actions</p> */}
       <div className="mt-2 grid grid-cols-1 xl:grid-cols-3 gap-4">
         <EntityAction
           title="Fund"

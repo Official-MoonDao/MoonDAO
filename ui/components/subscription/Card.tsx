@@ -7,6 +7,7 @@ export default function Card({ children, className = '', onClick }: any) {
     >
       <Frame 
         noPadding
+        bottomLeft="20px"
         >
         {children}
       </Frame>
