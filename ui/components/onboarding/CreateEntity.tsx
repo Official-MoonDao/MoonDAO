@@ -93,7 +93,7 @@ export function CreateEntity({
           <StageContainer
             className={`mb-[350px]`}
             title="Design"
-            description="Design your unique onchain registration certificate."
+            description="Design your unique passport image and on-chain registration profile."
           >
             <ImageGenerator
               setImage={setEntityImage}
@@ -106,7 +106,7 @@ export function CreateEntity({
         {stage === 1 && (
           <StageContainer
             title="Info"
-            description="Input your organization's information."
+            description="Please complete your team's profile."
           >
             <div className="w-full">
               <Widget
@@ -154,7 +154,7 @@ export function CreateEntity({
         {stage === 2 && (
           <StageContainer
             title="Mint Entity"
-            description="Please review your onchain Entity before minting."
+            description="Please review your onchain profile before minting."
           >
             {/* <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
               {`Make sure all your information is displayed correcly.`}
@@ -218,26 +218,25 @@ export function CreateEntity({
                 <h3 className="font-GoodTimes text-2xl mb-2">TREASURY</h3>
                 <p className="mt-2">
                   A self-custodied multisignature treasury will secure your
-                  organization’s assets, allowing to interact with any smart
+                  team's on-chain assets, and allows interaction with any smart
                   contracts within the Ethereum ecosystem. <br /> <br />
-                  You can add more signers later via your Entity management
+                  You can add or change signers later via your Team management
                   portal.
                 </p>
               </div>
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 mt-5">
                 <h3 className="font-GoodTimes text-2xl mb-2">ADMINISTRATOR</h3>
                 <p className="mt-2">
-                  The admin can modify your organization’s information. To
-                  begin, the currently connected wallet will act as the
+                  The admin can modify your Team’s information. To
+                  begin, the currently connected wallet will act as the initial
                   Administrator.
                   <br /> <br />
-                  You can change the admin or add more members to your
-                  organization using the Hats Protocol within your Entity
+                  You can change the admin or add more members to within your Team
                   Management Portal.
                 </p>
               </div>
               <p className="mt-4">
-                Welcome to the future of off-world coordination with MoonDAO!
+                Welcome to the future of on-chain, off-world coordination with MoonDAO!
               </p>
             </div>
             <div className="flex flex-row items-center mt-4">
@@ -278,13 +277,13 @@ export function CreateEntity({
                   <a
                     rel="noopener noreferrer"
                     className="text-sky-400"
-                    href="https://www.apple.com/pro-display-xdr/"
+                    href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"
                     target="_blank"
                   >
                     {' '}
-                    Learn more{' '}
+                    Read{' '}
                   </a>{' '}
-                  about MoonDAO's terms and conditions
+                  MoonDAO's terms and conditions.
                 </p>
               </label>
             </div>
@@ -388,7 +387,7 @@ export function CreateEntity({
                 }
               }}
             >
-              {isLoadingMint ? 'loading...' : 'Mint'}
+              {isLoadingMint ? 'loading...' : 'Check Out'}
             </StageButton>
           </StageContainer>
         )}

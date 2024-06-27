@@ -27,7 +27,7 @@ export default function InnerPreFooter() {
                                 className="header font-GoodTimes leading-none flex flex-col"
                                 >
                                 <span style={{ fontSize: 'calc(max(4vmin, 30px))' }} className="mt-[5vmax]">
-                                    Join Our 
+                                    MoonDAO's 
                                 </span>
                                 <span style={{ fontSize: 'calc(max(6vmin, 30px))' }}>
                                     MISSION 
@@ -36,7 +36,7 @@ export default function InnerPreFooter() {
                             <p id="paragraph" 
                                 className="w-full pt-2 pb-5 pr-0 md:pr-5 mr-5"
                                 >
-                                We aim to accelerate the development of a lunar base through better coordination. Want to help? Learn how to contribute to our mission, even if you're new to Web3, and get weekly updates.
+                                MoonDAO aims to accelerate the development of a lunar base through better coordination. Want to help? Learn how to contribute to our mission, even if you're new to Web3, and get weekly updates.
                             </p>
                             <MailingList />
                         </div>
