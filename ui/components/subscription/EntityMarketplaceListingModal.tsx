@@ -112,9 +112,11 @@ export default function EntityMarketplaceListingModal({
               ))
           }
 
+          let tx
+
           try {
             if (edit) {
-              await marketplaceTableContract.call('updateTable', [
+              tx = await marketplaceTableContract.call('updateTable', [
                 listing?.id,
                 listingData.title,
                 listingData.description,
@@ -125,7 +127,7 @@ export default function EntityMarketplaceListingModal({
                 listingData.shipping,
               ])
             } else {
-              await marketplaceTableContract?.call('insertIntoTable', [
+              tx = await marketplaceTableContract?.call('insertIntoTable', [
                 listingData.title,
                 listingData.description,
                 imageIpfsLink,
@@ -136,11 +138,12 @@ export default function EntityMarketplaceListingModal({
               ])
             }
 
-            setTimeout(() => {
-              refreshListings()
-              setIsLoading(false)
-              setEnabled(false)
-            }, 25000)
+            if (tx?.receipt)
+              setTimeout(() => {
+                refreshListings()
+                setIsLoading(false)
+                setEnabled(false)
+              }, 25000)
           } catch (err: any) {
             console.log(err)
             toast.error(
