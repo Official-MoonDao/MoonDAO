@@ -12,7 +12,9 @@ const LinkTree: React.FC = () => {
   return (
     <>
       <WebsiteHead title={title} description={description} />
-      <section className="w-[calc(100vw-20px)]">
+      <section 
+        className="w-[calc(100vw-20px)]"
+        >
         <Container
           >
           <ContentLayout

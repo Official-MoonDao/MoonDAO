@@ -86,7 +86,7 @@ export function PrivyConnectWallet() {
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className={`w-[125px] md:w-[175px] md:full relative flex flex-col items-right justify-center px-3 md:px-5 py-2 md:py-3 gradient-2 font-RobotoMono z-[10] rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300`}
+            className={`w-[125px] md:w-[175px] md:full relative flex flex-col items-right justify-center p-5 py-2 md:hover:pl-[25px] gradient-2 font-RobotoMono z-[10] rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300`}
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}
@@ -240,7 +240,7 @@ export function PrivyConnectWallet() {
                     <strong>Import Token</strong>
                   </button> */}
                   <button
-                    className="w-full mt-4 p-1 rounded-sm text-white transition-all duration-150 gradient-2 hover:bg-white hover:text-moon-orange"
+                    className="w-full mt-4 p-1 rounded-sm text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2 hover:bg-white hover:text-dark-cool"
                     onClick={async () => {
                       wallets.forEach((wallet) => wallet.disconnect())
                       logout()

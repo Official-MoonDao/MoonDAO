@@ -1,3 +1,4 @@
+//StandardButton.tsx
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -11,7 +12,7 @@ export default function StandardButton({
     link = '#',
     paddingOnHover = 'pl-5',
     textColor = 'text-white',
-    styleOnly = false, // New prop
+    styleOnly = false, 
 }) {
   const buttonContent = (
     <button
