@@ -6,9 +6,8 @@ import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
-import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
-import { CreateCitizen } from './CreateCitizen'
-import { CreateEntity } from './CreateEntity'
+import CreateCitizen from './CreateCitizen'
+import CreateTeam from './CreateTeam'
 
 type TierProps = {
   label: string
@@ -38,7 +37,8 @@ function Tier({
       onClick={() => {
         if (!address && user) logout()
         if (!address) return login()
-        if (hasCitizen) return toast.error('You have already registered as a citizen')
+        if (hasCitizen)
+          return toast.error('You have already registered as a citizen')
 
         onClick()
       }}
@@ -79,20 +79,20 @@ function Tier({
       </div>
       <div className="mt-4">
         {points.map((p, i) => {
-          const [title, description] = p.split(': ');
+          const [title, description] = p.split(': ')
           return (
             <div
               key={`${label}-tier-point-${i}`}
               className="flex flex-row bg-opacity-3 py-2 rounded-sm space-x-2"
             >
-            <p className="h-6 w-6 flex justify-center items-center rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2">
-              ✓
-            </p>
-            <p>
-              <strong>{title}:</strong> {description}
-            </p>
+              <p className="h-6 w-6 flex justify-center items-center rounded-full bg-[#FFFFFF1A] bg-opacity-10 px-2">
+                ✓
+              </p>
+              <p>
+                <strong>{title}:</strong> {description}
+              </p>
             </div>
-          );
+          )
         })}
       </div>
       <button className="my-6 w-full border-2 border-moon-orange text-moon-orange rounded-full p-2 hover:scale-105 ease-in-out duration-300">
@@ -106,7 +106,7 @@ export function OnboardingV2({ selectedChain }: any) {
   const address = useAddress()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
-  const [selectedTier, setSelectedTier] = useState<'entity' | 'citizen'>()
+  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
 
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
@@ -128,9 +128,9 @@ export function OnboardingV2({ selectedChain }: any) {
     )
   }
 
-  if (selectedTier === 'entity') {
+  if (selectedTier === 'team') {
     return (
-      <CreateEntity
+      <CreateTeam
         address={address}
         selectedChain={selectedChain}
         selectedWallet={selectedWallet}
@@ -174,7 +174,7 @@ export function OnboardingV2({ selectedChain }: any) {
               'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
             ]}
             buttoncta="Schedule a Call to Apply"
-            onClick={() => setSelectedTier('entity')}
+            onClick={() => setSelectedTier('team')}
           />
         </div>
       </div>

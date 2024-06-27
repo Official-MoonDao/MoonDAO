@@ -1,29 +1,30 @@
 import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import useEntitySplit from '@/lib/entity/useEntitySplit'
+import useEntitySplit from '@/lib/team/useTeamSplit'
+import useTeamSplit from '@/lib/team/useTeamSplit'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
-import EntityMarketplaceListingModal from './EntityMarketplaceListingModal'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
+import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
-export default function EntityMarketplace({
+export default function TeamMarketplace({
   selectedChain,
   marketplaceTableContract,
-  entityContract,
-  entityId,
+  teamContract,
+  teamId,
   isManager,
 }: any) {
   const [listings, setListings] = useState<TeamListingType[]>()
   const [listingModalEnabled, setListingModalEnabled] = useState(false)
 
-  const entitySplitAddress = useEntitySplit(entityContract, entityId)
+  const teamSplitAddress = useTeamSplit(teamContract, teamId)
 
   async function getEntityMarketplaceListings() {
     const marketplaceTableName = await marketplaceTableContract.call(
       'getTableName'
     )
-    const statement = `SELECT * FROM ${marketplaceTableName} WHERE entityId = ${entityId}`
+    const statement = `SELECT * FROM ${marketplaceTableName} WHERE entityId = ${teamId}`
 
     const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
     const data = await res.json()
@@ -33,7 +34,7 @@ export default function EntityMarketplace({
 
   useEffect(() => {
     if (marketplaceTableContract) getEntityMarketplaceListings()
-  }, [marketplaceTableContract, entityId])
+  }, [marketplaceTableContract, teamId])
 
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
@@ -65,8 +66,8 @@ export default function EntityMarketplace({
                 selectedChain={selectedChain}
                 listing={listing}
                 marketplaceTableContract={marketplaceTableContract}
-                entityContract={entityContract}
-                entitySplitAddress={entitySplitAddress}
+                teamContract={teamContract}
+                teamSplitAddress={teamSplitAddress}
                 editable={isManager}
                 refreshListings={getEntityMarketplaceListings}
               />
@@ -77,8 +78,8 @@ export default function EntityMarketplace({
         </div>
       </SlidingCardMenu>
       {listingModalEnabled && (
-        <EntityMarketplaceListingModal
-          entityId={entityId}
+        <TeamMarketplaceListingModal
+          teamId={teamId}
           refreshListings={getEntityMarketplaceListings}
           marketplaceTableContract={marketplaceTableContract}
           setEnabled={setListingModalEnabled}

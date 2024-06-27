@@ -1,12 +1,10 @@
-import { ArrowUpRightIcon, PlusCircleIcon } from '@heroicons/react/24/outline'
 import { useAddress, useSDK } from '@thirdweb-dev/react'
 import Image from 'next/image'
+import { useEffect } from 'react'
 import toast from 'react-hot-toast'
 import TeamSplitABI from '../../const/abis/TeamSplit.json'
 import { CopyIcon } from '../assets'
 import StandardButton from '../layout/StandardButton'
-import Button from './Button'
-import Card from './Card'
 
 type TeamTreasuryProps = {
   multisigAddress: string
@@ -27,6 +25,7 @@ export default function TeamTreasury({
 }: TeamTreasuryProps) {
   const address = useAddress()
   const sdk = useSDK()
+
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
       <div className="flex flex-col">

@@ -10,15 +10,14 @@ import {
 import {
   CITIZEN_ADDRESSES,
   DAI_ADDRESSES,
-  ENTITY_ADDRESSES,
+  TEAM_ADDRESSES,
   MOONEY_ADDRESSES,
   USDC_ADDRESSES,
 } from 'const/config'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
-import useEntityEmail from '@/lib/entity/useEntityEmail'
-import useEntitySplit from '@/lib/entity/useEntitySplit'
+import useTeamEmail from '@/lib/team/useTeamEmail'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { TeamListing } from '@/components/subscription/TeamListing'
 
@@ -43,13 +42,13 @@ export default function BuyTeamListingModal({
     CITIZEN_ADDRESSES[selectedChain.slug]
   )
 
-  const { contract: entityContract } = useContract(
-    ENTITY_ADDRESSES[selectedChain.slug]
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug]
   )
 
-  const { data: entityNft } = useNFT(entityContract, listing.entityId)
+  const { data: teamNft } = useNFT(teamContract, listing.entityId)
 
-  const entityEmail = useEntityEmail(entityNft)
+  const teamEmail = useTeamEmail(teamNft)
 
   const [email, setEmail] = useState<string>()
   const [shippingInfo, setShippingInfo] = useState({
@@ -90,7 +89,7 @@ export default function BuyTeamListingModal({
 
   async function buyListing() {
     const price = Number(listing.price)
-
+    console.log(recipient)
     setIsLoading(true)
     let receipt
     try {
@@ -141,7 +140,7 @@ export default function BuyTeamListingModal({
             quantity: 1,
             tx: transactionLink,
             shipping,
-            teamEmail: entityEmail,
+            teamEmail: teamEmail,
           }),
         })
 
@@ -170,10 +169,10 @@ export default function BuyTeamListingModal({
   return (
     <div
       onMouseDown={(e: any) => {
-        if (e.target.id === 'entity-marketplace-buy-modal-backdrop')
+        if (e.target.id === 'team-marketplace-buy-modal-backdrop')
           setEnabled(false)
       }}
-      id="entity-marketplace-buy-modal-backdrop"
+      id="team-marketplace-buy-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <form
@@ -277,9 +276,9 @@ export default function BuyTeamListingModal({
         <button
           type="submit"
           className="mt-4 px-2 w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"
-          disabled={isLoading || !entityEmail || !recipient}
+          disabled={isLoading || !teamEmail || !recipient}
         >
-          {isLoading || !entityEmail || !recipient ? 'Loading...' : 'Buy'}
+          {isLoading || !teamEmail || !recipient ? 'Loading...' : 'Buy'}
         </button>
         {isLoading && (
           <p>Do not leave the page until the transaction is complete.</p>

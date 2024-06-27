@@ -1,11 +1,10 @@
-
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useState } from 'react'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
-import EntityJobModal from '../subscription/EntityJobModal'
 import Frame from '../layout/Frame'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
+import TeamJobModal from '../subscription/TeamJobModal'
 
 export type Job = {
   id: number
@@ -20,7 +19,7 @@ type JobProps = {
   jobTableContract?: any
   refreshJobs?: any
   editable?: boolean
-  entityId?: string
+  teamId?: string
   showEntityId?: boolean
 }
 
@@ -29,7 +28,7 @@ export default function Job({
   jobTableContract,
   refreshJobs,
   editable,
-  entityId,
+  teamId,
   showEntityId,
 }: JobProps) {
   const [enabledEditJobModal, setEnabledEditJobModal] = useState(false)
@@ -48,10 +47,9 @@ export default function Job({
               >{`Entity #${job.entityId}`}</Link>
             )}
             <div className="flex flex-col lg:flex-row pb-5 items-center gap-2 lg:gap-4">
-
-                <StandardButton className='gradient-2 rounded-[5vmax] rounded-bl-[20px]'>
-                  Apply
-                </StandardButton>
+              <StandardButton className="gradient-2 rounded-[5vmax] rounded-bl-[20px]">
+                Apply
+              </StandardButton>
 
               {editable && (
                 <div className="flex gap-4">
@@ -69,7 +67,7 @@ export default function Job({
                         try {
                           await jobTableContract.call('deleteFromTable', [
                             job.id,
-                            entityId,
+                            teamId,
                           ])
                           setTimeout(() => {
                             refreshJobs()
@@ -85,8 +83,8 @@ export default function Job({
                     </button>
                   )}
                   {enabledEditJobModal && (
-                    <EntityJobModal
-                      entityId={entityId as any}
+                    <TeamJobModal
+                      teamId={teamId as any}
                       setEnabled={setEnabledEditJobModal}
                       jobTableContract={jobTableContract}
                       job={job}
@@ -100,7 +98,7 @@ export default function Job({
           </div>
         </div>
         <p>{job.description}</p>
-      </Frame>  
+      </Frame>
     </div>
   )
 }
