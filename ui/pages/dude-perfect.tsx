@@ -15,7 +15,7 @@ const DudePerfect: React.FC = () => {
   return (
     <>
       <WebsiteHead title={title} description={description} image={image} />
-      <Container fullWidth>
+      <Container containerFullWidth>
         <ContentLayout popOverEffect mainPadding
           header="Hey Dude Perfect frens, let's go to space together!"
           headerSize="max(20px, 2vw)"
