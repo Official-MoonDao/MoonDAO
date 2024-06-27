@@ -1,3 +1,4 @@
+// Team Profile Page
 import {
   ArrowUpRightIcon,
   ChatBubbleLeftIcon,
@@ -24,9 +25,10 @@ import {
   MOONEY_ADDRESSES,
 } from 'const/config'
 import { GetServerSideProps } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { useEntityData } from '@/lib/entity/useEntityData'
 import useEntitySplit from '@/lib/entity/useEntitySplit'
@@ -38,8 +40,12 @@ import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useLightMode } from '@/lib/utils/hooks'
 import { CopyIcon, TwitterIcon } from '@/components/assets'
+import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import Frame from '@/components/layout/Frame'
+import InnerPreFooter from '@/components/layout/InnerPreFooter'
+import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import Button from '@/components/subscription/Button'
-import Card from '@/components/subscription/Card'
 import EntityActions from '@/components/subscription/EntityActions'
 import EntityDonation from '@/components/subscription/EntityDonation'
 import EntityJobs from '@/components/subscription/EntityJobs'
@@ -50,28 +56,22 @@ import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
-import TeamSplitABI from '../../const/abis/TeamSplit.json'
 
-export default function EntityDetailPage() {
-  const sdk = useSDK()
-
+export default function EntityDetailPage({ tokenId }: any) {
+  const [lightMode] = useLightMode()
   const router = useRouter()
   const address = useAddress()
-
-  const [tokenId, setTokenId] = useState<any>(router.query.tokenId)
 
   //privy
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
-
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
-
   const [entityMetadataModalEnabled, setEntityMetadataModalEnabled] =
     useState(false)
   const [entitySubscriptionModalEnabled, setEntitySubscriptionModalEnabled] =
     useState(false)
-
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
+
   //Entity Data
   const { contract: entityContract } = useContract(
     ENTITY_ADDRESSES[selectedChain.slug]
@@ -117,21 +117,14 @@ export default function EntityDetailPage() {
     splitAddress
   )
 
-  const [nativeBalance, setNativeBalance] = useState<number>(0)
-
   const [splitNativeBalance, setSplitNativeBalance] = useState<number>(0)
+  const [nativeBalance, setNativeBalance] = useState<number>(0)
 
   async function getNativeBalance() {
     const sdk = initSDK(selectedChain)
     const provider = sdk.getProvider()
     const balance: any = await provider.getBalance(nft?.owner as string)
     setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
-  }
-  async function getSplitNativeBalance() {
-    const sdk = initSDK(selectedChain)
-    const provider = sdk.getProvider()
-    const balance: any = await provider.getBalance(splitAddress as string)
-    setSplitNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
   }
 
   //Subscription Data
@@ -144,10 +137,7 @@ export default function EntityDetailPage() {
     if (wallets && nft?.owner) {
       getNativeBalance()
     }
-    if (splitAddress) {
-      getSplitNativeBalance()
-    }
-  }, [wallets, nft, splitAddress])
+  }, [wallets, nft])
 
   useEffect(() => {
     setSelectedChain(
@@ -155,35 +145,158 @@ export default function EntityDetailPage() {
     )
   }, [])
 
-  if (!nft?.metadata || isLoadingEntityData) return
+  // Horizontal scroll effect
+  const teamMembersContainerRef = useRef<HTMLDivElement>(null)
 
-  return (
-    <div className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]">
-      {/* Header and socials */}
-      <Card className="flex flex-col xl:flex-row justify-between dark:bg-gradient-to-tr from-[#080C20] to-[#111A46] from-60%">
-        <div>
-          <div className="w-full flex flex-col lg:flex-row items-start gap-8 justify-between">
-            <div className="flex gap-4">
+  useEffect(() => {
+    const handleScroll = (event: WheelEvent) => {
+      if (teamMembersContainerRef.current) {
+        event.preventDefault()
+        teamMembersContainerRef.current.scrollLeft += event.deltaY
+      }
+    }
+
+    const container = teamMembersContainerRef.current
+    if (container) {
+      container.addEventListener('wheel', handleScroll, { passive: false })
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('wheel', handleScroll)
+      }
+    }
+  }, [])
+
+  if (!nft?.metadata || isLoadingEntityData) return null
+
+  //Profile Header Section
+  const ProfileHeader = (
+    <div id="orgheader-container">
+      <Frame
+        noPadding
+        bottomRight="0px"
+        bottomLeft="0px"
+        topLeft="0px"
+        topRight="0px"
+        className="z-50"
+        marginBottom="0px"
+      >
+        <div id="frame-content-container" className="w-full">
+          <div
+            id="moon-asset-container"
+            className="bg-white rounded-[100%] w-[100px] h-[100px] absolute top-5 lg:top-[40px]left-5 lg:left-[40px]"
+          ></div>
+          <div
+            id="frame-content"
+            className="w-full flex flex-col lg:flex-row items-start justify-between"
+          >
+            <div
+              id="profile-description-section"
+              className="flex flex-col lg:flex-row items-start lg:items-end gap-4"
+            >
               {nft?.metadata.image ? (
-                <div className="w-[125px]">
+                <div
+                  id="org-image-container"
+                  className="relative w-[300px] h-[300px]"
+                >
                   <ThirdwebNftMedia
                     className="rounded-full"
                     metadata={nft.metadata}
-                    height={'100%'}
-                    width={'100%'}
+                    height={'300'}
+                    width={'300'}
                   />
+                  <div
+                    id="star-asset-container"
+                    className="absolute bottom-0 lg:right-0"
+                  >
+                    <Image
+                      src="/../.././assets/icon-star.svg"
+                      alt=""
+                      width={80}
+                      height={80}
+                    ></Image>
+                  </div>
                 </div>
               ) : (
-                <div className="w-[200px] h-[200px] bg-[#ffffff25] animate-pulse" />
+                <></>
               )}
-              <div>
-                <div className="flex gap-4">
-                  {nft ? (
-                    <h1 className="text-black dark:text-white text-3xl">
-                      {nft.metadata.name}
-                    </h1>
+              <div id="entity-name-container">
+                <div
+                  id="entity-name"
+                  className="flex flex-col justify-center  gap-4"
+                >
+                  <div id="entity-name-container"
+                    className="flex flex-row gap-2 items-center justify-start"
+                    >
+                    {subIsValid && isManager && (
+                      <button
+                        onClick={() => {
+                          if (address === nft?.owner || isManager)
+                            setEntityMetadataModalEnabled(true)
+                          else
+                            return toast.error(
+                              'Connect the entity admin wallet or multisig to edit metadata.'
+                            )
+                        }}
+                      >
+                        <PencilIcon width={35} height={35} />
+                      </button>
+                    )}  
+                    {nft ? (
+                      <h1 className="text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
+                        {nft.metadata.name}
+                      </h1>
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+
+                  {socials ? (
+                    <div
+                      id="socials-container"
+                      className="pl-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter p-2"
+                    >
+                      {socials.communications && (
+                        <Link
+                          className="flex gap-2"
+                          href={socials.communications}
+                          target="_blank"
+                          passHref
+                        >
+                          <ChatBubbleLeftIcon height={25} width={25} />
+                        </Link>
+                      )}
+                      {socials.twitter && (
+                        <Link
+                          className="flex gap-2"
+                          href={socials.twitter}
+                          target="_blank"
+                          passHref
+                        >
+                          <TwitterIcon />
+                        </Link>
+                      )}
+                      {socials.website && (
+                        <Link
+                          className="flex gap-2"
+                          href={socials.website}
+                          target="_blank"
+                          passHref
+                        >
+                          <GlobeAltIcon height={25} width={25} />
+                        </Link>
+                      )}
+                    </div>
                   ) : (
-                    <div className="w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
+                    <></>
+                  )}
+                  {isManager || address === nft.owner ? (
+                    ''
+                  ) : (
+                    <div className="max-w-[290px]">
+                      <EntityDonation splitAddress={splitAddress} />
+                    </div>
                   )}
                   {entityMetadataModalEnabled && (
                     <EntityMetadataModal
@@ -192,73 +305,46 @@ export default function EntityDetailPage() {
                       setEnabled={setEntityMetadataModalEnabled}
                     />
                   )}
-                  {subIsValid && isManager && (
-                    <button
-                      onClick={() => {
-                        if (address === nft?.owner || isManager)
-                          setEntityMetadataModalEnabled(true)
-                        else
-                          return toast.error(
-                            'Connect the entity admin wallet or multisig to edit metadata.'
-                          )
-                      }}
-                    >
-                      <PencilIcon width={35} height={35} />
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
           </div>
-          <div>
+          <div id="profile-container">
             {nft?.metadata.description ? (
-              <p className="mt-4">{nft?.metadata.description || ''}</p>
+              <p
+                id="profile-description-container"
+                className="mt-4 w-full lg:w-[80%]"
+              >
+                {nft?.metadata.description || ''}
+              </p>
             ) : (
-              <div className="mt-4 w-full h-[30px] bg-[#ffffff25] animate-pulse" />
-            )}
-            {socials ? (
-              <div className="mt-4 inline-flex flex-col gap-2">
-                {socials.communications && (
-                  <Link
-                    className="flex gap-2"
-                    href={socials.communications}
-                    target="_blank"
-                    passHref
-                  >
-                    <ChatBubbleLeftIcon height={25} width={25} />
-                    {socials.communications}
-                  </Link>
-                )}
-                {socials.twitter && (
-                  <Link
-                    className="flex gap-2"
-                    href={socials.twitter}
-                    target="_blank"
-                    passHref
-                  >
-                    <TwitterIcon />
-                    {socials.twitter}
-                  </Link>
-                )}
-                {socials.website && (
-                  <Link
-                    className="flex gap-2"
-                    href={socials.website}
-                    target="_blank"
-                    passHref
-                  >
-                    <GlobeAltIcon height={25} width={25} />
-                    {socials.website}
-                  </Link>
-                )}
-              </div>
-            ) : (
-              <div className="mt-4 w-[200px] h-[30px] bg-[#ffffff25] animate-pulse" />
+              <></>
             )}
           </div>
+          <div id="entity-actions-container"
+            className="pt-5"
+            >
+            {isManager || address === nft.owner ? (
+              <EntityActions
+                entityId={tokenId}
+                jobTableContract={jobTableContract}
+                marketplaceTableContract={marketplaceTableContract}
+              />
+              ) : (
+
+                ''
+
+              )
+            }
+            {entityMetadataModalEnabled && (
+              ''
+              )
+            }
+          </div>
         </div>
+
         {isManager || address === nft.owner ? (
-          <div className="mt-8 xl:mt-0">
+          <div id="manager-container" className="mt-8 xl:mt-0">
             {entitySubscriptionModalEnabled && (
               <SubscriptionModal
                 setEnabled={setEntitySubscriptionModalEnabled}
@@ -269,235 +355,236 @@ export default function EntityDetailPage() {
               />
             )}
             {expiresAt && (
-              <div className="flex flex-col gap-4 items-start">
+              <div
+                id="expires-container"
+                className="flex flex-col gap-4 items-start"
+              >
                 <p className="opacity-50">
                   {'Exp: '}
                   {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                 </p>
-
-                <Button
-                  onClick={() => {
-                    if (address === nft?.owner || isManager)
-                      setEntitySubscriptionModalEnabled(true)
-                    else
-                      return toast.error(
-                        `Connect the entity admin wallet or multisig to extend the subscription.`
-                      )
-                  }}
-                >
-                  {'Extend Subscription'}
-                </Button>
+                <Frame
+                  noPadding
+                  >
+                  <div id="extend-sub-button"
+                    className="gradient-2"
+                    >
+                    <Button
+                      onClick={() => {
+                        if (address === nft?.owner || isManager)
+                          setEntitySubscriptionModalEnabled(true)
+                        else
+                          return toast.error(
+                            `Connect the entity admin wallet or multisig to extend the subscription.`
+                          )
+                      }}
+                    >
+                      {'Extend Subscription'}
+                    </Button>
+                  </div>
+                  </Frame>  
               </div>
             )}
           </div>
         ) : (
           <></>
         )}
-      </Card>
-
-      {subIsValid ? (
-        <div className="flex flex-col gap-6">
-          {/* Team Actions */}
-
-          {isManager || address === nft.owner ? (
-            <EntityActions
-              entityId={tokenId}
-              jobTableContract={jobTableContract}
-            />
-          ) : (
-            <EntityDonation splitAddress={splitAddress} />
-          )}
-
-          {/* Team */}
-          <Card className="w-full">
-            <p className="text-2xl">Team</p>
-            <div className="pb-6 h-full flex flex-col items-start justify-between">
-              <div className="w-full py-2 pr-4 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-2 h-[800px] overflow-auto">
-                {hats?.map((hat: any, i: number) => (
-                  <TeamMembers
-                    key={'hat-' + i}
-                    selectedChain={selectedChain}
-                    hatId={hat.id}
-                    hatsContract={hatsContract}
-                    citizenConract={citizenConract}
-                    wearers={hat.wearers}
-                  />
-                ))}
-              </div>
-              {isManager && (
-                <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
-                  <Button
-                    onClick={() => {
-                      window.open(
-                        `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
-                      )
-                    }}
-                  >
-                    Manage Members
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-          {/* Jobs */}
-          <EntityJobs
-            entityId={tokenId}
-            jobTableContract={jobTableContract}
-            isManager={isManager}
-          />
-
-          <EntityMarketplace
-            selectedChain={selectedChain}
-            entityId={tokenId}
-            marketplaceTableContract={marketplaceTableContract}
-            entityContract={entityContract}
-            isManager={isManager}
-          />
-          {/* Mooney and Voting Power */}
-          <div className="flex flex-col xl:flex-row gap-6">
-            <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
-              <div className="w-3/4">
-                <div className="flex items-center gap-4">
-                  <p className="text-2xl">Treasury</p>
-                  {nft?.owner ? (
-                    <button
-                      className="flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
-                      onClick={() => {
-                        navigator.clipboard.writeText(nft.owner)
-                        toast.success('Address copied to clipboard')
-                      }}
-                    >
-                      {nft.owner?.slice(0, 6) + '...' + nft.owner?.slice(-4)}
-                      <CopyIcon />
-                    </button>
-                  ) : (
-                    <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
-                  )}
-                </div>
-
-                <div className="mt-4 flex gap-4 items-center text-lg">
-                  <p>{`MOONEY :`}</p>
-                  <p>
-                    {MOONEYBalance
-                      ? (MOONEYBalance?.toString() / 10 ** 18).toLocaleString()
-                      : 0}
-                  </p>
-                </div>
-                <div className="flex gap-4 items-center text-lg">
-                  <p>{`ETHER :`}</p>
-                  <p className="pl-6">{nativeBalance ? nativeBalance : 0}</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col 2xl:flex-row gap-2 items-end">
-                <Button
-                  onClick={() => {
-                    const safeNetwork =
-                      process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-                        ? 'arb1'
-                        : 'sep'
-                    window.open(
-                      `https://app.safe.global/home?safe=${safeNetwork}:${nft?.owner}`
-                    )
-                  }}
-                >
-                  <ArrowUpRightIcon height={20} width={20} />
-                  {'Treasury'}
-                </Button>
-              </div>
-            </Card>
-            <Card className="w-full flex flex-col md:flex-row justify-between items-start xl:items-end gap-4">
-              <div className="w-3/4">
-                <div className="flex items-center gap-4">
-                  <p className="text-2xl">Split</p>
-                  {splitAddress ? (
-                    <button
-                      className="flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
-                      onClick={() => {
-                        navigator.clipboard.writeText(splitAddress)
-                        toast.success('Address copied to clipboard')
-                      }}
-                    >
-                      {splitAddress?.slice(0, 6) +
-                        '...' +
-                        splitAddress?.slice(-4)}
-                      <CopyIcon />
-                    </button>
-                  ) : (
-                    <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
-                  )}
-                </div>
-
-                <div className="mt-4 flex gap-4 items-center text-lg">
-                  <p>{`MOONEY :`}</p>
-                  <p>
-                    {splitMOONEYBalance
-                      ? (
-                          splitMOONEYBalance?.toString() /
-                          10 ** 18
-                        ).toLocaleString()
-                      : 0}
-                  </p>
-                </div>
-                <div className="flex gap-4 items-center text-lg">
-                  <p>{`ETHER :`}</p>
-                  <p className="pl-6">
-                    {splitNativeBalance ? splitNativeBalance : 0}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col 2xl:flex-row gap-2 items-end">
-                <Button
-                  onClick={async () => {
-                    if (!address)
-                      return toast.error('Please connect your wallet')
-                    if (!splitAddress)
-                      return toast.error('No split address found')
-
-                    const splitContract = await sdk?.getContract(
-                      splitAddress,
-                      TeamSplitABI
-                    )
-                    const tx = await splitContract?.call('release', [nft.owner])
-
-                    if (tx.receipt) {
-                      toast.success('Funds Released')
-                    }
-                  }}
-                >
-                  <ArrowUpRightIcon height={20} width={20} />
-                  {'Release to Treasury'}
-                </Button>
-              </div>
-            </Card>
-          </div>
-
-          {/* General Actions */}
-          {isManager && <GeneralActions />}
-        </div>
-      ) : (
-        // Subscription Expired
-        <Card>
-          <p className="text-moon-orange">
-            {`The pass has expired, please connect the owner or admin wallet to
-            renew.`}
-          </p>
-          <Button
-            className="mt-4"
-            onClick={() => {
-              const safeNetwork =
-                process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-              window.open(
-                `https://app.safe.global/home?safe=${safeNetwork}:${nft?.owner}`
-              )
-            }}
-          >
-            <ArrowUpRightIcon height={20} width={20} />
-            {'Treasury'}
-          </Button>
-        </Card>
-      )}
+      </Frame>
     </div>
   )
+
+  const teamIcon = '/./assets/icon-team.svg'
+
+  return (
+    <Container>
+      <ContentLayout
+        description={ProfileHeader}
+        preFooter={<InnerPreFooter />}
+        mainPadding
+        mode="compact"
+        popOverEffect={false}
+        branded={false}
+        isProfile
+      >
+        <div
+          id="page-container"
+          className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
+        >
+          {/* Header and socials */}
+          {subIsValid ? (
+            <div className="z-50 flex flex-col gap-6">
+              {/* Team Actions */}
+              {/* Team */}
+              <Frame
+                noPadding
+                bottomLeft="0px"
+                bottomRight="0px"
+                topRight="0px"
+                topLeft="0px"
+              >
+                <div
+                  id="team-container"
+                  className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+                >
+                  <div
+                    id="job-title-container"
+                    className="flex gap-5 items-center opacity-[50%]"
+                  >
+                    <Image
+                      src={teamIcon}
+                      alt="Job icon"
+                      width={30}
+                      height={30}
+                    />
+                    <h2 className="header font-GoodTimes">Meet Our Team</h2>
+                  </div>
+                  <SlidingCardMenu>
+                    <div className="pb-5 h-full flex flex-col items-start justify-between">
+                      <div
+                        id="team-members-container"
+                        ref={teamMembersContainerRef}
+                        className="flex w-full gap-2 overflow-auto"
+                      >
+                        {hats?.map((hat: any, i: number) => (
+                          <TeamMembers
+                            key={'hat-' + i}
+                            selectedChain={selectedChain}
+                            hatId={hat.id}
+                            hatsContract={hatsContract}
+                            citizenConract={citizenConract}
+                            wearers={hat.wearers}
+                          />
+                        ))}
+                      </div>
+                      {isManager && (
+                        <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
+                          <Button
+                            onClick={() => {
+                              window.open(
+                                `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
+                              )
+                            }}
+                          >
+                            Manage Members
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </SlidingCardMenu>
+                </div>
+              </Frame>
+              {/* Jobs */}
+              <EntityJobs
+                entityId={tokenId}
+                jobTableContract={jobTableContract}
+                isManager={isManager}
+              />
+              <EntityMarketplace
+                selectedChain={selectedChain}
+                marketplaceTableContract={marketplaceTableContract}
+                entityContract={entityContract}
+                isManager={isManager}
+                entityId={tokenId}
+              />
+              {/* Mooney and Voting Power */}
+              <div
+                id="mooney-voting-power-container"
+                className="flex flex-col xl:flex-row gap-6"
+              >
+                <Frame>
+                  <div className="w-3/4">
+                    <div className="flex items-center gap-4">
+                      <p className="text-2xl">Treasury</p>
+                      {nft?.owner ? (
+                        <button
+                          className="flex items-center gap-2 text-white font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
+                          onClick={() => {
+                            navigator.clipboard.writeText(nft.owner)
+                            toast.success('Address copied to clipboard')
+                          }}
+                        >
+                          {nft.owner?.slice(0, 6) +
+                            '...' +
+                            nft.owner?.slice(-4)}
+                          <CopyIcon />
+                        </button>
+                      ) : (
+                        <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
+                      )}
+                    </div>
+                    <div className="mt-4 flex gap-4 items-center text-lg">
+                      <p>{`MOONEY :`}</p>
+                      <p>
+                        {MOONEYBalance
+                          ? (
+                              MOONEYBalance?.toString() /
+                              10 ** 18
+                            ).toLocaleString()
+                          : 0}
+                      </p>
+                    </div>
+                    <div className="flex gap-4 items-center text-lg">
+                      <p>{`ETHER :`}</p>
+                      <p className="pl-6">
+                        {nativeBalance ? nativeBalance : 0}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col 2xl:flex-row gap-2 items-end">
+                    <Button
+                      onClick={() => {
+                        const safeNetwork =
+                          process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+                            ? 'arb1'
+                            : 'sep'
+                        window.open(
+                          `https://app.safe.global/home?safe=${safeNetwork}:${nft?.owner}`
+                        )
+                      }}
+                    >
+                      <ArrowUpRightIcon height={20} width={20} />
+                      {'Treasury'}
+                    </Button>
+                  </div>
+                </Frame>
+              </div>
+
+              {/* General Actions */}
+              {isManager && <GeneralActions />}
+            </div>
+          ) : (
+            // Subscription Expired
+            <Frame>
+              <p className="text-white">
+                {`The pass has expired, please connect the owner or admin wallet to renew.`}
+              </p>
+              <Button
+                className="mt-4"
+                onClick={() => {
+                  const safeNetwork =
+                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+                  window.open(
+                    `https://app.safe.global/home?safe=${safeNetwork}:${nft?.owner}`
+                  )
+                }}
+              >
+                <ArrowUpRightIcon height={20} width={20} />
+                {'Treasury'}
+              </Button>
+            </Frame>
+          )}
+        </div>
+      </ContentLayout>
+    </Container>
+  )
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+  const tokenId = params?.tokenId
+
+  return {
+    props: {
+      tokenId,
+    },
+  }
 }

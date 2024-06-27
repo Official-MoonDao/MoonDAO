@@ -1,9 +1,11 @@
+//EntityJobs.tsx
 import { TABLELAND_ENDPOINT } from 'const/config'
 import { useEffect, useState } from 'react'
 import Job, { Job as JobType } from '../jobs/Job'
 import Button from './Button'
 import Card from './Card'
 import EntityJobModal from './EntityJobModal'
+import Image from 'next/image'
 
 type EntityJobsProps = {
   entityId: string
@@ -29,13 +31,23 @@ export default function EntityJobs({
     setJobs(data)
   }
 
+  const jobIcon = '/./assets/icon-job.svg'
+
   useEffect(() => {
     if (jobTableContract) getEntityJobs()
   }, [entityId, jobTableContract])
 
   return (
-    <Card className="w-full flex flex-col justify-between gap-4">
-      <p className="text-2xl">Jobs</p>
+  <section id="jobs section"
+    className='bg-slide-section p-5 rounded-tl-[2vmax] rounded-bl-[5vmax]'
+    >
+    <Card className="w-full flex flex-col justify-between gap-5">
+      <div id="job-title-container" 
+        className="flex gap-5 items-center opacity-[50%]"
+        >
+        <Image src={jobIcon} alt="Job icon" width={30} height={30} />
+        <p className="header font-GoodTimes">Open Job Board</p>
+      </div>
       <div className="flex flex-col max-h-[500px] overflow-auto gap-4">
         {jobs?.[0] ? (
           jobs.map((job, i) => (
@@ -70,5 +82,6 @@ export default function EntityJobs({
         />
       )}
     </Card>
+  </section>    
   )
 }
