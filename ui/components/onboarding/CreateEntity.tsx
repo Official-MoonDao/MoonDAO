@@ -15,7 +15,7 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatEntityFormData, { EntityData } from '@/lib/typeform/entityFormData'
 import MoonDAOEntityCreatorABI from '../../const/abis/MoonDAOEntityCreator.json'
 import { Steps } from '../layout/Steps'
-import { ImageGenerator } from './ImageGenerator'
+import { ImageGenerator } from './EntityImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 
