@@ -58,12 +58,12 @@ export default function Card({
     const cardContent = (       
         <span id="card-container" 
             className={`
-                animate-fadeIn flex flex-col h-full relative bg-dark-cool h-full min-h-[200px]
+                animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full min-h-[200px]
             `}
             >
             <div id="card-styling" 
                 className={`
-                    bg-darkest-cool rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5
+                    bg-darkest-cool rounded-[20px] min-w-[450px] h-[30%] absolute top-0 left-0 pb-5
                 `}
             ></div>
             <span id="content-container" 
@@ -225,7 +225,7 @@ export default function Card({
     return (
         <span id="link-frame" 
             className={`
-                card-container w-full  flex lg:flex-col rounded-[20px] relative overflow-hidden 
+                card-container min-w-[300px] w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
                 ${link ? 'cursor-pointer' : ''}
             `}
             >
