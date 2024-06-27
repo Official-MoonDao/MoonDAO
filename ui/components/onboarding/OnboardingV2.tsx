@@ -158,7 +158,7 @@ export function OnboardingV2({ selectedChain }: any) {
               'Early Project Access: Engage in space projects early, earn money, and advance your career.',
               'Unique Identity: Create a personalized Passport representing your on-chain identity.',
             ]}
-            buttoncta="Submit Your Application Now"
+            buttoncta="Register as a Citizen Now"
             onClick={() => setSelectedTier('citizen')}
             hasCitizen={+citizenBalance > 0}
           />
@@ -173,7 +173,7 @@ export function OnboardingV2({ selectedChain }: any) {
               'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
               'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
             ]}
-            buttoncta="Schedule a Call to Apply"
+            buttoncta="Register Your Team Now"
             onClick={() => setSelectedTier('entity')}
           />
         </div>
