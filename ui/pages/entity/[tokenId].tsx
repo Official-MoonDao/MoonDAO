@@ -226,13 +226,31 @@ export default function EntityDetailPage({ tokenId }: any) {
                   id="entity-name"
                   className="flex flex-col justify-center  gap-4"
                 >
-                  {nft ? (
-                    <h1 className="text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
-                      {nft.metadata.name}
-                    </h1>
-                  ) : (
-                    <></>
-                  )}
+                  <div id="entity-name-container"
+                    className="flex flex-row gap-2 items-center justify-start"
+                    >
+                    {subIsValid && isManager && (
+                      <button
+                        onClick={() => {
+                          if (address === nft?.owner || isManager)
+                            setEntityMetadataModalEnabled(true)
+                          else
+                            return toast.error(
+                              'Connect the entity admin wallet or multisig to edit metadata.'
+                            )
+                        }}
+                      >
+                        <PencilIcon width={35} height={35} />
+                      </button>
+                    )}  
+                    {nft ? (
+                      <h1 className="text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
+                        {nft.metadata.name}
+                      </h1>
+                    ) : (
+                      <></>
+                    )}
+                  </div>
 
                   {socials ? (
                     <div
@@ -274,11 +292,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                     <></>
                   )}
                   {isManager || address === nft.owner ? (
-                    <EntityActions
-                      entityId={tokenId}
-                      jobTableContract={jobTableContract}
-                      marketplaceTableContract={marketplaceTableContract}
-                    />
+                    ''
                   ) : (
                     <div className="max-w-[290px]">
                       <EntityDonation splitAddress={splitAddress} />
@@ -290,20 +304,6 @@ export default function EntityDetailPage({ tokenId }: any) {
                       selectedChain={selectedChain}
                       setEnabled={setEntityMetadataModalEnabled}
                     />
-                  )}
-                  {subIsValid && isManager && (
-                    <button
-                      onClick={() => {
-                        if (address === nft?.owner || isManager)
-                          setEntityMetadataModalEnabled(true)
-                        else
-                          return toast.error(
-                            'Connect the entity admin wallet or multisig to edit metadata.'
-                          )
-                      }}
-                    >
-                      <PencilIcon width={35} height={35} />
-                    </button>
                   )}
                 </div>
               </div>
@@ -320,6 +320,26 @@ export default function EntityDetailPage({ tokenId }: any) {
             ) : (
               <></>
             )}
+          </div>
+          <div id="entity-actions-container"
+            className="pt-5"
+            >
+            {isManager || address === nft.owner ? (
+              <EntityActions
+                entityId={tokenId}
+                jobTableContract={jobTableContract}
+                marketplaceTableContract={marketplaceTableContract}
+              />
+              ) : (
+              <div className="max-w-[290px]">
+                <EntityDonation splitAddress={splitAddress} />
+              </div>
+              )
+            }
+            {entityMetadataModalEnabled && (
+              ''
+              )
+            }
           </div>
         </div>
 
@@ -343,19 +363,26 @@ export default function EntityDetailPage({ tokenId }: any) {
                   {'Exp: '}
                   {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                 </p>
-
-                <Button
-                  onClick={() => {
-                    if (address === nft?.owner || isManager)
-                      setEntitySubscriptionModalEnabled(true)
-                    else
-                      return toast.error(
-                        `Connect the entity admin wallet or multisig to extend the subscription.`
-                      )
-                  }}
-                >
-                  {'Extend Subscription'}
-                </Button>
+                <Frame
+                  noPadding
+                  >
+                  <div id="extend-sub-button"
+                    className="gradient-2"
+                    >
+                    <Button
+                      onClick={() => {
+                        if (address === nft?.owner || isManager)
+                          setEntitySubscriptionModalEnabled(true)
+                        else
+                          return toast.error(
+                            `Connect the entity admin wallet or multisig to extend the subscription.`
+                          )
+                      }}
+                    >
+                      {'Extend Subscription'}
+                    </Button>
+                  </div>
+                  </Frame>  
               </div>
             )}
           </div>
