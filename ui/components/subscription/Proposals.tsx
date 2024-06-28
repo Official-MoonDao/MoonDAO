@@ -9,7 +9,7 @@ export default function Proposals({ numberOfProposals = 3 }) {
   const newestProposals = useNewestProposals(numberOfProposals)
   return (
     <Card className="w-full flex flex-col justify-between">
-      <p className="text-2xl">Governance</p>
+      <p className="header font-GoodTimes opacity-[50%]">Governance</p>
       <div className="mt-2 flex flex-col gap-4">
         {newestProposals
           ? newestProposals.map((proposal: any) => (

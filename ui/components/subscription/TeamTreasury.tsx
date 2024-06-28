@@ -57,16 +57,20 @@ export default function TeamTreasury({
                 if (!address) return toast.error('Please connect your wallet')
                 if (!splitAddress) return toast.error('No split address found')
 
-                const splitContract = await sdk?.getContract(
-                  splitAddress,
-                  TeamSplitABI
-                )
-                const tx = await splitContract?.call('release', [
-                  multisigAddress,
-                ])
+                try {
+                  const splitContract = await sdk?.getContract(
+                    splitAddress,
+                    TeamSplitABI
+                  )
+                  const tx = await splitContract?.call('release', [
+                    multisigAddress,
+                  ])
 
-                if (tx.receipt) {
-                  toast.success('Funds Released')
+                  if (tx.receipt) {
+                    toast.success('Funds Released')
+                  }
+                } catch (err: any) {
+                  console.log(err)
                 }
               }}
             >
