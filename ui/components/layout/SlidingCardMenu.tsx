@@ -89,7 +89,7 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
   return (
     <div
       ref={parentRef}
-      className="relative rounded-tl-[20px] rounded-bl-[5vmax] p-4"
+      className="flex justify-center relative rounded-tl-[20px] rounded-bl-[5vmax] p-4"
     >
       <div
         ref={containerRef}
@@ -98,7 +98,7 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
       >
         {children}
       </div>
-      <div
+      {/* <div
         id="left-fadeout"
         className={`hidden ${
           isHovered && 'animate-fadeIn md:block'
@@ -107,7 +107,7 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
       <div
         id="right-fadein"
         className="hidden md:block right-fadein h-full w-[80px] bg-red-500 absolute top-0 right-0 z-50"
-      ></div>
+      ></div> */}
     </div>
   )
 }

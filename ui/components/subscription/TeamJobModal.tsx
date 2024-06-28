@@ -3,6 +3,8 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import isTextInavlid from '@/lib/tableland/isTextValid'
 import { Job } from '../jobs/Job'
+import Modal from '../layout/Modal'
+import StandardButton from '../layout/StandardButton'
 
 type JobData = {
   title: string
@@ -10,8 +12,8 @@ type JobData = {
   contactInfo: string
 }
 
-type EntityJobModalProps = {
-  entityId: string
+type TeamJobModalProps = {
+  teamId: string
   setEnabled: Function
   refreshJobs: Function
   jobTableContract: any
@@ -19,14 +21,14 @@ type EntityJobModalProps = {
   job?: Job
 }
 
-export default function EntityJobModal({
-  entityId,
+export default function TeamJobModal({
+  teamId,
   setEnabled,
   refreshJobs,
   jobTableContract,
   edit,
   job,
-}: EntityJobModalProps) {
+}: TeamJobModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [jobData, setJobData] = useState<JobData>(
     edit
@@ -43,15 +45,9 @@ export default function EntityJobModal({
   )
 
   return (
-    <div
-      onMouseDown={(e: any) => {
-        if (e.target.id === 'entity-job-modal-backdrop') setEnabled(false)
-      }}
-      id="entity-job-modal-backdrop"
-      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
-    >
+    <Modal id="team-job-modal-backdrop" setEnabled={setEnabled}>
       <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md"
+        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md"
         onSubmit={async (e) => {
           e.preventDefault()
           if (
@@ -77,14 +73,14 @@ export default function EntityJobModal({
                 job?.id,
                 jobData.title,
                 jobData.description,
-                entityId,
+                teamId,
                 jobData.contactInfo,
               ])
             } else {
               await jobTableContract?.call('insertIntoTable', [
                 jobData.title,
                 jobData.description,
-                entityId,
+                teamId,
                 jobData.contactInfo,
               ])
             }
@@ -101,7 +97,9 @@ export default function EntityJobModal({
         }}
       >
         <div className="w-full flex items-center justify-between">
-          <p>{edit ? 'Edit a Job' : 'Add a Job'}</p>
+          <h2 className="font-GoodTimes">
+            {edit ? 'Edit a Job' : 'Add a Job'}
+          </h2>
           <button
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -140,17 +138,17 @@ export default function EntityJobModal({
           value={jobData.contactInfo}
         />
 
-        <button
+        <StandardButton
           type="submit"
           disabled={isLoading}
-          className="mt-4 px-2 w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"
+          className="mt-4 w-full gradient-2 rounded-[5vmax]"
         >
           {isLoading ? '...loading' : edit ? 'Edit Job' : 'Add Job'}
-        </button>
+        </StandardButton>
         {isLoading && (
           <p className="opacity-60">{`This action may take up to 60 seconds. You can close this modal at any time.`}</p>
         )}
       </form>
-    </div>
+    </Modal>
   )
 }

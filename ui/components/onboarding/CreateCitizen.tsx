@@ -8,7 +8,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import useWindowSize from '../../lib/entity/use-window-size'
+import useWindowSize from '../../lib/team/use-window-size'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import isTextInavlid from '@/lib/tableland/isTextValid'
@@ -21,7 +21,7 @@ import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 
-export function CreateCitizen({
+export default function CreateCitizen({
   address,
   wallets,
   selectedWallet,

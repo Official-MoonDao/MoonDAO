@@ -86,7 +86,7 @@ export function PrivyConnectWallet() {
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className={`w-[125px] md:w-[175px] md:full relative flex flex-col items-right justify-center p-5 py-2 md:hover:pl-[25px] gradient-2 font-RobotoMono z-[10] rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300`}
+            className={`cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] gradient-2 font-RobotoMono z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300`}
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}
@@ -107,7 +107,7 @@ export function PrivyConnectWallet() {
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="w-[245px] lg:w-[270px] absolute left-0 text-sm font-RobotoMono animate-fadeIn mt-2 p-4 flex flex-col bg-white text-black dark:text-white dark:bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2 z-[100]"
+              className="w-[245px] lg:w-[270px] absolute left-0 text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn mt-2 p-4 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[100]"
             >
               <div className="absolute right-2 w-full flex justify-end">
                 <XMarkIcon
@@ -118,7 +118,7 @@ export function PrivyConnectWallet() {
               <div className="mt-6">
                 <div className="mt-2 flex items-center">
                   <NetworkIcon />
-                  <div className="ml-2">
+                  <div className="ml-2 bg-dark-cool">
                     <p className="uppercase font-normal inline-block">
                       {
                         allChains.find(
@@ -240,7 +240,7 @@ export function PrivyConnectWallet() {
                     <strong>Import Token</strong>
                   </button> */}
                   <button
-                    className="w-full mt-4 p-1 rounded-sm text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2 hover:bg-white hover:text-dark-cool"
+                    className="w-full mt-4 p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
                     onClick={async () => {
                       wallets.forEach((wallet) => wallet.disconnect())
                       logout()

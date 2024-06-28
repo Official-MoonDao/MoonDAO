@@ -1,4 +1,4 @@
-export const blockedEntities: any = []
+export const blockedTeams: any = []
 
 export const blockedCitizens: any = []
 

@@ -63,17 +63,15 @@ function TeamMember({ address, hatData, citizenContract }: TeamMemberProps) {
   }, [nft])
 
   return (
-    <div className="p-5">      
-      <Card
-        inline
-        metadata={metadata}
-        owner={address}
-        type="citizen"
-        hovertext='Explore Profile'
-        horizontalscroll
-        subheader={hatData.name}
-      />
-    </div>
+    <Card
+      inline
+      metadata={metadata}
+      owner={address}
+      type="citizen"
+      hovertext={metadata?.name && 'Explore Profile'}
+      horizontalscroll
+      subheader={hatData.name}
+    />
   )
 }
 
