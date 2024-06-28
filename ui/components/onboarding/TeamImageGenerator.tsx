@@ -8,10 +8,10 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
   const [userImage, setUserImage] = useState<File>()
 
   async function submitImage() {
-    if (!document.getElementById('entityPic'))
-      return console.error('entityPic is not defined')
+    if (!document.getElementById('teamPic'))
+      return console.error('teamPic is not defined')
     // @ts-expect-error
-    await html2canvas(document.getElementById('entityPic')).then((canvas) => {
+    await html2canvas(document.getElementById('teamPic')).then((canvas) => {
       const img = canvas.toDataURL('image/png')
 
       //Convert from base64 to file
@@ -23,7 +23,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
         ia[i] = byteString.charCodeAt(i)
       }
       const blob = new Blob([ab], { type: mimeString })
-      const file = new File([blob], 'entityPic.png', { type: mimeString })
+      const file = new File([blob], 'teamPic.png', { type: mimeString })
 
       setImage(file)
       nextStage()
@@ -39,20 +39,24 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
           accept="image/*"
           onChange={(e: any) => setUserImage(e.target.files[0])}
         />
-        <StageButton className="" onClick={submitImage}>
-          Submit Image
-        </StageButton>
+        {userImage && (
+          <StageButton className="" onClick={submitImage}>
+            Save Design
+          </StageButton>
+        )}
       </div>
 
-      <div id="background"
-        className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex" 
-        >
+      <div
+        id="teamPic"
+        className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
+      >
         {userImage && (
-          <div id="user-image"
-            style={{ 
-              backgroundImage: `url(${URL.createObjectURL(userImage)})`, 
-            }} 
-              className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+          <div
+            id="user-image"
+            style={{
+              backgroundImage: `url(${URL.createObjectURL(userImage)})`,
+            }}
+            className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
           ></div>
         )}
       </div>
