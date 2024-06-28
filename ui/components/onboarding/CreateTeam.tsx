@@ -6,7 +6,7 @@ import { TEAM_ADDRESSES, TEAM_CREATOR_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
@@ -70,6 +70,37 @@ export default function CreateTeam({
 
   const nativeBalance = useNativeBalance()
 
+  const submitTypeform = useCallback(async (formResponse: any) => {
+    const accessToken = await getAccessToken()
+
+    //get response from form
+    const { formId, responseId } = formResponse
+    const responseRes = await fetch(
+      `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    )
+    const data = await responseRes.json()
+
+    const teamFormData = formatTeamFormData(data.answers, responseId)
+
+    //check for invalid text
+    const invalidText = Object.values(teamFormData).some((v: any) =>
+      isTextInavlid(v)
+    )
+
+    if (invalidText) {
+      return
+    }
+
+    setTeamData(teamFormData)
+    setStage(2)
+  }, [])
+
   return (
     <div className="flex flex-row">
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
@@ -110,39 +141,7 @@ export default function CreateTeam({
               <Widget
                 className="w-[100%] md:w-[100%]"
                 id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
-                onSubmit={async (formResponse: any) => {
-                  const accessToken = await getAccessToken()
-
-                  //get response from form
-                  const { formId, responseId } = formResponse
-                  const responseRes = await fetch(
-                    `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
-                    {
-                      method: 'POST',
-                      headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                      },
-                    }
-                  )
-                  const data = await responseRes.json()
-
-                  const teamFormData = formatTeamFormData(
-                    data.answers,
-                    responseId
-                  )
-
-                  //check for invalid text
-                  const invalidText = Object.values(teamFormData).some(
-                    (v: any) => isTextInavlid(v)
-                  )
-
-                  if (invalidText) {
-                    return
-                  }
-
-                  setTeamData(teamFormData)
-                  setStage(2)
-                }}
+                onSubmit={submitTypeform}
                 height={700}
               />
             </div>
