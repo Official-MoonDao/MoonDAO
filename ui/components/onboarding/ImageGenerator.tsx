@@ -62,7 +62,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
           onChange={(e: any) => setUserImage(e.target.files[0])}
         />
         <StageButton className="" onClick={submitImage}>
-          Submit Image
+          Save Design
         </StageButton>
       </div>
 

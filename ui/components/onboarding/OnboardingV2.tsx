@@ -158,7 +158,7 @@ export function OnboardingV2({ selectedChain }: any) {
               'Early Project Access: Engage in space projects early, earn money, and advance your career.',
               'Unique Identity: Create a personalized Passport representing your on-chain identity.',
             ]}
-            buttoncta="Submit Your Application Now"
+            buttoncta="Register as a Citizen Now"
             onClick={() => setSelectedTier('citizen')}
             hasCitizen={+citizenBalance > 0}
           />
