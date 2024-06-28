@@ -4,7 +4,6 @@ import {
   ChatBubbleLeftIcon,
   GlobeAltIcon,
   PencilIcon,
-  PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
@@ -18,11 +17,11 @@ import {
 } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
-  ENTITY_ADDRESSES,
+  TEAM_ADDRESSES,
   HATS_ADDRESS,
   JOBS_TABLE_ADDRESSES,
-  MARKETPLACE_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
+  MARKETPLACE_TABLE_ADDRESSES,
 } from 'const/config'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
@@ -30,11 +29,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { useEntityData } from '@/lib/entity/useEntityData'
-import useEntitySplit from '@/lib/entity/useEntitySplit'
-import { useHatTree } from '@/lib/hats/useHatTree'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { useTeamData } from '@/lib/team/useTeamData'
+import useEntitySplit from '@/lib/team/useTeamSplit'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
@@ -46,35 +44,34 @@ import Frame from '@/components/layout/Frame'
 import InnerPreFooter from '@/components/layout/InnerPreFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import Button from '@/components/subscription/Button'
-import EntityActions from '@/components/subscription/EntityActions'
-import EntityDonation from '@/components/subscription/EntityDonation'
-import EntityJobs from '@/components/subscription/EntityJobs'
-import EntityMarketplace from '@/components/subscription/EntityMarketplace'
-import { EntityMetadataModal } from '@/components/subscription/EntityMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
-import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
+import TeamActions from '@/components/subscription/TeamActions'
+import TeamDonation from '@/components/subscription/TeamDonation'
+import TeamJobs from '@/components/subscription/TeamJobs'
+import TeamMarketplace from '@/components/subscription/TeamMarketplace'
 import TeamMembers from '@/components/subscription/TeamMembers'
+import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
+import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
 
-export default function EntityDetailPage({ tokenId }: any) {
-  const [lightMode] = useLightMode()
-  const router = useRouter()
+export default function TeamDetailPage({ tokenId }: any) {
+  const sdk = useSDK()
   const address = useAddress()
 
   //privy
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
-  const [entityMetadataModalEnabled, setEntityMetadataModalEnabled] =
+  const [teamMetadataModalEnabled, setTeamMetadataModalEnabled] =
     useState(false)
-  const [entitySubscriptionModalEnabled, setEntitySubscriptionModalEnabled] =
+  const [teamSubscriptionModalEnabled, setTeamSubscriptionModalEnabled] =
     useState(false)
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
 
   //Entity Data
-  const { contract: entityContract } = useContract(
-    ENTITY_ADDRESSES[selectedChain.slug]
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug]
   )
 
   const { contract: citizenConract } = useContract(
@@ -90,7 +87,7 @@ export default function EntityDetailPage({ tokenId }: any) {
     MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug]
   )
 
-  const { data: nft } = useNFT(entityContract, tokenId)
+  const { data: nft } = useNFT(teamContract, tokenId)
 
   const {
     socials,
@@ -99,10 +96,10 @@ export default function EntityDetailPage({ tokenId }: any) {
     adminHatId,
     isManager,
     subIsValid,
-    isLoading: isLoadingEntityData,
-  } = useEntityData(entityContract, hatsContract, nft)
+    isLoading: isLoadingTeamData,
+  } = useTeamData(teamContract, hatsContract, nft)
 
-  const splitAddress = useEntitySplit(entityContract, tokenId)
+  const splitAddress = useEntitySplit(teamContract, tokenId)
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
 
@@ -121,14 +118,19 @@ export default function EntityDetailPage({ tokenId }: any) {
   const [nativeBalance, setNativeBalance] = useState<number>(0)
 
   async function getNativeBalance() {
-    const sdk = initSDK(selectedChain)
-    const provider = sdk.getProvider()
-    const balance: any = await provider.getBalance(nft?.owner as string)
+    const provider = sdk?.getProvider()
+    const balance: any = await provider?.getBalance(nft?.owner as string)
     setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
   }
 
+  async function getSplitNativeBalance() {
+    const provider = sdk?.getProvider()
+    const balance: any = await provider?.getBalance(splitAddress as string)
+    setSplitNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
+  }
+
   //Subscription Data
-  const { data: expiresAt } = useContractRead(entityContract, 'expiresAt', [
+  const { data: expiresAt } = useContractRead(teamContract, 'expiresAt', [
     nft?.metadata?.id,
   ])
 
@@ -137,7 +139,11 @@ export default function EntityDetailPage({ tokenId }: any) {
     if (wallets && nft?.owner) {
       getNativeBalance()
     }
-  }, [wallets, nft])
+    if (splitAddress) {
+      getSplitNativeBalance()
+      console.log(splitAddress)
+    }
+  }, [wallets, nft, splitAddress])
 
   useEffect(() => {
     setSelectedChain(
@@ -168,7 +174,7 @@ export default function EntityDetailPage({ tokenId }: any) {
     }
   }, [])
 
-  if (!nft?.metadata || isLoadingEntityData) return null
+  if (!nft?.metadata || isLoadingTeamData) return null
 
   //Profile Header Section
   const ProfileHeader = (
@@ -221,19 +227,20 @@ export default function EntityDetailPage({ tokenId }: any) {
               ) : (
                 <></>
               )}
-              <div id="entity-name-container">
+              <div id="team-name-container">
                 <div
-                  id="entity-name"
+                  id="team-name"
                   className="flex flex-col justify-center  gap-4"
                 >
-                  <div id="entity-name-container"
+                  <div
+                    id="team-name-container"
                     className="flex flex-row gap-2 items-center justify-start"
-                    >
+                  >
                     {subIsValid && isManager && (
                       <button
                         onClick={() => {
                           if (address === nft?.owner || isManager)
-                            setEntityMetadataModalEnabled(true)
+                            setTeamMetadataModalEnabled(true)
                           else
                             return toast.error(
                               'Connect the entity admin wallet or multisig to edit metadata.'
@@ -242,7 +249,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                       >
                         <PencilIcon width={35} height={35} />
                       </button>
-                    )}  
+                    )}
                     {nft ? (
                       <h1 className="text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
                         {nft.metadata.name}
@@ -295,14 +302,14 @@ export default function EntityDetailPage({ tokenId }: any) {
                     ''
                   ) : (
                     <div className="max-w-[290px]">
-                      <EntityDonation splitAddress={splitAddress} />
+                      <TeamDonation splitAddress={splitAddress} />
                     </div>
                   )}
-                  {entityMetadataModalEnabled && (
-                    <EntityMetadataModal
+                  {teamMetadataModalEnabled && (
+                    <TeamMetadataModal
                       nft={nft}
                       selectedChain={selectedChain}
-                      setEnabled={setEntityMetadataModalEnabled}
+                      setEnabled={setTeamMetadataModalEnabled}
                     />
                   )}
                 </div>
@@ -321,37 +328,28 @@ export default function EntityDetailPage({ tokenId }: any) {
               <></>
             )}
           </div>
-          <div id="entity-actions-container"
-            className="pt-5"
-            >
+          <div id="entity-actions-container" className="pt-5">
             {isManager || address === nft.owner ? (
-              <EntityActions
-                entityId={tokenId}
+              <TeamActions
+                teamId={tokenId}
                 jobTableContract={jobTableContract}
                 marketplaceTableContract={marketplaceTableContract}
               />
-              ) : (
-
-                ''
-
-              )
-            }
-            {entityMetadataModalEnabled && (
+            ) : (
               ''
-              )
-            }
+            )}
           </div>
         </div>
 
         {isManager || address === nft.owner ? (
           <div id="manager-container" className="mt-8 xl:mt-0">
-            {entitySubscriptionModalEnabled && (
+            {teamSubscriptionModalEnabled && (
               <SubscriptionModal
-                setEnabled={setEntitySubscriptionModalEnabled}
+                setEnabled={setTeamSubscriptionModalEnabled}
                 nft={nft}
                 validPass={subIsValid}
                 expiresAt={expiresAt}
-                subscriptionContract={entityContract}
+                subscriptionContract={teamContract}
               />
             )}
             {expiresAt && (
@@ -363,16 +361,12 @@ export default function EntityDetailPage({ tokenId }: any) {
                   {'Exp: '}
                   {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                 </p>
-                <Frame
-                  noPadding
-                  >
-                  <div id="extend-sub-button"
-                    className="gradient-2"
-                    >
+                <Frame noPadding>
+                  <div id="extend-sub-button" className="gradient-2">
                     <Button
                       onClick={() => {
                         if (address === nft?.owner || isManager)
-                          setEntitySubscriptionModalEnabled(true)
+                          setTeamSubscriptionModalEnabled(true)
                         else
                           return toast.error(
                             `Connect the entity admin wallet or multisig to extend the subscription.`
@@ -382,7 +376,7 @@ export default function EntityDetailPage({ tokenId }: any) {
                       {'Extend Subscription'}
                     </Button>
                   </div>
-                  </Frame>  
+                </Frame>
               </div>
             )}
           </div>
@@ -428,15 +422,30 @@ export default function EntityDetailPage({ tokenId }: any) {
                 >
                   <div
                     id="job-title-container"
-                    className="flex gap-5 items-center opacity-[50%]"
+                    className="flex gap-5 items-center justify-between opacity-[50%]"
                   >
-                    <Image
-                      src={teamIcon}
-                      alt="Job icon"
-                      width={30}
-                      height={30}
-                    />
-                    <h2 className="header font-GoodTimes">Meet Our Team</h2>
+                    <div className="flex gap-5">
+                      <Image
+                        src={teamIcon}
+                        alt="Job icon"
+                        width={30}
+                        height={30}
+                      />
+                      <h2 className="header font-GoodTimes">Meet Our Team</h2>
+                    </div>
+                    {isManager && (
+                      <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
+                        <Button
+                          onClick={() => {
+                            window.open(
+                              `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
+                            )
+                          }}
+                        >
+                          Manage Members
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <SlidingCardMenu>
                     <div className="pb-5 h-full flex flex-col items-start justify-between">
@@ -456,98 +465,32 @@ export default function EntityDetailPage({ tokenId }: any) {
                           />
                         ))}
                       </div>
-                      {isManager && (
-                        <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
-                          <Button
-                            onClick={() => {
-                              window.open(
-                                `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
-                              )
-                            }}
-                          >
-                            Manage Members
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   </SlidingCardMenu>
                 </div>
               </Frame>
               {/* Jobs */}
-              <EntityJobs
-                entityId={tokenId}
+              <TeamJobs
+                teamId={tokenId}
                 jobTableContract={jobTableContract}
                 isManager={isManager}
               />
-              <EntityMarketplace
+              <TeamMarketplace
                 selectedChain={selectedChain}
                 marketplaceTableContract={marketplaceTableContract}
-                entityContract={entityContract}
+                teamContract={teamContract}
                 isManager={isManager}
-                entityId={tokenId}
+                teamId={tokenId}
               />
               {/* Mooney and Voting Power */}
-              <div
-                id="mooney-voting-power-container"
-                className="flex flex-col xl:flex-row gap-6"
-              >
-                <Frame>
-                  <div className="w-3/4">
-                    <div className="flex items-center gap-4">
-                      <p className="text-2xl">Treasury</p>
-                      {nft?.owner ? (
-                        <button
-                          className="flex items-center gap-2 text-white font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
-                          onClick={() => {
-                            navigator.clipboard.writeText(nft.owner)
-                            toast.success('Address copied to clipboard')
-                          }}
-                        >
-                          {nft.owner?.slice(0, 6) +
-                            '...' +
-                            nft.owner?.slice(-4)}
-                          <CopyIcon />
-                        </button>
-                      ) : (
-                        <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
-                      )}
-                    </div>
-                    <div className="mt-4 flex gap-4 items-center text-lg">
-                      <p>{`MOONEY :`}</p>
-                      <p>
-                        {MOONEYBalance
-                          ? (
-                              MOONEYBalance?.toString() /
-                              10 ** 18
-                            ).toLocaleString()
-                          : 0}
-                      </p>
-                    </div>
-                    <div className="flex gap-4 items-center text-lg">
-                      <p>{`ETHER :`}</p>
-                      <p className="pl-6">
-                        {nativeBalance ? nativeBalance : 0}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col 2xl:flex-row gap-2 items-end">
-                    <Button
-                      onClick={() => {
-                        const safeNetwork =
-                          process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-                            ? 'arb1'
-                            : 'sep'
-                        window.open(
-                          `https://app.safe.global/home?safe=${safeNetwork}:${nft?.owner}`
-                        )
-                      }}
-                    >
-                      <ArrowUpRightIcon height={20} width={20} />
-                      {'Treasury'}
-                    </Button>
-                  </div>
-                </Frame>
-              </div>
+              <TeamTreasury
+                multisigAddress={nft.owner}
+                splitAddress={splitAddress}
+                mutlisigMooneyBalance={MOONEYBalance}
+                multisigNativeBalance={nativeBalance}
+                splitMooneyBalance={splitMOONEYBalance}
+                splitNativeBalance={splitNativeBalance}
+              />
 
               {/* General Actions */}
               {isManager && <GeneralActions />}

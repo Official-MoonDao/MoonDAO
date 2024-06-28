@@ -30,21 +30,6 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
     })
   }
 
-  // useEffect(() => {
-  //   fetch('/image-generator/init.js')
-  //     .then((response) => response.text())
-  //     .then((script) => {
-  //       const runScript = new Function(script)
-  //       runScript()
-
-  //       //bug causes multiple param forms to be rendered, remove all except the first one
-  //       const forms = document.querySelectorAll('.ctrl')
-  //       for (let i = 1; i < forms.length; i++) {
-  //         forms[i].remove()
-  //       }
-  //     })
-  // }, [])
-
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="mb-12 flex items-start md:items-center flex-col gap-4 md:flex-row">

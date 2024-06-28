@@ -2,27 +2,25 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { ENTITY_ADDRESSES, ENTITY_CREATOR_ADDRESSES } from 'const/config'
+import { TEAM_ADDRESSES, TEAM_CREATOR_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import useWindowSize from '../../lib/entity/use-window-size'
+import useWindowSize from '../../lib/team/use-window-size'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import isTextInavlid from '@/lib/tableland/isTextValid'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
-import formatEntityFormData, { EntityData } from '@/lib/typeform/entityFormData'
-import MoonDAOEntityCreatorABI from '../../const/abis/MoonDAOEntityCreator.json'
+import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
+import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import { Steps } from '../layout/Steps'
-import { ImageGenerator } from './EntityImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
+import { ImageGenerator } from './TeamImageGenerator'
 
-export function CreateEntity({
+export default function CreateTeam({
   address,
-  wallets,
-  selectedWallet,
   selectedChain,
   setSelectedTier,
 }: any) {
@@ -33,7 +31,7 @@ export function CreateEntity({
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
 
-  const [entityImage, setEntityImage] = useState<any>()
+  const [teamImage, setTeamImage] = useState<any>()
 
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
@@ -43,7 +41,7 @@ export function CreateEntity({
 
   const { isMobile } = useWindowSize()
 
-  const [entityData, setEntityData] = useState<EntityData>({
+  const [teamData, setTeamData] = useState<TeamData>({
     name: '',
     description: '',
     twitter: '',
@@ -60,13 +58,13 @@ export function CreateEntity({
     }
   }, [stage, lastStage])
 
-  const { contract: entityContract } = useContract(
-    ENTITY_ADDRESSES[selectedChain.slug]
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug]
   )
 
-  const { contract: entityCreatorContract } = useContract(
-    ENTITY_CREATOR_ADDRESSES[selectedChain.slug],
-    MoonDAOEntityCreatorABI
+  const { contract: teamCreatorContract } = useContract(
+    TEAM_CREATOR_ADDRESSES[selectedChain.slug],
+    MoonDAOTeamCreatorABI
   )
   const pfpRef = useRef<HTMLDivElement | null>(null)
 
@@ -96,7 +94,7 @@ export function CreateEntity({
             description="Design your unique onchain registration certificate."
           >
             <ImageGenerator
-              setImage={setEntityImage}
+              setImage={setTeamImage}
               nextStage={() => setStage(1)}
               stage={stage}
             />
@@ -111,7 +109,7 @@ export function CreateEntity({
             <div className="w-full">
               <Widget
                 className="w-[100%] md:w-[100%]"
-                id={process.env.NEXT_PUBLIC_TYPEFORM_ENTITY_FORM_ID as string}
+                id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
                 onSubmit={async (formResponse: any) => {
                   const accessToken = await getAccessToken()
 
@@ -128,13 +126,13 @@ export function CreateEntity({
                   )
                   const data = await responseRes.json()
 
-                  const entityFormData = formatEntityFormData(
+                  const teamFormData = formatTeamFormData(
                     data.answers,
                     responseId
                   )
 
                   //check for invalid text
-                  const invalidText = Object.values(entityFormData).some(
+                  const invalidText = Object.values(teamFormData).some(
                     (v: any) => isTextInavlid(v)
                   )
 
@@ -142,7 +140,7 @@ export function CreateEntity({
                     return
                   }
 
-                  setEntityData(entityFormData)
+                  setTeamData(teamFormData)
                   setStage(2)
                 }}
                 height={700}
@@ -153,8 +151,8 @@ export function CreateEntity({
         {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
         {stage === 2 && (
           <StageContainer
-            title="Mint Entity"
-            description="Please review your onchain Entity before minting."
+            title="Mint Team"
+            description="Please review your onchain Team before minting."
           >
             {/* <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
               {`Make sure all your information is displayed correcly.`}
@@ -164,7 +162,7 @@ export function CreateEntity({
             </p> */}
 
             <Image
-              src={URL.createObjectURL(entityImage)}
+              src={URL.createObjectURL(teamImage)}
               alt="entity-image"
               width={600}
               height={600}
@@ -174,7 +172,7 @@ export function CreateEntity({
               <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
                 {isMobile ? (
-                  Object.keys(entityData).map((v, i) => {
+                  Object.keys(teamData).map((v, i) => {
                     return (
                       <div
                         className="flex flex-col text-left"
@@ -184,7 +182,7 @@ export function CreateEntity({
 
                         <p className="text-md text-balance">
                           {/**@ts-expect-error */}
-                          {entityData[v]!}
+                          {teamData[v]!}
                         </p>
                       </div>
                     )
@@ -192,7 +190,7 @@ export function CreateEntity({
                 ) : (
                   <table className="table w-fit">
                     <tbody>
-                      {Object.keys(entityData).map((v, i) => {
+                      {Object.keys(teamData).map((v, i) => {
                         return (
                           <tr className="" key={'entityData' + i}>
                             <th className="text-xl border-2 dark:border-0 dark:bg-[#0F152F]">
@@ -201,7 +199,7 @@ export function CreateEntity({
 
                             <th className="text-md border-2 dark:border-0 dark:bg-[#0F152F] text-pretty">
                               {/**@ts-expect-error */}
-                              {entityData[v]!}
+                              {teamData[v]!}
                             </th>
                           </tr>
                         )
@@ -220,7 +218,7 @@ export function CreateEntity({
                   A self-custodied multisignature treasury will secure your
                   organization’s assets, allowing to interact with any smart
                   contracts within the Ethereum ecosystem. <br /> <br />
-                  You can add more signers later via your Entity management
+                  You can add more signers later via your Team management
                   portal.
                 </p>
               </div>
@@ -232,7 +230,7 @@ export function CreateEntity({
                   Administrator.
                   <br /> <br />
                   You can change the admin or add more members to your
-                  organization using the Hats Protocol within your Entity
+                  organization using the Hats Protocol within your Team
                   Management Portal.
                 </p>
               </div>
@@ -292,7 +290,7 @@ export function CreateEntity({
               isDisabled={!agreedToCondition || isLoadingMint}
               onClick={async () => {
                 try {
-                  const cost = await entityContract?.call('getRenewalPrice', [
+                  const cost = await teamContract?.call('getRenewalPrice', [
                     address,
                     365 * 24 * 60 * 60,
                   ])
@@ -322,11 +320,11 @@ export function CreateEntity({
                     {
                       type: '1.0',
                       data: {
-                        name: entityData.name + ' Admin',
-                        description: entityData.description,
+                        name: teamData.name + ' Admin',
+                        description: teamData.description,
                       },
                     },
-                    entityData.name + 'Admin Hat Metadata'
+                    teamData.name + 'Admin Hat Metadata'
                   )
 
                   const managerHatMetadataIpfsHash = await pinMetadataToIPFS(
@@ -334,18 +332,18 @@ export function CreateEntity({
                     {
                       type: '1.0',
                       data: {
-                        name: entityData.name + ' Manager',
-                        description: entityData.description,
+                        name: teamData.name + ' Manager',
+                        description: teamData.description,
                       },
                     },
-                    entityData.name + 'Manager Hat Metadata'
+                    teamData.name + 'Manager Hat Metadata'
                   )
 
                   //pin image to IPFS
                   const newImageIpfsHash = await pinImageToIPFS(
                     pinataJWT || '',
-                    entityImage,
-                    entityData.name + ' Image'
+                    teamImage,
+                    teamData.name + ' Image'
                   )
 
                   if (!newImageIpfsHash) {
@@ -354,19 +352,19 @@ export function CreateEntity({
 
                   setIsLoadingMint(true)
                   //mint NFT to safe
-                  const mintTx = await entityCreatorContract?.call(
+                  const mintTx = await teamCreatorContract?.call(
                     'createMoonDAOEntity',
                     [
                       'ipfs://' + adminHatMetadataIpfsHash,
                       'ipfs://' + managerHatMetadataIpfsHash,
-                      entityData.name,
-                      entityData.description,
+                      teamData.name,
+                      teamData.description,
                       `ipfs://${newImageIpfsHash}`,
-                      entityData.twitter,
-                      entityData.communications,
-                      entityData.website,
-                      entityData.view,
-                      entityData.formResponseId,
+                      teamData.twitter,
+                      teamData.communications,
+                      teamData.website,
+                      teamData.view,
+                      teamData.formResponseId,
                     ],
                     {
                       value: cost,
@@ -380,7 +378,7 @@ export function CreateEntity({
 
                   setTimeout(() => {
                     setIsLoadingMint(false)
-                    router.push(`/entity/${mintedTokenId}`)
+                    router.push(`/team/${mintedTokenId}`)
                   }, 30000)
                 } catch (err) {
                   console.error(err)

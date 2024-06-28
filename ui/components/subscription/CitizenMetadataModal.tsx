@@ -1,26 +1,17 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy, useWallets } from '@privy-io/react-auth'
-import {
-  useAddress,
-  useContract,
-  useResolvedMediaType,
-} from '@thirdweb-dev/react'
+import { usePrivy } from '@privy-io/react-auth'
+import { useContract, useResolvedMediaType } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { CITIZEN_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import isTextInavlid from '@/lib/tableland/isTextValid'
 import formatCitizenFormData from '@/lib/typeform/citizenFormData'
 
 export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const router = useRouter()
   const { getAccessToken } = usePrivy()
-  const address = useAddress()
-  const { wallets } = useWallets()
-  const { selectedWallet } = useContext(PrivyWalletContext)
 
   const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
 

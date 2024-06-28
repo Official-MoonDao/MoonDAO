@@ -1,11 +1,11 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { MediaRenderer, useAddress, useNFT } from '@thirdweb-dev/react'
-import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
+import StandardButton from '../layout/StandardButton'
 import BuyTeamListingModal from './BuyTeamListingModal'
-import EntityMarketplaceListingModal from './EntityMarketplaceListingModal'
+import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
 export type TeamListing = {
   id: number
@@ -21,23 +21,21 @@ export type TeamListing = {
 type TeamListingProps = {
   selectedChain: any
   listing: TeamListing
-  entityContract: any
-  entitySplitAddress: string | undefined
+  teamContract: any
+  teamSplitAddress: string | undefined
   marketplaceTableContract?: any
   refreshListings?: any
   editable?: boolean
-  showEntityId?: boolean
 }
 
 export default function TeamListing({
   selectedChain,
   listing,
-  entityContract,
-  entitySplitAddress,
+  teamContract,
+  teamSplitAddress,
   marketplaceTableContract,
   refreshListings,
   editable,
-  showEntityId,
 }: TeamListingProps) {
   const address = useAddress()
 
@@ -48,92 +46,149 @@ export default function TeamListing({
   const [isDeleting, setIsDeleting] = useState(false)
 
   const { data: nft, isLoading: isLoadingNft }: any = useNFT(
-    entityContract,
+    teamContract,
     listing.entityId
   )
 
   return (
-    <div className="p-2 flex flex-col justify-between border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm gap-2">
-      <MediaRenderer src={listing.image} />
-      <div className="flex justify-between">
-        <p className="font-bold">{listing.title}</p>
-        <div className="flex gap-2">
-          {showEntityId && (
-            <Link
-              href={`/entity/${listing.entityId}`}
-              className="text-moon-orange"
-            >{`Entity #${listing.entityId}`}</Link>
-          )}
-          <div className="flex flex-col lg:flex-row items-center gap-2 lg:gap-4">
-            {editable && (
-              <div className="flex gap-4">
-                <button onClick={() => setEnabledMarketplaceListingModal(true)}>
-                  {!isDeleting && (
-                    <PencilIcon className="h-6 w-6 text-moon-orange" />
-                  )}
-                </button>
-                {isDeleting ? (
-                  <LoadingSpinner className="scale-[75%]" />
-                ) : (
+    <span className="link-frame">
+      <span
+        id="card-container"
+        className={`
+        card-container animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full min-h-[200px] min-w-[350px]
+    `}
+      >
+        <div
+          id="card-styling"
+          className={`
+            bg-darkest-cool rounded-[20px] min-w-[450px] h-[30%] absolute top-0 left-0 pb-5
+        `}
+        ></div>
+        <span
+          id="content-container"
+          className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-r-[3px] border-darkest-cool"
+        >
+          <span
+            id="content"
+            className="animate-fadeIn relative z-50 flex flex-col"
+          >
+            <div className="">
+              <MediaRenderer
+                className="rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] rounded-br-[5vmax] overflow-hidden"
+                width="200px"
+                height="200px"
+                src={listing.image}
+              />
+            </div>
+
+            <span
+              id="title-section"
+              className={`
+                    flex 
+                    pb-5 flex-row items-end pr-5 justify-between
+                `}
+            >
+              <h2
+                id="main-header"
+                className={`z-20 pt-[20px] static-sub-header font-GoodTimes flex items-center 
+        text-left`}
+              >
+                {listing.title}
+              </h2>
+              {editable && (
+                <div className="flex gap-4 ml-4">
                   <button
-                    onClick={async () => {
-                      setIsDeleting(true)
-                      try {
-                        await marketplaceTableContract.call('deleteFromTable', [
-                          listing.id,
-                          listing.entityId,
-                        ])
-                        setTimeout(() => {
-                          refreshListings()
+                    onClick={() => setEnabledMarketplaceListingModal(true)}
+                  >
+                    {!isDeleting && (
+                      <PencilIcon className="h-6 w-6 text-moon-orange" />
+                    )}
+                  </button>
+                  {isDeleting ? (
+                    <LoadingSpinner className="scale-[75%]" />
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        setIsDeleting(true)
+                        try {
+                          await marketplaceTableContract.call(
+                            'deleteFromTable',
+                            [listing.id, listing.entityId]
+                          )
+                          setTimeout(() => {
+                            refreshListings()
+                            setIsDeleting(false)
+                          }, 25000)
+                        } catch (err) {
+                          console.log(err)
                           setIsDeleting(false)
-                        }, 25000)
-                      } catch (err) {
-                        console.log(err)
-                        setIsDeleting(false)
-                      }
+                        }
+                      }}
+                    >
+                      <TrashIcon className="h-6 w-6 text-moon-orange" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </span>
+            <div id="description-and-id-container" className="relative z-50">
+              <div id="description-and-id" className="description">
+                <div className="flex opacity-[70%]">{listing.description}</div>
+                <div>{`${listing.price} ${listing.currency}`}</div>
+                <span
+                  id="mobile-button-container"
+                  className="md:hidden flex pt-5 pb-5 justify-start w-full"
+                >
+                  <StandardButton
+                    textColor="text-white"
+                    borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+                    link="#"
+                    paddingOnHover="pl-5"
+                    className="gradient-2"
+                    styleOnly={true}
+                    onClick={() => {
+                      if (!address)
+                        return toast.error('Please connect your wallet')
+                      setEnabledBuyListingModal(true)
                     }}
                   >
-                    <TrashIcon className="h-6 w-6 text-moon-orange" />
-                  </button>
-                )}
-                {enabledMarketplaceListingModal && (
-                  <EntityMarketplaceListingModal
-                    entityId={listing.entityId}
-                    setEnabled={setEnabledMarketplaceListingModal}
-                    marketplaceTableContract={marketplaceTableContract}
-                    listing={listing}
-                    edit
-                    refreshListings={refreshListings}
-                  />
-                )}
+                    {'Buy Now'}
+                  </StandardButton>
+                </span>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-      <p className="py-2 h-[200px] overflow-auto">{listing.description}</p>
-      <p>{`${listing.price} ${listing.currency}`}</p>
-      {enabledBuyListingModal && (
-        <BuyTeamListingModal
-          selectedChain={selectedChain}
-          listing={listing}
-          recipient={entitySplitAddress}
-          setEnabled={setEnabledBuyListingModal}
-        />
-      )}
-      {isLoadingNft ? (
-        <LoadingSpinner className="scale-[75%]" />
-      ) : (
-        <button
-          className="px-2 flex items-center justify-center min-w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"
-          onClick={() => {
-            if (!address) return toast.error('Please connect your wallet')
-            setEnabledBuyListingModal(true)
-          }}
-        >
-          Buy
-        </button>
-      )}
-    </div>
+
+              <span
+                id="hovertext-container"
+                className="hovertext absolute left-0 bottom-[-320px] ml-[-20px] w-[calc(100%+40px)] h-[calc(100%+300px)] p-[20px] text-lg rounded-[10px] text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
+                onClick={() => {
+                  if (!address) return toast.error('Please connect your wallet')
+                  setEnabledBuyListingModal(true)
+                }}
+              >
+                <span className="hidden md:block">{'Buy Now'}</span>
+              </span>
+            </div>
+          </span>
+        </span>
+        {enabledMarketplaceListingModal && (
+          <TeamMarketplaceListingModal
+            teamId={listing.entityId}
+            setEnabled={setEnabledMarketplaceListingModal}
+            marketplaceTableContract={marketplaceTableContract}
+            listing={listing}
+            edit
+            refreshListings={refreshListings}
+          />
+        )}
+        {enabledBuyListingModal && (
+          <BuyTeamListingModal
+            selectedChain={selectedChain}
+            listing={listing}
+            recipient={teamSplitAddress}
+            setEnabled={setEnabledBuyListingModal}
+          />
+        )}
+      </span>
+    </span>
   )
 }

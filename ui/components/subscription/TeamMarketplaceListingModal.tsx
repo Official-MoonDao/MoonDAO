@@ -17,8 +17,8 @@ type ListingData = {
   shipping: string
 }
 
-type EntityMarketplaceListingModalProps = {
-  entityId: number
+type TeamMarketplaceListingModalProps = {
+  teamId: number
   setEnabled: Function
   refreshListings: Function
   marketplaceTableContract: any
@@ -26,14 +26,14 @@ type EntityMarketplaceListingModalProps = {
   listing?: TeamListing
 }
 
-export default function EntityMarketplaceListingModal({
-  entityId,
+export default function TeamMarketplaceListingModal({
+  teamId,
   setEnabled,
   refreshListings,
   marketplaceTableContract,
   edit,
   listing,
-}: EntityMarketplaceListingModalProps) {
+}: TeamMarketplaceListingModalProps) {
   const { getAccessToken } = usePrivy()
   const [isLoading, setIsLoading] = useState(false)
   const [listingData, setListingData] = useState<ListingData>(
@@ -59,10 +59,10 @@ export default function EntityMarketplaceListingModal({
   return (
     <div
       onMouseDown={(e: any) => {
-        if (e.target.id === 'entity-marketplace-listing-modal-backdrop')
+        if (e.target.id === 'team-marketplace-listing-modal-backdrop')
           setEnabled(false)
       }}
-      id="entity-marketplace-listing-modal-backdrop"
+      id="team-marketplace-listing-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <form
@@ -108,7 +108,7 @@ export default function EntityMarketplaceListingModal({
               (await pinImageToIPFS(
                 pinataJWT || '',
                 listingData.image,
-                `entity#${entityId}-listing-${listingData.title}`
+                `team#${teamId}-listing-${listingData.title}`
               ))
           }
 
@@ -121,7 +121,7 @@ export default function EntityMarketplaceListingModal({
                 listingData.title,
                 listingData.description,
                 imageIpfsLink,
-                entityId,
+                teamId,
                 listingData.price,
                 listingData.currency,
                 listingData.shipping,
@@ -131,7 +131,7 @@ export default function EntityMarketplaceListingModal({
                 listingData.title,
                 listingData.description,
                 imageIpfsLink,
-                entityId,
+                teamId,
                 listingData.price,
                 listingData.currency,
                 listingData.shipping,
