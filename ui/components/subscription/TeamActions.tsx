@@ -26,7 +26,7 @@ type TeamActionsProps = {
 function TeamAction({ title, description, icon, onClick }: TeamActionProps) {
   return (
     <button onClick={onClick}>
-      <SubCard className="xl:h-[175px] flex flex-col gap-2 hover:ml-2 ease-in-out duration-300">
+      <SubCard className="h-[200px] flex flex-col gap-2 hover:mt-2 ease-in-out duration-300">
         <div className="flex gap-2">
           {icon}
           <p className="font-bold text-xl">{title}</p>
@@ -48,7 +48,7 @@ export default function TeamActions({
 
   return (
     <Card>
-      <div className="mt-2 grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 h-full md:h-[225px]">
         <TeamAction
           title="Fund"
           description="Submit a proposal to secure funding from the MoonDAO community for your space project."
