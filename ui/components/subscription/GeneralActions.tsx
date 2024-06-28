@@ -18,10 +18,13 @@ function GeneralAction({
   href,
 }: GeneralActionProps) {
   return (
-    <button onClick={() => window.open(href)}>
-      <Card className="flex flex-col justify-between p-8 w-full h-full hover:scale-105 duration-300 bg-[#e7e5e7]">
-        <div className="h-[50px]">{logo}</div>
-        <p className="mt-2 h-full">{description}</p>
+    <button
+      className="hover:scale-105 ease-in-out duration-300"
+      onClick={() => window.open(href)}
+    >
+      <div className="bg-dark-cool p-4">
+        <div className="h-[75px]">{logo}</div>
+        <p className="mt-2 h-[100px] md:h-[200px] text-start">{description}</p>
         <div className="mt-8 flex gap-4">
           {points.map((p, i) => (
             <p key={p + i} className="py-2 px-4 bg-[#ffffff25] rounded-full">
@@ -29,16 +32,24 @@ function GeneralAction({
             </p>
           ))}
         </div>
-      </Card>
+      </div>
     </button>
   )
 }
 
 export default function GeneralActions() {
   return (
-    <div className="flex flex-col gap-4">
-      <p className="p-4 text-2xl">General Actions</p>
-      <div className="flex flex-col lg:grid xl:grid-cols-3 gap-8">
+    <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+      <div className="flex gap-5 opacity-[50%]">
+        <Image
+          src={'/assets/icon-action.svg'}
+          alt="Marketplace icon"
+          width={30}
+          height={30}
+        />
+        <p className="header font-GoodTimes">General Actions</p>
+      </div>
+      <div className="flex flex-col lg:grid xl:grid-cols-3 gap-8 p-8">
         <GeneralAction
           logo={<CoordinapeLogoWhite />}
           description={`Coordinape is a collaborative platform that enables teams to allocate tokens (GIVE) to recognize each other's contributions.`}

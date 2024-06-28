@@ -46,7 +46,7 @@ export default function TeamMarketplace({
             width={30}
             height={30}
           />
-          <h2 className="header font-GoodTimes">Meet Our Team</h2>
+          <h2 className="header font-GoodTimes">Marketplace</h2>
         </div>
         {isManager && (
           <StandardButton
