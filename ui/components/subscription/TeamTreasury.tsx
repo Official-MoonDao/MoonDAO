@@ -28,7 +28,7 @@ export default function TeamTreasury({
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
       <div className="flex flex-col">
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center pr-12">
           <div className="flex gap-5 opacity-[50%]">
             <Image
               src={'/assets/icon-treasury.svg'}

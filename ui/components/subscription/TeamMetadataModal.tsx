@@ -10,8 +10,13 @@ import { TEAM_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import isTextInavlid from '@/lib/tableland/isTextValid'
 import formatTeamFormData from '@/lib/typeform/teamFormData'
+import Modal from '../layout/Modal'
 
-export default function TeamMetadataModal({ nft, selectedChain, setEnabled }: any) {
+export default function TeamMetadataModal({
+  nft,
+  selectedChain,
+  setEnabled,
+}: any) {
   const router = useRouter()
   const { getAccessToken } = usePrivy()
 
@@ -22,14 +27,8 @@ export default function TeamMetadataModal({ nft, selectedChain, setEnabled }: an
   )
 
   return (
-    <div
-      onMouseDown={(e: any) => {
-        if (e.target.id === 'entity-metadata-modal-backdrop') setEnabled(false)
-      }}
-      id="entity-metadata-modal-backdrop"
-      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
-    >
-      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
+    <Modal id="entity-metadata-modal-backdrop" setEnabled={setEnabled}>
+      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md">
         <div className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-bold">Update Info</h1>
           <button
@@ -93,6 +92,6 @@ export default function TeamMetadataModal({ nft, selectedChain, setEnabled }: an
           height={500}
         />
       </div>
-    </div>
+    </Modal>
   )
 }

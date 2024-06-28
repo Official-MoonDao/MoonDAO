@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from 'next/image'
 
 type TabProps = {
   tab: string
@@ -8,7 +8,13 @@ type TabProps = {
   icon: string
 }
 
-export default function Tab({ tab, currentTab, setTab, children, icon }: TabProps) {
+export default function Tab({
+  tab,
+  currentTab,
+  setTab,
+  children,
+  icon,
+}: TabProps) {
   return (
     <button
       className={`
@@ -16,20 +22,17 @@ export default function Tab({ tab, currentTab, setTab, children, icon }: TabProp
           ${currentTab === tab ? '' : 'bg-mid-cool opacity-80 text-opacity-50 '}
         `}
       onClick={() => setTab(tab)}
-      >
-      <div id='all-tab' 
-        className="flex items-center justify-start"
-        >
-        <div id="icon-container" 
+    >
+      <div id="all-tab" className="flex items-center justify-start">
+        <div
+          id="icon-container"
           className={`
             ${currentTab === tab ? '' : 'opacity-80 '}
-          `}  
-          >
+          `}
+        >
           <Image src={icon} alt="" width={20} height={20} />
         </div>
-        <div id="text-container"
-          className="pl-2"
-          >
+        <div id="text-container" className="pl-2">
           {children}
         </div>
       </div>

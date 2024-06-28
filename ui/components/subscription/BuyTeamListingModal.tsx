@@ -20,6 +20,8 @@ import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
 import useTeamEmail from '@/lib/team/useTeamEmail'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { TeamListing } from '@/components/subscription/TeamListing'
+import Modal from '../layout/Modal'
+import StandardButton from '../layout/StandardButton'
 
 type BuyListingModalProps = {
   selectedChain: any
@@ -167,14 +169,7 @@ export default function BuyTeamListingModal({
   }
 
   return (
-    <div
-      onMouseDown={(e: any) => {
-        if (e.target.id === 'team-marketplace-buy-modal-backdrop')
-          setEnabled(false)
-      }}
-      id="team-marketplace-buy-modal-backdrop"
-      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
-    >
+    <Modal id="team-marketplace-buy-modal-backdrop" setEnabled={setEnabled}>
       <form
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md"
         onSubmit={(e) => {
@@ -196,7 +191,7 @@ export default function BuyTeamListingModal({
       >
         <div className="w-full flex items-center justify-between">
           <div>
-            <p>{'Buy a Listing'}</p>
+            <h2 className="font-GoodTimes">{'Buy a Listing'}</h2>
           </div>
           <button
             type="button"
@@ -273,17 +268,17 @@ export default function BuyTeamListingModal({
             </div>
           </div>
         )}
-        <button
+        <StandardButton
           type="submit"
-          className="mt-4 px-2 w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"
+          className="mt-4 w-full gradient-2 rounded-[5vmax]"
           disabled={isLoading || !teamEmail || !recipient}
         >
           {isLoading || !teamEmail || !recipient ? 'Loading...' : 'Buy'}
-        </button>
+        </StandardButton>
         {isLoading && (
           <p>Do not leave the page until the transaction is complete.</p>
         )}
       </form>
-    </div>
+    </Modal>
   )
 }
