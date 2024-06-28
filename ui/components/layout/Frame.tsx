@@ -42,9 +42,9 @@ export default function RoundedFrame({
         <div id="frame-container"
             style={frameStyle}
             className={`
-                overflow-hidden w-full
+                overflow-hidden
                 ${noPadding ? "" : "p-5 pb-0 md:p-10"} 
-                ${className}
+                ${className && className }
             `} 
             >
             {children}

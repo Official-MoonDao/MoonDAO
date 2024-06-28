@@ -1,6 +1,6 @@
 import { answerByFieldId } from './answerByFieldId'
 
-export type EntityData = {
+export type TeamData = {
   name: string
   description: string
   twitter: string
@@ -10,7 +10,7 @@ export type EntityData = {
   formResponseId: string
 }
 
-export default function formatEntityFormData(
+export default function formatTeamFormData(
   answers: any[],
   responseId: string
 ) {
@@ -25,5 +25,5 @@ export default function formatEntityFormData(
         ? 'public'
         : 'private',
     formResponseId: responseId,
-  } as EntityData
+  } as TeamData
 }

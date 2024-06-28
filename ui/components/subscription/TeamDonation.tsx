@@ -1,18 +1,15 @@
-import { useWallets } from '@privy-io/react-auth'
 import { useAddress, useSDK } from '@thirdweb-dev/react'
-import { BigNumber } from 'ethers'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import Frame from '../layout/Frame'
 import Button from './Button'
 import Card from './Card'
 
-type EntityDonationProps = {
+type TeamDonationProps = {
   splitAddress: string | undefined
 }
 
-export default function EntityDonation({ splitAddress }: EntityDonationProps) {
+export default function TeamDonation({ splitAddress }: TeamDonationProps) {
   const address = useAddress()
   const sdk = useSDK()
   const [donationAmount, setDonationAmount] = useState(0)
@@ -38,25 +35,28 @@ export default function EntityDonation({ splitAddress }: EntityDonationProps) {
 
   return (
     <Card className="flex flex-col lg:flex-row justify-between gap-4">
-      <p className="text-2xl">Contribute</p>
       <div className="flex flex-col lg:flex-row gap-4">
-        <form
-          className="flex gap-4 items-center"
-          onSubmit={(e) => {
-            e.preventDefault()
-            donate()
-          }}
-        >
-          <input
-            className="w-[100px] bg-[#0f152f] px-2 h-full"
-            type="number"
-            onChange={({ target }: any) => setDonationAmount(target.value)}
-            value={donationAmount}
-            step={0.001}
-          />
-          <p>ETH</p>
-          <Button type="submit">Donate</Button>
-        </form>
+        <Frame noPadding>
+          <form
+            className="flex bg-dark-cool gap-4 items-center justify-between"
+            onSubmit={(e) => {
+              e.preventDefault()
+              donate()
+            }}
+          >
+            <input
+              className="w-[100px] bg-dark-cool pl-5 h-full"
+              type="number"
+              onChange={({ target }: any) => setDonationAmount(target.value)}
+              value={donationAmount}
+              step={0.001}
+            />
+            <p>ETH</p>
+            <div id="" className="gradient-2">
+              <Button type="submit">Donate</Button>
+            </div>
+          </form>
+        </Frame>
       </div>
     </Card>
   )

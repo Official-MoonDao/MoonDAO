@@ -4,7 +4,8 @@ import ContentLayout from '../components/layout/ContentLayout';
 
 const ThankYou: React.FC = () => {
     return (
-        <section className="overflow-auto">
+        <section id="main-section" 
+            className="overflow-auto">
             <Container>
                 <ContentLayout
                     header="Thank You"

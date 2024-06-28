@@ -4,11 +4,7 @@ import { useEffect, useState } from 'react'
 import { useHandleRead } from '../thirdweb/hooks'
 import { getAttribute } from '../utils/nft'
 
-export function useEntityData(
-  entityContract: any,
-  hatsContract: any,
-  nft: any
-) {
+export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   const address = useAddress()
   const { wallets } = useWallets()
 
@@ -19,7 +15,7 @@ export function useEntityData(
   const [isManager, setIsManager] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
 
-  const { data: adminHatId } = useHandleRead(entityContract, 'entityAdminHat', [
+  const { data: adminHatId } = useHandleRead(teamContract, 'entityAdminHat', [
     nft?.metadata?.id || '',
   ])
 
@@ -51,7 +47,7 @@ export function useEntityData(
   async function checkManager() {
     try {
       if (address) {
-        const isAddressManager = await entityContract.call('isManager', [
+        const isAddressManager = await teamContract.call('isManager', [
           nft?.metadata?.id,
           address,
         ])
@@ -69,7 +65,7 @@ export function useEntityData(
     const now = Math.floor(Date.now() / 1000)
 
     try {
-      const expiresAt = await entityContract.call('expiresAt', [
+      const expiresAt = await teamContract.call('expiresAt', [
         nft?.metadata?.id,
       ])
       setSubIsValid(expiresAt.toNumber() > now)
@@ -90,8 +86,8 @@ export function useEntityData(
   }, [nft])
 
   useEffect(() => {
-    if (entityContract && nft?.metadata?.id) checkManager()
-  }, [address, nft, entityContract])
+    if (teamContract && nft?.metadata?.id) checkManager()
+  }, [address, nft, teamContract])
 
   useEffect(() => {
     if (hatsContract && adminHatId) getHatTreeId()

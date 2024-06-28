@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import { NumberType } from '../utils/numbers'
 
-export default function useEntitySplit(
-  entityContract: any,
-  entityId: number | string | undefined
+export default function useTeamSplit(
+  teamContract: any,
+  teamId: number | string | undefined
 ) {
   const [splitContractAddress, setSplitContractAddress] = useState<
     string | undefined
   >()
 
   async function getEntitySplitContract() {
-    const split = await entityContract.call('splitContract', [entityId])
+    const split = await teamContract.call('splitContract', [teamId])
     setSplitContractAddress(split)
   }
 
   useEffect(() => {
-    if (entityContract && entityId) getEntitySplitContract()
-  }, [entityContract, entityId])
+    if (teamContract && teamId) getEntitySplitContract()
+  }, [teamContract, teamId])
 
   return splitContractAddress
 }

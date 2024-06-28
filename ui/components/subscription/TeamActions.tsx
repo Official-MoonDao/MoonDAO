@@ -6,31 +6,27 @@ import {
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import Card from './Card'
-import EntityJobModal from './EntityJobModal'
-import EntityMarketplaceListingModal from './EntityMarketplaceListingModal'
 import SubCard from './SubCard'
+import TeamJobModal from './TeamJobModal'
+import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
-type EntityActionProps = {
+type TeamActionProps = {
   title: string
   description: string
   icon: any
   onClick?: () => void
 }
 
-type EntityActionsProps = {
-  entityId: any
+type TeamActionsProps = {
+  teamId: any
   jobTableContract: any
+  marketplaceTableContract: any
 }
 
-function EntityAction({
-  title,
-  description,
-  icon,
-  onClick,
-}: EntityActionProps) {
+function TeamAction({ title, description, icon, onClick }: TeamActionProps) {
   return (
     <button onClick={onClick}>
-      <SubCard className="xl:h-[175px] flex flex-col gap-2 hover:scale-105 ease-in-out duration-300">
+      <SubCard className="xl:h-[175px] flex flex-col gap-2 hover:ml-2 ease-in-out duration-300">
         <div className="flex gap-2">
           {icon}
           <p className="font-bold text-xl">{title}</p>
@@ -41,52 +37,50 @@ function EntityAction({
   )
 }
 
-export default function EntityActions({
-  entityId,
+export default function TeamActions({
+  teamId,
   jobTableContract,
   marketplaceTableContract,
-}: any) {
+}: TeamActionsProps) {
   const router = useRouter()
-  const [entityJobModalEnabled, setEntityJobModalEnabled] = useState(false)
-  const [entityListingModalEnabled, setEntityListingModalEnabled] =
-    useState(false)
+  const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
+  const [teamListingModalEnabled, setTeamListingModalEnabled] = useState(false)
 
   return (
     <Card>
-      {/* <p className="text-2xl">Actions</p> */}
       <div className="mt-2 grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <EntityAction
+        <TeamAction
           title="Fund"
           description="Submit a proposal to secure funding from the MoonDAO community for your space project."
           icon={<BanknotesIcon height={30} width={30} />}
           onClick={() => router.push('/newProposal')}
         />
-        <EntityAction
+        <TeamAction
           title="Hire"
           description="List job openings, contracts, and bounties to a global talent pool passionate about space."
           icon={<ClipboardDocumentListIcon height={30} width={30} />}
-          onClick={() => setEntityJobModalEnabled(true)}
+          onClick={() => setTeamJobModalEnabled(true)}
         />
-        <EntityAction
+        <TeamAction
           title="Sell"
           description="List products, services, or ticketed events for sale in ETH within the MoonDAO marketplace."
           icon={<BuildingStorefrontIcon height={30} width={30} />}
-          onClick={() => setEntityListingModalEnabled(true)}
+          onClick={() => setTeamListingModalEnabled(true)}
         />
       </div>
-      {entityJobModalEnabled && (
-        <EntityJobModal
-          entityId={entityId}
+      {teamJobModalEnabled && (
+        <TeamJobModal
+          teamId={teamId}
           jobTableContract={jobTableContract}
-          setEnabled={setEntityJobModalEnabled}
+          setEnabled={setTeamJobModalEnabled}
           refreshJobs={() => router.reload()}
         />
       )}
-      {entityListingModalEnabled && (
-        <EntityMarketplaceListingModal
-          entityId={entityId}
+      {teamListingModalEnabled && (
+        <TeamMarketplaceListingModal
+          teamId={teamId}
           marketplaceTableContract={marketplaceTableContract}
-          setEnabled={setEntityListingModalEnabled}
+          setEnabled={setTeamListingModalEnabled}
           refreshListings={() => router.reload()}
         />
       )}

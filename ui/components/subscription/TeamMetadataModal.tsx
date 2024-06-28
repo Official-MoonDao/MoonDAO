@@ -1,31 +1,24 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { usePrivy } from '@privy-io/react-auth'
 import {
   useAddress,
   useContract,
   useResolvedMediaType,
 } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { ENTITY_TABLE_ADDRESSES } from 'const/config'
+import { TEAM_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
-import toast from 'react-hot-toast'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import isTextInavlid from '@/lib/tableland/isTextValid'
-import formatEntityFormData from '@/lib/typeform/entityFormData'
+import formatTeamFormData from '@/lib/typeform/teamFormData'
 
-export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {
+export default function TeamMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const router = useRouter()
   const { getAccessToken } = usePrivy()
-  const [isLoading, setIsLoading] = useState(false)
 
-  const address = useAddress()
-  const { wallets } = useWallets()
-  const { selectedWallet } = useContext(PrivyWalletContext)
   const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
 
-  const { contract: entityTableContract } = useContract(
-    ENTITY_TABLE_ADDRESSES[selectedChain.slug]
+  const { contract: teamTableContract } = useContract(
+    TEAM_TABLE_ADDRESSES[selectedChain.slug]
   )
 
   return (
@@ -49,7 +42,7 @@ export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {
         </div>
         <Widget
           className="w-[100%] md:w-[100%]"
-          id={process.env.NEXT_PUBLIC_TYPEFORM_ENTITY_FORM_ID as string}
+          id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
           onSubmit={async (formResponse: any) => {
             const accessToken = await getAccessToken()
 
@@ -70,9 +63,9 @@ export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {
             const rawMetadata = await rawMetadataRes.json()
             const imageIPFSLink = rawMetadata.image
 
-            const entityData = formatEntityFormData(data.answers, responseId)
+            const teamData = formatTeamFormData(data.answers, responseId)
 
-            const invalidText = Object.values(entityData).some((v: any) =>
+            const invalidText = Object.values(teamData).some((v: any) =>
               isTextInavlid(v)
             )
 
@@ -81,16 +74,16 @@ export function EntityMetadataModal({ nft, selectedChain, setEnabled }: any) {
             }
 
             //mint NFT to safe
-            await entityTableContract?.call('updateTable', [
+            await teamTableContract?.call('updateTable', [
               nft.metadata.id,
-              entityData.name,
-              entityData.description,
+              teamData.name,
+              teamData.description,
               imageIPFSLink,
-              entityData.twitter,
-              entityData.communications,
-              entityData.website,
-              entityData.view,
-              entityData.formResponseId,
+              teamData.twitter,
+              teamData.communications,
+              teamData.website,
+              teamData.view,
+              teamData.formResponseId,
             ])
 
             setTimeout(() => {

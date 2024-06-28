@@ -10,8 +10,8 @@ type JobData = {
   contactInfo: string
 }
 
-type EntityJobModalProps = {
-  entityId: string
+type TeamJobModalProps = {
+  teamId: string
   setEnabled: Function
   refreshJobs: Function
   jobTableContract: any
@@ -19,14 +19,14 @@ type EntityJobModalProps = {
   job?: Job
 }
 
-export default function EntityJobModal({
-  entityId,
+export default function TeamJobModal({
+  teamId,
   setEnabled,
   refreshJobs,
   jobTableContract,
   edit,
   job,
-}: EntityJobModalProps) {
+}: TeamJobModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [jobData, setJobData] = useState<JobData>(
     edit
@@ -45,9 +45,9 @@ export default function EntityJobModal({
   return (
     <div
       onMouseDown={(e: any) => {
-        if (e.target.id === 'entity-job-modal-backdrop') setEnabled(false)
+        if (e.target.id === 'team-job-modal-backdrop') setEnabled(false)
       }}
-      id="entity-job-modal-backdrop"
+      id="team-job-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <form
@@ -77,14 +77,14 @@ export default function EntityJobModal({
                 job?.id,
                 jobData.title,
                 jobData.description,
-                entityId,
+                teamId,
                 jobData.contactInfo,
               ])
             } else {
               await jobTableContract?.call('insertIntoTable', [
                 jobData.title,
                 jobData.description,
-                entityId,
+                teamId,
                 jobData.contactInfo,
               ])
             }

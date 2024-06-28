@@ -78,17 +78,17 @@ export const CITIZEN_TABLE_ADDRESSES: Index = {
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
-export const ENTITY_ADDRESSES: Index = {
+export const TEAM_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0xc235E23D983C1F871d792406cd291e43Ca08AD67',
 }
 
-export const ENTITY_CREATOR_ADDRESSES: Index = {
+export const TEAM_CREATOR_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0x112f6D690da78c32A074a9D4Fe302D10Dcfb2997',
 }
 
-export const ENTITY_TABLE_ADDRESSES: Index = {
+export const TEAM_TABLE_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0x316D472c1730A6fcD7a369E95C8F74FA821D98f6',
 }

@@ -5,7 +5,8 @@ import ContentLayout from '../components/layout/ContentLayout';
 const AlmostThere: React.FC = () => {
     return (
         <section>
-            <Container fullWidth>
+            <Container 
+                containerFullWidth>
                 <ContentLayout
                     header="Almost There..."
                     headerSize="max(25px, 2.5vw)" 
