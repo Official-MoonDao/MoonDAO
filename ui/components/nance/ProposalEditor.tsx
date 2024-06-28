@@ -241,7 +241,7 @@ export default function ProposalEditor() {
   const pageTitle = proposalId ? 'Edit Proposal' : 'New Proposal'
 
   return (
-    <div className="flex flex-col justify-center items-center animate-fadeIn">
+    <div className="flex flex-col justify-center items-center animate-fadeIn w-[90vw] md:w-full">
       <Head title={pageTitle} />
 
       <div className="w-full sm:w-[90%] lg:w-3/4">
