@@ -6,7 +6,7 @@ export default function StandardButton({
   className = '',
   children = 'ReactNode',
   onClick = () => {},
-  disabled,
+  disabled = false,
   backgroundColor = 'dark-cool',
   hoverColor = 'mid-cool',
   borderRadius = 'rounded',
