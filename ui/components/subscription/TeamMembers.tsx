@@ -71,6 +71,7 @@ function TeamMember({ address, hatData, citizenContract }: TeamMemberProps) {
       hovertext={metadata?.name && 'Explore Profile'}
       horizontalscroll
       subheader={hatData.name}
+      profile
     />
   )
 }
