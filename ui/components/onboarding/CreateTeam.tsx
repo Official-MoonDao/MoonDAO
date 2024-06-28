@@ -171,38 +171,42 @@ export default function CreateTeam({
               <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
                 {isMobile ? (
-                  Object.keys(teamData).map((v, i) => {
-                    return (
-                      <div
-                        className="flex flex-col text-left"
-                        key={'entityData' + i}
-                      >
-                        <p className="text-xl capitalize">{v}:</p>
+                  Object.keys(teamData)
+                    .filter((v) => v != 'formResponseId')
+                    .map((v, i) => {
+                      return (
+                        <div
+                          className="flex flex-col text-left"
+                          key={'entityData' + i}
+                        >
+                          <p className="text-xl capitalize">{v}:</p>
 
-                        <p className="text-md text-balance">
-                          {/**@ts-expect-error */}
-                          {teamData[v]!}
-                        </p>
-                      </div>
-                    )
-                  })
+                          <p className="text-md text-balance">
+                            {/**@ts-expect-error */}
+                            {teamData[v]!}
+                          </p>
+                        </div>
+                      )
+                    })
                 ) : (
                   <table className="table w-fit">
                     <tbody>
-                      {Object.keys(teamData).map((v, i) => {
-                        return (
-                          <tr className="" key={'entityData' + i}>
-                            <th className="text-xl border-2 dark:border-0 dark:bg-[#0F152F]">
-                              {v}:
-                            </th>
+                      {Object.keys(teamData)
+                        .filter((v) => v != 'formResponseId')
+                        .map((v, i) => {
+                          return (
+                            <tr className="" key={'entityData' + i}>
+                              <th className="text-xl border-2 dark:border-0 dark:bg-[#0F152F]">
+                                {v}:
+                              </th>
 
-                            <th className="text-md border-2 dark:border-0 dark:bg-[#0F152F] text-pretty">
-                              {/**@ts-expect-error */}
-                              {teamData[v]!}
-                            </th>
-                          </tr>
-                        )
-                      })}
+                              <th className="text-md border-2 dark:border-0 dark:bg-[#0F152F] text-pretty">
+                                {/**@ts-expect-error */}
+                                {teamData[v]!}
+                              </th>
+                            </tr>
+                          )
+                        })}
                     </tbody>
                   </table>
                 )}
@@ -390,6 +394,7 @@ export default function CreateTeam({
           </StageContainer>
         )}
       </div>
+      <button onClick={() => setStage(stage + 1)}>Next</button>
     </div>
   )
 }

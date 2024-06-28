@@ -184,7 +184,9 @@ export default function CreateCitizen({
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
                 {isMobile ? (
                   Object.keys(citizenData)
-                    .filter((v) => v != 'newsletterSub')
+                    .filter(
+                      (v) => v != 'newsletterSub' && v != 'formResponseId'
+                    )
                     .map((v, i) => {
                       return (
                         <div
@@ -204,7 +206,9 @@ export default function CreateCitizen({
                   <table className="table w-fit">
                     <tbody>
                       {Object.keys(citizenData)
-                        .filter((v) => v != 'newsletterSub')
+                        .filter(
+                          (v) => v != 'newsletterSub' && v != 'formResponseId'
+                        )
                         .map((v, i) => {
                           return (
                             <tr className="" key={'citizenData' + i}>
