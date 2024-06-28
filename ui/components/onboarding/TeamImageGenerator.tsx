@@ -44,38 +44,16 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
         </StageButton>
       </div>
 
-      <div className="justify-center relative flex" id="entityPic">
-        <Image
-          src="/flat-moondao-flag.png"
-          // layout="fill"
-          width={600}
-          height={600}
-          objectFit="contain"
-          alt="flag"
-        />
+      <div id="background"
+        className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex" 
+        >
         {userImage && (
-          <div
-          // style={{
-          //   position: 'absolute',
-          //   top: -50,
-          //   left: 0,
-          //   width: '100%',
-          //   height: '100%',
-          //   display: 'flex',
-          //   justifyContent: 'center',
-          //   alignItems: 'center',
-          // }}
-          // className="w-full h-full justify-center items-center mix-blend-multiply"
-          >
-            <Image
-              className="z-30 absolute mix-blend-multiply max-w-[300px] max-h-[200px] md:max-w-[400px] md:max-h-[300px] w-auto h-auto top-[95px] left-[90px] md:top-[170px] md:left-[170px]"
-              src={URL.createObjectURL(userImage)}
-              alt="user image"
-              width={200}
-              height={200}
-              objectFit="contain"
-            />
-          </div>
+          <div id="user-image"
+            style={{ 
+              backgroundImage: `url(${URL.createObjectURL(userImage)})`, 
+            }} 
+              className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+          ></div>
         )}
       </div>
     </div>
