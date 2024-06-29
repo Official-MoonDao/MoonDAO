@@ -16,7 +16,7 @@ const ThankYou: React.FC = () => {
                             <a href="/" className="text-white underline">
                                 CLICK HERE
                             </a> 
-                            &nbsp; to go back to the homepage.
+                            &nbsp; to go back to the homepage
                         </>
                     }
                 />
