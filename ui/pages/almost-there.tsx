@@ -9,7 +9,7 @@ const AlmostThere: React.FC = () => {
                 containerwidth>
                 <ContentLayout
                     header="Almost There..."
-                    headerSize="max(25px, 2.5vw)" 
+                    headerSize="max(25px, 2.5vw)"  
                     description={
                         <>
                             Check your email to confirm your subscription. 

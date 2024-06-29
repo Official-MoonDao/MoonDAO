@@ -33,7 +33,7 @@ const ContentLayout: React.FC<ContentProps> = ({
     popOverEffect = false,
     contentwide = false, 
     branded = true,
-    isProfile = false,
+    isProfile = false, 
 }) => {
     const isCompact = mode === 'compact';
 

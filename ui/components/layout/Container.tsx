@@ -9,7 +9,7 @@ function Container({ children, containerwidth }: BodyProps) {
   // Assert that the children are React elements with the additional prop
   const childrenWithProps = React.Children.map(children, child => {
     if (React.isValidElement(child)) {
-      return React.cloneElement(child as ReactElement<{ containerwidth?: boolean }>, { containerwidth });
+      return React.cloneElement(child as ReactElement<{ containerwidth?: boolean }>, { containerwidth }); 
     }
     return child;
   });
