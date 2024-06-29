@@ -35,6 +35,7 @@ import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
 import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
+import Head from '@/components/layout/Head'
 import StandardButton from '@/components/layout/StandardButton'
 import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
@@ -43,15 +44,9 @@ import GeneralActions from '@/components/subscription/GeneralActions'
 import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 
-export default function CitizenDetailPage() {
+export default function CitizenDetailPage({ nft, tokenId }: any) {
   const router = useRouter()
   const address = useAddress()
-
-  const [tokenId, setTokenId] = useState<any>(router.query.tokenId)
-
-  // //privy
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
 
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
 
@@ -63,7 +58,6 @@ export default function CitizenDetailPage() {
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
   )
-  const { data: nft } = useNFT(citizenContract, tokenId)
 
   const {
     socials,
@@ -119,51 +113,14 @@ export default function CitizenDetailPage() {
     )
   }, [])
 
-  if (!nft?.metadata || isLoadingCitizenData) return
-
-  if (!subIsValid) {
-    return (
-      <Card>
-        <p>The pass has expired, please connect the owner's wallet to renew.</p>
-        <div className="mt-8 xl:mt-0">
-          {subModalEnabled && (
-            <SubscriptionModal
-              setEnabled={setSubModalEnabled}
-              nft={nft}
-              validPass={subIsValid}
-              expiresAt={expiresAt}
-              subscriptionContract={citizenContract}
-            />
-          )}
-          {expiresAt && (
-            <div className="flex flex-col gap-4 items-start">
-              {subIsValid && (
-                <p className="opacity-50">
-                  {'Exp: '}
-                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                </p>
-              )}
-              <Button
-                onClick={() => {
-                  if (address != nft?.owner)
-                    return toast.error(
-                      `Connect the entity admin wallet or multisig to extend the subscription.`
-                    )
-                  setSubModalEnabled(true)
-                }}
-              >
-                {'Extend Subscription'}
-              </Button>
-            </div>
-          )}
-        </div>
-      </Card>
-    )
-  }
-
   return (
     <div className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]">
       {/* Header and socials */}
+      <Head
+        title={nft.metadata.name}
+        description={nft.metadata.description}
+        image={nft.metadata.image}
+      />
       <Card className="flex flex-col xl:flex-row justify-between dark:bg-gradient-to-tr from-[#080C20] to-[#111A46] from-60%">
         <div>
           <div className="w-full flex flex-col lg:flex-row items-start gap-8 justify-between">
@@ -418,4 +375,20 @@ export default function CitizenDetailPage() {
       )}
     </div>
   )
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+  const tokenId: any = params?.tokenId
+
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
+  const teamContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
+  const nft = await teamContract.erc721.get(tokenId)
+
+  return {
+    props: {
+      nft,
+      tokenId,
+    },
+  }
 }

@@ -5,14 +5,12 @@ import {
   GlobeAltIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
-import { useWallets } from '@privy-io/react-auth'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import {
   ThirdwebNftMedia,
   useAddress,
   useContract,
   useContractRead,
-  useNFT,
   useSDK,
 } from '@thirdweb-dev/react'
 import {
@@ -26,21 +24,19 @@ import {
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { useContext, useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { useTeamData } from '@/lib/team/useTeamData'
 import useEntitySplit from '@/lib/team/useTeamSplit'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
-import { useLightMode } from '@/lib/utils/hooks'
-import { CopyIcon, TwitterIcon } from '@/components/assets'
+import { TwitterIcon } from '@/components/assets'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
+import Head from '@/components/layout/Head'
 import InnerPreFooter from '@/components/layout/InnerPreFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
@@ -56,13 +52,11 @@ import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
 
-export default function TeamDetailPage({ tokenId }: any) {
+export default function TeamDetailPage({ tokenId, nft }: any) {
   const sdk = useSDK()
   const address = useAddress()
 
   //privy
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const [teamMetadataModalEnabled, setTeamMetadataModalEnabled] =
     useState(false)
@@ -87,8 +81,6 @@ export default function TeamDetailPage({ tokenId }: any) {
   const { contract: marketplaceTableContract } = useContract(
     MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug]
   )
-
-  const { data: nft } = useNFT(teamContract, tokenId)
 
   const {
     socials,
@@ -137,14 +129,14 @@ export default function TeamDetailPage({ tokenId }: any) {
 
   // get native balance for multisig
   useEffect(() => {
-    if (wallets && nft?.owner) {
+    if (sdk && nft?.owner) {
       getNativeBalance()
     }
     if (splitAddress) {
       getSplitNativeBalance()
       console.log(splitAddress)
     }
-  }, [wallets, nft, splitAddress])
+  }, [sdk, nft, splitAddress])
 
   useEffect(() => {
     setSelectedChain(
@@ -174,8 +166,6 @@ export default function TeamDetailPage({ tokenId }: any) {
       }
     }
   }, [])
-
-  if (!nft?.metadata || isLoadingTeamData) return null
 
   //Profile Header Section
   const ProfileHeader = (
@@ -376,6 +366,11 @@ export default function TeamDetailPage({ tokenId }: any) {
 
   return (
     <Container>
+      <Head
+        title={nft.metadata.name}
+        description={nft.metadata.description}
+        image={nft.metadata.image}
+      />
       <ContentLayout
         description={ProfileHeader}
         preFooter={<InnerPreFooter />}
@@ -525,10 +520,16 @@ export default function TeamDetailPage({ tokenId }: any) {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  const tokenId = params?.tokenId
+  const tokenId: any = params?.tokenId
+
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
+  const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
+  const nft = await teamContract.erc721.get(tokenId)
 
   return {
     props: {
+      nft,
       tokenId,
     },
   }
