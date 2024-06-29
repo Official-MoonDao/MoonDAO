@@ -43,6 +43,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import InnerPreFooter from '@/components/layout/InnerPreFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import StandardButton from '@/components/layout/StandardButton'
 import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -305,13 +306,6 @@ export default function TeamDetailPage({ tokenId }: any) {
                       <TeamDonation splitAddress={splitAddress} />
                     </div>
                   )}
-                  {teamMetadataModalEnabled && (
-                    <TeamMetadataModal
-                      nft={nft}
-                      selectedChain={selectedChain}
-                      setEnabled={setTeamMetadataModalEnabled}
-                    />
-                  )}
                 </div>
               </div>
             </div>
@@ -343,15 +337,6 @@ export default function TeamDetailPage({ tokenId }: any) {
 
         {isManager || address === nft.owner ? (
           <div id="manager-container" className="mt-8 xl:mt-0">
-            {teamSubscriptionModalEnabled && (
-              <SubscriptionModal
-                setEnabled={setTeamSubscriptionModalEnabled}
-                nft={nft}
-                validPass={subIsValid}
-                expiresAt={expiresAt}
-                subscriptionContract={teamContract}
-              />
-            )}
             {expiresAt && (
               <div
                 id="expires-container"
@@ -407,6 +392,22 @@ export default function TeamDetailPage({ tokenId }: any) {
           {/* Header and socials */}
           {subIsValid ? (
             <div className="z-50 flex flex-col gap-6">
+              {teamMetadataModalEnabled && (
+                <TeamMetadataModal
+                  nft={nft}
+                  selectedChain={selectedChain}
+                  setEnabled={setTeamMetadataModalEnabled}
+                />
+              )}
+              {teamSubscriptionModalEnabled && (
+                <SubscriptionModal
+                  setEnabled={setTeamSubscriptionModalEnabled}
+                  nft={nft}
+                  validPass={subIsValid}
+                  expiresAt={expiresAt}
+                  subscriptionContract={teamContract}
+                />
+              )}
               {/* Team Actions */}
               {/* Team */}
               <Frame
@@ -422,9 +423,9 @@ export default function TeamDetailPage({ tokenId }: any) {
                 >
                   <div
                     id="job-title-container"
-                    className="flex gap-5 items-center justify-between opacity-[50%]"
+                    className="flex gap-5 items-center justify-between pr-12"
                   >
-                    <div className="flex gap-5">
+                    <div className="flex gap-5 opacity-[50%]">
                       <Image
                         src={teamIcon}
                         alt="Job icon"
@@ -435,7 +436,8 @@ export default function TeamDetailPage({ tokenId }: any) {
                     </div>
                     {isManager && (
                       <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
-                        <Button
+                        <StandardButton
+                          className="w-full gradient-2 rounded-[5vmax]"
                           onClick={() => {
                             window.open(
                               `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
@@ -443,7 +445,7 @@ export default function TeamDetailPage({ tokenId }: any) {
                           }}
                         >
                           Manage Members
-                        </Button>
+                        </StandardButton>
                       </div>
                     )}
                   </div>

@@ -35,6 +35,7 @@ import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
 import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
+import StandardButton from '@/components/layout/StandardButton'
 import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
 import { CitizenMetadataModal } from '@/components/subscription/CitizenMetadataModal'
@@ -313,8 +314,9 @@ export default function CitizenDetailPage() {
         <div>
           {/* Mooney and Voting Power */}
           <div className="flex flex-col xl:flex-row gap-6">
-            <Card className="w-full flex flex-col md:flex-row gap-4  justify-between">
-              <div className="flex flex-col gap-4">
+            <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+              <h2 className="header font-GoodTimes opacity-[50%]">Assets</h2>
+              <div className="mt-4 flex flex-col gap-4">
                 <div className="">
                   <p className="text-xl">{`$MOONEY`}</p>
                   <p className="text-3xl">
@@ -332,53 +334,53 @@ export default function CitizenDetailPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col xl:flex-row items-start xl:items-end gap-2">
-                <Button
+              <div className="p-4 flex flex-col xl:flex-row items-start xl:items-end gap-2">
+                <StandardButton
+                  className="w-full gradient-2 rounded-[5vmax]"
                   onClick={() =>
                     window.open(
                       'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
                     )
                   }
                 >
-                  <PlusCircleIcon height={30} width={30} />
                   {'Get $MOONEY'}
-                </Button>
-                <Button onClick={() => router.push('/lock')}>
-                  <ArrowUpRightIcon height={20} width={20} />
+                </StandardButton>
+                <StandardButton
+                  className="w-full gradient-2 rounded-[5vmax]"
+                  onClick={() => router.push('/lock')}
+                >
                   {'Stake $MOONEY'}
-                </Button>
+                </StandardButton>
               </div>
-            </Card>
+            </div>
           </div>
 
-          <div className="flex flex-col 2xl:flex-row gap-6">
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col lg:flex-row gap-6">
+          <div className="mt-6 flex flex-col 2xl:flex-row">
+            <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+              <div className="flex flex-col gap-6">
                 {/* Proposals */}
                 <Proposals />
               </div>
-
-              <Card className="w-full">
-                <p className="text-2xl">Roles</p>
-                <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
-                  {hats.map((hat: any) => (
-                    <div
-                      key={hat.id}
-                      className="py-2 border-2 dark:border-0 dark:bg-[#0f152f]"
-                    >
-                      <Hat
-                        selectedChain={selectedChain}
-                        hatId={hat.id}
-                        hatsContract={hatsContract}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </Card>
+              <p className="header font-GoodTimes opacity-[50%]">Roles</p>
+              <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
+                {hats.map((hat: any) => (
+                  <div
+                    key={hat.id}
+                    className="py-2 border-2 dark:border-0 dark:bg-[#0f152f]"
+                  >
+                    <Hat
+                      selectedChain={selectedChain}
+                      hatId={hat.id}
+                      hatsContract={hatsContract}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
+
             {/* Projects */}
-            <Card className="w-full">
-              <p className="text-2xl">Projects</p>
+            <div className="w-full p-5 md:pr-0 md:pb-10 overflow-hiddend bg-slide-section">
+              <p className="header font-GoodTimes opacity-[50%]">Projects</p>
               <div className="py-4 max-h-[600px] overflow-y-scroll flex flex-col gap-2">
                 {projects &&
                   projects.map((p: any, i: number) => (
@@ -399,10 +401,12 @@ export default function CitizenDetailPage() {
                     </Link>
                   ))}
               </div>
-            </Card>
+            </div>
             {/* General Actions */}
           </div>
-          <GeneralActions />
+          <div className="mt-6">
+            <GeneralActions />
+          </div>
         </div>
       ) : (
         // Subscription expired

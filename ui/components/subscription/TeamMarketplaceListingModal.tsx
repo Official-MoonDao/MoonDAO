@@ -6,6 +6,8 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import isTextInavlid from '@/lib/tableland/isTextValid'
+import Modal from '../layout/Modal'
+import StandardButton from '../layout/StandardButton'
 import { TeamListing } from './TeamListing'
 
 type ListingData = {
@@ -57,16 +59,9 @@ export default function TeamMarketplaceListingModal({
   )
 
   return (
-    <div
-      onMouseDown={(e: any) => {
-        if (e.target.id === 'team-marketplace-listing-modal-backdrop')
-          setEnabled(false)
-      }}
-      id="team-marketplace-listing-modal-backdrop"
-      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
-    >
+    <Modal id="team-marketplace-listing-modal-backdrop" setEnabled={setEnabled}>
       <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md"
+        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md"
         onSubmit={async (e) => {
           e.preventDefault()
           if (
@@ -155,7 +150,9 @@ export default function TeamMarketplaceListingModal({
         }}
       >
         <div className="w-full flex items-center justify-between">
-          <p>{edit ? 'Edit a Listing' : 'Add a Listing'}</p>
+          <h2 className="font-GoodTimes">
+            {edit ? 'Edit a Listing' : 'Add a Listing'}
+          </h2>
           <button
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -251,17 +248,17 @@ export default function TeamMarketplaceListingModal({
           />
         </div>
 
-        <button
+        <StandardButton
           type="submit"
           disabled={isLoading}
-          className="mt-4 px-2 w-[100px] border-2 border-moon-orange text-moon-orange rounded-full"
+          className="w-full gradient-2 rounded-[5vmax]"
         >
           {isLoading ? '...loading' : edit ? 'Edit Listing' : 'Add Listing'}
-        </button>
+        </StandardButton>
         {isLoading && (
           <p className="opacity-60">{`This action may take up to 60 seconds. You can close this modal at any time.`}</p>
         )}
       </form>
-    </div>
+    </Modal>
   )
 }

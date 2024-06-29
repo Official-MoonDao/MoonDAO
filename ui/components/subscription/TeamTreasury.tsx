@@ -28,7 +28,7 @@ export default function TeamTreasury({
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
       <div className="flex flex-col">
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center pr-12">
           <div className="flex gap-5 opacity-[50%]">
             <Image
               src={'/assets/icon-treasury.svg'}
@@ -57,16 +57,20 @@ export default function TeamTreasury({
                 if (!address) return toast.error('Please connect your wallet')
                 if (!splitAddress) return toast.error('No split address found')
 
-                const splitContract = await sdk?.getContract(
-                  splitAddress,
-                  TeamSplitABI
-                )
-                const tx = await splitContract?.call('release', [
-                  multisigAddress,
-                ])
+                try {
+                  const splitContract = await sdk?.getContract(
+                    splitAddress,
+                    TeamSplitABI
+                  )
+                  const tx = await splitContract?.call('release', [
+                    multisigAddress,
+                  ])
 
-                if (tx.receipt) {
-                  toast.success('Funds Released')
+                  if (tx.receipt) {
+                    toast.success('Funds Released')
+                  }
+                } catch (err: any) {
+                  console.log(err)
                 }
               }}
             >

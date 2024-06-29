@@ -4,6 +4,8 @@ import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
+import Modal from '../layout/Modal'
+import StandardButton from '../layout/StandardButton'
 
 export function SubscriptionModal({
   setEnabled,
@@ -15,7 +17,7 @@ export function SubscriptionModal({
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
-  const [years, setYears] = useState<number>(0)
+  const [years, setYears] = useState<number>(1)
   const [subscriptionCost, setSubscriptionCost] = useState<string>()
 
   const { data: pricePerSecond } = useHandleRead(
@@ -36,17 +38,10 @@ export function SubscriptionModal({
   }, [years, pricePerSecond])
 
   return (
-    <div
-      onMouseDown={(e: any) => {
-        if (e.target.id === 'entity-subscription-modal-backdrop')
-          setEnabled(false)
-      }}
-      id="entity-subscription-modal-backdrop"
-      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[1000]"
-    >
-      <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
+    <Modal id="subscription-modal" setEnabled={setEnabled}>
+      <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md z-[1000]">
         <div className="w-full flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Extend Subscription</h1>
+          <h2 className="font-GoodTimes">Extend Subscription</h2>
           <button
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -55,13 +50,37 @@ export function SubscriptionModal({
             <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </button>
         </div>
-        <div className="w-full flex flex-col gap-4">
+        <form
+          className="w-full flex flex-col gap-4"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (!years || !subscriptionCost) return
+
+            setIsLoading(true)
+
+            try {
+              const duration = years * 365 * 24 * 60 * 60
+
+              await subscriptionContract.call(
+                'renewSubscription',
+                [nft.metadata.id, duration],
+                {
+                  value: subscriptionCost.toString(),
+                }
+              )
+            } catch (err) {
+              console.log(err)
+            }
+
+            setIsLoading(false)
+            setEnabled(false)
+            router.reload()
+          }}
+        >
           <div className="w-full flex gap-4">
             <p>
               {`Expiration Date: `}
-              <span
-                className={validPass ? 'text-moon-green' : 'text-moon-orange'}
-              >
+              <span className={'text-moon-orange'}>
                 {validPass
                   ? new Date(expiresAt?.toString() * 1000).toLocaleString()
                   : 'Expired'}
@@ -73,12 +92,13 @@ export function SubscriptionModal({
             subscription for from now.
           </p>
           <input
-            className="px-2 text-black w-[75px]"
+            className="w-[100px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
             type="number"
             min={0}
             onChange={(e: any) => {
               setYears(parseInt(e.target.value))
             }}
+            value={years}
           />
           <p>
             {`Subscription Cost: ${
@@ -87,36 +107,15 @@ export function SubscriptionModal({
                 : '0.00'
             } ETH`}
           </p>
-          <button
-            className="mt-4 px-2 w-[200px] border-2 border-moon-orange text-moon-orange rounded-full"
-            onClick={async () => {
-              if (!years || !subscriptionCost) return
-
-              setIsLoading(true)
-
-              try {
-                const duration = years * 365 * 24 * 60 * 60
-
-                await subscriptionContract.call(
-                  'renewSubscription',
-                  [nft.metadata.id, duration],
-                  {
-                    value: subscriptionCost.toString(),
-                  }
-                )
-              } catch (err) {
-                console.log(err)
-              }
-
-              setIsLoading(false)
-              setEnabled(false)
-              router.reload()
-            }}
+          <StandardButton
+            type="submit"
+            className="w-full gradient-2 rounded-[5vmax]"
+            disabled={isLoading}
           >
             {isLoading ? 'Loading...' : 'Extend Subscription'}
-          </button>
-        </div>
+          </StandardButton>
+        </form>
       </div>
-    </div>
+    </Modal>
   )
 }

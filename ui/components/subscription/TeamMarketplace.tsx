@@ -38,7 +38,7 @@ export default function TeamMarketplace({
 
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center pr-12">
         <div className="flex gap-5 opacity-[50%]">
           <Image
             src={'/assets/icon-marketplace.svg'}

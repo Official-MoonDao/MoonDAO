@@ -3,6 +3,7 @@ import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import Job, { Job as JobType } from '../jobs/Job'
+import StandardButton from '../layout/StandardButton'
 import Button from './Button'
 import Card from './Card'
 import TeamJobModal from './TeamJobModal'
@@ -45,10 +46,22 @@ export default function TeamJobs({
       <Card className="w-full flex flex-col justify-between gap-5">
         <div
           id="job-title-container"
-          className="flex gap-5 items-center opacity-[50%]"
+          className="flex gap-5 justify-between items-center pr-12"
         >
-          <Image src={jobIcon} alt="Job icon" width={30} height={30} />
-          <p className="header font-GoodTimes">Open Job Board</p>
+          <div className="flex gap-5 opacity-[50%]">
+            <Image src={jobIcon} alt="Job icon" width={30} height={30} />
+            <p className="header font-GoodTimes">Open Job Board</p>
+          </div>{' '}
+          {isManager && (
+            <StandardButton
+              className="gradient-2 rounded-[5vmax]"
+              onClick={() => {
+                setTeamJobModalEnabled(true)
+              }}
+            >
+              Add a Job
+            </StandardButton>
+          )}
         </div>
         <div className="flex flex-col max-h-[500px] overflow-auto gap-4">
           {jobs?.[0] ? (
@@ -66,15 +79,7 @@ export default function TeamJobs({
             <p>{`This team hasn't listed any open roles yet.`}</p>
           )}
         </div>
-        {isManager && (
-          <Button
-            onClick={() => {
-              setTeamJobModalEnabled(true)
-            }}
-          >
-            Add a Job
-          </Button>
-        )}
+
         {teamJobModalEnabled && (
           <TeamJobModal
             setEnabled={setTeamJobModalEnabled}

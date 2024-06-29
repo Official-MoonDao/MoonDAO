@@ -6,7 +6,7 @@ import { CITIZEN_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
@@ -75,6 +75,47 @@ export default function CreateCitizen({
 
   const nativeBalance = useNativeBalance()
 
+  const submitTypeform = useCallback(async (formResponse: any) => {
+    const accessToken = await getAccessToken()
+
+    const { formId, responseId } = formResponse
+    const responseRes = await fetch(
+      `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    )
+    const data = await responseRes.json()
+
+    const citizenFormData = formatCitizenFormData(data.answers, responseId)
+
+    //subscribe to newsletter
+    if (citizenFormData.newsletterSub) {
+      const subRes = await subscribeToNewsletter(citizenFormData.email)
+      if (subRes.ok) {
+        toast.success(
+          'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
+        )
+      }
+    }
+
+    setCitizenData(citizenFormData)
+
+    //check for emojis
+    const invalidText = Object.values(citizenFormData).some((v: any) =>
+      isTextInavlid(v)
+    )
+
+    if (invalidText) {
+      return
+    }
+
+    setStage(2)
+  }, [])
+
   return (
     <div className="flex flex-row">
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
@@ -96,7 +137,7 @@ export default function CreateCitizen({
           <StageContainer
             className={`mb-[350px]`}
             title="Design"
-            description="Design your unique onchain registration certificate."
+            description="Design your unique passport image and on-chain registration profile."
           >
             <ImageGenerator
               setImage={setCitizenImage}
@@ -107,57 +148,12 @@ export default function CreateCitizen({
         )}
         {/* Upload & Create Image */}
         {stage === 1 && (
-          <StageContainer description="Input your information.">
+          <StageContainer description="Please complete your citizen profile.">
             <div className="w-full">
               <Widget
                 className="w-[100%] md:w-[100%]"
                 id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
-                onSubmit={async (formResponse: any) => {
-                  //get response from form
-                  const accessToken = await getAccessToken()
-
-                  const { formId, responseId } = formResponse
-                  const responseRes = await fetch(
-                    `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
-                    {
-                      method: 'POST',
-                      headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                      },
-                    }
-                  )
-                  const data = await responseRes.json()
-
-                  const citizenFormData = formatCitizenFormData(
-                    data.answers,
-                    responseId
-                  )
-
-                  //subscribe to newsletter
-                  if (citizenFormData.newsletterSub) {
-                    const subRes = await subscribeToNewsletter(
-                      citizenFormData.email
-                    )
-                    if (subRes.ok) {
-                      toast.success(
-                        'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
-                      )
-                    }
-                  }
-
-                  setCitizenData(citizenFormData)
-
-                  //check for emojis
-                  const invalidText = Object.values(citizenFormData).some(
-                    (v: any) => isTextInavlid(v)
-                  )
-
-                  if (invalidText) {
-                    return
-                  }
-
-                  setStage(2)
-                }}
+                onSubmit={submitTypeform}
                 height={700}
               />
             </div>
@@ -167,7 +163,7 @@ export default function CreateCitizen({
         {stage === 2 && (
           <StageContainer
             title="Mint Entity"
-            description="Please review your onchain Entity before minting."
+            description="Please review your onchain profile before minting."
           >
             {/* <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
               {`Make sure all your information is displayed correcly.`}
@@ -188,7 +184,9 @@ export default function CreateCitizen({
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
                 {isMobile ? (
                   Object.keys(citizenData)
-                    .filter((v) => v != 'newsletterSub')
+                    .filter(
+                      (v) => v != 'newsletterSub' && v != 'formResponseId'
+                    )
                     .map((v, i) => {
                       return (
                         <div
@@ -208,7 +206,9 @@ export default function CreateCitizen({
                   <table className="table w-fit">
                     <tbody>
                       {Object.keys(citizenData)
-                        .filter((v) => v != 'newsletterSub')
+                        .filter(
+                          (v) => v != 'newsletterSub' && v != 'formResponseId'
+                        )
                         .map((v, i) => {
                           return (
                             <tr className="" key={'citizenData' + i}>
@@ -234,13 +234,14 @@ export default function CreateCitizen({
               <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 mt-5">
                 <h3 className="font-GoodTimes text-2xl mb-2">MEMBERSHIP</h3>
                 <p className="mt-2">
-                  Memerships will last for one year, and can be renewed at any
-                  time. All funds are self-custodied, so even if your memership
-                  expires you still own those funds.
+                  Membership lasts for one year and can be renewed at any time.
+                  Any wallet funds are self-custodied and are not dependent on
+                  membership.
                 </p>
               </div>
               <p className="mt-4">
-                Welcome to the future of off-world coordination with MoonDAO!
+                Welcome to the future of on-chain, off-world coordination with
+                MoonDAO!
               </p>
             </div>
             <div className="flex flex-row items-center mt-4">
@@ -281,13 +282,13 @@ export default function CreateCitizen({
                   <a
                     rel="noopener noreferrer"
                     className="text-sky-400"
-                    href="https://www.apple.com/pro-display-xdr/"
+                    href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"
                     target="_blank"
                   >
                     {' '}
-                    Learn more{' '}
+                    Read{' '}
                   </a>{' '}
-                  about MoonDAO's terms and conditions
+                  MoonDAO's terms and conditions.
                 </p>
               </label>
             </div>
@@ -369,7 +370,7 @@ export default function CreateCitizen({
                 }
               }}
             >
-              {isLoadingMint ? 'loading...' : 'Mint'}
+              {isLoadingMint ? 'loading...' : 'Check Out'}
             </StageButton>
           </StageContainer>
         )}
