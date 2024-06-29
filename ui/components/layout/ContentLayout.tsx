@@ -14,7 +14,7 @@ interface ContentProps {
     mainPadding?: boolean;
     mode?: 'compact' | 'default';
     popOverEffect?: boolean;
-    contentFullWidth?: boolean; 
+    contentwide?: boolean; 
     branded?: boolean;
     isProfile?:boolean;
 }
@@ -31,14 +31,14 @@ const ContentLayout: React.FC<ContentProps> = ({
     mainPadding,
     mode = 'default',
     popOverEffect = false,
-    contentFullWidth = false, 
+    contentwide = false, 
     branded = true,
-    isProfile = false,
+    isProfile = false, 
 }) => {
     const isCompact = mode === 'compact';
 
     return (
-        <div>
+        <div className="pb-5">
             <section id="title-section" 
                 className="z-0"
                 >
@@ -135,13 +135,13 @@ const ContentLayout: React.FC<ContentProps> = ({
                             ${isCompact && !popOverEffect ? 'md:ml-0' : 'md:m-10'} 
                             ${isCompact && popOverEffect ? 'md:ml-0' : 'md:m-0'} 
                             ${popOverEffect ? ' pb-0 mb-0 md:mb-[-160px]':''} 
-                            ${contentFullWidth ? 'p-0' : ''}
+                            ${contentwide ? 'p-0' : ''}
                         `} 
                         >
                         {popOverEffect ? 
                         null:
                         <div id="popout-bg-element" 
-                            className="z-0 popout-bg hidden md:block absolute w-[calc(100%-250px)] h-[calc(100%-200px)] top-[200px] left-[250px] rounded-bl-[2vmax]"
+                            className="z-0 popout-bg hidden md:block absolute w-[calc(100%-250px)] h-[calc(100%-200px)] top-[200px] left-[250px] rounded-bl-[5vmax] "
                         ></div> 
                         }
 
@@ -170,11 +170,9 @@ const ContentLayout: React.FC<ContentProps> = ({
             )}
 
             {preFooter && (
-            <section id="preFooter-container"
+            <section id="preFooter-container-element"
                 >
-                <div>
-                    {preFooter}
-                </div>
+                {preFooter}
             </section>
             )}
 

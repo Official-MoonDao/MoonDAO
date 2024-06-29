@@ -6,10 +6,10 @@ const AlmostThere: React.FC = () => {
     return (
         <section>
             <Container 
-                containerFullWidth>
+                containerwidth>
                 <ContentLayout
                     header="Almost There..."
-                    headerSize="max(25px, 2.5vw)" 
+                    headerSize="max(25px, 2.5vw)"  
                     description={
                         <>
                             Check your email to confirm your subscription. 
