@@ -44,7 +44,11 @@ import GeneralActions from '@/components/subscription/GeneralActions'
 import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 
-export default function CitizenDetailPage({ nft, tokenId }: any) {
+export default function CitizenDetailPage({
+  nft,
+  tokenId,
+  imageIpfsLink,
+}: any) {
   const router = useRouter()
   const address = useAddress()
 
@@ -119,7 +123,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
       <Head
         title={nft.metadata.name}
         description={nft.metadata.description}
-        image={nft.metadata.image}
+        image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
       />
       <Card className="flex flex-col xl:flex-row justify-between dark:bg-gradient-to-tr from-[#080C20] to-[#111A46] from-60%">
         <div>
@@ -385,10 +389,15 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const teamContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
   const nft = await teamContract.erc721.get(tokenId)
 
+  const rawMetadataRes = await fetch(nft.metadata.uri)
+  const rawMetadata = await rawMetadataRes.json()
+  const imageIpfsLink = rawMetadata.image
+
   return {
     props: {
       nft,
       tokenId,
+      imageIpfsLink,
     },
   }
 }

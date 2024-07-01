@@ -52,7 +52,7 @@ import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
 
-export default function TeamDetailPage({ tokenId, nft }: any) {
+export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const sdk = useSDK()
   const address = useAddress()
 
@@ -369,7 +369,7 @@ export default function TeamDetailPage({ tokenId, nft }: any) {
       <Head
         title={nft.metadata.name}
         description={nft.metadata.description}
-        image={nft.metadata.image}
+        image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
       />
       <ContentLayout
         description={ProfileHeader}
@@ -527,10 +527,15 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
   const nft = await teamContract.erc721.get(tokenId)
 
+  const rawMetadataRes = await fetch(nft.metadata.uri)
+  const rawMetadata = await rawMetadataRes.json()
+  const imageIpfsLink = rawMetadata.image
+
   return {
     props: {
       nft,
       tokenId,
+      imageIpfsLink,
     },
   }
 }
