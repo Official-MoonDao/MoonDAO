@@ -144,29 +144,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     )
   }, [])
 
-  // Horizontal scroll effect
-  const teamMembersContainerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleScroll = (event: WheelEvent) => {
-      if (teamMembersContainerRef.current) {
-        event.preventDefault()
-        teamMembersContainerRef.current.scrollLeft += event.deltaY
-      }
-    }
-
-    const container = teamMembersContainerRef.current
-    if (container) {
-      container.addEventListener('wheel', handleScroll, { passive: false })
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener('wheel', handleScroll)
-      }
-    }
-  }, [])
-
   //Profile Header Section
   const ProfileHeader = (
     <div id="orgheader-container">
@@ -444,24 +421,19 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                       </div>
                     )}
                   </div>
+
                   <SlidingCardMenu>
-                    <div className="pb-5 h-full flex flex-col items-start justify-between">
-                      <div
-                        id="team-members-container"
-                        ref={teamMembersContainerRef}
-                        className="flex w-full gap-2 overflow-auto"
-                      >
-                        {hats?.map((hat: any, i: number) => (
-                          <TeamMembers
-                            key={'hat-' + i}
-                            selectedChain={selectedChain}
-                            hatId={hat.id}
-                            hatsContract={hatsContract}
-                            citizenConract={citizenConract}
-                            wearers={hat.wearers}
-                          />
-                        ))}
-                      </div>
+                    <div className="flex gap-4">
+                      {hats?.map((hat: any, i: number) => (
+                        <TeamMembers
+                          key={'hat-' + i}
+                          selectedChain={selectedChain}
+                          hatId={hat.id}
+                          hatsContract={hatsContract}
+                          citizenConract={citizenConract}
+                          wearers={hat.wearers}
+                        />
+                      ))}
                     </div>
                   </SlidingCardMenu>
                 </div>
