@@ -30,10 +30,9 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
       if (!container || !parent) return
 
       const isDesktopOrTablet = window.innerWidth > 768 // Adjust the width as needed for tablet breakpoint
-
       if (isHovered && isDesktopOrTablet && isElementInViewport(parent)) {
         const { scrollLeft, scrollWidth, clientWidth } = container
-        const isAtEnd = scrollLeft + clientWidth >= scrollWidth - 1
+        const isAtEnd = scrollLeft + clientWidth >= scrollWidth - 2
         const isAtStart = scrollLeft <= 0
 
         if (
