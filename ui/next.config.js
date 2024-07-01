@@ -9,6 +9,7 @@ module.exports = nextTranslate({
       'gateway.ipfscdn.io',
       'ipfs.cf-ipfs.com',
       'ipfscdn.io',
+      'b507f59d2508ebfb5e70996008095782.ipfscdn.io',
     ],
   },
   async redirects() {
