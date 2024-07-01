@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
-import isTextInavlid from '@/lib/tableland/isTextValid'
+import cleanData from '@/lib/tableland/cleanData'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import { TeamListing } from './TeamListing'
@@ -73,13 +73,9 @@ export default function TeamMarketplaceListingModal({
 
           setIsLoading(true)
 
-          const invalidText = Object.values(listingData).some((v: any) =>
-            isTextInavlid(v)
-          )
+          const cleanedData = cleanData(listingData)
 
-          if (invalidText) {
-            return setIsLoading(false)
-          }
+          console.log(cleanedData)
 
           //upload image to ipfs
           const accessToken = await getAccessToken()
@@ -113,23 +109,23 @@ export default function TeamMarketplaceListingModal({
             if (edit) {
               tx = await marketplaceTableContract.call('updateTable', [
                 listing?.id,
-                listingData.title,
-                listingData.description,
+                cleanedData.title,
+                cleanedData.description,
                 imageIpfsLink,
                 teamId,
-                listingData.price,
-                listingData.currency,
-                listingData.shipping,
+                cleanedData.price,
+                cleanedData.currency,
+                cleanedData.shipping,
               ])
             } else {
               tx = await marketplaceTableContract?.call('insertIntoTable', [
-                listingData.title,
-                listingData.description,
+                cleanedData.title,
+                cleanedData.description,
                 imageIpfsLink,
                 teamId,
-                listingData.price,
-                listingData.currency,
-                listingData.shipping,
+                cleanedData.price,
+                cleanedData.currency,
+                cleanedData.shipping,
               ])
             }
 
@@ -167,15 +163,16 @@ export default function TeamMarketplaceListingModal({
             {typeof listingData.image === 'string' ? (
               <MediaRenderer
                 src={listingData.image}
-                height="150px"
-                width="150px"
+                height="200px"
+                width="200px"
                 alt=""
               />
             ) : (
               <Image
+                className="w-[200px] h-[200px]"
                 src={URL.createObjectURL(listingData.image)}
-                width={150}
-                height={150}
+                width={200}
+                height={200}
                 alt=""
               />
             )}

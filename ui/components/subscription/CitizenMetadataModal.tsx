@@ -7,7 +7,7 @@ import { useRouter } from 'next/router'
 import { useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
-import isTextInavlid from '@/lib/tableland/isTextValid'
+import cleanData from '@/lib/tableland/cleanData'
 import formatCitizenFormData from '@/lib/typeform/citizenFormData'
 import Modal from '../layout/Modal'
 
@@ -23,69 +23,65 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
 
   const subscribeToNewsletter = useNewsletterSub()
 
-  const submitTypeform = useCallback(
-    async (formResponse: any) => {
-      try {
-        const accessToken = await getAccessToken()
+  const submitTypeform = useCallback(async (formResponse: any) => {
+    try {
+      const accessToken = await getAccessToken()
 
-        //get response from form
-        const { formId, responseId } = formResponse
-        const responseRes = await fetch(
-          `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        )
-        const data = await responseRes.json()
-
-        const citizenData = formatCitizenFormData(data.answers, responseId)
-
-        const rawMetadataRes = await fetch(resolvedMetadata.url)
-        const rawMetadata = await rawMetadataRes.json()
-        const imageIPFSLink = rawMetadata.image
-
-        const invalidText = Object.values(citizenData).some((v: any) =>
-          isTextInavlid(v)
-        )
-
-        if (invalidText) {
-          return
+      //get response from form
+      const { formId, responseId } = formResponse
+      const responseRes = await fetch(
+        `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         }
+      )
+      const data = await responseRes.json()
 
-        if (citizenData.newsletterSub) {
-          const subRes = await subscribeToNewsletter(citizenData.email)
-          if (subRes.ok) {
-            toast.success(
-              'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
-            )
-          }
+      //format answers into an object
+      const formattedCiizenData = formatCitizenFormData(
+        data.answers,
+        responseId
+      )
+
+      //escape single quotes and remove emojis
+      const citizenData = cleanData(formattedCiizenData)
+
+      const rawMetadataRes = await fetch(resolvedMetadata.url)
+      const rawMetadata = await rawMetadataRes.json()
+      const imageIPFSLink = rawMetadata.image
+
+      if (citizenData.newsletterSub) {
+        const subRes = await subscribeToNewsletter(citizenData.email)
+        if (subRes.ok) {
+          toast.success(
+            'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
+          )
         }
-
-        await citizenTableContract?.call('updateTable', [
-          nft.metadata.id,
-          `${citizenData.firstName} ${citizenData.lastName}`,
-          citizenData.description,
-          imageIPFSLink,
-          citizenData.location,
-          citizenData.discord,
-          citizenData.twitter,
-          citizenData.website,
-          citizenData.view,
-          responseId,
-        ])
-
-        setTimeout(() => {
-          router.reload()
-        }, 10000)
-      } catch (err: any) {
-        console.log(err)
       }
-    },
-    [citizenTableContract, resolvedMetadata, nft, router]
-  )
+
+      await citizenTableContract?.call('updateTable', [
+        nft.metadata.id,
+        `${citizenData.firstName} ${citizenData.lastName}`,
+        citizenData.description,
+        imageIPFSLink,
+        citizenData.location,
+        citizenData.discord,
+        citizenData.twitter,
+        citizenData.website,
+        citizenData.view,
+        responseId,
+      ])
+
+      setTimeout(() => {
+        router.reload()
+      }, 10000)
+    } catch (err: any) {
+      console.log(err)
+    }
+  }, [])
 
   return (
     <Modal id="citizen-metadata-modal-backdrop" setEnabled={setEnabled}>

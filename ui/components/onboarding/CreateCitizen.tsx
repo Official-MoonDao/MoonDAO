@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
-import isTextInavlid from '@/lib/tableland/isTextValid'
+import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatCitizenFormData, {
   CitizenData,
@@ -90,6 +90,7 @@ export default function CreateCitizen({
     )
     const data = await responseRes.json()
 
+    //fomat answers into an object
     const citizenFormData = formatCitizenFormData(data.answers, responseId)
 
     //subscribe to newsletter
@@ -102,16 +103,10 @@ export default function CreateCitizen({
       }
     }
 
-    setCitizenData(citizenFormData)
+    //escape single quotes and remove emojis
+    const cleanedCitizenFormData = cleanData(citizenFormData)
 
-    //check for emojis
-    const invalidText = Object.values(citizenFormData).some((v: any) =>
-      isTextInavlid(v)
-    )
-
-    if (invalidText) {
-      return
-    }
+    setCitizenData(cleanedCitizenFormData as any)
 
     setStage(2)
   }, [])
@@ -119,6 +114,7 @@ export default function CreateCitizen({
   return (
     <div className="flex flex-row">
       <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
+        <button onClick={submitTypeform}>TEST</button>
         <div className="flex flex-row w-full justify-between items-start">
           <Steps
             className="mb-4 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16 -ml-10"

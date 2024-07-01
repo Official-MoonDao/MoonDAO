@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
-import isTextInavlid from '@/lib/tableland/isTextValid'
+import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
@@ -86,18 +86,13 @@ export default function CreateTeam({
     )
     const data = await responseRes.json()
 
+    //format answers into an object
     const teamFormData = formatTeamFormData(data.answers, responseId)
 
-    //check for invalid text
-    const invalidText = Object.values(teamFormData).some((v: any) =>
-      isTextInavlid(v)
-    )
+    //escape single quotes and remove emojis
+    const cleanedTeamFormData = cleanData(teamFormData)
 
-    if (invalidText) {
-      return
-    }
-
-    setTeamData(teamFormData)
+    setTeamData(cleanedTeamFormData)
     setStage(2)
   }, [])
 
@@ -394,7 +389,6 @@ export default function CreateTeam({
           </StageContainer>
         )}
       </div>
-      <button onClick={() => setStage(stage + 1)}>Next</button>
     </div>
   )
 }

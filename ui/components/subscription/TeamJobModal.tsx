@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import isTextInavlid from '@/lib/tableland/isTextValid'
+import cleanData from '@/lib/tableland/cleanData'
 import { Job } from '../jobs/Job'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
@@ -59,29 +59,23 @@ export default function TeamJobModal({
 
           setIsLoading(true)
 
-          const invalidText = Object.values(jobData).some((v: any) =>
-            isTextInavlid(v)
-          )
-
-          if (invalidText) {
-            return setIsLoading(false)
-          }
+          const cleanedData = cleanData(jobData)
 
           try {
             if (edit) {
               await jobTableContract.call('updateTable', [
                 job?.id,
-                jobData.title,
-                jobData.description,
+                cleanedData.title,
+                cleanedData.description,
                 teamId,
-                jobData.contactInfo,
+                cleanedData.contactInfo,
               ])
             } else {
               await jobTableContract?.call('insertIntoTable', [
-                jobData.title,
-                jobData.description,
+                cleanedData.title,
+                cleanedData.description,
                 teamId,
-                jobData.contactInfo,
+                cleanedData.contactInfo,
               ])
             }
 
