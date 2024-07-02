@@ -11,12 +11,14 @@ import {
   ProposalStatus,
   RequestBudget,
   actionsToYaml,
+  getActionsFromBody,
+  trimActionsFromBody,
 } from '@nance/nance-sdk'
 import { add, differenceInDays } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
@@ -50,43 +52,30 @@ const NanceEditor = dynamic(
   }
 )
 
+const DEFAULT_MULTISIG_TEAM: RequestBudget['multisigTeam'][number] = {
+  discordUserId: '',
+  discordUsername: '',
+  address: '',
+}
+
 const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
   projectTeam: [
     {
       discordUserId: '',
+      discordUsername: '',
       payoutAddress: '',
       votingAddress: '',
       isRocketeer: true,
     },
     {
       discordUserId: '',
+      discordUsername: '',
       payoutAddress: '',
       votingAddress: '',
       isRocketeer: false,
     },
   ],
-  multisigTeam: [
-    {
-      discordUserId: '',
-      address: '',
-    },
-    {
-      discordUserId: '',
-      address: '',
-    },
-    {
-      discordUserId: '',
-      address: '',
-    },
-    {
-      discordUserId: '',
-      address: '',
-    },
-    {
-      discordUserId: '',
-      address: '',
-    },
-  ],
+  multisigTeam: Array(5).fill(DEFAULT_MULTISIG_TEAM),
   budget: [
     { token: '', amount: '', justification: 'dev cost' },
     { token: '', amount: '', justification: 'flex' },
@@ -137,7 +126,19 @@ export default function ProposalEditor() {
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
   })
-  const { register, handleSubmit, formState, reset } = methods
+  const { handleSubmit, reset } = methods
+
+  useEffect(() => {
+    // will need to refactor if we want to support multiple actions
+    if (loadedProposal) {
+      const actions = getActionsFromBody(loadedProposal?.body);
+      if (!actions) return;
+      console.debug('loaded action:', actions)
+      setAttachBudget(true)
+      reset(actions[0].payload as RequestBudget)
+    }
+  }, [loadedProposal, reset])
+
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
     let proposal = buildProposal(proposalStatus)
 
@@ -238,18 +239,16 @@ export default function ProposalEditor() {
       })
   }
 
-  const pageTitle = proposalId ? 'Edit Proposal' : 'New Proposal'
-
   return (
-    <div className="flex flex-col justify-center items-center animate-fadeIn w-[90vw] md:w-full">
-      <Head title={pageTitle} />
+    <div className="flex flex-col justify-center items-center animate-fadeIn">
+      <Head title='Proposal Editor' />
 
       <div className="w-full sm:w-[90%] lg:w-3/4">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <h1 className="page-title py-10">{pageTitle}</h1>
+          <h1 className="page-title py-10">{loadedProposal ? 'Edit Proposal' : 'New Proposal'}</h1>
           <ProposalTitleInput initialValue={loadedProposal?.title} />
           <NanceEditor
-            initialValue={loadedProposal?.body || TEMPLATE}
+            initialValue={trimActionsFromBody(loadedProposal?.body) || TEMPLATE}
             fileUploadIPFS={fileUploadIPFS}
             darkMode={true}
           />

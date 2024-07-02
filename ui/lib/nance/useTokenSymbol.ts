@@ -2,6 +2,7 @@ import { Ethereum } from '@thirdweb-dev/chains'
 import { useEffect, useState } from 'react'
 import { isAddress } from 'ethers/lib/utils'
 import { initSDK } from '../thirdweb/thirdweb'
+import { ETH_MOCK_ADDRESS } from "../../components/nance/form/SafeTokenForm"
 
 const ETHEREUM_SDK = initSDK(Ethereum)
 
@@ -13,7 +14,7 @@ export function useTokenSymbol(address: string | undefined) {
   async function getValue() {
     const isValidAddress = address !== undefined && isAddress(address)
 
-    if (address === '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE') {
+    if (address === ETH_MOCK_ADDRESS) {
       setValue('ETH')
       setIsLoading(false)
       setError(undefined)

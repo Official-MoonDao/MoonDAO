@@ -1,14 +1,16 @@
 import { XMarkIcon, PlusIcon } from '@heroicons/react/24/solid'
+import { InformationCircleIcon } from "@heroicons/react/20/solid"
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import AddressForm from './form/AddressForm'
 import DiscordUserIdForm from './form/DiscordUserIdForm'
 import SafeTokenForm from './form/SafeTokenForm'
 import StringForm from './form/StringForm'
+import { useEffect } from "react"
 
 export default function RequestBudgetActionForm() {
   // form
 
-  const { register, control } = useFormContext()
+  const { register, control, watch } = useFormContext()
 
   const {
     fields: projectTeamFields,
@@ -31,6 +33,12 @@ export default function RequestBudgetActionForm() {
     name: 'budget',
   })
 
+  // DEBUG
+  // const watchAllFields = watch()
+  // useEffect(() => {
+  //   console.log('Form values:', watchAllFields)
+  // }, [watchAllFields])
+
   return (
     <div>
       <div className="space-y-12">
@@ -38,10 +46,6 @@ export default function RequestBudgetActionForm() {
           <h2 className="text-base font-semibold leading-7 text-white">
             Project team
           </h2>
-          {/* <p className="mt-1 text-sm leading-6 text-gray-400">
-            Use a permanent address where you can receive mail.
-          </p> */}
-
           {projectTeamFields.map((field, index) => (
             <div
               key={field.id}
@@ -58,6 +62,7 @@ export default function RequestBudgetActionForm() {
                 <AddressForm
                   label="Payout Address"
                   fieldName={`projectTeam.${index}.payoutAddress`}
+                  tooltip="Address where project payments will be sent"
                 />
               </div>
 
@@ -65,28 +70,34 @@ export default function RequestBudgetActionForm() {
                 <AddressForm
                   label="Voting Address"
                   fieldName={`projectTeam.${index}.votingAddress`}
+                  tooltip={`
+                    Address where rewarded vMOONEY will be sent.\n\n
+                    Note: Use a MetaMask or hardware wallet address. To use your MoonDAO Privy wallet, you must first export it.\n
+                    Using addresses from exchanges like Coinbase or Binance could result in loss of funds.
+                  `}
                 />
               </div>
 
-              <div className="sm:col-span-1 flex items-center">
-                <div className="w-full">
-                  <label className="label">
-                    <span className="label-text">Rocketeer?</span>
-                  </label>
-                  <input
-                    type="checkbox"
-                    className="h-8 w-8"
-                    {...register(`projectTeam.${index}.isRocketeer`, {
-                      shouldUnregister: true,
-                    })}
-                  />
-                </div>
+              <div className="sm:col-span-1 flex flex-col mt-2">
+                <label className="flex flex-row">
+                  <span className="label-text whitespace-nowrap">Project Lead</span>
+                  <div className="tooltip" data-tip="Member that will attend weekly Townhall">
+                    <InformationCircleIcon className="ml-3 h-4 w-4 text-gray-400" />
+                  </div>
+                </label>
+                <input
+                  type="checkbox"
+                  className="mt-5 ml-7 h-8 w-8"
+                  {...register(`projectTeam.${index}.isRocketeer`, {
+                    shouldUnregister: true,
+                  })}
+                />
               </div>
 
               {index !== 0 && (
                 <div className="sm:col-span-1 flex items-center">
                   <button
-                    className="mt-7 btn btn-circle btn-outline btn-sm hover:text-black"
+                    className="ml-10 mt-10 btn btn-circle btn-outline btn-sm hover:text-black"
                     type="button"
                     onClick={() => projectTeamRemove(index)}
                   >
@@ -140,6 +151,7 @@ export default function RequestBudgetActionForm() {
                 <AddressForm
                   label="Address"
                   fieldName={`multisigTeam.${index}.address`}
+                  tooltip="Address that will be added as a Safe signer"
                 />
               </div>
             </div>

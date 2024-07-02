@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { Controller, useFormContext } from 'react-hook-form'
 import { formatNumberUSStyle } from '../../../lib/nance'
 import {
@@ -12,12 +13,11 @@ type ListBoxItems = {
   name?: string
 }
 
-const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+export const ETH_MOCK_ADDRESS = 'ETH'
 
 const safeBalanceToItems = (b: SafeBalanceUsdResponse[]): ListBoxItems[] => {
   return (
     b
-      //.filter((b) => !!b.tokenAddress && !!b.token)
       .sort(
         (a, b) =>
           parseInt(
@@ -29,7 +29,7 @@ const safeBalanceToItems = (b: SafeBalanceUsdResponse[]): ListBoxItems[] => {
       )
       .map((b) => {
         return {
-          id: (b.tokenAddress as string) || ETH_ADDRESS,
+          id: (b.tokenAddress as string) || ETH_MOCK_ADDRESS,
           name:
             (b.token?.symbol || 'ETH') +
             ` (${formatNumberUSStyle(
@@ -51,12 +51,22 @@ export default function SafeTokenForm({
   const {
     control,
     formState: { errors },
+    setValue,
+    getValues,
   } = useFormContext()
 
   const { data, isLoading, error } = useSafeBalances(address, !!address)
   const items: ListBoxItems[] = data
     ? safeBalanceToItems(data)
     : [{ id: 'nope', name: 'no tokens found in Safe' }]
+
+  // set default to first item after data loads
+  useEffect(() => {
+    if (data && data.length > 0) {
+      const currentValue = getValues(fieldName)
+      if (currentValue === '') setValue(fieldName, data[0].tokenAddress || ETH_MOCK_ADDRESS);
+    }
+  }, [data, setValue, getValues, fieldName]);
 
   return (
     <Controller
