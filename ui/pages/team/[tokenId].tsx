@@ -134,7 +134,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     }
     if (splitAddress) {
       getSplitNativeBalance()
-      console.log(splitAddress)
     }
   }, [sdk, nft, splitAddress])
 
@@ -360,6 +359,15 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
         >
+          {teamSubscriptionModalEnabled && (
+            <SubscriptionModal
+              setEnabled={setTeamSubscriptionModalEnabled}
+              nft={nft}
+              validPass={subIsValid}
+              expiresAt={expiresAt}
+              subscriptionContract={teamContract}
+            />
+          )}
           {/* Header and socials */}
           {subIsValid ? (
             <div className="z-50 flex flex-col gap-6">
@@ -370,15 +378,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                   setEnabled={setTeamMetadataModalEnabled}
                 />
               )}
-              {teamSubscriptionModalEnabled && (
-                <SubscriptionModal
-                  setEnabled={setTeamSubscriptionModalEnabled}
-                  nft={nft}
-                  validPass={subIsValid}
-                  expiresAt={expiresAt}
-                  subscriptionContract={teamContract}
-                />
-              )}
+
               {/* Team Actions */}
               {/* Team */}
               <Frame
@@ -470,19 +470,16 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               <p className="text-white">
                 {`The pass has expired, please connect the owner or admin wallet to renew.`}
               </p>
-              <Button
-                className="mt-4"
-                onClick={() => {
-                  const safeNetwork =
-                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-                  window.open(
-                    `https://app.safe.global/home?safe=${safeNetwork}:${nft?.owner}`
-                  )
-                }}
-              >
-                <ArrowUpRightIcon height={20} width={20} />
-                {'Treasury'}
-              </Button>
+              {isManager && (
+                <TeamTreasury
+                  multisigAddress={nft.owner}
+                  splitAddress={splitAddress}
+                  mutlisigMooneyBalance={MOONEYBalance}
+                  multisigNativeBalance={nativeBalance}
+                  splitMooneyBalance={splitMOONEYBalance}
+                  splitNativeBalance={splitNativeBalance}
+                />
+              )}
             </Frame>
           )}
         </div>

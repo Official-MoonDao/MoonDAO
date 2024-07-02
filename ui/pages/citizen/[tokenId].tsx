@@ -35,6 +35,7 @@ import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
 import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
+import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import StandardButton from '@/components/layout/StandardButton'
 import Button from '@/components/subscription/Button'
@@ -247,24 +248,30 @@ export default function CitizenDetailPage({
                 subscriptionContract={citizenContract}
               />
             )}
-            {expiresAt && (
+            {nft.owner === address && expiresAt && (
               <div className="flex flex-col gap-4 items-start">
                 <p className="opacity-50">
                   {'Exp: '}
                   {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                 </p>
-
-                <Button
-                  onClick={() => {
-                    if (address != nft?.owner)
-                      return toast.error(
-                        `Connect the entity admin wallet or multisig to extend the subscription.`
-                      )
-                    setSubModalEnabled(true)
-                  }}
-                >
-                  {'Extend Subscription'}
-                </Button>
+                <Frame>
+                  <div
+                    id="extend-sub-button"
+                    className="gradient-2 rounded-[5vmax] rounded-tl-[20px]"
+                  >
+                    <Button
+                      onClick={() => {
+                        if (address != nft?.owner)
+                          return toast.error(
+                            `Connect the entity admin wallet or multisig to extend the subscription.`
+                          )
+                        setSubModalEnabled(true)
+                      }}
+                    >
+                      {'Extend Subscription'}
+                    </Button>
+                  </div>
+                </Frame>
               </div>
             )}
           </div>
