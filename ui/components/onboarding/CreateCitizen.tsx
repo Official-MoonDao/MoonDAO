@@ -23,8 +23,6 @@ import { StageContainer } from './StageContainer'
 
 export default function CreateCitizen({
   address,
-  wallets,
-  selectedWallet,
   selectedChain,
   setSelectedTier,
 }: any) {

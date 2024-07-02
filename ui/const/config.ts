@@ -94,7 +94,7 @@ export const TEAM_TABLE_ADDRESSES: Index = {
 }
 
 export const MOONDAO_HAT_TREE_IDS: Index = {
-  arbitrum: '',
+  arbitrum: '0x0000001a',
   sepolia: '0x0000013f',
 }
 
@@ -109,7 +109,7 @@ export const MARKETPLACE_ADDRESS =
     : sepoliaConfig.Marketplace
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x276051E655140B549DF5505D4D91f31330b43F73',
   sepolia: '0x50722c52C6d97f1FFd0493047E86fD5613F9BB02',
 }
 

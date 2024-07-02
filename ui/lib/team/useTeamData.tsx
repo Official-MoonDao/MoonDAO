@@ -1,4 +1,3 @@
-import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 import { useHandleRead } from '../thirdweb/hooks'
@@ -6,11 +5,11 @@ import { getAttribute } from '../utils/nft'
 
 export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   const address = useAddress()
-  const { wallets } = useWallets()
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
+  const [isDeleted, setIsDeleted] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState()
   const [isManager, setIsManager] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
@@ -28,6 +27,7 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   function getView() {
     const entityView: any = getAttribute(nft.metadata.attributes, 'view')
     setIsPublic(entityView?.value === 'public' ? true : false)
+    setIsDeleted(entityView?.value === '' ? true : false)
   }
 
   function getEntitySocials() {
@@ -51,7 +51,7 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
           nft?.metadata?.id,
           address,
         ])
-        setIsManager(isAddressManager)
+        setIsManager(isAddressManager || nft.owner === address)
       } else {
         setIsManager(false)
       }
@@ -96,6 +96,7 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   return {
     socials,
     isPublic,
+    isDeleted,
     hatTreeId,
     adminHatId,
     isManager,

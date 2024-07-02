@@ -19,6 +19,7 @@ import {
   MOONEY_ADDRESSES,
   VMOONEY_ADDRESSES,
 } from 'const/config'
+import { blockedCitizens } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -66,7 +67,7 @@ export default function CitizenDetailPage({
 
   const {
     socials,
-    isPublic,
+    isDeleted,
     subIsValid,
     isLoading: isLoadingCitizenData,
   } = useCitizenData(nft, citizenContract)
@@ -278,7 +279,7 @@ export default function CitizenDetailPage({
         )}
       </Card>
 
-      {subIsValid ? (
+      {subIsValid && !isDeleted ? (
         <div>
           {/* Mooney and Voting Power */}
           <div className="flex flex-col xl:flex-row gap-6">
@@ -380,7 +381,9 @@ export default function CitizenDetailPage({
         // Subscription expired
         <Card>
           <p className="text-moon-orange">
-            {`The pass has expired, please connect the owner's wallet to renew.`}
+            {isDeleted
+              ? `This profile has been deleted, please connect the owner's wallet to submit new data.`
+              : `The profile has expired, please connect the owner's wallet to renew.`}
           </p>
         </Card>
       )}
@@ -395,6 +398,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const sdk = initSDK(chain)
   const teamContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
   const nft = await teamContract.erc721.get(tokenId)
+
+  if (!nft || !nft.metadata.uri || blockedCitizens.includes(nft.metadata.id)) {
+    return {
+      notFound: true,
+    }
+  }
 
   const rawMetadataRes = await fetch(nft.metadata.uri)
   const rawMetadata = await rawMetadataRes.json()

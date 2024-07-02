@@ -21,6 +21,7 @@ import {
   MOONEY_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
 } from 'const/config'
+import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -85,6 +86,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const {
     socials,
     isPublic,
+    isDeleted,
     hatTreeId,
     adminHatId,
     isManager,
@@ -205,6 +207,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                   >
                     {subIsValid && isManager && (
                       <button
+                        className={'absolute top-6 right-6'}
                         onClick={() => {
                           if (address === nft?.owner || isManager)
                             setTeamMetadataModalEnabled(true)
@@ -288,17 +291,19 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               <></>
             )}
           </div>
-          <div id="entity-actions-container" className="pt-5">
-            {isManager || address === nft.owner ? (
-              <TeamActions
-                teamId={tokenId}
-                jobTableContract={jobTableContract}
-                marketplaceTableContract={marketplaceTableContract}
-              />
-            ) : (
-              ''
-            )}
-          </div>
+          {!isDeleted && (
+            <div id="entity-actions-container" className="pt-5">
+              {isManager || address === nft.owner ? (
+                <TeamActions
+                  teamId={tokenId}
+                  jobTableContract={jobTableContract}
+                  marketplaceTableContract={marketplaceTableContract}
+                />
+              ) : (
+                ''
+              )}
+            </div>
+          )}
         </div>
         {isManager || address === nft.owner ? (
           <div id="manager-container" className="mt-8 xl:mt-0">
@@ -368,17 +373,16 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               subscriptionContract={teamContract}
             />
           )}
+          {teamMetadataModalEnabled && (
+            <TeamMetadataModal
+              nft={nft}
+              selectedChain={selectedChain}
+              setEnabled={setTeamMetadataModalEnabled}
+            />
+          )}
           {/* Header and socials */}
-          {subIsValid ? (
+          {subIsValid && !isDeleted ? (
             <div className="z-50 flex flex-col gap-6">
-              {teamMetadataModalEnabled && (
-                <TeamMetadataModal
-                  nft={nft}
-                  selectedChain={selectedChain}
-                  setEnabled={setTeamMetadataModalEnabled}
-                />
-              )}
-
               {/* Team Actions */}
               {/* Team */}
               <Frame
@@ -468,7 +472,9 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
             // Subscription Expired
             <Frame>
               <p className="text-white">
-                {`The pass has expired, please connect the owner or admin wallet to renew.`}
+                {isDeleted
+                  ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
+                  : `The profile has expired, please connect the owner or admin wallet to renew.`}
               </p>
               {isManager && (
                 <TeamTreasury
@@ -495,6 +501,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const sdk = initSDK(chain)
   const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
   const nft = await teamContract.erc721.get(tokenId)
+
+  if (!nft || !nft.metadata.uri || blockedTeams.includes(nft.metadata.id)) {
+    return {
+      notFound: true,
+    }
+  }
 
   const rawMetadataRes = await fetch(nft.metadata.uri)
   const rawMetadata = await rawMetadataRes.json()
