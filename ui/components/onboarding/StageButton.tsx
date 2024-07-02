@@ -10,7 +10,7 @@ export function StageButton({
 
   return (
     <button
-      className={`mt-8 px-12 py-4 w-fit text-lg bg-[#D7594F] text-white ${className} disabled:opacity-50`}
+      className={`mt-5 px-5 py-3 rounded-[2vmax] rounded-tl-[10px] text-lg gradient-2 text-white ${className} disabled:opacity-50`}
       onClick={async () => {
         setIsLoading(true)
         await onClick()

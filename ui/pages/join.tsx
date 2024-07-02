@@ -17,10 +17,10 @@ export default function Join() {
   }, [])
 
   return (
-    <div className="animate-fadeIn flex flex-col items-center">
-      <Head title={t('joinTitle')} description={t('joinDesc')} />
-      <OnboardingV2 selectedChain={selectedChain} />
-    </div>
+      <div className="animate-fadeIn flex flex-col items-center">
+        <Head title={t('joinTitle')} description={t('joinDesc')} />
+        <OnboardingV2 selectedChain={selectedChain} />
+      </div>
   )
 }
 
