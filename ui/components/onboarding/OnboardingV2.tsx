@@ -42,12 +42,12 @@ function Tier({
 
   return (
     <section id="callout-card-container"
-      className="bg-darkest-cool md:bg-transparent "
+      className="bg-darkest-cool md:bg-transparent"
       >
       <div className="bg-[#020617] md:mb-5 md:rounded-[5vmax] p-5 md:rounded-tl-[20px]"
         >
         <div
-          className="w-full transition-all duration-150 pb-10 cursor-pointer text-white text-opacity-[80%] flex flex-col bg-darkest-cool"
+          className="w-full transition-all duration-150 pb-10 cursor-pointer text-white text-opacity-[80%] flex flex-col"
           onClick={() => {
             if (!address && user) logout()
             if (!address) return login()
