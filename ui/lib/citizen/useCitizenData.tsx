@@ -5,11 +5,13 @@ export function useCitizenData(nft: any, citizenContract: any) {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
+  const [isDeleted, setIsDeleted] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
 
   function getView() {
-    const entityView: any = getAttribute(nft.metadata.attributes, 'view')
-    setIsPublic(entityView?.value === 'public' ? true : false)
+    const citizenView: any = getAttribute(nft.metadata.attributes, 'view')
+    setIsPublic(citizenView?.value === 'public' ? true : false)
+    setIsDeleted(citizenView?.value === '' ? true : false)
   }
 
   function getCitizenSocials() {
@@ -23,6 +25,7 @@ export function useCitizenData(nft: any, citizenContract: any) {
     })
   }
 
+  //check if the subscription is valid
   async function checkSubscription() {
     //get unix timestamp for now
     const now = Math.floor(Date.now() / 1000)
@@ -53,6 +56,7 @@ export function useCitizenData(nft: any, citizenContract: any) {
   return {
     socials,
     isPublic,
+    isDeleted,
     subIsValid,
     isLoading,
   }
