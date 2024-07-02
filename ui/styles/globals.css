@@ -410,7 +410,7 @@ a {
 /*Typeface styles*/
 @media(max-width:1399px) {
   .header {
-    font-size: calc(max(2.5vmax, 30px));
+    font-size: calc(max(2.5vmax, 25dpx));
     line-height: 1.2;
   }
 }
@@ -600,7 +600,7 @@ html {
 
 @media(min-width:1100px) {
   .popout-base-bg {
-    background: linear-gradient(90deg, transparent 30%, rgba(9, 13, 33, 1) 30%);
+    background: linear-gradient(90deg, transparent 35%, rgba(9, 13, 33, 1) 35%);
   }
 }
 
