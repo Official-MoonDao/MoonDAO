@@ -46,7 +46,7 @@ export default function TeamJobs({
       <Card className="w-full flex flex-col justify-between gap-5">
         <div
           id="job-title-container"
-          className="flex gap-5 justify-between items-center pr-12"
+          className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center pr-12"
         >
           <div className="flex gap-5 opacity-[50%]">
             <Image src={jobIcon} alt="Job icon" width={30} height={30} />

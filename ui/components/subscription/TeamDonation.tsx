@@ -2,6 +2,7 @@ import { useAddress, useSDK } from '@thirdweb-dev/react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import Frame from '../layout/Frame'
+import StandardButton from '../layout/StandardButton'
 import Button from './Button'
 import Card from './Card'
 
@@ -35,8 +36,8 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
 
   return (
     <Card className="flex flex-col lg:flex-row justify-between gap-4">
-      <div className="flex flex-col lg:flex-row gap-4">
-        <Frame noPadding>
+      <div className="flex flex-col lg:flex-row gap-4 justify-center">
+        <Frame noPadding marginBottom="0px">
           <form
             className="flex bg-dark-cool gap-4 items-center justify-between"
             onSubmit={(e) => {
@@ -53,7 +54,7 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
             />
             <p>ETH</p>
             <div id="" className="gradient-2">
-              <Button type="submit">Donate</Button>
+              <StandardButton type="submit">Donate</StandardButton>
             </div>
           </form>
         </Frame>

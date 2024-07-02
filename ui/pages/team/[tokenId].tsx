@@ -301,7 +301,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
             )}
           </div>
         </div>
-
         {isManager || address === nft.owner ? (
           <div id="manager-container" className="mt-8 xl:mt-0">
             {expiresAt && (
@@ -395,7 +394,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                 >
                   <div
                     id="job-title-container"
-                    className="flex gap-5 items-center justify-between pr-12"
+                    className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 pr-12"
                   >
                     <div className="flex gap-5 opacity-[50%]">
                       <Image
@@ -452,15 +451,16 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                 teamId={tokenId}
               />
               {/* Mooney and Voting Power */}
-              <TeamTreasury
-                multisigAddress={nft.owner}
-                splitAddress={splitAddress}
-                mutlisigMooneyBalance={MOONEYBalance}
-                multisigNativeBalance={nativeBalance}
-                splitMooneyBalance={splitMOONEYBalance}
-                splitNativeBalance={splitNativeBalance}
-              />
-
+              {isManager && (
+                <TeamTreasury
+                  multisigAddress={nft.owner}
+                  splitAddress={splitAddress}
+                  mutlisigMooneyBalance={MOONEYBalance}
+                  multisigNativeBalance={nativeBalance}
+                  splitMooneyBalance={splitMOONEYBalance}
+                  splitNativeBalance={splitNativeBalance}
+                />
+              )}
               {/* General Actions */}
               {isManager && <GeneralActions />}
             </div>
