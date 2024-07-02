@@ -69,27 +69,27 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 }
 
 export const CITIZEN_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x061570c3a2DF455d61f8386489bea516Dd7664DE',
   sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x0ad4923AcfBA7Ae935A54db27EF5198146f4Ea24',
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
 export const TEAM_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x9D78fc5aD4a485Dc6A8159509A6ca476146A59a2',
   sepolia: '0xc235E23D983C1F871d792406cd291e43Ca08AD67',
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xF2c55e3AebC3C28187d645e7995C42672d3dC08C',
   sepolia: '0x112f6D690da78c32A074a9D4Fe302D10Dcfb2997',
 }
 
 export const TEAM_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x6673aDE0fa99be86B71ccC3DdCDb84aF2D15cBFF',
   sepolia: '0x316D472c1730A6fcD7a369E95C8F74FA821D98f6',
 }
 
@@ -99,7 +99,7 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x20E1a0048ACc0C9eF82846D7Df56Dd07E84A4bC4',
   sepolia: '0xa935179A87Ebf963aC4Fa463e2B1A9191FC75E30',
 }
 
