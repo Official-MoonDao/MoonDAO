@@ -196,15 +196,15 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               ) : (
                 <></>
               )}
-              <div id="team-name-container">
+              <div id="team-name-container ">
                 <div
                   id="team-name"
-                  className="flex flex-col justify-center  gap-4"
-                >
+                  className="flex flex-col flex-col-reverse justify-start gap-2"
+                  >
                   <div
                     id="team-name-container"
                     className="flex flex-row gap-2 items-center justify-start"
-                  >
+                    >
                     {subIsValid && isManager && (
                       <button
                         className={'absolute top-6 right-6'}
@@ -216,7 +216,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                               'Connect the entity admin wallet or multisig to edit metadata.'
                             )
                         }}
-                      >
+                        >
                         <PencilIcon width={35} height={35} />
                       </button>
                     )}
@@ -228,6 +228,17 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                       <></>
                     )}
                   </div>
+
+                  {isManager || address === nft.owner ? (
+                    ''
+                  ) : (
+                    <div id="donation-container" 
+                      className="max-w-[290px]">
+                      {!isDeleted && subIsValid && (
+                        <TeamDonation splitAddress={splitAddress} />
+                      )}
+                    </div>
+                  )}
 
                   {socials ? (
                     <div
@@ -267,15 +278,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     </div>
                   ) : (
                     <></>
-                  )}
-                  {isManager || address === nft.owner ? (
-                    ''
-                  ) : (
-                    <div className="max-w-[290px]">
-                      {!isDeleted && subIsValid && (
-                        <TeamDonation splitAddress={splitAddress} />
-                      )}
-                    </div>
                   )}
                 </div>
               </div>
