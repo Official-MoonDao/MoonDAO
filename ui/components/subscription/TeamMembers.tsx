@@ -2,7 +2,7 @@ import { useNFT } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 import { useHatData } from '@/lib/hats/useHatData'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
-import Card from '../layout/Card'
+import ProfileCard from '../layout/ProfileCard'
 
 type TeamMemberProps = {
   address: string
@@ -63,7 +63,7 @@ function TeamMember({ address, hatData, citizenContract }: TeamMemberProps) {
   }, [nft])
 
   return (
-    <Card
+    <ProfileCard
       inline
       metadata={metadata}
       owner={address}

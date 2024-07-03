@@ -36,7 +36,7 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
 
   return (
     <Card className="flex flex-col lg:flex-row justify-between gap-4">
-      <div className="flex flex-col lg:flex-row gap-4 justify-center">
+      <div className="flex flex-col lg:flex-row gap-4 justify-start">
         <Frame noPadding marginBottom="0px">
           <form
             className="flex bg-dark-cool gap-4 items-center justify-between"
@@ -46,7 +46,7 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
             }}
           >
             <input
-              className="w-[100px] bg-dark-cool pl-5 h-full"
+              className="w-[100px] bg-dark-cool pl-5 h-full focus:outline-none"
               type="number"
               onChange={({ target }: any) => setDonationAmount(target.value)}
               value={donationAmount}
