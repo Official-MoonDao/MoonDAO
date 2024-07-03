@@ -211,14 +211,14 @@ export default function CitizenDetailPage({
                       id="socials-container"
                       className="pl-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter p-2"
                     >
-                      {socials.discord && (
+                      {socials.discordLink && (
                         <Link
                           className="flex gap-2"
-                          href={socials.discord}
+                          href={socials.discordLink}
                           target="_blank"
                           passHref
                         >
-                          <DiscordIcon height={25} width={25} />
+                          <DiscordIcon />
                         </Link>
                       )}
                       {socials.twitter && (
@@ -277,8 +277,7 @@ export default function CitizenDetailPage({
                   <div id="extend-sub-button" className="gradient-2">
                     <Button
                       onClick={() => {
-                        if (address === nft?.owner || isManager)
-                          setSubModalEnabled(true)
+                        if (address === nft?.owner) setSubModalEnabled(true)
                         else
                           return toast.error(
                             `Connect the entity admin wallet or multisig to extend the subscription.`
@@ -361,24 +360,26 @@ export default function CitizenDetailPage({
                     </p>
                   </div>
                 </div>
-                <div className="mt-4 flex items-start xl:items-end gap-2">
-                  <StandardButton
-                    className="w-full gradient-2 rounded-[5vmax]"
-                    onClick={() =>
-                      window.open(
-                        'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
-                      )
-                    }
-                  >
-                    {'Get $MOONEY'}
-                  </StandardButton>
-                  <StandardButton
-                    className="w-full gradient-2 rounded-[5vmax]"
-                    onClick={() => router.push('/lock')}
-                  >
-                    {'Stake $MOONEY'}
-                  </StandardButton>
-                </div>
+                {address === nft.owner && (
+                  <div className="mt-4 flex items-start xl:items-end gap-2">
+                    <StandardButton
+                      className="w-full gradient-2 rounded-[5vmax]"
+                      onClick={() =>
+                        window.open(
+                          'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
+                        )
+                      }
+                    >
+                      {'Get $MOONEY'}
+                    </StandardButton>
+                    <StandardButton
+                      className="w-full gradient-2 rounded-[5vmax]"
+                      onClick={() => router.push('/lock')}
+                    >
+                      {'Stake $MOONEY'}
+                    </StandardButton>
+                  </div>
+                )}
               </div>
             </Frame>
 
@@ -391,12 +392,8 @@ export default function CitizenDetailPage({
             >
               <div className="mt-6 flex flex-col 2xl:flex-row">
                 <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <div className="flex flex-col gap-6">
-                    {/* Proposals */}
-                    <Proposals />
-                  </div>
-                  <p className="header font-GoodTimes opacity-[50%]">Roles</p>
-                  <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
+                  <p className="header font-GoodTimes opacity-[50%]">Teams</p>
+                  <div className="mt-4 py-4 flex flex-col gap-2 max-h-[600px] overflow-y-scroll">
                     {hats.map((hat: any) => (
                       <div
                         key={hat.id}
@@ -441,15 +438,17 @@ export default function CitizenDetailPage({
                 {/* General Actions */}
               </div>
             </Frame>
-            <Frame
-              noPadding
-              bottomLeft="0px"
-              bottomRight="0px"
-              topRight="0px"
-              topLeft="0px"
-            >
-              <GeneralActions />
-            </Frame>
+            {address === nft.owner && (
+              <Frame
+                noPadding
+                bottomLeft="0px"
+                bottomRight="0px"
+                topRight="0px"
+                topLeft="0px"
+              >
+                <GeneralActions />
+              </Frame>
+            )}
           </div>
         ) : (
           // Subscription expired
