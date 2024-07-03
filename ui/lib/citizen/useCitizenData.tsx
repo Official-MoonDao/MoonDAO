@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import useDiscordUserSearch from '../nance/DiscordUserSearch'
 import { getAttribute } from '../utils/nft'
 
 export function useCitizenData(nft: any, citizenContract: any) {
@@ -7,6 +8,15 @@ export function useCitizenData(nft: any, citizenContract: any) {
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [isDeleted, setIsDeleted] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
+
+  const discordUser = useDiscordUserSearch(socials?.discord, true)
+
+  useEffect(() => {
+    setSocials((prev: any) => ({
+      ...prev,
+      discordLink: `https://discord.com/users/${discordUser?.data?.[0]?.user?.id}`,
+    }))
+  }, [discordUser])
 
   function getView() {
     const citizenView: any = getAttribute(nft.metadata.attributes, 'view')
