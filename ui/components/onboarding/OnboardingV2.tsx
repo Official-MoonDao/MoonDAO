@@ -78,7 +78,7 @@ function Tier({
             <div className="flex flex-col p-5 justify-between w-full items-start">
               <div className="w-full flex-col space-y-5">
                 <div className="md:rounded-[5vmax] md:rounded-tl-[20px]">
-                  <h1 className={'mt-6 font-GoodTimes text-3xl'}>{label}</h1>
+                  <h2 className={'mt-6 font-GoodTimes text-3xl'}>{label}</h2>
                   <p className="opacity-80">{description}</p>
 
                   <div className="flex flex-col w-full">
