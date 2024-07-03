@@ -1,6 +1,8 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useNewestProposals } from '@/lib/snapshot/useNewestProposals'
+import StandardButton from '../layout/StandardButton'
 import Button from './Button'
 import Card from './Card'
 
@@ -9,7 +11,15 @@ export default function Proposals({ numberOfProposals = 3 }) {
   const newestProposals = useNewestProposals(numberOfProposals)
   return (
     <Card className="w-full flex flex-col justify-between">
-      <p className="header font-GoodTimes opacity-[50%]">Governance</p>
+      <div className="flex gap-5 opacity-[50%]">
+        <Image
+          src="/assets/icon-governance.svg"
+          width={30}
+          height={30}
+          alt="Governance icon"
+        />
+        <p className="header font-GoodTimes">Governance</p>
+      </div>
       <div className="mt-2 flex flex-col gap-4">
         {newestProposals
           ? newestProposals.map((proposal: any) => (
@@ -43,10 +53,18 @@ export default function Proposals({ numberOfProposals = 3 }) {
             ))}
       </div>
       <div className="mt-4 flex flex-col md:flex-row gap-2">
-        <Button onClick={() => router.push('/newProposal')}>
+        <StandardButton
+          className="gradient-2"
+          onClick={() => router.push('/newProposal')}
+        >
           Create a Proposal
-        </Button>
-        <Button onClick={() => router.push('/vote')}>Vote on Proposals</Button>
+        </StandardButton>
+        <StandardButton
+          className="gradient-2"
+          onClick={() => router.push('/vote')}
+        >
+          Vote on Proposals
+        </StandardButton>
       </div>
     </Card>
   )

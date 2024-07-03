@@ -272,7 +272,9 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     ''
                   ) : (
                     <div className="max-w-[290px]">
-                      <TeamDonation splitAddress={splitAddress} />
+                      {!isDeleted && subIsValid && (
+                        <TeamDonation splitAddress={splitAddress} />
+                      )}
                     </div>
                   )}
                 </div>
