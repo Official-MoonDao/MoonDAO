@@ -60,6 +60,7 @@ export default function CitizenDetailPage({
 
   const {
     socials,
+    discordLink,
     isDeleted,
     subIsValid,
     isLoading: isLoadingCitizenData,
@@ -79,15 +80,6 @@ export default function CitizenDetailPage({
     nft?.owner
   )
 
-  const [nativeBalance, setNativeBalance] = useState<number>(0)
-
-  async function getNativeBalance() {
-    const sdk = initSDK(selectedChain)
-    const provider = sdk.getProvider()
-    const balance: any = await provider.getBalance(nft?.owner || '')
-    setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
-  }
-
   //Subscription Data
   const { data: expiresAt } = useHandleRead(citizenContract, 'expiresAt', [
     nft?.metadata?.id || '',
@@ -96,13 +88,6 @@ export default function CitizenDetailPage({
   // //Hats
   const hats = useWearer(selectedChain, nft?.owner)
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
-
-  // get native balance for multisig
-  useEffect(() => {
-    if (nft?.owner) {
-      getNativeBalance()
-    }
-  }, [nft])
 
   useEffect(() => {
     setSelectedChain(
@@ -198,10 +183,10 @@ export default function CitizenDetailPage({
                       id="socials-container"
                       className="pl-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter p-2"
                     >
-                      {socials.discordLink && (
+                      {discordLink && (
                         <Link
                           className="flex gap-2"
-                          href={socials.discordLink}
+                          href={discordLink}
                           target="_blank"
                           passHref
                         >

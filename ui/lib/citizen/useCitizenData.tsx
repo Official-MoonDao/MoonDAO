@@ -11,13 +11,6 @@ export function useCitizenData(nft: any, citizenContract: any) {
 
   const discordUser = useDiscordUserSearch(socials?.discord, true)
 
-  useEffect(() => {
-    setSocials((prev: any) => ({
-      ...prev,
-      discordLink: `https://discord.com/users/${discordUser?.data?.[0]?.user?.id}`,
-    }))
-  }, [discordUser])
-
   function getView() {
     const citizenView: any = getAttribute(nft.metadata.attributes, 'view')
     setIsPublic(citizenView?.value === 'public' ? true : false)
@@ -61,10 +54,9 @@ export function useCitizenData(nft: any, citizenContract: any) {
     })()
   }, [nft])
 
-  useEffect(() => {}, [])
-
   return {
     socials,
+    discordLink: `https://discord.com/users/${discordUser?.data?.[0]?.user?.id}`,
     isPublic,
     isDeleted,
     subIsValid,
