@@ -35,7 +35,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
     <div className="animate-fadeIn flex flex-col">
       <div className="mb-12 flex items-start md:items-center flex-col gap-4 md:flex-row">
         <input
-          className="text-moon-orange"
+          className="text-white text-opacity-80"
           type="file"
           accept="image/*"
           onChange={(e: any) => setUserImage(e.target.files[0])}
