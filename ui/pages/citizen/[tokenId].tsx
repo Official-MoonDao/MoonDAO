@@ -2,19 +2,11 @@ import {
   ArrowUpRightIcon,
   GlobeAltIcon,
   PencilIcon,
-  PlusCircleIcon,
 } from '@heroicons/react/24/outline'
-import { useWallets } from '@privy-io/react-auth'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import {
-  ThirdwebNftMedia,
-  useAddress,
-  useContract,
-  useNFT,
-} from '@thirdweb-dev/react'
+import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
-  DISCORD_GUILD_ID,
   HATS_ADDRESS,
   MOONEY_ADDRESSES,
   VMOONEY_ADDRESSES,
@@ -27,9 +19,7 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
-import { useProjects } from '@/lib/discord/useProjects'
 import { useWearer } from '@/lib/hats/useWearer'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
@@ -47,7 +37,6 @@ import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
 import { CitizenMetadataModal } from '@/components/subscription/CitizenMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
-import Proposals from '@/components/subscription/Proposals'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 
 export default function CitizenDetailPage({
@@ -114,8 +103,6 @@ export default function CitizenDetailPage({
       getNativeBalance()
     }
   }, [nft])
-
-  const projects = useProjects()
 
   useEffect(() => {
     setSelectedChain(
@@ -323,6 +310,15 @@ export default function CitizenDetailPage({
             setEnabled={setCitizenMetadataModalEnabled}
           />
         )}
+        {subModalEnabled && (
+          <SubscriptionModal
+            setEnabled={setSubModalEnabled}
+            nft={nft}
+            subscriptionContract={citizenContract}
+            validPass={subIsValid}
+            expiresAt={expiresAt}
+          />
+        )}
 
         {subIsValid && !isDeleted ? (
           <div>
@@ -361,7 +357,7 @@ export default function CitizenDetailPage({
                   </div>
                 </div>
                 {address === nft.owner && (
-                  <div className="mt-4 flex items-start xl:items-end gap-2">
+                  <div className="mt-4 px-4 flex items-start xl:items-end gap-2">
                     <StandardButton
                       className="w-full gradient-2 rounded-[5vmax]"
                       onClick={() =>
@@ -406,33 +402,6 @@ export default function CitizenDetailPage({
                         />
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                {/* Projects */}
-                <div className="w-full p-5 md:pr-0 md:pb-10 overflow-hiddend bg-slide-section">
-                  <p className="header font-GoodTimes opacity-[50%]">
-                    Projects
-                  </p>
-                  <div className="py-4 max-h-[600px] overflow-y-scroll flex flex-col gap-2">
-                    {projects &&
-                      projects.map((p: any, i: number) => (
-                        <Link
-                          key={`project-${i}`}
-                          className="flex items-center justify-between p-2 border-2 dark:border-0 dark:bg-[#0f152f]"
-                          href={`https://discord.com/channels/${DISCORD_GUILD_ID}/${p.id}`}
-                          target="_blank"
-                          passHref
-                        >
-                          <div className={'flex justify-between p-2 '}>
-                            {p.name}
-                          </div>
-                          <ArrowUpRightIcon
-                            className="text-moon-orange"
-                            height={24}
-                          />
-                        </Link>
-                      ))}
                   </div>
                 </div>
                 {/* General Actions */}
