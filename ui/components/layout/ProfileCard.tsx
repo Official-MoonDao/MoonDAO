@@ -1,4 +1,4 @@
-//Card component
+//ProfileCard
 import { ThirdwebNftMedia } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -144,7 +144,7 @@ export default function Card({
                             className="relative z-50"
                             >
                             <div id="description-and-id"
-                              className="description mt-2"
+                                className={metadata?.name && 'description'}
                             >
                             <div 
                                 className="flex opacity-[70%]"

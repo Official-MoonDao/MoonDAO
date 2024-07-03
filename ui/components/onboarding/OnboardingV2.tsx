@@ -1,3 +1,4 @@
+//OnboardingV2
 import { StarIcon } from '@heroicons/react/24/outline'
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
@@ -162,7 +163,7 @@ export function OnboardingV2({ selectedChain }: any) {
     <Container>
       <ContentLayout
         header="Join MoonDAO"
-        headerSize="max(20px, 2vw)"
+        headerSize="max(20px, 3vw)"
         mainPadding
         mode="compact"
         popOverEffect={false}
@@ -184,7 +185,7 @@ export function OnboardingV2({ selectedChain }: any) {
                 </div>
                 <div className="">
                   <h3 className="header font-GoodTimes">
-                    Questions about MoonDAO?
+                    Need Help?
                   </h3>
                 </div>
               </div>
