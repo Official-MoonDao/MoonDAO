@@ -86,14 +86,17 @@ function DeleteProfileDataModal({
                 }
 
                 if (tx.receipt) {
-                  toast.success('Data deleted successfully')
-                  setDeleteModalEnabled(false)
-                  setParentModalEnabled(false)
+                  toast.success(
+                    'Data deleted successfully, please wait for the page to reload.',
+                    { duration: 10000 }
+                  )
                 }
 
                 setTimeout(() => {
+                  setDeleteModalEnabled(false)
+                  setParentModalEnabled(false)
                   router.reload()
-                }, 10000)
+                }, 15000)
               } catch (err) {
                 console.log(err)
               }
