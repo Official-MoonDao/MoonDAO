@@ -78,12 +78,12 @@ export default function ProposalInfo({
   sponsorDisabled?: boolean
   coauthorsDisabled?: boolean
 }) {
-  const { proposalIdPrefix } = proposalPacket?.proposalInfo || ''
-  const preTitleDisplay = proposalIdPrefix
-    ? `${proposalIdPrefix}${proposalPacket.proposalId}: `
+  const { proposalIdPrefix } = proposalPacket?.proposalInfo
+  const { proposalInfo, ...proposal } = proposalPacket
+  const preTitleDisplay = proposalIdPrefix && proposal.proposalId
+    ? `${proposalIdPrefix}${proposal.proposalId}: `
     : ''
   const router = useRouter()
-  const { proposalInfo, ...proposal } = proposalPacket
   proposal.voteSetup = {
     type: 'quadratic', // could make this dynamic in the future
     choices: ['Yes', 'No', 'Abstain'], // could make this dynamic in the future

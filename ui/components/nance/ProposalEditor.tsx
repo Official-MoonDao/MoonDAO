@@ -35,6 +35,8 @@ import ProposalTitleInput, {
   TITLE_ID,
 } from '../../components/nance/ProposalTitleInput'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
+import { pinBlobOrFile } from "@/lib/nance/pinBlobOrFile"
+import { getAccessToken } from "@privy-io/react-auth"
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -168,13 +170,6 @@ export default function ProposalEditor() {
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
   const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
 
-  const fileUploadIPFS = {
-    gateway: process.env.NEXT_PUBLIC_INFURA_IPFS_GATEWAY as string,
-    auth: `Basic ${Buffer.from(
-      `${process.env.NEXT_PUBLIC_INFURA_IPFS_ID}:${process.env.NEXT_PUBLIC_INFURA_IPFS_SECRET}`
-    ).toString('base64')}`,
-  }
-
   const buildProposal = (status: ProposalStatus) => {
     const title = (document?.getElementById(TITLE_ID) as HTMLInputElement).value
     return {
@@ -249,7 +244,7 @@ export default function ProposalEditor() {
           <ProposalTitleInput initialValue={loadedProposal?.title} />
           <NanceEditor
             initialValue={trimActionsFromBody(loadedProposal?.body) || TEMPLATE}
-            fileUploadIPFS={fileUploadIPFS}
+            fileUploadExternal={pinBlobOrFile}
             darkMode={true}
           />
 
