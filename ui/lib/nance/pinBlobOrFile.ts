@@ -14,6 +14,10 @@ export async function pinBlobOrFile (blob: Blob | File): Promise<string> {
       },
       body: imageFormData
     })
+    if (pin.status === 401) {
+      toast.error("Sign in add images to proposal")
+      return ""
+    }
     const { cid } = await pin.json();
     const url = `https://tan-collective-smelt-690.mypinata.cloud/ipfs/${cid}`
     return url
