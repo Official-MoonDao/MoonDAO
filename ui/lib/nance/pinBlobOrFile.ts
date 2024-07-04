@@ -1,5 +1,4 @@
 import { getAccessToken } from "@privy-io/react-auth";
-import { pinImageToIPFS } from "../ipfs/pin";
 import toast from "react-hot-toast";
 
 export async function pinBlobOrFile (blob: Blob | File): Promise<string> {

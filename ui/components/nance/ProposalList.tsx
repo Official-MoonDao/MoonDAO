@@ -1,10 +1,8 @@
 import {
-  ArrowLongLeftIcon,
-  ArrowLongRightIcon,
   DocumentMagnifyingGlassIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { ArrowPathIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
+import { ChevronRightIcon } from '@heroicons/react/24/solid'
 import { useProposalsInfinite } from '@nance/nance-hooks'
 import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
 import { formatDistanceStrict } from 'date-fns'

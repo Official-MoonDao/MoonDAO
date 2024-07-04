@@ -43,7 +43,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
 
       const json = await imageRes.json()
-      console.log(json)
 
       if (imageRes.status !== 200) {
         return res.status(400).json('Error pinning file to IPFS')
