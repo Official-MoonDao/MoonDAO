@@ -41,7 +41,7 @@ export default function TeamJobs({
   return (
     <section
       id="jobs section"
-      className="bg-slide-section p-5 rounded-tl-[2vmax] rounded-bl-[5vmax]"
+      className="bg-slide-section mb-5 p-5 rounded-tl-[2vmax] rounded-bl-[5vmax]"
     >
       <Card className="w-full flex flex-col justify-between gap-5">
         <div
@@ -54,7 +54,7 @@ export default function TeamJobs({
           </div>{' '}
           {isManager && (
             <StandardButton
-              className="gradient-2 rounded-[5vmax]"
+              className="gradient-2 rounded-[2vmax] rounded-bl-[10px]"
               onClick={() => {
                 setTeamJobModalEnabled(true)
               }}
