@@ -96,20 +96,24 @@ export default function TeamTreasury({
             <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
           )}
         </div>
-
-        <div className="mt-4 flex gap-4 items-center text-lg">
-          <p>{`MOONEY :`}</p>
-          <p>
-            {mutlisigMooneyBalance
-              ? (mutlisigMooneyBalance?.toString() / 10 ** 18).toLocaleString()
-              : 0}
-          </p>
-        </div>
-        <div className="flex gap-4 items-center text-lg">
-          <p>{`ETHER :`}</p>
-          <p className="pl-6">
-            {multisigNativeBalance ? multisigNativeBalance : 0}
-          </p>
+        <div className="p-4">
+          <div className="mt-4 flex gap-4 items-center text-lg">
+            <p>{`MOONEY :`}</p>
+            <p>
+              {mutlisigMooneyBalance
+                ? (
+                    mutlisigMooneyBalance?.toString() /
+                    10 ** 18
+                  ).toLocaleString()
+                : 0}
+            </p>
+          </div>
+          <div className="flex gap-4 items-center text-lg">
+            <p>{`ETHER :`}</p>
+            <p className="pl-6">
+              {multisigNativeBalance ? multisigNativeBalance : 0}
+            </p>
+          </div>
         </div>
         <div className="mt-4">
           <div className="flex gap-5 opacity-[50%]">
@@ -121,19 +125,21 @@ export default function TeamTreasury({
             />
             <h2 className="header font-GoodTimes">Pending Disbursement</h2>
           </div>
-          <div className="mt-4 flex gap-4 items-center text-lg">
-            <p>{`MOONEY :`}</p>
-            <p>
-              {splitMooneyBalance
-                ? (splitMooneyBalance?.toString() / 10 ** 18).toLocaleString()
-                : 0}
-            </p>
-          </div>
-          <div className="flex gap-4 items-center text-lg">
-            <p>{`ETHER :`}</p>
-            <p className="pl-6">
-              {splitNativeBalance ? splitNativeBalance : 0}
-            </p>
+          <div className="p-4">
+            <div className="mt-4 flex gap-4 items-center text-lg">
+              <p>{`MOONEY :`}</p>
+              <p>
+                {splitMooneyBalance
+                  ? (splitMooneyBalance?.toString() / 10 ** 18).toLocaleString()
+                  : 0}
+              </p>
+            </div>
+            <div className="flex gap-4 items-center text-lg">
+              <p>{`ETHER :`}</p>
+              <p className="pl-6">
+                {splitNativeBalance ? splitNativeBalance : 0}
+              </p>
+            </div>
           </div>
         </div>
       </div>

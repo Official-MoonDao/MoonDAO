@@ -49,16 +49,18 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
       <div
         id="teamPic"
         className="w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
-        >
-        {userImage && (
-          <div
-            id="user-image"
-            style={{
-              backgroundImage: `url(${URL.createObjectURL(userImage)})`,
-            }}
-            className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
-          ></div>
-        )}
+      >
+        <div
+          id="user-image"
+          style={{
+            backgroundImage: `url(${
+              userImage
+                ? URL.createObjectURL(userImage)
+                : '/assets/image-placeholder.svg'
+            })`,
+          }}
+          className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+        ></div>
       </div>
     </div>
   )

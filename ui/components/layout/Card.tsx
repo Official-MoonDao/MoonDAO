@@ -2,6 +2,7 @@
 import { ThirdwebNftMedia } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useState } from 'react'
 import { MeshStandardMaterial } from 'three'
 import Frame from '../layout/Frame'
@@ -52,7 +53,11 @@ export default function Card({
       : icon ?? '/assets/icon-passport.svg'
   iconAlt = iconAlt ?? 'Star'
 
+  const router = useRouter()
+
   const [citizenDiscord, setCitizenDiscord] = useState<string | undefined>()
+
+  const [isLoadingRoute, setIsLoadingRoute] = useState<boolean>(false)
 
   useEffect(() => {
     if (type === 'citizen' && metadata) {

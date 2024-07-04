@@ -203,9 +203,11 @@ export default function BuyTeamListingModal({
         </div>
         <div>
           <MediaRenderer src={listing.image} width="200px" height="200px" />
-          <p>{listing.title}</p>
-          <p className="text-[75%]">{listing.description}</p>
-          <p>{`${listing.price} ${listing.currency}`}</p>
+          <div className="mt-4">
+            <p className="font-GoodTimes">{listing.title}</p>
+            <p className="text-[75%]">{listing.description}</p>
+            <p className="font-bold">{`${listing.price} ${listing.currency}`}</p>
+          </div>
         </div>
         <p className="opacity-60">
           Enter your information, confirm the transaction and wait to receive an
