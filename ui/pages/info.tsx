@@ -105,12 +105,12 @@ const Info: React.FC = () => {
             mode="compact" 
             popOverEffect={false}
           >
-            <>
+            <div className="mt-10 flex justify-center">
               <CardGrid 
                 cards={cardData} 
                 singleCol={false}
               />
-            </>
+            </div>
           </ContentLayout>
         </Container>
       </section>
