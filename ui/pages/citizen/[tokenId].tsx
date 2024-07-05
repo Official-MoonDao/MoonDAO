@@ -38,6 +38,7 @@ import Card from '@/components/subscription/Card'
 import { CitizenMetadataModal } from '@/components/subscription/CitizenMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
+import Footer from '@/components/layout/Footer'
 
 export default function CitizenDetailPage({
   nft,
@@ -96,7 +97,7 @@ export default function CitizenDetailPage({
   }, [])
 
   const ProfileHeader = (
-    <div id="orgheader-container">
+    <div id="citizenheader-container">
       <Frame
         noPadding
         bottomRight="0px"
@@ -121,7 +122,7 @@ export default function CitizenDetailPage({
             >
               {nft?.metadata.image ? (
                 <div
-                  id="org-image-container"
+                  id="citizen-image-container"
                   className="relative w-[300px] h-[300px]"
                 >
                   <ThirdwebNftMedia
@@ -145,10 +146,11 @@ export default function CitizenDetailPage({
               ) : (
                 <></>
               )}
-              <div id="team-name-container">
+              <div id="team-name-container"
+                >
                 <div
                   id="team-name"
-                  className="flex flex-col justify-center  gap-4"
+                  className="flex flex-col justify-center flex-col-reverse gap-4"
                 >
                   <div
                     id="team-name-container"
@@ -277,7 +279,7 @@ export default function CitizenDetailPage({
         preFooter={<InnerPreFooter />}
         mainPadding
         mode="compact"
-        popOverEffect={true}
+        popOverEffect={false}
         branded={false}
         isProfile
       >
@@ -306,7 +308,7 @@ export default function CitizenDetailPage({
         )}
 
         {subIsValid && !isDeleted ? (
-          <div>
+          <div className="z-50">
             {/* Mooney and Voting Power */}
             <Frame
               noPadding
@@ -315,10 +317,10 @@ export default function CitizenDetailPage({
               topRight="0px"
               topLeft="0px"
             >
-              <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+              <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
                 <h2 className="header font-GoodTimes opacity-[50%]">Assets</h2>
-                <div className="mt-4 flex flex-col gap-4">
-                  <div className="">
+                <div className="mt-5 flex flex-col gap-5">
+                  <div>
                     <p className="text-xl">{`$MOONEY`}</p>
                     <p className="text-3xl">
                       {MOONEYBalance
@@ -329,7 +331,7 @@ export default function CitizenDetailPage({
                         : 0}
                     </p>
                   </div>
-                  <div className="">
+                  <div>
                     <p className="text-xl">{`Voting Power`}</p>
                     <p className="text-2xl">
                       {VMOONEYBalance
@@ -370,15 +372,15 @@ export default function CitizenDetailPage({
               bottomRight="0px"
               topRight="0px"
               topLeft="0px"
-            >
-              <div className="mt-6 flex flex-col 2xl:flex-row">
+              >
+              <div className="flex flex-col 2xl:flex-row">
                 <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <p className="header font-GoodTimes opacity-[50%]">Teams</p>
-                  <div className="mt-4 py-4 flex flex-col gap-2 max-h-[600px] overflow-y-scroll">
+                  <p className="header font-GoodTimes opacity-[50%]">Teams</p>  
+                  <div className="mt-5 py-5 flex flex-col gap-2 overflow-y-scroll">
                     {hats.map((hat: any) => (
                       <div
                         key={hat.id}
-                        className="py-2 border-2 dark:border-0 dark:bg-[#0f152f]"
+                        className="py-3 gradient-16 rounded-[20px]"
                       >
                         <Hat
                           selectedChain={selectedChain}

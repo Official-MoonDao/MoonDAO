@@ -101,7 +101,7 @@ export default function TeamListing({
                     onClick={() => setEnabledMarketplaceListingModal(true)}
                   >
                     {!isDeleting && (
-                      <PencilIcon className="h-6 w-6 text-moon-orange" />
+                      <PencilIcon className="h-6 w-6 text-light-warm" />
                     )}
                   </button>
                   {isDeleting ? (
@@ -126,7 +126,7 @@ export default function TeamListing({
                         }
                       }}
                     >
-                      <TrashIcon className="h-6 w-6 text-moon-orange" />
+                      <TrashIcon className="h-6 w-6 text-light-warm" />
                     </button>
                   )}
                 </div>

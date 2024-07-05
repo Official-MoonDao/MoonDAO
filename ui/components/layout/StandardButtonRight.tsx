@@ -1,8 +1,8 @@
-//StandardButton.tsx
+//StandardButtonRight.tsx
 import PropTypes from 'prop-types'
 import React from 'react'
 
-export default function StandardButton({
+export default function StandardButtonRight({
   className = '',
   children = 'ReactNode',
   onClick = () => {},
@@ -25,16 +25,16 @@ export default function StandardButton({
         ${className} 
       `}
       onClick={onClick || null}
-      style={{ paddingLeft: '0' }}
-      onMouseEnter={(e) => (e.currentTarget.style.paddingLeft = '10px')}
-      onMouseLeave={(e) => (e.currentTarget.style.paddingLeft = '0')}
+      style={{ paddingRight: '0' }}
+      onMouseEnter={(e) => (e.currentTarget.style.paddingRight = '10px')}
+      onMouseLeave={(e) => (e.currentTarget.style.paddingRight = '0')}
       type={type as any}
       disabled={disabled}
     >
       <div
         id="button-content"
         className={` 
-          p-2 pb-3 pr-5 pl-5 
+          py-3 px-5 rounded-[2vmax] rounded-tr-[10px]
           ${textColor}
         `}
       >
@@ -46,7 +46,7 @@ export default function StandardButton({
   return styleOnly ? buttonContent : <a href={link}>{buttonContent}</a>
 }
 
-StandardButton.propTypes = {
+StandardButtonRight.propTypes = {
   className: PropTypes.string,
   children: PropTypes.node.isRequired,
   onClick: PropTypes.func,

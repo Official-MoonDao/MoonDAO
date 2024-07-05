@@ -52,6 +52,7 @@ import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
+import StandardButtonRight from '@/components/layout/StandardButtonRight'
 
 export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const sdk = useSDK()
@@ -199,7 +200,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               <div id="team-name-container ">
                 <div
                   id="team-name"
-                  className="flex flex-col flex-col-reverse justify-start gap-2"
+                  className="flex flex-col flex-col-reverse justify-center gap-2"
                   >
                   <div
                     id="team-name-container"
@@ -295,22 +296,11 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               <></>
             )}
           </div>
-          {!isDeleted && (
-            <div id="entity-actions-container" className="pt-5">
-              {isManager || address === nft.owner ? (
-                <TeamActions
-                  teamId={tokenId}
-                  jobTableContract={jobTableContract}
-                  marketplaceTableContract={marketplaceTableContract}
-                />
-              ) : (
-                ''
-              )}
-            </div>
-          )}
         </div>
         {isManager || address === nft.owner ? (
-          <div id="manager-container" className="mt-8 xl:mt-0">
+          <div id="manager-container" 
+            className="mt-8 xl:mt-0 absolute top-[80px] right-0 px-5 pt-5 bg-dark-cool rounded-tl-[20px] rounded-bl-[2vmax] rounded-[20px]"
+            >
             {expiresAt && (
               <div
                 id="expires-container"
@@ -367,7 +357,20 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         <div
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
-        >
+          >
+          {!isDeleted && (
+            <div id="entity-actions-container" className=" z-30">
+              {isManager || address === nft.owner ? (
+                <TeamActions
+                  teamId={tokenId}
+                  jobTableContract={jobTableContract}
+                  marketplaceTableContract={marketplaceTableContract}
+                />
+              ) : (
+                ''
+              )}
+            </div>
+          )}
           {teamSubscriptionModalEnabled && (
             <SubscriptionModal
               setEnabled={setTeamSubscriptionModalEnabled}
@@ -395,15 +398,15 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                 bottomRight="0px"
                 topRight="0px"
                 topLeft="0px"
-              >
+                >
                 <div
                   id="team-container"
                   className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
-                >
+                  >
                   <div
                     id="job-title-container"
                     className="p-5 pb-0 md:p-0 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 pr-12"
-                  >
+                    >
                     <div className="flex gap-5 opacity-[50%]">
                       <Image
                         src={teamIcon}
@@ -414,17 +417,18 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                       <h2 className="header font-GoodTimes">Meet Our Team</h2>
                     </div>
                     {isManager && (
-                      <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
-                        <StandardButton
+                      <div id="button-container" 
+                        className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2">
+                        <StandardButtonRight
                           className="w-full gradient-2 rounded-[5vmax]"
                           onClick={() => {
                             window.open(
                               `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
                             )
                           }}
-                        >
+                          >
                           Manage Members
-                        </StandardButton>
+                        </StandardButtonRight>
                       </div>
                     )}
                   </div>

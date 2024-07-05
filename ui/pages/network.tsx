@@ -259,7 +259,7 @@ export default function Directory() {
                         ? 'team'
                         : 'citizen'
                       return (
-                        <div key={'team-citizen-' + I}>
+                        <div className="justify-center mt-5 flex" key={'team-citizen-' + I}>
                           <Card
                             inline
                             metadata={nft.metadata}
@@ -282,7 +282,7 @@ export default function Directory() {
             <Frame noPadding marginBottom="0px">
               <div
                 id="pagination-container"
-                className="w-full flex font-GoodTimes text-2xl flex-row justify-center lg:justify-start lg:space-x-8"
+                className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center lg:justify-start lg:space-x-8"
               >
                 {pageIdx === 1 ? (
                   <p></p>

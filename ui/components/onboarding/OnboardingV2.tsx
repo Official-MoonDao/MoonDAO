@@ -118,7 +118,7 @@ function Tier({
               )
             })}
           </div>
-          <button className="mt-5 px-5 rounded-tl-[10px] rounded-[2vmax] pt-2 pb-5 hover:pl-5 ease-in-out duration-300 gradient-2 max-w-[250px]">
+          <button className="mt-5 px-5 rounded-tl-[10px] rounded-[2vmax] py-3 hover:pl-5 ease-in-out duration-300 gradient-2 max-w-[250px]">
             {buttoncta}
           </button>
         </div>
@@ -178,18 +178,18 @@ export function OnboardingV2({ selectedChain }: any) {
         }
         preFooter={
           <div className="p-5 ">
-            <div className="lg:ml-[230px] popout-bg p-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
+            <div className="custom-break-padding gradient-15 ml-5 p-5 mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
               <div className="flex items-center">
-                <div className="font-GoodTimes w-[40px] h-[40px] items-center justify-center flex rounded-[100px] bg-dark-cool m-2">
+                <div className="font-GoodTimes w-[40px] h-[40px] items-center justify-center flex rounded-[100px] bg-light-warm m-2">
                   ?
                 </div>
                 <div className="">
-                  <h3 className="header font-GoodTimes">
+                  <h3 className="header opacity-80 font-GoodTimes">
                     Need Help?
                   </h3>
                 </div>
               </div>
-              <p className="pl-5">
+              <p className="pl-5 opacity-60">
                 <Link
                   className="underline"
                   href="https://discord.com/channels/914720248140279868/1212113005836247050"
@@ -215,7 +215,7 @@ export function OnboardingV2({ selectedChain }: any) {
                 'Early Project Access: Engage in space projects early, earn money, and advance your career.',
                 'Unique Identity: Create a personalized Passport representing your on-chain identity.',
               ]}
-              buttoncta="Submit Your Application Now"
+              buttoncta="Register As A Citizen"
               onClick={() => setSelectedTier('citizen')}
               hasCitizen={+citizenBalance > 0}
             />
@@ -230,7 +230,7 @@ export function OnboardingV2({ selectedChain }: any) {
                 'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
                 'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
               ]}
-              buttoncta="Schedule a Call to Apply"
+              buttoncta="Register As A Team"
               onClick={() => setSelectedTier('team')}
             />
           </div>

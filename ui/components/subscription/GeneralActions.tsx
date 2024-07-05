@@ -19,10 +19,10 @@ function GeneralAction({
 }: GeneralActionProps) {
   return (
     <button
-      className="hover:scale-105 ease-in-out duration-300"
+      className="hover:scale-105 ease-in-out duration-300 "
       onClick={() => window.open(href)}
     >
-      <div className="bg-dark-cool p-4">
+      <div className="bg-dark-cool p-4 p-5 rounded-[20px]">
         <div className="h-[75px]">{logo}</div>
         <p className="mt-2 h-[100px] md:h-[200px] text-start">{description}</p>
         <div className="mt-8 flex gap-4">

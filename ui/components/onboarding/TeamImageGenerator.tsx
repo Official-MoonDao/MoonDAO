@@ -48,7 +48,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
       </div>
       <div
         id="teamPic"
-        className="w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
+        className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
       >
         <div
           id="user-image"
