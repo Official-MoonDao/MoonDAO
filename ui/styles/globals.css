@@ -324,6 +324,10 @@ a {
     background: linear-gradient(90deg, #020617 5%, #090D21 60%);
   }
 
+  .gradient-16 {
+    background: linear-gradient(-90deg, #020617 60%, #090D21 85% )
+  }
+
   /*Dividers*/
   .divider-1 {
     background-repeat: no-repeat;
@@ -663,3 +667,4 @@ background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
     margin-top: auto;
   }
 }
+

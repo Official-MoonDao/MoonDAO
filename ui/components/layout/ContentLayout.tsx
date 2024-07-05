@@ -125,20 +125,12 @@ const ContentLayout: React.FC<ContentProps> = ({
                 >
                 <div id="main-section"
                     className={`
-                        relative w-full max-w-[1200px] mt-0
+                        relative w-full max-w-[1200px] mt-0 
                         ${mainPadding ? 'p-0' : 'pb-5'} 
                         ${isCompact && !isProfile ? 'mt-0 md:mt-[-120px] lg:mt-[-200px]' : isCompact && isProfile ? '' : 'mt-0 md:mt-[-200px] lg:mt-[-280px] md:pb-0 '}
                     `}
                     >
-                    <div id="main-section-content-container"
-                        className={`relative z-10 
-                            ${isCompact && !popOverEffect ? 'md:ml-0' : 'md:m-10'} 
-                            ${isCompact && popOverEffect ? 'md:ml-0' : 'md:m-0'} 
-                            ${popOverEffect ? ' pb-0 mb-0 md:mb-[-160px]':''} 
-                            ${contentwide ? 'p-0' : ''}
-                        `} 
-                        >
-                        {popOverEffect ? 
+                                                {popOverEffect ? 
                         null:
                         <div id="popout-bg-element" 
                             className={`
@@ -147,19 +139,31 @@ const ContentLayout: React.FC<ContentProps> = ({
                                 `}
                         ></div> 
                         }
+                    <div id="main-section-content-container"
+                        className={`relative z-10 
+                            ${isCompact && !popOverEffect ? 'md:ml-0' : 'md:m-10'} 
+                            ${isCompact && popOverEffect ? 'md:ml-0' : 'md:m-0'} 
+                            ${popOverEffect ? ' pb-0 mb-0 md:mb-[-160px]':''} 
+                            ${contentwide ? 'p-0' : ''}
+                        `} 
+                        >
 
                         <Frame 
                             noPadding 
                             marginBottom='0px'
                             >
                             <div id="content" 
-                                className={`
+                                className={` z-50
                                     ${isCompact && !isProfile ? 'md:m-10' : (isCompact ? 'md:m-0 md:mt-5 md:mr-5' : 'm-5')}
                                 `}
                                 >
-                                {children}
+                                    <div className="z-50">
+                                        {children}
+                                    </div>
+                            
                             </div>
                         </Frame>
+
                     </div>
                 </div>
                 {preFooter && (
