@@ -320,6 +320,10 @@ a {
     background: linear-gradient(0deg,#182254 0%, #020617 20%);
   }  
 
+  .gradient-15{
+    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+  }
+
   /*Dividers*/
   .divider-1 {
     background-repeat: no-repeat;
@@ -410,7 +414,7 @@ a {
 /*Typeface styles*/
 @media(max-width:1399px) {
   .header {
-    font-size: calc(max(2.5vmax, 25dpx));
+    font-size: calc(max(2.5vmax, 25px));
     line-height: 1.2;
   }
 }
@@ -641,3 +645,21 @@ background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
     background: linear-gradient(90deg, transparent 5%, #090D21 75%);
   }
 
+/*Custom breakpoint for footer padding on join page*/
+@media(min-width:1100px) {
+  .custom-break-padding {
+    margin-left:230px;
+  }
+}
+
+@media(max-width:1100px) {
+  .custom-break-padding {
+    margin-top:-40px;
+  }
+}
+
+@media(max-width:768px) {
+  .custom-break-padding {
+    margin-top: auto;
+  }
+}

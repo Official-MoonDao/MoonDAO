@@ -178,18 +178,18 @@ export function OnboardingV2({ selectedChain }: any) {
         }
         preFooter={
           <div className="p-5 ">
-            <div className="lg:ml-[230px] popout-bg p-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
+            <div className="custom-break-padding gradient-15 ml-5 p-5 mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
               <div className="flex items-center">
-                <div className="font-GoodTimes w-[40px] h-[40px] items-center justify-center flex rounded-[100px] bg-dark-cool m-2">
+                <div className="font-GoodTimes w-[40px] h-[40px] items-center justify-center flex rounded-[100px] bg-light-warm m-2">
                   ?
                 </div>
                 <div className="">
-                  <h3 className="header font-GoodTimes">
+                  <h3 className="header opacity-80 font-GoodTimes">
                     Need Help?
                   </h3>
                 </div>
               </div>
-              <p className="pl-5">
+              <p className="pl-5 opacity-60">
                 <Link
                   className="underline"
                   href="https://discord.com/channels/914720248140279868/1212113005836247050"

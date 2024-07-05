@@ -142,7 +142,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                         null:
                         <div id="popout-bg-element" 
                             className={`
-                                z-0 popout-bg hidden md:block absolute w-[calc(100%-250px)] left-[250px] rounded-bl-[5vmax] 
+                                z-0 popout-bg hidden md:block absolute w-[calc(100%-250px)] left-[250px] rounded-bl-[20px] 
                                 ${!isProfile ? `h-[calc(100%-200px)] top-[200px]`:'h-full top-0'}
                                 `}
                         ></div> 
