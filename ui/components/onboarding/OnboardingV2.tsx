@@ -118,7 +118,7 @@ function Tier({
               )
             })}
           </div>
-          <button className="mt-5 px-5 rounded-tl-[10px] rounded-[2vmax] pt-2 pb-5 hover:pl-5 ease-in-out duration-300 gradient-2 max-w-[250px]">
+          <button className="mt-5 px-5 rounded-tl-[10px] rounded-[2vmax] py-3 hover:pl-5 ease-in-out duration-300 gradient-2 max-w-[250px]">
             {buttoncta}
           </button>
         </div>

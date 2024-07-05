@@ -19,7 +19,6 @@ import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 import { ImageGenerator } from './TeamImageGenerator'
 import Container from '../layout/Container'
-import Frame from '../layout/Frame'
 
 export default function CreateTeam({
   address,
@@ -103,14 +102,14 @@ export default function CreateTeam({
       containerwidth
       >
       <div id="create-team-image-container" 
-        className="bg-slide-section mt-5 pt-10 flex items-center justify-center w-full h-full"
+        className="bg-slide-section md:pt-10 flex items-start md:items-center justify-center w-full h-full"
         >
         <div className="flex flex-row">
-              <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
-                <div className="flex flex-row w-full justify-between items-start">
+              <div className="m-5 w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-center">
+                <div className="pl-5 flex flex-row w-full justify-between items-start">
                   <Steps
                     className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
-                    steps={['Design', 'Info', 'Mint']}
+                    steps={['Design', 'Profile', 'Checkout']}
                     currStep={stage}
                     lastStep={lastStage}
                     setStep={setStage}
@@ -123,7 +122,7 @@ export default function CreateTeam({
                 {/* Typeform form */}
                 {stage === 0 && (
                   <StageContainer
-                    className={`mb-[350px]`}
+                    className={`mb-[350px] max-w-[600px]`}
                     title="Design"
                     description="Design your unique onchain registration certificate by uploading your logo or image. For best results, use an image with a white or transparent background."
                   >
@@ -134,6 +133,7 @@ export default function CreateTeam({
                     />
                   </StageContainer>
                 )}
+
                 {/* Upload & Create Image */}
                 {stage === 1 && (
                   <StageContainer
@@ -170,9 +170,9 @@ export default function CreateTeam({
                       height={600}
                     />
 
-                    <div className="flex flex-col dark:bg-black w-full p-3 md:p-5 mt-10 max-w-[600px]">
+                    <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
                       <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
-                      <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
+                      <div className="flex flex-col rounded-[20px] bg-[#0F152F] p-5 pb-10 md:p-5 overflow-auto space-y-3 md:space-y-0">
                         {isMobile ? (
                           Object.keys(teamData)
                             .filter((v) => v != 'formResponseId')
@@ -215,10 +215,10 @@ export default function CreateTeam({
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-col border-2 dark:border-0 dark:bg-black w-full p-3 md:p-5 mt-10 max-w-[600px]">
+                    <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
                       <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT</h2>
                       <h2 className="font-GoodTimes text-3xl mb-2">INFORMATION</h2>
-                      <div className="flex flex-col border-2 dark:bg-[#0F152F] dark:border-0 p-3 md:p-5">
+                      <div className="flex flex-col rounded-[20px] bg-[#0F152F] p-5 pb-10 md:p-5">
                         <h3 className="font-GoodTimes text-2xl mb-2">TREASURY</h3>
                         <p className="mt-2">
                           A self-custodied multisignature treasury will secure your
@@ -228,7 +228,7 @@ export default function CreateTeam({
                           portal.
                         </p>
                       </div>
-                      <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 mt-5">
+                      <div className="flex flex-col bg-[#0F152F] rounded-[20px] pb-10 p-5 mt-5">
                         <h3 className="font-GoodTimes text-2xl mb-2">ADMINISTRATOR</h3>
                         <p className="mt-2">
                           The admin can modify your organization’s information. To
@@ -282,7 +282,7 @@ export default function CreateTeam({
                           <a
                             rel="noopener noreferrer"
                             className="text-sky-400"
-                            href="https://www.apple.com/pro-display-xdr/"
+                            href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
                             target="_blank"
                           >
                             {' '}
@@ -403,3 +403,4 @@ export default function CreateTeam({
     
   )
 }
+

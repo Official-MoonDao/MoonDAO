@@ -20,6 +20,7 @@ import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './ImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
+import Container from '../layout/Container'
 
 export default function CreateCitizen({
   address,
@@ -110,13 +111,15 @@ export default function CreateCitizen({
   }, [])
 
   return (
-    <div className="flex flex-row">
-      <div className="w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-start">
-        <button onClick={submitTypeform}>TEST</button>
-        <div className="flex flex-row w-full justify-between items-start">
+  <Container
+    containerwidth
+    >
+    <div className="flex flex-row w-full h-full mb-20">
+      <div className="m-5 h-full w-full flex flex-col lg:max-w-[1200px] items-center ">
+        <div className="flex flex-row w-full justify-between max-w-[600px] items-start">
           <Steps
-            className="mb-4 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16 -ml-10"
-            steps={['Design', 'Info', 'Mint']}
+            className="mb-4 pl-5 md:pl-0 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16 -ml-10"
+            steps={['Design', 'Profile', 'Checkout']}
             currStep={stage}
             lastStep={lastStage}
             setStep={setStage}
@@ -129,7 +132,7 @@ export default function CreateCitizen({
         {/* Typeform form */}
         {stage === 0 && (
           <StageContainer
-            className={`mb-[350px]`}
+            className={`mb-[350px] max-w-[600px]`}
             title="Design"
             description="Design your unique passport image and on-chain registration profile."
           >
@@ -145,7 +148,7 @@ export default function CreateCitizen({
           <StageContainer description="Please complete your citizen profile.">
             <div className="w-full">
               <Widget
-                className="w-[100%] md:w-[100%]"
+                className="w-[100%]"
                 id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
                 onSubmit={submitTypeform}
                 height={700}
@@ -173,9 +176,9 @@ export default function CreateCitizen({
               height={600}
             />
 
-            <div className="flex flex-col border-2 dark:border-0 dark:bg-black w-full p-3 md:p-5 mt-10 max-w-[600px]">
+            <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
               <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
-              <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 overflow-auto space-y-3 md:space-y-0">
+              <div className="flex flex-col dark:bg-[#0F152F] p-5 pb-10 rounded-[20px] md:p-5 overflow-auto space-y-3 md:space-y-0">
                 {isMobile ? (
                   Object.keys(citizenData)
                     .filter(
@@ -222,10 +225,10 @@ export default function CreateCitizen({
                 )}
               </div>
             </div>
-            <div className="flex flex-col border-2 dark:border-0  dark:bg-black w-full p-3 md:p-5 mt-10 max-w-[600px]">
+            <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
               <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT</h2>
               <h2 className="font-GoodTimes text-3xl mb-2">INFORMATION</h2>
-              <div className="flex flex-col border-2 dark:border-0 dark:bg-[#0F152F] p-3 md:p-5 mt-5">
+              <div className="flex flex-col dark:bg-[#0F152F] p-5 pb-10 rounded-[20px] md:p-5 mt-5">
                 <h3 className="font-GoodTimes text-2xl mb-2">MEMBERSHIP</h3>
                 <p className="mt-2">
                   Membership lasts for one year and can be renewed at any time.
@@ -280,9 +283,8 @@ export default function CreateCitizen({
                     target="_blank"
                   >
                     {' '}
-                    Read{' '}
+                    Read MoonDAO's terms and conditions{' '}
                   </a>{' '}
-                  MoonDAO's terms and conditions.
                 </p>
               </label>
             </div>
@@ -370,5 +372,6 @@ export default function CreateCitizen({
         )}
       </div>
     </div>
+  </Container>  
   )
 }

@@ -48,6 +48,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
   }, [])
 
   return (
+    
     <div className="animate-fadeIn">
       <Head>
         <link href="/image-generator/celestial.css" rel="stylesheet" />
@@ -56,7 +57,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
 
       <div className="mb-12 flex items-start md:items-center flex-col gap-4 md:flex-row">
         <input
-          className="text-moon-orange"
+          className="text-white text-opacity-60"
           type="file"
           accept="image/*"
           onChange={(e: any) => setUserImage(e.target.files[0])}
@@ -69,7 +70,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
       <div id="html-container">
         <div id="pfp" ref={pfpRef}>
           <div id="celestial-map"></div>
-          <div id="canvas-container"></div>
+          <div id="canvas-container" className="max-w-[600px]"></div>
           <Image alt="default-img" id="process-image" src="" />
           {userImage && (
             <Image
