@@ -3,7 +3,8 @@ import Head from 'next/head'
 const defaultTitle = "MoonDAO: The Internet's Space Program"
 const defaultDescription =
   'Join MoonDAO and be part of the future of space exploration. Learn more about our mission and how you can get involved.'
-const defaultImage = '/assets/MoonDAO-OG.png'
+const defaultImage =
+  'https://ipfs.io/ipfs/QmXY1axN4tQGV7CQBFtoE4hMZM3TRGMqqg5DD5LG3dz1dA'
 
 export default function WebsiteHead({
   title = defaultTitle,
