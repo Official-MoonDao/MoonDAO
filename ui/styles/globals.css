@@ -606,10 +606,19 @@ html {
 
 }
 
-@media(min-width:1100px) {
+@media(max-width:1099px) {
   .popout-base-bg {
-    background: linear-gradient(90deg, transparent 35%, rgba(9, 13, 33, 1) 35%);
+    background: linear-gradient(90deg, transparent 40%, rgba(9, 13, 33, 1) 40%);
   }
+
+  .popout-bg{
+    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+  }
+
+  .innerprefooter-popout-bg {
+    background: linear-gradient(90deg, transparent 50%, #090D21 0%);
+  }
+
 }
 
 /*Backgrounds for the title section of the ContentLayout component*/
@@ -628,13 +637,13 @@ html {
 }
 
 /*Search and filter button backgrounds*/
-.bg-filter {
-background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 95%);
-}
+  .bg-filter {
+    background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 95%);
+  }
 
-.bg-search {
-background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
-}
+  .bg-search {
+    background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
+  }
 
 /*Profile page cards background*/
   .bg-slide-section {
@@ -649,22 +658,6 @@ background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
     background: linear-gradient(90deg, transparent 5%, #090D21 75%);
   }
 
-/*Custom breakpoint for footer padding on join page*/
-@media(min-width:1100px) {
-  .custom-break-padding {
-    margin-left:230px;
-  }
-}
 
-@media(max-width:1100px) {
-  .custom-break-padding {
-    margin-top:-40px;
-  }
-}
 
-@media(max-width:768px) {
-  .custom-break-padding {
-    margin-top: auto;
-  }
-}
 
