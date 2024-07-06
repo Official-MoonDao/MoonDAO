@@ -1,63 +1,52 @@
-import {
-  ArrowUpRightIcon,
-  GlobeAltIcon,
-  PencilIcon,
-} from '@heroicons/react/24/outline'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
-import {
-  CITIZEN_ADDRESSES,
-  HATS_ADDRESS,
-  MOONEY_ADDRESSES,
-  VMOONEY_ADDRESSES,
-} from 'const/config'
-import { blockedCitizens } from 'const/whitelist'
-import { GetServerSideProps } from 'next'
-import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
-import { useCitizenData } from '@/lib/citizen/useCitizenData'
-import { useWearer } from '@/lib/hats/useWearer'
-import ChainContext from '@/lib/thirdweb/chain-context'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
-import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
-import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
-import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
-import { Hat } from '@/components/hats/Hat'
-import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
-import Frame from '@/components/layout/Frame'
-import Head from '@/components/layout/Head'
-import InnerPreFooter from '@/components/layout/InnerPreFooter'
-import StandardButton from '@/components/layout/StandardButton'
-import Button from '@/components/subscription/Button'
-import Card from '@/components/subscription/Card'
-import { CitizenMetadataModal } from '@/components/subscription/CitizenMetadataModal'
-import GeneralActions from '@/components/subscription/GeneralActions'
-import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
-import Footer from '@/components/layout/Footer'
+import { ArrowUpRightIcon, GlobeAltIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains';
+import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react';
+import { CITIZEN_ADDRESSES, MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from 'const/config';
+import { blockedCitizens } from 'const/whitelist';
+import { GetServerSideProps } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useContext, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useCitizenData } from '@/lib/citizen/useCitizenData';
+import { useWearer } from '@/lib/hats/useWearer';
+import ChainContext from '@/lib/thirdweb/chain-context';
+import { useHandleRead } from '@/lib/thirdweb/hooks';
+import { initSDK } from '@/lib/thirdweb/thirdweb';
+import { useMOONEYBalance } from '@/lib/tokens/mooney-token';
+import { useVMOONEYBalance } from '@/lib/tokens/ve-token';
+import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets';
+import { Hat } from '@/components/hats/Hat';
+import Container from '@/components/layout/Container';
+import ContentLayout from '@/components/layout/ContentLayout';
+import Frame from '@/components/layout/Frame';
+import Head from '@/components/layout/Head';
+import StandardButton from '@/components/layout/StandardButton';
+import Button from '@/components/subscription/Button';
+import Card from '@/components/subscription/Card';
+import { CitizenMetadataModal } from '@/components/subscription/CitizenMetadataModal';
+import GeneralActions from '@/components/subscription/GeneralActions';
+import { SubscriptionModal } from '@/components/subscription/SubscriptionModal';
+import { NoticeFooter } from '@/components/layout/NoticeFooter';
+import { useTeamData } from '@/lib/team/useTeamData';
+import { HATS_ADDRESS } from 'const/config';
+
 
 export default function CitizenDetailPage({
   nft,
   tokenId,
   imageIpfsLink,
 }: any) {
-  const router = useRouter()
-  const address = useAddress()
+  const router = useRouter();
+  const address = useAddress();
+  const { selectedChain, setSelectedChain } = useContext(ChainContext);
 
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const [subModalEnabled, setSubModalEnabled] = useState(false);
+  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false);
 
-  const [subModalEnabled, setSubModalEnabled] = useState(false)
-  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
-    useState(false)
-
-  //Data
-  const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug]
-  )
+  // Data
+  const { contract: citizenContract } = useContract(CITIZEN_ADDRESSES[selectedChain.slug]);
 
   const {
     socials,
@@ -65,39 +54,31 @@ export default function CitizenDetailPage({
     isDeleted,
     subIsValid,
     isLoading: isLoadingCitizenData,
-  } = useCitizenData(nft, citizenContract)
+  } = useCitizenData(nft, citizenContract);
 
-  //Balances
-  const { contract: mooneyContract } = useContract(
-    MOONEY_ADDRESSES[selectedChain.slug]
-  )
-  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner)
-  const { contract: vMooneyContract } = useContract(
-    VMOONEY_ADDRESSES[selectedChain.slug]
-  )
+  // Balances
+  const { contract: mooneyContract } = useContract(MOONEY_ADDRESSES[selectedChain.slug]);
+  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner);
+  const { contract: vMooneyContract } = useContract(VMOONEY_ADDRESSES[selectedChain.slug]);
+  const { data: VMOONEYBalance } = useVMOONEYBalance(vMooneyContract, nft?.owner);
 
-  const { data: VMOONEYBalance } = useVMOONEYBalance(
-    vMooneyContract,
-    nft?.owner
-  )
-
-  //Subscription Data
+  // Subscription Data
   const { data: expiresAt } = useHandleRead(citizenContract, 'expiresAt', [
     nft?.metadata?.id || '',
-  ])
+  ]);
 
-  // //Hats
-  const hats = useWearer(selectedChain, nft?.owner)
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
+  // Hats
+  const hats = useWearer(selectedChain, nft?.owner);
+  const { contract: hatsContract } = useContract(HATS_ADDRESS);
+  const { isManager } = useTeamData(hatsContract, address, nft);
 
   useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    )
-  }, [])
+    setSelectedChain(process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia);
+  }, []);
 
   const ProfileHeader = (
-    <div id="citizenheader-container">
+    <div id="citizenheader-container"
+      >
       <Frame
         noPadding
         bottomRight="0px"
@@ -276,7 +257,12 @@ export default function CitizenDetailPage({
     <Container>
       <ContentLayout
         description={ProfileHeader}
-        preFooter={<InnerPreFooter />}
+        preFooter={
+          <NoticeFooter
+            isManager={isManager}
+            isCitizen={!!address && !isManager && subIsValid}
+          />
+        }
         mainPadding
         mode="compact"
         popOverEffect={false}
@@ -374,7 +360,7 @@ export default function CitizenDetailPage({
               topLeft="0px"
               >
               <div className="flex flex-col 2xl:flex-row">
-                <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+                <div className="mb-10 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
                   <p className="header font-GoodTimes opacity-[50%]">Teams</p>  
                   <div className="mt-5 py-5 flex flex-col gap-2 overflow-y-scroll">
                     {hats.map((hat: any) => (

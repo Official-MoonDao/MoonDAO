@@ -39,7 +39,6 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Footer from '@/components/layout/Footer'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
-import InnerPreFooter from '@/components/layout/InnerPreFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
@@ -54,6 +53,9 @@ import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
+import StandardButtonRight from '@/components/layout/StandardButtonRight'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
+
 
 export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const sdk = useSDK()
@@ -370,27 +372,10 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         branded={false}
         isProfile
         preFooter={
-          <div className="p-5 ">
-            <div className="custom-break-padding lg:ml-[240px] max-w-[970px] gradient-15 md:ml-7 p-5 md:mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
-              <div className="flex items-center">
-                <div className="font-GoodTimes min-w-[40px] min-h-[40px] items-center header justify-center flex rounded-[100px] bg-light-warm m-2">
-                  !
-                </div>
-                <div className="">
-                  <h3 className="header opacity-80 font-GoodTimes">
-                    Get started with MoonDAO
-                  </h3>
-                </div>
-              </div>
-              <p className="pl-5 opacity-60">
-                <Link className="underline" href="/join">
-                  Become a citizen
-                </Link>{' '}
-                of the MoonDAO Network State
-              </p>
-            </div>
-            <Footer />
-          </div>
+          <NoticeFooter
+            isManager={isManager}
+            isCitizen={!!address && !isManager && subIsValid}
+          />
         }
       >
         <div

@@ -323,10 +323,13 @@ a {
   .gradient-15{
     background: linear-gradient(90deg, #020617 5%, #090D21 60%);
   }
-
   .gradient-16 {
     background: linear-gradient(-90deg, #020617 60%, #090D21 85% )
   }
+
+  .gradient-17{
+    background: linear-gradient(90deg, #020617 30%, #46161b 100%);
+  }  
 
   /*Dividers*/
   .divider-1 {

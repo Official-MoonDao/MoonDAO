@@ -6,7 +6,7 @@ const ThankYou: React.FC = () => {
     return (
         <section id="main-section" 
             className="overflow-auto">
-            <Container>
+            <Container containerwidth>
                 <ContentLayout
                     header="Thank You"
                     headerSize="max(25px, 4vw)"
