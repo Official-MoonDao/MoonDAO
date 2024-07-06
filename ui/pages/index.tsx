@@ -12,7 +12,9 @@ import Container from '../components/layout/Container'
 export default function Home() {
   return (
     <Container>
-      <WebsiteHead description="MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement." />
+      <WebsiteHead 
+        title="Welcome"
+        description="MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement." />
       <div>
         <Hero />
         <Video />
