@@ -17,6 +17,10 @@ import DeleteProfileData from './DeleteProfileData'
 export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const router = useRouter()
 
+  const [stage, setStage] = useState(0)
+  const [currCitizenImage, setCurrCitizenImage] = useState<string>()
+  const [newCitizenImage, setNewCitizenImage] = useState<File>()
+
   const { getAccessToken } = usePrivy()
 
   const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
@@ -83,7 +87,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
         if (tx.receipt) {
           setTimeout(() => {
             router.reload()
-          }, 10000)
+          }, 15000)
         }
       } catch (err: any) {
         console.log(err)
@@ -92,11 +96,29 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
     [citizenTableContract]
   )
 
+  useEffect(() => {
+    async function getCurrCitizenImage() {
+      const rawMetadataRes = await fetch(resolvedMetadata.url)
+      const rawMetadata = await rawMetadataRes.json()
+      const imageIpfsLink = rawMetadata.image
+      setCurrCitizenImage(imageIpfsLink)
+    }
+
+    getCurrCitizenImage()
+  }, [resolvedMetadata])
+
+  /*
+  
+  set initial citizen image if no upload
+
+
+  */
+
   return (
     <Modal id="citizen-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="w-full flex flex-col gap-4 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md">
+      <div className="w-full flex flex-col gap-4 items-start justify-start w-auto p-4 md:p-8 bg-darkest-cool rounded-md">
         <div className="w-full flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Update Info</h1>
+          <h1 className="text-2xl font-GoodTimes">Update Info</h1>
           <button
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -105,20 +127,29 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
             <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </button>
         </div>
-
-        <Widget
-          className="w-[100%] md:w-[100%]"
-          id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
-          onSubmit={submitTypeform}
-          height={500}
-        />
-        <DeleteProfileData
-          resolvedMetadata={resolvedMetadata}
-          setEnabled={setEnabled}
-          tableContract={citizenTableContract}
-          tokenId={nft.metadata.id}
-          type="citizen"
-        />
+        {stage === 0 && (
+          <ImageGenerator
+            setImage={setNewCitizenImage}
+            nextStage={() => setStage(1)}
+            stage={stage}
+          />
+        )}
+        {stage === 1 && (
+          <>
+            <Widget
+              className="w-[100%] md:w-[100%]"
+              id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
+              onSubmit={submitTypeform}
+              height={500}
+            />
+            <DeleteProfileData
+              setEnabled={setEnabled}
+              tableContract={citizenTableContract}
+              tokenId={nft.metadata.id}
+              type="citizen"
+            />
+          </>
+        )}
       </div>
     </Modal>
   )

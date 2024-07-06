@@ -1,10 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
-import {
-  useAddress,
-  useContract,
-  useResolvedMediaType,
-} from '@thirdweb-dev/react'
+import { useContract, useResolvedMediaType } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { TEAM_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
@@ -22,6 +18,11 @@ export default function TeamMetadataModal({
   setEnabled,
 }: any) {
   const router = useRouter()
+
+  const [stage, setStage] = useState(0)
+
+  const [currTeamImage, setCurrTeamImage] = useState<string>()
+  const [newTeamImage, setNewTeamImage] = useState<File>()
 
   const { getAccessToken } = usePrivy()
 
@@ -58,8 +59,29 @@ export default function TeamMetadataModal({
 
         const rawMetadataRes = await fetch(resolvedMetadata.url)
         const rawMetadata = await rawMetadataRes.json()
-        const imageIpfsLink = rawMetadata.image
 
+        let imageIpfsLink
+        if (!newTeamImage && rawMetadata.image && rawMetadata.image !== '') {
+          imageIpfsLink = rawMetadata.image
+        } else {
+          if (!newTeamImage) return console.error('No new image')
+          const jwtRes = await fetch('/api/ipfs/upload', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          })
+
+          const pinataJWT = await jwtRes.text()
+
+          const newImageIpfsHash = await pinImageToIPFS(
+            pinataJWT || '',
+            newTeamImage,
+            teamData.name + ' Image'
+          )
+
+          imageIpfsLink = `ipfs://${newImageIpfsHash}`
+        }
         //mint NFT to safe
         await teamTableContract?.call('updateTable', [
           nft.metadata.id,
@@ -75,19 +97,29 @@ export default function TeamMetadataModal({
 
         setTimeout(() => {
           router.reload()
-        }, 10000)
+        }, 15000)
       } catch (err: any) {
         console.log(err)
       }
     },
-    [teamTableContract]
+    [teamTableContract, newTeamImage]
   )
+
+  useEffect(() => {
+    async function getCurrTeamImage() {
+      const rawMetadataRes = await fetch(resolvedMetadata.url)
+      const rawMetadata = await rawMetadataRes.json()
+      const imageIpfsLink = rawMetadata.image
+      setCurrTeamImage(imageIpfsLink)
+    }
+    getCurrTeamImage()
+  }, [resolvedMetadata])
 
   return (
     <Modal id="entity-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-4 md:p-8 bg-darkest-cool rounded-md">
+      <div className="mt-32 w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-4 md:p-8 bg-darkest-cool rounded-md">
         <div className="w-full flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Update Info</h1>
+          <h1 className="text-2xl font-GoodTimes ">Update Info</h1>
           <button
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -96,15 +128,23 @@ export default function TeamMetadataModal({
             <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </button>
         </div>
-
-        <Widget
-          className="w-[100%] md:w-[100%]"
-          id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
-          onSubmit={submitTypeform}
-          height={500}
-        />
+        {stage === 0 && (
+          <ImageGenerator
+            setImage={setNewTeamImage}
+            nextStage={() => setStage(1)}
+            stage={stage}
+            currImage={currTeamImage}
+          />
+        )}
+        {stage === 1 && (
+          <Widget
+            className="w-[100%] md:w-[100%]"
+            id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
+            onSubmit={submitTypeform}
+            height={500}
+          />
+        )}
         <DeleteProfileData
-          resolvedMetadata={resolvedMetadata}
           setEnabled={setEnabled}
           tableContract={teamTableContract}
           tokenId={nft.metadata.id}
