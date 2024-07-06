@@ -50,7 +50,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                         <div id="graphic-element-container"
                             >
                             <div id="graphic-element" 
-                                className="gradient-10 w-full h-full rounded-bl-[5vmax] absolute top-0 left-0"
+                                className="gradient-10 w-full h-full rounded-bl-[2vmax] md:rounded-bl-[5vmax] absolute top-0 left-0"
                             ></div>
                         </div>
                         <div id="content-container" 
@@ -134,7 +134,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                         null:
                         <div id="popout-bg-element" 
                             className={`
-                                z-0 popout-bg hidden md:block absolute w-[calc(100%-250px)] left-[250px] rounded-bl-[20px] 
+                                z-0 popout-bg absolute w-full md:w-[calc(100%-40px)] lg:w-[calc(100%-250px)] left-0 md:left-[50px] lg:left-[250px] rounded-bl-[20px] 
                                 ${!isProfile ? `h-[calc(100%-200px)] top-[200px]`:'h-full top-0'}
                                 `}
                         ></div> 
