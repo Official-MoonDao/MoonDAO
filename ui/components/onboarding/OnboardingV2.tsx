@@ -2,10 +2,10 @@
 import { StarIcon } from '@heroicons/react/24/outline'
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES } from 'const/config'
+import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, HATS_ADDRESS } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useContext, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Container from '../layout/Container'
@@ -15,6 +15,10 @@ import Frame from '../layout/Frame'
 import InnerPreFooter from '../layout/InnerPreFooter'
 import CreateCitizen from './CreateCitizen'
 import CreateTeam from './CreateTeam'
+import { NoticeFooter } from '../layout/NoticeFooter'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains';
+import ChainContext from '@/lib/thirdweb/chain-context';
+import { useTeamData } from '@/lib/team/useTeamData';
 
 type TierProps = {
   label: string
@@ -128,16 +132,29 @@ function Tier({
 }
 
 export function OnboardingV2({ selectedChain }: any) {
-  const address = useAddress()
-  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
+  const address = useAddress();
+  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>();
 
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
-  )
+  );
 
   const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
     address,
-  ])
+  ]);
+
+  // Adding these lines to get the chain context
+  const { setSelectedChain } = useContext(ChainContext);
+
+  // Adding these lines to determine the user's role
+  const { contract: teamContract } = useContract(TEAM_ADDRESSES[selectedChain?.slug]);
+  const { contract: hatsContract } = useContract(HATS_ADDRESS);
+  const { isManager, subIsValid } = useTeamData(teamContract, hatsContract, address);
+
+  // Setting the selected chain
+  useEffect(() => {
+    setSelectedChain(process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia);
+  }, [setSelectedChain]);
 
   if (selectedTier === 'citizen') {
     return (
@@ -146,7 +163,7 @@ export function OnboardingV2({ selectedChain }: any) {
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />
-    )
+    );
   }
 
   if (selectedTier === 'team') {
@@ -156,7 +173,7 @@ export function OnboardingV2({ selectedChain }: any) {
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />
-    )
+    );
   }
 
   return (
@@ -167,6 +184,7 @@ export function OnboardingV2({ selectedChain }: any) {
         mainPadding
         mode="compact"
         popOverEffect={false}
+        isProfile
         description={
           <>
             Be part of the first open-source, interplanetary network state
@@ -177,34 +195,18 @@ export function OnboardingV2({ selectedChain }: any) {
           </>
         }
         preFooter={
-          <div className="p-5 ">
-            <div className="custom-break-padding gradient-15 ml-5 p-5 mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
-              <div className="flex items-center">
-                <div className="font-GoodTimes w-[40px] h-[40px] items-center justify-center flex rounded-[100px] bg-light-warm m-2">
-                  ?
-                </div>
-                <div className="">
-                  <h3 className="header opacity-80 font-GoodTimes">
-                    Need Help?
-                  </h3>
-                </div>
-              </div>
-              <p className="pl-5 opacity-60">
-                <Link
-                  className="underline"
-                  href="https://discord.com/channels/914720248140279868/1212113005836247050"
-                >
-                  Submit a ticket
-                </Link>{' '}
-                in our support channel on Discord!
-              </p>
-            </div>
-            <Footer />
-          </div>
+          <NoticeFooter
+            isManager={isManager}
+            isCitizen={!!address && !isManager && subIsValid}
+            defaultTitle = 'Need Help?'
+            defaultDescription = "Submit a ticket in MoonDAO's support channel on Discord!"
+            defaultButtonText = 'Submit a ticket'
+            defaultButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050'
+          />
         }
       >
         <div className="flex flex-col">
-          <div className=" z-50 flex flex-col">
+          <div className="mb-10 z-50 flex flex-col">
             <Tier
               price={0.1}
               label="Become a Citizen"
@@ -237,5 +239,5 @@ export function OnboardingV2({ selectedChain }: any) {
         </div>
       </ContentLayout>
     </Container>
-  )
+  );
 }

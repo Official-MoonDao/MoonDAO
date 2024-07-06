@@ -134,7 +134,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                         null:
                         <div id="popout-bg-element" 
                             className={`
-                                z-0 popout-bg absolute w-full md:w-[calc(100%-40px)] lg:w-[calc(100%-250px)] left-0 md:left-[50px] lg:left-[250px] rounded-bl-[20px] 
+                                z-0 popout-bg absolute w-full md:w-[calc(100%-40px)] lg:w-[calc(100%-100px)] left-0 md:left-[50px] lg:left-[100px] rounded-bl-[20px] 
                                 ${!isProfile ? `h-[calc(100%-200px)] top-[200px]`:'h-full top-0'}
                                 `}
                         ></div> 
@@ -183,16 +183,6 @@ const ContentLayout: React.FC<ContentProps> = ({
             </section>
             )}
 
-            {!preFooter && (
-            <section id="default-prefooter-container"
-                >
-                <div id="prefooter-container" 
-                    className="min-h-[120px] md:min-h-[70px]"
-                    >
-                    <PreFooter/>
-                </div>
-            </section>
-            )}
         </div>
     );
 }

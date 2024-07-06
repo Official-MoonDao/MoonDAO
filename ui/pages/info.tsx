@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import PreFooter from '../components/layout/PreFooter';
 import Container from '../components/layout/Container';
 import ContentLayout from '../components/layout/ContentLayout';
 import WebsiteHead from '../components/layout/Head';
 import CardGrid from '../components/layout/CardGrid';
-import Image from 'next/image'
+import Image from 'next/image';
+import Footer from '../components/layout/Footer';
+import Link from 'next/link';
+import { NoticeFooter } from '@/components/layout/NoticeFooter';
+import { useAddress, useContract } from '@thirdweb-dev/react';
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains';
+import { TEAM_ADDRESSES, CITIZEN_ADDRESSES, HATS_ADDRESS } from 'const/config';
+import ChainContext from '@/lib/thirdweb/chain-context';
+import { useTeamData } from '@/lib/team/useTeamData';
+
 
 const cardData = [
   {
@@ -76,16 +85,26 @@ const cardData = [
 
 const Info: React.FC = () => {
   const title = "Information Center";
-  const description =
-    "Learn More About The Internet's Space Program";
+  const description = "Learn More About The Internet's Space Program";
   const image = "/assets/moondao-og.jpg";
+
+  const { selectedChain, setSelectedChain } = useContext(ChainContext);
+  const address = useAddress();
+  const { contract: teamContract } = useContract(TEAM_ADDRESSES[selectedChain?.slug]);
+  const { contract: citizenContract } = useContract(CITIZEN_ADDRESSES[selectedChain?.slug]);
+  const { contract: hatsContract } = useContract(HATS_ADDRESS);
+
+  const { isManager, subIsValid } = useTeamData(teamContract, hatsContract, address);
+
+  useEffect(() => {
+    setSelectedChain(process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia);
+  }, []);
 
   return (
     <>
       <WebsiteHead title={title} description={description} image={image} />
       <section className="w-[calc(100vw-20px)]">
-        <Container 
-          >
+        <Container>
           <ContentLayout
             header="Info Center"
             headerSize="max(20px, 3vw)"
@@ -95,17 +114,17 @@ const Info: React.FC = () => {
               </>
             }
             preFooter={
-              <>
-                <PreFooter 
-                  mode='compact'
-                />
-              </>
+              <NoticeFooter
+                isManager={isManager}
+                isCitizen={!!address && !isManager && subIsValid}
+              />
             }
             mainPadding
-            mode="compact" 
+            mode="compact"
             popOverEffect={false}
+            isProfile
           >
-            <div className="mt-10 flex justify-center">
+            <div className="mt-10 mb-10 flex justify-center">
               <CardGrid 
                 cards={cardData} 
                 singleCol={false}
@@ -116,6 +135,6 @@ const Info: React.FC = () => {
       </section>
     </>
   );
-}
+};
 
-export default Info; 
+export default Info;

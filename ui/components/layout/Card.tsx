@@ -76,7 +76,7 @@ export default function Card({
                 className="bg-darkest-cool rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5"
             ></div>
             <span id="content-container"
-                className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-r-[3px] border-darkest-cool"
+                className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool"
                 >
                 <span id="content"
                     className="animate-fadeIn relative z-50 flex flex-col"
