@@ -36,11 +36,13 @@ import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { TwitterIcon } from '@/components/assets'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
+import Footer from '@/components/layout/Footer'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import InnerPreFooter from '@/components/layout/InnerPreFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
+import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -52,8 +54,6 @@ import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
-import StandardButtonRight from '@/components/layout/StandardButtonRight'
-import Footer from '@/components/layout/Footer'
 
 export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const sdk = useSDK()
@@ -202,11 +202,11 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                 <div
                   id="team-name"
                   className="flex flex-col flex-col-reverse justify-center gap-2"
-                  >
+                >
                   <div
                     id="team-name-container"
                     className="flex flex-row gap-2 items-center justify-start"
-                    >
+                  >
                     {subIsValid && isManager && (
                       <button
                         className={'absolute top-6 right-6'}
@@ -218,7 +218,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                               'Connect the entity admin wallet or multisig to edit metadata.'
                             )
                         }}
-                        >
+                      >
                         <PencilIcon width={35} height={35} />
                       </button>
                     )}
@@ -234,8 +234,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                   {isManager || address === nft.owner ? (
                     ''
                   ) : (
-                    <div id="donation-container" 
-                      className="max-w-[290px]">
+                    <div id="donation-container" className="max-w-[290px]">
                       {!isDeleted && subIsValid && (
                         <TeamDonation splitAddress={splitAddress} />
                       )}
@@ -299,9 +298,10 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
           </div>
         </div>
         {isManager || address === nft.owner ? (
-          <div id="manager-container" 
+          <div
+            id="manager-container"
             className="mt-8 xl:mt-0 absolute top-[80px] right-0 px-5 pt-5 bg-dark-cool rounded-tl-[20px] rounded-bl-[2vmax] rounded-[20px]"
-            >
+          >
             {expiresAt && (
               <div
                 id="expires-container"
@@ -346,6 +346,22 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         description={nft.metadata.description}
         image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
       />
+      {teamSubscriptionModalEnabled && (
+        <SubscriptionModal
+          setEnabled={setTeamSubscriptionModalEnabled}
+          nft={nft}
+          validPass={subIsValid}
+          expiresAt={expiresAt}
+          subscriptionContract={teamContract}
+        />
+      )}
+      {teamMetadataModalEnabled && (
+        <TeamMetadataModal
+          nft={nft}
+          selectedChain={selectedChain}
+          setEnabled={setTeamMetadataModalEnabled}
+        />
+      )}
       <ContentLayout
         description={ProfileHeader}
         mainPadding
@@ -355,35 +371,32 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         isProfile
         preFooter={
           <div className="p-5 ">
-          <div className="custom-break-padding lg:ml-[240px] max-w-[970px] gradient-15 md:ml-7 p-5 md:mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
-            <div className="flex items-center">
-              <div className="font-GoodTimes min-w-[40px] min-h-[40px] items-center header justify-center flex rounded-[100px] bg-light-warm m-2">
-                !
+            <div className="custom-break-padding lg:ml-[240px] max-w-[970px] gradient-15 md:ml-7 p-5 md:mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
+              <div className="flex items-center">
+                <div className="font-GoodTimes min-w-[40px] min-h-[40px] items-center header justify-center flex rounded-[100px] bg-light-warm m-2">
+                  !
+                </div>
+                <div className="">
+                  <h3 className="header opacity-80 font-GoodTimes">
+                    Get started with MoonDAO
+                  </h3>
+                </div>
               </div>
-              <div className="">
-                <h3 className="header opacity-80 font-GoodTimes">
-                  Get started with MoonDAO
-                </h3>
-              </div>
+              <p className="pl-5 opacity-60">
+                <Link className="underline" href="/join">
+                  Become a citizen
+                </Link>{' '}
+                of the MoonDAO Network State
+              </p>
             </div>
-            <p className="pl-5 opacity-60">
-              <Link
-                className="underline"
-                href="/join"
-              >
-                Become a citizen
-              </Link>{' '}
-              of the MoonDAO Network State
-            </p>
+            <Footer />
           </div>
-          <Footer />
-        </div>
         }
       >
         <div
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
-          >
+        >
           {!isDeleted && (
             <div id="entity-actions-container" className=" z-30">
               {isManager || address === nft.owner ? (
@@ -397,22 +410,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               )}
             </div>
           )}
-          {teamSubscriptionModalEnabled && (
-            <SubscriptionModal
-              setEnabled={setTeamSubscriptionModalEnabled}
-              nft={nft}
-              validPass={subIsValid}
-              expiresAt={expiresAt}
-              subscriptionContract={teamContract}
-            />
-          )}
-          {teamMetadataModalEnabled && (
-            <TeamMetadataModal
-              nft={nft}
-              selectedChain={selectedChain}
-              setEnabled={setTeamMetadataModalEnabled}
-            />
-          )}
           {/* Header and socials */}
           {subIsValid && !isDeleted ? (
             <div className="z-50 flex flex-col gap-5 mb-[50px]">
@@ -424,15 +421,15 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                 bottomRight="0px"
                 topRight="0px"
                 topLeft="0px"
-                >
+              >
                 <div
                   id="team-container"
                   className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
-                  >
+                >
                   <div
                     id="job-title-container"
                     className="p-5 pb-0 md:p-0 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 pr-12"
-                    >
+                  >
                     <div className="flex gap-5 opacity-[50%]">
                       <Image
                         src={teamIcon}
@@ -443,8 +440,10 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                       <h2 className="header font-GoodTimes">Meet Our Team</h2>
                     </div>
                     {isManager && (
-                      <div id="button-container" 
-                        className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2">
+                      <div
+                        id="button-container"
+                        className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
+                      >
                         <StandardButtonRight
                           className="w-full gradient-2 rounded-[5vmax]"
                           onClick={() => {
@@ -452,7 +451,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                               `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
                             )
                           }}
-                          >
+                        >
                           Manage Members
                         </StandardButtonRight>
                       </div>
