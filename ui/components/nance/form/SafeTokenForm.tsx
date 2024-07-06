@@ -1,10 +1,10 @@
 import { useEffect } from "react"
 import { Controller, useFormContext } from 'react-hook-form'
-import { formatNumberUSStyle } from '../../../lib/nance'
+import { formatNumberUSStyle } from '@/lib/nance'
 import {
   SafeBalanceUsdResponse,
   useSafeBalances,
-} from '../../../lib/nance/SafeHooks'
+} from '@/lib/nance/SafeHooks'
 import { formatUnits } from 'ethers/lib/utils'
 import GenericListbox from '../GenericListbox'
 

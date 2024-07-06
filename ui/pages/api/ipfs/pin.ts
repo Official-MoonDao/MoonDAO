@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const form = formidable({})
     
     try {
-      const [fields, files] = await form.parse(req)
+      const [_fields, files] = await form.parse(req)
       
       const file = Array.isArray(files.file) ? files.file[0] : files.file
       if (!file) {

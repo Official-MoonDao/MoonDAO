@@ -1,5 +1,5 @@
-import { formatNumberUSStyle } from '../../lib/nance'
-import { classNames } from '../../lib/utils/tailwind'
+import { formatNumberUSStyle } from '@/lib/nance'
+import { classNames } from '@/lib/utils/tailwind'
 
 export const JB_THRESHOLD = 80_000_000
 

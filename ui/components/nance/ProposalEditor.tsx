@@ -22,7 +22,7 @@ import { useEffect, useState } from 'react'
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
-import { TEMPLATE } from '../../lib/nance'
+import { TEMPLATE } from '@/lib/nance'
 import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
 import useAccount from '../../lib/nance/useAccountAddress'
 import { useSignProposal } from '../../lib/nance/useSignProposal'
@@ -35,8 +35,7 @@ import ProposalTitleInput, {
   TITLE_ID,
 } from '../../components/nance/ProposalTitleInput'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
-import { pinBlobOrFile } from "@/lib/nance/pinBlobOrFile"
-import { getAccessToken } from "@privy-io/react-auth"
+import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile"
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -244,7 +243,10 @@ export default function ProposalEditor() {
           <ProposalTitleInput initialValue={loadedProposal?.title} />
           <NanceEditor
             initialValue={trimActionsFromBody(loadedProposal?.body) || TEMPLATE}
-            fileUploadExternal={pinBlobOrFile}
+            fileUploadExternal={ async (val) => {
+              const res = await pinBlobOrFile(val)
+              return res.url;
+            }}
             darkMode={true}
           />
 

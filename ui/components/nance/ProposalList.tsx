@@ -16,11 +16,11 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import InfiniteScroll from 'react-infinite-scroll-component'
-import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
+import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import {
   SnapshotGraphqlProposalVotingInfo,
   useVotingInfoOfProposals,
-} from '../../lib/snapshot'
+} from '@/lib/snapshot'
 import ProposalInfo, { ProposalInfoSkeleton } from './ProposalInfo'
 
 function NoResults() {

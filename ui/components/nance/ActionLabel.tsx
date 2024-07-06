@@ -1,5 +1,5 @@
 import { Action, RequestBudget } from '@nance/nance-sdk'
-import { classNames } from '../../lib/utils/tailwind'
+import { classNames } from '@/lib/utils/tailwind'
 import { AddressLink } from './AddressLink'
 import { TokensOfProposal } from './RequestingTokensOfProposal'
 

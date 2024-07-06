@@ -5,7 +5,7 @@ import {
   CheckCircleIcon,
   ChatBubbleBottomCenterTextIcon,
 } from '@heroicons/react/24/outline'
-import { classNames } from '../../lib/utils/tailwind'
+import { classNames } from '@/lib/utils/tailwind'
 
 export default function ProposalStatusIcon({
   status,

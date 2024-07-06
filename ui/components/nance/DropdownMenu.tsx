@@ -12,12 +12,12 @@ import { ProposalPacket } from '@nance/nance-sdk'
 import Link from 'next/link'
 import { Fragment } from 'react'
 import toast from 'react-hot-toast'
-import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
-import useAccount from '../../lib/nance/useAccountAddress'
-import { useSignDeleteProposal } from "../../lib/nance/useSignDeleteProposal"
+import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
+import useAccount from '@/lib/nance/useAccountAddress'
+import { useSignDeleteProposal } from "@/lib/nance/useSignDeleteProposal"
 import { useProposalDelete, useProposalUpload } from "@nance/nance-hooks"
-import toastStyle from "../../lib/marketplace/marketplace-utils/toastConfig"
-import { useSignArchiveProposal } from "../../lib/nance/useSignArchiveProposal"
+import toastStyle from "@/lib/marketplace/marketplace-utils/toastConfig"
+import { useSignArchiveProposal } from "@/lib/nance/useSignArchiveProposal"
 
 export default function DropDownMenu({
   proposalPacket,

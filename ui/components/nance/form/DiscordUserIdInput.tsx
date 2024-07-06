@@ -10,9 +10,9 @@ import { useEffect, useState } from 'react'
 import { useDebounce } from 'react-use'
 import useDiscordUserSearch, {
   DiscordUser,
-} from '../../../lib/nance/DiscordUserSearch'
+} from '@/lib/nance/DiscordUserSearch'
 import { PhotoIcon, QuestionMarkCircleIcon } from "@heroicons/react/24/outline"
-import { classNames } from '../../../lib/utils/tailwind'
+import { classNames } from '@/lib/utils/tailwind'
 import { LoadingSpinner } from "../../layout/LoadingSpinner"
 
 const noUser: DiscordUser = {
