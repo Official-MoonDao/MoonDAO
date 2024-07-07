@@ -39,13 +39,14 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Footer from '@/components/layout/Footer'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
-import StandardButton from '@/components/layout/StandardButton'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamActions from '@/components/subscription/TeamActions'
+import TeamAddManager from '@/components/subscription/TeamAddManager'
 import TeamDonation from '@/components/subscription/TeamDonation'
 import TeamJobs from '@/components/subscription/TeamJobs'
 import TeamMarketplace from '@/components/subscription/TeamMarketplace'
@@ -53,9 +54,6 @@ import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
-import StandardButtonRight from '@/components/layout/StandardButtonRight'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
-
 
 export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const sdk = useSDK()
@@ -93,6 +91,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     isDeleted,
     hatTreeId,
     adminHatId,
+    managerHatId,
     isManager,
     subIsValid,
     isLoading: isLoadingTeamData,
@@ -439,6 +438,10 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         >
                           Manage Members
                         </StandardButtonRight>
+                        <TeamAddManager
+                          multisigAddress={nft.owner}
+                          managerHatId={managerHatId}
+                        />
                       </div>
                     )}
                   </div>
