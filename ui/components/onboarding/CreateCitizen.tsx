@@ -17,7 +17,7 @@ import formatCitizenFormData, {
   CitizenData,
 } from '@/lib/typeform/citizenFormData'
 import { Steps } from '../layout/Steps'
-import { ImageGenerator } from './ImageGenerator'
+import { ImageGenerator } from './CitizenImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 
@@ -134,6 +134,7 @@ export default function CreateCitizen({
             description="Design your unique passport image and on-chain registration profile."
           >
             <ImageGenerator
+              citizenImage={citizenImage}
               setImage={setCitizenImage}
               nextStage={() => setStage(1)}
               stage={stage}
