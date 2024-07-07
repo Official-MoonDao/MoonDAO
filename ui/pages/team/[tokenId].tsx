@@ -36,11 +36,12 @@ import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { TwitterIcon } from '@/components/assets'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
+import Footer from '@/components/layout/Footer'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
-import InnerPreFooter from '@/components/layout/InnerPreFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
+import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -52,6 +53,9 @@ import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
+import StandardButtonRight from '@/components/layout/StandardButtonRight'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
+
 
 export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const sdk = useSDK()
@@ -199,12 +203,12 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               <div id="team-name-container ">
                 <div
                   id="team-name"
-                  className="flex flex-col flex-col-reverse justify-start gap-2"
-                  >
+                  className="flex flex-col flex-col-reverse justify-center gap-2"
+                >
                   <div
                     id="team-name-container"
                     className="flex flex-row gap-2 items-center justify-start"
-                    >
+                  >
                     {subIsValid && isManager && (
                       <button
                         className={'absolute top-6 right-6'}
@@ -216,7 +220,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                               'Connect the entity admin wallet or multisig to edit metadata.'
                             )
                         }}
-                        >
+                      >
                         <PencilIcon width={35} height={35} />
                       </button>
                     )}
@@ -232,8 +236,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                   {isManager || address === nft.owner ? (
                     ''
                   ) : (
-                    <div id="donation-container" 
-                      className="max-w-[290px]">
+                    <div id="donation-container" className="max-w-[290px]">
                       {!isDeleted && subIsValid && (
                         <TeamDonation splitAddress={splitAddress} />
                       )}
@@ -295,22 +298,12 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               <></>
             )}
           </div>
-          {!isDeleted && (
-            <div id="entity-actions-container" className="pt-5">
-              {isManager || address === nft.owner ? (
-                <TeamActions
-                  teamId={tokenId}
-                  jobTableContract={jobTableContract}
-                  marketplaceTableContract={marketplaceTableContract}
-                />
-              ) : (
-                ''
-              )}
-            </div>
-          )}
         </div>
         {isManager || address === nft.owner ? (
-          <div id="manager-container" className="mt-8 xl:mt-0">
+          <div
+            id="manager-container"
+            className="mt-8 xl:mt-0 absolute top-[80px] right-0 px-5 pt-5 bg-dark-cool rounded-tl-[20px] rounded-bl-[2vmax] rounded-[20px]"
+          >
             {expiresAt && (
               <div
                 id="expires-container"
@@ -355,38 +348,56 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         description={nft.metadata.description}
         image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
       />
+      {teamSubscriptionModalEnabled && (
+        <SubscriptionModal
+          setEnabled={setTeamSubscriptionModalEnabled}
+          nft={nft}
+          validPass={subIsValid}
+          expiresAt={expiresAt}
+          subscriptionContract={teamContract}
+        />
+      )}
+      {teamMetadataModalEnabled && (
+        <TeamMetadataModal
+          nft={nft}
+          selectedChain={selectedChain}
+          setEnabled={setTeamMetadataModalEnabled}
+        />
+      )}
       <ContentLayout
         description={ProfileHeader}
-        preFooter={<InnerPreFooter />}
         mainPadding
         mode="compact"
         popOverEffect={false}
         branded={false}
         isProfile
+        preFooter={
+          <NoticeFooter
+            isManager={isManager}
+            isCitizen={!!address && !isManager && subIsValid}
+          />
+        }
       >
         <div
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
         >
-          {teamSubscriptionModalEnabled && (
-            <SubscriptionModal
-              setEnabled={setTeamSubscriptionModalEnabled}
-              nft={nft}
-              validPass={subIsValid}
-              expiresAt={expiresAt}
-              subscriptionContract={teamContract}
-            />
-          )}
-          {teamMetadataModalEnabled && (
-            <TeamMetadataModal
-              nft={nft}
-              selectedChain={selectedChain}
-              setEnabled={setTeamMetadataModalEnabled}
-            />
+          {!isDeleted && (
+            <div id="entity-actions-container" className=" z-30">
+              {isManager || address === nft.owner ? (
+                <TeamActions
+                  teamId={tokenId}
+                  jobTableContract={jobTableContract}
+                  marketplaceTableContract={marketplaceTableContract}
+                />
+              ) : (
+                ''
+              )}
+            </div>
           )}
           {/* Header and socials */}
           {subIsValid && !isDeleted ? (
-            <div className="z-50 flex flex-col gap-6">
+            <div className="z-50 flex flex-col gap-5 mb-[50px]">
               {/* Team Actions */}
               {/* Team */}
               <Frame
@@ -414,8 +425,11 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                       <h2 className="header font-GoodTimes">Meet Our Team</h2>
                     </div>
                     {isManager && (
-                      <div className="my-2 flex flex-col md:flex-row justify-start items-center gap-2">
-                        <StandardButton
+                      <div
+                        id="button-container"
+                        className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
+                      >
+                        <StandardButtonRight
                           className="w-full gradient-2 rounded-[5vmax]"
                           onClick={() => {
                             window.open(
@@ -424,7 +438,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                           }}
                         >
                           Manage Members
-                        </StandardButton>
+                        </StandardButtonRight>
                       </div>
                     )}
                   </div>

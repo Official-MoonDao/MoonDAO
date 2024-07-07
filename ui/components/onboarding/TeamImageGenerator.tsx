@@ -1,11 +1,10 @@
 // Team Image Generator
+import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
-import Head from 'next/head'
-import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { StageButton } from './StageButton'
 
-export function ImageGenerator({ setImage, nextStage, stage }: any) {
+export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
   const [userImage, setUserImage] = useState<File>()
 
   async function submitImage() {
@@ -40,28 +39,61 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
           accept="image/*"
           onChange={(e: any) => setUserImage(e.target.files[0])}
         />
-        {userImage && (
+        {currImage || userImage ? (
           <StageButton className="" onClick={submitImage}>
             Save Design
           </StageButton>
+        ) : (
+          <></>
         )}
       </div>
-      <div
-        id="teamPic"
-        className="w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
-      >
+
+      {/* Show current team  image if no user image has been uploaded */}
+      {currImage && !userImage && (
         <div
-          id="user-image"
-          style={{
-            backgroundImage: `url(${
-              userImage
-                ? URL.createObjectURL(userImage)
-                : '/assets/image-placeholder.svg'
-            })`,
-          }}
-          className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
-        ></div>
-      </div>
+          id="teamPic"
+          className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] justify-left relative flex"
+        >
+          <MediaRenderer
+            className="p-0 m-0"
+            src={currImage}
+            width="100%"
+            height="100%"
+          />
+        </div>
+      )}
+
+      {/* Show uploaded image if available */}
+      {userImage && (
+        <div
+          id="teamPic"
+          className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
+        >
+          <div
+            id="user-image"
+            style={{
+              backgroundImage: `url(${URL.createObjectURL(userImage)})`,
+            }}
+            className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+          ></div>
+        </div>
+      )}
+
+      {/* Show placeholder if no current image and no uploaded image */}
+      {!userImage && !currImage && (
+        <div
+          id="teamPic"
+          className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
+        >
+          <div
+            id="user-image"
+            style={{
+              backgroundImage: `url('/assets/image-placeholder.svg')`,
+            }}
+            className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+          ></div>
+        </div>
+      )}
     </div>
   )
 }

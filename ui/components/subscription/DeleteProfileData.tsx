@@ -5,7 +5,6 @@ import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 
 type DeleteProfileDataProps = {
-  resolvedMetadata: any
   setEnabled: Function
   tableContract: any
   tokenId: any
@@ -13,7 +12,6 @@ type DeleteProfileDataProps = {
 }
 
 type DeleteProfileDataModalProps = {
-  resolvedMetadata: any
   setParentModalEnabled: Function
   setDeleteModalEnabled: Function
   tableContract: any
@@ -22,7 +20,6 @@ type DeleteProfileDataModalProps = {
 }
 
 function DeleteProfileDataModal({
-  resolvedMetadata,
   setParentModalEnabled,
   setDeleteModalEnabled,
   tableContract,
@@ -53,17 +50,13 @@ function DeleteProfileDataModal({
               setIsLoading(true)
 
               try {
-                const rawMetadataRes = await fetch(resolvedMetadata.url)
-                const rawMetadata = await rawMetadataRes.json()
-                const imageIpfsLink = rawMetadata.image
-
                 let tx
                 if (type === 'team') {
                   tx = await tableContract.call('updateTable', [
                     tokenId,
                     '',
                     '',
-                    imageIpfsLink,
+                    '',
                     '',
                     '',
                     '',
@@ -75,7 +68,7 @@ function DeleteProfileDataModal({
                     tokenId,
                     '',
                     '',
-                    imageIpfsLink,
+                    '',
                     '',
                     '',
                     '',
@@ -112,7 +105,6 @@ function DeleteProfileDataModal({
 }
 
 export default function DeleteProfileData({
-  resolvedMetadata,
   setEnabled,
   tableContract,
   tokenId,
@@ -123,7 +115,6 @@ export default function DeleteProfileData({
     <>
       {deleteModalEnabled && (
         <DeleteProfileDataModal
-          resolvedMetadata={resolvedMetadata}
           setDeleteModalEnabled={setDeleteModalEnabled}
           setParentModalEnabled={setEnabled}
           tableContract={tableContract}

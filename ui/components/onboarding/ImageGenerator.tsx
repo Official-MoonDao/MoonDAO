@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { StageButton } from './StageButton'
 
-export function ImageGenerator({ setImage, nextStage, stage }: any) {
+export function ImageGenerator({ setImage, nextStage, stage, currImage }: any) {
   const pfpRef = useRef<any>()
 
   const [userImage, setUserImage] = useState<File>()
@@ -56,7 +56,7 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
 
       <div className="mb-12 flex items-start md:items-center flex-col gap-4 md:flex-row">
         <input
-          className="text-moon-orange"
+          className="text-white text-opacity-60"
           type="file"
           accept="image/*"
           onChange={(e: any) => setUserImage(e.target.files[0])}
@@ -68,18 +68,20 @@ export function ImageGenerator({ setImage, nextStage, stage }: any) {
 
       <div id="html-container">
         <div id="pfp" ref={pfpRef}>
-          <div id="celestial-map"></div>
-          <div id="canvas-container"></div>
-          <Image alt="default-img" id="process-image" src="" />
-          {userImage && (
-            <Image
-              className="absolute w-full h-full"
-              src={URL.createObjectURL(userImage as any)}
-              width={500}
-              height={500}
-              alt=""
-            />
-          )}
+          <>
+            <div id="celestial-map"></div>
+            <div id="canvas-container" className="max-w-[600px]"></div>
+            <Image alt="default-img" id="process-image" src="" />
+            {userImage && (
+              <Image
+                className="absolute w-full h-full"
+                src={URL.createObjectURL(userImage as any)}
+                width={500}
+                height={500}
+                alt=""
+              />
+            )}
+          </>
         </div>
       </div>
     </div>

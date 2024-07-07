@@ -55,7 +55,7 @@ export default function Job({
                 <div className="flex gap-4">
                   <button onClick={() => setEnabledEditJobModal(true)}>
                     {!isDeleting && (
-                      <PencilIcon className="h-6 w-6 text-moon-orange" />
+                      <PencilIcon className="h-6 w-6 text-light-warm" />
                     )}
                   </button>
                   {isDeleting ? (
@@ -79,7 +79,7 @@ export default function Job({
                         }
                       }}
                     >
-                      <TrashIcon className="h-6 w-6 text-moon-orange" />
+                      <TrashIcon className="h-6 w-6 text-light-warm" />
                     </button>
                   )}
                   {enabledEditJobModal && (

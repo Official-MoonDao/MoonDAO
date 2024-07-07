@@ -61,7 +61,7 @@ export default function TeamListing({
         <div
           id="card-styling"
           className={`
-            bg-darkest-cool rounded-[20px] min-w-[450px] h-[30%] absolute top-0 left-0 pb-5
+            bg-darkest-cool rounded-[20px] min-w-[30%] h-[30%] absolute top-0 left-0 pb-5
         `}
         ></div>
         <span
@@ -101,7 +101,7 @@ export default function TeamListing({
                     onClick={() => setEnabledMarketplaceListingModal(true)}
                   >
                     {!isDeleting && (
-                      <PencilIcon className="h-6 w-6 text-moon-orange" />
+                      <PencilIcon className="h-6 w-6 text-light-warm" />
                     )}
                   </button>
                   {isDeleting ? (
@@ -126,7 +126,7 @@ export default function TeamListing({
                         }
                       }}
                     >
-                      <TrashIcon className="h-6 w-6 text-moon-orange" />
+                      <TrashIcon className="h-6 w-6 text-light-warm" />
                     </button>
                   )}
                 </div>

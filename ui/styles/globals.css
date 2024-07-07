@@ -320,6 +320,17 @@ a {
     background: linear-gradient(0deg,#182254 0%, #020617 20%);
   }  
 
+  .gradient-15{
+    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+  }
+  .gradient-16 {
+    background: linear-gradient(-90deg, #020617 60%, #090D21 85% )
+  }
+
+  .gradient-17{
+    background: linear-gradient(90deg, #020617 30%, #46161b 100%);
+  }  
+
   /*Dividers*/
   .divider-1 {
     background-repeat: no-repeat;
@@ -410,7 +421,7 @@ a {
 /*Typeface styles*/
 @media(max-width:1399px) {
   .header {
-    font-size: calc(max(2.5vmax, 25dpx));
+    font-size: calc(max(2.5vmax, 25px));
     line-height: 1.2;
   }
 }
@@ -598,10 +609,19 @@ html {
 
 }
 
-@media(min-width:1100px) {
+@media(max-width:1099px) {
   .popout-base-bg {
-    background: linear-gradient(90deg, transparent 35%, rgba(9, 13, 33, 1) 35%);
+    background: linear-gradient(90deg, transparent 40%, rgba(9, 13, 33, 1) 40%);
   }
+
+  .popout-bg{
+    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+  }
+
+  .innerprefooter-popout-bg {
+    background: linear-gradient(90deg, transparent 50%, #090D21 0%);
+  }
+
 }
 
 /*Backgrounds for the title section of the ContentLayout component*/
@@ -620,13 +640,13 @@ html {
 }
 
 /*Search and filter button backgrounds*/
-.bg-filter {
-background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 95%);
-}
+  .bg-filter {
+    background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 95%);
+  }
 
-.bg-search {
-background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
-}
+  .bg-search {
+    background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
+  }
 
 /*Profile page cards background*/
   .bg-slide-section {
@@ -640,4 +660,7 @@ background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
   .right-fadein {
     background: linear-gradient(90deg, transparent 5%, #090D21 75%);
   }
+
+
+
 

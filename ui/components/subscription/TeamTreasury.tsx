@@ -38,7 +38,7 @@ export default function TeamTreasury({
             />
             <h2 className="header font-GoodTimes">Treasury</h2>
           </div>
-          <div className="flex gap-2 items-end">
+          <div className="flex ml-10 gap-2 items-end">
             <StandardButton
               className="w-full gradient-2 rounded-[5vmax] rounded-tr-[10px] rounded-br-[10px]"
               onClick={() => {
@@ -81,7 +81,7 @@ export default function TeamTreasury({
         <div className="mt-4 flex items-center gap-4">
           {multisigAddress ? (
             <button
-              className="text-2xl flex items-center gap-2 text-moon-orange font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
+              className="text-2xl flex pl-5 items-center gap-2 text-light-warm font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
               onClick={() => {
                 navigator.clipboard.writeText(multisigAddress)
                 toast.success('Address copied to clipboard')
