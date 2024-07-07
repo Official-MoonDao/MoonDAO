@@ -17,7 +17,7 @@ import formatCitizenFormData, {
   CitizenData,
 } from '@/lib/typeform/citizenFormData'
 import { Steps } from '../layout/Steps'
-import { ImageGenerator } from './ImageGenerator'
+import { ImageGenerator } from './CitizenImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 import Container from '../layout/Container'
@@ -111,7 +111,7 @@ export default function CreateCitizen({
   }, [])
 
   return (
-    <Container
+<Container
       containerwidth
       >
       <div className="bg-slide-section flex flex-row w-full h-full pb-20">

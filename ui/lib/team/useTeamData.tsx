@@ -1,3 +1,4 @@
+import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 import { useHandleRead } from '../thirdweb/hooks'
@@ -17,6 +18,12 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   const { data: adminHatId } = useHandleRead(teamContract, 'entityAdminHat', [
     nft?.metadata?.id || '',
   ])
+
+  const { data: managerHatId } = useHandleRead(
+    teamContract,
+    'entityManagerHat',
+    [nft?.metadata?.id || '']
+  )
 
   async function getHatTreeId() {
     const hatTreeId = await hatsContract.call('getTopHatDomain', [adminHatId])
@@ -99,6 +106,7 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
     isDeleted,
     hatTreeId,
     adminHatId,
+    managerHatId,
     isManager,
     isLoading,
     subIsValid,
