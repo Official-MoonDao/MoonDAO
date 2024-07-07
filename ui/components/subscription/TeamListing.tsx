@@ -1,5 +1,5 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
-import { MediaRenderer, useAddress, useNFT } from '@thirdweb-dev/react'
+import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -31,7 +31,6 @@ type TeamListingProps = {
 export default function TeamListing({
   selectedChain,
   listing,
-  teamContract,
   teamSplitAddress,
   marketplaceTableContract,
   refreshListings,
@@ -45,13 +44,15 @@ export default function TeamListing({
 
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const { data: nft, isLoading: isLoadingNft }: any = useNFT(
-    teamContract,
-    listing.entityId
-  )
-
   return (
-    <span className="link-frame">
+    <span
+      id="link-frame"
+      className={`card-container min-w-[300px] w-[65vw] md:w-full flex lg:flex-col rounded-[20px] relative overflow-hidden cursor-pointer`}
+    >
+      <span
+        id="Interactive-Element"
+        className="clip absolute h-full w-full z-10"
+      ></span>
       <span
         id="card-container"
         className={`
@@ -74,9 +75,9 @@ export default function TeamListing({
           >
             <div className="">
               <MediaRenderer
-                className="rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] rounded-br-[5vmax] overflow-hidden"
-                width="200px"
-                height="200px"
+                className="w-full rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] rounded-br-[5vmax] overflow-hidden"
+                width="100%"
+                height="100%"
                 src={listing.image}
               />
             </div>
