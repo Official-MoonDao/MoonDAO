@@ -99,9 +99,43 @@ export function SweepstakesMinting({
       {/* <h3 className="mt-5 lg:mt-8 font-bold text-center lg:text-left text-lg lg:text-xl xl:text-2xl">
           Take the leap, for the chance to win a trip to space!
         </h3> */}
-      <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] xl:text-left text-sm xl:text-base">
-        {`One person will be randomly selected to win an opportunity aboard a future Blue Origin rocket to space!`}
+      <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white px-2 py-2 xl:py-3 xl:px-4 w-full xl:w-[95%] xl:text-left text-sm xl:text-base">
+        MoonDAO is sending regular people to space as one small step in our mission to accelerate a multiplanetary future for all.
       </p>
+  
+      {/* Highlighting Astronauts */}
+<div className="mt-10 flex items-center">
+  <div className="w-1/3">
+    <img src="\assets\coby-cotton.png" alt="Coby Cotton" className="rounded-full float-right w-full h-auto" />
+  </div>
+  <div className="w-2/3 pl-4">
+    <h2 className="text-xl font-bold">Coby Cotton: MoonDAO's First Astronaut</h2>
+    <p className="mt-3 text-[#1F212B] dark:text-white px-2 py-2 xl:py-3 xl:px-4 text-sm xl:text-base">
+      Coby is one of the five cofounders of the YouTube channel Dude Perfect, the most-subscribed sports channel on YouTube and one of the most popular in the world with more than 57 million followers. He co-founded the sports entertainment channel known for specializing in trick shots and comedy videos in 2009 with his college roommates.
+    </p>
+    <p className="mt-3 text-[#1F212B] dark:text-white px-2 py-2 xl:py-3 xl:px-4 text-sm xl:text-base">
+      MoonDAO members voted to have Coby represent them on this flight and he flew as part of Blue Origin's NS-22 mission. <u><Link href="https://www.youtube.com/watch?v=YXXlSG-du7c" target="_blank">Watch the launch video</Link></u>.
+    </p>
+  </div>
+</div>
+
+<div className="mt-10 flex items-center">
+  <div className="w-1/3 order-2 pl-4">
+    <img src="\assets\eiman-jahangir.png" alt="Dr. Eiman Jahangir" className="rounded-full float-left w-full h-auto" />
+  </div>
+  <div className="w-2/3 order-1 pr-4">
+    <h2 className="text-xl font-bold">Dr. Eiman Jahangir: MoonDAO's Second Astronaut</h2>
+    <p className="mt-3 text-[#1F212B] dark:text-white px-2 py-2 xl:py-3 xl:px-4 text-sm xl:text-base">
+      Dr. Eiman Jahangir is a Cardiologist and Associate Professor of Medicine and Radiology at Vanderbilt University Medical Center, where he treats patients with heart disease and educates future physicians. Outside of medicine, he has a passion for exploration, including a lifelong dream of going to space. Over the past two decades, Eiman has been a NASA astronaut candidate finalist twice, participated in analog astronaut missions, and trained in various aspects of human spaceflight.
+    </p>
+    <p className="mt-3 text-[#1F212B] dark:text-white px-2 py-2 xl:py-3 xl:px-4 text-sm xl:text-base">
+      Eiman was selected via the Ticket to Space sweepstakes and is a long-time member of MoonDAO. <u><Link href ="https://docs.moondao.com/Reference/Nested-Docs/About-Eiman-Jahangir" target="_blank">Read more about Eiman</Link></u>.
+    </p>
+  </div>
+</div>
+
+
+  
 
       {/*Collection title, image and description*/}
       <div className="mt-6 inner-container-background relative w-full">
