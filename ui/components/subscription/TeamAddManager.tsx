@@ -1,11 +1,9 @@
 import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useAddress } from '@thirdweb-dev/react'
 import { HATS_ADDRESS } from 'const/config'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import useSafe from '@/lib/safe/useSafe'
-import useSafeApiKit from '@/lib/safe/useSafeApiKit'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import StandardButtonRight from '../layout/StandardButtonRight'
@@ -26,13 +24,11 @@ function TeamAddManagerModal({
   managerHatId,
   setEnabled,
 }: TeamAddManagerModalProps) {
-  const address = useAddress()
   const [hasAddedManager, setHasAddedManager] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [wearerAddress, setWearerAddress] = useState('')
 
   const { safe, queueSafeTx } = useSafe(multisigAddress)
-  const safeApiKit = useSafeApiKit()
 
   return (
     <Modal id="team-add-manager-modal" setEnabled={setEnabled}>
