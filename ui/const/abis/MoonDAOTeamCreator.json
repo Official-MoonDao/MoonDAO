@@ -2,11 +2,7 @@
   {
     "inputs": [
       { "internalType": "address", "name": "_hats", "type": "address" },
-      {
-        "internalType": "address",
-        "name": "_moonDAOEntity",
-        "type": "address"
-      },
+      { "internalType": "address", "name": "_moonDAOTeam", "type": "address" },
       {
         "internalType": "address",
         "name": "_gnosisSingleton",
@@ -58,7 +54,7 @@
   },
   {
     "inputs": [],
-    "name": "MoonDaoEntityEdminHatId",
+    "name": "MoonDaoTeamEdminHatId",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -76,7 +72,7 @@
       { "internalType": "string", "name": "_view", "type": "string" },
       { "internalType": "string", "name": "formId", "type": "string" }
     ],
-    "name": "createMoonDAOEntity",
+    "name": "createMoonDAOTeam",
     "outputs": [
       { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
       { "internalType": "uint256", "name": "childHatId", "type": "uint256" }
@@ -109,11 +105,11 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_MoonDaoEntityEdminHatId",
+        "name": "_MoonDaoTeamEdminHatId",
         "type": "uint256"
       }
     ],
-    "name": "setMoonDaoEntityEdminHatId",
+    "name": "setMoonDaoTeamEdminHatId",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -132,7 +128,7 @@
     "name": "table",
     "outputs": [
       {
-        "internalType": "contract MoonDaoEntityTableland",
+        "internalType": "contract MoonDaoTeamTableland",
         "name": "",
         "type": "address"
       }
