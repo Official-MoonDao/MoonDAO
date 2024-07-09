@@ -60,7 +60,9 @@ export function ImageGenerator({
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ url }),
-    }).then((res) => res.json())
+    })
+      .then((res) => res.json())
+      .catch((e) => console.error(e))
 
     console.log('jobId', jobId)
     await checkJobStatus(jobId.id)

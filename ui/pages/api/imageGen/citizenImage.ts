@@ -12,7 +12,13 @@ export default async function handler(
       return res.status(401).json('Unauthorized')
     }
 
-    const { url } = JSON.parse(req.body)
+    const { url } = req.body
+
+    // generate a random 15 digit number
+    let seed = ''
+    for (let i = 0; i < 15; i++) {
+      seed += Math.floor(Math.random() * 10)
+    }
     const jobId = await fetch(
       'https://comfy.icu/api/v1/workflows/72hy4zetA-0OBLesxmjJc/runs',
       {
@@ -27,7 +33,7 @@ export default async function handler(
             '3': {
               inputs: {
                 cfg: 2.6,
-                seed: 963816335811821,
+                seed: Number(seed),
                 model: ['60', 0],
                 steps: 7,
                 denoise: 1,
