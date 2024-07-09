@@ -11,7 +11,7 @@ import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import cleanData from '@/lib/tableland/cleanData'
 import formatCitizenFormData from '@/lib/typeform/citizenFormData'
 import Modal from '../layout/Modal'
-import { ImageGenerator } from '../onboarding/ImageGenerator'
+import { ImageGenerator } from '../onboarding/CitizenImageGenerator'
 import DeleteProfileData from './DeleteProfileData'
 
 export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
@@ -58,10 +58,6 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
         //escape single quotes and remove emojis
         const citizenData = cleanData(formattedCiizenData)
 
-        const rawMetadataRes = await fetch(resolvedMetadata.url)
-        const rawMetadata = await rawMetadataRes.json()
-        const imageIpfsLink = rawMetadata.image
-
         if (citizenData.newsletterSub) {
           const subRes = await subscribeToNewsletter(citizenData.email)
           if (subRes.ok) {
@@ -69,6 +65,32 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
               'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
             )
           }
+        }
+
+        const rawMetadataRes = await fetch(resolvedMetadata.url)
+        const rawMetadata = await rawMetadataRes.json()
+
+        let imageIpfsLink
+        if (!newCitizenImage && rawMetadata.image && rawMetadata.image !== '') {
+          imageIpfsLink = rawMetadata.image
+        } else {
+          if (!newCitizenImage) return console.error('No new image')
+          const jwtRes = await fetch('/api/ipfs/upload', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          })
+
+          const pinataJWT = await jwtRes.text()
+
+          const newImageIpfsHash = await pinImageToIPFS(
+            pinataJWT || '',
+            newCitizenImage,
+            citizenData.firstName + ' Image'
+          )
+
+          imageIpfsLink = `ipfs://${newImageIpfsHash}`
         }
 
         const tx = await citizenTableContract?.call('updateTable', [
@@ -116,7 +138,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
 
   return (
     <Modal id="citizen-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="w-full flex flex-col gap-4 items-start justify-start w-auto p-4 md:p-8 bg-darkest-cool rounded-md">
+      <div className="mt-32 w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-4 md:p-8 bg-darkest-cool rounded-md">
         <div className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-GoodTimes">Update Info</h1>
           <button
@@ -132,6 +154,8 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
             setImage={setNewCitizenImage}
             nextStage={() => setStage(1)}
             stage={stage}
+            citizenImage={newCitizenImage}
+            currImage={currCitizenImage}
           />
         )}
         {stage === 1 && (

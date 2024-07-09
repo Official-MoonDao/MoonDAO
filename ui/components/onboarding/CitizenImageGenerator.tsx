@@ -1,5 +1,6 @@
 // Team Image Generator
 import { usePrivy } from '@privy-io/react-auth'
+import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
 import { useS3Upload } from 'next-s3-upload'
 import Head from 'next/head'
@@ -8,6 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { StageButton } from './StageButton'
 
 export function ImageGenerator({
+  currImage,
   citizenImage,
   setImage,
   nextStage,
@@ -98,8 +100,13 @@ export function ImageGenerator({
               Save Design
             </StageButton>
           ) : (
-            <StageButton onClick={generateImage}>generate</StageButton>
+            <StageButton onClick={generateImage}>Generate</StageButton>
           ))}
+        {!userImage && currImage && (
+          <StageButton className="" onClick={submitImage}>
+            Save Design
+          </StageButton>
+        )}
       </div>
       <div
         id="citizenPic"
@@ -116,24 +123,37 @@ export function ImageGenerator({
           }}
           className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
         ></div> */}
-        {generatedImage ? (
-          <Image
-            src={generatedImage}
-            layout="fill"
-            objectFit="contain"
+        {currImage && !userImage && (
+          <MediaRenderer
+            src={currImage}
             className="mix-blend-multiply"
+            width="100%"
+            height="100%"
             alt={''}
           />
-        ) : (
-          userImage && (
-            <Image
-              src={URL.createObjectURL(userImage)}
-              layout="fill"
-              objectFit="contain"
-              className="mix-blend-multiply"
-              alt={''}
-            />
-          )
+        )}
+        {!currImage && userImage && (
+          <>
+            {generatedImage ? (
+              <Image
+                src={generatedImage}
+                layout="fill"
+                objectFit="contain"
+                className="mix-blend-multiply"
+                alt={''}
+              />
+            ) : (
+              userImage && (
+                <Image
+                  src={URL.createObjectURL(userImage)}
+                  layout="fill"
+                  objectFit="contain"
+                  className="mix-blend-multiply"
+                  alt={''}
+                />
+              )
+            )}
+          </>
         )}
       </div>
     </div>
