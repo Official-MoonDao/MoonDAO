@@ -1,11 +1,17 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log(process.env.COMFYICU_API_KEY)
   if (req.method === 'POST') {
+    const auth = await verifyPrivyAuth(req.headers.authorization)
+
+    if (!auth || auth.appId !== process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
+      return res.status(401).json('Unauthorized')
+    }
+
     const { url } = req.body
     const jobId = await fetch(
       'https://comfy.icu/api/v1/workflows/72hy4zetA-0OBLesxmjJc/runs',

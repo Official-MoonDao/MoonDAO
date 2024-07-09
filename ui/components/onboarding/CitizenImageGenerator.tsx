@@ -1,4 +1,5 @@
 // Team Image Generator
+import { usePrivy } from '@privy-io/react-auth'
 import html2canvas from 'html2canvas'
 import { useS3Upload } from 'next-s3-upload'
 import Head from 'next/head'
@@ -12,6 +13,7 @@ export function ImageGenerator({
   nextStage,
   stage,
 }: any) {
+  const { getAccessToken } = usePrivy()
   const [userImage, setUserImage] = useState<File>()
   const [generatedImage, setGeneratedImage] = useState<string>()
   const { FileInput, openFileDialog, uploadToS3 } = useS3Upload()
@@ -46,10 +48,13 @@ export function ImageGenerator({
 
     const { url } = await uploadToS3(userImage)
 
+    const accessToken = await getAccessToken()
+
     const jobId = await fetch('/api/imageGen/citizenImage', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ url }),
     }).then((res) => res.json())
