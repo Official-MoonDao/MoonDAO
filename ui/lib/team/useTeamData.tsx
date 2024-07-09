@@ -15,15 +15,13 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   const [isManager, setIsManager] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
 
-  const { data: adminHatId } = useHandleRead(teamContract, 'entityAdminHat', [
+  const { data: adminHatId } = useHandleRead(teamContract, 'teamAdminHat', [
     nft?.metadata?.id || '',
   ])
 
-  const { data: managerHatId } = useHandleRead(
-    teamContract,
-    'entityManagerHat',
-    [nft?.metadata?.id || '']
-  )
+  const { data: managerHatId } = useHandleRead(teamContract, 'teamManagerHat', [
+    nft?.metadata?.id || '',
+  ])
 
   async function getHatTreeId() {
     const hatTreeId = await hatsContract.call('getTopHatDomain', [adminHatId])

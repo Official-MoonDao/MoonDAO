@@ -24,7 +24,7 @@ export default function TeamMarketplace({
     const marketplaceTableName = await marketplaceTableContract.call(
       'getTableName'
     )
-    const statement = `SELECT * FROM ${marketplaceTableName} WHERE entityId = ${teamId}`
+    const statement = `SELECT * FROM ${marketplaceTableName} WHERE teamId = ${teamId}`
 
     const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
     const data = await res.json()
