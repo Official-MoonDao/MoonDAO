@@ -8,7 +8,7 @@ import TeamJobModal from '../subscription/TeamJobModal'
 
 export type Job = {
   id: number
-  entityId: number
+  teamId: number
   title: string
   description: string
   contactInfo: string
@@ -42,9 +42,9 @@ export default function Job({
           <div className="flex gap-2">
             {showEntityId && (
               <Link
-                href={`/entity/${job.entityId}`}
+                href={`/entity/${job.teamId}`}
                 className="text-moon-orange"
-              >{`Entity #${job.entityId}`}</Link>
+              >{`Entity #${job.teamId}`}</Link>
             )}
             <div className="flex flex-col lg:flex-row pb-5 items-center gap-2 lg:gap-4">
               <StandardButton className="gradient-2 rounded-[5vmax] rounded-bl-[20px]">

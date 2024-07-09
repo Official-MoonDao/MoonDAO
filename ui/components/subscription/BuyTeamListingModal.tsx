@@ -48,7 +48,7 @@ export default function BuyTeamListingModal({
     TEAM_ADDRESSES[selectedChain.slug]
   )
 
-  const { data: teamNft } = useNFT(teamContract, listing.entityId)
+  const { data: teamNft } = useNFT(teamContract, listing.teamId)
 
   const teamEmail = useTeamEmail(teamNft)
 

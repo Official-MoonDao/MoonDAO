@@ -9,7 +9,7 @@ import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
 export type TeamListing = {
   id: number
-  entityId: number
+  teamId: number
   title: string
   description: string
   image: string
@@ -56,7 +56,7 @@ export default function TeamListing({
       <span
         id="card-container"
         className={`
-        card-container animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full min-h-[200px] min-w-[350px]
+        card-container animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full min-h-[200px] min-w-[350px] max-w-[600px]
     `}
       >
         <div
@@ -114,7 +114,7 @@ export default function TeamListing({
                         try {
                           await marketplaceTableContract.call(
                             'deleteFromTable',
-                            [listing.id, listing.entityId]
+                            [listing.id, listing.teamId]
                           )
                           setTimeout(() => {
                             refreshListings()
@@ -174,7 +174,7 @@ export default function TeamListing({
         </span>
         {enabledMarketplaceListingModal && (
           <TeamMarketplaceListingModal
-            teamId={listing.entityId}
+            teamId={listing.teamId}
             setEnabled={setEnabledMarketplaceListingModal}
             marketplaceTableContract={marketplaceTableContract}
             listing={listing}

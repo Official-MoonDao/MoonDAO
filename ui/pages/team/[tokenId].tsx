@@ -1,7 +1,10 @@
 // Team Profile Page
 import {
   ArrowUpRightIcon,
+  BanknotesIcon,
+  BuildingStorefrontIcon,
   ChatBubbleLeftIcon,
+  ClipboardDocumentListIcon,
   GlobeAltIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
@@ -25,6 +28,7 @@ import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useContext, useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { useSubHats } from '@/lib/hats/useSubHats'
@@ -46,17 +50,21 @@ import StandardButton from '@/components/layout/StandardButton'
 import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
-import TeamActions from '@/components/subscription/TeamActions'
+import TeamAction from '@/components/subscription/TeamAction'
 import TeamAddManager from '@/components/subscription/TeamAddManager'
 import TeamDonation from '@/components/subscription/TeamDonation'
+import TeamJobModal from '@/components/subscription/TeamJobModal'
 import TeamJobs from '@/components/subscription/TeamJobs'
 import TeamMarketplace from '@/components/subscription/TeamMarketplace'
+import TeamMarketplaceListingModal from '@/components/subscription/TeamMarketplaceListingModal'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
 
 export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
+  const router = useRouter()
+
   const sdk = useSDK()
   const address = useAddress()
 
@@ -66,6 +74,8 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     useState(false)
   const [teamSubscriptionModalEnabled, setTeamSubscriptionModalEnabled] =
     useState(false)
+  const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
+  const [teamListingModalEnabled, setTeamListingModalEnabled] = useState(false)
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
 
   //Entity Data
@@ -364,6 +374,22 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
           setEnabled={setTeamMetadataModalEnabled}
         />
       )}
+      {teamJobModalEnabled && (
+        <TeamJobModal
+          teamId={tokenId}
+          jobTableContract={jobTableContract}
+          setEnabled={setTeamJobModalEnabled}
+          refreshJobs={() => router.reload()}
+        />
+      )}
+      {teamListingModalEnabled && (
+        <TeamMarketplaceListingModal
+          teamId={tokenId}
+          marketplaceTableContract={marketplaceTableContract}
+          setEnabled={setTeamListingModalEnabled}
+          refreshListings={() => router.reload()}
+        />
+      )}
       <ContentLayout
         description={ProfileHeader}
         mainPadding
@@ -385,11 +411,42 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
           {!isDeleted && (
             <div id="entity-actions-container" className=" z-30">
               {isManager || address === nft.owner ? (
-                <TeamActions
-                  teamId={tokenId}
-                  jobTableContract={jobTableContract}
-                  marketplaceTableContract={marketplaceTableContract}
-                />
+                <div
+                  id="team-actions-container"
+                  className="px-5 pt-5 md:px-0 md:pt-0"
+                >
+                  <Frame
+                    noPadding
+                    marginBottom="0px"
+                    bottomRight="2vmax"
+                    topRight="2vmax"
+                    topLeft="10px"
+                    bottomLeft="2vmax"
+                  >
+                    <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+                      <TeamAction
+                        title="Fund"
+                        description="Submit a proposal to secure space project funding."
+                        icon={<BanknotesIcon height={30} width={30} />}
+                        onClick={() => router.push('/newProposal')}
+                      />
+                      <TeamAction
+                        title="Hire"
+                        description="List job openings or contracts to a global talent pool."
+                        icon={
+                          <ClipboardDocumentListIcon height={30} width={30} />
+                        }
+                        onClick={() => setTeamJobModalEnabled(true)}
+                      />
+                      <TeamAction
+                        title="Sell"
+                        description="List products, services, or ticketed events for sale."
+                        icon={<BuildingStorefrontIcon height={30} width={30} />}
+                        onClick={() => setTeamListingModalEnabled(true)}
+                      />
+                    </div>
+                  </Frame>
+                </div>
               ) : (
                 ''
               )}
@@ -413,7 +470,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                 >
                   <div
                     id="job-title-container"
-                    className="p-5 pb-0 md:p-0 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 pr-12"
+                    className="p-5 pb-0 md:p-0 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 pr-12 "
                   >
                     <div className="flex gap-5 opacity-[50%]">
                       <Image

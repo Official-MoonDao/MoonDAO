@@ -3,7 +3,9 @@
     "inputs": [
       { "internalType": "string", "name": "name_", "type": "string" },
       { "internalType": "string", "name": "symbol_", "type": "string" },
-      { "internalType": "address", "name": "_treasury", "type": "address" }
+      { "internalType": "address", "name": "_treasury", "type": "address" },
+      { "internalType": "address", "name": "_hats", "type": "address" },
+      { "internalType": "address", "name": "_discountList", "type": "address" }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -214,8 +216,8 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "name": "entityTopHat",
+    "inputs": [],
+    "name": "discount",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -233,17 +235,18 @@
     "inputs": [
       { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
     ],
-    "name": "getAdmin",
+    "name": "getApproved",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "tokenId", "type": "uint256" }
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "uint64", "name": "duration", "type": "uint64" }
     ],
-    "name": "getApproved",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "getRenewalPrice",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -253,6 +256,16 @@
       { "internalType": "address", "name": "operator", "type": "address" }
     ],
     "name": "isApprovedForAll",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
+      { "internalType": "address", "name": "sender", "type": "address" }
+    ],
+    "name": "isManager",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
@@ -269,19 +282,9 @@
   {
     "inputs": [
       { "internalType": "address", "name": "to", "type": "address" },
-      { "internalType": "string", "name": "uri", "type": "string" }
-    ],
-    "name": "mintTo",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "to", "type": "address" },
-      { "internalType": "string", "name": "uri", "type": "string" },
-      { "internalType": "uint256", "name": "tophat", "type": "uint256" },
-      { "internalType": "address", "name": "orginalCaller", "type": "address" }
+      { "internalType": "uint256", "name": "adminHat", "type": "uint256" },
+      { "internalType": "uint256", "name": "managerHat", "type": "uint256" },
+      { "internalType": "address", "name": "_splitContract", "type": "address" }
     ],
     "name": "mintTo",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
@@ -328,13 +331,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "renewDiscount",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
       { "internalType": "uint64", "name": "duration", "type": "uint64" }
@@ -369,20 +365,28 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
-      { "internalType": "address", "name": "newAdmin", "type": "address" }
+      { "internalType": "address", "name": "operator", "type": "address" },
+      { "internalType": "bool", "name": "approved", "type": "bool" }
     ],
-    "name": "setAdmin",
+    "name": "setApprovalForAll",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "operator", "type": "address" },
-      { "internalType": "bool", "name": "approved", "type": "bool" }
+      { "internalType": "string", "name": "baseURI", "type": "string" }
     ],
-    "name": "setApprovalForAll",
+    "name": "setBaseURI",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_discountList", "type": "address" }
+    ],
+    "name": "setDiscountList",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -429,21 +433,27 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
-      { "internalType": "string", "name": "_uri", "type": "string" }
+      { "internalType": "address", "name": "_newTreasury", "type": "address" }
     ],
-    "name": "setTokenURI",
+    "name": "setTreasury",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "_newTreasury", "type": "address" }
+      { "internalType": "string", "name": "uriTemplate", "type": "string" }
     ],
-    "name": "setTreasury",
+    "name": "setURITemplate",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "splitContract",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -459,6 +469,20 @@
     "inputs": [],
     "name": "symbol",
     "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "teamAdminHat",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "teamManagerHat",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },

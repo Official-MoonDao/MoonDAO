@@ -61,7 +61,7 @@ export default function TeamMarketplaceListingModal({
   return (
     <Modal id="team-marketplace-listing-modal-backdrop" setEnabled={setEnabled}>
       <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md"
+        className="mt-12 w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md"
         onSubmit={async (e) => {
           e.preventDefault()
           if (

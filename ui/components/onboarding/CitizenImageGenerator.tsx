@@ -1,18 +1,24 @@
 // Team Image Generator
+import { usePrivy } from '@privy-io/react-auth'
+import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
+import { useS3Upload } from 'next-s3-upload'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { StageButton } from './StageButton'
 
 export function ImageGenerator({
+  currImage,
   citizenImage,
   setImage,
   nextStage,
   stage,
 }: any) {
+  const { getAccessToken } = usePrivy()
   const [userImage, setUserImage] = useState<File>()
   const [generatedImage, setGeneratedImage] = useState<string>()
+  const { FileInput, openFileDialog, uploadToS3 } = useS3Upload()
 
   async function submitImage() {
     if (!document.getElementById('citizenPic'))
@@ -41,126 +47,44 @@ export function ImageGenerator({
     if (!userImage) {
       return console.error('userImage is not defined')
     }
-    const imageUrl = URL.createObjectURL(userImage)
 
-    const jobId = await fetch(
-      'https://comfy.icu/api/v1/workflows/72hy4zetA-0OBLesxmjJc/runs',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          authorization: `Bearer ${process.env.COMFYICU_API_KEY}`,
-        },
-        body: JSON.stringify({
-          prompt: {
-            '3': {
-              inputs: {
-                cfg: 2.6,
-                seed: 963816335811821,
-                model: ['60', 0],
-                steps: 7,
-                denoise: 1,
-                negative: ['60', 2],
-                positive: ['60', 1],
-                scheduler: 'karras',
-                latent_image: ['5', 0],
-                sampler_name: 'dpmpp_sde',
-              },
-              class_type: 'KSampler',
-            },
-            '4': {
-              inputs: { ckpt_name: 'albedobaseXL_v21.safetensors' },
-              class_type: 'CheckpointLoaderSimple',
-            },
-            '5': {
-              inputs: { width: 1024, height: 1024, batch_size: 1 },
-              class_type: 'EmptyLatentImage',
-            },
-            '8': {
-              inputs: { vae: ['4', 2], samples: ['3', 0] },
-              class_type: 'VAEDecode',
-            },
-            '11': {
-              inputs: { instantid_file: 'instantid-ip-adapter.bin' },
-              class_type: 'InstantIDModelLoader',
-            },
-            '13': {
-              inputs: { image: 'input.jpg', upload: 'image' },
-              class_type: 'LoadImage',
-            },
-            '16': {
-              inputs: { control_net_name: 'instantid-controlnet.safetensors' },
-              class_type: 'ControlNetLoader',
-            },
-            '38': {
-              inputs: { provider: 'CPU' },
-              class_type: 'InstantIDFaceAnalysis',
-            },
-            '39': {
-              inputs: {
-                clip: ['4', 1],
-                text: 'oil portrait of a man, dramatic lighting, Detailed, Digital painting, Artstation, Dark lighting, Concept art, Intricate,\n\n',
-              },
-              class_type: 'CLIPTextEncode',
-            },
-            '40': {
-              inputs: { clip: ['4', 1], text: 'watermark, text, monochrome' },
-              class_type: 'CLIPTextEncode',
-            },
-            '60': {
-              inputs: {
-                image: ['13', 0],
-                model: ['4', 0],
-                end_at: 1,
-                weight: 0.8,
-                negative: ['40', 0],
-                positive: ['39', 0],
-                start_at: 0,
-                instantid: ['11', 0],
-                control_net: ['16', 0],
-                insightface: ['38', 0],
-              },
-              class_type: 'ApplyInstantID',
-            },
-            '67': {
-              inputs: { images: ['8', 0], filename_prefix: 'ComfyUI' },
-              class_type: 'SaveImage',
-            },
-          },
-          files: { '/input/input.jpg': imageUrl },
-          accelerator: 'L4',
-        }),
-      }
-    )
+    const { url } = await uploadToS3(userImage)
+    console.log('url', url)
+
+    const accessToken = await getAccessToken()
+
+    const jobId = await fetch('/api/imageGen/citizenImage', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ url }),
+    })
       .then((res) => res.json())
       .catch((e) => console.error(e))
 
     console.log('jobId', jobId)
-    checkJobStatus(jobId.id)
+    await checkJobStatus(jobId.id)
   }
 
   const checkJobStatus = async (jobId: string) => {
-    const jobs = await fetch(
-      'https://comfy.icu/api/v1/workflows/72hy4zetA-0OBLesxmjJc/runs',
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          authorization: `Bearer ${process.env.COMFYICU_API_KEY}`,
-        },
-      }
-    ).then((res) => res.json())
+    const jobs = await fetch('/api/imageGen/citizenImage').then((res) =>
+      res.json()
+    )
 
     const job = jobs.find((job: any) => job.id === jobId)
+
+    if (job.status === 'ERROR') {
+      console.error('job failed')
+    }
 
     if (job.status === 'COMPLETED') {
       setGeneratedImage(job.output[0].url)
     } else {
       setTimeout(() => {
         checkJobStatus(jobId)
-      }, 5000)
+      }, 15000)
     }
   }
 
@@ -179,8 +103,13 @@ export function ImageGenerator({
               Save Design
             </StageButton>
           ) : (
-            <StageButton onClick={generateImage}>generate</StageButton>
+            <StageButton onClick={generateImage}>Generate</StageButton>
           ))}
+        {!userImage && currImage && (
+          <StageButton className="" onClick={submitImage}>
+            Save Design
+          </StageButton>
+        )}
       </div>
       <div
         id="citizenPic"
@@ -197,15 +126,37 @@ export function ImageGenerator({
           }}
           className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
         ></div> */}
-
-        {userImage && (
-          <Image
-            src={URL.createObjectURL(userImage)}
-            layout="fill"
-            objectFit="contain"
+        {currImage && !userImage && (
+          <MediaRenderer
+            src={currImage}
             className="mix-blend-multiply"
+            width="100%"
+            height="100%"
             alt={''}
           />
+        )}
+        {userImage && (
+          <>
+            {generatedImage ? (
+              <Image
+                src={generatedImage}
+                layout="fill"
+                objectFit="contain"
+                className="mix-blend-multiply"
+                alt={''}
+              />
+            ) : (
+              userImage && (
+                <Image
+                  src={URL.createObjectURL(userImage)}
+                  layout="fill"
+                  objectFit="contain"
+                  className="mix-blend-multiply"
+                  alt={''}
+                />
+              )
+            )}
+          </>
         )}
       </div>
     </div>

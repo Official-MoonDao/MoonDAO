@@ -24,7 +24,7 @@ export default function TeamJobs({
 
   async function getEntityJobs() {
     const jobBoardTableName = await jobTableContract.call('getTableName')
-    const statement = `SELECT * FROM ${jobBoardTableName} WHERE entityId = ${teamId}`
+    const statement = `SELECT * FROM ${jobBoardTableName} WHERE teamId = ${teamId}`
 
     const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
     const data = await res.json()
@@ -67,7 +67,7 @@ export default function TeamJobs({
           {jobs?.[0] ? (
             jobs.map((job, i) => (
               <Job
-                key={`entity-job-${i}`}
+                key={`team-job-${i}`}
                 job={job}
                 jobTableContract={jobTableContract}
                 teamId={teamId}
