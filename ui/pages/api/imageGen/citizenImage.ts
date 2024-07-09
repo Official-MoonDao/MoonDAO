@@ -12,7 +12,7 @@ export default async function handler(
       return res.status(401).json('Unauthorized')
     }
 
-    const { url } = req.body
+  const { url } = req.body
 
     // generate a random 15 digit number
     let seed = ''
