@@ -132,7 +132,7 @@ export function ImageGenerator({
             alt={''}
           />
         )}
-        {!currImage && userImage && (
+        {userImage && (
           <>
             {generatedImage ? (
               <Image
