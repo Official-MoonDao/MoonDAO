@@ -12,7 +12,7 @@ export default async function handler(
       return res.status(401).json('Unauthorized')
     }
 
-    const { url } = req.body
+    const { url } = JSON.parse(req.body)
     const jobId = await fetch(
       'https://comfy.icu/api/v1/workflows/72hy4zetA-0OBLesxmjJc/runs',
       {
