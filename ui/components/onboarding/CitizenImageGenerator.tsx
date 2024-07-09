@@ -49,6 +49,7 @@ export function ImageGenerator({
     }
 
     const { url } = await uploadToS3(userImage)
+    console.log('url', url)
 
     const accessToken = await getAccessToken()
 
