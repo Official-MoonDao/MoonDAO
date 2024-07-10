@@ -171,7 +171,7 @@ export default function CreateCitizen({
 
               <Image
                 src={citizenImage ? URL.createObjectURL(citizenImage) : ''}
-                alt="entity-image"
+                alt="citizen-image"
                 width={600}
                 height={600}
               />
