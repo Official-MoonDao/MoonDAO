@@ -1,5 +1,5 @@
 import { Field, Label, Switch } from '@headlessui/react'
-import { GetMarkdown } from '@nance/nance-editor'
+import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import {
   useProposal,
   useProposalUpload,
@@ -8,13 +8,14 @@ import {
 import {
   Action,
   Proposal,
+  ProposalPacket,
   ProposalStatus,
   RequestBudget,
   actionsToYaml,
   getActionsFromBody,
   trimActionsFromBody,
 } from '@nance/nance-sdk'
-import { add, differenceInDays } from 'date-fns'
+import { add, differenceInDays, formatDistance, fromUnixTime, getUnixTime } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -31,20 +32,22 @@ import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
 import Head from '../../components/layout/Head'
 import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
-import ProposalTitleInput, {
-  TITLE_ID,
-} from '../../components/nance/ProposalTitleInput'
+import ProposalTitleInput from '../../components/nance/ProposalTitleInput'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
 import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile"
+import { useBeforeUnload, useLocalStorage } from 'react-use'
+import ResultModal from './ResultModal'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 // Nance Editor
 let getMarkdown: GetMarkdown
+let setMarkdown: SetMarkdown
 
 const NanceEditor = dynamic(
   async () => {
     getMarkdown = (await import('@nance/nance-editor')).getMarkdown
+    setMarkdown = (await import("@nance/nance-editor")).setMarkdown
     return import('@nance/nance-editor').then((mod) => mod.NanceEditor)
   },
   {
@@ -83,13 +86,23 @@ const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
   ],
 }
 
+type ProposalCache = Pick<ProposalPacket, "title" | "body"> & {timestamp: number}
+
 export default function ProposalEditor() {
   const router = useRouter()
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
+  const [proposalTitle, setProposalTitle] = useState<string>("")
   const [proposalStatus, setProposalStatus] =
     useState<ProposalStatus>('Discussion')
+  const [proposalCache, setProposalCache] = useLocalStorage<ProposalCache>(
+    "NanceProposalCacheV1",
+    {title: "", body: TEMPLATE, timestamp: 0}
+  );
+  const [cacheModalIsOpen, setCacheModalIsOpen] = useState(
+    !!(proposalCache?.title || proposalCache?.body),
+  );
 
   // get space info to find next Snapshot Vote
   // we need this to be compliant with the proposal signing format of Snapshot
@@ -127,18 +140,24 @@ export default function ProposalEditor() {
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
   })
-  const { handleSubmit, reset } = methods
+  const { handleSubmit, reset, getValues, watch } = methods
 
   useEffect(() => {
     // will need to refactor if we want to support multiple actions
     if (loadedProposal) {
-      const actions = getActionsFromBody(loadedProposal?.body);
-      if (!actions) return;
-      console.debug('loaded action:', actions)
-      setAttachBudget(true)
-      reset(actions[0].payload as RequestBudget)
+      restoreFromTitleAndBody(loadedProposal.title, loadedProposal.body)
     }
   }, [loadedProposal, reset])
+
+  function restoreFromTitleAndBody(t: string, b: string) {
+    setProposalTitle(t)
+    setMarkdown(trimActionsFromBody(b))
+    const actions = getActionsFromBody(b);
+    if (!actions) return;
+    console.debug('loaded action:', actions)
+    setAttachBudget(true)
+    reset(actions[0].payload as RequestBudget)
+  }
 
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
     let proposal = buildProposal(proposalStatus)
@@ -170,9 +189,8 @@ export default function ProposalEditor() {
   const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
 
   const buildProposal = (status: ProposalStatus) => {
-    const title = (document?.getElementById(TITLE_ID) as HTMLInputElement).value
     return {
-      title,
+      title: proposalTitle,
       body: getMarkdown(),
       status,
       voteSetup: {
@@ -233,21 +251,73 @@ export default function ProposalEditor() {
       })
   }
 
+  const saveProposalBodyCache = function() {
+    let body = getMarkdown()
+
+    if (attachBudget) {
+      const action: Action = {
+        type: 'Request Budget',
+        payload: getValues(),
+      }
+      body = `${body}\n\n${actionsToYaml([action])}`
+    }
+
+    setProposalCache({title: proposalCache?.title || "Untitled", body: body || "", timestamp: getUnixTime(new Date())})
+  }
+
+  useEffect(() => {
+      const subscription = watch((value, { name, type }) =>{
+        if(type === "change") {
+          saveProposalBodyCache()
+        }
+      })
+
+      return () => subscription.unsubscribe()
+    }, [watch])
+
+
   return (
     <div className="flex flex-col justify-center items-center animate-fadeIn">
       <Head title='Proposal Editor' />
 
+      <ResultModal
+        title="You have saved proposal content, do you wish to restore it?"
+        description={`Saved ${formatDistance(
+          fromUnixTime(proposalCache?.timestamp || 0),
+          new Date(),
+          { addSuffix: true },
+        )}. Title: ${proposalCache?.title}, Content: ${proposalCache?.body.slice(
+          0,
+          140,
+        )}...`}
+        buttonText="Restore"
+        onClick={() => {
+          restoreFromTitleAndBody(proposalCache?.title || "", proposalCache?.body || "")
+          setCacheModalIsOpen(false);
+        }}
+        cancelButtonText="Close"
+        close={() => {
+          setCacheModalIsOpen(false);
+        }}
+        shouldOpen={cacheModalIsOpen}
+      />
+
       <div className="w-full sm:w-[90%] lg:w-3/4">
         <form onSubmit={handleSubmit(onSubmit)}>
           <h1 className="page-title py-10">{loadedProposal ? 'Edit Proposal' : 'New Proposal'}</h1>
-          <ProposalTitleInput initialValue={loadedProposal?.title} />
+          <ProposalTitleInput value={proposalTitle} onChange={(s) => {
+            setProposalTitle(s)
+            const cache = proposalCache || {body: "... empty ...", timestamp: 0}
+            setProposalCache({...cache, title: s})
+          }} />
           <NanceEditor
-            initialValue={trimActionsFromBody(loadedProposal?.body) || TEMPLATE}
+            initialValue={TEMPLATE}
             fileUploadExternal={ async (val) => {
               const res = await pinBlobOrFile(val)
               return res.url;
             }}
             darkMode={true}
+            onEditorChange={(m) => {saveProposalBodyCache()}}
           />
 
           <Field as="div" className="flex items-center mt-5">
