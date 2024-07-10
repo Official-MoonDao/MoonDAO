@@ -16,11 +16,11 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatCitizenFormData, {
   CitizenData,
 } from '@/lib/typeform/citizenFormData'
+import Container from '../layout/Container'
 import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './CitizenImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
-import Container from '../layout/Container'
 
 export default function CreateCitizen({
   address,
@@ -36,8 +36,7 @@ export default function CreateCitizen({
 
   const [citizenImage, setCitizenImage] = useState<any>()
   const [citizenData, setCitizenData] = useState<CitizenData>({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     description: '',
     location: '',
@@ -111,9 +110,7 @@ export default function CreateCitizen({
   }, [])
 
   return (
-<Container
-      containerwidth
-      >
+    <Container containerwidth>
       <div className="bg-slide-section flex flex-row w-full h-full pb-20">
         <div className="m-5 h-full w-full flex flex-col lg:max-w-[1200px] items-center ">
           <div className="flex flex-row w-full justify-between max-w-[600px] items-start">
@@ -135,11 +132,12 @@ export default function CreateCitizen({
               className={`mb-[350px] max-w-[600px]`}
               title="Design"
               description="Design your unique passport image and on-chain registration profile."
-              >
+            >
               <ImageGenerator
                 setImage={setCitizenImage}
                 nextStage={() => setStage(1)}
                 stage={stage}
+                generateInBG
               />
             </StageContainer>
           )}
@@ -149,7 +147,9 @@ export default function CreateCitizen({
               <div className="w-full">
                 <Widget
                   className="w-[100%]"
-                  id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string}
+                  id={
+                    process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string
+                  }
                   onSubmit={submitTypeform}
                   height={700}
                 />
@@ -170,7 +170,7 @@ export default function CreateCitizen({
               </p> */}
 
               <Image
-                src={URL.createObjectURL(citizenImage)}
+                src={citizenImage ? URL.createObjectURL(citizenImage) : ''}
                 alt="entity-image"
                 width={600}
                 height={600}
@@ -231,9 +231,9 @@ export default function CreateCitizen({
                 <div className="flex flex-col dark:bg-[#0F152F] p-5 pb-10 rounded-[20px] md:p-5 mt-5">
                   <h3 className="font-GoodTimes text-2xl mb-2">MEMBERSHIP</h3>
                   <p className="mt-2">
-                    Membership lasts for one year and can be renewed at any time.
-                    Any wallet funds are self-custodied and are not dependent on
-                    membership.
+                    Membership lasts for one year and can be renewed at any
+                    time. Any wallet funds are self-custodied and are not
+                    dependent on membership.
                   </p>
                 </div>
                 <p className="mt-4">
@@ -294,10 +294,10 @@ export default function CreateCitizen({
                   //sign message
 
                   try {
-                    const cost = await citizenContract?.call('getRenewalPrice', [
-                      address,
-                      365 * 24 * 60 * 60,
-                    ])
+                    const cost = await citizenContract?.call(
+                      'getRenewalPrice',
+                      [address, 365 * 24 * 60 * 60]
+                    )
 
                     const formattedCost = ethers.utils
                       .formatEther(cost.toString())
@@ -323,7 +323,7 @@ export default function CreateCitizen({
                     const newImageIpfsHash = await pinImageToIPFS(
                       pinataJWT || '',
                       citizenImage,
-                      citizenData.firstName + citizenData.lastName + ' Image'
+                      citizenData.name + ' Image'
                     )
 
                     if (!newImageIpfsHash) {
@@ -336,7 +336,7 @@ export default function CreateCitizen({
                       'mintTo',
                       [
                         address,
-                        `${citizenData.firstName} ${citizenData.lastName}`,
+                        citizenData.name,
                         citizenData.description,
                         `ipfs://${newImageIpfsHash}`,
                         citizenData.location,
@@ -371,7 +371,7 @@ export default function CreateCitizen({
             </StageContainer>
           )}
         </div>
-      </div>  
+      </div>
     </Container>
   )
 }
