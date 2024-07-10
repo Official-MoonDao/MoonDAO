@@ -1,24 +1,24 @@
 //OnboardingV2
 import { StarIcon } from '@heroicons/react/24/outline'
 import { useLogin, usePrivy } from '@privy-io/react-auth'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, HATS_ADDRESS } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useContext, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { useTeamData } from '@/lib/team/useTeamData'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import Footer from '../layout/Footer'
 import Frame from '../layout/Frame'
 import InnerPreFooter from '../layout/InnerPreFooter'
+import { NoticeFooter } from '../layout/NoticeFooter'
 import CreateCitizen from './CreateCitizen'
 import CreateTeam from './CreateTeam'
-import { NoticeFooter } from '../layout/NoticeFooter'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains';
-import ChainContext from '@/lib/thirdweb/chain-context';
-import { useTeamData } from '@/lib/team/useTeamData';
 
 type TierProps = {
   label: string
@@ -40,12 +40,13 @@ function Tier({
   hasCitizen = false,
 }: TierProps) {
   const address = useAddress()
-  const { user, logout } = usePrivy()
-  const { login } = useLogin({
-    onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
-      if (!wasAlreadyAuthenticated) onClick()
-    },
-  })
+  const { login, user, logout } = usePrivy()
+
+  // const { login } = useLogin({
+  //   onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
+  //     if (!wasAlreadyAuthenticated) onClick()
+  //   },
+  // })
 
   const iconStar = './assets/icon-star.svg'
 
@@ -132,29 +133,37 @@ function Tier({
 }
 
 export function OnboardingV2({ selectedChain }: any) {
-  const address = useAddress();
-  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>();
+  const address = useAddress()
+  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
 
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
-  );
+  )
 
   const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
     address,
-  ]);
+  ])
 
   // Adding these lines to get the chain context
-  const { setSelectedChain } = useContext(ChainContext);
+  const { setSelectedChain } = useContext(ChainContext)
 
   // Adding these lines to determine the user's role
-  const { contract: teamContract } = useContract(TEAM_ADDRESSES[selectedChain?.slug]);
-  const { contract: hatsContract } = useContract(HATS_ADDRESS);
-  const { isManager, subIsValid } = useTeamData(teamContract, hatsContract, address);
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain?.slug]
+  )
+  const { contract: hatsContract } = useContract(HATS_ADDRESS)
+  const { isManager, subIsValid } = useTeamData(
+    teamContract,
+    hatsContract,
+    address
+  )
 
   // Setting the selected chain
   useEffect(() => {
-    setSelectedChain(process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia);
-  }, [setSelectedChain]);
+    setSelectedChain(
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+    )
+  }, [setSelectedChain])
 
   if (selectedTier === 'citizen') {
     return (
@@ -163,7 +172,7 @@ export function OnboardingV2({ selectedChain }: any) {
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />
-    );
+    )
   }
 
   if (selectedTier === 'team') {
@@ -173,7 +182,7 @@ export function OnboardingV2({ selectedChain }: any) {
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />
-    );
+    )
   }
 
   return (
@@ -198,10 +207,10 @@ export function OnboardingV2({ selectedChain }: any) {
           <NoticeFooter
             isManager={isManager}
             isCitizen={!!address && !isManager && subIsValid}
-            defaultTitle = 'Need Help?'
-            defaultDescription = "Submit a ticket in MoonDAO's support channel on Discord!"
-            defaultButtonText = 'Submit a ticket'
-            defaultButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050'
+            defaultTitle="Need Help?"
+            defaultDescription="Submit a ticket in MoonDAO's support channel on Discord!"
+            defaultButtonText="Submit a ticket"
+            defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
           />
         }
       >
@@ -239,5 +248,5 @@ export function OnboardingV2({ selectedChain }: any) {
         </div>
       </ContentLayout>
     </Container>
-  );
+  )
 }
