@@ -11,7 +11,7 @@ import { useDebounce } from 'react-use'
 import useDiscordUserSearch, {
   DiscordUser,
 } from '@/lib/nance/DiscordUserSearch'
-import { PhotoIcon, QuestionMarkCircleIcon } from "@heroicons/react/24/outline"
+import { PhotoIcon, QuestionMarkCircleIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline"
 import { classNames } from '@/lib/utils/tailwind'
 import { LoadingSpinner } from "../../layout/LoadingSpinner"
 
@@ -39,7 +39,7 @@ export default function DiscordUserIdInput({
   const [username, setUsername] = useState('')
   const [selectedUser, setSelectedUser] = useState<DiscordUser | null>(null)
 
-  const { data, isLoading: loading } = useDiscordUserSearch(
+  const { data, isLoading: loading, error } = useDiscordUserSearch(
     username,
     !!username
   )
@@ -82,6 +82,7 @@ export default function DiscordUserIdInput({
             selectedUser ? `@${selectedUser.global_name}` : displayVal ? `@${displayVal}` : query
           }
           placeholder="Search..."
+          autoComplete="off"
         />
         <ComboboxButton className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
           <ChevronDownIcon
@@ -93,7 +94,7 @@ export default function DiscordUserIdInput({
         <ComboboxOptions className="absolute inner-container-background z-10 mt-1 max-h-60 w-max overflow-y-auto overflow-x-visible rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
           {data
             ?.map((d) => d.user)
-            .map((u) => (
+            ?.map((u) => (
               <ComboboxOption
                 key={u.id}
                 value={u}
@@ -144,6 +145,18 @@ export default function DiscordUserIdInput({
               </div>
             </div>
           )}
+
+          {error && (
+            <div className="py-2 pl-3 pr-9 whitespace-nowrap text-gray-500">
+              <div className="flex items-center">
+                <ExclamationCircleIcon className="w-6 h-6 text-red-400" />
+                <div className="ml-2">
+                  <p className="text-sm">Error occurred</p>
+                  <p className="text-xs text-gray-400">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </ComboboxOptions>
       </div>
     </Combobox>
@@ -151,7 +164,6 @@ export default function DiscordUserIdInput({
 }
 
 function DiscordUserInfoEntry({ user }: { user: DiscordUser }) {
-  console.log(user)
   return (
     <div className="flex">
       {user.avatar ? (
