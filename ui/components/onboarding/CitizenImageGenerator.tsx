@@ -13,11 +13,11 @@ export function ImageGenerator({
   citizenImage,
   setImage,
   nextStage,
+  generateInBG,
   stage,
 }: any) {
   const { getAccessToken } = usePrivy()
   const [userImage, setUserImage] = useState<File>()
-  const [generatedImage, setGeneratedImage] = useState<string>()
   const { FileInput, openFileDialog, uploadToS3 } = useS3Upload()
 
   async function submitImage() {
@@ -66,6 +66,7 @@ export function ImageGenerator({
 
     console.log('jobId', jobId)
     await checkJobStatus(jobId.id)
+    if (generateInBG) nextStage()
   }
 
   const checkJobStatus = async (jobId: string) => {
@@ -80,7 +81,15 @@ export function ImageGenerator({
     }
 
     if (job.status === 'COMPLETED') {
-      setGeneratedImage(job.output[0].url)
+      const res = await fetch(job.output[0].url)
+      const blob = await res.blob()
+
+      // Create a File object from the blob
+      const fileName = `image_${jobId}.png` // You can customize the file name
+      const file = new File([blob], fileName, { type: blob.type })
+
+      // Set the image as a File object
+      setImage(file)
     } else {
       setTimeout(() => {
         checkJobStatus(jobId)
@@ -97,18 +106,13 @@ export function ImageGenerator({
           accept="image/*"
           onChange={(e: any) => setUserImage(e.target.files[0])}
         />
-        {userImage &&
-          (citizenImage ? (
-            <StageButton className="" onClick={submitImage}>
-              Save Design
-            </StageButton>
-          ) : (
-            <StageButton onClick={generateImage}>Generate</StageButton>
-          ))}
-        {!userImage && currImage && (
+        <StageButton onClick={generateImage}>Generate</StageButton>
+        {(currImage && !userImage) || citizenImage ? (
           <StageButton className="" onClick={submitImage}>
             Save Design
           </StageButton>
+        ) : (
+          <></>
         )}
       </div>
       <div
@@ -137,9 +141,9 @@ export function ImageGenerator({
         )}
         {userImage && (
           <>
-            {generatedImage ? (
+            {citizenImage ? (
               <Image
-                src={generatedImage}
+                src={URL.createObjectURL(citizenImage)}
                 layout="fill"
                 objectFit="contain"
                 className="mix-blend-multiply"

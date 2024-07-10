@@ -12,8 +12,7 @@ export function useMoonPay() {
     const roundedCurrencyAmount = Math.round(amount * 1000) / 1000
 
     const fundWalletConfig: MoonpayConfig = {
-      currencyCode:
-        +selectedChain.chainId === 1 ? 'ETH_ETHEREUM' : 'MATIC_POLYGON',
+      currencyCode: 'ETH_ARBITRUM',
       paymentMethod: 'credit_debit_card',
       quoteCurrencyAmount: roundedCurrencyAmount,
       uiConfig: {

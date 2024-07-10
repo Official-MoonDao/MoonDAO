@@ -1,9 +1,16 @@
 import { useContract } from '@thirdweb-dev/react'
-import { JOBS_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
+import {
+  JOBS_TABLE_ADDRESSES,
+  TABLELAND_ENDPOINT,
+  TEAM_ADDRESSES,
+} from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
+import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import Frame from '@/components/layout/Frame'
 import Search from '@/components/layout/Search'
 
 export default function Jobs() {
@@ -15,6 +22,10 @@ export default function Jobs() {
 
   const { contract: jobTableContract }: any = useContract(
     JOBS_TABLE_ADDRESSES[selectedChain.slug]
+  )
+
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug]
   )
 
   async function getAllJobs() {
@@ -43,20 +54,40 @@ export default function Jobs() {
   }, [jobs, input])
 
   return (
-    <main className="animate-fadeIn">
+    <section id="jobs-container" className="overflow-hidden">
       <Head title="Jobs" image="" />
-      <div className="flex flex-col items-center lg:items-start space-y-10 mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-[white] dark:bg-[#080C20] font-RobotoMono w-[350px] sm:w-[400px] lg:w-full lg:max-w-[1080px] text-slate-950 dark:text-white page-border-and-color">
-        <h1 className={`page-title`}>Jobs</h1>
+      <Container>
+        <ContentLayout
+          header="Jobs"
+          headerSize="max(20px, 3vw)"
+          description={''}
+          preFooter={''}
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+        >
+          <Frame
+            bottomLeft="20px"
+            topLeft="5vmax"
+            marginBottom="10px"
+            noPadding
+          >
+            <Search input={input} setInput={setInput} />
+          </Frame>
 
-        <Search input={input} setInput={setInput} />
-
-        <div className="w-full flex flex-col gap-4">
-          {filteredJobs &&
-            filteredJobs.map((job: JobType, i: number) => (
-              <Job key={`job-${i}`} job={job} showEntityId />
-            ))}
-        </div>
-      </div>
-    </main>
+          <div className="w-full flex flex-col gap-4">
+            {filteredJobs &&
+              filteredJobs.map((job: JobType, i: number) => (
+                <Job
+                  key={`job-${i}`}
+                  job={job}
+                  showTeam
+                  teamContract={teamContract}
+                />
+              ))}
+          </div>
+        </ContentLayout>
+      </Container>
+    </section>
   )
 }

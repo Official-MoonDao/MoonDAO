@@ -1,4 +1,5 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { useNFT } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useState } from 'react'
 import Frame from '../layout/Frame'
@@ -19,8 +20,8 @@ type JobProps = {
   jobTableContract?: any
   refreshJobs?: any
   editable?: boolean
-  teamId?: string
-  showEntityId?: boolean
+  teamContract?: any
+  showTeam?: boolean
 }
 
 export default function Job({
@@ -28,29 +29,34 @@ export default function Job({
   jobTableContract,
   refreshJobs,
   editable,
-  teamId,
-  showEntityId,
+  teamContract,
+  showTeam,
 }: JobProps) {
   const [enabledEditJobModal, setEnabledEditJobModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  const { data: teamNft } = useNFT(teamContract, job.teamId)
+
   return (
-    <div className="flex flex-col justify-between">
+    <div className="flex flex-col justify-between bg-dark-cool rounded-md">
       <Frame>
         <div className="flex justify-between items-end">
-          <p className="font-bold font-GoodTimes pb-2">{job.title}</p>
-          <div className="flex gap-2">
-            {showEntityId && (
+          <div className="flex flex-col">
+            {showTeam && teamNft && (
               <Link
-                href={`/entity/${job.teamId}`}
-                className="text-moon-orange"
-              >{`Entity #${job.teamId}`}</Link>
+                href={`/team/${job.teamId}`}
+                className="font-bold text-light-warm"
+              >
+                {teamNft.metadata.name}
+              </Link>
             )}
+            <p className="font-bold font-GoodTimes pb-2">{job.title}</p>
+          </div>
+          <div className="flex gap-2 items-center">
             <div className="flex flex-col lg:flex-row pb-5 items-center gap-2 lg:gap-4">
               <StandardButton className="gradient-2 rounded-[5vmax] rounded-bl-[20px]">
                 Apply
               </StandardButton>
-
               {editable && (
                 <div className="flex gap-4">
                   <button onClick={() => setEnabledEditJobModal(true)}>
@@ -67,7 +73,7 @@ export default function Job({
                         try {
                           await jobTableContract.call('deleteFromTable', [
                             job.id,
-                            teamId,
+                            job.teamId,
                           ])
                           setTimeout(() => {
                             refreshJobs()
@@ -84,7 +90,7 @@ export default function Job({
                   )}
                   {enabledEditJobModal && (
                     <TeamJobModal
-                      teamId={teamId as any}
+                      teamId={job.teamId as any}
                       setEnabled={setEnabledEditJobModal}
                       jobTableContract={jobTableContract}
                       job={job}

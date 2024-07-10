@@ -1,8 +1,7 @@
 import { answerByFieldId } from './answerByFieldId'
 
 export type CitizenData = {
-  firstName: string
-  lastName?: string
+  name: string
   email: string
   description?: string
   location?: string
@@ -19,8 +18,7 @@ export default function formatCitizenFormData(
   responseId: string
 ) {
   return {
-    firstName: answerByFieldId(answers, 'Zj6QbNhOey3i').text,
-    lastName: answerByFieldId(answers, 'D8kNaAAjwBQt')?.text || '',
+    name: answerByFieldId(answers, 'Zj6QbNhOey3i').text,
     email: answerByFieldId(answers, 'ggrOjApkLFMz').email,
     description: answerByFieldId(answers, 'PtIcC6l6F5bl')?.text || '',
     discord: answerByFieldId(answers, 'WzZ35V8MLS4J')?.text || '',

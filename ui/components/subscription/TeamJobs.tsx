@@ -70,7 +70,6 @@ export default function TeamJobs({
                 key={`team-job-${i}`}
                 job={job}
                 jobTableContract={jobTableContract}
-                teamId={teamId}
                 editable={isManager}
                 refreshJobs={getEntityJobs}
               />

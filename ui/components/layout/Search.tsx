@@ -1,17 +1,29 @@
+import Image from 'next/image'
+import Frame from '@/components/layout/Frame'
 import { SearchIcon } from '../assets'
 
 export default function Search({ input, setInput }: any) {
   return (
-    <div className="px-4 w-full max-w-[350px] h-[30px] flex items-center space-x-5 text-black dark:text-white">
-      <SearchIcon />
-      <input
-        className="w-full rounded-sm px-4 py-2 bg-moon-orange bg-opacity-25 text-moon-orange placeholder:text-moon-orange"
-        onChange={({ target }) => setInput(target.value)}
-        value={input}
-        type="text"
-        name="search"
-        placeholder="Search..."
+    <div className="relative px-4 bg-search w-full max-w-[350px] flex items-center space-x-2 text-black dark:text-white">
+      <div id="search-icon-bg" className="bg-search"></div>
+      <Image
+        src="/assets/icon-mag.svg"
+        alt="Search Icon"
+        width={20}
+        height={20}
       />
+      <div id="input-field-container" className="">
+        <Frame noPadding marginBottom="0px">
+          <input
+            className="w-full rounded-sm px-4 pt-2 pb-4 bg-dark-cool text-white placeholder:text-grey"
+            onChange={({ target }) => setInput(target.value)}
+            value={input}
+            type="text"
+            name="search"
+            placeholder="Search..."
+          />
+        </Frame>
+      </div>
     </div>
   )
 }
