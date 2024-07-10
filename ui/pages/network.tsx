@@ -1,54 +1,55 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains';
-import { NFT, useContract, useNFTs } from '@thirdweb-dev/react';
-import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, HATS_ADDRESS } from 'const/config';
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { NFT, useContract, useNFTs } from '@thirdweb-dev/react'
+import { useAddress } from '@thirdweb-dev/react'
+import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, HATS_ADDRESS } from 'const/config'
 import {
   blockedCitizens,
   blockedTeams,
   featuredEntities,
-} from 'const/whitelist';
-import Image from 'next/image';
-import { useRouter } from 'next/router';
-import React, { useState, useEffect, useContext } from 'react';
-import ChainContext from '../lib/thirdweb/chain-context';
-import { useHandleRead } from '@/lib/thirdweb/hooks';
-import { useShallowQueryRoute } from '@/lib/utils/hooks';
-import Card from '../components/layout/Card';
-import Container from '../components/layout/Container';
-import ContentLayout from '../components/layout/ContentLayout';
-import Frame from '../components/layout/Frame';
-import Head from '../components/layout/Head';
-import InnerPreFooter from '../components/layout/InnerPreFooter';
-import CardSkeleton from '@/components/layout/CardSkeleton';
-import Tab from '@/components/layout/Tab';
-import { NoticeFooter } from '@/components/layout/NoticeFooter';
-import { useTeamData } from '@/lib/team/useTeamData';
-import { useAddress } from '@thirdweb-dev/react';
+} from 'const/whitelist'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
+import React, { useState, useEffect, useContext } from 'react'
+import ChainContext from '../lib/thirdweb/chain-context'
+import { useTeamData } from '@/lib/team/useTeamData'
+import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import Card from '../components/layout/Card'
+import Container from '../components/layout/Container'
+import ContentLayout from '../components/layout/ContentLayout'
+import Frame from '../components/layout/Frame'
+import Head from '../components/layout/Head'
+import InnerPreFooter from '../components/layout/InnerPreFooter'
+import CardSkeleton from '@/components/layout/CardSkeleton'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import Search from '@/components/layout/Search'
+import Tab from '@/components/layout/Tab'
 
 export default function Directory() {
-  const { selectedChain, setSelectedChain }: any = useContext(ChainContext);
-  const address = useAddress();  // Add this line to get the user's address
+  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
+  const address = useAddress() // Add this line to get the user's address
 
-  const router = useRouter();
-  const shallowQueryRoute = useShallowQueryRoute();
+  const router = useRouter()
+  const shallowQueryRoute = useShallowQueryRoute()
 
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState('')
   function filterBySearch(nfts: NFT[]) {
     return nfts.filter((nft) => {
       return nft.metadata.name
         ?.toString()
         .toLowerCase()
-        .includes(input.toLowerCase());
-    });
+        .includes(input.toLowerCase())
+    })
   }
 
-  const [tab, setTab] = useState<string>('all');
+  const [tab, setTab] = useState<string>('all')
   function loadByTab(tab: string) {
     if (tab === 'teams') {
-      setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams);
+      setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
     } else if (tab === 'citizens') {
       setCachedNFTs(
         input != '' ? filterBySearch(filteredCitizens) : filteredCitizens
-      );
+      )
     } else {
       const nfts =
         filteredTeams?.[0] && filteredCitizens?.[0]
@@ -57,8 +58,8 @@ export default function Directory() {
           ? filteredCitizens
           : filteredTeams?.[0]
           ? filteredTeams
-          : [];
-      setCachedNFTs(input != '' ? filterBySearch(nfts) : nfts);
+          : []
+      setCachedNFTs(input != '' ? filterBySearch(nfts) : nfts)
     }
     // shallowQueryRoute({ type: tab })
   }
@@ -66,50 +67,50 @@ export default function Directory() {
   // Citizen and Entity Data
   const { contract: teamContract } = useContract(
     TEAM_ADDRESSES[selectedChain.slug]
-  );
+  )
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
-  );
+  )
 
-  const { data: totalTeams } = useHandleRead(teamContract, 'totalSupply');
-  const { data: totalCitizens } = useHandleRead(citizenContract, 'totalSupply');
+  const { data: totalTeams } = useHandleRead(teamContract, 'totalSupply')
+  const { data: totalCitizens } = useHandleRead(citizenContract, 'totalSupply')
 
-  const [maxPage, setMaxPage] = useState(1);
+  const [maxPage, setMaxPage] = useState(1)
 
   useEffect(() => {
-    if (!totalTeams || !totalCitizens) return;
-    if (tab === 'teams') setMaxPage(Math.ceil(totalTeams?.toNumber() / 9));
-    if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens?.toNumber() / 9));
+    if (!totalTeams || !totalCitizens) return
+    if (tab === 'teams') setMaxPage(Math.ceil(totalTeams?.toNumber() / 9))
+    if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens?.toNumber() / 9))
     if (tab === 'all')
       setMaxPage(
         Math.ceil((totalTeams.toNumber() + totalCitizens.toNumber()) / 9)
-      );
-  }, [totalTeams, totalCitizens, tab]);
+      )
+  }, [totalTeams, totalCitizens, tab])
 
-  const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([]);
+  const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
 
   const {
     data: teams,
     isLoading: isLoadingTeams,
     error,
-  } = useNFTs(teamContract, { start: 0, count: 100 });
+  } = useNFTs(teamContract, { start: 0, count: 100 })
 
   const { data: citizens, isLoading: isLoadingCitizens } = useNFTs(
     citizenContract,
     { start: 0, count: 100 }
-  );
+  )
 
-  const [filteredTeams, setFilteredTeams] = useState<NFT[]>([]);
-  const [filteredCitizens, setFilteredCitizens] = useState<NFT[]>([]);
+  const [filteredTeams, setFilteredTeams] = useState<NFT[]>([])
+  const [filteredCitizens, setFilteredCitizens] = useState<NFT[]>([])
 
-  const [pageIdx, setPageIdx] = useState(1);
+  const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
-    const type = router.query.type;
+    const type = router.query.type
     if (type) {
-      setTab(type as string);
+      setTab(type as string)
     }
-  }, [router]);
+  }, [router])
 
   //only show public nfts that are whitelisted
   useEffect(() => {
@@ -119,23 +120,23 @@ export default function Directory() {
           nft.metadata.attributes?.find(
             (attr: any) => attr.trait_type === 'view'
           ).value === 'public' && !blockedTeams.includes(nft.metadata.id)
-      );
+      )
 
-      const now = Math.floor(Date.now() / 1000);
+      const now = Math.floor(Date.now() / 1000)
 
       const filteredValidTeams: any = filteredPublicTeams?.filter(
         async (nft: any) => {
           const expiresAt = await teamContract.call('expiresAt', [
             nft?.metadata?.id,
-          ]);
+          ])
 
-          return expiresAt.toNumber() > now;
+          return expiresAt.toNumber() > now
         }
-      );
+      )
 
-      setFilteredTeams(filteredValidTeams);
+      setFilteredTeams(filteredValidTeams)
     }
-  }, [teams, teamContract]);
+  }, [teams, teamContract])
 
   useEffect(() => {
     if (citizenContract) {
@@ -144,64 +145,48 @@ export default function Directory() {
           nft.metadata.attributes?.find(
             (attr: any) => attr.trait_type === 'view'
           ).value === 'public' && !blockedCitizens.includes(nft.metadata.id)
-      );
-      const now = Math.floor(Date.now() / 1000);
+      )
+      const now = Math.floor(Date.now() / 1000)
 
       const filteredValidCitizens: any = filteredPublicCitizens?.filter(
         async (nft: any) => {
           const expiresAt = await citizenContract.call('expiresAt', [
             nft?.metadata?.id,
-          ]);
+          ])
 
-          return expiresAt.toNumber() > now;
+          return expiresAt.toNumber() > now
         }
-      );
-      setFilteredCitizens(filteredValidCitizens);
+      )
+      setFilteredCitizens(filteredValidCitizens)
     }
-  }, [citizens, citizenContract]);
+  }, [citizens, citizenContract])
 
   useEffect(() => {
-    loadByTab(tab);
-  }, [tab, input, filteredTeams, filteredCitizens, router.query]);
+    loadByTab(tab)
+  }, [tab, input, filteredTeams, filteredCitizens, router.query])
 
   useEffect(() => {
     if (router.query.type || router.asPath === '/directory')
-      shallowQueryRoute({ type: tab });
-  }, [tab]);
+      shallowQueryRoute({ type: tab })
+  }, [tab])
 
   useEffect(() => {
     setSelectedChain(
       process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    );
-  }, [setSelectedChain]);
+    )
+  }, [setSelectedChain])
 
-  const { contract: hatsContract } = useContract(HATS_ADDRESS);
-  const { isManager, subIsValid } = useTeamData(teamContract, hatsContract, address);
+  const { contract: hatsContract } = useContract(HATS_ADDRESS)
+  const { isManager, subIsValid } = useTeamData(
+    teamContract,
+    hatsContract,
+    address
+  )
 
   const descriptionSection = (
     <>
       <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
-        <div className="relative px-4 bg-search w-full max-w-[350px] flex items-center space-x-2 text-black dark:text-white">
-          <div id="search-icon-bg" className="bg-search"></div>
-          <Image
-            src="/../.././assets/icon-mag.svg"
-            alt="Search Icon"
-            width={20}
-            height={20}
-          />
-          <div id="input-field-container" className="">
-            <Frame noPadding marginBottom="0px">
-              <input
-                className="w-full rounded-sm px-4 pt-2 pb-4 bg-dark-cool text-white placeholder:text-grey"
-                onChange={({ target }) => setInput(target.value)}
-                value={input}
-                type="text"
-                name="search"
-                placeholder="Search..."
-              />
-            </Frame>
-          </div>
-        </div>
+        <Search input={input} setInput={setInput} />
       </Frame>
       <div
         id="filter-container"
@@ -237,7 +222,7 @@ export default function Directory() {
         </Frame>
       </div>
     </>
-  );
+  )
 
   return (
     <section id="network-container" className="overflow-hidden">
@@ -273,7 +258,10 @@ export default function Directory() {
                         ? 'team'
                         : 'citizen'
                       return (
-                        <div className="justify-center mt-5 flex" key={'team-citizen-' + I}>
+                        <div
+                          className="justify-center mt-5 flex"
+                          key={'team-citizen-' + I}
+                        >
                           <Card
                             inline
                             metadata={nft.metadata}
