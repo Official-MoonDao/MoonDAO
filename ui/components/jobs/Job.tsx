@@ -90,7 +90,7 @@ export default function Job({
                   )}
                   {enabledEditJobModal && (
                     <TeamJobModal
-                      teamId={teamId as any}
+                      teamId={job.teamId as any}
                       setEnabled={setEnabledEditJobModal}
                       jobTableContract={jobTableContract}
                       job={job}
