@@ -277,7 +277,7 @@ export default function ProposalEditor() {
 
 
   return (
-    <div className="flex flex-col justify-center items-center animate-fadeIn">
+    <div className="flex flex-col justify-center items-center animate-fadeIn w-[90vw] md:w-full">
       <Head title='Proposal Editor' />
 
       <ResultModal
