@@ -1,6 +1,5 @@
 //OnboardingV2
-import { StarIcon } from '@heroicons/react/24/outline'
-import { useLogin, usePrivy } from '@privy-io/react-auth'
+import { usePrivy } from '@privy-io/react-auth'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, HATS_ADDRESS } from 'const/config'
@@ -13,9 +12,6 @@ import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
-import Footer from '../layout/Footer'
-import Frame from '../layout/Frame'
-import InnerPreFooter from '../layout/InnerPreFooter'
 import { NoticeFooter } from '../layout/NoticeFooter'
 import CreateCitizen from './CreateCitizen'
 import CreateTeam from './CreateTeam'
@@ -73,9 +69,9 @@ function Tier({
             <div className="pt-5 md:pt-0 flex items-center rounded-[2vmax] rounded-tl-[20px] overflow-hidden">
               <Image
                 src={
-                  label === 'Register Now'
-                    ? '/image-generator/images/org-example.png'
-                    : '/image-generator/images/citizen_image.png'
+                  label === 'Create a Team'
+                    ? '/assets/team_image.png'
+                    : '/assets/neil-armstrong-pfp.png'
                 }
                 width={506}
                 height={506}
@@ -202,9 +198,10 @@ export function OnboardingV2({ selectedChain }: any) {
           <>
             Be part of the first open-source, interplanetary network state
             dedicated to establishing a permanent human presence on the Moon and
-            beyond. Membership is currently invite-only, but you can register
-            your interest by submitting an application or scheduling an
-            onboarding call to see if you'd be a good fit.
+            beyond. Registration is currently invite-only, but you can send an
+            email to{' '}
+            <Link href="mailto:info@moondao.com">info@moondao.com</Link> if you
+            think you'd be a good fit.
           </>
         }
         preFooter={
@@ -213,8 +210,8 @@ export function OnboardingV2({ selectedChain }: any) {
               isManager={isManager}
               isCitizen={!!address && !isManager && subIsValid}
               defaultTitle="Need Help?"
-              defaultDescription="Submit a ticket in MoonDAO's support channel on Discord!"
-              defaultButtonText="Submit a ticket"
+              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+              defaultButtonText="Submit a Ticket"
               defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
             />
           </>
@@ -233,7 +230,7 @@ export function OnboardingV2({ selectedChain }: any) {
                 'Early Project Access: Engage in space projects early, earn money, and advance your career.',
                 'Unique Identity: Create a personalized Passport representing your on-chain identity.',
               ]}
-              buttoncta="Register As A Citizen"
+              buttoncta="Become a Citizen"
               onClick={() => setSelectedTier('citizen')}
               hasCitizen={+citizenBalance > 0}
             />
@@ -249,7 +246,7 @@ export function OnboardingV2({ selectedChain }: any) {
                 'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
                 'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
               ]}
-              buttoncta="Create A Team"
+              buttoncta="Create a Team"
               onClick={() => setSelectedTier('team')}
             />
           </div>

@@ -135,7 +135,7 @@ export default function CreateTeam({
                 <StageContainer
                   className={`mb-[350px] max-w-[600px]`}
                   title="Design"
-                  description="Design your unique onchain registration certificate by uploading your logo or image. For best results, use an image with a white or transparent background."
+                  description="Design your unique onchain registration by uploading your logo or image. For best results, use an image with a white or transparent background."
                 >
                   <ImageGenerator
                     setImage={setTeamImage}
@@ -149,7 +149,7 @@ export default function CreateTeam({
               {stage === 1 && (
                 <StageContainer
                   title="Info"
-                  description="Input your organization's information."
+                  description="Please complete your team profile."
                 >
                   <div className="w-full">
                     <Widget
@@ -167,7 +167,7 @@ export default function CreateTeam({
               {stage === 2 && (
                 <StageContainer
                   title="Mint Team"
-                  description="Please review your onchain Team before minting."
+                  description="Please review your onchain profile before finalizing your registration."
                 >
                   {/* <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
                         {`Make sure all your information is displayed correcly.`}
@@ -229,15 +229,13 @@ export default function CreateTeam({
                     </div>
                   </div>
                   <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
-                    <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT</h2>
-                    <h2 className="font-GoodTimes text-3xl mb-2">
-                      INFORMATION
+                    <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT INFORMATION
                     </h2>
                     <div className="flex flex-col rounded-[20px] bg-[#0F152F] p-5 pb-10 md:p-5">
                       <h3 className="font-GoodTimes text-2xl mb-2">TREASURY</h3>
                       <p className="mt-2">
                         A self-custodied multisignature treasury will secure
-                        your organization’s assets, allowing to interact with
+                        your organization’s assets, allowing interaction with
                         any smart contracts within the Ethereum ecosystem.{' '}
                         <br /> <br />
                         You can add more signers later via your Team management
@@ -259,7 +257,7 @@ export default function CreateTeam({
                       </p>
                     </div>
                     <p className="mt-4">
-                      Welcome to the future of off-world coordination with
+                      Welcome to the future of on-chain, off-world coordination with
                       MoonDAO!
                     </p>
                   </div>
@@ -414,12 +412,12 @@ export default function CreateTeam({
                       }
                     }}
                   >
-                    {isLoadingMint ? 'loading...' : 'Mint'}
+                    {isLoadingMint ? 'loading...' : 'Check Out'}
                   </StageButton>
                   {isLoadingMint && (
                     <p className="opacity-[50%]">
                       {
-                        'Minting can take up to a minute, please wait while the transaction is processed.'
+                        'On-chain registration can take up to a minute, please wait while the transaction is processed.'
                       }
                     </p>
                   )}

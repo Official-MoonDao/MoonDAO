@@ -178,7 +178,7 @@ export default function Card({
                 profile && (
                   <div id="details-container" className="mt-4">
                     <p id="org-description">
-                      This citizen has yet to add a profile
+                      This citizen has yet to add a profile.
                     </p>
                     <div id="handle-container">Discord: NONE</div>
                   </div>

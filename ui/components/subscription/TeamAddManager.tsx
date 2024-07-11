@@ -70,7 +70,7 @@ function TeamAddManagerModal({
               setWearerAddress(target.value)
             }}
             value={wearerAddress}
-            placeholder="Enter an address"
+            placeholder="Enter a wallet address: 0x..."
           />
           <StandardButton
             type="submit"
@@ -111,7 +111,7 @@ export default function TeamAddManager({
   return (
     <div
       id="button-container"
-      className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
+      className="flex flex-col md:flex-row justify-start items-center gap-2"
     >
       {managerModalEnabled && (
         <TeamAddManagerModal
@@ -121,7 +121,7 @@ export default function TeamAddManager({
         />
       )}
       <StandardButtonRight
-        className="w-full gradient-2 rounded-[5vmax]"
+        className="min-w-[200px] gradient-2 rounded-[5vmax]"
         onClick={() => setManagerModalEnabled(true)}
       >
         Add Manager
