@@ -147,7 +147,8 @@ export default function CreateCitizen({
                 description="Create your unique and personalized astronaut profile picture using AI! Upload a photo of yourself, or an avatar that represents you well. Please make sure the photo contains a face. Image generation may take up to a minute, so please fill in your profile in the next step while your image is being generated."
               >
                 <ImageGenerator
-                  setImage={setCitizenImage}
+                  citizenImage={citizenImage}
+                setImage={setCitizenImage}
                   nextStage={() => setStage(1)}
                   stage={stage}
                   generateInBG
@@ -182,12 +183,16 @@ export default function CreateCitizen({
                   {`Welcome to the future of off-world coordination with MoonDAO.`}
                 </p> */}
 
-                <Image
-                  src={citizenImage ? URL.createObjectURL(citizenImage) : ''}
-                  alt="citizen-image"
-                  width={600}
-                  height={600}
-                />
+              <Image
+                src={
+                  citizenImage
+                    ? URL.createObjectURL(citizenImage)
+                    : '/assets/MoonDAO-Loading-Animation.svg'
+                }
+                alt="citizen-image"
+                width={600}
+                height={600}
+              />
 
                 <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
                   <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
@@ -306,7 +311,12 @@ export default function CreateCitizen({
                   onClick={async () => {
                     //sign message
 
-                    try {
+                    if (!citizenImage)
+                    return toast.error(
+                      'Please wait for your image to finish generating.'
+                    )
+
+                  try {
                       const cost = await citizenContract?.call(
                         'getRenewalPrice',
                         [address, 365 * 24 * 60 * 60]

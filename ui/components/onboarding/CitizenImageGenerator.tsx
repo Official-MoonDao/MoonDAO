@@ -3,9 +3,8 @@ import { usePrivy } from '@privy-io/react-auth'
 import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
 import { useS3Upload } from 'next-s3-upload'
-import Head from 'next/head'
 import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { StageButton } from './StageButton'
 
 export function ImageGenerator({
@@ -19,6 +18,7 @@ export function ImageGenerator({
   const { getAccessToken } = usePrivy()
   const [userImage, setUserImage] = useState<File>()
   const { FileInput, openFileDialog, uploadToS3 } = useS3Upload()
+  const [generating, setGenerating] = useState(false)
 
   async function submitImage() {
     if (!document.getElementById('citizenPic'))
@@ -49,11 +49,10 @@ export function ImageGenerator({
     }
 
     const { url } = await uploadToS3(userImage)
-    console.log('url', url)
 
     const accessToken = await getAccessToken()
 
-    const jobId = await fetch('/api/imageGen/citizenImage', {
+    const jobId = await fetch('/api/image-gen/citizen-image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -64,36 +63,52 @@ export function ImageGenerator({
       .then((res) => res.json())
       .catch((e) => console.error(e))
 
-    console.log('jobId', jobId)
-    await checkJobStatus(jobId.id)
+    setGenerating(true)
     if (generateInBG) nextStage()
+    await checkJobStatus(jobId.id)
   }
 
   const checkJobStatus = async (jobId: string) => {
-    const jobs = await fetch('/api/imageGen/citizenImage').then((res) =>
+    let jobs = await fetch('/api/image-gen/citizen-image').then((res) =>
       res.json()
     )
 
-    const job = jobs.find((job: any) => job.id === jobId)
+    let job = jobs.find((job: any) => job.id === jobId)
+
+    while (
+      job.status === 'QUEUED' ||
+      job.status === 'STARTED' ||
+      job.status === 'INIT'
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 7000))
+      jobs = await fetch('/api/image-gen/citizen-image').then((res) =>
+        res.json()
+      )
+      job = jobs.find((job: any) => job.id === jobId)
+      console.log(job)
+    }
 
     if (job.status === 'ERROR') {
       console.error('job failed')
     }
 
     if (job.status === 'COMPLETED') {
-      const res = await fetch(job.output[0].url)
+      const res = await fetch('/api/image-gen/get-citizen-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: job.output[0].url }),
+      })
+      //get the text from the res
       const blob = await res.blob()
 
       // Create a File object from the blob
       const fileName = `image_${jobId}.png` // You can customize the file name
       const file = new File([blob], fileName, { type: blob.type })
-
       // Set the image as a File object
       setImage(file)
-    } else {
-      setTimeout(() => {
-        checkJobStatus(jobId)
-      }, 15000)
+      setGenerating(false)
     }
   }
 
@@ -132,22 +147,28 @@ export function ImageGenerator({
           <>
             {citizenImage ? (
               <Image
-                src={URL.createObjectURL(citizenImage)}
+                src={URL.createObjectURL(userImage)}
+                layout="fill"
+                objectFit="contain"
+                className="mix-blend-multiply"
+                alt={''}
+              />
+            ) : generating ? (
+              <Image
+                src={'/assets/MoonDAO-Loading-Animation.svg'}
                 layout="fill"
                 objectFit="contain"
                 className="mix-blend-multiply"
                 alt={''}
               />
             ) : (
-              userImage && (
-                <Image
-                  src={URL.createObjectURL(userImage)}
-                  layout="fill"
-                  objectFit="contain"
-                  className="mix-blend-multiply"
-                  alt={''}
-                />
-              )
+              <Image
+                src={URL.createObjectURL(userImage)}
+                layout="fill"
+                objectFit="contain"
+                className="mix-blend-multiply"
+                alt={''}
+              />
             )}
           </>
         )}

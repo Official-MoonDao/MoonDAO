@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import { v4 } from 'uuid'
 import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 
 export default async function handler(
@@ -12,7 +13,10 @@ export default async function handler(
       return res.status(401).json('Unauthorized')
     }
 
-  const { url } = req.body
+    const { url } = req.body
+    const uuid = v4()
+    const files: { [key: string]: string } = {}
+    files[`/input/${uuid}.jpg`] = url
 
     // generate a random 15 digit number
     let seed = ''
@@ -62,7 +66,7 @@ export default async function handler(
               class_type: 'InstantIDModelLoader',
             },
             '13': {
-              inputs: { image: 'input.jpg', upload: 'image' },
+              inputs: { image: `${uuid}.jpg`, upload: 'image' },
               class_type: 'LoadImage',
             },
             '16': {
@@ -76,7 +80,7 @@ export default async function handler(
             '39': {
               inputs: {
                 clip: ['4', 1],
-                text: 'a portrait of an astronaut on the moon in watercolor style with rainbow background\n\n',
+                text: "Create a portrait of an Astronaut wearing a futuristic space suit in the style of Jorodowsky's Dune with the face prominently displayed up to the beginning of the shoulders with a watercolor Rainbow background displaying the moon, stars, and other space elements\n\n",
               },
               class_type: 'CLIPTextEncode',
             },
@@ -104,7 +108,7 @@ export default async function handler(
               class_type: 'SaveImage',
             },
           },
-          files: { '/input/input.jpg': url },
+          files,
           accelerator: 'L4',
         }),
       }
