@@ -271,7 +271,7 @@ export default function ProposalEditor() {
       body = `${body}\n\n${actionsToYaml([action])}`
     }
 
-    setProposalCache({title: proposalTitle || "Untitled", body: body || "", timestamp: getUnixTime(new Date())})
+    setProposalCache({title: proposalTitle, body: body || undefined, timestamp: getUnixTime(new Date())})
   }
 
   useEffect(() => {
