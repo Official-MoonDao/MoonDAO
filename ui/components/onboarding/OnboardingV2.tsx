@@ -202,9 +202,8 @@ export function OnboardingV2({ selectedChain }: any) {
           <>
             Be part of the first open-source, interplanetary network state
             dedicated to establishing a permanent human presence on the Moon and
-            beyond. Membership is currently invite-only, but you can register
-            your interest by submitting an application or scheduling an
-            onboarding call to see if you'd be a good fit.
+            beyond. Registration is currently invite-only, but you can send and email 
+            to <Link href="mailto:info@moondao.com">info@moondao.com</Link> if you think you'd be a good fit.
           </>
         }
         preFooter={
@@ -213,8 +212,8 @@ export function OnboardingV2({ selectedChain }: any) {
               isManager={isManager}
               isCitizen={!!address && !isManager && subIsValid}
               defaultTitle="Need Help?"
-              defaultDescription="Submit a ticket in MoonDAO's support channel on Discord!"
-              defaultButtonText="Submit a ticket"
+              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+              defaultButtonText="Submit a Ticket"
               defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
             />
           </>
@@ -233,7 +232,7 @@ export function OnboardingV2({ selectedChain }: any) {
                 'Early Project Access: Engage in space projects early, earn money, and advance your career.',
                 'Unique Identity: Create a personalized Passport representing your on-chain identity.',
               ]}
-              buttoncta="Register As A Citizen"
+              buttoncta="Become a Citizen"
               onClick={() => setSelectedTier('citizen')}
               hasCitizen={+citizenBalance > 0}
             />
@@ -249,7 +248,7 @@ export function OnboardingV2({ selectedChain }: any) {
                 'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
                 'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
               ]}
-              buttoncta="Create A Team"
+              buttoncta="Create a Team"
               onClick={() => setSelectedTier('team')}
             />
           </div>

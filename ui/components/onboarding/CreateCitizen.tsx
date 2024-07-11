@@ -175,8 +175,8 @@ export default function CreateCitizen({
             {/* Pin Image and Metadata to IPFS, Mint NFT to Gnosis Safe */}
             {stage === 2 && (
               <StageContainer
-                title="Mint Entity"
-                description="Please review your onchain profile before minting."
+                title="Mint Citizen"
+                description="Please review your onchain profile before finalizing your registration"
               >
                 {/* <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
                   {`Make sure all your information is displayed correcly.`}
@@ -247,14 +247,13 @@ export default function CreateCitizen({
                   </div>
                 </div>
                 <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
-                  <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT</h2>
-                  <h2 className="font-GoodTimes text-3xl mb-2">INFORMATION</h2>
+                  <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT INFORMATION</h2>
                   <div className="flex flex-col dark:bg-[#0F152F] p-5 pb-10 rounded-[20px] md:p-5 mt-5">
-                    <h3 className="font-GoodTimes text-2xl mb-2">MEMBERSHIP</h3>
+                    <h3 className="font-GoodTimes text-2xl mb-2">CITIZENSHIP</h3>
                     <p className="mt-2">
-                      Membership lasts for one year and can be renewed at any
+                      Citizenship lasts for one year and can be renewed at any
                       time. Any wallet funds are self-custodied and are not
-                      dependent on membership.
+                      dependent on registration.
                     </p>
                   </div>
                   <p className="mt-4">
@@ -397,7 +396,7 @@ export default function CreateCitizen({
                 {isLoadingMint && (
                   <p className="opacity-[50%]">
                     {
-                      'Minting can take up to a minute, please wait while the transaction is processed.'
+                      'On-chain registration can take up to a minute, please wait while the transaction is processed.'
                     }
                   </p>
                 )}

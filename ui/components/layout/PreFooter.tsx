@@ -84,9 +84,9 @@ export default function PreFooter({ mode = 'Default' }) {
                                     . Always make sure you are interacting with our official token address on the Ethereum mainnet: 
                                 </span>    
                                 <span className="opacity-[60%] hover:opacity-[100%] break-all">
-                                    <Link id="FAQ-link" href="https://docs.moondao.com/Governance/Governance-Tokens" target="_blank">
+                                    <u><Link id="token-link" href="https://docs.moondao.com/Governance/Governance-Tokens" target="_blank">
                                         &nbsp;0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395
-                                    </Link>
+                                    </Link></u>
                                 </span>
                             </div>
                         </span>
