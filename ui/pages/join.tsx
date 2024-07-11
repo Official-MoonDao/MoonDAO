@@ -98,10 +98,10 @@ export default function Join() {
                 label="Become a Citizen"
                 description="Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission."
                 points={[
+                  'Unique Identity: Create a personalized, AI-generated passport image representing your on-chain identity.',
                   'Professional Networking: Connect with top space startups, non-profits, and ambitious teams.',
                   'Career Advancement: Access jobs, gigs, hackathons, and more; building on-chain credentials to showcase your experience.',
-                  'Early Project Access: Engage in space projects early, earn money, and advance your career.',
-                  'Unique Identity: Create a personalized Passport representing your on-chain identity.',
+                  'Early Project Access: Engage in space projects, earn money, and advance your career.',
                 ]}
                 buttoncta="Become a Citizen"
                 onClick={() => setSelectedTier('citizen')}
