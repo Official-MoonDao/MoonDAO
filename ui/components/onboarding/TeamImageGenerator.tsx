@@ -32,7 +32,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
 
   return (
     <div className="animate-fadeIn flex flex-col">
-      <div className="mb-10 flex items-start md:items-center flex-col md:flex-row">
+      <div className="flex items-start flex-col">
         <input
           className="text-white text-opacity-80"
           type="file"
