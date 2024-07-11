@@ -102,10 +102,7 @@ export default function ProposalEditor() {
   const [proposalTitle, setProposalTitle] = useState<string | undefined>()
   const [proposalStatus, setProposalStatus] =
     useState<ProposalStatus>('Discussion')
-  const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(
-    "NanceProposalCacheV1",
-    {title: undefined, body: undefined, timestamp: 0}
-  );
+  const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>("NanceProposalCacheV1");
   const [cacheModalIsOpen, setCacheModalIsOpen] = useState(
     !!(proposalCache?.title || proposalCache?.body),
   );
@@ -266,7 +263,6 @@ export default function ProposalEditor() {
 
   const saveProposalBodyCache = function() {
     let body = getMarkdown()
-
     if (attachBudget) {
       const action: Action = {
         type: 'Request Budget',
@@ -275,7 +271,7 @@ export default function ProposalEditor() {
       body = `${body}\n\n${actionsToYaml([action])}`
     }
 
-    setProposalCache({title: proposalCache?.title || "Untitled", body: body || "", timestamp: getUnixTime(new Date())})
+    setProposalCache({title: proposalTitle || "Untitled", body: body || "", timestamp: getUnixTime(new Date())})
   }
 
   useEffect(() => {
@@ -321,7 +317,7 @@ export default function ProposalEditor() {
           <h1 className="page-title py-10">{loadedProposal ? 'Edit Proposal' : 'New Proposal'}</h1>
           <ProposalTitleInput value={proposalTitle} onChange={(s) => {
             setProposalTitle(s)
-            const cache = proposalCache || {body: "... empty ...", timestamp: 0}
+            const cache = proposalCache || { body: loadedProposal?.body, timestamp: 0 }
             setProposalCache({...cache, title: s})
           }} />
           <NanceEditor
