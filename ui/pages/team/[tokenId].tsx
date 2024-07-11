@@ -45,8 +45,8 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
-import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import StandardButton from '@/components/layout/StandardButton'
+import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -312,7 +312,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         {isManager || address === nft.owner ? (
           <div
             id="manager-container"
-            className="mt-8 xl:mt-0 absolute top-[80px] right-0 px-5 pt-5 bg-dark-cool rounded-tl-[20px] rounded-bl-[2vmax] rounded-[20px]"
+            className="mt-8 xl:mt-0 relative md:absolute md:top-[80px] right-0 px-5 pt-5 bg-dark-cool rounded-tl-[20px] rounded-bl-[2vmax] rounded-[20px]"
           >
             {expiresAt && (
               <div

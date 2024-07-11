@@ -71,7 +71,7 @@ export default function Card({
   const cardContent = (
     <span
       id="card-container"
-      className="animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full min-h-[200px]"
+      className="animate-fadeIn flex flex-col relative bg-dark-cool w-full h-[550px]"
     >
       <div
         id="card-styling"

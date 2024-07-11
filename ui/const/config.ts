@@ -95,7 +95,7 @@ export const TEAM_TABLE_ADDRESSES: Index = {
 
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '0x0000001a',
-  sepolia: '0x0000013f',
+  sepolia: '0x00000162',
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {

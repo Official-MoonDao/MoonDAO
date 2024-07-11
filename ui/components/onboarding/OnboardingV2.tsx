@@ -28,7 +28,7 @@ type TierProps = {
   onClick: () => void
   hasCitizen?: boolean
   buttoncta: string
-  tierDescription?:string
+  tierDescription?: string
 }
 
 function Tier({
@@ -124,7 +124,8 @@ function Tier({
                 </div>
               )
             })}
-          <br></br>{tierDescription}  
+            <br></br>
+            {tierDescription}
           </div>
           <button className="mt-5 px-5 rounded-tl-[10px] rounded-[2vmax] py-3 hover:pl-5 ease-in-out duration-300 gradient-2 max-w-[250px]">
             {buttoncta}
@@ -238,7 +239,7 @@ export function OnboardingV2({ selectedChain }: any) {
             />
             <Tier
               price={0.5}
-              label="Register a Team"
+              label="Create a Team"
               description="Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future. Be a part of Team Space."
               tierDescription="We've created this flow for select organizations to become MoonDAO Teams. Currently only allow-listed addresses can create Teams. You can explore the flow without being allow-listed, but if you'd like to create a Team please send an email to info@moondao.com with your Arbitrum wallet address and bio. This software is experimental, and is provided as-is. By proceeding you accept that you are testing new systems, and that things may break or funds could get lost as a result of using these systems. You agree to hold MoonDAO and its subsidiaries harmless in case there is a malfunction of our code as you are testing and using this new functionality.  Some of the data you are inputting will be stored on the Ethereum blockchain, please be advised that blockchain data is immutable and public, but you can always delete your profile and it will stop being displayed on the MoonDAO website. As a Team you will be able to access the cutting-edge of new onchain organization tools at MoonDAO, allowing you to hire MoonDAO Citizens, list Products and Services on the marketplace, compete in future prizes, and be displayed in our MoonDAO Network Directory. The future is closer than it seems. Ad Lunam!"
               points={[
@@ -248,7 +249,7 @@ export function OnboardingV2({ selectedChain }: any) {
                 'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
                 'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
               ]}
-              buttoncta="Register As A Team"
+              buttoncta="Create A Team"
               onClick={() => setSelectedTier('team')}
             />
           </div>
