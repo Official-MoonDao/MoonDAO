@@ -317,7 +317,7 @@ export default function ProposalEditor() {
           <h1 className="page-title py-10">{loadedProposal ? 'Edit Proposal' : 'New Proposal'}</h1>
           <ProposalTitleInput value={proposalTitle} onChange={(s) => {
             setProposalTitle(s)
-            const cache = proposalCache || { body: loadedProposal?.body, timestamp: 0 }
+            const cache = proposalCache || { body: loadedProposal?.body || TEMPLATE, timestamp: getUnixTime(new Date())}
             setProposalCache({...cache, title: s})
           }} />
           <NanceEditor
