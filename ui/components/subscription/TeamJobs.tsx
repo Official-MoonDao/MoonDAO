@@ -48,7 +48,7 @@ export default function TeamJobs({
           id="job-title-container"
           className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center pr-12"
         >
-          <div className="flex gap-5 opacity-[50%]">
+          <div className="flex pb-5 gap-5 opacity-[50%]">
             <Image src={jobIcon} alt="Job icon" width={30} height={30} />
             <p className="header font-GoodTimes">Open Job Board</p>
           </div>{' '}

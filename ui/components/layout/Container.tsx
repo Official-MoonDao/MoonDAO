@@ -23,7 +23,7 @@ function Container({ children, containerwidth }: BodyProps) {
         `}
         >
         <div id="content-container-section" 
-          className="flex-grow"
+          className="flex-grow overflow-x-hidden"
           >
           {childrenWithProps}
         </div>  

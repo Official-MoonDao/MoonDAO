@@ -184,7 +184,7 @@ export default function Directory() {
   )
 
   const descriptionSection = (
-    <>
+    <div className="pt-2">
       <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
         <Search input={input} setInput={setInput} />
       </Frame>
@@ -221,7 +221,7 @@ export default function Directory() {
           </div>
         </Frame>
       </div>
-    </>
+    </div>
   )
 
   return (

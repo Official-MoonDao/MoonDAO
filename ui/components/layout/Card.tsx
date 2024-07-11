@@ -93,7 +93,7 @@ export default function Card({
                 <Image
                   id="featured-image"
                   src={orgimage}
-                  alt="Entity Image"
+                  alt="Team Image"
                   width="675"
                   height="675"
                   className="w-full h-full"
@@ -102,7 +102,7 @@ export default function Card({
             </div>
           )}
           {ThirdwebNftMedia && metadata && (
-            <div id="entity-citizen-image-container" className="z-40">
+            <div id="team-citizen-image-container" className="z-40">
               <Frame noPadding marginBottom="0px" className="">
                 <ThirdwebNftMedia
                   className=""

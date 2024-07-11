@@ -54,7 +54,7 @@ export function ImageGenerator({ setImage, nextStage, stage, currImage }: any) {
         <link href="/image-generator/pfp-style.css" rel="stylesheet" />
       </Head>
 
-      <div className="mb-12 flex items-start md:items-center flex-col gap-4 md:flex-row">
+      <div className="mb-12 flex items-start md:items-center flex-col gap-4">
         <input
           className="text-white text-opacity-60"
           type="file"
