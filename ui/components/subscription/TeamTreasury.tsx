@@ -38,9 +38,9 @@ export default function TeamTreasury({
             />
             <h2 className="header font-GoodTimes">Treasury</h2>
           </div>
-          <div className="flex ml-10 gap-2 items-end">
+          <div className="flex flex-col md:flex-row gap-2">
             <StandardButton
-              className="w-full gradient-2 rounded-[5vmax] rounded-tr-[10px] rounded-br-[10px]"
+              className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
               onClick={() => {
                 const safeNetwork =
                   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
@@ -52,7 +52,7 @@ export default function TeamTreasury({
               {'Treasury'}
             </StandardButton>
             <StandardButton
-              className="w-full gradient-2 rounded-[5vmax] rounded-tl-[10px] rounded-bl-[10px]"
+              className="min-w-[200px] gradient-2 rounded-[5vmax]"
               onClick={async () => {
                 if (!address) return toast.error('Please connect your wallet')
                 if (!splitAddress) return toast.error('No split address found')
@@ -70,7 +70,13 @@ export default function TeamTreasury({
                     toast.success('Funds Released')
                   }
                 } catch (err: any) {
-                  console.log(err)
+                  if (
+                    err.reason.startsWith(
+                      'PaymentSplitter: account is not due payment'
+                    )
+                  ) {
+                    toast.error('No funds to release')
+                  }
                 }
               }}
             >

@@ -487,7 +487,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
                       >
                         <StandardButtonRight
-                          className="w-full gradient-2 rounded-[5vmax]"
+                          className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
                           onClick={() => {
                             window.open(
                               `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`

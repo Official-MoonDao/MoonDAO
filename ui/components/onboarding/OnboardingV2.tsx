@@ -1,11 +1,9 @@
 //OnboardingV2
-import { StarIcon } from '@heroicons/react/24/outline'
-import { useLogin, usePrivy } from '@privy-io/react-auth'
+import { usePrivy } from '@privy-io/react-auth'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, HATS_ADDRESS } from 'const/config'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useState, useContext, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useTeamData } from '@/lib/team/useTeamData'
@@ -13,9 +11,6 @@ import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
-import Footer from '../layout/Footer'
-import Frame from '../layout/Frame'
-import InnerPreFooter from '../layout/InnerPreFooter'
 import { NoticeFooter } from '../layout/NoticeFooter'
 import CreateCitizen from './CreateCitizen'
 import CreateTeam from './CreateTeam'
@@ -73,9 +68,9 @@ function Tier({
             <div className="pt-5 md:pt-0 flex items-center rounded-[2vmax] rounded-tl-[20px] overflow-hidden">
               <Image
                 src={
-                  label === 'Register Now'
-                    ? '/image-generator/images/org-example.png'
-                    : '/image-generator/images/citizen_image.png'
+                  label === 'Create a Team'
+                    ? '/assets/team_image.png'
+                    : '/assets/neil-armstrong-pfp.png'
                 }
                 width={506}
                 height={506}
