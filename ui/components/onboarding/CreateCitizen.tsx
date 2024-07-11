@@ -382,7 +382,6 @@ export default function CreateCitizen({
           )}
         </div>
       </div>
-      <button onClick={() => setStage(stage + 1)}>NEXT</button>
     </Container>
   )
 }
