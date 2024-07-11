@@ -229,7 +229,8 @@ export default function CreateTeam({
                     </div>
                   </div>
                   <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
-                    <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT INFORMATION
+                    <h2 className="font-GoodTimes text-3xl mb-2">
+                      IMPORTANT INFORMATION
                     </h2>
                     <div className="flex flex-col rounded-[20px] bg-[#0F152F] p-5 pb-10 md:p-5">
                       <h3 className="font-GoodTimes text-2xl mb-2">TREASURY</h3>
@@ -257,8 +258,8 @@ export default function CreateTeam({
                       </p>
                     </div>
                     <p className="mt-4">
-                      Welcome to the future of on-chain, off-world coordination with
-                      MoonDAO!
+                      Welcome to the future of on-chain, off-world coordination
+                      with MoonDAO!
                     </p>
                   </div>
                   <div className="flex flex-row items-center mt-4">

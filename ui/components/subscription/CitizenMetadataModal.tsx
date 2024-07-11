@@ -87,7 +87,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
           const newImageIpfsHash = await pinImageToIPFS(
             pinataJWT || '',
             newCitizenImage,
-            citizenData.firstName + ' Image'
+            citizenData.name + ' Image'
           )
 
           imageIpfsLink = `ipfs://${newImageIpfsHash}`
@@ -95,7 +95,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
 
         const tx = await citizenTableContract?.call('updateTable', [
           nft.metadata.id,
-          `${citizenData.firstName} ${citizenData.lastName}`,
+          citizenData.name,
           citizenData.description,
           imageIpfsLink,
           citizenData.location,
@@ -166,14 +166,14 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
               onSubmit={submitTypeform}
               height={500}
             />
-            <DeleteProfileData
-              setEnabled={setEnabled}
-              tableContract={citizenTableContract}
-              tokenId={nft.metadata.id}
-              type="citizen"
-            />
           </>
         )}
+        <DeleteProfileData
+          setEnabled={setEnabled}
+          tableContract={citizenTableContract}
+          tokenId={nft.metadata.id}
+          type="citizen"
+        />
       </div>
     </Modal>
   )

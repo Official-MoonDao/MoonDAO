@@ -117,14 +117,16 @@ export function ImageGenerator({
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col">
         <FileInput setFile={setUserImage} />
-        <StageButton onClick={generateImage}>Generate</StageButton>
-        {(currImage && !userImage) || citizenImage ? (
-          <StageButton className="" onClick={submitImage}>
-            Save Design
-          </StageButton>
-        ) : (
-          <></>
-        )}
+        <div className="flex gap-4">
+          <StageButton onClick={generateImage}>Generate</StageButton>
+          {(currImage && !userImage) || citizenImage ? (
+            <StageButton className="" onClick={submitImage}>
+              Save Design
+            </StageButton>
+          ) : (
+            <></>
+          )}
+        </div>
       </div>
       <div
         id="citizenPic"
