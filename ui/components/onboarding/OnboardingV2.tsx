@@ -197,7 +197,7 @@ export function OnboardingV2({ selectedChain }: any) {
           <>
             Be part of the first open-source, interplanetary network state
             dedicated to establishing a permanent human presence on the Moon and
-            beyond. Registration is currently invite-only, but you can send and email 
+            beyond. Registration is currently invite-only, but you can send an email 
             to <Link href="mailto:info@moondao.com">info@moondao.com</Link> if you think you'd be a good fit.
           </>
         }
