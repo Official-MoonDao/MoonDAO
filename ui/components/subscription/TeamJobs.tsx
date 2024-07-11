@@ -54,7 +54,7 @@ export default function TeamJobs({
           </div>{' '}
           {isManager && (
             <StandardButton
-              className="gradient-2 rounded-[2vmax] rounded-bl-[10px]"
+              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
               onClick={() => {
                 setTeamJobModalEnabled(true)
               }}
@@ -75,7 +75,7 @@ export default function TeamJobs({
               />
             ))
           ) : (
-            <p>{`This team hasn't listed any open roles yet.`}</p>
+            <p className="p-4 pt-6">{`This team hasn't listed any open roles yet.`}</p>
           )}
         </div>
 

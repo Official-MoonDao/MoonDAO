@@ -50,7 +50,7 @@ export default function TeamMarketplace({
         </div>
         {isManager && (
           <StandardButton
-            className="w-full gradient-2 rounded-[5vmax]"
+            className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
             onClick={() => setListingModalEnabled(true)}
           >
             Create a Listing
@@ -59,7 +59,7 @@ export default function TeamMarketplace({
       </div>
       <SlidingCardMenu>
         <div className="flex gap-4">
-          {listings?.[0] ? (
+          {listings?.[0] &&
             listings.map((listing, i) => (
               <TeamListing
                 key={`entity-marketplace-listing-${i}`}
@@ -71,12 +71,12 @@ export default function TeamMarketplace({
                 editable={isManager}
                 refreshListings={getEntityMarketplaceListings}
               />
-            ))
-          ) : (
-            <p>{`This team hasn't listed any items for sale yet.`}</p>
-          )}
+            ))}
         </div>
       </SlidingCardMenu>
+      {!listings?.[0] && (
+        <p className="p-4">{`This team hasn't listed any items for sale yet.`}</p>
+      )}
       {listingModalEnabled && (
         <TeamMarketplaceListingModal
           teamId={teamId}
