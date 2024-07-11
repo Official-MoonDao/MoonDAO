@@ -1,34 +1,25 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES, HATS_ADDRESS, TEAM_ADDRESSES } from 'const/config'
+import { HATS_ADDRESS, TEAM_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
-import ChainContext from '../lib/thirdweb/chain-context'
 import { useTeamData } from '@/lib/team/useTeamData'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
-import Head from '../components/layout/Head'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
+import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import CreateCitizen from '@/components/onboarding/CreateCitizen'
+import CreateTeam from '@/components/onboarding/CreateTeam'
 import Tier from '@/components/onboarding/Tier'
 
-export default function Join() {
+export default function TeamJoin() {
   const { t } = useTranslation('common')
 
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
 
   const address = useAddress()
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
-
-  const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug]
-  )
-
-  const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
-    address,
-  ])
 
   // Adding these lines to determine the user's role
   const { contract: teamContract } = useContract(
@@ -47,9 +38,9 @@ export default function Join() {
     )
   }, [])
 
-  if (selectedTier === 'citizen') {
+  if (selectedTier === 'team') {
     return (
-      <CreateCitizen
+      <CreateTeam
         address={address}
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
@@ -59,7 +50,10 @@ export default function Join() {
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head title={t('joinTitle')} description={t('joinDesc')} />
+      <Head
+        title={'Create A Team'}
+        description={'Create a Team within the MoonDAO Network.'}
+      />
       <Container>
         <ContentLayout
           header="Join MoonDAO"
@@ -94,18 +88,18 @@ export default function Join() {
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
               <Tier
-                price={0.1}
-                label="Become a Citizen"
-                description="Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission."
+                price={0.5}
+                label="Create a Team"
+                description="Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future. Be a part of Team Space."
                 points={[
-                  'Professional Networking: Connect with top space startups, non-profits, and ambitious teams.',
-                  'Career Advancement: Access jobs, gigs, hackathons, and more; building on-chain credentials to showcase your experience.',
-                  'Early Project Access: Engage in space projects early, earn money, and advance your career.',
-                  'Unique Identity: Create a personalized Passport representing your on-chain identity.',
+                  'Funding Access: Obtain seed funding from MoonDAO for your bold projects and initiatives.',
+                  'Professional Network: Hire top talent including full-time roles or posting bounties, and connect with other cutting-edge organizations.',
+                  'Marketplace Listing: Sell products and services in a dedicated space marketplace, whether payload space or satellite imagery.',
+                  'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
+                  'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
                 ]}
-                buttoncta="Become a Citizen"
-                onClick={() => setSelectedTier('citizen')}
-                hasCitizen={+citizenBalance > 0}
+                buttoncta="Create a Team"
+                onClick={() => setSelectedTier('team')}
               />
             </div>
           </div>

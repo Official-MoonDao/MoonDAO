@@ -6,13 +6,17 @@ import {
   RocketLaunchIcon,
   Squares2X2Icon,
 } from '@heroicons/react/24/outline'
-
 import IconOrg from '../../assets/IconOrg'
 
 export const navigation = [
   {
     name: 'Join MoonDAO',
     href: '/join',
+    icon: PlusIcon,
+  },
+  {
+    name: 'Create a Team',
+    href: '/team',
     icon: PlusIcon,
   },
   {
