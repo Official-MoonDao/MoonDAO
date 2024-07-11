@@ -15,6 +15,7 @@ import ContentLayout from '../layout/ContentLayout'
 import { NoticeFooter } from '../layout/NoticeFooter'
 import CreateCitizen from './CreateCitizen'
 import CreateTeam from './CreateTeam'
+import Tier from './Tier'
 
 export function OnboardingV2({ selectedChain }: any) {
   const address = useAddress()
