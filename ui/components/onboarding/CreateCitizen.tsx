@@ -171,7 +171,11 @@ export default function CreateCitizen({
               </p> */}
 
               <Image
-                src={citizenImage ? URL.createObjectURL(citizenImage) : ''}
+                src={
+                  citizenImage
+                    ? URL.createObjectURL(citizenImage)
+                    : '/assets/MoonDAO-Loading-Animation.svg'
+                }
                 alt="citizen-image"
                 width={600}
                 height={600}
@@ -294,6 +298,11 @@ export default function CreateCitizen({
                 onClick={async () => {
                   //sign message
 
+                  if (!citizenImage)
+                    return toast.error(
+                      'Please wait for your image to finish generating.'
+                    )
+
                   try {
                     const cost = await citizenContract?.call(
                       'getRenewalPrice',
@@ -373,6 +382,7 @@ export default function CreateCitizen({
           )}
         </div>
       </div>
+      <button onClick={() => setStage(stage + 1)}>NEXT</button>
     </Container>
   )
 }
