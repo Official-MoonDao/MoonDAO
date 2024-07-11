@@ -115,7 +115,7 @@ export function ImageGenerator({
 
   return (
     <div className="animate-fadeIn flex flex-col">
-      <div className="flex items-start flex-col">
+      <div className="flex items-start flex-col mt-5">
         <FileInput setFile={setUserImage} />
         <div className="flex gap-4">
           <StageButton onClick={generateImage}>Generate</StageButton>
@@ -130,12 +130,12 @@ export function ImageGenerator({
       </div>
       <div
         id="citizenPic"
-        className="w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-white bg-cover justify-left relative flex"
+        className="w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left relative flex"
       >
         {currImage && !userImage && (
           <MediaRenderer
             src={currImage}
-            className="mix-blend-multiply"
+            className=""
             width="100%"
             height="100%"
             alt={''}
@@ -148,7 +148,7 @@ export function ImageGenerator({
                 src={URL.createObjectURL(userImage)}
                 layout="fill"
                 objectFit="contain"
-                className="mix-blend-multiply"
+                className=""
                 alt={''}
               />
             ) : generating ? (
@@ -156,7 +156,7 @@ export function ImageGenerator({
                 src={'/assets/MoonDAO-Loading-Animation.svg'}
                 layout="fill"
                 objectFit="contain"
-                className="mix-blend-multiply"
+                className=""
                 alt={''}
               />
             ) : (
@@ -164,7 +164,7 @@ export function ImageGenerator({
                 src={URL.createObjectURL(userImage)}
                 layout="fill"
                 objectFit="contain"
-                className="mix-blend-multiply"
+                className=""
                 alt={''}
               />
             )}
