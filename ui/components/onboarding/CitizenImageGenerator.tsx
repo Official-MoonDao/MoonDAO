@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas'
 import { useS3Upload } from 'next-s3-upload'
 import Image from 'next/image'
 import { useState } from 'react'
+import FileInput from '../layout/FileInput'
 import { StageButton } from './StageButton'
 
 export function ImageGenerator({
@@ -17,7 +18,7 @@ export function ImageGenerator({
 }: any) {
   const { getAccessToken } = usePrivy()
   const [userImage, setUserImage] = useState<File>()
-  const { FileInput, openFileDialog, uploadToS3 } = useS3Upload()
+  const { openFileDialog, uploadToS3 } = useS3Upload()
   const [generating, setGenerating] = useState(false)
 
   async function submitImage() {
@@ -115,12 +116,7 @@ export function ImageGenerator({
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col">
-        <input
-          className="text-white text-opacity-80"
-          type="file"
-          accept="image/*"
-          onChange={(e: any) => setUserImage(e.target.files[0])}
-        />
+        <FileInput setFile={setUserImage} />
         <StageButton onClick={generateImage}>Generate</StageButton>
         {(currImage && !userImage) || citizenImage ? (
           <StageButton className="" onClick={submitImage}>

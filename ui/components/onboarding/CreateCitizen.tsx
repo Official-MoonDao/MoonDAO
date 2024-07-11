@@ -17,12 +17,12 @@ import formatCitizenFormData, {
   CitizenData,
 } from '@/lib/typeform/citizenFormData'
 import Container from '../layout/Container'
+import ContentLayout from '../layout/ContentLayout'
+import Footer from '../layout/Footer'
 import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './CitizenImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
-import ContentLayout from '../layout/ContentLayout'
-import Footer from '../layout/Footer'
 
 export default function CreateCitizen({
   address,
@@ -112,23 +112,25 @@ export default function CreateCitizen({
   }, [])
 
   return (
-    <Container
-      
-      >
+    <Container>
       <ContentLayout
         isProfile
         mode="compact"
-        header='Join The Network'
+        header="Join The Network"
         mainPadding
         headerSize="max(20px, 3vw)"
-        preFooter={<><Footer></Footer></>}
+        preFooter={
+          <>
+            <Footer></Footer>
+          </>
+        }
         description=""
-        >
+      >
         <div className="flex flex-row w-full">
           <div className="px-5 bg-slide-section lg:p-5 rounded-tl-[20px] rounded-[5vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1200px]">
-            <div className="flex p-5 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
+            <div className="flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
               <Steps
-                className="mb-4 pl-5 md:pl-0 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16 -ml-10"
+                className="mb-4 pl-5 md:pl-0 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16"
                 steps={['Design', 'Profile', 'Checkout']}
                 currStep={stage}
                 lastStep={lastStage}
@@ -148,7 +150,7 @@ export default function CreateCitizen({
               >
                 <ImageGenerator
                   citizenImage={citizenImage}
-                setImage={setCitizenImage}
+                  setImage={setCitizenImage}
                   nextStage={() => setStage(1)}
                   stage={stage}
                   generateInBG
@@ -183,16 +185,16 @@ export default function CreateCitizen({
                   {`Welcome to the future of off-world coordination with MoonDAO.`}
                 </p> */}
 
-              <Image
-                src={
-                  citizenImage
-                    ? URL.createObjectURL(citizenImage)
-                    : '/assets/MoonDAO-Loading-Animation.svg'
-                }
-                alt="citizen-image"
-                width={600}
-                height={600}
-              />
+                <Image
+                  src={
+                    citizenImage
+                      ? URL.createObjectURL(citizenImage)
+                      : '/assets/MoonDAO-Loading-Animation.svg'
+                  }
+                  alt="citizen-image"
+                  width={600}
+                  height={600}
+                />
 
                 <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
                   <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>
@@ -222,7 +224,8 @@ export default function CreateCitizen({
                         <tbody>
                           {Object.keys(citizenData)
                             .filter(
-                              (v) => v != 'newsletterSub' && v != 'formResponseId'
+                              (v) =>
+                                v != 'newsletterSub' && v != 'formResponseId'
                             )
                             .map((v, i) => {
                               return (
@@ -255,8 +258,8 @@ export default function CreateCitizen({
                     </p>
                   </div>
                   <p className="mt-4">
-                    Welcome to the future of on-chain, off-world coordination with
-                    MoonDAO!
+                    Welcome to the future of on-chain, off-world coordination
+                    with MoonDAO!
                   </p>
                 </div>
                 <div className="flex flex-row items-center mt-4">
@@ -312,11 +315,11 @@ export default function CreateCitizen({
                     //sign message
 
                     if (!citizenImage)
-                    return toast.error(
-                      'Please wait for your image to finish generating.'
-                    )
+                      return toast.error(
+                        'Please wait for your image to finish generating.'
+                      )
 
-                  try {
+                    try {
                       const cost = await citizenContract?.call(
                         'getRenewalPrice',
                         [address, 365 * 24 * 60 * 60]
@@ -391,12 +394,18 @@ export default function CreateCitizen({
                 >
                   {isLoadingMint ? 'loading...' : 'Check Out'}
                 </StageButton>
+                {isLoadingMint && (
+                  <p className="opacity-[50%]">
+                    {
+                      'Minting can take up to a minute, please wait while the transaction is processed.'
+                    }
+                  </p>
+                )}
               </StageContainer>
             )}
-            
           </div>
         </div>
-      </ContentLayout>  
+      </ContentLayout>
     </Container>
   )
 }

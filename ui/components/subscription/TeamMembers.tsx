@@ -51,7 +51,7 @@ function TeamMember({ address, hatData, citizenContract }: TeamMemberProps) {
       setMetadata({
         name: undefined,
         description: undefined,
-        image: '/image-generator/images/citizen_image.png',
+        image: '/assets/citizen_image.png',
         attributes: [
           {
             trait_type: '',

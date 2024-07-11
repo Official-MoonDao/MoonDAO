@@ -22,7 +22,7 @@ export function Steps({
       {steps.map((step, i) => (
         <button
           data-content=""
-          className={`step ${i <= currStep ? 'step-error' : ''}`}
+          className={`step ${i <= currStep ? 'step-accent' : ''}`}
           key={i}
           onClick={() => {
             if (i <= lastStep) {

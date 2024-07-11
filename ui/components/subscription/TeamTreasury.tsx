@@ -123,7 +123,7 @@ export default function TeamTreasury({
               width={30}
               height={30}
             />
-            <h2 className="header font-GoodTimes">Pending Disbursement</h2>
+            <h2 className="text-[150%] font-GoodTimes">Pending Disbursement</h2>
           </div>
           <div className="p-4">
             <div className="mt-4 flex gap-4 items-center text-lg">

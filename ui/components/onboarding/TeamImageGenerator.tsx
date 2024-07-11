@@ -2,6 +2,7 @@
 import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
 import { useState } from 'react'
+import FileInput from '../layout/FileInput'
 import { StageButton } from './StageButton'
 
 export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
@@ -33,12 +34,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col">
-        <input
-          className="text-white text-opacity-80"
-          type="file"
-          accept="image/*"
-          onChange={(e: any) => setUserImage(e.target.files[0])}
-        />
+        <FileInput setFile={setUserImage} />
         {currImage || userImage ? (
           <StageButton className="" onClick={submitImage}>
             Save Design
@@ -49,51 +45,53 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
       </div>
 
       {/* Show current team  image if no user image has been uploaded */}
-      {currImage && !userImage && (
-        <div
-          id="teamPic"
-          className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] justify-left relative flex"
-        >
-          <MediaRenderer
-            className="p-0 m-0"
-            src={currImage}
-            width="100%"
-            height="100%"
-          />
-        </div>
-      )}
-
-      {/* Show uploaded image if available */}
-      {userImage && (
-        <div
-          id="teamPic"
-          className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
-        >
+      <div className="mt-4">
+        {currImage && !userImage && (
           <div
-            id="user-image"
-            style={{
-              backgroundImage: `url(${URL.createObjectURL(userImage)})`,
-            }}
-            className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
-          ></div>
-        </div>
-      )}
+            id="teamPic"
+            className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] justify-left relative flex"
+          >
+            <MediaRenderer
+              className="p-0 m-0"
+              src={currImage}
+              width="100%"
+              height="100%"
+            />
+          </div>
+        )}
 
-      {/* Show placeholder if no current image and no uploaded image */}
-      {!userImage && !currImage && (
-        <div
-          id="teamPic"
-          className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
-        >
+        {/* Show uploaded image if available */}
+        {userImage && (
           <div
-            id="user-image"
-            style={{
-              backgroundImage: `url('/assets/image-placeholder.svg')`,
-            }}
-            className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
-          ></div>
-        </div>
-      )}
+            id="teamPic"
+            className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
+          >
+            <div
+              id="user-image"
+              style={{
+                backgroundImage: `url(${URL.createObjectURL(userImage)})`,
+              }}
+              className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+            ></div>
+          </div>
+        )}
+
+        {/* Show placeholder if no current image and no uploaded image */}
+        {!userImage && !currImage && (
+          <div
+            id="teamPic"
+            className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
+          >
+            <div
+              id="user-image"
+              style={{
+                backgroundImage: `url('/assets/image-placeholder.svg')`,
+              }}
+              className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
+            ></div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

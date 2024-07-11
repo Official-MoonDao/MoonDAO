@@ -15,12 +15,12 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import Container from '../layout/Container'
+import ContentLayout from '../layout/ContentLayout'
+import Footer from '../layout/Footer'
 import { Steps } from '../layout/Steps'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 import { ImageGenerator } from './TeamImageGenerator'
-import ContentLayout from '../layout/ContentLayout'
-import Footer from '../layout/Footer'
 
 export default function CreateTeam({
   address,
@@ -101,20 +101,23 @@ export default function CreateTeam({
 
   return (
     <Container>
-      <div id="create-team-image-container"
-        >
+      <div id="create-team-image-container">
         <ContentLayout
           isProfile
           mode="compact"
-          header='Join The Network'
+          header="Join The Network"
           mainPadding
           headerSize="max(20px, 3vw)"
-          preFooter={<><Footer></Footer></>}
+          preFooter={
+            <>
+              <Footer></Footer>
+            </>
+          }
           description=""
-          > 
+        >
           <div className="flex flex-row w-full">
             <div className="px-5 bg-slide-section lg:p-5 rounded-tl-[20px] rounded-[5vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1200px]">
-              <div className="flex p-5 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
+              <div className="flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
                 <Steps
                   className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
                   steps={['Design', 'Profile', 'Checkout']}
@@ -151,7 +154,9 @@ export default function CreateTeam({
                   <div className="w-full">
                     <Widget
                       className="w-[100%] md:w-[100%]"
-                      id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
+                      id={
+                        process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string
+                      }
                       onSubmit={submitTypeform}
                       height={700}
                     />
@@ -225,13 +230,16 @@ export default function CreateTeam({
                   </div>
                   <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
                     <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT</h2>
-                    <h2 className="font-GoodTimes text-3xl mb-2">INFORMATION</h2>
+                    <h2 className="font-GoodTimes text-3xl mb-2">
+                      INFORMATION
+                    </h2>
                     <div className="flex flex-col rounded-[20px] bg-[#0F152F] p-5 pb-10 md:p-5">
                       <h3 className="font-GoodTimes text-2xl mb-2">TREASURY</h3>
                       <p className="mt-2">
-                        A self-custodied multisignature treasury will secure your
-                        organization’s assets, allowing to interact with any smart
-                        contracts within the Ethereum ecosystem. <br /> <br />
+                        A self-custodied multisignature treasury will secure
+                        your organization’s assets, allowing to interact with
+                        any smart contracts within the Ethereum ecosystem.{' '}
+                        <br /> <br />
                         You can add more signers later via your Team management
                         portal.
                       </p>
@@ -241,13 +249,13 @@ export default function CreateTeam({
                         ADMINISTRATOR
                       </h3>
                       <p className="mt-2">
-                        The admin can modify your organization’s information. To
-                        begin, the currently connected wallet will act as the
-                        Administrator.
+                        The manager can modify your organization’s information.
+                        To begin, the currently connected wallet will act as the
+                        Manager.
                         <br /> <br />
-                        You can change the admin or add more members to your
-                        organization using the Hats Protocol within your Team
-                        Management Portal.
+                        You can add a manager or members to your organization
+                        using the Hats Protocol within your Team Management
+                        Portal.
                       </p>
                     </div>
                     <p className="mt-4">
@@ -307,10 +315,10 @@ export default function CreateTeam({
                     isDisabled={!agreedToCondition || isLoadingMint}
                     onClick={async () => {
                       try {
-                        const cost = await teamContract?.call('getRenewalPrice', [
-                          address,
-                          365 * 24 * 60 * 60,
-                        ])
+                        const cost = await teamContract?.call(
+                          'getRenewalPrice',
+                          [address, 365 * 24 * 60 * 60]
+                        )
 
                         const formattedCost = ethers.utils
                           .formatEther(cost.toString())
@@ -332,17 +340,18 @@ export default function CreateTeam({
 
                         const pinataJWT = await jwtRes.text()
 
-                        const adminHatMetadataIpfsHash = await pinMetadataToIPFS(
-                          pinataJWT || '',
-                          {
-                            type: '1.0',
-                            data: {
-                              name: teamData.name + ' Admin',
-                              description: teamData.description,
+                        const adminHatMetadataIpfsHash =
+                          await pinMetadataToIPFS(
+                            pinataJWT || '',
+                            {
+                              type: '1.0',
+                              data: {
+                                name: teamData.name + ' Admin',
+                                description: teamData.description,
+                              },
                             },
-                          },
-                          teamData.name + 'Admin Hat Metadata'
-                        )
+                            teamData.name + 'Admin Hat Metadata'
+                          )
 
                         const managerHatMetadataIpfsHash =
                           await pinMetadataToIPFS(
@@ -370,7 +379,7 @@ export default function CreateTeam({
 
                         setIsLoadingMint(true)
                         //mint NFT to safe
-                        console.log(teamCreatorContract)
+
                         const mintTx = await teamCreatorContract?.call(
                           'createMoonDAOTeam',
                           [
@@ -407,12 +416,19 @@ export default function CreateTeam({
                   >
                     {isLoadingMint ? 'loading...' : 'Mint'}
                   </StageButton>
+                  {isLoadingMint && (
+                    <p className="opacity-[50%]">
+                      {
+                        'Minting can take up to a minute, please wait while the transaction is processed.'
+                      }
+                    </p>
+                  )}
                 </StageContainer>
               )}
             </div>
           </div>
-          </ContentLayout>  
-      </div> 
+        </ContentLayout>
+      </div>
     </Container>
   )
 }
