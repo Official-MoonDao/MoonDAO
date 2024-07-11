@@ -91,15 +91,15 @@ export default function CitizenDetailPage({
         <div id="frame-content-container" className="w-full">
           <div
             id="moon-asset-container"
-            className="bg-white rounded-[100%] w-[100px] h-[100px] absolute top-5 lg:top-[40px]left-5 lg:left-[40px]"
+            className="bg-white rounded-[100%] w-[100px] h-[100px] absolute top-5 lg:left-[40px]"
           ></div>
           <div
             id="frame-content"
             className="w-full flex flex-col lg:flex-row items-start justify-between"
-          >
+            >
             <div
               id="profile-description-section"
-              className="flex flex-col lg:flex-row items-start lg:items-end gap-4"
+              className="flex flex-col lg:flex-row items-start lg:items-end"
             >
               {nft?.metadata.image ? (
                 <div

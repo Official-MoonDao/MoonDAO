@@ -99,7 +99,7 @@ export function ImageGenerator({
 
   return (
     <div className="animate-fadeIn flex flex-col">
-      <div className="mb-12 flex items-start md:items-center flex-col gap-4 md:flex-row">
+      <div className="flex items-start flex-col">
         <input
           className="text-white text-opacity-80"
           type="file"
@@ -117,19 +117,8 @@ export function ImageGenerator({
       </div>
       <div
         id="citizenPic"
-        className="w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[600px] md:h-[600px] bg-white bg-cover justify-left relative flex"
+        className="w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-white bg-cover justify-left relative flex"
       >
-        {/* <div
-          id="user-image"
-          style={{
-            backgroundImage: `url(${
-              userImage
-                ? URL.createObjectURL(userImage)
-                : '/assets/image-placeholder.svg'
-            })`,
-          }}
-          className="h-[48%] w-[75%] mt-[29%] ml-[15%] bg-contain bg-no-repeat bg-center mix-blend-multiply"
-        ></div> */}
         {currImage && !userImage && (
           <MediaRenderer
             src={currImage}

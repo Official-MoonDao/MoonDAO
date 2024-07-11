@@ -98,10 +98,10 @@ export default function CreateTeam({
   }, [])
 
   return (
-    <Container containerwidth>
+    <Container>
       <div
         id="create-team-image-container"
-        className="bg-slide-section md:pt-10 flex items-start md:items-center justify-center w-full h-full"
+        className="md:pt-10 flex items-start md:items-center justify-center w-full h-full"
       >
         <div className="flex flex-row">
           <div className="m-5 w-[90vw] md:w-full flex flex-col lg:max-w-[1256px] items-center">

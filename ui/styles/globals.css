@@ -327,10 +327,6 @@ a {
     background: linear-gradient(-90deg, #020617 60%, #090D21 85% )
   }
 
-  .gradient-17{
-    background: linear-gradient(90deg, #020617 30%, #46161b 100%);
-  }  
-
   /*Dividers*/
   .divider-1 {
     background-repeat: no-repeat;
@@ -661,6 +657,10 @@ html {
     background: linear-gradient(90deg, transparent 5%, #090D21 75%);
   }
 
+/*Overlay background for the onboarding process background*/
 
+.bg-overlay {
+  background:rgba(0,0,0,.2);
+}
 
 

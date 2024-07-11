@@ -71,8 +71,8 @@ const ContentLayout: React.FC<ContentProps> = ({
                             <div id="title-wrapper" 
                                 className={`
                                     z-50 w-full overflow-x-hidden p-5 pt-0 mt-[-80px]
-                                    ${isCompact ? 'pl-5 md:pl-[56px]' : 'lg:ml-[-10vw] lg:mt-0 md:p-10'} 
-                                    ${children ? 'pb-0 md:pb-[100px] lg:pb-[200px]' : 'flex md:items-start lg:items-center min-h-[60vh] lg:min-h-[90vh]'}
+                                    ${isCompact ? 'pl-5 md:pl-[56px]' : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5'} 
+                                    ${children ? 'pb-0 md:pb-[50px] lg:pb-[120px]' : 'flex md:items-start lg:items-center min-h-[60vh] lg:min-h-[90vh]'}
                                     ${isProfile ? 'lg:mb-[-100px]':''}
                                 `}
                                 >
@@ -85,8 +85,8 @@ const ContentLayout: React.FC<ContentProps> = ({
                                     <h1 
                                         id="header-element" 
                                         className={`
-                                            w-full leading-[1] pb-5 font-GoodTimes 
-                                            ${isCompact ? 'pt-5' : 'lg:pt-20'} 
+                                            w-full leading-[1] font-GoodTimes 
+                                            ${isCompact ? 'pt-0' : 'lg:pt-20'} 
                                         `} 
                                         style={{ fontSize: headerSize || 'max(25px, 4vw)' }}
                                         >
@@ -101,16 +101,17 @@ const ContentLayout: React.FC<ContentProps> = ({
                                     </h2>
                                     }
                                     <div 
-                                        className={` 
+                                        className={`
+                                            pt-2 pb-2 
                                             ${isCompact ? 'pb-0 w-full' : 'pb-5 md:pb-20 lg:pb-15 '} 
                                             ${branded ? '' : 'mt-20'}
                                         `}
                                         >
                                         {description && 
-                                        <span>
-                                            {description}
-                                        </span>
-                                    }
+                                            <span>
+                                                {description}
+                                            </span>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -148,10 +149,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                         `} 
                         >
 
-                        <Frame 
-                            noPadding 
-                            marginBottom='0px'
-                            >
+                        <div className="rounded-[5vw] rounded-tl-[20px] overflow-hidden">
                             <div id="content" 
                                 className={` z-50
                                     ${isCompact && !isProfile ? 'md:m-10' : (isCompact ? 'md:m-0 md:mt-5 md:mr-5' : 'm-5')}
@@ -162,7 +160,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                                     </div>
                             
                             </div>
-                        </Frame>
+                        </div>
 
                     </div>
                 </div>

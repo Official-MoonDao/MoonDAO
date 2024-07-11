@@ -174,7 +174,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         <div id="frame-content-container" className="w-full">
           <div
             id="moon-asset-container"
-            className="bg-white rounded-[100%] w-[100px] h-[100px] absolute top-5 lg:top-[40px]left-5 lg:left-[40px]"
+            className="bg-white rounded-[100%] w-[100px] h-[100px] absolute top-5 lg:top-[40px] left-5 lg:left-[40px]"
           ></div>
           <div
             id="frame-content"
