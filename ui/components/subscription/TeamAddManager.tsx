@@ -70,7 +70,7 @@ function TeamAddManagerModal({
               setWearerAddress(target.value)
             }}
             value={wearerAddress}
-            placeholder="Enter an address"
+            placeholder="Enter a wallet address: 0x..."
           />
           <StandardButton
             type="submit"

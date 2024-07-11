@@ -479,7 +479,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         width={30}
                         height={30}
                       />
-                      <h2 className="header font-GoodTimes">Meet Our Team</h2>
+                      <h2 className="header font-GoodTimes">Meet the Team</h2>
                     </div>
                     {isManager && (
                       <div

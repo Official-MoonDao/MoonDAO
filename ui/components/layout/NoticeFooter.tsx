@@ -25,20 +25,20 @@ type NoticeFooterProps = {
 export function NoticeFooter({
   isManager = false,
   isCitizen = false,
-  defaultTitle = 'Join MoonDAO',
+  defaultTitle = 'Join the Network',
   defaultImage = '../assets/moondao-logo-white.svg',
-  defaultDescription = 'Be part of the future of space exploration and join the MoonDAO network state!',
-  defaultButtonText = 'Join Us',
+  defaultDescription = 'Be part of the first open-source, interplanetary network state dedicated to establishing a permanent human presence on the Moon and beyond.',
+  defaultButtonText = 'Learn More',
   defaultButtonLink = '/join',
   managerTitle = 'Need Help?',
   managerImage = '../assets/MoonDAO-Logo-White.svg',
-  managerDescription = "Submit a ticket in MoonDAO's support channel on Discord!",
-  managerButtonText = 'Submit a ticket',
+  managerDescription = "Submit a ticket in the support channel on MoonDAO's Discord!",
+  managerButtonText = 'Submit a Ticket',
   managerButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050',
   citizenTitle = 'Need Help?',
   citizenImage = '../assets/MoonDAO-Logo-White.svg',
-  citizenDescription = "Submit a ticket in MoonDAO's support channel on Discord!",
-  citizenButtonText = 'Submit a ticket',
+  citizenDescription = "Submit a ticket in the support channel on MoonDAO's Discord!",
+  citizenButtonText = 'Submit a Ticket',
   citizenButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050',
 }: NoticeFooterProps) {
   let title = defaultTitle;
@@ -81,7 +81,7 @@ export function NoticeFooter({
           <p className="opacity-60 pt-2">
             {description}
           </p>
-          <Link href={buttonLink} className="inline-block">
+          <Link href={buttonLink} className="inline-block" target="_blank">
             <div id="button-container" className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-5 px-5 py-3 inline-block">
               {buttonText}
             </div>
