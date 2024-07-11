@@ -73,7 +73,7 @@ export default function TeamMarketplace({
               />
             ))
           ) : (
-            <p>{`This entity hasn't listed any items for sale yet.`}</p>
+            <p>{`This team hasn't listed any items for sale yet.`}</p>
           )}
         </div>
       </SlidingCardMenu>
