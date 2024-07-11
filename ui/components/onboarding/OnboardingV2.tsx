@@ -4,6 +4,7 @@ import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, HATS_ADDRESS } from 'const/config'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState, useContext, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useTeamData } from '@/lib/team/useTeamData'
@@ -197,8 +198,10 @@ export function OnboardingV2({ selectedChain }: any) {
           <>
             Be part of the first open-source, interplanetary network state
             dedicated to establishing a permanent human presence on the Moon and
-            beyond. Registration is currently invite-only, but you can send and email 
-            to <Link href="mailto:info@moondao.com">info@moondao.com</Link> if you think you'd be a good fit.
+            beyond. Registration is currently invite-only, but you can send and
+            email to{' '}
+            <Link href="mailto:info@moondao.com">info@moondao.com</Link> if you
+            think you'd be a good fit.
           </>
         }
         preFooter={
