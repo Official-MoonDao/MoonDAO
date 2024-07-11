@@ -19,6 +19,7 @@ export function ImageGenerator({
   const { getAccessToken } = usePrivy()
   const [userImage, setUserImage] = useState<File>()
   const { FileInput, openFileDialog, uploadToS3 } = useS3Upload()
+  const [generating, setGenerating] = useState(false)
 
   async function submitImage() {
     if (!document.getElementById('citizenPic'))
@@ -53,28 +54,44 @@ export function ImageGenerator({
 
     const accessToken = await getAccessToken()
 
-    const jobId = await fetch('/api/imageGen/citizenImage', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ url }),
-    })
-      .then((res) => res.json())
-      .catch((e) => console.error(e))
+    // const jobId = await fetch('/api/imageGen/citizenImage', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     Authorization: `Bearer ${accessToken}`,
+    //   },
+    //   body: JSON.stringify({ url }),
+    // })
+    //   .then((res) => res.json())
+    //   .catch((e) => console.error(e))
 
+    const jobId = { id: '0vTzdHazpX2YQz7NpoCPn' }
+
+    setGenerating(true)
     console.log('jobId', jobId)
     await checkJobStatus(jobId.id)
     if (generateInBG) nextStage()
   }
 
   const checkJobStatus = async (jobId: string) => {
-    const jobs = await fetch('/api/imageGen/citizenImage').then((res) =>
+    let jobs = await fetch('/api/imageGen/citizenImage').then((res) =>
       res.json()
     )
 
-    const job = jobs.find((job: any) => job.id === jobId)
+    let job = jobs.find((job: any) => job.id === jobId)
+
+    while (
+      job.status === 'QUEUED' ||
+      job.status === 'STARTED' ||
+      job.status === 'INIT'
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 7000))
+      jobs = await fetch('/api/imageGen/citizenImage').then((res) => res.json())
+      job = jobs.find((job: any) => job.id === jobId)
+      console.log(job)
+    }
+
+    console.log('job', job)
 
     if (job.status === 'ERROR') {
       console.error('job failed')
@@ -90,10 +107,7 @@ export function ImageGenerator({
 
       // Set the image as a File object
       setImage(file)
-    } else {
-      setTimeout(() => {
-        checkJobStatus(jobId)
-      }, 15000)
+      setGenerating(false)
     }
   }
 
@@ -143,22 +157,28 @@ export function ImageGenerator({
           <>
             {citizenImage ? (
               <Image
-                src={URL.createObjectURL(citizenImage)}
+                src={URL.createObjectURL(userImage)}
+                layout="fill"
+                objectFit="contain"
+                className="mix-blend-multiply"
+                alt={''}
+              />
+            ) : generating ? (
+              <Image
+                src={'/assets/MoonDAO-Loading-Animation.svg'}
                 layout="fill"
                 objectFit="contain"
                 className="mix-blend-multiply"
                 alt={''}
               />
             ) : (
-              userImage && (
-                <Image
-                  src={URL.createObjectURL(userImage)}
-                  layout="fill"
-                  objectFit="contain"
-                  className="mix-blend-multiply"
-                  alt={''}
-                />
-              )
+              <Image
+                src={URL.createObjectURL(userImage)}
+                layout="fill"
+                objectFit="contain"
+                className="mix-blend-multiply"
+                alt={''}
+              />
             )}
           </>
         )}
