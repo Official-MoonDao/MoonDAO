@@ -126,7 +126,7 @@ export default function CreateCitizen({
         >
         <div className="flex flex-row w-full">
           <div className="px-5 bg-slide-section lg:p-5 rounded-tl-[20px] rounded-[5vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1200px]">
-            <div className="flex p-5 flex-row w-full justify-between max-w-[600px] items-start">
+            <div className="flex p-5 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
               <Steps
                 className="mb-4 pl-5 md:pl-0 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16 -ml-10"
                 steps={['Design', 'Profile', 'Checkout']}
