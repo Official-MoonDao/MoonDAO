@@ -8,7 +8,6 @@ import {
 import {
   Action,
   Proposal,
-  ProposalPacket,
   ProposalStatus,
   RequestBudget,
   actionsToYaml,
@@ -35,8 +34,7 @@ import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
 import ProposalTitleInput from '../../components/nance/ProposalTitleInput'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
 import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile"
-import { useBeforeUnload, useLocalStorage } from 'react-use'
-import ResultModal from './ResultModal'
+import { useLocalStorage } from 'react-use'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -55,6 +53,10 @@ const NanceEditor = dynamic(
     loading: () => <LoadingSpinner />,
   }
 )
+
+const ResultModal = dynamic(() => import("./ResultModal"), {
+  ssr: false,
+});
 
 const DEFAULT_MULTISIG_TEAM: RequestBudget['multisigTeam'][number] = {
   discordUserId: '',
@@ -86,19 +88,23 @@ const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
   ],
 }
 
-type ProposalCache = Pick<ProposalPacket, "title" | "body"> & {timestamp: number}
+type ProposalCache = {
+  title?: string
+  body?: string
+  timestamp: number
+}
 
 export default function ProposalEditor() {
   const router = useRouter()
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
-  const [proposalTitle, setProposalTitle] = useState<string>("")
+  const [proposalTitle, setProposalTitle] = useState<string | undefined>()
   const [proposalStatus, setProposalStatus] =
     useState<ProposalStatus>('Discussion')
-  const [proposalCache, setProposalCache] = useLocalStorage<ProposalCache>(
+  const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(
     "NanceProposalCacheV1",
-    {title: "", body: TEMPLATE, timestamp: 0}
+    {title: undefined, body: undefined, timestamp: 0}
   );
   const [cacheModalIsOpen, setCacheModalIsOpen] = useState(
     !!(proposalCache?.title || proposalCache?.body),
@@ -143,7 +149,6 @@ export default function ProposalEditor() {
   const { handleSubmit, reset, getValues, watch } = methods
 
   useEffect(() => {
-    // will need to refactor if we want to support multiple actions
     if (loadedProposal) {
       restoreFromTitleAndBody(loadedProposal.title, loadedProposal.body)
     }
@@ -151,7 +156,7 @@ export default function ProposalEditor() {
 
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
-    setMarkdown(trimActionsFromBody(b))
+    setMarkdown?.(trimActionsFromBody(b)) // dynamic load so might be undefined
     const actions = getActionsFromBody(b);
     if (!actions) return;
     console.debug('loaded action:', actions)
@@ -209,6 +214,9 @@ export default function ProposalEditor() {
     }
     if (!nextSnapshotVote) return
     setSigningStatus('loading')
+    const t = toast.loading('Sign proposal...', {
+      style: toastStyle
+    })
     const proposalId = loadedProposal?.proposalId || nextProposalId
     const preTitle = `${proposalIdPrefix}${proposalId}: `
     signProposalAsync(proposal, preTitle, nextSnapshotVote)
@@ -226,6 +234,8 @@ export default function ProposalEditor() {
           .then((res) => {
             if (res.success) {
               setSigningStatus('success')
+              clearProposalCache();
+              toast.dismiss(t)
               toast.success('Proposal submitted successfully!', {
                 style: toastStyle,
               })
@@ -233,11 +243,13 @@ export default function ProposalEditor() {
               router.push(`/proposal/${res.data.uuid}`)
             } else {
               setSigningStatus('error')
-              toast.error('Error saving draft', { style: toastStyle })
+              toast.dismiss(t)
+              toast.error('Error saving proposal', { style: toastStyle })
             }
           })
           .catch((error) => {
             setSigningStatus('error')
+            toast.dismiss(t)
             toast.error(`[API] Error submitting proposal:\n${error}`, {
               style: toastStyle,
             })
@@ -245,6 +257,7 @@ export default function ProposalEditor() {
       })
       .catch((error) => {
         setSigningStatus('idle')
+        toast.dismiss(t)
         toast.error(`[Wallet] Error signing proposal:\n${error}`, {
           style: toastStyle,
         })
@@ -286,7 +299,7 @@ export default function ProposalEditor() {
           fromUnixTime(proposalCache?.timestamp || 0),
           new Date(),
           { addSuffix: true },
-        )}. Title: ${proposalCache?.title}, Content: ${proposalCache?.body.slice(
+        )}. Title: ${proposalCache?.title}, Content: ${proposalCache?.body?.slice(
           0,
           140,
         )}...`}
@@ -295,8 +308,9 @@ export default function ProposalEditor() {
           restoreFromTitleAndBody(proposalCache?.title || "", proposalCache?.body || "")
           setCacheModalIsOpen(false);
         }}
-        cancelButtonText="Close"
+        cancelButtonText="Delete"
         close={() => {
+          clearProposalCache();
           setCacheModalIsOpen(false);
         }}
         shouldOpen={cacheModalIsOpen}
@@ -311,7 +325,7 @@ export default function ProposalEditor() {
             setProposalCache({...cache, title: s})
           }} />
           <NanceEditor
-            initialValue={TEMPLATE}
+            initialValue={loadedProposal?.body || TEMPLATE}
             fileUploadExternal={ async (val) => {
               const res = await pinBlobOrFile(val)
               return res.url;
