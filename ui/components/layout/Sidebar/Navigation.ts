@@ -13,11 +13,15 @@ export const navigation = [
     name: 'Join MoonDAO',
     href: '/join',
     icon: PlusIcon,
+    children: [
+      {name: 'Become a Citizen', href: '/citizen' },
+      {name: 'Create a Team', href: '/team' }
+    ],
   },
   {
-    name: 'Create a Team',
-    href: '/team',
-    icon: PlusIcon,
+    name: 'Network',
+    href: '/network',
+    icon: IconOrg,
   },
   {
     name: 'Info',
@@ -33,16 +37,6 @@ export const navigation = [
       { name: 'Events', href: '/events' },
       { name: 'Analytics', href: '/analytics' },
     ],
-  },
-  {
-    name: 'Network',
-    href: '/network',
-    icon: IconOrg,
-  },
-  {
-    name: 'Jobs',
-    href: '/jobs',
-    icon: ClipboardDocumentListIcon,
   },
   {
     name: 'Governance',
@@ -80,5 +74,10 @@ export const navigation = [
       //   dynamicHref: '/marketplace/collection/[contractAddress]',
       // },
     ],
+  },
+  {
+    name: 'Jobs',
+    href: '/jobs',
+    icon: ClipboardDocumentListIcon,
   },
 ]

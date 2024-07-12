@@ -8,6 +8,7 @@ import {
   featuredEntities,
 } from 'const/whitelist'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useContext } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -185,6 +186,9 @@ export default function Directory() {
 
   const descriptionSection = (
     <div className="pt-2">
+      <div className="mb-4">
+        The first open-source, interplanetary network state dedicated to establishing a permanent human presence on the Moon and beyond. Be a part of our multiplanetary future and <u><Link href="/join">join the network</Link></u>.
+      </div>
       <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
         <Search input={input} setInput={setInput} />
       </Frame>
@@ -222,13 +226,21 @@ export default function Directory() {
         </Frame>
       </div>
     </div>
-  )
+  );
+  
+  
+  
+  
 
   return (
     <section id="network-container" className="overflow-hidden">
+      <Head
+        title={'The Space Network'}
+        description={'The first open source, interplanetary network state dedicated to expanding life beyond Earth.'}
+      />
       <Container>
         <ContentLayout
-          header="Our Network"
+          header="The Network"
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
           preFooter={
@@ -284,28 +296,26 @@ export default function Directory() {
             <Frame noPadding marginBottom="0px">
               <div
                 id="pagination-container"
-                className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center lg:space-x-8"
+                className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
               >
-                {pageIdx === 1 ? (
-                  <p></p>
-                ) : (
-                  <button
-                    onClick={() => {
-                      if (pageIdx > 1) {
-                        setPageIdx(pageIdx - 1)
-                      }
-                    }}
-                  >
-                    <Image
-                      src="/../.././assets/icon-left.svg"
-                      alt="Right Arrow"
-                      width={35}
-                      height={35}
-                    />
-                  </button>
-                )}
-                <p id="page-number" className="px-5">
-                  {pageIdx}
+                <button
+                  onClick={() => {
+                    if (pageIdx > 1) {
+                      setPageIdx(pageIdx - 1)
+                    }
+                  }}
+                  className={`pagination-button ${pageIdx === 1 ? 'opacity-10' : 'cursor-pointer opacity-100'}`}
+                  disabled={pageIdx === 1}
+                >
+                  <Image
+                    src="/../.././assets/icon-left.svg"
+                    alt="Left Arrow"
+                    width={35}
+                    height={35}
+                  />
+                </button>
+                <p id="page-number" className="px-5 font-bold">
+                  Page {pageIdx} of {maxPage}
                 </p>
                 <button
                   onClick={() => {
@@ -313,6 +323,8 @@ export default function Directory() {
                       setPageIdx(pageIdx + 1)
                     }
                   }}
+                  className={`pagination-button ${pageIdx === maxPage ? 'opacity-10' : 'cursor-pointer opacity-100'}`}
+                  disabled={pageIdx === maxPage}
                 >
                   <Image
                     src="/../.././assets/icon-right.svg"
@@ -323,6 +335,7 @@ export default function Directory() {
                 </button>
               </div>
             </Frame>
+
           </>
         </ContentLayout>
       </Container>
