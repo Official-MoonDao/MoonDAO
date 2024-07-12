@@ -115,7 +115,7 @@ export default function Governance() {
           name: 'Submit a Proposal',
           description:
             'Proposals start in our “Ideation” channel in the Discord. Post your idea there to get feedback and start the submission process!',
-          href: '/newProposal',
+          href: '/propose',
           icon: DocumentIcon,
           externalLink: false,
         },

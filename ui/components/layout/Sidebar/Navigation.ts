@@ -40,7 +40,7 @@ export const navigation = [
       { name: 'Proposals' },
       {
         name: 'Submit Proposal',
-        href: '/newProposal',
+        href: '/propose',
       },
       {
         name: 'Vote',

@@ -14,29 +14,31 @@ import {
   getActionsFromBody,
   trimActionsFromBody,
 } from '@nance/nance-sdk'
-import { add, differenceInDays, formatDistance, fromUnixTime, getUnixTime } from 'date-fns'
+import { add, differenceInDays, getUnixTime } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { TEMPLATE } from '@/lib/nance'
 import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
-import useAccount from '../../lib/nance/useAccountAddress'
-import { useSignProposal } from '../../lib/nance/useSignProposal'
-import { classNames } from '../../lib/utils/tailwind'
+import useAccount from '@/lib/nance/useAccountAddress'
+import { useSignProposal } from '@/lib/nance/useSignProposal'
+import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
-import Head from '../../components/layout/Head'
-import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
-import ProposalTitleInput from '../../components/nance/ProposalTitleInput'
+import Head from '@/components/layout/Head'
+import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
+import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
 import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile"
 import { useLocalStorage } from 'react-use'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
+
+const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })
 
 // Nance Editor
 let getMarkdown: GetMarkdown
@@ -53,10 +55,6 @@ const NanceEditor = dynamic(
     loading: () => <LoadingSpinner />,
   }
 )
-
-const ResultModal = dynamic(() => import("./ResultModal"), {
-  ssr: false,
-});
 
 const DEFAULT_MULTISIG_TEAM: RequestBudget['multisigTeam'][number] = {
   discordUserId: '',
@@ -88,7 +86,7 @@ const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
   ],
 }
 
-type ProposalCache = {
+export type ProposalCache = {
   title?: string
   body?: string
   timestamp: number
@@ -100,12 +98,8 @@ export default function ProposalEditor() {
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
   const [proposalTitle, setProposalTitle] = useState<string | undefined>()
-  const [proposalStatus, setProposalStatus] =
-    useState<ProposalStatus>('Discussion')
-  const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>("NanceProposalCacheV1");
-  const [cacheModalIsOpen, setCacheModalIsOpen] = useState(
-    !!(proposalCache?.title || proposalCache?.body),
-  );
+  const [proposalStatus, setProposalStatus] = useState<ProposalStatus>('Discussion')
+
 
   // get space info to find next Snapshot Vote
   // we need this to be compliant with the proposal signing format of Snapshot
@@ -139,6 +133,8 @@ export default function ProposalEditor() {
   )
   const loadedProposal = data?.data
 
+  const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(`NanceProposalCacheV1-${loadedProposal?.uuid.substring(0, 5) || 'new'}`);
+
   // request budget form
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
@@ -147,9 +143,9 @@ export default function ProposalEditor() {
 
   useEffect(() => {
     if (loadedProposal) {
-      restoreFromTitleAndBody(loadedProposal.title, loadedProposal.body)
+      setProposalTitle(loadedProposal.title)
     }
-  }, [loadedProposal, reset])
+  }, [loadedProposal])
 
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
@@ -271,7 +267,11 @@ export default function ProposalEditor() {
       body = `${body}\n\n${actionsToYaml([action])}`
     }
 
-    setProposalCache({title: proposalTitle, body: body || undefined, timestamp: getUnixTime(new Date())})
+    setProposalCache({
+      timestamp: getUnixTime(new Date()),
+      title: proposalCache?.title || proposalTitle,
+      body: body || undefined
+    })
   }
 
   useEffect(() => {
@@ -289,36 +289,21 @@ export default function ProposalEditor() {
     <div className="flex flex-col justify-center items-center animate-fadeIn w-[90vw] md:w-full">
       <Head title='Proposal Editor' />
 
-      <ResultModal
-        title="You have saved proposal content, do you wish to restore it?"
-        description={`Saved ${formatDistance(
-          fromUnixTime(proposalCache?.timestamp || 0),
-          new Date(),
-          { addSuffix: true },
-        )}. Title: ${proposalCache?.title}, Content: ${proposalCache?.body?.slice(
-          0,
-          140,
-        )}...`}
-        buttonText="Restore"
-        onClick={() => {
-          restoreFromTitleAndBody(proposalCache?.title || "", proposalCache?.body || "")
-          setCacheModalIsOpen(false);
-        }}
-        cancelButtonText="Delete"
-        close={() => {
-          clearProposalCache();
-          setCacheModalIsOpen(false);
-        }}
-        shouldOpen={cacheModalIsOpen}
-      />
-
       <div className="w-full sm:w-[90%] lg:w-3/4">
         <form onSubmit={handleSubmit(onSubmit)}>
           <h1 className="page-title py-10">{loadedProposal ? 'Edit Proposal' : 'New Proposal'}</h1>
+
+          <ProposalLocalCache
+            proposalCache={proposalCache}
+            clearProposalCache={clearProposalCache}
+            restoreProposalCache={restoreFromTitleAndBody}
+          />
+
           <ProposalTitleInput value={proposalTitle} onChange={(s) => {
             setProposalTitle(s)
-            const cache = proposalCache || { body: loadedProposal?.body || TEMPLATE, timestamp: getUnixTime(new Date())}
-            setProposalCache({...cache, title: s})
+            console.debug("setProposalTitle", s)
+            const cache = proposalCache || { body: loadedProposal?.body || TEMPLATE }
+            setProposalCache({ ...cache, title: s, timestamp: getUnixTime(new Date()) })
           }} />
           <NanceEditor
             initialValue={loadedProposal?.body || TEMPLATE}
