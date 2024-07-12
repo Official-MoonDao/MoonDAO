@@ -38,7 +38,7 @@ const ContentLayout: React.FC<ContentProps> = ({
     const isCompact = mode === 'compact';
 
     return (
-        <div className="pb-5">
+        <div className="">
             <section id="title-section" 
                 className="z-0"
                 >

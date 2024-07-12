@@ -56,7 +56,7 @@ export default function Governance() {
         {
           name: 'Bridge $MOONEY',
           description:
-            'Reduce onchain gas fees by bridging $MOONEY from L1 to L2.',
+            'Reduce onchain gas fees by bridging $MOONEY from L1 to L2. ',
           icon: ArrowsRightLeftIcon,
           href: 'https://wallet.polygon.technology/polygon/bridge/deposit',
           externalLink: true,
