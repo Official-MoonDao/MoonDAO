@@ -17,6 +17,7 @@ import toast from 'react-hot-toast'
 import PrivyWalletContext from '../lib/privy/privy-wallet-context'
 import Head from '../components/layout/Head'
 import { PageCards } from '../components/layout/PageCards'
+import { joinSignature } from 'ethers/lib/utils'
 
 export default function Governance() {
   const router = useRouter()
@@ -132,14 +133,21 @@ export default function Governance() {
         title="Governance"
         description={
           <p className="font-[Lato] text-left px-0">
-            {`MoonDAO's Treasury is governed by its Citizens. If you don't have voting power, become a Citizen by `}
+            {`MoonDAO's Treasury is governed by its members. If you don't have voting power, become a member by `}
+            <button
+              className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
+              onClick={() => window.open('https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet')}
+            >
+              getting MOONEY
+            </button>
+            {` and `}
             <button
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
               onClick={() => router.push('/join')}
             >
               joining
             </button>
-            {` our community. You can read MoonDAO's `}
+              {` our community. You can read MoonDAO's `}
             <button
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
               onClick={() =>
