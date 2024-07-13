@@ -2,7 +2,7 @@ import { NanceProvider, useProposal } from '@nance/nance-hooks'
 import { getActionsFromBody } from '@nance/nance-sdk'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
 import { useRouter } from 'next/router'
-import { NANCE_API_URL, NANCE_SPACE_NAME } from '../../lib/nance/constants'
+import { NANCE_API_URL, NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
 import { useVotesOfProposal } from '../../lib/snapshot'
 import ActionLabel from '../../components/nance/ActionLabel'
 import DropDownMenu from '../../components/nance/DropdownMenu'
@@ -12,6 +12,7 @@ import ProposalInfo, {
 } from '../../components/nance/ProposalInfo'
 import ProposalSummary from '../../components/nance/ProposalSummary'
 import ProposalVotes from '../../components/nance/ProposalVotes'
+import WebsiteHead from "@/components/layout/Head"
 
 function ProposalSkeleton() {
   return (
@@ -93,6 +94,11 @@ function Proposal() {
   }
 
   return (
+    <>
+    <WebsiteHead
+      title={`${proposalPacket.title}`}
+      description={`${proposalPacket.proposalSummary?.substring(0, 250)}...`}
+    />
     <div className="absolute top-0 left-0 lg:left-[20px] h-[100vh] overflow-auto w-full lg:px-10 bg-white py-5 dark:bg-[#040C1A] shadow-[0px_4px_29px_0px_rgba(0,0,0,0.03)] dark:shadow-none font-[Lato]">
       <header className="relative isolate">
         <div
@@ -182,6 +188,7 @@ function Proposal() {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
