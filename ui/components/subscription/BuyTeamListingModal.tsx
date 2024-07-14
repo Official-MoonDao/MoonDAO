@@ -129,6 +129,7 @@ export default function BuyTeamListingModal({
         const shipping = Object.values(shippingInfo).join(', ')
 
         //send email to entity w/ purchase details
+        console.log(teamEmail)
         const res = await fetch('/api/nodemailer/marketplace-purchase', {
           method: 'POST',
           headers: {

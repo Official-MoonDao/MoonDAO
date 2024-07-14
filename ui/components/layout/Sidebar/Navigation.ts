@@ -5,6 +5,7 @@ import {
   PlusIcon,
   RocketLaunchIcon,
   Squares2X2Icon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 import IconOrg from '../../assets/IconOrg'
 
@@ -17,7 +18,7 @@ export const navigation = [
   {
     name: 'Create a Team',
     href: '/team',
-    icon: PlusIcon,
+    icon: UserGroupIcon,
   },
   {
     name: 'Info',
