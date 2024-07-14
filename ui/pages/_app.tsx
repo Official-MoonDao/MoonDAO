@@ -31,7 +31,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
             appearance: {
               theme: '#252c4d',
               showWalletLoginFirst: false,
-              logo: 'Original_White.png',
+              logo: '/Original_White.png',
               accentColor: '#d85c4c',
             },
             legal: {
