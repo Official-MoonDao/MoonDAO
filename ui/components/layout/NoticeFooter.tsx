@@ -62,7 +62,7 @@ export function NoticeFooter({
   }
 
   return (
-    <div className="p-5">
+    <div className="p-5 pb-0">
       <div className="md:pl-10 flex items-center gap-5 lg:ml-[80px] max-w-[970px] gradient-15 md:ml-7 p-5 md:mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
         <div id="Image container" className="hidden opacity-[90%] lg:block">
           <Image src={image} alt="MoonDAO Logo" width={150} height={150} />

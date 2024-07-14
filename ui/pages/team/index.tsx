@@ -51,7 +51,7 @@ export default function TeamJoin() {
   return (
     <div className="animate-fadeIn flex flex-col items-center">
       <Head
-        title={'Create A Team'}
+        title={'Create a Team'}
         description={'Create a Team within the MoonDAO Network.'}
       />
       <Container>
