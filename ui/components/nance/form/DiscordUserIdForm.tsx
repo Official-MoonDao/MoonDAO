@@ -37,7 +37,7 @@ export default function DiscordUserIdForm({
     control,
     formState: { errors, isValidating },
     setValue,
-    getValues,
+    getValues
   } = useFormContext()
 
   // Controller doesn't support default values, so we need to set it manually
@@ -47,6 +47,10 @@ export default function DiscordUserIdForm({
       setValue(fieldName, defaultValue)
     }
   }, [defaultValue, getValues, setValue, fieldName])
+
+  const superFieldName = fieldName.split('.').slice(0, 2).join('.');
+  const discordUserNameField = `${superFieldName}.discordUsername`;
+  const discordUsername = getValues(discordUserNameField)
 
   return (
     <div>
@@ -60,8 +64,11 @@ export default function DiscordUserIdForm({
           rules={{
             required: required && "Can't be empty",
           }}
-          render={({ field: { onChange, onBlur, value, ref } }) => (
-            <DiscordUserIdInput val={value} setVal={onChange} />
+          render={({ field: { value } }) => (
+            <DiscordUserIdInput val={value} displayVal={discordUsername} setVal={(v) => {
+              setValue(discordUserNameField, v?.global_name)
+              setValue(fieldName, v?.id)
+            }} />
           )}
           shouldUnregister={true}
         />

@@ -15,7 +15,7 @@ import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
 import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import useAccount from '../../lib/nance/useAccountAddress'
 import { useSignProposal } from '../../lib/nance/useSignProposal'
-import { SnapshotGraphqlProposalVotingInfo } from '../../lib/snapshot'
+import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import { AddressLink } from './AddressLink'
 import ProposalStatusIcon from './ProposalStatusIcon'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
@@ -78,12 +78,12 @@ export default function ProposalInfo({
   sponsorDisabled?: boolean
   coauthorsDisabled?: boolean
 }) {
-  const { proposalIdPrefix } = proposalPacket?.proposalInfo || ''
-  const preTitleDisplay = proposalIdPrefix
-    ? `${proposalIdPrefix}${proposalPacket.proposalId}: `
+  const { proposalIdPrefix } = proposalPacket?.proposalInfo
+  const { proposalInfo, ...proposal } = proposalPacket
+  const preTitleDisplay = proposalIdPrefix && proposal.proposalId
+    ? `${proposalIdPrefix}${proposal.proposalId}: `
     : ''
   const router = useRouter()
-  const { proposalInfo, ...proposal } = proposalPacket
   proposal.voteSetup = {
     type: 'quadratic', // could make this dynamic in the future
     choices: ['Yes', 'No', 'Abstain'], // could make this dynamic in the future

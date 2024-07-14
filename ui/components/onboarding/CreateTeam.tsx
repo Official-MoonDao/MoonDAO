@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
@@ -327,49 +328,45 @@ export default function CreateTeam({
                           return toast.error('Insufficient balance')
                         }
 
-                        const accessToken = await getAccessToken()
-
-                        //get pinata jwt
-                        const jwtRes = await fetch('/api/ipfs/upload', {
-                          method: 'POST',
-                          headers: {
-                            Authorization: `Bearer ${accessToken}`,
-                          },
-                        })
-
-                        const pinataJWT = await jwtRes.text()
-
-                        const adminHatMetadataIpfsHash =
-                          await pinMetadataToIPFS(
-                            pinataJWT || '',
-                            {
+                        const adminHatMetadataBlob = new Blob(
+                          [
+                            JSON.stringify({
                               type: '1.0',
                               data: {
                                 name: teamData.name + ' Admin',
                                 description: teamData.description,
                               },
-                            },
-                            teamData.name + 'Admin Hat Metadata'
-                          )
+                            }),
+                          ],
+                          {
+                            type: 'application/json',
+                          }
+                        )
 
-                        const managerHatMetadataIpfsHash =
-                          await pinMetadataToIPFS(
-                            pinataJWT || '',
-                            {
+                        const { cid: adminHatMetadataIpfsHash } =
+                          await pinBlobOrFile(adminHatMetadataBlob)
+
+                        const managerHatMetadataBlob = new Blob(
+                          [
+                            JSON.stringify({
                               type: '1.0',
                               data: {
                                 name: teamData.name + ' Manager',
                                 description: teamData.description,
                               },
-                            },
-                            teamData.name + 'Manager Hat Metadata'
-                          )
+                            }),
+                          ],
+                          {
+                            type: 'application/json',
+                          }
+                        )
+
+                        const { cid: managerHatMetadataIpfsHash } =
+                          await pinBlobOrFile(managerHatMetadataBlob)
 
                         //pin image to IPFS
-                        const newImageIpfsHash = await pinImageToIPFS(
-                          pinataJWT || '',
-                          teamImage,
-                          teamData.name + ' Image'
+                        const { cid: newImageIpfsHash } = await pinBlobOrFile(
+                          teamImage
                         )
 
                         if (!newImageIpfsHash) {

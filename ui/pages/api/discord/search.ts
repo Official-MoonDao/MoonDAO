@@ -19,8 +19,8 @@ export default async function handler(req: any, res: any) {
 
     const ret = await response.json()
     res.status(200).json(ret)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error searching username:', error)
-    res.status(500).json({ error: 'An error occurred' })
+    res.status(500).json({ success: false, error: error.toString() })
   }
 }

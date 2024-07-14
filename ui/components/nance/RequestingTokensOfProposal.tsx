@@ -1,6 +1,6 @@
 import { BanknotesIcon } from '@heroicons/react/24/outline'
 import { Action, RequestBudget } from '@nance/nance-sdk'
-import { formatNumberUSStyle } from '../../lib/nance'
+import { formatNumberUSStyle } from '@/lib/nance'
 import { TokenSymbol } from './TokenSymbol'
 
 export default function RequestingTokensOfProposal({

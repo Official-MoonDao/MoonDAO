@@ -6,6 +6,7 @@ import { TEAM_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
 import formatTeamFormData from '@/lib/typeform/teamFormData'
 import Modal from '../layout/Modal'
@@ -65,20 +66,7 @@ export default function TeamMetadataModal({
           imageIpfsLink = rawMetadata.image
         } else {
           if (!newTeamImage) return console.error('No new image')
-          const jwtRes = await fetch('/api/ipfs/upload', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          })
-
-          const pinataJWT = await jwtRes.text()
-
-          const newImageIpfsHash = await pinImageToIPFS(
-            pinataJWT || '',
-            newTeamImage,
-            teamData.name + ' Image'
-          )
+          const { cid: newImageIpfsHash } = await pinBlobOrFile(newTeamImage)
 
           imageIpfsLink = `ipfs://${newImageIpfsHash}`
         }

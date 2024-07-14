@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
-import { pinImageToIPFS } from '@/lib/ipfs/pin'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatCitizenFormData, {
@@ -247,9 +247,13 @@ export default function CreateCitizen({
                   </div>
                 </div>
                 <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
-                  <h2 className="font-GoodTimes text-3xl mb-2">IMPORTANT INFORMATION</h2>
+                  <h2 className="font-GoodTimes text-3xl mb-2">
+                    IMPORTANT INFORMATION
+                  </h2>
                   <div className="flex flex-col dark:bg-[#0F152F] p-5 pb-10 rounded-[20px] md:p-5 mt-5">
-                    <h3 className="font-GoodTimes text-2xl mb-2">CITIZENSHIP</h3>
+                    <h3 className="font-GoodTimes text-2xl mb-2">
+                      CITIZENSHIP
+                    </h3>
                     <p className="mt-2">
                       Citizenship lasts for one year and can be renewed at any
                       time. Any wallet funds are self-custodied and are not
@@ -332,23 +336,8 @@ export default function CreateCitizen({
                         return toast.error('Insufficient balance')
                       }
 
-                      const accessToken = await getAccessToken()
-
-                      //get pinata jwt
-                      const jwtRes = await fetch('/api/ipfs/upload', {
-                        method: 'POST',
-                        headers: {
-                          Authorization: `Bearer ${accessToken}`,
-                        },
-                      })
-
-                      const pinataJWT = await jwtRes.text()
-
-                      //pin image to IPFS
-                      const newImageIpfsHash = await pinImageToIPFS(
-                        pinataJWT || '',
-                        citizenImage,
-                        citizenData.name + ' Image'
+                      const { cid: newImageIpfsHash } = await pinBlobOrFile(
+                        citizenImage
                       )
 
                       if (!newImageIpfsHash) {

@@ -5,10 +5,12 @@ export default function StringForm({
   label,
   fieldName,
   defaultValue = '',
+  required = true,
 }: {
   label: string
   fieldName: any
   defaultValue?: string
+  required?: boolean
 }) {
   const {
     register,
@@ -25,6 +27,7 @@ export default function StringForm({
           type="text"
           {...register(fieldName, { shouldUnregister: true })}
           className="block h-10 w-full input dark:bg-black flex-1 rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          required={required}
         />
       </div>
       <ErrorMessage

@@ -1,7 +1,7 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useState } from 'react'
 import useAccountAddress from '../../lib/nance/useAccountAddress'
-import { SnapshotGraphqlProposalVotingInfo } from '../../lib/snapshot'
+import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import { classNames } from '../../lib/utils/tailwind'
 import VotingModal from './VotingModal'
 

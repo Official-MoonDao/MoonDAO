@@ -4,10 +4,10 @@ import {
   NumberParam,
   createEnumParam,
 } from 'next-query-params'
-import { formatNumberUSStyle } from '../../lib/nance'
+import { formatNumberUSStyle } from '@/lib/nance'
 import { SNAPSHOT_SPACE_NAME } from '../../lib/nance/constants'
-import { VotesOfProposal } from '../../lib/snapshot'
-import { classNames } from '../../lib/utils/tailwind'
+import { VotesOfProposal } from '@/lib/snapshot'
+import { classNames } from '@/lib/utils/tailwind'
 import { AddressLink } from './AddressLink'
 import ColorBar from './ColorBar'
 import NewVoteButton from './NewVoteButton'

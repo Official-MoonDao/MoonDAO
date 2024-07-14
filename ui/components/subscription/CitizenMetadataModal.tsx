@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
 import formatCitizenFormData from '@/lib/typeform/citizenFormData'
 import Modal from '../layout/Modal'
@@ -75,20 +76,8 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
           imageIpfsLink = rawMetadata.image
         } else {
           if (!newCitizenImage) return console.error('No new image')
-          const jwtRes = await fetch('/api/ipfs/upload', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          })
 
-          const pinataJWT = await jwtRes.text()
-
-          const newImageIpfsHash = await pinImageToIPFS(
-            pinataJWT || '',
-            newCitizenImage,
-            citizenData.name + ' Image'
-          )
+          const { cid: newImageIpfsHash } = await pinBlobOrFile(newCitizenImage)
 
           imageIpfsLink = `ipfs://${newImageIpfsHash}`
         }

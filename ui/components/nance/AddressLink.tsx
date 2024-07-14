@@ -1,5 +1,5 @@
 import { mainnet } from 'viem/chains'
-import { useENS } from '../../lib/utils/hooks/useENS'
+import { useENS } from '@/lib/utils/hooks/useENS'
 
 function shortenAddress(address: string | undefined) {
   if (address?.length !== 42) {
