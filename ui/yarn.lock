@@ -2370,26 +2370,26 @@
   resolved "https://registry.npmjs.org/@multiformats/base-x/-/base-x-4.0.1.tgz"
   integrity sha512-eMk0b9ReBbV23xXU693TAIrLyeO5iTgBZGSJfpqriG8UkYvr/hC9u9pyMlAakDNHWmbhMZCDs6KQO0jzKD8OTw==
 
-"@nance/nance-editor@^1.7.0":
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/@nance/nance-editor/-/nance-editor-1.7.0.tgz#7bd27dd7bd252be9a4b74a3106c2c4b8e2380d37"
-  integrity sha512-8mn7Zok5AVefO9yQ1asfopL1nEECQyQxUIwpIhCVjgVd33R6k12XJYZe6va4ifkahjbQUduS88hS+3/NHpPDLw==
+"@nance/nance-editor@1.8.2":
+  version "1.8.2"
+  resolved "https://registry.yarnpkg.com/@nance/nance-editor/-/nance-editor-1.8.2.tgz#127c1d359167488f8eef547a8de59f794f94a6c1"
+  integrity sha512-VaZ44MwdiA/jWsjptD1ckQvr1Vm63BtQaasghnN46jPw+5QfgKbMiU6uIUvvySqmQmCJZT0Eo2tDsB3O+n6sMQ==
   dependencies:
     "@toast-ui/react-editor" "^3.2.3"
 
-"@nance/nance-hooks@^3.0.5":
-  version "3.0.5"
-  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-3.0.5.tgz#ea1ab146f5d97974ab51aa3a40fdd377593a5a6e"
-  integrity sha512-WeKAdoJl9g+RoWe2PP+4nzNW55Wu+ErhCUiLc6I0kmXWW4qry4tqGtN9jlkloP9J5mRLMEQuux4iNlLznb6UEQ==
+"@nance/nance-hooks@^3.1.1":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-3.1.1.tgz#0f413551bbef96a9782ff5380db03c0ae900e3fc"
+  integrity sha512-xR9DK9FtSzTyj20BKkJKLCsNnaJ383wuJeobUu6xzuRWPLS64jHJRhU7mXPuPdX0UEG5iMu1cHXLmmB47LNQvQ==
   dependencies:
-    "@nance/nance-sdk" "^3.0.5"
+    "@nance/nance-sdk" "^3.1.1"
     swr "^2.2.4"
     tslib "^2.6.2"
 
-"@nance/nance-sdk@^3.0.5":
-  version "3.0.5"
-  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-3.0.5.tgz#518cede687acf43cf1eceb584af00a75df3bb581"
-  integrity sha512-QTed66ToYD/13jb3lPl+ZKkI27+EeNpyu4h1YHbqpcYFZVTjBiTG0BYok4RQskLf7YEXNygnqIRYSgeW7HOfEQ==
+"@nance/nance-sdk@^3.1.1":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-3.1.1.tgz#a311d33fe592d6587831eb95848b4fad5e23f19b"
+  integrity sha512-17cWnhNtPt3EqMA5OrLrP2xf3WxsReUMbiD2aLquSGphxhkByDzKvLhi9uIjf8IQWLcUihWiVmS0oUoS3JJlCw==
   dependencies:
     tslib "^2.6.2"
     yaml "^2.4.2"
@@ -2713,6 +2713,18 @@
     uuid ">=8 <10"
     web3-core "^1.8.0"
     web3-core-helpers "^1.8.0"
+
+"@privy-io/server-auth@^1.7.3":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@privy-io/server-auth/-/server-auth-1.8.0.tgz#f146352f9429e7a593a5f7faf7873e2fa1f741bd"
+  integrity sha512-e4OLdZhBLU8X4/ymeFfkvjh4iMKf93fCTluNVBAOV78eE+dhd9E3ZpbAabdi4yC0YnkfH3iV6A6eEjm5DTSwhw==
+  dependencies:
+    dotenv "^16.0.3"
+    jose "^4.10.4"
+    node-fetch-native "^1.4.0"
+    redaxios "^0.5.1"
+    ts-case-convert "^2.0.2"
+    type-fest "^3.6.1"
 
 "@privy-io/wagmi-connector@^0.1.12":
   version "0.1.12"
@@ -3945,6 +3957,13 @@
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.5.tgz#a6ce3e556e00fd9895dd872dd172ad0d4bd687f4"
   integrity sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==
+
+"@types/formidable@^3.4.5":
+  version "3.4.5"
+  resolved "https://registry.yarnpkg.com/@types/formidable/-/formidable-3.4.5.tgz#8e45c053cac5868e2b71cc7410e2bd92872f6b9c"
+  integrity sha512-s7YPsNVfnsng5L8sKnG/Gbb2tiwwJTY1conOkJzTMRvJAlLFW1nEua+ADsJQu8N1c0oTHx9+d5nqg10WuT9gHQ==
+  dependencies:
+    "@types/node" "*"
 
 "@types/glob@*":
   version "8.1.0"
@@ -5474,6 +5493,11 @@ arrify@^2.0.0:
   resolved "https://registry.npmjs.org/arrify/-/arrify-2.0.1.tgz"
   integrity sha512-3duEwti880xqi4eAMN8AyR4a0ByT90zoYdLlevfrvU43vb0YZwZVfxOgxWrLXXXpyugL0hNZc9G6BiB5B3nUug==
 
+asap@^2.0.0:
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/asap/-/asap-2.0.6.tgz#e50347611d7e690943208bbdafebcbc2fb866d46"
+  integrity sha512-BSHWgDSAiKs50o2Re8ppvp3seVHXSRM44cdSsT9FfNEUUZLOGWVCsiWaRPWM1Znn+mqZ1OfVZ3z3DWEzSp7hRA==
+
 asn1.js@5.4.1, asn1.js@^5.0.1:
   version "5.4.1"
   resolved "https://registry.npmjs.org/asn1.js/-/asn1.js-5.4.1.tgz"
@@ -6960,6 +6984,14 @@ devlop@^1.0.0, devlop@^1.1.0:
   dependencies:
     dequal "^2.0.0"
 
+dezalgo@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/dezalgo/-/dezalgo-1.0.4.tgz#751235260469084c132157dfa857f386d4c33d81"
+  integrity sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==
+  dependencies:
+    asap "^2.0.0"
+    wrappy "1"
+
 didyoumean@^1.2.2:
   version "1.2.2"
   resolved "https://registry.npmjs.org/didyoumean/-/didyoumean-1.2.2.tgz"
@@ -8271,6 +8303,15 @@ form-data@~2.3.2:
     combined-stream "^1.0.6"
     mime-types "^2.1.12"
 
+formidable@^3.5.1:
+  version "3.5.1"
+  resolved "https://registry.yarnpkg.com/formidable/-/formidable-3.5.1.tgz#9360a23a656f261207868b1484624c4c8d06ee1a"
+  integrity sha512-WJWKelbRHN41m5dumb0/k8TeAx7Id/y3a+Z7QfhxP/htI9Js5zYaEDtG8uMgG0vM0lOlqnmjE99/kfpOYi/0Og==
+  dependencies:
+    dezalgo "^1.0.4"
+    hexoid "^1.0.0"
+    once "^1.4.0"
+
 fraction.js@^4.2.0:
   version "4.2.0"
   resolved "https://registry.npmjs.org/fraction.js/-/fraction.js-4.2.0.tgz"
@@ -8973,6 +9014,11 @@ help-me@^4.0.1:
     glob "^8.0.0"
     readable-stream "^3.6.0"
 
+hexoid@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/hexoid/-/hexoid-1.0.0.tgz#ad10c6573fb907de23d9ec63a711267d9dc9bc18"
+  integrity sha512-QFLV0taWQOZtvIRIAdBChesmogZrtuXvVWsFHZTk2SU+anspqZ2vMnoLg7IE1+Uk16N19APic1BuF8bC8c2m5g==
+
 hey-listen@^1.0.8:
   version "1.0.8"
   resolved "https://registry.npmjs.org/hey-listen/-/hey-listen-1.0.8.tgz"
@@ -9666,6 +9712,11 @@ jiti@^1.20.0:
   version "1.21.0"
   resolved "https://registry.npmjs.org/jiti/-/jiti-1.21.0.tgz"
   integrity sha512-gFqAIbuKyyso/3G2qhiO2OM6shY6EPP/R0+mkDbyspxKazh8BXDC5FiFsUjlczgdNz/vfra0da2y+aHrusLG/Q==
+
+jose@^4.10.4:
+  version "4.15.9"
+  resolved "https://registry.yarnpkg.com/jose/-/jose-4.15.9.tgz#9b68eda29e9a0614c042fa29387196c7dd800100"
+  integrity sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==
 
 jose@^4.11.2, jose@^4.9.1:
   version "4.15.1"
@@ -12616,6 +12667,11 @@ recast@^0.20.4:
     source-map "~0.6.1"
     tslib "^2.0.1"
 
+redaxios@^0.5.1:
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/redaxios/-/redaxios-0.5.1.tgz#a2e21c9337f615c23d8ceadb7c9f0a1844762d21"
+  integrity sha512-FSD2AmfdbkYwl7KDExYQlVvIrFz6Yd83pGfaGjBzM9F6rpq8g652Q4Yq5QD4c+nf4g2AgeElv1y+8ajUPiOYMg==
+
 redis-errors@^1.0.0, redis-errors@^1.2.0:
   version "1.2.0"
   resolved "https://registry.npmjs.org/redis-errors/-/redis-errors-1.2.0.tgz"
@@ -14042,6 +14098,11 @@ trough@^2.0.0:
   resolved "https://registry.yarnpkg.com/trough/-/trough-2.2.0.tgz#94a60bd6bd375c152c1df911a4b11d5b0256f50f"
   integrity sha512-tmMpK00BjZiUyVyvrBK7knerNgmgvcV/KLVyuma/SC+TQN167GrMRciANTz09+k3zW8L8t60jWO1GpfkZdjTaw==
 
+ts-case-convert@^2.0.2:
+  version "2.0.7"
+  resolved "https://registry.yarnpkg.com/ts-case-convert/-/ts-case-convert-2.0.7.tgz#a92b9fb17aadde088f34329f6841cf5640c24f23"
+  integrity sha512-Kqj8wrkuduWsKUOUNRczrkdHCDt4ZNNd6HKjVw42EnMIGHQUABS4pqfy0acETVLwUTppc1fzo/yi11+uMTaqzw==
+
 ts-easing@^0.2.0:
   version "0.2.0"
   resolved "https://registry.npmjs.org/ts-easing/-/ts-easing-0.2.0.tgz"
@@ -14166,6 +14227,11 @@ type-fest@^0.21.3:
   version "0.21.3"
   resolved "https://registry.npmjs.org/type-fest/-/type-fest-0.21.3.tgz"
   integrity sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==
+
+type-fest@^3.6.1:
+  version "3.13.1"
+  resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-3.13.1.tgz#bb744c1f0678bea7543a2d1ec24e83e68e8c8706"
+  integrity sha512-tLq3bSNx+xSpwvAJnzrK0Ep5CLNWjvFTOp71URMaAEWBfRb9nnJiBoUe0tF8bI4ZFO3omgBR6NvnbzVUT3Ly4g==
 
 type@^1.0.1:
   version "1.2.0"

@@ -1,5 +1,5 @@
-import { formatNumberUSStyle } from '../../lib/nance'
-import { SnapshotGraphqlProposalVotingInfo } from '../../lib/snapshot'
+import { formatNumberUSStyle } from '@/lib/nance'
+import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 
 export default function VotingInfo({
   votingInfo,

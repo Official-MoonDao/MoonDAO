@@ -3,13 +3,13 @@ import { XMarkIcon } from '@heroicons/react/24/solid'
 import { useState, Fragment, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { formatNumberUSStyle } from '../../lib/nance'
-import useVote from '../../lib/nance/useVote'
+import { formatNumberUSStyle } from '@/lib/nance'
+import useVote from '@/lib/nance/useVote'
 import {
   SnapshotGraphqlProposalVotingInfo,
   useVotingPower,
-} from '../../lib/snapshot'
-import { classNames } from '../../lib/utils/tailwind'
+} from '@/lib/snapshot'
+import { classNames } from '@/lib/utils/tailwind'
 
 interface VotingProps {
   modalIsOpen: boolean

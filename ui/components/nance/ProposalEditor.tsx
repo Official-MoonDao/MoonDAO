@@ -1,5 +1,5 @@
 import { Field, Label, Switch } from '@headlessui/react'
-import { GetMarkdown } from '@nance/nance-editor'
+import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import {
   useProposal,
   useProposalUpload,
@@ -11,37 +11,43 @@ import {
   ProposalStatus,
   RequestBudget,
   actionsToYaml,
+  getActionsFromBody,
+  trimActionsFromBody,
 } from '@nance/nance-sdk'
-import { add, differenceInDays } from 'date-fns'
+import { add, differenceInDays, getUnixTime } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
-import { TEMPLATE } from '../../lib/nance'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { TEMPLATE } from '@/lib/nance'
 import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
-import useAccount from '../../lib/nance/useAccountAddress'
-import { useSignProposal } from '../../lib/nance/useSignProposal'
-import { classNames } from '../../lib/utils/tailwind'
+import useAccount from '@/lib/nance/useAccountAddress'
+import { useSignProposal } from '@/lib/nance/useSignProposal'
+import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
-import Head from '../../components/layout/Head'
-import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
-import ProposalTitleInput, {
-  TITLE_ID,
-} from '../../components/nance/ProposalTitleInput'
+import Head from '@/components/layout/Head'
+import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
+import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
+import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile"
+import { useLocalStorage } from 'react-use'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
+const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })
+
 // Nance Editor
 let getMarkdown: GetMarkdown
+let setMarkdown: SetMarkdown
 
 const NanceEditor = dynamic(
   async () => {
     getMarkdown = (await import('@nance/nance-editor')).getMarkdown
+    setMarkdown = (await import("@nance/nance-editor")).setMarkdown
     return import('@nance/nance-editor').then((mod) => mod.NanceEditor)
   },
   {
@@ -50,47 +56,40 @@ const NanceEditor = dynamic(
   }
 )
 
+const DEFAULT_MULTISIG_TEAM: RequestBudget['multisigTeam'][number] = {
+  discordUserId: '',
+  discordUsername: '',
+  address: '',
+}
+
 const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
   projectTeam: [
     {
       discordUserId: '',
+      discordUsername: '',
       payoutAddress: '',
       votingAddress: '',
       isRocketeer: true,
     },
     {
       discordUserId: '',
+      discordUsername: '',
       payoutAddress: '',
       votingAddress: '',
       isRocketeer: false,
     },
   ],
-  multisigTeam: [
-    {
-      discordUserId: '',
-      address: '',
-    },
-    {
-      discordUserId: '',
-      address: '',
-    },
-    {
-      discordUserId: '',
-      address: '',
-    },
-    {
-      discordUserId: '',
-      address: '',
-    },
-    {
-      discordUserId: '',
-      address: '',
-    },
-  ],
+  multisigTeam: Array(5).fill(DEFAULT_MULTISIG_TEAM),
   budget: [
     { token: '', amount: '', justification: 'dev cost' },
     { token: '', amount: '', justification: 'flex' },
   ],
+}
+
+export type ProposalCache = {
+  title?: string
+  body?: string
+  timestamp: number
 }
 
 export default function ProposalEditor() {
@@ -98,8 +97,9 @@ export default function ProposalEditor() {
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
-  const [proposalStatus, setProposalStatus] =
-    useState<ProposalStatus>('Discussion')
+  const [proposalTitle, setProposalTitle] = useState<string | undefined>()
+  const [proposalStatus, setProposalStatus] = useState<ProposalStatus>('Discussion')
+
 
   // get space info to find next Snapshot Vote
   // we need this to be compliant with the proposal signing format of Snapshot
@@ -133,11 +133,30 @@ export default function ProposalEditor() {
   )
   const loadedProposal = data?.data
 
+  const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(`NanceProposalCacheV1-${loadedProposal?.uuid.substring(0, 5) || 'new'}`);
+
   // request budget form
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
   })
-  const { register, handleSubmit, formState, reset } = methods
+  const { handleSubmit, reset, getValues, watch } = methods
+
+  useEffect(() => {
+    if (loadedProposal) {
+      setProposalTitle(loadedProposal.title)
+    }
+  }, [loadedProposal])
+
+  function restoreFromTitleAndBody(t: string, b: string) {
+    setProposalTitle(t)
+    setMarkdown?.(trimActionsFromBody(b)) // dynamic load so might be undefined
+    const actions = getActionsFromBody(b);
+    if (!actions) return;
+    console.debug('loaded action:', actions)
+    setAttachBudget(true)
+    reset(actions[0].payload as RequestBudget)
+  }
+
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
     let proposal = buildProposal(proposalStatus)
 
@@ -167,17 +186,9 @@ export default function ProposalEditor() {
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
   const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
 
-  const fileUploadIPFS = {
-    gateway: process.env.NEXT_PUBLIC_INFURA_IPFS_GATEWAY as string,
-    auth: `Basic ${Buffer.from(
-      `${process.env.NEXT_PUBLIC_INFURA_IPFS_ID}:${process.env.NEXT_PUBLIC_INFURA_IPFS_SECRET}`
-    ).toString('base64')}`,
-  }
-
   const buildProposal = (status: ProposalStatus) => {
-    const title = (document?.getElementById(TITLE_ID) as HTMLInputElement).value
     return {
-      title,
+      title: proposalTitle,
       body: getMarkdown(),
       status,
       voteSetup: {
@@ -196,6 +207,9 @@ export default function ProposalEditor() {
     }
     if (!nextSnapshotVote) return
     setSigningStatus('loading')
+    const t = toast.loading('Sign proposal...', {
+      style: toastStyle
+    })
     const proposalId = loadedProposal?.proposalId || nextProposalId
     const preTitle = `${proposalIdPrefix}${proposalId}: `
     signProposalAsync(proposal, preTitle, nextSnapshotVote)
@@ -213,6 +227,8 @@ export default function ProposalEditor() {
           .then((res) => {
             if (res.success) {
               setSigningStatus('success')
+              clearProposalCache();
+              toast.dismiss(t)
               toast.success('Proposal submitted successfully!', {
                 style: toastStyle,
               })
@@ -220,11 +236,13 @@ export default function ProposalEditor() {
               router.push(`/proposal/${res.data.uuid}`)
             } else {
               setSigningStatus('error')
-              toast.error('Error saving draft', { style: toastStyle })
+              toast.dismiss(t)
+              toast.error('Error saving proposal', { style: toastStyle })
             }
           })
           .catch((error) => {
             setSigningStatus('error')
+            toast.dismiss(t)
             toast.error(`[API] Error submitting proposal:\n${error}`, {
               style: toastStyle,
             })
@@ -232,26 +250,69 @@ export default function ProposalEditor() {
       })
       .catch((error) => {
         setSigningStatus('idle')
+        toast.dismiss(t)
         toast.error(`[Wallet] Error signing proposal:\n${error}`, {
           style: toastStyle,
         })
       })
   }
 
-  const pageTitle = proposalId ? 'Edit Proposal' : 'New Proposal'
+  const saveProposalBodyCache = function() {
+    let body = getMarkdown()
+    if (attachBudget) {
+      const action: Action = {
+        type: 'Request Budget',
+        payload: getValues(),
+      }
+      body = `${body}\n\n${actionsToYaml([action])}`
+    }
+
+    setProposalCache({
+      timestamp: getUnixTime(new Date()),
+      title: proposalCache?.title || proposalTitle,
+      body: body || undefined
+    })
+  }
+
+  useEffect(() => {
+      const subscription = watch((value, { name, type }) =>{
+        if(type === "change") {
+          saveProposalBodyCache()
+        }
+      })
+
+      return () => subscription.unsubscribe()
+    }, [watch])
+
 
   return (
     <div className="flex flex-col justify-center items-center animate-fadeIn w-[90vw] md:w-full">
-      <Head title={pageTitle} />
+      <Head title='Proposal Editor' />
 
       <div className="w-full sm:w-[90%] lg:w-3/4">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <h1 className="page-title py-10">{pageTitle}</h1>
-          <ProposalTitleInput initialValue={loadedProposal?.title} />
+          <h1 className="page-title py-10">{loadedProposal ? 'Edit Proposal' : 'New Proposal'}</h1>
+
+          <ProposalLocalCache
+            proposalCache={proposalCache}
+            clearProposalCache={clearProposalCache}
+            restoreProposalCache={restoreFromTitleAndBody}
+          />
+
+          <ProposalTitleInput value={proposalTitle} onChange={(s) => {
+            setProposalTitle(s)
+            console.debug("setProposalTitle", s)
+            const cache = proposalCache || { body: loadedProposal?.body || TEMPLATE }
+            setProposalCache({ ...cache, title: s, timestamp: getUnixTime(new Date()) })
+          }} />
           <NanceEditor
             initialValue={loadedProposal?.body || TEMPLATE}
-            fileUploadIPFS={fileUploadIPFS}
+            fileUploadExternal={ async (val) => {
+              const res = await pinBlobOrFile(val)
+              return res.url;
+            }}
             darkMode={true}
+            onEditorChange={(m) => {saveProposalBodyCache()}}
           />
 
           <Field as="div" className="flex items-center mt-5">
@@ -286,7 +347,7 @@ export default function ProposalEditor() {
           {attachBudget && (
             <FormProvider {...methods}>
               <div className="my-10">
-                <RequestBudgetActionForm />
+                <RequestBudgetActionForm disableRequiredFields={proposalStatus === "Draft"} />
               </div>
             </FormProvider>
           )}

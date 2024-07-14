@@ -12,12 +12,12 @@ import { ProposalPacket } from '@nance/nance-sdk'
 import Link from 'next/link'
 import { Fragment } from 'react'
 import toast from 'react-hot-toast'
-import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
-import useAccount from '../../lib/nance/useAccountAddress'
-import { useSignDeleteProposal } from "../../lib/nance/useSignDeleteProposal"
+import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
+import useAccount from '@/lib/nance/useAccountAddress'
+import { useSignDeleteProposal } from "@/lib/nance/useSignDeleteProposal"
 import { useProposalDelete, useProposalUpload } from "@nance/nance-hooks"
-import toastStyle from "../../lib/marketplace/marketplace-utils/toastConfig"
-import { useSignArchiveProposal } from "../../lib/nance/useSignArchiveProposal"
+import toastStyle from "@/lib/marketplace/marketplace-utils/toastConfig"
+import { useSignArchiveProposal } from "@/lib/nance/useSignArchiveProposal"
 
 export default function DropDownMenu({
   proposalPacket,
@@ -110,22 +110,22 @@ export default function DropDownMenu({
   return (
     <>
       <Menu as="div" className="relative inline-block">
-        <div>
-          <MenuButton className="inline-flex w-full justify-end rounded-md sm:hidden">
+        <MenuButton>
+          <div className="inline-flex w-full justify-end rounded-md sm:hidden">
             <EllipsisVerticalIcon
-              className="h-7 w-7 text-indigo-600 hover:text-gray-900"
+              className="h-7 w-7 text-indigo-600"
               aria-hidden="true"
             />
-          </MenuButton>
+          </div>
 
-          <MenuButton className="hidden w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:inline-flex">
+          <div className="hidden w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:inline-flex">
             Options
             <ChevronDownIcon
               className="-mr-1 h-5 w-5 text-gray-400"
               aria-hidden="true"
             />
-          </MenuButton>
-        </div>
+          </div>
+        </MenuButton>
         <Transition
           as={Fragment}
           enter="transition ease-out duration-100"
@@ -169,7 +169,7 @@ export default function DropDownMenu({
                     className={`${
                       focus ? 'bg-moon-blue text-white' : 'text-gray-900'
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                    href={`/newProposal?proposalId=${proposalPacket.uuid}`}
+                    href={`/propose?proposalId=${proposalPacket.uuid}`}
                     passHref
                   >
                     <PencilIcon className="mr-2 h-5 w-5" aria-hidden="true" />

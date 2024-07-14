@@ -31,21 +31,19 @@ export const navigation = [
     icon: BuildingLibraryIcon,
     href: '/governance',
     children: [
-      { name: 'Tokens' },
+      {
+        name: 'All Proposals',
+        href: '/vote',
+      },
+      {
+        name: 'Submit Proposal',
+        href: '/propose',
+      },
       {
         name: 'Get $MOONEY',
         href: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
       },
       { name: 'Lock $MOONEY', href: '/lock' },
-      { name: 'Proposals' },
-      {
-        name: 'Submit Proposal',
-        href: '/newProposal',
-      },
-      {
-        name: 'Vote',
-        href: '/vote',
-      },
     ],
   },
   {

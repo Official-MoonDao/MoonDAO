@@ -1,8 +1,8 @@
 import { Combobox } from '@headlessui/react'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/solid'
 import { useState } from 'react'
-import { useENS } from '../../../lib/utils/hooks/useENS'
-import { classNames } from '../../../lib/utils/tailwind'
+import { useENS } from '@/lib/utils/hooks/useENS'
+import { classNames } from '@/lib/utils/tailwind'
 
 /**
  * A component that allows users to enter an address or ENS name. If the user enters an ENS name, it will resolve to an address.
