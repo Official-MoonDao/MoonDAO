@@ -347,7 +347,7 @@ export default function ProposalEditor() {
           {attachBudget && (
             <FormProvider {...methods}>
               <div className="my-10">
-                <RequestBudgetActionForm />
+                <RequestBudgetActionForm disableRequiredFields={proposalStatus === "Draft"} />
               </div>
             </FormProvider>
           )}

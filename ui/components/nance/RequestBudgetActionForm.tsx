@@ -7,7 +7,9 @@ import SafeTokenForm from './form/SafeTokenForm'
 import StringForm from './form/StringForm'
 // import { useEffect } from "react"
 
-export default function RequestBudgetActionForm() {
+export default function RequestBudgetActionForm({
+  disableRequiredFields = false,
+}) {
   // form
 
   const { register, control, watch } = useFormContext()
@@ -55,6 +57,7 @@ export default function RequestBudgetActionForm() {
                 <DiscordUserIdForm
                   label="Discord Username"
                   fieldName={`projectTeam.${index}.discordUserId`}
+                  required={!disableRequiredFields}
                 />
               </div>
 
@@ -63,6 +66,7 @@ export default function RequestBudgetActionForm() {
                   label="Payout Address"
                   fieldName={`projectTeam.${index}.payoutAddress`}
                   tooltip="Address where project payments will be sent"
+                  required={!disableRequiredFields}
                 />
               </div>
 
@@ -75,6 +79,7 @@ export default function RequestBudgetActionForm() {
                     Note: Use a MetaMask or hardware wallet address. To use your MoonDAO Privy wallet, you must first export it.\n
                     Using addresses from exchanges like Coinbase or Binance could result in loss of funds.
                   `}
+                  required={!disableRequiredFields}
                 />
               </div>
 
@@ -144,6 +149,7 @@ export default function RequestBudgetActionForm() {
                 <DiscordUserIdForm
                   label="Discord Username"
                   fieldName={`multisigTeam.${index}.discordUserId`}
+                  required={!disableRequiredFields}
                 />
               </div>
 
@@ -152,6 +158,7 @@ export default function RequestBudgetActionForm() {
                   label="Address"
                   fieldName={`multisigTeam.${index}.address`}
                   tooltip="Address that will be added as a Safe signer"
+                  required={!disableRequiredFields}
                 />
               </div>
             </div>
@@ -177,6 +184,7 @@ export default function RequestBudgetActionForm() {
                 <StringForm
                   label="Amount"
                   fieldName={`budget.${index}.amount`}
+                  required={!disableRequiredFields}
                 />
               </div>
 
@@ -191,6 +199,7 @@ export default function RequestBudgetActionForm() {
                 <StringForm
                   label="Justification"
                   fieldName={`budget.${index}.justification`}
+                  required={!disableRequiredFields}
                 />
               </div>
 
