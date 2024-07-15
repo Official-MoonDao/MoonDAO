@@ -246,7 +246,7 @@ export default function CreateTeam({
                     </div>
                     <div className="flex flex-col bg-[#0F152F] rounded-[20px] pb-10 p-5 mt-5">
                       <h3 className="font-GoodTimes text-2xl mb-2">
-                        Manager
+                        MANAGER
                       </h3>
                       <p className="mt-2">
                         The manager can modify your organization’s information.
