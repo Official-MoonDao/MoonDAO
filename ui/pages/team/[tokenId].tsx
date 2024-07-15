@@ -51,7 +51,8 @@ import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamAction from '@/components/subscription/TeamAction'
-import TeamAddManager from '@/components/subscription/TeamAddManager'
+import TeamAddHat from '@/components/subscription/TeamAddHat'
+import TeamAddMember from '@/components/subscription/TeamAddMember'
 import TeamDonation from '@/components/subscription/TeamDonation'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
 import TeamJobs from '@/components/subscription/TeamJobs'
@@ -486,19 +487,14 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         id="button-container"
                         className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
                       >
-                        <StandardButtonRight
-                          className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
-                          onClick={() => {
-                            window.open(
-                              `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
-                            )
-                          }}
-                        >
-                          Manage Members
-                        </StandardButtonRight>
-                        <TeamAddManager
+                        <TeamAddHat
                           multisigAddress={nft.owner}
-                          managerHatId={managerHatId}
+                          adminHatId={managerHatId}
+                        />
+                        <TeamAddMember
+                          selectedChain={selectedChain}
+                          adminHatId={adminHatId}
+                          multisigAddress={nft.owner}
                         />
                       </div>
                     )}
