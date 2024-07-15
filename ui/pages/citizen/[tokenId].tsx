@@ -1,63 +1,52 @@
-import {
-  ArrowUpRightIcon,
-  GlobeAltIcon,
-  PencilIcon,
-} from '@heroicons/react/24/outline'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
-import {
-  CITIZEN_ADDRESSES,
-  MOONEY_ADDRESSES,
-  VMOONEY_ADDRESSES,
-} from 'const/config'
-import { HATS_ADDRESS } from 'const/config'
-import { blockedCitizens } from 'const/whitelist'
-import { GetServerSideProps } from 'next'
-import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
-import { useCitizenData } from '@/lib/citizen/useCitizenData'
-import { useWearer } from '@/lib/hats/useWearer'
-import { useTeamData } from '@/lib/team/useTeamData'
-import ChainContext from '@/lib/thirdweb/chain-context'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
-import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
-import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
-import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
-import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
-import { Hat } from '@/components/hats/Hat'
-import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
-import Frame from '@/components/layout/Frame'
-import Head from '@/components/layout/Head'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import StandardButton from '@/components/layout/StandardButton'
-import Button from '@/components/subscription/Button'
-import Card from '@/components/subscription/Card'
-import { CitizenMetadataModal } from '@/components/subscription/CitizenMetadataModal'
-import GeneralActions from '@/components/subscription/GeneralActions'
-import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
+import { ArrowUpRightIcon, GlobeAltIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains';
+import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react';
+import { CITIZEN_ADDRESSES, MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from 'const/config';
+import { blockedCitizens } from 'const/whitelist';
+import { GetServerSideProps } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useContext, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useCitizenData } from '@/lib/citizen/useCitizenData';
+import { useWearer } from '@/lib/hats/useWearer';
+import ChainContext from '@/lib/thirdweb/chain-context';
+import { useHandleRead } from '@/lib/thirdweb/hooks';
+import { initSDK } from '@/lib/thirdweb/thirdweb';
+import { useMOONEYBalance } from '@/lib/tokens/mooney-token';
+import { useVMOONEYBalance } from '@/lib/tokens/ve-token';
+import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets';
+import { Hat } from '@/components/hats/Hat';
+import Container from '@/components/layout/Container';
+import ContentLayout from '@/components/layout/ContentLayout';
+import Frame from '@/components/layout/Frame';
+import Head from '@/components/layout/Head';
+import StandardButton from '@/components/layout/StandardButton';
+import Button from '@/components/subscription/Button';
+import Card from '@/components/subscription/Card';
+import { CitizenMetadataModal } from '@/components/subscription/CitizenMetadataModal';
+import GeneralActions from '@/components/subscription/GeneralActions';
+import { SubscriptionModal } from '@/components/subscription/SubscriptionModal';
+import { NoticeFooter } from '@/components/layout/NoticeFooter';
+import { useTeamData } from '@/lib/team/useTeamData';
+import { HATS_ADDRESS } from 'const/config';
+
 
 export default function CitizenDetailPage({
   nft,
   tokenId,
   imageIpfsLink,
 }: any) {
-  const router = useRouter()
-  const address = useAddress()
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const router = useRouter();
+  const address = useAddress();
+  const { selectedChain, setSelectedChain } = useContext(ChainContext);
 
-  const [subModalEnabled, setSubModalEnabled] = useState(false)
-  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
-    useState(false)
+  const [subModalEnabled, setSubModalEnabled] = useState(false);
+  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false);
 
   // Data
-  const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug]
-  )
+  const { contract: citizenContract } = useContract(CITIZEN_ADDRESSES[selectedChain.slug]);
 
   const {
     socials,
@@ -65,41 +54,31 @@ export default function CitizenDetailPage({
     isDeleted,
     subIsValid,
     isLoading: isLoadingCitizenData,
-  } = useCitizenData(nft, citizenContract)
+  } = useCitizenData(nft, citizenContract);
 
   // Balances
-  const { contract: mooneyContract } = useContract(
-    MOONEY_ADDRESSES[selectedChain.slug]
-  )
-  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner)
-  const { contract: vMooneyContract } = useContract(
-    VMOONEY_ADDRESSES[selectedChain.slug]
-  )
-  const { data: VMOONEYBalance } = useVMOONEYBalance(
-    vMooneyContract,
-    nft?.owner
-  )
-
-  const totalVotingPower = useTotalVP(nft?.owner)
+  const { contract: mooneyContract } = useContract(MOONEY_ADDRESSES[selectedChain.slug]);
+  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner);
+  const { contract: vMooneyContract } = useContract(VMOONEY_ADDRESSES[selectedChain.slug]);
+  const { data: VMOONEYBalance } = useVMOONEYBalance(vMooneyContract, nft?.owner);
 
   // Subscription Data
   const { data: expiresAt } = useHandleRead(citizenContract, 'expiresAt', [
     nft?.metadata?.id || '',
-  ])
+  ]);
 
   // Hats
-  const hats = useWearer(selectedChain, nft?.owner)
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
-  const { isManager } = useTeamData(hatsContract, address, nft)
+  const hats = useWearer(selectedChain, nft?.owner);
+  const { contract: hatsContract } = useContract(HATS_ADDRESS);
+  const { isManager } = useTeamData(hatsContract, address, nft);
 
   useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    )
-  }, [])
+    setSelectedChain(process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia);
+  }, []);
 
   const ProfileHeader = (
-    <div id="citizenheader-container">
+    <div id="citizenheader-container"
+      >
       <Frame
         noPadding
         bottomRight="0px"
@@ -117,10 +96,10 @@ export default function CitizenDetailPage({
           <div
             id="frame-content"
             className="w-full flex flex-col lg:flex-row items-start justify-between"
-          >
+            >
             <div
               id="profile-description-section"
-              className="flex flex-col lg:flex-row items-start lg:items-end"
+              className="flex w-full flex-col lg:flex-row items-start lg:items-center"
             >
               {nft?.metadata.image ? (
                 <div
@@ -148,15 +127,16 @@ export default function CitizenDetailPage({
               ) : (
                 <></>
               )}
-              <div id="team-name-container">
+              <div id="team-name-container"
+                >
                 <div
                   id="team-name"
-                  className="flex flex-col justify-center flex-col-reverse gap-4"
+                  className="flex w-full flex-col justify-center flex-col-reverse gap-2 ml-5"
                 >
                   <div
                     id="team-name-container"
-                    className="flex flex-row gap-2 items-center justify-start"
-                  >
+                    className="flex flex-col flex-col-reverse w-full items-start justify-start"
+                    >
                     {subIsValid && address === nft?.owner && (
                       <button
                         className={'absolute top-6 right-6'}
@@ -176,15 +156,28 @@ export default function CitizenDetailPage({
                       <h1 className="text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
                         {nft.metadata.name}
                       </h1>
+                      
                     ) : (
                       <></>
                     )}
+                    <div id="profile-container">
+                      {nft?.metadata.description ? (
+                        <p
+                          id="profile-description-container"
+                          className="w-full"
+                        >
+                          {nft?.metadata.description || ''}
+                        </p>
+                      ) : (
+                        <></>
+                      )}
+                    </div>  
                   </div>
 
                   {socials ? (
                     <div
                       id="socials-container"
-                      className="pl-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter p-2"
+                      className="pl-5 mt-5 lg:mt-0 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter p-2"
                     >
                       {discordLink && (
                         <Link
@@ -223,18 +216,6 @@ export default function CitizenDetailPage({
                 </div>
               </div>
             </div>
-          </div>
-          <div id="profile-container">
-            {nft?.metadata.description ? (
-              <p
-                id="profile-description-container"
-                className="mt-4 w-full lg:w-[80%]"
-              >
-                {nft?.metadata.description || ''}
-              </p>
-            ) : (
-              <></>
-            )}
           </div>
         </div>
         {address === nft.owner ? (
@@ -339,7 +320,14 @@ export default function CitizenDetailPage({
                   </div>
                   <div>
                     <p className="text-xl">{`Voting Power`}</p>
-                    <p className="text-2xl">{totalVotingPower}</p>
+                    <p className="text-2xl">
+                      {VMOONEYBalance
+                        ? (
+                            VMOONEYBalance?.toString() /
+                            10 ** 18
+                          ).toLocaleString()
+                        : 0}
+                    </p>
                   </div>
                 </div>
                 {address === nft.owner && (
@@ -371,10 +359,10 @@ export default function CitizenDetailPage({
               bottomRight="0px"
               topRight="0px"
               topLeft="0px"
-            >
+              >
               <div className="flex flex-col 2xl:flex-row">
                 <div className="mb-10 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <p className="header font-GoodTimes opacity-[50%]">Teams</p>
+                  <p className="header font-GoodTimes opacity-[50%]">Teams</p>  
                   <div className="mt-5 py-5 flex flex-col gap-2 overflow-y-scroll">
                     {hats.map((hat: any) => (
                       <div
