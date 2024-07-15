@@ -17,6 +17,7 @@ import toast from 'react-hot-toast'
 import PrivyWalletContext from '../lib/privy/privy-wallet-context'
 import Head from '../components/layout/Head'
 import { PageCards } from '../components/layout/PageCards'
+import { joinSignature } from 'ethers/lib/utils'
 
 export default function Governance() {
   const router = useRouter()
@@ -56,7 +57,7 @@ export default function Governance() {
         {
           name: 'Bridge $MOONEY',
           description:
-            'Reduce onchain gas fees by bridging $MOONEY from L1 to L2.',
+            'Reduce onchain gas fees by bridging $MOONEY from L1 to L2. ',
           icon: ArrowsRightLeftIcon,
           href: 'https://wallet.polygon.technology/polygon/bridge/deposit',
           externalLink: true,
@@ -111,7 +112,7 @@ export default function Governance() {
           name: 'Submit a Proposal',
           description:
             'Proposals start in our “Ideation” channel in the Discord. Post your idea there to get feedback and start the submission process!',
-          href: '/newProposal',
+          href: '/propose',
           icon: DocumentIcon,
           externalLink: false,
         },
@@ -132,14 +133,21 @@ export default function Governance() {
         title="Governance"
         description={
           <p className="font-[Lato] text-left px-0">
-            {`MoonDAO's Treasury is governed by its Citizens. If you don't have voting power, become a Citizen by `}
+            {`MoonDAO's Treasury is governed by its members. If you don't have voting power, become a member by `}
+            <button
+              className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
+              onClick={() => window.open('https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet')}
+            >
+              getting MOONEY
+            </button>
+            {` and `}
             <button
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
               onClick={() => router.push('/join')}
             >
               joining
             </button>
-            {` our community. You can read MoonDAO's `}
+              {` our community. You can read MoonDAO's `}
             <button
               className="hover:scale-[1.05] duration-300 ease-in-out font-bold text-moon-gold"
               onClick={() =>

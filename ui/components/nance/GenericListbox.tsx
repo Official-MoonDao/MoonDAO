@@ -9,7 +9,7 @@ import {
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import { Fragment } from 'react'
-import { classNames } from '../../lib/utils/tailwind'
+import { classNames } from '@/lib/utils/tailwind'
 
 interface Includes {
   name?: string

@@ -59,7 +59,10 @@ export default function Join() {
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head title={t('joinTitle')} description={t('joinDesc')} />
+      <Head
+        title={'Become a Citizen'}
+        description={'Join the first interplanetary network state dedicated to expanding life beyond Earth.'}
+      />
       <Container>
         <ContentLayout
           header="Join MoonDAO"
@@ -106,24 +109,6 @@ export default function Join() {
                 buttoncta="Become a Citizen"
                 onClick={() => setSelectedTier('citizen')}
                 hasCitizen={+citizenBalance > 0}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <div className="mb-10 z-50 flex flex-col">
-              <Tier
-                price={0.5}
-                label="Create a Team"
-                description="Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future. Be a part of Team Space."
-                points={[
-                  'Funding Access: Obtain seed funding from MoonDAO for your bold projects and initiatives.',
-                  'Professional Network: Hire top talent including full-time roles or posting bounties, and connect with other cutting-edge organizations.',
-                  'Marketplace Listing: Sell products and services in a dedicated space marketplace, whether payload space or satellite imagery.',
-                  'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
-                  'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
-                ]}
-                buttoncta="Create a Team"
-                onClick={() => setSelectedTier('team')}
               />
             </div>
           </div>

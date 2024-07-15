@@ -3,11 +3,12 @@ import useSWR, { Fetcher } from 'swr'
 function jsonFetcher(): Fetcher<any, string> {
   return async (url) => {
     const res = await fetch(url)
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
     const json = await res.json()
-    if (json?.success === 'false') {
-      throw new Error(
-        `An error occurred while fetching the data: ${json?.error}`
-      )
+    if (json.success === false) {
+      throw new Error(json.error || 'An unknown error occurred')
     }
     return json
   }
@@ -28,8 +29,20 @@ export default function useDiscordUserSearch(
   username: string,
   shouldFetch: boolean = false
 ) {
-  return useSWR<DiscordUserSearchResponse, string>(
+  const { data, error, isLoading } = useSWR<DiscordUserSearchResponse, Error>(
     shouldFetch ? `/api/discord/search?username=${username}` : null,
-    jsonFetcher()
+    jsonFetcher(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 0
+    }
   )
+
+  return {
+    data,
+    isLoading,
+    error: error?.message,
+    isError: !!error
+  }
 }

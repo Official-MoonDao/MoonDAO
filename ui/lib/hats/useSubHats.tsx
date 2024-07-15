@@ -12,14 +12,32 @@ export function useSubHats(selectedChain: any, hatId: any) {
         props: {
           subHats: {
             props: {
+              details: true,
               wearers: {
                 props: {},
+              },
+              subHats: {
+                props: {
+                  details: true,
+                  wearers: {
+                    props: {},
+                  },
+                },
               },
             },
           },
         },
       })
-      setSubHats(hat.subHats)
+
+      const subHatsLevel1: any = hat?.subHats
+      const subHatsLevel2: any = subHatsLevel1
+        ?.map((hat: any) => hat.subHats)
+        .flat()
+      //check lenght of each subHats array and only add the ones that have hats
+
+      const subHats = subHatsLevel1.concat(subHatsLevel2)
+
+      setSubHats(subHats)
     } catch (err) {
       console.log(err)
     }

@@ -2,6 +2,7 @@ import { ErrorMessage } from '@hookform/error-message'
 import { useEffect } from 'react'
 import { Controller, useFormContext } from 'react-hook-form'
 import ENSAddressInput from './ENSAddressInput'
+import { InformationCircleIcon } from "@heroicons/react/20/solid"
 
 interface AddressFormProps {
   /**
@@ -36,6 +37,9 @@ interface AddressFormProps {
    * The tooltip to show when the input is disabled
    */
   disabledTooltip?: string
+  /**
+  * Information icon tooltip
+  */
   tooltip?: string
 }
 
@@ -61,6 +65,7 @@ export default function AddressForm({
   defaultValue = '',
   validate = undefined,
   required = true,
+  tooltip
 }: AddressFormProps) {
   const {
     control,
@@ -79,8 +84,13 @@ export default function AddressForm({
 
   return (
     <div>
-      <label className="label">
-        <span className="label-text">{label}</span>
+      <label className="label flex items-center justify-start">
+        <span className="label-text whitespace-nowrap">{label}</span>
+        {tooltip && (
+          <div className="tooltip ml-3" data-tip={tooltip}>
+            <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+          </div>
+        )}
       </label>
       <div className="mt-1 flex rounded-md shadow-sm">
         <Controller

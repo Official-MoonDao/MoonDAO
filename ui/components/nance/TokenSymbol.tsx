@@ -1,4 +1,4 @@
-import { useTokenSymbol } from '../../lib/nance/useTokenSymbol'
+import { useTokenSymbol } from '@/lib/nance/useTokenSymbol'
 
 export function TokenSymbol({ address }: { address: string | undefined }) {
   const { value: tokenSymbol, error, isLoading } = useTokenSymbol(address)

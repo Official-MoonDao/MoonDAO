@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
@@ -75,32 +76,13 @@ export default function TeamMarketplaceListingModal({
 
           const cleanedData = cleanData(listingData)
 
-          console.log(cleanedData)
-
-          //upload image to ipfs
-          const accessToken = await getAccessToken()
-
-          const jwtRes = await fetch('/api/ipfs/upload', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          })
-
-          const pinataJWT = await jwtRes.text()
-
           let imageIpfsLink
 
           if (typeof listingData.image === 'string') {
             imageIpfsLink = listingData.image
           } else {
-            imageIpfsLink =
-              'ipfs://' +
-              (await pinImageToIPFS(
-                pinataJWT || '',
-                listingData.image,
-                `team#${teamId}-listing-${listingData.title}`
-              ))
+            const imageIpfsHash = await pinBlobOrFile(listingData.image)
+            imageIpfsLink = `ipfs://${imageIpfsHash}`
           }
 
           let tx

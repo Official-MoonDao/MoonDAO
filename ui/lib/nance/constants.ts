@@ -1,5 +1,5 @@
-const prod = process.env.NODE_ENV === 'production'
-
+// use chainId as env var for detecting dev mode
+const prod = process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
 export const NANCE_SPACE_NAME = prod ? 'moondao' : 'waterbox'
 export const SNAPSHOT_SPACE_NAME = prod ? 'tomoondao.eth' : 'jigglyjams.eth'
 

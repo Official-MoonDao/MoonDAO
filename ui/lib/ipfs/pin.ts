@@ -2,7 +2,7 @@ import toast from 'react-hot-toast'
 
 export async function pinImageToIPFS(
   JWT: string,
-  image: File,
+  image: File | Blob,
   ipfsLabel: string
 ) {
   try {
@@ -22,6 +22,8 @@ export async function pinImageToIPFS(
         },
       }
     )
+
+    if (imageRes.status !== 200) return Promise.reject()
 
     const { IpfsHash } = await imageRes.json()
 

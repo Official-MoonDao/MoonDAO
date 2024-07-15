@@ -66,16 +66,16 @@ export default function Jobs() {
           mode="compact"
           popOverEffect={false}
         >
-          <Frame
-            bottomLeft="20px"
-            topLeft="5vmax"
-            marginBottom="10px"
-            noPadding
-          >
-            <Search input={input} setInput={setInput} />
-          </Frame>
-
           <div className="w-full flex flex-col gap-4">
+            <Frame
+              bottomLeft="20px"
+              topLeft="5vmax"
+              marginBottom="30px"
+              marginTop="30px"
+              noPadding
+            >
+              <Search input={input} setInput={setInput} />
+            </Frame>
             {filteredJobs &&
               filteredJobs.map((job: JobType, i: number) => (
                 <Job
