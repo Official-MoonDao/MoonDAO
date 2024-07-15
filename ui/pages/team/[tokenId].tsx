@@ -496,6 +496,16 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                           adminHatId={adminHatId}
                           multisigAddress={nft.owner}
                         />
+                        <StandardButton
+                          className="min-w-[200px] gradient-2 rounded-[5vmax]"
+                          onClick={() => {
+                            window.open(
+                              `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
+                            )
+                          }}
+                        >
+                          Manage Members
+                        </StandardButton>
                       </div>
                     )}
                   </div>
