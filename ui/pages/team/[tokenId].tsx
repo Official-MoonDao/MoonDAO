@@ -62,6 +62,7 @@ import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
+import MarketplaceTableABI from '../../const/abis/MarketplaceTable.json'
 
 export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const router = useRouter()
@@ -94,7 +95,8 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   )
 
   const { contract: marketplaceTableContract } = useContract(
-    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug]
+    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug],
+    MarketplaceTableABI
   )
 
   const {
