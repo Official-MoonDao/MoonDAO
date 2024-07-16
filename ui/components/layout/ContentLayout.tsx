@@ -71,14 +71,14 @@ const ContentLayout: React.FC<ContentProps> = ({
                             <div id="title-wrapper" 
                                 className={`
                                     z-50 w-full overflow-x-hidden p-5 pt-0 mt-[-80px]
-                                    ${isCompact ? 'pl-5 md:pl-[56px]' : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5'} 
-                                    ${children ? 'pb-0 md:pb-[50px] lg:pb-[120px]' : 'flex md:items-start lg:items-center min-h-[60vh] lg:min-h-[90vh]'}
+                                    ${isCompact ? 'pl-5 lg:pl-[56px]' : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5'} 
+                                    ${children ? 'pb-0 lg:pb-[120px]' : 'flex md:items-start lg:items-center min-h-[60vh] lg:min-h-[90vh]'}
                                     ${isProfile ? 'lg:mb-[-100px]':''}
                                 `}
                                 >
                                 <div id="title-container" 
                                     className={`
-                                        p-5 pl-0 pb-10 md:pb-0 w-full h-full 
+                                        p-5 pl-0 pb-5 md:pb-0 w-full h-full 
                                         ${isCompact ? '' : 'md:max-w-[700px] lg:max-w-[100%]'}
                                     `}
                                     >
