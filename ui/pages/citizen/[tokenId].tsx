@@ -186,83 +186,88 @@ export default function CitizenDetailPage({
                       )}
                     </div>
                   </div>
-
-                  {socials ? (
-                    <div
-                      id="socials-container"
-                      className="pl-5 mt-5 lg:mt-0 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter p-2"
-                    >
-                      {discordLink && (
-                        <Link
-                          className="flex gap-2"
-                          href={discordLink}
-                          target="_blank"
-                          passHref
-                        >
-                          <DiscordIcon />
-                        </Link>
-                      )}
-                      {socials.twitter && (
-                        <Link
-                          className="flex gap-2"
-                          href={socials.twitter}
-                          target="_blank"
-                          passHref
-                        >
-                          <TwitterIcon />
-                        </Link>
-                      )}
-                      {socials.website && (
-                        <Link
-                          className="flex gap-2"
-                          href={socials.website}
-                          target="_blank"
-                          passHref
-                        >
-                          <GlobeAltIcon height={25} width={25} />
-                        </Link>
-                      )}
-                    </div>
-                  ) : (
-                    <></>
-                  )}
+                  <div id="interactions-container"
+                    className="flex flex-col md:flex-row items-start justify-start lg:pr-10"
+                    > 
+                    {socials ? (
+                      <>
+                        <div
+                          id="socials-container"
+                          className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
+                          >
+                          {discordLink && (
+                            <Link
+                              className="flex gap-2"
+                              href={discordLink}
+                              target="_blank"
+                              passHref
+                            >
+                              <DiscordIcon />
+                            </Link>
+                          )}
+                          {socials.twitter && (
+                            <Link
+                              className="flex gap-2"
+                              href={socials.twitter}
+                              target="_blank"
+                              passHref
+                            >
+                              <TwitterIcon />
+                            </Link>
+                          )}
+                          {socials.website && (
+                            <Link
+                              className="flex gap-2"
+                              href={socials.website}
+                              target="_blank"
+                              passHref
+                            >
+                              <GlobeAltIcon height={25} width={25} />
+                            </Link>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <></>
+                    )}
+                    {address === nft.owner ? (
+                      <div id="manager-container" >
+                        {expiresAt && (
+                          <div
+                            id="expires-container"
+                            className="flex flex-col gap-4 items-start"
+                            >
+                            <div className="rounded-[2vmax] rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px] overflow-hidden">
+                              <div id="extend-sub-button" className="gradient-2 text-sm">
+                                <Button
+                                  onClick={() => {
+                                    if (address === nft?.owner) setSubModalEnabled(true)
+                                    else
+                                      return toast.error(
+                                        `Connect the entity admin wallet or multisig to extend the subscription.`
+                                      )
+                                  }}
+                                >
+                                  {'Extend Plan'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <></>
+                    )}  
+                  </div>  
                 </div>
+                <p className="opacity-50 mt-2 lg:ml-5">
+                  {'Exp: '}
+                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
         </div>
-        {address === nft.owner ? (
-          <div id="manager-container" className="mt-8 xl:mt-0">
-            {expiresAt && (
-              <div
-                id="expires-container"
-                className="flex flex-col gap-4 items-start"
-              >
-                <p className="opacity-50">
-                  {'Exp: '}
-                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                </p>
-                <Frame noPadding>
-                  <div id="extend-sub-button" className="gradient-2">
-                    <Button
-                      onClick={() => {
-                        if (address === nft?.owner) setSubModalEnabled(true)
-                        else
-                          return toast.error(
-                            `Connect the entity admin wallet or multisig to extend the subscription.`
-                          )
-                      }}
-                    >
-                      {'Extend Subscription'}
-                    </Button>
-                  </div>
-                </Frame>
-              </div>
-            )}
-          </div>
-        ) : (
-          <></>
-        )}
       </div>
     </div>
   )

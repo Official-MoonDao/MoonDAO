@@ -173,7 +173,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         topRight="0px"
         className="z-50"
         marginBottom="0px"
-      >
+        >
         <div id="frame-content-container" className="w-full">
           <div
             id="moon-asset-container"
@@ -182,16 +182,16 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
           <div
             id="frame-content"
             className="w-full flex flex-col lg:flex-row items-start justify-between"
-          >
+            >
             <div
               id="profile-description-section"
               className="flex flex-col lg:flex-row items-start lg:items-center gap-4"
-            >
+              >
               {nft?.metadata.image ? (
                 <div
                   id="org-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
-                >
+                  >
                   <ThirdwebNftMedia
                     className="rounded-full"
                     metadata={nft.metadata}
@@ -201,7 +201,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                   <div
                     id="star-asset-container"
                     className="absolute bottom-0 lg:right-0"
-                  >
+                    >
                     <Image
                       src="/../.././assets/icon-star.svg"
                       alt=""
@@ -233,7 +233,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                               'Connect the entity admin wallet or multisig to edit metadata.'
                             )
                         }}
-                      >
+                        >
                         <PencilIcon width={35} height={35} />
                       </button>
                     )}
@@ -252,7 +252,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     <p
                       id="profile-description-container"
                       className="mb-5 w-full lg:w-[80%]"
-                    >
+                      >
                       {nft?.metadata.description || ''}
                     </p>
                   ) : (
@@ -263,7 +263,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     {socials ? (
                       <div
                         id="socials-container"
-                        className="p-1.5 mb-2 mr-2 md:mb-0 pl-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter"
+                        className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter"
                         >
                         {socials.communications && (
                           <Link
@@ -281,7 +281,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                             href={socials.twitter}
                             target="_blank"
                             passHref
-                          >
+                            >
                             <TwitterIcon />
                           </Link>
                         )}
@@ -291,7 +291,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                             href={socials.website}
                             target="_blank"
                             passHref
-                          >
+                            >
                             <GlobeAltIcon height={25} width={25} />
                           </Link>
                         )}
@@ -309,48 +309,52 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         )}
                       </div>
                     )}
-                  </div>  
+
+                    {/*Subscription Extension Container*/}
+                    {isManager || address === nft.owner ? (
+                      <div
+                        id="manager-container"
+                        className="relative"
+                        >
+                        {expiresAt && (
+                          <div
+                            id="expires-container"
+                            className=""
+                            >
+                            <div id="extend-sub-button-container"
+                              className="rounded-[2vmax] overflow-hidden text-sm rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px]"
+                              >
+                              <div id="extend-sub-button" className="gradient-2">
+                                <Button
+                                  onClick={() => {
+                                      setTeamSubscriptionModalEnabled(true)
+                                  }}
+                                  >
+                                  {'Extend Plan'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <></>
+                    )}
+                    
+                  </div>
+                  {isManager || address === nft.owner ? (
+                    <p className="opacity-50 mt-2 text-sm">
+                      {'Exp: '}
+                      {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                    </p>                      
+                  ) : (
+                    <></>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-        {isManager || address === nft.owner ? (
-          <div
-            id="manager-container"
-            className="mt-8 xl:mt-0 relative md:absolute md:top-[80px] right-0 px-5 pt-5 bg-dark-cool rounded-tl-[20px] rounded-bl-[2vmax] rounded-[20px]"
-          >
-            {expiresAt && (
-              <div
-                id="expires-container"
-                className="flex flex-col gap-4 items-start"
-              >
-                <p className="opacity-50">
-                  {'Exp: '}
-                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                </p>
-                <Frame noPadding>
-                  <div id="extend-sub-button" className="gradient-2">
-                    <Button
-                      onClick={() => {
-                        if (address === nft?.owner || isManager)
-                          setTeamSubscriptionModalEnabled(true)
-                        else
-                          return toast.error(
-                            `Connect the entity admin wallet or multisig to extend the subscription.`
-                          )
-                      }}
-                    >
-                      {'Extend Subscription'}
-                    </Button>
-                  </div>
-                </Frame>
-              </div>
-            )}
-          </div>
-        ) : (
-          <></>
-        )}
       </Frame>
     </div>
   )
@@ -409,18 +413,18 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
             isCitizen={!!address && !isManager && subIsValid}
           />
         }
-      >
+        >
         <div
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
-        >
+          >
           {!isDeleted && (
             <div id="entity-actions-container" className=" z-30">
               {isManager || address === nft.owner ? (
                 <div
                   id="team-actions-container"
                   className="px-5 pt-5 md:px-0 md:pt-0"
-                >
+                  >
                   <Frame
                     noPadding
                     marginBottom="0px"
@@ -428,7 +432,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     topRight="2vmax"
                     topLeft="10px"
                     bottomLeft="2vmax"
-                  >
+                    >
                     <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
                       <TeamAction
                         title="Fund"
@@ -469,15 +473,15 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                 bottomRight="0px"
                 topRight="0px"
                 topLeft="0px"
-              >
+                >
                 <div
                   id="team-container"
                   className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
-                >
+                  >
                   <div
                     id="job-title-container"
                     className="p-5 pb-0 md:p-0 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 pr-12 "
-                  >
+                    >
                     <div className="flex gap-5 opacity-[50%]">
                       <Image
                         src={teamIcon}
@@ -491,7 +495,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                       <div
                         id="button-container"
                         className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
-                      >
+                        >
                         <TeamAddHat
                           multisigAddress={nft.owner}
                           adminHatId={managerHatId}
@@ -508,7 +512,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                               `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
                             )
                           }}
-                        >
+                          >
                           Manage Members
                         </StandardButton>
                       </div>
