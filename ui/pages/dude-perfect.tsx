@@ -7,6 +7,7 @@ import Frame from '../components/layout/Frame'
 import Image from 'next/image'
 import MailingList from '../components/layout/MailingList'
 import Link from 'next/link'
+import ColorsAndSocials from '../components/layout/Sidebar/ColorsAndSocials'
 
 const DudePerfect: React.FC = () => {
   const title = '🚀 We Sent Dude Perfect to SPACE!'
@@ -49,6 +50,7 @@ const DudePerfect: React.FC = () => {
               MoonDAO is an international collective of people united by the mission of decentralizing access to space research and exploration. Be sure to enter your email address to learn how you can get involved and about some of the exciting stuff we've got in the works... Like the launch of our second astronaut!
             </p>
             <p className="pb-10 md:pb-5">Explore <u><Link href="/">MoonDAO.com</Link></u></p>
+            <ColorsAndSocials />
           </ Frame>
         </ContentLayout>
       </Container>
