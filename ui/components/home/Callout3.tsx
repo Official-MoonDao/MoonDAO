@@ -7,8 +7,8 @@ const cardData = [
     icon: "/assets/icon-astronaut.svg",
     iconAlt: "Astronaut",
     header: "Sending Members To Space",
-    link: "https://www.youtube.com/watch?v=YXXlSG-du7c",
-    hovertext: "Watch the Video",
+    link: "/sweepstakes",
+    hovertext: "Meet Our Astronauts",
     paragraph: (
       <>
         Sent the first crowdraised astronaut to space, through a democratically governed onchain vote. Randomly chose a second regular, everyday person who will be flying in the near future.
