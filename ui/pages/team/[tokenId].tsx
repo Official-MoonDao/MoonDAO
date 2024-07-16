@@ -263,7 +263,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     {socials ? (
                       <div
                         id="socials-container"
-                        className="p-1.5 mb-2 mr-2 md:mb-0 pl-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter"
+                        className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter"
                         >
                         {socials.communications && (
                           <Link
@@ -309,48 +309,57 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         )}
                       </div>
                     )}
-                  </div>  
+
+                    {/*Subscription Extension Container*/}
+                    {isManager || address === nft.owner ? (
+                      <div
+                        id="manager-container"
+                        className="relative"
+                        >
+                        {expiresAt && (
+                          <div
+                            id="expires-container"
+                            className=""
+                            >
+                            <div id="extend-sub-button-container"
+                              className="rounded-[2vmax] overflow-hidden text-sm rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px]"
+                              >
+                              <div id="extend-sub-button" className="gradient-2">
+                                <Button
+                                  onClick={() => {
+                                    if (address === nft?.owner || isManager)
+                                      setTeamSubscriptionModalEnabled(true)
+                                    else
+                                      return toast.error(
+                                        `Connect the entity admin wallet or multisig to extend the subscription.`
+                                      )
+                                  }}
+                                >
+                                  {'Extend Plan'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <></>
+                    )}
+                    
+                  </div>
+                  {isManager || address === nft.owner ? (
+                    <p className="opacity-50 mt-2 text-sm">
+                      {'Exp: '}
+                      {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                    </p>                      
+                  ) : (
+                    <></>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-        {isManager || address === nft.owner ? (
-          <div
-            id="manager-container"
-            className="mt-8 xl:mt-0 relative md:absolute md:top-[80px] right-0 px-5 pt-5 bg-dark-cool rounded-tl-[20px] rounded-bl-[2vmax] rounded-[20px]"
-          >
-            {expiresAt && (
-              <div
-                id="expires-container"
-                className="flex flex-col gap-4 items-start"
-              >
-                <p className="opacity-50">
-                  {'Exp: '}
-                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                </p>
-                <Frame noPadding>
-                  <div id="extend-sub-button" className="gradient-2">
-                    <Button
-                      onClick={() => {
-                        if (address === nft?.owner || isManager)
-                          setTeamSubscriptionModalEnabled(true)
-                        else
-                          return toast.error(
-                            `Connect the entity admin wallet or multisig to extend the subscription.`
-                          )
-                      }}
-                    >
-                      {'Extend Subscription'}
-                    </Button>
-                  </div>
-                </Frame>
-              </div>
-            )}
-          </div>
-        ) : (
-          <></>
-        )}
       </Frame>
     </div>
   )
