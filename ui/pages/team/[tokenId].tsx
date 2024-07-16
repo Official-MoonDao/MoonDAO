@@ -185,12 +185,12 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
           >
             <div
               id="profile-description-section"
-              className="flex flex-col lg:flex-row items-start lg:items-end gap-4"
+              className="flex flex-col lg:flex-row items-start lg:items-center gap-4"
             >
               {nft?.metadata.image ? (
                 <div
                   id="org-image-container"
-                  className="relative w-[300px] h-[300px]"
+                  className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
                   <ThirdwebNftMedia
                     className="rounded-full"
@@ -213,15 +213,15 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               ) : (
                 <></>
               )}
-              <div id="team-name-container ">
+              <div id="team-name-container">
                 <div
                   id="team-name"
                   className="flex flex-col flex-col-reverse justify-center gap-2"
-                >
-                  <div
-                    id="team-name-container"
-                    className="flex flex-row gap-2 items-center justify-start"
                   >
+                  <div
+                    id="team-name"
+                    className="flex flex-row gap-2 items-center justify-start"
+                    >
                     {subIsValid && isManager && (
                       <button
                         className={'absolute top-6 right-6'}
@@ -244,72 +244,75 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     ) : (
                       <></>
                     )}
-                  </div>
-
-                  {isManager || address === nft.owner ? (
-                    ''
-                  ) : (
-                    <div id="donation-container" className="max-w-[290px]">
-                      {!isDeleted && subIsValid && (
-                        <TeamDonation splitAddress={splitAddress} />
-                      )}
-                    </div>
-                  )}
-
-                  {socials ? (
-                    <div
-                      id="socials-container"
-                      className="pl-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter p-2"
+                  </div> 
+                </div>
+                <div id="profile-container"
+                  >
+                  {nft?.metadata.description ? (
+                    <p
+                      id="profile-description-container"
+                      className="mb-5 w-full lg:w-[80%]"
                     >
-                      {socials.communications && (
-                        <Link
-                          className="flex gap-2"
-                          href={socials.communications}
-                          target="_blank"
-                          passHref
-                        >
-                          <ChatBubbleLeftIcon height={25} width={25} />
-                        </Link>
-                      )}
-                      {socials.twitter && (
-                        <Link
-                          className="flex gap-2"
-                          href={socials.twitter}
-                          target="_blank"
-                          passHref
-                        >
-                          <TwitterIcon />
-                        </Link>
-                      )}
-                      {socials.website && (
-                        <Link
-                          className="flex gap-2"
-                          href={socials.website}
-                          target="_blank"
-                          passHref
-                        >
-                          <GlobeAltIcon height={25} width={25} />
-                        </Link>
-                      )}
-                    </div>
+                      {nft?.metadata.description || ''}
+                    </p>
                   ) : (
                     <></>
                   )}
+
+                  <div className="flex flex-col md:flex-row items-start justify-start lg:pr-10">
+                    {socials ? (
+                      <div
+                        id="socials-container"
+                        className="p-1.5 mb-2 mr-2 md:mb-0 pl-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter"
+                        >
+                        {socials.communications && (
+                          <Link
+                            className="flex gap-2"
+                            href={socials.communications}
+                            target="_blank"
+                            passHref
+                            >
+                            <ChatBubbleLeftIcon height={25} width={25} />
+                          </Link>
+                        )}
+                        {socials.twitter && (
+                          <Link
+                            className="flex gap-2"
+                            href={socials.twitter}
+                            target="_blank"
+                            passHref
+                          >
+                            <TwitterIcon />
+                          </Link>
+                        )}
+                        {socials.website && (
+                          <Link
+                            className="flex gap-2"
+                            href={socials.website}
+                            target="_blank"
+                            passHref
+                          >
+                            <GlobeAltIcon height={25} width={25} />
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <></>
+                    )}
+
+                    {isManager || address === nft.owner ? (
+                      ''
+                    ) : (
+                      <div id="donation-container" className="flex items-center max-w-[290px]">
+                        {!isDeleted && subIsValid && (
+                          <TeamDonation splitAddress={splitAddress} />
+                        )}
+                      </div>
+                    )}
+                  </div>  
                 </div>
               </div>
             </div>
-          </div>
-          <div id="profile-container">
-            {nft?.metadata.description ? (
-              <p
-                id="profile-description-container"
-                className="mt-4 w-full lg:w-[80%]"
-              >
-                {nft?.metadata.description || ''}
-              </p>
-            ) : (
-              <></>
-            )}
           </div>
         </div>
         {isManager || address === nft.owner ? (
