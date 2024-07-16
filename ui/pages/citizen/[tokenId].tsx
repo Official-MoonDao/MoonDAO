@@ -102,15 +102,7 @@ export default function CitizenDetailPage({
 
   const ProfileHeader = (
     <div id="citizenheader-container">
-      <Frame
-        noPadding
-        bottomRight="0px"
-        bottomLeft="0px"
-        topLeft="0px"
-        topRight="0px"
-        className="z-50"
-        marginBottom="0px"
-      >
+      <div className="z-50 rounded-tl-[20px] overflow-hidden">
         <div id="frame-content-container" className="w-full">
           <div
             id="moon-asset-container"
@@ -127,7 +119,7 @@ export default function CitizenDetailPage({
               {nft?.metadata.image ? (
                 <div
                   id="citizen-image-container"
-                  className="relative w-[300px] h-[300px]"
+                  className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
                   <ThirdwebNftMedia
                     className="rounded-full"
@@ -150,15 +142,15 @@ export default function CitizenDetailPage({
               ) : (
                 <></>
               )}
-              <div id="team-name-container">
+              <div id="citizen-name-container">
                 <div
                   id="team-name"
-                  className="flex w-full flex-col justify-center flex-col-reverse gap-2 ml-5"
-                >
+                  className="flex mb-2 w-full flex-col justify-center gap-2 lg:ml-5"
+                  >
                   <div
                     id="team-name-container"
-                    className="flex flex-col flex-col-reverse w-full items-start justify-start"
-                  >
+                    className="mt-5 lg:mt-0 flex flex-col flex-col-reverse w-full items-start justify-start"
+                    >
                     {subIsValid && address === nft?.owner && (
                       <button
                         className={'absolute top-6 right-6'}
@@ -271,7 +263,7 @@ export default function CitizenDetailPage({
         ) : (
           <></>
         )}
-      </Frame>
+      </div>
     </div>
   )
 
@@ -417,7 +409,7 @@ export default function CitizenDetailPage({
         ) : (
           // Subscription expired
           <Card>
-            <p className="text-moon-orange">
+            <p className="text-white">
               {isDeleted
                 ? `This profile has been deleted, please connect the owner's wallet to submit new data.`
                 : `The profile has expired, please connect the owner's wallet to renew.`}
