@@ -1,9 +1,7 @@
 import { useAddress, useSDK } from '@thirdweb-dev/react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
-import Button from './Button'
 import Card from './Card'
 
 type TeamDonationProps = {
@@ -37,16 +35,16 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
   return (
     <Card className="flex flex-col lg:flex-row justify-between gap-4">
       <div className="flex flex-col lg:flex-row gap-4 justify-start">
-        <Frame noPadding marginBottom="0px">
+        <div>
           <form
-            className="flex bg-dark-cool gap-4 items-center justify-between"
+            className="rounded-[20px] rounded-tl-[10px] md:rounded-tl-[20px] md:rounded-bl-[10px] overflow-hidden flex bg-dark-cool gap-4 items-center justify-between"
             onSubmit={(e) => {
               e.preventDefault()
               donate()
             }}
-          >
+            >
             <input
-              className="w-[100px] bg-dark-cool pl-5 h-full focus:outline-none"
+              className="w-full min-w-[40px] max-w-[100px] bg-dark-cool pl-5 h-full focus:outline-none"
               type="number"
               onChange={({ target }: any) => setDonationAmount(target.value)}
               value={donationAmount}
@@ -54,10 +52,10 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
             />
             <p>ETH</p>
             <div id="" className="gradient-2">
-              <StandardButton type="submit">Donate</StandardButton>
+              <StandardButton type="submit">Send</StandardButton>
             </div>
           </form>
-        </Frame>
+        </div>
       </div>
     </Card>
   )
