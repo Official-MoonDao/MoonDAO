@@ -1,36 +1,31 @@
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
 import { Chain } from '@thirdweb-dev/chains'
-import { MOONDAO_HAT_TREE_IDS } from 'const/config'
-import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useHatData } from '@/lib/hats/useHatData'
 
 type HatProps = {
   selectedChain: Chain
   hatsContract: any
-  hatId: any
+  hat: any
 }
 
-export function Hat({ selectedChain, hatsContract, hatId }: HatProps) {
-  const hatData = useHatData(selectedChain, hatsContract, hatId)
+export function Hat({ selectedChain, hatsContract, hat }: HatProps) {
+  const router = useRouter()
+  const hatData = useHatData(selectedChain, hatsContract, hat.id)
 
   return (
-    <Link
-      href={`https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${
-        MOONDAO_HAT_TREE_IDS[selectedChain.slug]
-      }?hatId=${hatData.prettyId}`}
-      className="px-4 flex flex-col"
-      target="_blank"
-      rel="noreferrer"
-      passHref
+    <button
+      className="text-left px-4 flex flex-col"
+      onClick={() => {
+        if (hat.teamId) {
+          router.push(`/team/${hat.teamId}`)
+        }
+      }}
     >
       <div className="flex items-center gap-5">
         <div>
-          <p className="font-GoodTimes">
-            {hatData.name}
-          </p>
-          <p>
-            {hatData.description}
-          </p>
+          <p className="font-GoodTimes">{hatData.name}</p>
+          <p>{hatData.description}</p>
         </div>
         <div>
           <ArrowUpRightIcon
@@ -40,6 +35,6 @@ export function Hat({ selectedChain, hatsContract, hatId }: HatProps) {
           />
         </div>
       </div>
-    </Link>
+    </button>
   )
 }
