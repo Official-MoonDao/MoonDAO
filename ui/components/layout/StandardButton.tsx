@@ -34,7 +34,7 @@ export default function StandardButton({
       <div
         id="button-content"
         className={` 
-          p-2 pb-3 pr-5 pl-5 
+          p-2 pb-2 pr-5 pl-5 
           ${textColor}
         `}
       >

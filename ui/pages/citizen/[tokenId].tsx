@@ -131,7 +131,7 @@ export default function CitizenDetailPage({
                 >
                 <div
                   id="team-name"
-                  className="flex w-full flex-col justify-center flex-col-reverse gap-2 ml-5"
+                  className="flex w-full flex-col justify-center gap-2 ml-5"
                 >
                   <div
                     id="team-name-container"
