@@ -118,7 +118,7 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const MOONDAO_HAT_TREE_IDS: Index = {
-  arbitrum: '0x0000001a',
+  arbitrum: '0x00000023',
   sepolia: '0x0000017c',
 }
 
