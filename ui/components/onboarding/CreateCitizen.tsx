@@ -16,6 +16,7 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatCitizenFormData, {
   CitizenData,
 } from '@/lib/typeform/citizenFormData'
+import CitizenABI from '../../const/abis/Citizen.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import Footer from '../layout/Footer'
@@ -66,7 +67,8 @@ export default function CreateCitizen({
   }, [stage, lastStage])
 
   const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug]
+    CITIZEN_ADDRESSES[selectedChain.slug],
+    CitizenABI
   )
 
   const pfpRef = useRef<HTMLDivElement | null>(null)
@@ -323,6 +325,7 @@ export default function CreateCitizen({
                       )
 
                     try {
+                      console.log(citizenContract)
                       const cost = await citizenContract?.call(
                         'getRenewalPrice',
                         [address, 365 * 24 * 60 * 60]
@@ -346,6 +349,7 @@ export default function CreateCitizen({
 
                       //mint
                       setIsLoadingMint(true)
+
                       const mintTx = await citizenContract?.call(
                         'mintTo',
                         [
@@ -362,6 +366,7 @@ export default function CreateCitizen({
                         ],
                         {
                           value: cost,
+                          gasLimit: 1000000,
                         }
                       )
 

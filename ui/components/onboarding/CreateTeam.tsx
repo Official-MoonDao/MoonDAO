@@ -410,6 +410,7 @@ export default function CreateTeam({
                           ],
                           {
                             value: cost,
+                            gasLimit: 1000000,
                           }
                         )
 
