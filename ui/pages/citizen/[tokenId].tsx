@@ -196,47 +196,43 @@ export default function CitizenDetailPage({
                   <div id="interactions-container"
                     className="flex flex-col md:flex-row items-start justify-start lg:pr-10"
                     > 
-                    {socials ? (
-                      <>
-                        <div
-                          id="socials-container"
-                          className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
+                  {((discordLink && !discordLink.includes("/users/undefined")) || (socials && (socials.twitter || socials.website))) ? (
+                    <div
+                      id="socials-container"
+                      className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
+                      >
+                      {discordLink && !discordLink.includes("/users/undefined") && (
+                        <Link
+                          className="flex gap-2"
+                          href={discordLink}
+                          target="_blank"
+                          passHref
                           >
-                          {discordLink && (
-                            <Link
-                              className="flex gap-2"
-                              href={discordLink}
-                              target="_blank"
-                              passHref
-                            >
-                              <DiscordIcon />
-                            </Link>
-                          )}
-                          {socials.twitter && (
-                            <Link
-                              className="flex gap-2"
-                              href={socials.twitter}
-                              target="_blank"
-                              passHref
-                            >
-                              <TwitterIcon />
-                            </Link>
-                          )}
-                          {socials.website && (
-                            <Link
-                              className="flex gap-2"
-                              href={socials.website}
-                              target="_blank"
-                              passHref
-                            >
-                              <GlobeAltIcon height={25} width={25} />
-                            </Link>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <></>
-                    )}
+                          <DiscordIcon />
+                        </Link>
+                      )}
+                      {socials.twitter && (
+                        <Link
+                          className="flex gap-2"
+                          href={socials.twitter}
+                          target="_blank"
+                          passHref
+                          >
+                          <TwitterIcon />
+                        </Link>
+                      )}
+                      {socials.website && (
+                        <Link
+                          className="flex gap-2"
+                          href={socials.website}
+                          target="_blank"
+                          passHref
+                          >
+                          <GlobeAltIcon height={25} width={25} />
+                        </Link>
+                      )}
+                    </div>
+                  ) : null}
                     {address === nft.owner ? (
                       <div id="manager-container" >
                         {expiresAt && (
@@ -267,10 +263,14 @@ export default function CitizenDetailPage({
                     )}  
                   </div>  
                 </div>
-                <p className="opacity-50 mt-2 lg:ml-5 text-sm">
-                  {'Exp: '}
-                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                </p>
+                {address === nft.owner ? (
+                  <p className="opacity-50 mt-2 lg:ml-5 text-sm">
+                    {'Exp: '}
+                    {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                  </p>
+                  ) : (
+                  <></>
+                )}  
               </div>
             </div>
           </div>
@@ -362,7 +362,7 @@ export default function CitizenDetailPage({
         )}
 
         {subIsValid && !isDeleted ? (
-          <div className="z-50">
+          <div className="z-50 mb-10">
             {/* Mooney and Voting Power */}
             <Frame
               noPadding
@@ -372,7 +372,7 @@ export default function CitizenDetailPage({
               topLeft="0px"
             >
               <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                <h2 className="header font-GoodTimes opacity-[50%]">Assets</h2>
+                <h2 className="header font-GoodTimes opacity-[50%]">Voting Power</h2>
                 <div className="mt-5 flex flex-col gap-5">
                   <div>
                     <p className="text-xl">{`$MOONEY`}</p>
@@ -428,7 +428,7 @@ export default function CitizenDetailPage({
               topLeft="0px"
             >
               <div className="flex flex-col 2xl:flex-row">
-                <div className="mb-10 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+                <div className=" w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
                   <p className="header font-GoodTimes opacity-[50%]">Teams</p>
                   <div className="mt-5 py-5 flex flex-col gap-2 overflow-y-scroll">
                     {hats.map((hat: any) => (
