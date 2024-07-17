@@ -54,7 +54,7 @@
   },
   {
     "inputs": [],
-    "name": "MoonDaoTeamEdminHatId",
+    "name": "MoonDaoTeamAdminHatId",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -63,6 +63,7 @@
     "inputs": [
       { "internalType": "string", "name": "adminHatURI", "type": "string" },
       { "internalType": "string", "name": "managerHatURI", "type": "string" },
+      { "internalType": "string", "name": "memberHatURI", "type": "string" },
       { "internalType": "string", "name": "name", "type": "string" },
       { "internalType": "string", "name": "bio", "type": "string" },
       { "internalType": "string", "name": "image", "type": "string" },
@@ -105,11 +106,11 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_MoonDaoTeamEdminHatId",
+        "name": "_MoonDaoTeamAdminHatId",
         "type": "uint256"
       }
     ],
-    "name": "setMoonDaoTeamEdminHatId",
+    "name": "setMoonDaoTeamAdminHatId",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
