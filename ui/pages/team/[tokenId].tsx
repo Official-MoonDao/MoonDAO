@@ -433,7 +433,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     topLeft="10px"
                     bottomLeft="2vmax"
                     >
-                    <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+                    <div className="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
                       <TeamAction
                         title="Fund"
                         description="Submit a proposal to secure space project funding."

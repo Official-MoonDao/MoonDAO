@@ -1,8 +1,4 @@
-import {
-  ArrowUpRightIcon,
-  GlobeAltIcon,
-  PencilIcon,
-} from '@heroicons/react/24/outline'
+//Citizen Profile 
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
@@ -40,6 +36,17 @@ import Card from '@/components/subscription/Card'
 import { CitizenMetadataModal } from '@/components/subscription/CitizenMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
+import TeamAction from '@/components/subscription/TeamAction'
+import {
+  ArrowUpRightIcon,
+  BanknotesIcon,
+  BuildingStorefrontIcon,
+  ChatBubbleLeftIcon,
+  ClipboardDocumentListIcon,
+  GlobeAltIcon,
+  PencilIcon,
+} from '@heroicons/react/24/outline'
+
 
 export default function CitizenDetailPage({
   nft,
@@ -260,7 +267,7 @@ export default function CitizenDetailPage({
                     )}  
                   </div>  
                 </div>
-                <p className="opacity-50 mt-2 lg:ml-5">
+                <p className="opacity-50 mt-2 lg:ml-5 text-sm">
                   {'Exp: '}
                   {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                 </p>
@@ -287,13 +294,55 @@ export default function CitizenDetailPage({
         popOverEffect={false}
         branded={false}
         isProfile
-      >
+        >
         {/* Header and socials */}
         <Head
           title={nft.metadata.name}
           description={nft.metadata.description}
           image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
         />
+        {!isDeleted && (
+          <div id="entity-actions-container" className=" z-30">
+            {isManager || address === nft.owner ? (
+              <div
+                id="team-actions-container"
+                className="px-5 pt-5 md:px-0 md:pt-0"
+                >
+                <Frame
+                  noPadding
+                  marginBottom="0px"
+                  bottomRight="2vmax"
+                  topRight="2vmax"
+                  topLeft="10px"
+                  bottomLeft="2vmax"
+                  >
+                  <div className="mt-2 mb-5 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+                    <TeamAction
+                      title="Create Project"
+                      description="Submit a proposal to secure funding for your space project."
+                      icon={<Image src="../assets/icon-project.svg" alt="Submit a proposal" height={30} width={30} />}
+                      onClick={() => window.location.href = '/propose'}
+                    />
+                    <TeamAction
+                      title="Browse Jobs"
+                      description="Browse job openings, contracting opportunities, and bounties."
+                      icon={<Image src="../assets/icon-job.svg" alt="Browse open jobs" height={30} width={30} />}
+                      onClick={() => window.location.href = '/jobs'}
+                    />
+                    <TeamAction
+                      title="Get Rewards"
+                      description="Get rewarded for mission-aligned worked towards a lunar settlement."
+                      icon={<Image src="../assets/icon-submit.svg" alt="Get rewards" height={30} width={30} />}
+                      onClick={() => window.location.href = 'https://moondao.com/'}
+                    />
+                  </div>
+                </Frame>
+              </div>
+            ) : (
+              ''
+            )}
+          </div>
+        )}
 
         {citizenMetadataModalEnabled && (
           <CitizenMetadataModal
