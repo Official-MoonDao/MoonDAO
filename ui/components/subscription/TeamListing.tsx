@@ -135,12 +135,17 @@ export default function TeamListing({
             </span>
             <div id="description-and-id-container" className="relative z-50">
               <div id="description-and-id" className="description">
-                <div className="flex opacity-[70%]">{listing.description}</div>
-                <div>{`${listing.price} ${listing.currency}`}</div>
+                <div className="flex opacity-[70%]">
+                  {listing.description}
+                </div>
+                <div>
+                  {`${listing.price} 
+                  ${listing.currency}`}
+                </div>
                 <span
                   id="mobile-button-container"
                   className="md:hidden flex pt-5 pb-5 justify-start w-full"
-                >
+                  >
                   <StandardButton
                     textColor="text-white"
                     borderRadius="rounded-tl-[10px] rounded-[2vmax]"

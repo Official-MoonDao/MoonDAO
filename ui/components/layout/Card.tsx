@@ -116,13 +116,13 @@ export default function Card({
           <span
             id="title-section"
             className={`
-                            flex 
-                            ${
-                              inline
-                                ? 'pb-5 flex-row items-center pr-5 justify-start'
-                                : 'flex-col justify-center items-center'
-                            }
-                        `}
+              flex 
+              ${
+                inline
+                  ? 'pb-5 flex-row items-center pr-5 justify-start'
+                  : 'flex-col justify-center items-center'
+              }
+            `}
           >
             <Image
               id="featured-icon"
@@ -139,29 +139,23 @@ export default function Card({
             <h2
               id="main-header"
               className={`
-                                z-20 pt-[20px] static-sub-header font-GoodTimes flex items-center 
-                                ${
-                                  inline
-                                    ? 'text-left'
-                                    : 'text-center justify-center md:justify-start'
-                                }
-                            `}
-            >
+                  z-20 pt-[20px] static-sub-header font-GoodTimes flex items-center 
+                  ${
+                    inline
+                      ? 'text-left'
+                      : 'text-center justify-center md:justify-start'
+                  }
+              `}
+              >
               {header && header}
               {metadata?.name ? metadata.name : profile && 'Anon'}
             </h2>
           </span>
           {subheader && subheader}
           <div id="description-and-id-container" className="relative z-50">
-            <div id="description-and-id" className="description mt-2">
+            <div id="description-and-id" className="description text-left">
               <div className="flex opacity-[70%]">
                 {paragraph}
-                {/*{metadata?.id && 'ID: ' + metadata.id + ' |'}
-                                {owner && (
-                                    <p id="owner-wallet" className="pl-2">
-                                        {owner.slice(0, 6)}...{owner.slice(-4)}
-                                    </p>
-                                )}*/}
               </div>
               {metadata?.id ? (
                 <div id="details-container" className="mt-4">

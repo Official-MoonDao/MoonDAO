@@ -1,8 +1,4 @@
-import {
-  ArrowUpRightIcon,
-  GlobeAltIcon,
-  PencilIcon,
-} from '@heroicons/react/24/outline'
+//Citizen Profile 
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
@@ -40,6 +36,17 @@ import Card from '@/components/subscription/Card'
 import { CitizenMetadataModal } from '@/components/subscription/CitizenMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
+import TeamAction from '@/components/subscription/TeamAction'
+import {
+  ArrowUpRightIcon,
+  BanknotesIcon,
+  BuildingStorefrontIcon,
+  ChatBubbleLeftIcon,
+  ClipboardDocumentListIcon,
+  GlobeAltIcon,
+  PencilIcon,
+} from '@heroicons/react/24/outline'
+
 
 export default function CitizenDetailPage({
   nft,
@@ -102,15 +109,7 @@ export default function CitizenDetailPage({
 
   const ProfileHeader = (
     <div id="citizenheader-container">
-      <Frame
-        noPadding
-        bottomRight="0px"
-        bottomLeft="0px"
-        topLeft="0px"
-        topRight="0px"
-        className="z-50"
-        marginBottom="0px"
-      >
+      <div className="z-50 rounded-tl-[20px] overflow-hidden">
         <div id="frame-content-container" className="w-full">
           <div
             id="moon-asset-container"
@@ -127,7 +126,7 @@ export default function CitizenDetailPage({
               {nft?.metadata.image ? (
                 <div
                   id="citizen-image-container"
-                  className="relative w-[300px] h-[300px]"
+                  className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
                   <ThirdwebNftMedia
                     className="rounded-full"
@@ -150,15 +149,15 @@ export default function CitizenDetailPage({
               ) : (
                 <></>
               )}
-              <div id="team-name-container">
+              <div id="citizen-name-container">
                 <div
                   id="team-name"
-                  className="flex w-full flex-col justify-center flex-col-reverse gap-2 ml-5"
-                >
+                  className="flex mb-2 w-full flex-col justify-center gap-2 lg:ml-5"
+                  >
                   <div
                     id="team-name-container"
-                    className="flex flex-col flex-col-reverse w-full items-start justify-start"
-                  >
+                    className="mt-5 lg:mt-0 flex flex-col flex-col-reverse w-full items-start justify-start"
+                    >
                     {subIsValid && address === nft?.owner && (
                       <button
                         className={'absolute top-6 right-6'}
@@ -194,19 +193,21 @@ export default function CitizenDetailPage({
                       )}
                     </div>
                   </div>
-
-                  {socials ? (
+                  <div id="interactions-container"
+                    className="flex flex-col md:flex-row items-start justify-start lg:pr-10"
+                    > 
+                  {((discordLink && !discordLink.includes("/users/undefined")) || (socials && (socials.twitter || socials.website))) ? (
                     <div
                       id="socials-container"
-                      className="pl-5 mt-5 lg:mt-0 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter p-2"
-                    >
-                      {discordLink && (
+                      className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
+                      >
+                      {discordLink && !discordLink.includes("/users/undefined") && (
                         <Link
                           className="flex gap-2"
                           href={discordLink}
                           target="_blank"
                           passHref
-                        >
+                          >
                           <DiscordIcon />
                         </Link>
                       )}
@@ -216,7 +217,7 @@ export default function CitizenDetailPage({
                           href={socials.twitter}
                           target="_blank"
                           passHref
-                        >
+                          >
                           <TwitterIcon />
                         </Link>
                       )}
@@ -226,52 +227,55 @@ export default function CitizenDetailPage({
                           href={socials.website}
                           target="_blank"
                           passHref
-                        >
+                          >
                           <GlobeAltIcon height={25} width={25} />
                         </Link>
                       )}
                     </div>
-                  ) : (
-                    <></>
-                  )}
+                  ) : null}
+                    {address === nft.owner ? (
+                      <div id="manager-container" >
+                        {expiresAt && (
+                          <div
+                            id="expires-container"
+                            className="flex flex-col gap-4 items-start"
+                            >
+                            <div className="rounded-[2vmax] rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px] overflow-hidden">
+                              <div id="extend-sub-button" className="gradient-2 text-sm">
+                                <Button
+                                  onClick={() => {
+                                    if (address === nft?.owner) setSubModalEnabled(true)
+                                    else
+                                      return toast.error(
+                                        `Connect the entity admin wallet or multisig to extend the subscription.`
+                                      )
+                                  }}
+                                >
+                                  {'Extend Plan'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <></>
+                    )}  
+                  </div>  
                 </div>
+                {address === nft.owner ? (
+                  <p className="opacity-50 mt-2 lg:ml-5 text-sm">
+                    {'Exp: '}
+                    {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                  </p>
+                  ) : (
+                  <></>
+                )}  
               </div>
             </div>
           </div>
         </div>
-        {address === nft.owner ? (
-          <div id="manager-container" className="mt-8 xl:mt-0">
-            {expiresAt && (
-              <div
-                id="expires-container"
-                className="flex flex-col gap-4 items-start"
-              >
-                <p className="opacity-50">
-                  {'Exp: '}
-                  {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                </p>
-                <Frame noPadding>
-                  <div id="extend-sub-button" className="gradient-2">
-                    <Button
-                      onClick={() => {
-                        if (address === nft?.owner) setSubModalEnabled(true)
-                        else
-                          return toast.error(
-                            `Connect the entity admin wallet or multisig to extend the subscription.`
-                          )
-                      }}
-                    >
-                      {'Extend Subscription'}
-                    </Button>
-                  </div>
-                </Frame>
-              </div>
-            )}
-          </div>
-        ) : (
-          <></>
-        )}
-      </Frame>
+      </div>
     </div>
   )
 
@@ -290,13 +294,55 @@ export default function CitizenDetailPage({
         popOverEffect={false}
         branded={false}
         isProfile
-      >
+        >
         {/* Header and socials */}
         <Head
           title={nft.metadata.name}
           description={nft.metadata.description}
           image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
         />
+        {!isDeleted && (
+          <div id="entity-actions-container" className=" z-30">
+            {isManager || address === nft.owner ? (
+              <div
+                id="team-actions-container"
+                className="px-5 pt-5 md:px-0 md:pt-0"
+                >
+                <Frame
+                  noPadding
+                  marginBottom="0px"
+                  bottomRight="2vmax"
+                  topRight="2vmax"
+                  topLeft="10px"
+                  bottomLeft="2vmax"
+                  >
+                  <div className="mt-2 mb-5 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+                    <TeamAction
+                      title="Create Project"
+                      description="Submit a proposal to secure funding for your space project."
+                      icon={<Image src="../assets/icon-project.svg" alt="Submit a proposal" height={30} width={30} />}
+                      onClick={() => window.location.href = '/propose'}
+                    />
+                    <TeamAction
+                      title="Browse Jobs"
+                      description="Browse job openings, contracting opportunities, and bounties."
+                      icon={<Image src="../assets/icon-job.svg" alt="Browse open jobs" height={30} width={30} />}
+                      onClick={() => window.location.href = '/jobs'}
+                    />
+                    <TeamAction
+                      title="Get Rewards"
+                      description="Get rewarded for mission-aligned worked towards a lunar settlement."
+                      icon={<Image src="../assets/icon-submit.svg" alt="Get rewards" height={30} width={30} />}
+                      onClick={() => window.location.href = 'https://moondao.com/'}
+                    />
+                  </div>
+                </Frame>
+              </div>
+            ) : (
+              ''
+            )}
+          </div>
+        )}
 
         {citizenMetadataModalEnabled && (
           <CitizenMetadataModal
@@ -316,7 +362,7 @@ export default function CitizenDetailPage({
         )}
 
         {subIsValid && !isDeleted ? (
-          <div className="z-50">
+          <div className="z-50 mb-10">
             {/* Mooney and Voting Power */}
             <Frame
               noPadding
@@ -326,7 +372,7 @@ export default function CitizenDetailPage({
               topLeft="0px"
             >
               <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                <h2 className="header font-GoodTimes opacity-[50%]">Assets</h2>
+                <h2 className="header font-GoodTimes opacity-[50%]">Voting Power</h2>
                 <div className="mt-5 flex flex-col gap-5">
                   <div>
                     <p className="text-xl">{`$MOONEY`}</p>
@@ -382,7 +428,7 @@ export default function CitizenDetailPage({
               topLeft="0px"
             >
               <div className="flex flex-col 2xl:flex-row">
-                <div className="mb-10 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+                <div className=" w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
                   <p className="header font-GoodTimes opacity-[50%]">Teams</p>
                   <div className="mt-5 py-5 flex flex-col gap-2 overflow-y-scroll">
                     {hats.map((hat: any) => (
@@ -417,7 +463,7 @@ export default function CitizenDetailPage({
         ) : (
           // Subscription expired
           <Card>
-            <p className="text-moon-orange">
+            <p className="text-white">
               {isDeleted
                 ? `This profile has been deleted, please connect the owner's wallet to submit new data.`
                 : `The profile has expired, please connect the owner's wallet to renew.`}
