@@ -88,13 +88,13 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
   return (
     <div
       ref={parentRef}
-      className="flex justify-start relative rounded-tl-[20px] rounded-bl-[5vmax] p-4"
-    >
+      className="flex justify-center md:justify-start relative rounded-tl-[20px] rounded-bl-[5vmax] p-4"
+      >
       <div
         ref={containerRef}
         className="pr-8 flex overflow-x-auto overflow-y-hidden"
         style={{ msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
-      >
+        >
         {children}
       </div>
       <div
