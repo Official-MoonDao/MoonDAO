@@ -41,7 +41,7 @@ export default function Callout2() {
               link="/join"
               paddingOnHover="pl-5"
               >
-              Become a Citizen
+              Become a Member
             </StandardButton>
           </div>
         </div>
