@@ -325,7 +325,6 @@ export default function CreateCitizen({
                       )
 
                     try {
-                      console.log(citizenContract)
                       const cost = await citizenContract?.call(
                         'getRenewalPrice',
                         [address, 365 * 24 * 60 * 60]
