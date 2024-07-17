@@ -131,7 +131,7 @@ export default function Card({
                             className={`
                                 z-20 pt-[20px] static-sub-header font-GoodTimes flex items-center 
                                 ${inline ? 
-                                    'text-left': 'text-center justify-center md:justify-start'
+                                    'text-left': 'text-left md:justify-start'
                                 }
                             `}
                         >
@@ -145,84 +145,79 @@ export default function Card({
                             >
                             <div id="description-and-id"
                                 className={metadata?.name && 'description'}
-                            >
-                            <div 
-                                className="flex opacity-[70%]"
                                 >
-                                {paragraph}
-                                {/*{metadata?.id && 'ID: ' + metadata.id + ' |'}
-                                {owner && (
-                                    <p id="owner-wallet" className="pl-2">
-                                        {owner.slice(0, 6)}...{owner.slice(-4)}
-                                    </p>
-                                )}*/}
-                            </div>
-                            {metadata?.id ? (
-                                <div id="details-container" 
-                                    className="mt-4"
+                                <div 
+                                    className="flex opacity-[70%] text-left items-start"
                                     >
-                                    <p id="org-description">
-                                        {metadata.description && metadata.description.length > 100
-                                            ? `${metadata.description.slice(0, 100)}...`
-                                        : metadata.description}
-                                    </p>
-                                    {type === 'citizen' && citizenDiscord && (
-                                        <div id="handle-container">
-                                            Discord: @{citizenDiscord}
-                                        </div>
-                                    )}
+                                        TESTING
+                                    {paragraph}
                                 </div>
-                                ) : (
-                                profile && (
+                                {metadata?.id ? (
                                     <div id="details-container" 
                                         className="mt-4"
                                         >
-                                        <p id="org-description"
-                                            >
-                                            This citizen has yet to add a profile 
+                                        <p id="org-description">
+                                            {metadata.description && metadata.description.length > 100
+                                                ? `${metadata.description.slice(0, 100)}...`
+                                            : metadata.description}
                                         </p>
-                                        <div id="handle-container">
-                                            Discord: NONE
-                                        </div>
+                                        {type === 'citizen' && citizenDiscord && (
+                                            <div id="handle-container">
+                                                Discord: @{citizenDiscord}
+                                            </div>
+                                        )}
                                     </div>
-                                ))
-                            }
-                            {hovertext && metadata?.name && (
-                                <span id="mobile-button-container"
-                                    className="md:hidden flex pt-5 pb-5 justify-start w-full"
-                                    >   
-                                    <StandardButton
-                                        textColor="text-white"
-                                        borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-                                        link="#"
-                                        paddingOnHover="pl-5"
-                                        className="gradient-2"
-                                        styleOnly={true}
-                                        >
-                                        {hovertext}
-                                    </StandardButton>
+                                    ) : (
+                                    profile && (
+                                        <div id="details-container" 
+                                            className="mt-4"
+                                            >
+                                            <p id="org-description"
+                                                >
+                                                This citizen has yet to add a profile 
+                                            </p>
+                                            <div id="handle-container">
+                                                Discord: NONE
+                                            </div>
+                                        </div>
+                                    ))
+                                }
+                                {hovertext && metadata?.name && (
+                                    <span id="mobile-button-container"
+                                        className="md:hidden flex pt-5 pb-5 justify-start w-full"
+                                        >   
+                                        <StandardButton
+                                            textColor="text-white"
+                                            borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+                                            link="#"
+                                            paddingOnHover="pl-5"
+                                            className="gradient-2"
+                                            styleOnly={true}
+                                            >
+                                            {hovertext}
+                                        </StandardButton>
+                                    </span>
+                                )}
+                            </div>
+                            {hovertext && (
+                                <span id="hovertext-container"
+                                    className="hovertext absolute left-0 bottom-[-320px] ml-[-20px] w-[calc(100%+40px)] h-[calc(100%+300px)] p-[20px] text-lg rounded-[10px] text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
+                                    >
+                                    <span id="hovertext" 
+                                        className="hidden md:block">{hovertext}
+                                    </span>
                                 </span>
                             )}
                         </div>
-                        {hovertext && (
-                            <span id="hovertext-container"
-                                className="hovertext absolute left-0 bottom-[-320px] ml-[-20px] w-[calc(100%+40px)] h-[calc(100%+300px)] p-[20px] text-lg rounded-[10px] text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
-                                >
-                                <span id="hovertext" 
-                                    className="hidden md:block">{hovertext}
-                                </span>
-                            </span>
-                        )}
-                    </div>
+                    </span>
                 </span>
             </span>
-        </span>
-    )
+        )
 
     return (
         <span id="link-frame"
             className={`
-                card-container min-w-[300px] w-[65vw] md:w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
+                card-container min-w-[300px] w-full max-w-[450px] md:max-w-[450px] md:w-full flex items-center lg:flex-col rounded-[20px] relative overflow-hidden 
                 ${link ? 'cursor-pointer' : ''}
             `}
             >
