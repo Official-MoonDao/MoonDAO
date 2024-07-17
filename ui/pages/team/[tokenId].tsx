@@ -56,6 +56,7 @@ import TeamAddMember from '@/components/subscription/TeamAddMember'
 import TeamDonation from '@/components/subscription/TeamDonation'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
 import TeamJobs from '@/components/subscription/TeamJobs'
+import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMarketplace from '@/components/subscription/TeamMarketplace'
 import TeamMarketplaceListingModal from '@/components/subscription/TeamMarketplaceListingModal'
 import TeamMembers from '@/components/subscription/TeamMembers'
@@ -489,16 +490,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         id="button-container"
                         className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
                       >
-                        <TeamAddHat
-                          multisigAddress={nft.owner}
-                          adminHatId={managerHatId}
-                        />
-                        <TeamAddMember
-                          selectedChain={selectedChain}
-                          adminHatId={adminHatId}
-                          multisigAddress={nft.owner}
-                        />
-                        <StandardButton
+                        {/* <StandardButton
                           className="min-w-[200px] gradient-2 rounded-[5vmax]"
                           onClick={() => {
                             window.open(
@@ -507,7 +499,15 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                           }}
                         >
                           Manage Members
-                        </StandardButton>
+                        </StandardButton> */}
+                        <TeamManageMembers
+                          hats={hats}
+                          hatsContract={hatsContract}
+                          selectedChain={selectedChain}
+                          multisigAddress={nft.owner}
+                          adminHatId={adminHatId}
+                          managerHatId={managerHatId}
+                        />
                       </div>
                     )}
                   </div>

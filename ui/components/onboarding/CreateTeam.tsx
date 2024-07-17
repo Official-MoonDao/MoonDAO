@@ -3,7 +3,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { TEAM_ADDRESSES, TEAM_CREATOR_ADDRESSES } from 'const/config'
-import { ethers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -15,6 +15,7 @@ import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
+import TeamABI from '../../const/abis/Team.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import Footer from '../layout/Footer'
@@ -63,7 +64,8 @@ export default function CreateTeam({
   }, [stage, lastStage])
 
   const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug]
+    TEAM_ADDRESSES[selectedChain.slug],
+    TeamABI
   )
 
   const { contract: teamCreatorContract } = useContract(
@@ -245,9 +247,7 @@ export default function CreateTeam({
                       </p>
                     </div>
                     <div className="flex flex-col bg-[#0F152F] rounded-[20px] pb-10 p-5 mt-5">
-                      <h3 className="font-GoodTimes text-2xl mb-2">
-                        MANAGER
-                      </h3>
+                      <h3 className="font-GoodTimes text-2xl mb-2">MANAGER</h3>
                       <p className="mt-2">
                         The manager can modify your organization’s information.
                         To begin, the currently connected wallet will act as the
@@ -363,6 +363,24 @@ export default function CreateTeam({
                         const { cid: managerHatMetadataIpfsHash } =
                           await pinBlobOrFile(managerHatMetadataBlob)
 
+                        const memberHatMetadataBlob = new Blob(
+                          [
+                            JSON.stringify({
+                              type: '1.0',
+                              data: {
+                                name: teamData.name + ' Member',
+                                description: teamData.description,
+                              },
+                            }),
+                          ],
+                          {
+                            type: 'application/json',
+                          }
+                        )
+
+                        const { cid: memberHatMetadataIpfsHash } =
+                          await pinBlobOrFile(memberHatMetadataBlob)
+
                         //pin image to IPFS
                         const { cid: newImageIpfsHash } = await pinBlobOrFile(
                           teamImage
@@ -380,9 +398,10 @@ export default function CreateTeam({
                           [
                             'ipfs://' + adminHatMetadataIpfsHash,
                             'ipfs://' + managerHatMetadataIpfsHash,
+                            'ipfs://' + memberHatMetadataIpfsHash,
                             teamData.name,
                             teamData.description,
-                            `ipfs://${newImageIpfsHash}`,
+                            'ipfs://' + newImageIpfsHash,
                             teamData.twitter,
                             teamData.communications,
                             teamData.website,
@@ -395,7 +414,7 @@ export default function CreateTeam({
                         )
 
                         const mintedTokenId = parseInt(
-                          mintTx.receipt.logs[9].topics[3],
+                          mintTx.receipt.logs[14].topics[3],
                           16
                         ).toString()
 
