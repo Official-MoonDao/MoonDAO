@@ -149,7 +149,6 @@ export default function Card({
                                 <div 
                                     className="flex opacity-[70%] text-left items-start"
                                     >
-                                        TESTING
                                     {paragraph}
                                 </div>
                                 {metadata?.id ? (
