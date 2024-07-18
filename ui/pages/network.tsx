@@ -25,6 +25,7 @@ import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import Tab from '@/components/layout/Tab'
+import CitizenABI from '../const/abis/Citizen.json'
 
 export default function Directory() {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
@@ -70,7 +71,8 @@ export default function Directory() {
     TEAM_ADDRESSES[selectedChain.slug]
   )
   const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug]
+    CITIZEN_ADDRESSES[selectedChain.slug],
+    CitizenABI
   )
 
   const { data: totalTeams } = useHandleRead(teamContract, 'totalSupply')
@@ -187,7 +189,13 @@ export default function Directory() {
   const descriptionSection = (
     <div className="pt-2">
       <div className="mb-4">
-        The first open-source, interplanetary network state dedicated to establishing a permanent human presence on the Moon and beyond. Be a part of our multiplanetary future and <u><Link href="/join">join the network</Link></u>.
+        The first open-source, interplanetary network state dedicated to
+        establishing a permanent human presence on the Moon and beyond. Be a
+        part of our multiplanetary future and{' '}
+        <u>
+          <Link href="/join">join the network</Link>
+        </u>
+        .
       </div>
       <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
         <Search input={input} setInput={setInput} />
@@ -226,17 +234,15 @@ export default function Directory() {
         </Frame>
       </div>
     </div>
-  );
-  
-  
-  
-  
+  )
 
   return (
     <section id="network-container" className="overflow-hidden">
       <Head
         title={'The Space Network'}
-        description={'The first open source, interplanetary network state dedicated to expanding life beyond Earth.'}
+        description={
+          'The first open source, interplanetary network state dedicated to expanding life beyond Earth.'
+        }
       />
       <Container>
         <ContentLayout
@@ -304,7 +310,9 @@ export default function Directory() {
                       setPageIdx(pageIdx - 1)
                     }
                   }}
-                  className={`pagination-button ${pageIdx === 1 ? 'opacity-10' : 'cursor-pointer opacity-100'}`}
+                  className={`pagination-button ${
+                    pageIdx === 1 ? 'opacity-10' : 'cursor-pointer opacity-100'
+                  }`}
                   disabled={pageIdx === 1}
                 >
                   <Image
@@ -323,7 +331,11 @@ export default function Directory() {
                       setPageIdx(pageIdx + 1)
                     }
                   }}
-                  className={`pagination-button ${pageIdx === maxPage ? 'opacity-10' : 'cursor-pointer opacity-100'}`}
+                  className={`pagination-button ${
+                    pageIdx === maxPage
+                      ? 'opacity-10'
+                      : 'cursor-pointer opacity-100'
+                  }`}
                   disabled={pageIdx === maxPage}
                 >
                   <Image
@@ -335,7 +347,6 @@ export default function Directory() {
                 </button>
               </div>
             </Frame>
-
           </>
         </ContentLayout>
       </Container>
