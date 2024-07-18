@@ -69,51 +69,51 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 }
 
 export const CITIZEN_ADDRESSES: Index = {
-  arbitrum: '0x2C0Fe7Bc35790199Fe87dA44831226b9d3c923Fb',
+  arbitrum: '0xa4e531c3b45Bd4ADe6B859F7dc0609E349fc42Fe',
   sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x3339D24Af20B44772E4eE90f17C6d5e393aBeA9E',
+  arbitrum: '0xfC54809BC5d382c9EA4130bE6790bDD8DFdDc378',
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
-  arbitrum: '0x7eDEe88801db17df2b3118132C4dBfBcB0bb55Af',
+  arbitrum: '0xAAE358dA30143174492835AEf6d89d6E008730f0',
   sepolia: '',
 }
 
 export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0x65a8264622EfBD1AF9Dc6A2d6D30d38E830CaEB8',
+  arbitrum: '0x4cF33BF9F21232FF2eD97b3873d172322aCE3cfE',
   sepolia: '',
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0x3AA816327e807FF1BbD8A6Adab3cEC09FBE2C813',
+  arbitrum: '0x1f994cB6153C2F1CdE66f4E4F4aeb7A1939Dc39E',
   sepolia: '',
 }
 
 export const TEAM_ADDRESSES: Index = {
-  arbitrum: '0xd1BAcC7c72aE9ba1D2C11f6c5B93BAbE9A11aA1b',
+  arbitrum: '0xf2Bc5f25634F5F46982F85411c5623Cb764290AB',
   sepolia: '0xEb9A6975381468E388C33ebeF4089Be86fe31d78',
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0x78C46d2086345e1905531c04a2AdBC63f5AABBA0',
+  arbitrum: '0x6bECb28Ecc8243508Adb73F00F5C342003aA765c',
   sepolia: '0x55D07Ab23092edc7EdAEC7048B784aCcb2cc4469',
 }
 
 export const TEAM_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xBBe4675e9cE1d64729e04F8419B7ED989498A8F0',
+  arbitrum: '0xf03186c7abb242aFac62E2746Aa0e7650F5bb46e',
   sepolia: '0x42d356e77f6d9Bad870865e0973Ed32F54fA4006',
 }
 
 export const TEAM_WHITELIST_ADDRESSES: Index = {
-  arbitrum: '0xcC5B3b9a5da5aCa69a2ccca7a2d1A605b5b5D137',
+  arbitrum: '0xf52532121f340Af23Bf4Fdb56d83CA80A6526d59',
   sepolia: '',
 }
 export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0x097B4a3aCF6F293188D981b63b9Ea1C056e710c2',
+  arbitrum: '0xEc0224b7C136bFe7d8C8D74Ce258892299bdEdeE',
   sepolia: '',
 }
 
