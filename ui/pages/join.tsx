@@ -12,6 +12,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
+import CreateTeam from '@/components/onboarding/CreateTeam'
 import Tier from '@/components/onboarding/Tier'
 
 export default function Join() {
@@ -50,6 +51,16 @@ export default function Join() {
   if (selectedTier === 'citizen') {
     return (
       <CreateCitizen
+        address={address}
+        selectedChain={selectedChain}
+        setSelectedTier={setSelectedTier}
+      />
+    )
+  }
+
+  if (selectedTier === 'team') {
+    return (
+      <CreateTeam
         address={address}
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
