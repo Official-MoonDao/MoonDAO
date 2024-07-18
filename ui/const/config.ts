@@ -69,56 +69,56 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 }
 
 export const CITIZEN_ADDRESSES: Index = {
-  arbitrum: '0x6a80AE1E553070A33a2439bce8190c2a76CDB77c',
+  arbitrum: '0x2C0Fe7Bc35790199Fe87dA44831226b9d3c923Fb',
   sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xD1Cb910D74d2390F78C5dC6aaAf35851F795aE98',
+  arbitrum: '0x3339D24Af20B44772E4eE90f17C6d5e393aBeA9E',
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
-  arbitrum: '0x810875d99383d65fabA62198551B5F421Fa81F07',
+  arbitrum: '0x7eDEe88801db17df2b3118132C4dBfBcB0bb55Af',
   sepolia: '',
 }
 
 export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0xCc05Bc467c99C13658A7e8FEf7e080B3f4Cd1268',
+  arbitrum: '0x65a8264622EfBD1AF9Dc6A2d6D30d38E830CaEB8',
   sepolia: '',
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0xA4EB024B2f637C1611eb3bb0CFDEf9a7D2d5219b',
+  arbitrum: '0x3AA816327e807FF1BbD8A6Adab3cEC09FBE2C813',
   sepolia: '',
 }
 
 export const TEAM_ADDRESSES: Index = {
-  arbitrum: '0xdAe1E89fE83a03592b4AB2Db69b71026F675D6F9',
+  arbitrum: '0xd1BAcC7c72aE9ba1D2C11f6c5B93BAbE9A11aA1b',
   sepolia: '0xEb9A6975381468E388C33ebeF4089Be86fe31d78',
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0x7bdd499d335205d1883d1b81F632eaDf8FDbc58F',
+  arbitrum: '0x78C46d2086345e1905531c04a2AdBC63f5AABBA0',
   sepolia: '0x55D07Ab23092edc7EdAEC7048B784aCcb2cc4469',
 }
 
 export const TEAM_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xfDE860e33101dfbfEB8B06A9E28A6137A9e1EAbf',
+  arbitrum: '0xBBe4675e9cE1d64729e04F8419B7ED989498A8F0',
   sepolia: '0x42d356e77f6d9Bad870865e0973Ed32F54fA4006',
 }
 
 export const TEAM_WHITELIST_ADDRESSES: Index = {
-  arbitrum: '0xefF2A0dF8a790d6d18aa9E7ebE557420a3D68cCB',
+  arbitrum: '0xcC5B3b9a5da5aCa69a2ccca7a2d1A605b5b5D137',
   sepolia: '',
 }
 export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0xCA656A42EBf20E387C4F7111d891c229E5C0F50F',
+  arbitrum: '0x097B4a3aCF6F293188D981b63b9Ea1C056e710c2',
   sepolia: '',
 }
 
 export const MOONDAO_HAT_TREE_IDS: Index = {
-  arbitrum: '0x00000023',
+  arbitrum: '0x00000024',
   sepolia: '0x0000017c',
 }
 
