@@ -42,7 +42,7 @@ export default function Tier({
     >
       <div className="bg-[#020617] md:mb-5 md:rounded-[5vmax] p-5 md:rounded-tl-[20px]">
         <div
-          className="w-full transition-all duration-150 pb-10 cursor-pointer text-white text-opacity-[80%] flex flex-col"
+          className="w-full transition-all duration-150 pb-10 cursor-pointer text-white text-opacity-[80%] "
           onClick={() => {
             if (!address && user) logout()
             if (!address) return login()
@@ -51,7 +51,7 @@ export default function Tier({
 
             onClick()
           }}
-        >
+          >
           <div className="w-full h-full flex flex-col lg:flex-row ">
             <div className="pt-5 md:pt-0 flex items-center rounded-[2vmax] rounded-tl-[20px] overflow-hidden">
               <Image
@@ -110,9 +110,13 @@ export default function Tier({
             <br></br>
             {tierDescription}
           </div>
-          <button className="mt-5 px-5 rounded-tl-[10px] rounded-[2vmax] py-3 hover:pl-5 ease-in-out duration-300 gradient-2 max-w-[250px]">
-            {buttoncta}
-          </button>
+          <div className="inline-block ">
+            <div className="mt-5 rounded-tl-[10px] rounded-[2vmax] gradient-2">
+              <button className="py-2 px-5 hover:pl-7 ease-in-out duration-300">
+                {buttoncta}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
