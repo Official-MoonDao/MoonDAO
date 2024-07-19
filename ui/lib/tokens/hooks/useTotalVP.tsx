@@ -3,7 +3,7 @@ import request, { gql } from 'graphql-request'
 import { useEffect, useState } from 'react'
 
 export default function useTotalVP(address: string = '') {
-  const [walletVP, setWalletVP] = useState()
+  const [walletVP, setWalletVP] = useState<any>()
 
   useEffect(() => {
     async function getTotalVP() {
