@@ -64,7 +64,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
         {userImage && (
           <div
             id="teamPic"
-            className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
+            className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/moondao-team-flag.png')] bg-cover justify-left relative flex"
           >
             <div
               id="user-image"
@@ -80,7 +80,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
         {!userImage && !currImage && (
           <div
             id="teamPic"
-            className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/flat-moondao-flag.png')] bg-cover justify-left relative flex"
+            className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/moondao-team-flag.png')] bg-cover justify-left relative flex"
           >
             <div
               id="user-image"
