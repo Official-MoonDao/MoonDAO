@@ -69,27 +69,27 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 }
 
 export const CITIZEN_ADDRESSES: Index = {
-  arbitrum: '0xa1a709Da50dd54721e2657637CD8fE110c037061',
+  arbitrum: '0x932BFF3f7af8c720041691e7e9a12Ae4c55fCA13',
   sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xDD1C9d1bc5Ed80C6fB8b23937ddb37D5b704Fd8c',
+  arbitrum: '0x00531A1996d00366fad0C9d21726F91060C3D333',
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
-  arbitrum: '0x6b40813690ee1E46922a5cbf0a082bc41e3Ad667',
+  arbitrum: '0xEdEf4749b01679D2FA633af01dAf951C01c7809a',
   sepolia: '',
 }
 
 export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0x6E54B6D643CDc3040D0ac592E2c5D029EfC0BAad',
+  arbitrum: '0x8459ccdE1b2D89685995Dd01223d1469ed73a4b9',
   sepolia: '',
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0x517D6e1A52F0792C43e0b99A1F7d7980e56594c0',
+  arbitrum: '0xc8c2374e1756325dBa674C972d9c302C53865CbD',
   sepolia: '',
 }
 
