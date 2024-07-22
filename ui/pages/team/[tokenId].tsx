@@ -163,6 +163,10 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     )
   }, [])
 
+  useEffect(() => {
+    console.log(hats)
+  }, [hats])
+
   //Profile Header Section
   const ProfileHeader = (
     <div id="orgheader-container">
@@ -370,6 +374,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
       />
       {teamSubscriptionModalEnabled && (
         <SubscriptionModal
+          selectedChain={selectedChain}
           setEnabled={setTeamSubscriptionModalEnabled}
           nft={nft}
           validPass={subIsValid}
@@ -520,16 +525,17 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
 
                   <SlidingCardMenu>
                     <div className="flex gap-4">
-                      {hats?.map((hat: any, i: number) => (
-                        <TeamMembers
-                          key={'hat-' + i}
-                          selectedChain={selectedChain}
-                          hatId={hat.id}
-                          hatsContract={hatsContract}
-                          citizenConract={citizenConract}
-                          wearers={hat.wearers}
-                        />
-                      ))}
+                      {hats?.[0].id &&
+                        hats?.map((hat: any, i: number) => (
+                          <TeamMembers
+                            key={'hat-' + i}
+                            selectedChain={selectedChain}
+                            hatId={hat.id}
+                            hatsContract={hatsContract}
+                            citizenConract={citizenConract}
+                            wearers={hat.wearers}
+                          />
+                        ))}
                     </div>
                   </SlidingCardMenu>
                 </div>

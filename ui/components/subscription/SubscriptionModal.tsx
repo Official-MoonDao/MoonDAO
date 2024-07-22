@@ -1,5 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { sub } from 'date-fns'
+import { useAddress } from '@thirdweb-dev/react'
+import { TEAM_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -8,6 +9,7 @@ import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 
 export function SubscriptionModal({
+  selectedChain,
   setEnabled,
   nft,
   subscriptionContract,
@@ -15,6 +17,7 @@ export function SubscriptionModal({
   expiresAt,
 }: any) {
   const router = useRouter()
+  const address = useAddress()
   const [isLoading, setIsLoading] = useState(false)
 
   const [years, setYears] = useState<number>(1)
@@ -54,27 +57,38 @@ export function SubscriptionModal({
           className="w-full flex flex-col gap-4"
           onSubmit={async (e) => {
             e.preventDefault()
+
             if (!years || !subscriptionCost) return
 
             setIsLoading(true)
 
             try {
               const duration = years * 365 * 24 * 60 * 60
+              const contractAddress = subscriptionContract.getAddress()
 
-              await subscriptionContract.call(
-                'renewSubscription',
-                [nft.metadata.id, duration],
-                {
-                  value: subscriptionCost.toString(),
-                }
-              )
+              if (contractAddress === TEAM_ADDRESSES[selectedChain.slug]) {
+                await subscriptionContract.call(
+                  'renewSubscription',
+                  [address, nft.metadata.id, duration],
+                  {
+                    value: subscriptionCost.toString(),
+                  }
+                )
+              } else {
+                await subscriptionContract.call(
+                  'renewSubscription',
+                  [nft.metadata.id, duration],
+                  {
+                    value: subscriptionCost.toString(),
+                  }
+                )
+              }
+              setEnabled(false)
+              router.reload()
             } catch (err) {
               console.log(err)
             }
-
             setIsLoading(false)
-            setEnabled(false)
-            router.reload()
           }}
         >
           <div className="w-full flex gap-4">

@@ -384,6 +384,7 @@ export default function CitizenDetailPage({
         )}
         {subModalEnabled && (
           <SubscriptionModal
+            selectedChain={selectedChain}
             setEnabled={setSubModalEnabled}
             nft={nft}
             subscriptionContract={citizenContract}
