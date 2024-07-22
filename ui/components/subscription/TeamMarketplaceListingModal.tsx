@@ -81,7 +81,9 @@ export default function TeamMarketplaceListingModal({
           if (typeof listingData.image === 'string') {
             imageIpfsLink = listingData.image
           } else {
-            const imageIpfsHash = await pinBlobOrFile(listingData.image)
+            const { cid: imageIpfsHash } = await pinBlobOrFile(
+              listingData.image
+            )
             imageIpfsLink = `ipfs://${imageIpfsHash}`
           }
 
