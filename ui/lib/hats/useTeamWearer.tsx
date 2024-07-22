@@ -15,22 +15,30 @@ export function useTeamWearer(
     async function getWearerTeamHats() {
       try {
         if (!address) return []
-        const hats = await hatsSubgraphClient.getWearer({
-          chainId: selectedChain.chainId,
-          wearerAddress: address,
-          props: {
-            currentHats: {
-              props: {
-                tree: {},
-                admin: {
+        const res = await fetch('/api/hats/get-wearer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chainId: selectedChain.chainId,
+            wearerAddress: address,
+            props: {
+              currentHats: {
+                props: {
+                  tree: {},
                   admin: {
-                    admin: {},
+                    admin: {
+                      admin: {},
+                    },
                   },
                 },
               },
             },
-          },
+          }),
         })
+
+        const hats: any = res.json()
 
         //filter worn hats to only include hats that are in the MoonDAO hat tree
         if (hats.currentHats) {

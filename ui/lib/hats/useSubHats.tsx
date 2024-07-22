@@ -1,50 +1,29 @@
 import { useEffect, useState } from 'react'
-import hatsSubgraphClient from './hatsSubgraphClient'
 
 export function useSubHats(selectedChain: any, hatId: any) {
   const [subHats, setSubHats] = useState<any>()
 
-  async function getSubHats() {
-    try {
-      const hat = await hatsSubgraphClient.getHat({
-        chainId: selectedChain.chainId,
-        hatId,
-        props: {
-          subHats: {
-            props: {
-              details: true,
-              wearers: {
-                props: {},
-              },
-              subHats: {
-                props: {
-                  details: true,
-                  wearers: {
-                    props: {},
-                  },
-                },
-              },
-            },
-          },
-        },
-      })
-
-      const subHatsLevel1: any = hat?.subHats
-      const subHatsLevel2: any = subHatsLevel1
-        ?.map((hat: any) => hat.subHats)
-        .flat()
-      //check lenght of each subHats array and only add the ones that have hats
-
-      const subHats = subHatsLevel1.concat(subHatsLevel2)
-
-      setSubHats(subHats)
-    } catch (err) {
-      console.log(err)
-    }
-  }
-
   useEffect(() => {
-    if (hatId) getSubHats()
+    async function getSubHats() {
+      try {
+        const res = await fetch('/api/hats/sub-hats', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chainId: selectedChain.chainId,
+            hatId: hatId.toString(),
+          }),
+        })
+        const hats = await res.json()
+        setSubHats(hats)
+      } catch (err) {
+        console.log(err)
+      }
+    }
+
+    if (hatId && selectedChain) getSubHats()
   }, [selectedChain, hatId])
 
   return subHats

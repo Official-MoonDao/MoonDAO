@@ -1,6 +1,5 @@
 import { useResolvedMediaType } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
-import hatsSubgraphClient from './hatsSubgraphClient'
 
 export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
   const [hat, setHat] = useState<any>({})
@@ -20,16 +19,6 @@ export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
     setHatMetadataURI(hat.details)
   }
 
-  async function getHatPrettyId() {
-    const hat: any = await hatsSubgraphClient.getHat({
-      chainId: selectedChain.chainId,
-      hatId,
-      props: {
-        prettyId: true,
-      },
-    })
-  }
-
   async function getHatData() {
     const { supply, active } = hat
 
@@ -37,13 +26,21 @@ export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
       const metadataRes = await fetch(resolvedMetadata.url)
       const { data } = await metadataRes.json()
 
-      const hatSubgraphData = await hatsSubgraphClient.getHat({
-        chainId: selectedChain.chainId,
-        hatId,
-        props: {
-          prettyId: true,
+      const res = await fetch('/api/hats/get-hat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          chainId: selectedChain.chainId,
+          hatId,
+          props: {
+            prettyId: true,
+          },
+        }),
       })
+
+      const hatSubgraphData = await res.json()
 
       setHatData({
         name: data.name,

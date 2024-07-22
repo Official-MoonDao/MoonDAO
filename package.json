@@ -1,5 +1,11 @@
 {
   "devDependencies": {
     "@gradio/client": "^1.2.0"
+  },
+  "dependencies": {
+    "@hatsprotocol/sdk-v1-subgraph": "^1.0.0",
+    "@upstash/ratelimit": "^2.0.1",
+    "@upstash/redis": "^1.33.0",
+    "@vercel/kv": "^2.0.0"
   }
 }
