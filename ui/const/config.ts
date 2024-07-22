@@ -69,51 +69,51 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 }
 
 export const CITIZEN_ADDRESSES: Index = {
-  arbitrum: '0xa4e531c3b45Bd4ADe6B859F7dc0609E349fc42Fe',
+  arbitrum: '0xa1a709Da50dd54721e2657637CD8fE110c037061',
   sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xfC54809BC5d382c9EA4130bE6790bDD8DFdDc378',
+  arbitrum: '0xDD1C9d1bc5Ed80C6fB8b23937ddb37D5b704Fd8c',
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
-  arbitrum: '0xAAE358dA30143174492835AEf6d89d6E008730f0',
+  arbitrum: '0x6b40813690ee1E46922a5cbf0a082bc41e3Ad667',
   sepolia: '',
 }
 
 export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0x4cF33BF9F21232FF2eD97b3873d172322aCE3cfE',
+  arbitrum: '0x6E54B6D643CDc3040D0ac592E2c5D029EfC0BAad',
   sepolia: '',
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0x1f994cB6153C2F1CdE66f4E4F4aeb7A1939Dc39E',
+  arbitrum: '0x517D6e1A52F0792C43e0b99A1F7d7980e56594c0',
   sepolia: '',
 }
 
 export const TEAM_ADDRESSES: Index = {
-  arbitrum: '0xf2Bc5f25634F5F46982F85411c5623Cb764290AB',
+  arbitrum: '0x2a9135f02c35b07312A6D01c71B77ee683C59542',
   sepolia: '0xEb9A6975381468E388C33ebeF4089Be86fe31d78',
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0x6bECb28Ecc8243508Adb73F00F5C342003aA765c',
+  arbitrum: '0x20F00f2dbEC652bf4148169EFA231203575c76f0',
   sepolia: '0x55D07Ab23092edc7EdAEC7048B784aCcb2cc4469',
 }
 
 export const TEAM_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xf03186c7abb242aFac62E2746Aa0e7650F5bb46e',
+  arbitrum: '0x976ebaDBA4077ff371D39a118cb0cfdD8A633aec',
   sepolia: '0x42d356e77f6d9Bad870865e0973Ed32F54fA4006',
 }
 
 export const TEAM_WHITELIST_ADDRESSES: Index = {
-  arbitrum: '0xf52532121f340Af23Bf4Fdb56d83CA80A6526d59',
+  arbitrum: '0x650c4ddbCb9e1933f448df3f264c25881Dcd4d31',
   sepolia: '',
 }
 export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0xEc0224b7C136bFe7d8C8D74Ce258892299bdEdeE',
+  arbitrum: '0xf50aC858f78ff8d4e5E898C155046bd990dE2cED',
   sepolia: '',
 }
 
@@ -123,7 +123,7 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xdcbAe309b921e65E5593D4198dD464d969B8C4D7',
+  arbitrum: '0x720c1a410BB710E30DA3e6bC8559fC364Ffc90C4',
   sepolia: '0x1c588261069604490e73188343B2C930F35ae2EF',
 }
 
@@ -133,7 +133,7 @@ export const MARKETPLACE_ADDRESS =
     : sepoliaConfig.Marketplace
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xC51aA86303847E9689c170Bf32dFcDE3DB083365',
+  arbitrum: '0x7ec712605E8B8A619DEe7758170C4348585f78Cf',
   sepolia: '0xC066269774c8f216054F8C4db14F4C321Dc75710',
 }
 
@@ -176,8 +176,8 @@ export const DISCORD_GUILD_ID = '914720248140279868'
 export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
 
 export const HATS_PASSTHROUGH_MODULE_ADDRESS =
-  '0x56a36BF4c5fdB7A464e31a4ab0dc1B996d4c8F5d'
+  '0x050079a8fbFCE76818C62481BA015b89567D2d35'
 
 export const TABLELAND_ENDPOINT = `https://${
-  process.env.NEXT_PUBLIC_CHAIN != 'mainnet' && 'testnets.'
+  process.env.NEXT_PUBLIC_CHAIN != 'mainnet' ? 'testnets.' : ''
 }tableland.network/api/v1/query`
