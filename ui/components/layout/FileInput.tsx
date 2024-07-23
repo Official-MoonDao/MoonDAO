@@ -1,7 +1,13 @@
 import { useState } from 'react'
 
-export default function FileInput({ setFile }: any) {
-  const [fileName, setFileName] = useState('No file chosen')
+type FileInputProps = {
+  file: File | undefined
+  setFile: Function
+}
+
+export default function FileInput({ file, setFile }: FileInputProps) {
+  //get file name
+  const [fileName, setFileName] = useState(file?.name || 'No file chosen')
   return (
     <div className="relative">
       <input

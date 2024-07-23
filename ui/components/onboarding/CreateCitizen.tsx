@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
+import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
@@ -20,6 +21,7 @@ import CitizenABI from '../../const/abis/Citizen.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import Footer from '../layout/Footer'
+import StandardButton from '../layout/StandardButton'
 import { Steps } from '../layout/Steps'
 import { ImageGenerator } from './CitizenImageGenerator'
 import { StageButton } from './StageButton'
@@ -37,7 +39,16 @@ export default function CreateCitizen({
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
 
+  //Input Image for Image Generator
+  const [inputImage, setInputImage] = useState<File>()
+  //Final Image for Citizen Profile
   const [citizenImage, setCitizenImage] = useState<any>()
+  const { generateImage } = useImageGenerator(
+    '/api/image-gen/citizen-image',
+    inputImage,
+    setCitizenImage
+  )
+
   const [citizenData, setCitizenData] = useState<CitizenData>({
     name: '',
     email: '',
@@ -151,8 +162,10 @@ export default function CreateCitizen({
                 description="Create your unique and personalized astronaut profile picture using AI! Upload a photo of yourself, or an avatar that represents you well. Please make sure the photo contains a face. Image generation may take up to a minute, so please fill in your profile in the next step while your image is being generated."
               >
                 <ImageGenerator
-                  citizenImage={citizenImage}
+                  image={citizenImage}
                   setImage={setCitizenImage}
+                  inputImage={inputImage}
+                  setInputImage={setInputImage}
                   nextStage={() => setStage(1)}
                   stage={stage}
                   generateInBG
@@ -186,17 +199,34 @@ export default function CreateCitizen({
                 <p className="mt-6 w-[400px] font-[Lato] text-base xl:text-lg lg:text-left text-left text-[#071732] dark:text-white text-opacity-70 dark:text-opacity-60">
                   {`Welcome to the future of off-world coordination with MoonDAO.`}
                 </p> */}
+                <div className="flex flex-col items-center">
+                  <Image
+                    src={
+                      citizenImage
+                        ? URL.createObjectURL(citizenImage)
+                        : '/assets/MoonDAO-Loading-Animation.svg'
+                    }
+                    alt="citizen-image"
+                    width={600}
+                    height={600}
+                  />
 
-                <Image
-                  src={
-                    citizenImage
-                      ? URL.createObjectURL(citizenImage)
-                      : '/assets/MoonDAO-Loading-Animation.svg'
-                  }
-                  alt="citizen-image"
-                  width={600}
-                  height={600}
-                />
+                  {!citizenImage && (
+                    <p className="opacity-[50%]">
+                      Please wait while your image is generated.
+                    </p>
+                  )}
+                </div>
+                {citizenImage && (
+                  <StageButton
+                    onClick={() => {
+                      setCitizenImage(null)
+                      generateImage()
+                    }}
+                  >
+                    Generate
+                  </StageButton>
+                )}
 
                 <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
                   <h2 className="font-GoodTimes text-3xl mb-2">OVERVIEW</h2>

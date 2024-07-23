@@ -19,6 +19,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const router = useRouter()
 
   const [stage, setStage] = useState(0)
+  const [inputImage, setInputImage] = useState<File>()
   const [currCitizenImage, setCurrCitizenImage] = useState<string>()
   const [newCitizenImage, setNewCitizenImage] = useState<File>()
 
@@ -115,7 +116,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
       setCurrCitizenImage(imageIpfsLink)
     }
 
-    getCurrCitizenImage()
+    if (resolvedMetadata) getCurrCitizenImage()
   }, [resolvedMetadata])
 
   /*
@@ -140,10 +141,12 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
         </div>
         {stage === 0 && (
           <ImageGenerator
+            image={newCitizenImage}
             setImage={setNewCitizenImage}
+            inputImage={inputImage}
+            setInputImage={setInputImage}
             nextStage={() => setStage(1)}
             stage={stage}
-            citizenImage={newCitizenImage}
             currImage={currCitizenImage}
           />
         )}
