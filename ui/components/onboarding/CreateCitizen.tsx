@@ -17,6 +17,7 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatCitizenFormData, {
   CitizenData,
 } from '@/lib/typeform/citizenFormData'
+import { renameFile } from '@/lib/utils/files'
 import CitizenABI from '../../const/abis/Citizen.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
@@ -368,8 +369,13 @@ export default function CreateCitizen({
                         return toast.error('Insufficient balance')
                       }
 
+                      const renamedCitizenImage = renameFile(
+                        citizenImage,
+                        `${citizenData.name} Citizen Image`
+                      )
+
                       const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                        citizenImage
+                        renamedCitizenImage
                       )
 
                       if (!newImageIpfsHash) {

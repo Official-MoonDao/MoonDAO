@@ -14,6 +14,7 @@ import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
+import { renameFile } from '@/lib/utils/files'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import TeamABI from '../../const/abis/Team.json'
 import Container from '../layout/Container'
@@ -382,8 +383,14 @@ export default function CreateTeam({
                           await pinBlobOrFile(memberHatMetadataBlob)
 
                         //pin image to IPFS
+
+                        const renamedTeamImage = renameFile(
+                          teamImage,
+                          `${teamData.name} Team Image`
+                        )
+
                         const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                          teamImage
+                          renamedTeamImage
                         )
 
                         if (!newImageIpfsHash) {

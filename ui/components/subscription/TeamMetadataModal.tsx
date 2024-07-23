@@ -9,6 +9,7 @@ import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
 import formatTeamFormData from '@/lib/typeform/teamFormData'
+import { renameFile } from '@/lib/utils/files'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/TeamImageGenerator'
 import DeleteProfileData from './DeleteProfileData'
@@ -66,6 +67,11 @@ export default function TeamMetadataModal({
           imageIpfsLink = rawMetadata.image
         } else {
           if (!newTeamImage) return console.error('No new image')
+
+          const renamedTeamImage = renameFile(
+            newTeamImage,
+            `${teamData.name} Team Image`
+          )
           const { cid: newImageIpfsHash } = await pinBlobOrFile(newTeamImage)
 
           imageIpfsLink = `ipfs://${newImageIpfsHash}`

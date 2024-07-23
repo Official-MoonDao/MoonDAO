@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
+import { renameFile } from '@/lib/utils/files'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import { TeamListing } from './TeamListing'
@@ -81,8 +82,12 @@ export default function TeamMarketplaceListingModal({
           if (typeof listingData.image === 'string') {
             imageIpfsLink = listingData.image
           } else {
+            const renamedListingImage = renameFile(
+              listingData.image,
+              `Team#${teamId} ${cleanedData.title} Listing Image`
+            )
             const { cid: imageIpfsHash } = await pinBlobOrFile(
-              listingData.image
+              renamedListingImage
             )
             imageIpfsLink = `ipfs://${imageIpfsHash}`
           }

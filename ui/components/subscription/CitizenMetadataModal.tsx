@@ -11,6 +11,7 @@ import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import cleanData from '@/lib/tableland/cleanData'
 import formatCitizenFormData from '@/lib/typeform/citizenFormData'
+import { renameFile } from '@/lib/utils/files'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/CitizenImageGenerator'
 import DeleteProfileData from './DeleteProfileData'
@@ -78,7 +79,14 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
         } else {
           if (!newCitizenImage) return console.error('No new image')
 
-          const { cid: newImageIpfsHash } = await pinBlobOrFile(newCitizenImage)
+          const renamedCitizenImage = renameFile(
+            newCitizenImage,
+            `${citizenData.name} Citizen Image`
+          )
+
+          const { cid: newImageIpfsHash } = await pinBlobOrFile(
+            renamedCitizenImage
+          )
 
           imageIpfsLink = `ipfs://${newImageIpfsHash}`
         }
