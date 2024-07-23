@@ -7,36 +7,36 @@ export default function useTeamEmail(nft: any) {
 
   const [email, setEmail] = useState()
 
-  async function getTeamEmail() {
-    const formResponseId = getAttribute(
-      nft?.metadata?.attributes,
-      'formId'
-    ).value
-
-    const accessToken = await getAccessToken()
-
-    const res = await fetch(
-      `/api/typeform/response?formId=${process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID}&responseId=${formResponseId}`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    )
-
-    const data = await res.json()
-
-    const teamEmail = data?.answers?.find(
-      (a: any) => a.field.id === 'fQU0c6bZ8d0O'
-    ).email
-
-    setEmail(teamEmail)
-  }
-
   useEffect(() => {
+    async function getTeamEmail() {
+      const formResponseId = getAttribute(
+        nft?.metadata?.attributes,
+        'formId'
+      ).value
+
+      const accessToken = await getAccessToken()
+
+      const res = await fetch(
+        `/api/typeform/response?formId=${process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID}&responseId=${formResponseId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      )
+
+      const data = await res.json()
+
+      const teamEmail = data?.answers?.find(
+        (a: any) => a.field.id === 'fQU0c6bZ8d0O'
+      ).email
+
+      setEmail(teamEmail)
+    }
+
     if (nft) getTeamEmail()
-  }, [nft])
+  }, [nft, getAccessToken])
 
   return email
 }

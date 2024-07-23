@@ -29,30 +29,25 @@ import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState, useRef } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { useTeamData } from '@/lib/team/useTeamData'
-import useEntitySplit from '@/lib/team/useTeamSplit'
+import useTeamSplit from '@/lib/team/useTeamSplit'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { TwitterIcon } from '@/components/assets'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
-import Footer from '@/components/layout/Footer'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
-import StandardButton from '@/components/layout/StandardButton'
-import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamAction from '@/components/subscription/TeamAction'
-import TeamAddHat from '@/components/subscription/TeamAddHat'
-import TeamAddMember from '@/components/subscription/TeamAddMember'
 import TeamDonation from '@/components/subscription/TeamDonation'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
 import TeamJobs from '@/components/subscription/TeamJobs'
@@ -112,7 +107,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     isLoading: isLoadingTeamData,
   } = useTeamData(teamContract, hatsContract, nft)
 
-  const splitAddress = useEntitySplit(teamContract, tokenId)
+  const splitAddress = useTeamSplit(teamContract, tokenId)
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
 

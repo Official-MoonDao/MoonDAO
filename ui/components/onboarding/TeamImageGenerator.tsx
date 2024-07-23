@@ -34,7 +34,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col">
-        <FileInput setFile={setUserImage} />
+        <FileInput file={userImage} setFile={setUserImage} />
         {currImage || userImage ? (
           <StageButton className="" onClick={submitImage}>
             Save Design

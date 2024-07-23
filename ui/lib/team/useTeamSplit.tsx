@@ -1,22 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
-import { NumberType } from '../utils/numbers'
+import { useHandleRead } from '../thirdweb/hooks'
 
 export default function useTeamSplit(
   teamContract: any,
   teamId: number | string | undefined
 ) {
-  const [splitContractAddress, setSplitContractAddress] = useState<
-    string | undefined
-  >()
-
-  async function getEntitySplitContract() {
-    const split = await teamContract.call('splitContract', [teamId])
-    setSplitContractAddress(split)
-  }
-
-  useEffect(() => {
-    if (teamContract && teamId) getEntitySplitContract()
-  }, [teamContract, teamId])
+  const { data: splitContractAddress } = useHandleRead(
+    teamContract,
+    'splitContract',
+    [teamId]
+  )
 
   return splitContractAddress
 }

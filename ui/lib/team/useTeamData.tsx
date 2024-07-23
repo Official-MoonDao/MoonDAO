@@ -1,4 +1,3 @@
-import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 import { useHandleRead } from '../thirdweb/hooks'
@@ -11,7 +10,6 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   const [socials, setSocials] = useState<any>()
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [isDeleted, setIsDeleted] = useState<boolean>(false)
-  const [hatTreeId, setHatTreeId] = useState()
   const [isManager, setIsManager] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
 
@@ -23,11 +21,9 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
     nft?.metadata?.id || '',
   ])
 
-  async function getHatTreeId() {
-    const hatTreeId = await hatsContract.call('getTopHatDomain', [adminHatId])
-
-    setHatTreeId(hatTreeId)
-  }
+  const { data: hatTreeId } = useHandleRead(hatsContract, 'getTopHatDomain', [
+    adminHatId,
+  ])
 
   function getView() {
     const entityView: any = getAttribute(nft.metadata.attributes, 'view')
@@ -47,22 +43,6 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
       communications: entityCommunications?.value,
       website: entityWebsite?.value,
     })
-  }
-
-  async function checkManager() {
-    try {
-      if (address) {
-        const isAddressManager = await teamContract.call('isManager', [
-          nft?.metadata?.id,
-          address,
-        ])
-        setIsManager(isAddressManager || nft.owner === address)
-      } else {
-        setIsManager(false)
-      }
-    } catch (err) {
-      setIsManager(false)
-    }
   }
 
   async function checkSubscription() {
@@ -91,12 +71,24 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   }, [nft])
 
   useEffect(() => {
+    async function checkManager() {
+      try {
+        if (address) {
+          const isAddressManager = await teamContract.call('isManager', [
+            nft?.metadata?.id,
+            address,
+          ])
+          setIsManager(isAddressManager || nft.owner === address)
+        } else {
+          setIsManager(false)
+        }
+      } catch (err) {
+        setIsManager(false)
+      }
+    }
+
     if (teamContract && nft?.metadata?.id) checkManager()
   }, [address, nft, teamContract])
-
-  useEffect(() => {
-    if (hatsContract && adminHatId) getHatTreeId()
-  }, [adminHatId, hatsContract])
 
   return {
     socials,
