@@ -289,6 +289,7 @@
   {
     "inputs": [
       { "internalType": "address", "name": "to", "type": "address" },
+      { "internalType": "address", "name": "sender", "type": "address" },
       { "internalType": "uint256", "name": "adminHat", "type": "uint256" },
       { "internalType": "uint256", "name": "managerHat", "type": "uint256" },
       { "internalType": "uint256", "name": "memberHat", "type": "uint256" },
@@ -305,6 +306,13 @@
     "outputs": [
       { "internalType": "address payable", "name": "", "type": "address" }
     ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "moonDaoCreator",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -340,6 +348,7 @@
   },
   {
     "inputs": [
+      { "internalType": "address", "name": "sender", "type": "address" },
       { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
       { "internalType": "uint64", "name": "duration", "type": "uint64" }
     ],
@@ -392,6 +401,15 @@
   },
   {
     "inputs": [
+      { "internalType": "uint256", "name": "_discount", "type": "uint256" }
+    ],
+    "name": "setDiscount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
       { "internalType": "address", "name": "_discountList", "type": "address" }
     ],
     "name": "setDiscountList",
@@ -413,6 +431,19 @@
       { "internalType": "uint64", "name": "duration", "type": "uint64" }
     ],
     "name": "setMinimumRenewalDuration",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_moonDaoCreator",
+        "type": "address"
+      }
+    ],
+    "name": "setMoonDaoCreator",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
