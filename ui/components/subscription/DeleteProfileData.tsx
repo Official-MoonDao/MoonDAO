@@ -1,10 +1,15 @@
+import { useResolvedMediaType } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { unpin } from '@/lib/ipfs/unpin'
+import deleteResponse from '@/lib/typeform/deleteResponse'
+import { getAttribute } from '@/lib/utils/nft'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 
 type DeleteProfileDataProps = {
+  nft: any
   setEnabled: Function
   tableContract: any
   tokenId: any
@@ -12,6 +17,7 @@ type DeleteProfileDataProps = {
 }
 
 type DeleteProfileDataModalProps = {
+  nft: any
   setParentModalEnabled: Function
   setDeleteModalEnabled: Function
   tableContract: any
@@ -20,6 +26,7 @@ type DeleteProfileDataModalProps = {
 }
 
 function DeleteProfileDataModal({
+  nft,
   setParentModalEnabled,
   setDeleteModalEnabled,
   tableContract,
@@ -28,6 +35,9 @@ function DeleteProfileDataModal({
 }: DeleteProfileDataModalProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+
+  const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
+
   return (
     <Modal id="delete-profile-data-modal" setEnabled={setDeleteModalEnabled}>
       <div className="p-12 bg-darkest-cool rounded-md">
@@ -49,9 +59,22 @@ function DeleteProfileDataModal({
             onClick={async () => {
               setIsLoading(true)
 
+              const rawMetadataRes = await fetch(resolvedMetadata.url)
+              const rawMetadata = await rawMetadataRes.json()
+
+              //unpin image
+              await unpin(rawMetadata.image.split('ipfs://')[1])
+
+              const formResponseId = getAttribute(nft, 'formResponseId')
+
               try {
                 let tx
                 if (type === 'team') {
+                  await deleteResponse(
+                    process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
+                    formResponseId
+                  )
+
                   tx = await tableContract.call('updateTable', [
                     tokenId,
                     '',
@@ -64,6 +87,11 @@ function DeleteProfileDataModal({
                     '',
                   ])
                 } else if (type === 'citizen') {
+                  await deleteResponse(
+                    process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+                    formResponseId
+                  )
+
                   tx = await tableContract.call('updateTable', [
                     tokenId,
                     '',
@@ -105,6 +133,7 @@ function DeleteProfileDataModal({
 }
 
 export default function DeleteProfileData({
+  nft,
   setEnabled,
   tableContract,
   tokenId,
@@ -115,6 +144,7 @@ export default function DeleteProfileData({
     <>
       {deleteModalEnabled && (
         <DeleteProfileDataModal
+          nft={nft}
           setDeleteModalEnabled={setDeleteModalEnabled}
           setParentModalEnabled={setEnabled}
           tableContract={tableContract}

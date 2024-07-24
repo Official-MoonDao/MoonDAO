@@ -7,9 +7,12 @@ import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { unpin } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
+import deleteResponse from '@/lib/typeform/deleteResponse'
 import formatTeamFormData from '@/lib/typeform/teamFormData'
 import { renameFile } from '@/lib/utils/files'
+import { getAttribute } from '@/lib/utils/nft'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/TeamImageGenerator'
 import DeleteProfileData from './DeleteProfileData'
@@ -72,10 +75,25 @@ export default function TeamMetadataModal({
             newTeamImage,
             `${teamData.name} Team Image`
           )
-          const { cid: newImageIpfsHash } = await pinBlobOrFile(newTeamImage)
+
+          //pin new image
+          const { cid: newImageIpfsHash } = await pinBlobOrFile(
+            renamedTeamImage
+          )
+
+          //unpin old iamge
+          await unpin(rawMetadata.image.split('ipfs://')[1])
 
           imageIpfsLink = `ipfs://${newImageIpfsHash}`
         }
+
+        //delete old typeform response
+        const oldFormResponseId = getAttribute(nft, 'formResponseId')
+        await deleteResponse(
+          process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
+          oldFormResponseId
+        )
+
         //mint NFT to safe
         await teamTableContract?.call('updateTable', [
           nft.metadata.id,
@@ -139,6 +157,7 @@ export default function TeamMetadataModal({
           />
         )}
         <DeleteProfileData
+          nft={nft}
           setEnabled={setEnabled}
           tableContract={teamTableContract}
           tokenId={nft.metadata.id}

@@ -9,9 +9,12 @@ import toast from 'react-hot-toast'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { unpin } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
 import formatCitizenFormData from '@/lib/typeform/citizenFormData'
+import deleteResponse from '@/lib/typeform/deleteResponse'
 import { renameFile } from '@/lib/utils/files'
+import { getAttribute } from '@/lib/utils/nft'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/CitizenImageGenerator'
 import DeleteProfileData from './DeleteProfileData'
@@ -84,12 +87,23 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
             `${citizenData.name} Citizen Image`
           )
 
+          //pin new image
           const { cid: newImageIpfsHash } = await pinBlobOrFile(
             renamedCitizenImage
           )
 
+          //unpin old image
+          await unpin(rawMetadata.image.split('ipfs://')[1])
+
           imageIpfsLink = `ipfs://${newImageIpfsHash}`
         }
+
+        //delete old typeform response
+        const oldFormResponseId = getAttribute(nft, 'formResponseId')
+        await deleteResponse(
+          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+          oldFormResponseId
+        )
 
         const tx = await citizenTableContract?.call('updateTable', [
           nft.metadata.id,
@@ -169,6 +183,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
           </>
         )}
         <DeleteProfileData
+          nft={nft}
           setEnabled={setEnabled}
           tableContract={citizenTableContract}
           tokenId={nft.metadata.id}
