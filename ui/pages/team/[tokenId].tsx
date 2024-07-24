@@ -154,7 +154,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
 
   useEffect(() => {
     setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia comm
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
     )
   }, [])
 
