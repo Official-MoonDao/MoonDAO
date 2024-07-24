@@ -54,9 +54,16 @@ export default function Job({
           </div>
           <div className="flex gap-2 items-center">
             <div className="flex flex-col lg:flex-row pb-5 items-center gap-2 lg:gap-4">
-              <StandardButton className="gradient-2 rounded-[5vmax] rounded-bl-[20px]">
-                Apply
-              </StandardButton>
+              {job.contactInfo && (
+                <StandardButton
+                  className="gradient-2 rounded-[5vmax] rounded-bl-[20px]"
+                  onClick={() => {
+                    window.open(job.contactInfo)
+                  }}
+                >
+                  Apply
+                </StandardButton>
+              )}
               {editable && (
                 <div className="flex gap-4">
                   <button onClick={() => setEnabledEditJobModal(true)}>
