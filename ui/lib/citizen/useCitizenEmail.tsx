@@ -32,8 +32,8 @@ export default function useCitizenEmail(nft: any) {
       const data = await res.json()
 
       const citizenEmail = data?.answers?.find(
-        (a: any) => a.field.id === 'ggrOjApkLFMz'
-      ).email
+        (a: any) => a.field.id === 'LzGGOX3e8Sfv'
+      )?.email
 
       setEmail(citizenEmail)
     }

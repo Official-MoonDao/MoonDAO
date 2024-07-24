@@ -19,7 +19,7 @@ export default async function handler(
         {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${process.env.PINATA_JWT}`,
+            Authorization: `Bearer ${process.env.PINATA_JWT_KEY}`,
           },
         }
       )

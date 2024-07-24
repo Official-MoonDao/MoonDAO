@@ -434,7 +434,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         title="Fund"
                         description="Submit a proposal to secure space project funding."
                         icon={<BanknotesIcon height={30} width={30} />}
-                        onClick={() => router.push('/newProposal')}
+                        onClick={() => router.push('/propose')}
                       />
                       <TeamAction
                         title="Hire"
@@ -490,7 +490,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     {isManager && (
                       <div
                         id="button-container"
-                        className="pr-5 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
+                        className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
                       >
                         {/* <StandardButton
                           className="min-w-[200px] gradient-2 rounded-[5vmax]"
@@ -547,6 +547,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               {/* Mooney and Voting Power */}
               {isManager && (
                 <TeamTreasury
+                  selectedChain={selectedChain}
                   multisigAddress={nft.owner}
                   splitAddress={splitAddress}
                   mutlisigMooneyBalance={MOONEYBalance}
@@ -568,6 +569,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               </p>
               {isManager && (
                 <TeamTreasury
+                  selectedChain={selectedChain}
                   multisigAddress={nft.owner}
                   splitAddress={splitAddress}
                   mutlisigMooneyBalance={MOONEYBalance}

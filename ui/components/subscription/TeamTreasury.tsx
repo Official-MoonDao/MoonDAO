@@ -1,11 +1,15 @@
+import { useWallets } from '@privy-io/react-auth'
 import { useAddress, useSDK } from '@thirdweb-dev/react'
 import Image from 'next/image'
+import { useContext } from 'react'
 import toast from 'react-hot-toast'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import TeamSplitABI from '../../const/abis/TeamSplit.json'
 import { CopyIcon } from '../assets'
 import StandardButton from '../layout/StandardButton'
 
 type TeamTreasuryProps = {
+  selectedChain: any
   multisigAddress: string
   splitAddress: string | undefined
   mutlisigMooneyBalance: any
@@ -15,6 +19,7 @@ type TeamTreasuryProps = {
 }
 
 export default function TeamTreasury({
+  selectedChain,
   multisigAddress,
   splitAddress,
   mutlisigMooneyBalance,
@@ -24,6 +29,9 @@ export default function TeamTreasury({
 }: TeamTreasuryProps) {
   const address = useAddress()
   const sdk = useSDK()
+
+  const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
 
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
@@ -56,6 +64,14 @@ export default function TeamTreasury({
               onClick={async () => {
                 if (!address) return toast.error('Please connect your wallet')
                 if (!splitAddress) return toast.error('No split address found')
+                console.log(splitAddress)
+                if (
+                  selectedChain.chainId !==
+                  +wallets[selectedWallet]?.chainId.split(':')[1]
+                ) {
+                  wallets[selectedWallet]?.switchChain(selectedChain.chainId)
+                  return toast.error(`Please switch to ${selectedChain.name}`)
+                }
 
                 try {
                   const splitContract = await sdk?.getContract(
