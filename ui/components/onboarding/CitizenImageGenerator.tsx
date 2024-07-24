@@ -23,24 +23,28 @@ export function ImageGenerator({
   async function submitImage() {
     if (!document.getElementById('citizenPic'))
       return console.error('citizenPic is not defined')
-    // @ts-expect-error
-    await html2canvas(document.getElementById('citizenPic')).then((canvas) => {
-      const img = canvas.toDataURL('image/png')
+    if (inputImage) {
+      // @ts-expect-error
+      await html2canvas(document.getElementById('citizenPic')).then(
+        (canvas) => {
+          const img = canvas.toDataURL('image/png')
 
-      //Convert from base64 to file
-      const byteString = atob(img.split(',')[1])
-      const mimeString = img.split(',')[0].split(':')[1].split(';')[0]
-      const ab = new ArrayBuffer(byteString.length)
-      const ia = new Uint8Array(ab)
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i)
-      }
-      const blob = new Blob([ab], { type: mimeString })
-      const file = new File([blob], 'citizenPic.png', { type: mimeString })
+          //Convert from base64 to file
+          const byteString = atob(img.split(',')[1])
+          const mimeString = img.split(',')[0].split(':')[1].split(';')[0]
+          const ab = new ArrayBuffer(byteString.length)
+          const ia = new Uint8Array(ab)
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i)
+          }
+          const blob = new Blob([ab], { type: mimeString })
+          const file = new File([blob], 'citizenPic.png', { type: mimeString })
 
-      setImage(file)
-      nextStage()
-    })
+          setImage(file)
+        }
+      )
+    }
+    nextStage()
   }
 
   return (
