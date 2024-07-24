@@ -12,6 +12,7 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   const [isDeleted, setIsDeleted] = useState<boolean>(false)
   const [isManager, setIsManager] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
+  const [hatTreeId, setHatTreeId] = useState<string>()
 
   const { data: adminHatId } = useHandleRead(teamContract, 'teamAdminHat', [
     nft?.metadata?.id || '',
@@ -19,10 +20,6 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
 
   const { data: managerHatId } = useHandleRead(teamContract, 'teamManagerHat', [
     nft?.metadata?.id || '',
-  ])
-
-  const { data: hatTreeId } = useHandleRead(hatsContract, 'getTopHatDomain', [
-    adminHatId,
   ])
 
   function getView() {
@@ -89,6 +86,15 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
 
     if (teamContract && nft?.metadata?.id) checkManager()
   }, [address, nft, teamContract])
+
+  useEffect(() => {
+    async function getHatTreeId() {
+      const hatTreeId = await hatsContract.call('getTopHatDomain', [adminHatId])
+
+      setHatTreeId(hatTreeId)
+    }
+    if (hatsContract && adminHatId) getHatTreeId()
+  }, [adminHatId, hatsContract])
 
   return {
     socials,
