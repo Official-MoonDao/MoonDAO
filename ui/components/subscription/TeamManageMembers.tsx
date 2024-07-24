@@ -433,7 +433,7 @@ export default function TeamManageMembers({
         />
       )}
       <StandardButton
-        className="w-full gradient-2 rounded-[5vmax]"
+        className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
         onClick={() => setManagerModalEnabled(true)}
       >
         {'Manage Members'}
