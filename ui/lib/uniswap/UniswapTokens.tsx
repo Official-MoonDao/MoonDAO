@@ -1,5 +1,4 @@
-import { TokenERC20History } from '@thirdweb-dev/sdk'
-import { Ether, Token } from '@uniswap/sdk-core'
+import { Token } from '@uniswap/sdk-core'
 import { nativeOnChain } from '@uniswap/smart-order-router'
 import { useContext, useMemo } from 'react'
 import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../../const/config'
