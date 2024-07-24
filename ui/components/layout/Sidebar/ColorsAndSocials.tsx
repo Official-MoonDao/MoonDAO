@@ -2,11 +2,14 @@ import Link from 'next/link'
 import { DiscordIcon, TwitterIcon, GithubIcon } from '../../assets'
 
 interface ColorsAndSocials {
-  lightMode: boolean
-  setLightMode: Function
+  lightMode?: boolean
+  setLightMode?: Function
 }
 
-const ColorsAndSocials = ({ lightMode, setLightMode }: ColorsAndSocials) => {
+const ColorsAndSocials = ({
+  lightMode = false,
+  setLightMode,
+}: ColorsAndSocials) => {
   return (
     <div className="flex items-center px-4 md:px-0">
       {/* <button
