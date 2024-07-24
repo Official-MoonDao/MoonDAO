@@ -17,6 +17,7 @@ import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/CitizenImageGenerator'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import DeleteProfileData from './DeleteProfileData'
 
 export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
@@ -26,6 +27,8 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const [inputImage, setInputImage] = useState<File>()
   const [currCitizenImage, setCurrCitizenImage] = useState<string>()
   const [newCitizenImage, setNewCitizenImage] = useState<File>()
+  const [citizenData, setCitizenData] = useState<any>()
+  const [formResponseId, setFormResponseId] = useState<string>()
 
   const { getAccessToken } = usePrivy()
 
@@ -73,56 +76,9 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
           }
         }
 
-        const rawMetadataRes = await fetch(resolvedMetadata.url)
-        const rawMetadata = await rawMetadataRes.json()
-
-        let imageIpfsLink
-        if (!newCitizenImage && rawMetadata.image && rawMetadata.image !== '') {
-          imageIpfsLink = rawMetadata.image
-        } else {
-          if (!newCitizenImage) return console.error('No new image')
-
-          const renamedCitizenImage = renameFile(
-            newCitizenImage,
-            `${citizenData.name} Citizen Image`
-          )
-
-          //pin new image
-          const { cid: newImageIpfsHash } = await pinBlobOrFile(
-            renamedCitizenImage
-          )
-
-          //unpin old image
-          await unpin(rawMetadata.image.split('ipfs://')[1])
-
-          imageIpfsLink = `ipfs://${newImageIpfsHash}`
-        }
-
-        //delete old typeform response
-        const oldFormResponseId = getAttribute(nft, 'formResponseId')
-        await deleteResponse(
-          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
-          oldFormResponseId
-        )
-
-        const tx = await citizenTableContract?.call('updateTable', [
-          nft.metadata.id,
-          citizenData.name,
-          citizenData.description,
-          imageIpfsLink,
-          citizenData.location,
-          citizenData.discord,
-          citizenData.twitter,
-          citizenData.website,
-          citizenData.view,
-          responseId,
-        ])
-
-        if (tx.receipt) {
-          setTimeout(() => {
-            router.reload()
-          }, 15000)
-        }
+        setCitizenData(citizenData)
+        setFormResponseId(responseId)
+        setStage(2)
       } catch (err: any) {
         console.log(err)
       }
@@ -172,6 +128,15 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
             currImage={currCitizenImage}
           />
         )}
+        {stage == 0 && (
+          <DeleteProfileData
+            nft={nft}
+            setEnabled={setEnabled}
+            tableContract={citizenTableContract}
+            tokenId={nft.metadata.id}
+            type="citizen"
+          />
+        )}
         {stage === 1 && (
           <>
             <Widget
@@ -182,13 +147,77 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
             />
           </>
         )}
-        <DeleteProfileData
-          nft={nft}
-          setEnabled={setEnabled}
-          tableContract={citizenTableContract}
-          tokenId={nft.metadata.id}
-          type="citizen"
-        />
+        {stage === 2 && (
+          <div>
+            <p>Submit your new info</p>
+            <PrivyWeb3Button
+              label="Submit"
+              action={async () => {
+                try {
+                  const rawMetadataRes = await fetch(resolvedMetadata.url)
+                  const rawMetadata = await rawMetadataRes.json()
+
+                  let imageIpfsLink
+
+                  if (
+                    !newCitizenImage &&
+                    rawMetadata.image &&
+                    rawMetadata.image !== ''
+                  ) {
+                    imageIpfsLink = rawMetadata.image
+                  } else {
+                    if (!newCitizenImage) return console.error('No new image')
+
+                    const renamedCitizenImage = renameFile(
+                      newCitizenImage,
+                      `${citizenData?.name} Citizen Image`
+                    )
+
+                    //pin new image
+                    const { cid: newImageIpfsHash } = await pinBlobOrFile(
+                      renamedCitizenImage
+                    )
+
+                    //unpin old image
+                    await unpin(rawMetadata.image.split('ipfs://')[1])
+
+                    imageIpfsLink = `ipfs://${newImageIpfsHash}`
+                  }
+
+                  //delete old typeform response
+                  const oldFormResponseId = getAttribute(nft, 'formResponseId')
+                  await deleteResponse(
+                    process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+                    oldFormResponseId
+                  )
+
+                  const tx = await citizenTableContract?.call('updateTable', [
+                    nft.metadata.id,
+                    citizenData.name,
+                    citizenData.description,
+                    imageIpfsLink,
+                    citizenData.location,
+                    citizenData.discord,
+                    citizenData.twitter,
+                    citizenData.website,
+                    citizenData.view,
+                    formResponseId,
+                  ])
+
+                  setEnabled(false)
+
+                  if (tx.receipt) {
+                    setTimeout(() => {
+                      router.reload()
+                    }, 15000)
+                  }
+                } catch (err) {
+                  console.log(err)
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
     </Modal>
   )

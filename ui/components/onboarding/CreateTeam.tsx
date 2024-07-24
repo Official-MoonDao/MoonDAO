@@ -21,6 +21,7 @@ import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import Footer from '../layout/Footer'
 import { Steps } from '../layout/Steps'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 import { ImageGenerator } from './TeamImageGenerator'
@@ -311,9 +312,10 @@ export default function CreateTeam({
                       </p>
                     </label>
                   </div>
-                  <StageButton
+                  <PrivyWeb3Button
+                    label="Check Out"
                     isDisabled={!agreedToCondition || isLoadingMint}
-                    onClick={async () => {
+                    action={async () => {
                       try {
                         const cost = await teamContract?.call(
                           'getRenewalPrice',
@@ -434,9 +436,7 @@ export default function CreateTeam({
                         setIsLoadingMint(false)
                       }
                     }}
-                  >
-                    {isLoadingMint ? 'loading...' : 'Check Out'}
-                  </StageButton>
+                  />
                   {isLoadingMint && (
                     <p className="opacity-[50%]">
                       {

@@ -22,6 +22,7 @@ import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { TeamListing } from '@/components/subscription/TeamListing'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type BuyListingModalProps = {
   selectedChain: any
@@ -175,19 +176,6 @@ export default function BuyTeamListingModal({
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md"
         onSubmit={(e) => {
           e.preventDefault()
-          if (!email || email.trim() === '' || !email.includes('@'))
-            return toast.error('Please enter a valid email')
-          if (listing.shipping === 'true') {
-            if (
-              shippingInfo.streetAddress.trim() === '' ||
-              shippingInfo.city.trim() === '' ||
-              shippingInfo.state.trim() === '' ||
-              shippingInfo.postalCode.trim() === '' ||
-              shippingInfo.country.trim() === ''
-            )
-              return toast.error('Please fill out all fields')
-          }
-          buyListing()
         }}
       >
         <div className="w-full flex items-center justify-between">
@@ -271,13 +259,26 @@ export default function BuyTeamListingModal({
             </div>
           </div>
         )}
-        <StandardButton
-          type="submit"
+        <PrivyWeb3Button
+          label="Buy"
+          action={async () => {
+            if (!email || email.trim() === '' || !email.includes('@'))
+              return toast.error('Please enter a valid email')
+            if (listing.shipping === 'true') {
+              if (
+                shippingInfo.streetAddress.trim() === '' ||
+                shippingInfo.city.trim() === '' ||
+                shippingInfo.state.trim() === '' ||
+                shippingInfo.postalCode.trim() === '' ||
+                shippingInfo.country.trim() === ''
+              )
+                return toast.error('Please fill out all fields')
+            }
+            buyListing()
+          }}
           className="mt-4 w-full gradient-2 rounded-[5vmax]"
-          disabled={isLoading || !teamEmail || !recipient}
-        >
-          {isLoading || !teamEmail || !recipient ? 'Loading...' : 'Buy'}
-        </StandardButton>
+          isDisabled={isLoading || !teamEmail || !recipient}
+        />
         {isLoading && (
           <p>Do not leave the page until the transaction is complete.</p>
         )}

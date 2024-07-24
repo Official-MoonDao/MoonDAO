@@ -21,9 +21,11 @@ import { renameFile } from '@/lib/utils/files'
 import CitizenABI from '../../const/abis/Citizen.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
+import FileInput from '../layout/FileInput'
 import Footer from '../layout/Footer'
 import StandardButton from '../layout/StandardButton'
 import { Steps } from '../layout/Steps'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ImageGenerator } from './CitizenImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
@@ -214,19 +216,23 @@ export default function CreateCitizen({
 
                   {!citizenImage && (
                     <p className="opacity-[50%]">
-                      Please wait while your image is generated.
+                      Please note that it may take up to a couple of minutes for
+                      your image to be generated.
                     </p>
                   )}
                 </div>
                 {citizenImage && (
-                  <StageButton
-                    onClick={() => {
-                      setCitizenImage(null)
-                      generateImage()
-                    }}
-                  >
-                    Generate
-                  </StageButton>
+                  <div className="mt-4">
+                    <FileInput file={inputImage} setFile={setInputImage} />
+                    <StageButton
+                      onClick={() => {
+                        setCitizenImage(null)
+                        generateImage()
+                      }}
+                    >
+                      Regenerate
+                    </StageButton>
+                  </div>
                 )}
 
                 <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
@@ -345,9 +351,10 @@ export default function CreateCitizen({
                     </p>
                   </label>
                 </div>
-                <StageButton
+                <PrivyWeb3Button
+                  label="Check Out"
                   isDisabled={!agreedToCondition || isLoadingMint}
-                  onClick={async () => {
+                  action={async () => {
                     //sign message
 
                     if (!citizenImage)
@@ -419,9 +426,7 @@ export default function CreateCitizen({
                       setIsLoadingMint(false)
                     }
                   }}
-                >
-                  {isLoadingMint ? 'loading...' : 'Check Out'}
-                </StageButton>
+                />
                 {isLoadingMint && (
                   <p className="opacity-[50%]">
                     {

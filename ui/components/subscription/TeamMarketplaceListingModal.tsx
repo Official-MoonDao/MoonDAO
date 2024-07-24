@@ -10,6 +10,7 @@ import cleanData from '@/lib/tableland/cleanData'
 import { renameFile } from '@/lib/utils/files'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { TeamListing } from './TeamListing'
 
 type ListingData = {
@@ -234,13 +235,14 @@ export default function TeamMarketplaceListingModal({
           />
         </div>
 
-        <StandardButton
+        <PrivyWeb3Button
+          label={edit ? 'Edit Listing' : 'Add Listing'}
           type="submit"
-          disabled={isLoading}
+          isDisabled={isLoading}
+          action={() => {}}
           className="w-full gradient-2 rounded-[5vmax]"
-        >
-          {isLoading ? '...loading' : edit ? 'Edit Listing' : 'Add Listing'}
-        </StandardButton>
+        />
+
         {isLoading && (
           <p className="opacity-60">{`This action may take up to 60 seconds. You can close this modal at any time.`}</p>
         )}

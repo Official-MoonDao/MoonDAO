@@ -15,6 +15,7 @@ import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/TeamImageGenerator'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import DeleteProfileData from './DeleteProfileData'
 
 export default function TeamMetadataModal({
@@ -28,6 +29,8 @@ export default function TeamMetadataModal({
 
   const [currTeamImage, setCurrTeamImage] = useState<string>()
   const [newTeamImage, setNewTeamImage] = useState<File>()
+  const [teamData, setTeamData] = useState<any>()
+  const [formResponseId, setFormResponseId] = useState<string>()
 
   const { getAccessToken } = usePrivy()
 
@@ -61,55 +64,9 @@ export default function TeamMetadataModal({
 
         //escape single quotes and remove emojis
         const teamData = cleanData(formattedTeamData)
-
-        const rawMetadataRes = await fetch(resolvedMetadata.url)
-        const rawMetadata = await rawMetadataRes.json()
-
-        let imageIpfsLink
-        if (!newTeamImage && rawMetadata.image && rawMetadata.image !== '') {
-          imageIpfsLink = rawMetadata.image
-        } else {
-          if (!newTeamImage) return console.error('No new image')
-
-          const renamedTeamImage = renameFile(
-            newTeamImage,
-            `${teamData.name} Team Image`
-          )
-
-          //pin new image
-          const { cid: newImageIpfsHash } = await pinBlobOrFile(
-            renamedTeamImage
-          )
-
-          //unpin old iamge
-          await unpin(rawMetadata.image.split('ipfs://')[1])
-
-          imageIpfsLink = `ipfs://${newImageIpfsHash}`
-        }
-
-        //delete old typeform response
-        const oldFormResponseId = getAttribute(nft, 'formResponseId')
-        await deleteResponse(
-          process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
-          oldFormResponseId
-        )
-
-        //mint NFT to safe
-        await teamTableContract?.call('updateTable', [
-          nft.metadata.id,
-          teamData.name,
-          teamData.description,
-          imageIpfsLink,
-          teamData.twitter,
-          teamData.communications,
-          teamData.website,
-          teamData.view,
-          teamData.formResponseId,
-        ])
-
-        setTimeout(() => {
-          router.reload()
-        }, 15000)
+        setTeamData(teamData)
+        setFormResponseId(responseId)
+        setStage(2)
       } catch (err: any) {
         console.log(err)
       }
@@ -148,6 +105,15 @@ export default function TeamMetadataModal({
             currImage={currTeamImage}
           />
         )}
+        {stage === 0 && (
+          <DeleteProfileData
+            nft={nft}
+            setEnabled={setEnabled}
+            tableContract={teamTableContract}
+            tokenId={nft.metadata.id}
+            type="team"
+          />
+        )}
         {stage === 1 && (
           <Widget
             className="w-[100%] md:w-[100%]"
@@ -156,13 +122,74 @@ export default function TeamMetadataModal({
             height={500}
           />
         )}
-        <DeleteProfileData
-          nft={nft}
-          setEnabled={setEnabled}
-          tableContract={teamTableContract}
-          tokenId={nft.metadata.id}
-          type="team"
-        />
+        {stage === 2 && (
+          <div>
+            <p>Submit your new info</p>
+            <PrivyWeb3Button
+              label="Submit"
+              action={async () => {
+                try {
+                  const rawMetadataRes = await fetch(resolvedMetadata.url)
+                  const rawMetadata = await rawMetadataRes.json()
+
+                  let imageIpfsLink
+                  if (
+                    !newTeamImage &&
+                    rawMetadata.image &&
+                    rawMetadata.image !== ''
+                  ) {
+                    imageIpfsLink = rawMetadata.image
+                  } else {
+                    if (!newTeamImage) return console.error('No new image')
+
+                    const renamedTeamImage = renameFile(
+                      newTeamImage,
+                      `${teamData?.name} Team Image`
+                    )
+
+                    //pin new image
+                    const { cid: newImageIpfsHash } = await pinBlobOrFile(
+                      renamedTeamImage
+                    )
+
+                    //unpin old iamge
+                    await unpin(rawMetadata.image.split('ipfs://')[1])
+
+                    imageIpfsLink = `ipfs://${newImageIpfsHash}`
+                  }
+
+                  //delete old typeform response
+                  const oldFormResponseId = getAttribute(nft, 'formResponseId')
+                  await deleteResponse(
+                    process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
+                    oldFormResponseId
+                  )
+
+                  //mint NFT to safe
+                  await teamTableContract?.call('updateTable', [
+                    nft.metadata.id,
+                    teamData.name,
+                    teamData.description,
+                    imageIpfsLink,
+                    teamData.twitter,
+                    teamData.communications,
+                    teamData.website,
+                    teamData.view,
+                    formResponseId,
+                  ])
+
+                  setEnabled(false)
+
+                  setTimeout(() => {
+                    router.reload()
+                  }, 15000)
+                } catch (err) {
+                  console.log(err)
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
     </Modal>
   )

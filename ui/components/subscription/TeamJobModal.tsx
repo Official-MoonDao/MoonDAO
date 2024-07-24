@@ -5,6 +5,7 @@ import cleanData from '@/lib/tableland/cleanData'
 import { Job } from '../jobs/Job'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type JobData = {
   title: string
@@ -124,7 +125,7 @@ export default function TeamJobModal({
         />
         <input
           type="text"
-          placeholder="Link"
+          placeholder="Application Link"
           className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
           onChange={(e) => {
             setJobData({ ...jobData, contactInfo: e.target.value })
@@ -132,13 +133,13 @@ export default function TeamJobModal({
           value={jobData.contactInfo}
         />
 
-        <StandardButton
+        <PrivyWeb3Button
+          label={edit ? 'Edit Job' : 'Add Job'}
           type="submit"
-          disabled={isLoading}
+          isDisabled={isLoading}
+          action={() => {}}
           className="mt-4 w-full gradient-2 rounded-[5vmax]"
-        >
-          {isLoading ? '...loading' : edit ? 'Edit Job' : 'Add Job'}
-        </StandardButton>
+        />
         {isLoading && (
           <p className="opacity-60">{`This action may take up to 60 seconds. You can close this modal at any time.`}</p>
         )}

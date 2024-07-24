@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export function SubscriptionModal({
   selectedChain,
@@ -21,24 +22,12 @@ export function SubscriptionModal({
   const [isLoading, setIsLoading] = useState(false)
 
   const [years, setYears] = useState<number>(1)
-  const [subscriptionCost, setSubscriptionCost] = useState<string>()
 
-  const { data: pricePerSecond } = useHandleRead(
+  const { data: subscriptionCost } = useHandleRead(
     subscriptionContract,
-    'pricePerSecond'
+    'getRenewalPrice',
+    [address, years * 365 * 24 * 60 * 60]
   )
-
-  //calc duration and sub cost
-  useEffect(() => {
-    if (years && years > 0 && pricePerSecond) {
-      const duration = years * 365 * 24 * 60 * 60
-      setSubscriptionCost(
-        pricePerSecond.mul(ethers.BigNumber.from(duration)).toString()
-      )
-    } else {
-      setSubscriptionCost('0')
-    }
-  }, [years, pricePerSecond])
 
   return (
     <Modal id="subscription-modal" setEnabled={setEnabled}>
@@ -121,13 +110,13 @@ export function SubscriptionModal({
                 : '0.00'
             } ETH`}
           </p>
-          <StandardButton
+          <PrivyWeb3Button
+            label="Extend Subscription"
             type="submit"
+            action={() => {}}
             className="w-full gradient-2 rounded-[5vmax]"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : 'Extend Subscription'}
-          </StandardButton>
+            isDisabled={isLoading}
+          />
         </form>
       </div>
     </Modal>
