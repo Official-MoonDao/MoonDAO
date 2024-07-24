@@ -1,6 +1,5 @@
 //Get total mooney balance for an address on L1 and L2
 import { Arbitrum, Ethereum, Polygon } from '@thirdweb-dev/chains'
-import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import ERC20 from '../../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../../const/config'
@@ -33,8 +32,6 @@ export function useTotalMooneyBalance(address: string | undefined) {
         address,
       ])
       const arbMooney = await arbMooneyContract.call('balanceOf', [address])
-
-      console.log(ethMooney.toString())
 
       setTotalMooneyBalance(
         ethMooney?.add(polygonMooney).add(arbMooney).toString() / 10 ** 18
