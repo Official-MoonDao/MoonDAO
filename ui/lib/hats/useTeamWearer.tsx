@@ -38,7 +38,7 @@ export function useTeamWearer(
           }),
         })
 
-        const hats: any = res.json()
+        const hats: any = await res.json()
 
         //filter worn hats to only include hats that are in the MoonDAO hat tree
         if (hats.currentHats) {

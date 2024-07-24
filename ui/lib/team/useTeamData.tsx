@@ -57,7 +57,7 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   }
 
   useEffect(() => {
-    if (!nft?.metadata?.attributes) return
+    if (!nft?.metadata?.attributes || !teamContract) return
     ;(async () => {
       setIsLoading(true)
       await checkSubscription()
@@ -65,7 +65,7 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
       getView()
       setIsLoading(false)
     })()
-  }, [nft])
+  }, [nft, teamContract])
 
   useEffect(() => {
     async function checkManager() {

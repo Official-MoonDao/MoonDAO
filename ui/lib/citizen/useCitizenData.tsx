@@ -44,7 +44,7 @@ export function useCitizenData(nft: any, citizenContract: any) {
   }
 
   useEffect(() => {
-    if (!nft?.metadata?.attributes) return
+    if (!nft?.metadata?.attributes || !citizenContract) return
     ;(async () => {
       setIsLoading(true)
       await checkSubscription()
@@ -52,7 +52,7 @@ export function useCitizenData(nft: any, citizenContract: any) {
       getView()
       setIsLoading(false)
     })()
-  }, [nft])
+  }, [nft, citizenContract])
 
   return {
     socials,
