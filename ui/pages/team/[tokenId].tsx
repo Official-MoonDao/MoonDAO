@@ -158,10 +158,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     )
   }, [])
 
-  useEffect(() => {
-    console.log(hats)
-  }, [hats])
-
   //Profile Header Section
   const ProfileHeader = (
     <div id="orgheader-container">
