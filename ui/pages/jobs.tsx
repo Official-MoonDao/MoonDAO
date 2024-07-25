@@ -79,7 +79,7 @@ export default function Jobs() {
           header="Jobs"
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
-          preFooter={<NoticeFooter isCitizen={citizen} />}
+          preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"
           popOverEffect={false}
