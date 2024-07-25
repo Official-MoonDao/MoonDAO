@@ -1,4 +1,4 @@
-import { hatIdDecimalToHex, hatIdHexToDecimal } from '@hatsprotocol/sdk-v1-core'
+import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import {
   useAddress,
@@ -11,7 +11,6 @@ import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useHatData } from '@/lib/hats/useHatData'
-import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import useSafe from '@/lib/safe/useSafe'
 import HatsABI from '../../const/abis/Hats.json'
 import Modal from '../layout/Modal'
@@ -86,7 +85,7 @@ function TeamMember({
 
                 if (hat.id === hatIdDecimalToHex(managerHatId.toString())) {
                   await queueSafeTx({
-                    to: HATS_PASSTHROUGH_MODULE_ADDRESS,
+                    to: HATS_ADDRESS,
                     data: txData,
                     value: '0',
                     gasLimit: 1000000,
