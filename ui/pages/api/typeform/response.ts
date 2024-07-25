@@ -1,8 +1,6 @@
-import { ethers } from 'ethers'
+import { privyAuth } from 'middleware/privyAuth'
+import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-import Nonce from '@/lib/mongodb/models/Nonce'
-import dbConnect from '@/lib/mongodb/mongo'
-import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 
 //https://github.com/mathio/nextjs-embed-demo/blob/main/pages/api/response.js
 
@@ -39,18 +37,9 @@ async function retryGetResponse(formId: string, responseId: string) {
   return result.ok ? data : null
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed')
-  }
-
-  const auth = await verifyPrivyAuth(req.headers.authorization)
-
-  if (!auth) {
-    return res.status(401).json('Unauthorized')
   }
 
   const { formId, responseId } = req.query
@@ -72,3 +61,5 @@ export default async function handler(
     answers: response.answers,
   })
 }
+
+export default withMiddleware(handler, privyAuth)

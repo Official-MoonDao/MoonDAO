@@ -1,16 +1,9 @@
+import { privyAuth } from 'middleware/privyAuth'
+import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const auth = await verifyPrivyAuth(req.headers.authorization)
-    if (!auth || auth.appId !== process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
-      return res.status(401).json('Unauthorized')
-    }
-
     const { hash } = req.body
 
     try {
@@ -33,3 +26,5 @@ export default async function handler(
     return res.status(400).json('Invalid method')
   }
 }
+
+export default withMiddleware(handler, privyAuth)

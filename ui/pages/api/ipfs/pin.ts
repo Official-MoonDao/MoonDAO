@@ -1,7 +1,8 @@
-import { NextApiRequest, NextApiResponse } from 'next'
-import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 import formidable from 'formidable'
 import fs from 'fs'
+import { privyAuth } from 'middleware/privyAuth'
+import withMiddleware from 'middleware/withMiddleware'
+import { NextApiRequest, NextApiResponse } from 'next'
 
 export const config = {
   api: {
@@ -9,18 +10,13 @@ export const config = {
   },
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const auth = await verifyPrivyAuth(req.headers.authorization)
-    if (!auth || auth.appId !== process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
-      return res.status(401).json('Unauthorized')
-    }
-
     const form = formidable({})
-    
+
     try {
       const [_fields, files] = await form.parse(req)
-      
+
       const file = Array.isArray(files.file) ? files.file[0] : files.file
       if (!file) {
         return res.status(400).json('No file uploaded')
@@ -34,13 +30,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       formData.append('pinataOptions', JSON.stringify({ cidVersion: 0 }))
       formData.append('file', new Blob([fileContent]))
 
-      const imageRes = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.PINATA_JWT_KEY}`,
-        },
-        body: formData,
-      })
+      const imageRes = await fetch(
+        'https://api.pinata.cloud/pinning/pinFileToIPFS',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.PINATA_JWT_KEY}`,
+          },
+          body: formData,
+        }
+      )
 
       const json = await imageRes.json()
 
@@ -58,3 +57,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json('Invalid method')
   }
 }
+
+export default withMiddleware(handler, privyAuth)

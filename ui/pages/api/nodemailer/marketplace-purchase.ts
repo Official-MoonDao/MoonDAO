@@ -1,5 +1,6 @@
+import { privyAuth } from 'middleware/privyAuth'
+import withMiddleware from 'middleware/withMiddleware'
 import { transporter, opEmail } from '../../../lib/nodemailer/nodemailer'
-import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
 
 const MARKETPLACE_PURHCASE_FIELDS: any = {
   address: 'Address',
@@ -43,13 +44,8 @@ const generateEmailContent = (data: any) => {
   }
 }
 
-const handler = async (req: any, res: any) => {
+async function handler(req: any, res: any) {
   if (req.method === 'POST') {
-    const auth = await verifyPrivyAuth(req.headers.authorization)
-    if (!auth) {
-      res.status(401).json('Unauthorized')
-    }
-
     const data = req.body
     if (!data) {
       return res.status(400).send({ message: 'Bad request' })
@@ -74,4 +70,4 @@ const handler = async (req: any, res: any) => {
     res.status(405).send({ message: 'Method not allowed' })
   }
 }
-export default handler
+export default withMiddleware(handler, privyAuth)
