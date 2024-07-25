@@ -5,12 +5,14 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
+import useCitizen from '@/lib/citizen/useCitizen'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 
 export default function Jobs() {
@@ -27,6 +29,8 @@ export default function Jobs() {
   const { contract: teamContract } = useContract(
     TEAM_ADDRESSES[selectedChain.slug]
   )
+
+  const citizen = useCitizen(selectedChain)
 
   async function getAllJobs() {
     const jobBoardTableName = await jobTableContract.call('getTableName')
@@ -53,6 +57,20 @@ export default function Jobs() {
     }
   }, [jobs, input])
 
+  const descriptionSection = (
+    <div>
+      <Frame
+        bottomLeft="20px"
+        topLeft="5vmax"
+        marginBottom="30px"
+        marginTop="30px"
+        noPadding
+      >
+        <Search input={input} setInput={setInput} />
+      </Frame>
+    </div>
+  )
+
   return (
     <section id="jobs-container" className="overflow-hidden">
       <Head title="Jobs" image="" />
@@ -60,22 +78,14 @@ export default function Jobs() {
         <ContentLayout
           header="Jobs"
           headerSize="max(20px, 3vw)"
-          description={''}
-          preFooter={''}
+          description={descriptionSection}
+          preFooter={<NoticeFooter isCitizen={citizen} />}
           mainPadding
           mode="compact"
           popOverEffect={false}
+          isProfile
         >
-          <div className="w-full flex flex-col gap-4">
-            <Frame
-              bottomLeft="20px"
-              topLeft="5vmax"
-              marginBottom="30px"
-              marginTop="30px"
-              noPadding
-            >
-              <Search input={input} setInput={setInput} />
-            </Frame>
+          <div className="pb-32 w-full flex flex-col gap-4">
             {filteredJobs &&
               filteredJobs.map((job: JobType, i: number) => (
                 <Job
