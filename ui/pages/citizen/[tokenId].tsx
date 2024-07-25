@@ -293,8 +293,6 @@ export default function CitizenDetailPage({
         description={ProfileHeader}
         preFooter={
           <NoticeFooter
-            isManager={isManager}
-            isCitizen={!!address && !isManager && subIsValid}
           />
         }
         mainPadding

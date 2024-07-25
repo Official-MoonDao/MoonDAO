@@ -1,10 +1,8 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { useAddress, useContract } from '@thirdweb-dev/react'
-import { HATS_ADDRESS, TEAM_ADDRESSES } from 'const/config'
+import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
-import { useTeamData } from '@/lib/team/useTeamData'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -20,17 +18,6 @@ export default function TeamJoin() {
 
   const address = useAddress()
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
-
-  // Adding these lines to determine the user's role
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain?.slug]
-  )
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
-  const { isManager, subIsValid } = useTeamData(
-    teamContract,
-    hatsContract,
-    address
-  )
 
   useEffect(() => {
     setSelectedChain(
@@ -75,8 +62,6 @@ export default function TeamJoin() {
           preFooter={
             <>
               <NoticeFooter
-                isManager={isManager}
-                isCitizen={!!address && !isManager && subIsValid}
                 defaultTitle="Need Help?"
                 defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
                 defaultButtonText="Submit a Ticket"

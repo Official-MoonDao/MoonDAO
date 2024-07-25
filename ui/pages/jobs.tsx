@@ -5,7 +5,6 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
-import useCitizen from '@/lib/citizen/useCitizen'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
@@ -30,18 +29,15 @@ export default function Jobs() {
     TEAM_ADDRESSES[selectedChain.slug]
   )
 
-  const citizen = useCitizen(selectedChain)
-
-  async function getAllJobs() {
-    const jobBoardTableName = await jobTableContract.call('getTableName')
-    const statement = `SELECT * FROM ${jobBoardTableName}`
-
-    const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
-    const data = await res.json()
-    setJobs(data)
-  }
-
   useEffect(() => {
+    async function getAllJobs() {
+      const jobBoardTableName = await jobTableContract.call('getTableName')
+      const statement = `SELECT * FROM ${jobBoardTableName}`
+
+      const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
+      const data = await res.json()
+      setJobs(data)
+    }
     if (jobTableContract) getAllJobs()
   }, [jobTableContract])
 

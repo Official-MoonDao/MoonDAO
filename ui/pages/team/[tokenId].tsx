@@ -407,8 +407,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         isProfile
         preFooter={
           <NoticeFooter
-            isManager={isManager}
-            isCitizen={!!address && !isManager && subIsValid}
           />
         }
       >
