@@ -24,7 +24,7 @@ export default async function handler(
       seed += Math.floor(Math.random() * 10)
     }
     const jobId = await fetch(
-      'https://comfy.icu/api/v1/workflows/72hy4zetA-0OBLesxmjJc/runs',
+      'https://comfy.icu/api/v1/workflows/8BYQ3mpiFVlTjWOatIUAc/runs',
       {
         method: 'POST',
         headers: {
@@ -118,7 +118,7 @@ export default async function handler(
     return res.send(jobId)
   } else if (req.method === 'GET') {
     const jobs = await fetch(
-      'https://comfy.icu/api/v1/workflows/72hy4zetA-0OBLesxmjJc/runs',
+      'https://comfy.icu/api/v1/workflows/8BYQ3mpiFVlTjWOatIUAc/runs',
       {
         method: 'GET',
         headers: {
