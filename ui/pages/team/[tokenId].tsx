@@ -490,7 +490,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         id="button-container"
                         className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
                       >
-                        <StandardButton
+                        {/* <StandardButton
                           className="min-w-[200px] gradient-2 rounded-[5vmax]"
                           onClick={() => {
                             window.open(
@@ -499,7 +499,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                           }}
                         >
                           Manage Members
-                        </StandardButton>
+                        </StandardButton> */}
                         <TeamManageMembers
                           hats={hats}
                           hatsContract={hatsContract}
