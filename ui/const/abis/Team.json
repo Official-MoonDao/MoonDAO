@@ -287,12 +287,24 @@
     "type": "function"
   },
   {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "memberPassthroughModule",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       { "internalType": "address", "name": "to", "type": "address" },
       { "internalType": "address", "name": "sender", "type": "address" },
       { "internalType": "uint256", "name": "adminHat", "type": "uint256" },
       { "internalType": "uint256", "name": "managerHat", "type": "uint256" },
       { "internalType": "uint256", "name": "memberHat", "type": "uint256" },
+      {
+        "internalType": "address",
+        "name": "_memberPassthroughModule",
+        "type": "address"
+      },
       { "internalType": "address", "name": "_splitContract", "type": "address" }
     ],
     "name": "mintTo",
