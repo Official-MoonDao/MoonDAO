@@ -12,7 +12,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useContext } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
-import { useTeamData } from '@/lib/team/useTeamData'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import Card from '../components/layout/Card'
@@ -180,11 +179,6 @@ export default function Directory() {
   }, [setSelectedChain])
 
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
-  const { isManager, subIsValid } = useTeamData(
-    teamContract,
-    hatsContract,
-    address
-  )
 
   const descriptionSection = (
     <div className="pt-2">
@@ -249,12 +243,7 @@ export default function Directory() {
           header="The Network"
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
-          preFooter={
-            <NoticeFooter
-              isManager={isManager}
-              isCitizen={!!address && !isManager && subIsValid}
-            />
-          }
+          preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"
           popOverEffect={false}

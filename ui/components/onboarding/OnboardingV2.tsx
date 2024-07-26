@@ -92,8 +92,6 @@ export function OnboardingV2({ selectedChain }: any) {
         preFooter={
           <>
             <NoticeFooter
-              isManager={isManager}
-              isCitizen={!!address && !isManager && subIsValid}
               defaultTitle="Need Help?"
               defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
               defaultButtonText="Submit a Ticket"

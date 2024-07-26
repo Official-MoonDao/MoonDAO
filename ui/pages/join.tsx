@@ -1,11 +1,10 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES, HATS_ADDRESS, TEAM_ADDRESSES } from 'const/config'
+import { CITIZEN_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
-import { useTeamData } from '@/lib/team/useTeamData'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
@@ -30,17 +29,6 @@ export default function Join() {
   const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
     address,
   ])
-
-  // Adding these lines to determine the user's role
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain?.slug]
-  )
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
-  const { isManager, subIsValid } = useTeamData(
-    teamContract,
-    hatsContract,
-    address
-  )
 
   useEffect(() => {
     setSelectedChain(
@@ -92,8 +80,6 @@ export default function Join() {
           preFooter={
             <>
               <NoticeFooter
-                isManager={isManager}
-                isCitizen={!!address && !isManager && subIsValid}
                 defaultTitle="Need Help?"
                 defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
                 defaultButtonText="Submit a Ticket"
