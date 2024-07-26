@@ -1,12 +1,7 @@
 import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import {
-  useAddress,
-  useContract,
-  useResolvedMediaType,
-  useSDK,
-} from '@thirdweb-dev/react'
-import { HATS_ADDRESS, HATS_PASSTHROUGH_MODULE_ADDRESS } from 'const/config'
+import { useAddress, useResolvedMediaType, useSDK } from '@thirdweb-dev/react'
+import { HATS_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -218,11 +213,6 @@ function TeamManageMembersModal({
             )
               return toast.error('Invalid address')
 
-            // const hexHatId = hatIdDecimalToHex(selectedHatId)
-            // const formattedHatId = hexHatId.split('0x')[1]
-            // const formattedWearer = newMemberAddress.split('0x')[1]
-            // const txData = `0x641f776e${formattedHatId}000000000000000000000000${formattedWearer}`
-
             const iface = new ethers.utils.Interface(HatsABI)
             const txData = iface.encodeFunctionData('mintHat', [
               selectedHatId,
@@ -310,6 +300,7 @@ function TeamManageMembersModal({
             </p>
           )}
         </form>
+        {/* Create Hat */}
         {/* <form
           className="w-full flex flex-col gap-2 items-start justify-start bg-[#080C20] rounded-md"
           onSubmit={async (e) => {
