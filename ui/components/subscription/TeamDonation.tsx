@@ -1,6 +1,9 @@
+import { useWallets } from '@privy-io/react-auth'
 import { useAddress, useSDK } from '@thirdweb-dev/react'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import StandardButton from '../layout/StandardButton'
 import Card from './Card'
 
@@ -9,11 +12,23 @@ type TeamDonationProps = {
 }
 
 export default function TeamDonation({ splitAddress }: TeamDonationProps) {
+  const { selectedChain } = useContext(ChainContext)
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const { wallets } = useWallets()
+
   const address = useAddress()
   const sdk = useSDK()
   const [donationAmount, setDonationAmount] = useState(0)
 
   async function donate() {
+    //check network
+    if (
+      selectedChain.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
+    ) {
+      toast.error(`Please switch to ${selectedChain.name}`)
+      return wallets[selectedWallet]?.switchChain(selectedChain.chainId)
+    }
+
     try {
       const signer = sdk?.getSigner()
 
@@ -42,7 +57,7 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
               e.preventDefault()
               donate()
             }}
-            >
+          >
             <input
               className="w-full min-w-[40px] max-w-[100px] bg-dark-cool pl-5 h-full focus:outline-none"
               type="number"
