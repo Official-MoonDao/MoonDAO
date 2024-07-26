@@ -94,31 +94,31 @@ export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
 }
 
 export const TEAM_ADDRESSES: Index = {
-  arbitrum: '0x0d0a6EA25ce2B42facE66Af4f2c411e6ce8e25EC',
+  arbitrum: '0xAB2C354eC32880C143e87418f80ACc06334Ff55F',
   sepolia: '0xEb9A6975381468E388C33ebeF4089Be86fe31d78',
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0x9E5C386b83a12Df6d5E994e327C71965C34F22f6',
+  arbitrum: '0x203f481336A212Eff43E84761792E307975Cf27b',
   sepolia: '0x55D07Ab23092edc7EdAEC7048B784aCcb2cc4469',
 }
 
 export const TEAM_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x74A64DcC2f118cC9e9E2134951a3478fE23A1d11',
+  arbitrum: '0x434ADaB0BEdFc9973c5cbF0224dfe0212a20d3D4',
   sepolia: '0x42d356e77f6d9Bad870865e0973Ed32F54fA4006',
 }
 
 export const TEAM_WHITELIST_ADDRESSES: Index = {
-  arbitrum: '0xc5C3d8E5C539b89C12064F1220D116e94114E290',
+  arbitrum: '0x203ca831edec28b7657A022b8aFe5d28b6BE6Eda',
   sepolia: '',
 }
 export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0xe8528b8411E001adA9c929F287b5d2E789342031',
+  arbitrum: '0x96E054924258E51d8e3b3aB8A6A27920f6cE53ee',
   sepolia: '',
 }
 
 export const MOONDAO_HAT_TREE_IDS: Index = {
-  arbitrum: '0x00000028',
+  arbitrum: '0x0000002a',
   sepolia: '0x0000017c',
 }
 
