@@ -504,6 +504,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                           hats={hats}
                           hatsContract={hatsContract}
                           teamContract={teamContract}
+                          teamId={tokenId}
                           selectedChain={selectedChain}
                           multisigAddress={nft.owner}
                           adminHatId={adminHatId}
