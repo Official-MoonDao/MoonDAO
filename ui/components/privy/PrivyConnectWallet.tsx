@@ -63,10 +63,10 @@ export function PrivyConnectWallet() {
     }
   }, [wallets, selectedWallet])
 
-  // useEffect(() => {
-  //   if (walletChainId !== selectedChain.chainId) setNetworkMismatch(true)
-  //   else setNetworkMismatch(false)
-  // }, [walletChainId, selectedChain])
+  useEffect(() => {
+    if (walletChainId !== selectedChain.chainId) setNetworkMismatch(true)
+    else setNetworkMismatch(false)
+  }, [walletChainId, selectedChain])
 
   //detect outside click
   function handleClickOutside({ target }: any) {
@@ -97,12 +97,7 @@ export function PrivyConnectWallet() {
             {/*Address and Toggle open/close button*/}
             <div className="flex items-center w-full h-full justify-center">
               <p className="text-xs">
-                {ens
-                  ? ens
-                  : `${wallets?.[selectedWallet].address?.slice(
-                      0,
-                      6
-                    )}...${wallets?.[selectedWallet].address?.slice(-4)}`}
+                {ens ? ens : `${address?.slice(0, 6)}...${address?.slice(-4)}`}
               </p>
             </div>
             {/*Menu that opens up*/}
@@ -129,18 +124,15 @@ export function PrivyConnectWallet() {
                         )?.name
                       }
                     </p>
-                    <p className="text-sm">{`${wallets?.[
-                      selectedWallet
-                    ].address?.slice(0, 6)}...${wallets?.[
-                      selectedWallet
-                    ].address?.slice(-4)}`}</p>
+                    <p className="text-sm">{`${address?.slice(
+                      0,
+                      6
+                    )}...${address?.slice(-4)}`}</p>
                   </div>
                   <button
                     className="ml-4"
                     onClick={() => {
-                      navigator.clipboard.writeText(
-                        wallets[selectedWallet].address
-                      )
+                      navigator.clipboard.writeText(address || '')
                       toast.success('Address copied to clipboard')
                     }}
                   >
@@ -156,11 +148,7 @@ export function PrivyConnectWallet() {
                       wallets[selectedWallet].switchChain(selectedChain.chainId)
                     }}
                   >
-                    {`Switch to ${
-                      allChains.find(
-                        (chain) => chain.chainId === selectedChain.chainId
-                      )?.name
-                    }`}
+                    {`Switch to ${selectedChain.name}`}
                   </button>
                 </div>
               ) : (
