@@ -77,33 +77,37 @@ function TeamMember({
             <p className="font-bold">{hatData.name}</p>
             <button
               onClick={async () => {
-                const memberHatPassthroughModuleAddress =
-                  await teamContract?.call('memberPassthroughModule', [teamId])
+                try {
+                  const memberHatPassthroughModuleAddress =
+                    await teamContract?.call('memberPassthroughModule', [
+                      teamId,
+                    ])
 
-                const iface = new ethers.utils.Interface(HatsABI)
-                const txData = iface.encodeFunctionData('setHatWearerStatus', [
-                  hat.id,
-                  w.id,
-                  false,
-                  false,
-                ])
+                  const iface = new ethers.utils.Interface(HatsABI)
+                  const txData = iface.encodeFunctionData(
+                    'setHatWearerStatus',
+                    [hat.id, w.id, false, true]
+                  )
 
-                if (hat.id === hatIdDecimalToHex(managerHatId.toString())) {
-                  await queueSafeTx({
-                    to: HATS_ADDRESS,
-                    data: txData,
-                    value: '0',
-                    gasLimit: 1000000,
-                  })
-                  setHasDeletedMember(true)
-                } else {
-                  const signer = sdk?.getSigner()
-                  await signer?.sendTransaction({
-                    to: memberHatPassthroughModuleAddress,
-                    data: txData,
-                    value: '0',
-                    gasLimit: 1000000,
-                  })
+                  if (hat.id === hatIdDecimalToHex(managerHatId.toString())) {
+                    await queueSafeTx({
+                      to: HATS_ADDRESS,
+                      data: txData,
+                      value: '0',
+                      gasLimit: 1000000,
+                    })
+                    setHasDeletedMember(true)
+                  } else {
+                    const signer = sdk?.getSigner()
+                    await signer?.sendTransaction({
+                      to: memberHatPassthroughModuleAddress,
+                      data: txData,
+                      value: '0',
+                      gasLimit: 1000000,
+                    })
+                  }
+                } catch (err) {
+                  console.log(err)
                 }
               }}
             >
@@ -131,10 +135,12 @@ function TeamManageMembersModal({
   const sdk = useSDK()
   const address = useAddress()
 
+  const reversedHats = hats.slice().reverse()
+
   //Add member form
   const [hasAddedMember, setHasAddedMember] = useState<boolean>(false)
   const [newMemberAddress, setNewMemberAddress] = useState<string>('')
-  const [selectedHatId, setSelectedHatId] = useState<any>()
+  const [selectedHatId, setSelectedHatId] = useState<any>(reversedHats?.[0]?.id)
   const [newMemberIsIneligible, setNewMemberIsIneligible] =
     useState<boolean>(false)
   const [isLoadingNewMember, setIsLoadingNewMember] = useState<boolean>(false)
@@ -151,10 +157,6 @@ function TeamManageMembersModal({
   const [hasDeletedMember, setHasDeletedMember] = useState<boolean>(false)
 
   const { queueSafeTx } = useSafe(multisigAddress)
-
-  useEffect(() => {
-    setSelectedHatId(hats[0].id)
-  }, [])
 
   return (
     <Modal id="team-manage-members-modal" setEnabled={setEnabled}>
@@ -243,7 +245,6 @@ function TeamManageMembersModal({
               setNewMemberAddress('')
             } catch (err: any) {
               console.log(err.message)
-              console.log(selectedHatId, managerHatId)
               if (
                 selectedHatId === hatIdDecimalToHex(managerHatId.toString()) &&
                 err.message
@@ -264,8 +265,9 @@ function TeamManageMembersModal({
             <select
               className="p-2 bg-[#0f152f]"
               onChange={({ target }) => setSelectedHatId(target.value)}
+              value={selectedHatId}
             >
-              {hats.map((hat: any) => (
+              {reversedHats.map((hat: any) => (
                 <HatOption key={hat.id} hat={hat} />
               ))}
             </select>
