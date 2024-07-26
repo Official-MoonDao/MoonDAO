@@ -15,10 +15,13 @@ import useSafe from '@/lib/safe/useSafe'
 import HatsABI from '../../const/abis/Hats.json'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type TeamManageMembersModalProps = {
   hats: any
   hatsContract: any
+  teamContract: any
+  teamId: string
   selectedChain: any
   setEnabled: Function
   multisigAddress: string
@@ -27,9 +30,11 @@ type TeamManageMembersModalProps = {
 }
 
 type TeamManageMembersProps = {
-  hatsContract: any
-  selectedChain: any
   hats: any[]
+  hatsContract: any
+  teamContract: any
+  teamId: string
+  selectedChain: any
   multisigAddress: string
   adminHatId: string
   managerHatId: any
@@ -60,6 +65,8 @@ function TeamMember({
   hat,
   selectedChain,
   hatsContract,
+  teamContract,
+  teamId,
   queueSafeTx,
   setHasDeletedMember,
   managerHatId,
@@ -75,6 +82,9 @@ function TeamMember({
             <p className="font-bold">{hatData.name}</p>
             <button
               onClick={async () => {
+                const memberHatPassthroughModuleAddress =
+                  await teamContract?.call('memberPassthroughModule', [teamId])
+
                 const iface = new ethers.utils.Interface(HatsABI)
                 const txData = iface.encodeFunctionData('setHatWearerStatus', [
                   hat.id,
@@ -94,7 +104,7 @@ function TeamMember({
                 } else {
                   const signer = sdk?.getSigner()
                   await signer?.sendTransaction({
-                    to: HATS_PASSTHROUGH_MODULE_ADDRESS,
+                    to: memberHatPassthroughModuleAddress,
                     data: txData,
                     value: '0',
                     gasLimit: 1000000,
@@ -115,6 +125,8 @@ function TeamMember({
 function TeamManageMembersModal({
   hats,
   hatsContract,
+  teamContract,
+  teamId,
   selectedChain,
   multisigAddress,
   adminHatId,
@@ -128,6 +140,8 @@ function TeamManageMembersModal({
   const [hasAddedMember, setHasAddedMember] = useState<boolean>(false)
   const [newMemberAddress, setNewMemberAddress] = useState<string>('')
   const [selectedHatId, setSelectedHatId] = useState<any>()
+  const [newMemberIsIneligible, setNewMemberIsIneligible] =
+    useState<boolean>(false)
   const [isLoadingNewMember, setIsLoadingNewMember] = useState<boolean>(false)
 
   //Add hat form
@@ -168,6 +182,8 @@ function TeamManageMembersModal({
               hat={hat}
               selectedChain={selectedChain}
               hatsContract={hatsContract}
+              teamContract={teamContract}
+              teamId={teamId}
               queueSafeTx={queueSafeTx}
               setHasDeletedMember={setHasDeletedMember}
               managerHatId={managerHatId}
@@ -202,10 +218,16 @@ function TeamManageMembersModal({
             )
               return toast.error('Invalid address')
 
-            const hexHatId = hatIdDecimalToHex(selectedHatId)
-            const formattedHatId = hexHatId.split('0x')[1]
-            const formattedWearer = newMemberAddress.split('0x')[1]
-            const txData = `0x641f776e${formattedHatId}000000000000000000000000${formattedWearer}`
+            // const hexHatId = hatIdDecimalToHex(selectedHatId)
+            // const formattedHatId = hexHatId.split('0x')[1]
+            // const formattedWearer = newMemberAddress.split('0x')[1]
+            // const txData = `0x641f776e${formattedHatId}000000000000000000000000${formattedWearer}`
+
+            const iface = new ethers.utils.Interface(HatsABI)
+            const txData = iface.encodeFunctionData('mintHat', [
+              selectedHatId,
+              newMemberAddress,
+            ])
 
             try {
               if (
@@ -215,6 +237,7 @@ function TeamManageMembersModal({
                   to: HATS_ADDRESS,
                   data: txData,
                   value: '0',
+                  safeTxGas: '1000000',
                 })
                 setHasAddedMember(true)
               } else {
@@ -223,6 +246,7 @@ function TeamManageMembersModal({
                   to: HATS_ADDRESS,
                   data: txData,
                   value: '0',
+                  gasLimit: 1000000,
                 })
                 toast.success('Member added successfully')
               }
@@ -262,12 +286,12 @@ function TeamManageMembersModal({
               onChange={({ target }: any) => setNewMemberAddress(target.value)}
             />
           </div>
-          <StandardButton
+          <PrivyWeb3Button
+            label="Add Member"
             type="submit"
             className="mt-4 w-full gradient-2 rounded-[5vmax]"
-          >
-            {'Add Member'}
-          </StandardButton>
+            action={() => {}}
+          />
           {hasAddedMember && (
             <p>
               {`Please sign and execute the transaction in the team's `}
@@ -409,21 +433,23 @@ function TeamManageMembersModal({
 export default function TeamManageMembers({
   selectedChain,
   hatsContract,
+  teamContract,
+  teamId,
   hats,
   multisigAddress,
   adminHatId,
   managerHatId,
 }: TeamManageMembersProps) {
   const [manageMembersModalEnabled, setManagerModalEnabled] = useState(false)
-  const { contract: hatsPassthroughModuleContract } = useContract(
-    HATS_PASSTHROUGH_MODULE_ADDRESS
-  )
+
   return (
     <div>
       {manageMembersModalEnabled && (
         <TeamManageMembersModal
           selectedChain={selectedChain}
           hatsContract={hatsContract}
+          teamContract={teamContract}
+          teamId={teamId}
           hats={hats}
           setEnabled={setManagerModalEnabled}
           multisigAddress={multisigAddress}

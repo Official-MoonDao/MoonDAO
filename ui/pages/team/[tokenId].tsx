@@ -44,6 +44,7 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import StandardButton from '@/components/layout/StandardButton'
 import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -405,10 +406,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         popOverEffect={false}
         branded={false}
         isProfile
-        preFooter={
-          <NoticeFooter
-          />
-        }
+        preFooter={<NoticeFooter />}
       >
         <div
           id="page-container"
@@ -492,19 +490,20 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         id="button-container"
                         className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
                       >
-                        {/* <StandardButton
+                        <StandardButton
                           className="min-w-[200px] gradient-2 rounded-[5vmax]"
                           onClick={() => {
                             window.open(
                               `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
                             )
                           }}
-                          >
+                        >
                           Manage Members
-                        </StandardButton> */}
+                        </StandardButton>
                         <TeamManageMembers
                           hats={hats}
                           hatsContract={hatsContract}
+                          teamContract={teamContract}
                           selectedChain={selectedChain}
                           multisigAddress={nft.owner}
                           adminHatId={adminHatId}
