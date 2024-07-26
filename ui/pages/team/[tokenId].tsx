@@ -318,11 +318,11 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                           <div id="expires-container" className="">
                             <div
                               id="extend-sub-button-container"
-                              className="rounded-[2vmax] overflow-hidden text-sm rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px]"
+                              className="overflow-hidden text-sm"
                             >
                               <div
                                 id="extend-sub-button"
-                                className="gradient-2"
+                                className="gradient-2 rounded-[2vmax] rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px]"
                               >
                                 <Button
                                   onClick={() => {
