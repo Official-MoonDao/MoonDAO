@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -29,11 +30,7 @@ export default function Join() {
     address,
   ])
 
-  useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    )
-  }, [])
+  useChainDefault()
 
   if (selectedTier === 'citizen') {
     return (
