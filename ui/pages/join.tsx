@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -17,7 +18,7 @@ import Tier from '@/components/onboarding/Tier'
 export default function Join() {
   const { t } = useTranslation('common')
 
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContext)
 
   const address = useAddress()
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
@@ -30,11 +31,7 @@ export default function Join() {
     address,
   ])
 
-  useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    )
-  }, [])
+  useChainDefault()
 
   if (selectedTier === 'citizen') {
     return (

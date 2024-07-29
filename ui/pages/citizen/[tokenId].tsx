@@ -29,6 +29,7 @@ import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { useTeamData } from '@/lib/team/useTeamData'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
@@ -101,11 +102,7 @@ export default function CitizenDetailPage({
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
   const { isManager } = useTeamData(hatsContract, address, nft)
 
-  useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    )
-  }, [])
+  useChainDefault()
 
   const ProfileHeader = (
     <div id="citizenheader-container">
@@ -291,10 +288,7 @@ export default function CitizenDetailPage({
     <Container>
       <ContentLayout
         description={ProfileHeader}
-        preFooter={
-          <NoticeFooter
-          />
-        }
+        preFooter={<NoticeFooter />}
         mainPadding
         mode="compact"
         popOverEffect={false}
