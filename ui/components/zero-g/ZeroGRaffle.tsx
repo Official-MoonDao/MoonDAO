@@ -74,7 +74,7 @@ export default function ZeroGRaffle({
                 Sweepstakes
               </h2>
               <div className="my-3">
-                <Link href="/zero-g/rules">
+                <Link href="/zero-g/rules" passHref>
                   <p
                     className={`mt-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
                   >

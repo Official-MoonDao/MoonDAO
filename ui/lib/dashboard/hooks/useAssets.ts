@@ -29,7 +29,7 @@ export function useAssets() {
           setError(error)
         }
       )
-  }, [])
+  }, [ASSETS_URL])
 
   return { tokens, isLoading, balanceSum, error }
 }

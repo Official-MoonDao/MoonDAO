@@ -18,7 +18,7 @@ export default function PurchasePortal({ validVP }: any) {
 
   useEffect(() => {
     if (state === 2 && validVP.validLock) setState(1)
-  }, [validVP])
+  }, [validVP, state])
 
   return (
     <>

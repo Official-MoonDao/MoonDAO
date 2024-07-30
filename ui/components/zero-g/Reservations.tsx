@@ -138,7 +138,7 @@ export default function Reservations({ sweepstakesContract }: any) {
           vMooneyLock[1] != 0 &&
           BigNumber.from(+new Date()).lte(vMooneyLock[1].mul(1000))
       )
-  }, [vMooneyLock])
+  }, [vMooneyLock, vMooneyLockLoading])
 
   return (
     <ReservationRaffleLayout title="Reservations">
