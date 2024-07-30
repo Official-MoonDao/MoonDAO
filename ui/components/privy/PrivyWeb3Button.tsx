@@ -63,7 +63,7 @@ export function PrivyWeb3Button({
     } else {
       setBtnState(2)
     }
-  }, [wallets, selectedChain, selectedWallet, user])
+  }, [wallets, selectedChain, selectedWallet, user, skipNetworkCheck])
 
   return (
     <>

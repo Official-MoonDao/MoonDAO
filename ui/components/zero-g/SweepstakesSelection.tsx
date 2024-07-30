@@ -33,56 +33,56 @@ export default function SweepstakesSelection({
   const { mutateAsync: randomSelection } =
     useRandomSelection(sweepstakesContract)
 
-  const provider = new ethers.providers.JsonRpcProvider(
-    process.env.NEXT_PUBLIC_INFURA_URL
-  )
-
-  async function getWinners(loop = false) {
-    setLoading(true)
-    const winnersData: any = []
-    const contract: any = new Contract(
-      VMOONEY_SWEEPSTAKES,
-      vMooneySweepstakesZeroGABI,
-      provider
-    )
-    for (let i = 0; i < 10; i++) {
-      //get random word for id
-      try {
-        const randomWordsId = await contract.callStatic.requestIds(i)
-        if (randomWordsId) {
-          const { randomWords } = await contract.callStatic.getRequestStatus(
-            randomWordsId
-          )
-          const winningTokenId = await randomWords[0]
-            .mod(BigNumber.from(ZERO_G_V1_TOTAL_TOKENS))
-            .toString()
-          const winnerAddress = await contract.callStatic.ownerOf(
-            winningTokenId
-          )
-
-          const winnerData: any = getUserDataRaffle(winnerAddress)
-
-          winnersData.push({
-            discordUsername: winnerData?.DiscUsername,
-            discordId: winnerData?.DiscID,
-            address: winnerAddress,
-            tokenId: winningTokenId,
-            id: i,
-          })
-        }
-      } catch (err) {
-        console.log('No matching request id', err)
-      }
-    }
-    await setWinners(winnersData.sort((a: any, b: any) => a.id - b.id))
-    setLoading(false)
-  }
-
   useEffect(() => {
+    const provider = new ethers.providers.JsonRpcProvider(
+      process.env.NEXT_PUBLIC_INFURA_URL
+    )
+
+    async function getWinners(loop = false) {
+      setLoading(true)
+      const winnersData: any = []
+      const contract: any = new Contract(
+        VMOONEY_SWEEPSTAKES,
+        vMooneySweepstakesZeroGABI,
+        provider
+      )
+      for (let i = 0; i < 10; i++) {
+        //get random word for id
+        try {
+          const randomWordsId = await contract.callStatic.requestIds(i)
+          if (randomWordsId) {
+            const { randomWords } = await contract.callStatic.getRequestStatus(
+              randomWordsId
+            )
+            const winningTokenId = await randomWords[0]
+              .mod(BigNumber.from(ZERO_G_V1_TOTAL_TOKENS))
+              .toString()
+            const winnerAddress = await contract.callStatic.ownerOf(
+              winningTokenId
+            )
+
+            const winnerData: any = getUserDataRaffle(winnerAddress)
+
+            winnersData.push({
+              discordUsername: winnerData?.DiscUsername,
+              discordId: winnerData?.DiscID,
+              address: winnerAddress,
+              tokenId: winningTokenId,
+              id: i,
+            })
+          }
+        } catch (err) {
+          console.log('No matching request id', err)
+        }
+      }
+      await setWinners(winnersData.sort((a: any, b: any) => a.id - b.id))
+      setLoading(false)
+    }
+
     if (winnersData) {
       getWinners()
     }
-  }, [winnersData])
+  }, [winnersData, getUserDataRaffle])
 
   function Winner({ winner, i }: any) {
     if (winner && !winner.discordUsername) {

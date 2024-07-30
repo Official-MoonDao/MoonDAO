@@ -9,29 +9,29 @@ export function useTransactions(page: number) {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<any>()
 
-  function getTransactions() {
-    const url =
-      ETHERSCAN_API_BASE +
-      `?module=account&action=tokentx&address=${MULTISIG_ADDRESS}` +
-      `&page=${page}` +
-      `&offset=10` +
-      `&sort=desc` +
-      `&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
-    setIsLoading(true)
-    fetch(url)
-      .then((res) => res.json())
-      .then((result) => {
-        if (result.status === '0') {
-          throw Error(result.result)
-        }
-
-        setTransactions(result.result)
-      })
-      .catch((err) => setError(err))
-      .finally(() => setIsLoading(false))
-  }
-
   useEffect(() => {
+    function getTransactions() {
+      const url =
+        ETHERSCAN_API_BASE +
+        `?module=account&action=tokentx&address=${MULTISIG_ADDRESS}` +
+        `&page=${page}` +
+        `&offset=10` +
+        `&sort=desc` +
+        `&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
+      setIsLoading(true)
+      fetch(url)
+        .then((res) => res.json())
+        .then((result) => {
+          if (result.status === '0') {
+            throw Error(result.result)
+          }
+
+          setTransactions(result.result)
+        })
+        .catch((err) => setError(err))
+        .finally(() => setIsLoading(false))
+    }
+
     getTransactions()
   }, [page])
 

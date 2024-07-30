@@ -33,7 +33,7 @@ export default function Sweepstakes() {
     setSelectedChain(
       process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
     )
-  }, [])
+  }, [setSelectedChain])
 
   useEffect(() => {
     if (ttsContract) {
