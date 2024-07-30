@@ -1,9 +1,10 @@
+import Image from 'next/image'
 import React from 'react'
-import PreFooter from '../components/layout/PreFooter'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import MailingList from '../components/layout/MailingList'
+import PreFooter from '../components/layout/PreFooter'
 
 const LinkTree: React.FC = () => {
   const title = 'Linktree'
@@ -13,8 +14,7 @@ const LinkTree: React.FC = () => {
     <>
       <WebsiteHead title={title} description={description} />
       <section className="w-[calc(100vw-20px)]">
-        <Container
-          >
+        <Container>
           <ContentLayout
             header="News & Updates"
             headerSize="max(20px, 3vmax)"
@@ -28,17 +28,19 @@ const LinkTree: React.FC = () => {
             }
             preFooter={
               <>
-                <PreFooter/>
+                <PreFooter />
               </>
             }
           >
             <>
-              <img
+              <Image
                 className="mb-5 rounded-[5vmax] rounded-tl-[20px]"
-                src="../assets/dude-perfect.jpg"
+                src="/assets/dude-perfect.jpg"
+                width={1250}
+                height={500}
                 alt="Dude Perfect"
               />
-              <p>
+              <p className="p-8">
                 MoonDAO is an international collective of people united by the
                 mission of decentralizing access to space research and
                 exploration. Find out how to get involved and learn more about

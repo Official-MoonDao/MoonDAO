@@ -1,14 +1,16 @@
+import Image from 'next/image'
 import React from 'react'
-import PreFooter from '../components/layout/PreFooter'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
+import Frame from '../components/layout/Frame'
 import WebsiteHead from '../components/layout/Head'
 import MailingList from '../components/layout/MailingList'
-import Frame from '../components/layout/Frame'
+import PreFooter from '../components/layout/PreFooter'
 
 const JoinUs: React.FC = () => {
   const title = '🚀 Get the latest news and updates from MoonDAO'
-  const description = 'Sign up for the MoonDAO newsletter to learn more about how you can participate.'
+  const description =
+    'Sign up for the MoonDAO newsletter to learn more about how you can participate.'
   const image = '/assets/dp-og.jpg'
 
   return (
@@ -27,31 +29,31 @@ const JoinUs: React.FC = () => {
             }
             preFooter={
               <>
-                <PreFooter 
-                  mode='compact'
-                />
+                <PreFooter mode="compact" />
               </>
             }
-            >
-            <Frame backgroundColor='#090D21'>
+          >
+            <Frame backgroundColor="#090D21">
               <h1 className="pb-5 header font-GoodTimes">
                 MoonDAO makes HISTORY!
               </h1>
-              <p className="pb-5"
-                >
-                We were the first DAO to send someone to space! Join 12,000+ subscribers and find out how we can revolutionize
-                the space industry together. MoonDAO is an international
-                collective of people united by the mission of decentralizing
-                access to space research and exploration and making space
-                accessible to everyone, not just the rich and well-connected.
+              <p className="pb-5">
+                We were the first DAO to send someone to space! Join 12,000+
+                subscribers and find out how we can revolutionize the space
+                industry together. MoonDAO is an international collective of
+                people united by the mission of decentralizing access to space
+                research and exploration and making space accessible to
+                everyone, not just the rich and well-connected.
               </p>
-              <Frame 
-                noPadding
-                >
-                <img src="../assets/dp-og.jpg"></img>
+              <Frame noPadding>
+                <Image
+                  src="/assets/dp-og.jpg"
+                  width={1250}
+                  height={500}
+                  alt="Dude Perfect"
+                ></Image>
               </Frame>
-              <p className="pt-5"
-                >
+              <p className="pt-5">
                 Launching Coby Cotton of Dude Perfect to space was only the
                 beginning! MoonDAO aims to make space accessible to anyone in
                 the world, regardless of their financial means, and Coby’s
