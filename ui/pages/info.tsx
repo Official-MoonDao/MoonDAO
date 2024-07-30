@@ -1,17 +1,9 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { useAddress, useContract } from '@thirdweb-dev/react'
-import { TEAM_ADDRESSES, CITIZEN_ADDRESSES, HATS_ADDRESS } from 'const/config'
-import Image from 'next/image'
-import Link from 'next/link'
-import React, { useContext, useEffect, useState } from 'react'
-import { useTeamData } from '@/lib/team/useTeamData'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import React from 'react'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import CardGrid from '../components/layout/CardGrid'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
-import Footer from '../components/layout/Footer'
 import WebsiteHead from '../components/layout/Head'
-import PreFooter from '../components/layout/PreFooter'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 const cardData = [
@@ -92,13 +84,7 @@ const Info: React.FC = () => {
   const description = "Learn More About The Internet's Space Program"
   const image = '/assets/moondao-og.jpg'
 
-  const { setSelectedChain } = useContext(ChainContext)
-
-  useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    )
-  }, [])
+  useChainDefault()
 
   return (
     <>

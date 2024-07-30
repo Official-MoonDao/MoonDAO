@@ -61,6 +61,7 @@ import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceTableABI from '../../const/abis/MarketplaceTable.json'
 import TeamABI from '../../const/abis/Team.json'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 
 export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const router = useRouter()
@@ -128,18 +129,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const [splitNativeBalance, setSplitNativeBalance] = useState<number>(0)
   const [nativeBalance, setNativeBalance] = useState<number>(0)
 
-  async function getNativeBalance() {
-    const provider = sdk?.getProvider()
-    const balance: any = await provider?.getBalance(nft?.owner as string)
-    setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
-  }
-
-  async function getSplitNativeBalance() {
-    const provider = sdk?.getProvider()
-    const balance: any = await provider?.getBalance(splitAddress as string)
-    setSplitNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
-  }
-
   //Subscription Data
   const { data: expiresAt } = useContractRead(teamContract, 'expiresAt', [
     nft?.metadata?.id,
@@ -147,6 +136,18 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
 
   // get native balance for multisig
   useEffect(() => {
+    async function getNativeBalance() {
+      const provider = sdk?.getProvider()
+      const balance: any = await provider?.getBalance(nft?.owner as string)
+      setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
+    }
+
+    async function getSplitNativeBalance() {
+      const provider = sdk?.getProvider()
+      const balance: any = await provider?.getBalance(splitAddress as string)
+      setSplitNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
+    }
+
     if (sdk && nft?.owner) {
       getNativeBalance()
     }
@@ -155,11 +156,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     }
   }, [sdk, nft, splitAddress])
 
-  useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    )
-  }, [])
+  useChainDefault()
 
   //Profile Header Section
   const ProfileHeader = (

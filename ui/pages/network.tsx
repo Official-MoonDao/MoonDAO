@@ -13,6 +13,7 @@ import { useRouter } from 'next/router'
 import React, { useState, useEffect, useContext } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
@@ -172,13 +173,7 @@ export default function Directory() {
       shallowQueryRoute({ type: tab })
   }, [tab])
 
-  useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    )
-  }, [setSelectedChain])
-
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
+  useChainDefault()
 
   const descriptionSection = (
     <div className="pt-2">

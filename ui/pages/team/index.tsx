@@ -1,9 +1,9 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -12,18 +12,12 @@ import CreateTeam from '@/components/onboarding/CreateTeam'
 import Tier from '@/components/onboarding/Tier'
 
 export default function TeamJoin() {
-  const { t } = useTranslation('common')
-
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContext)
 
   const address = useAddress()
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
 
-  useEffect(() => {
-    setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    )
-  }, [])
+  useChainDefault()
 
   if (selectedTier === 'team') {
     return (

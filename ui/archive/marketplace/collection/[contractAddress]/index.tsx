@@ -34,7 +34,7 @@ type CollectionPageProps = {
 export default function CollectionPage({
   contractAddress,
 }: CollectionPageProps) {
-  useChainDefault('l2')
+  useChainDefault()
   //Marketplace data
   const { contract: marketplace } = useContract(
     MARKETPLACE_ADDRESS,
