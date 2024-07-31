@@ -2,6 +2,7 @@ import { useAddress } from '@thirdweb-dev/react'
 //Network warning
 import { useChain } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Script from 'next/script'
 import React from 'react'
@@ -62,11 +63,11 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
         {/* Sidebar component*/}
         <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col pt-5">
-          <a href="/">
+          <Link href="/" passHref>
             <div className="mt-2 ml-7 lg:ml-9 flex flex-shrink-0 items-center px-4 pl-6">
               {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
             </div>
-          </a>
+          </Link>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">
             <div className="pl-6 mb-4 flex justify-center">
               <PrivyConnectWallet />

@@ -9,7 +9,7 @@ type GradientLinkProps = {
 export default function GradientLink({ text, href }: GradientLinkProps) {
   if (href?.charAt(0) === '/') {
     return (
-      <Link id="gradient-link" href={href}>
+      <Link id="gradient-link" href={href} passHref>
         <p
           className={`my-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
         >

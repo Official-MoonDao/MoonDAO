@@ -1,6 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
-import { sign } from 'crypto'
 import { useState, useEffect } from 'react'
 import { useContext } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
@@ -44,73 +43,73 @@ export function ViewNFTDataModal({
     return signature
   }
 
-  async function fetchInfoFromDB() {
-    const signature = await signMessage()
-    if (!signature) return
-    const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
+  useEffect(() => {
+    async function fetchInfoFromDB() {
+      const signature = await signMessage()
+      if (!signature) return
+      const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
 
-    //find owned tokenIds in the databse
-    const verifiedNftsRes = await fetch(`/api/db/nft?address=${address}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'moondao-api-key': signature,
-      } as any,
-    })
+      //find owned tokenIds in the databse
+      const verifiedNftsRes = await fetch(`/api/db/nft?address=${address}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'moondao-api-key': signature,
+        } as any,
+      })
 
-    const { data: verifiedNfts } = await verifiedNftsRes.json()
+      const { data: verifiedNfts } = await verifiedNftsRes.json()
 
-    if (!verifiedNfts) return
+      if (!verifiedNfts) return
 
-    const email = verifiedNfts.find(
-      (nft: any) => nft.address === address && nft.email
-    )?.email
+      const email = verifiedNfts.find(
+        (nft: any) => nft.address === address && nft.email
+      )?.email
 
-    const name = verifiedNfts.find(
-      (nft: any) => nft.address === address && nft.name
-    )?.name
+      const name = verifiedNfts.find(
+        (nft: any) => nft.address === address && nft.name
+      )?.name
 
-    let nftsList = []
-    for (let i = 0; i < ownedNfts.length; i++) {
-      let found = false
-      for (let j = 0; j < verifiedNfts.length; j++) {
-        if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
-          if (
-            found &&
-            Date.parse(nftsList[i].updateTime) <
-              Date.parse(verifiedNfts[j].updatedAt)
-          ) {
-            nftsList[i] = {
-              id: ownedNfts[i]._hex,
-              name: verifiedNfts[j].name,
-              email: verifiedNfts[j].email,
-              updateTime: verifiedNfts[j].updatedAt,
+      let nftsList = []
+      for (let i = 0; i < ownedNfts.length; i++) {
+        let found = false
+        for (let j = 0; j < verifiedNfts.length; j++) {
+          if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
+            if (
+              found &&
+              Date.parse(nftsList[i].updateTime) <
+                Date.parse(verifiedNfts[j].updatedAt)
+            ) {
+              nftsList[i] = {
+                id: ownedNfts[i]._hex,
+                name: verifiedNfts[j].name,
+                email: verifiedNfts[j].email,
+                updateTime: verifiedNfts[j].updatedAt,
+              }
+            } else {
+              nftsList.push({
+                id: ownedNfts[i]._hex,
+                name: verifiedNfts[j].name,
+                email: verifiedNfts[j].email,
+                updateTime: verifiedNfts[j].updatedAt,
+              })
             }
-          } else {
-            nftsList.push({
-              id: ownedNfts[i]._hex,
-              name: verifiedNfts[j].name,
-              email: verifiedNfts[j].email,
-              updateTime: verifiedNfts[j].updatedAt,
-            })
+            found = true
           }
-          found = true
         }
+        if (!found)
+          nftsList.push({
+            id: ownedNfts[i]._hex,
+            name: name || 'Unverified',
+            email: email || 'Unverified',
+          })
       }
-      if (!found)
-        nftsList.push({
-          id: ownedNfts[i]._hex,
-          name: name || 'Unverified',
-          email: email || 'Unverified',
-        })
+
+      setUserNFTs(nftsList)
+
+      setIsLoading(false)
     }
 
-    setUserNFTs(nftsList)
-
-    setIsLoading(false)
-  }
-
-  useEffect(() => {
     fetchInfoFromDB()
   }, [])
 
