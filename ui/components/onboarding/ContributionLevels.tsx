@@ -182,7 +182,7 @@ export function ContributionLevels({
       <ContributionLevel
         lightIcon="/onboarding-icons/citizen-white.svg"
         darkIcon="/onboarding-icons/citizen-black.svg"
-        title="Citizen"
+        title="Voyager"
         intro="Play a more active role in building the largest Space Network-State focused on becoming multi-planetary with full voting power."
         mooneyValue={100000}
         usdQuote={usdQuotes[1]}
@@ -209,7 +209,7 @@ export function ContributionLevels({
         points={[
           '250,000 $MOONEY which you own and can use as you wish, such as purchasing items in the MoonDAO Marketplace',
           '250,000 $MOONEY staked for one year to co-govern MoonDAO. At the end of one year, your 250,000 $MOONEY unlocks to use as you wish',
-          'Everything in the Citizen Tier',
+          'Everything in the Voyager Tier',
         ]}
         hasVotingPower
         selectedLevel={selectedLevel}
