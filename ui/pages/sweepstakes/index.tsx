@@ -4,6 +4,7 @@ import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import Head from '../../components/layout/Head'
 import { SweepstakesMinting } from '../../components/ticket-to-space/SweepstakesMinting'
+import SweepstakesHighlights from '@/components/ticket-to-space/SweepstakesHighlights'
 import ERC20 from '../../const/abis/ERC20.json'
 import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { MOONEY_ADDRESSES, TICKET_TO_SPACE_ADDRESS } from '../../const/config'
@@ -32,7 +33,7 @@ export default function Sweepstakes() {
     setSelectedChain(
       process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
     )
-  }, [])
+  }, [setSelectedChain])
 
   useEffect(() => {
     if (ttsContract) {
@@ -48,14 +49,18 @@ export default function Sweepstakes() {
         title="Ticket to Space"
         image="https://gray-main-toad-36.mypinata.cloud/ipfs/QmdTYGGb5ayHor23WeCsNeT61Qzj8JK9EQmxKWeuGTQhYq"
       />
-      <SweepstakesMinting
-        setSelectedChain={setSelectedChain}
-        selectedChain={selectedChain}
-        ttsContract={ttsContract}
-        supply={supply}
-        mooneyContract={mooneyContract}
-        mooneyETHContract={mooneyETHContract}
-      />
+      <div className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 page-border-and-color font-RobotoMono w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] text-slate-950 dark:text-white">
+        <h1 className={`page-title flex text-lg`}>Ticket to Space</h1>
+        <SweepstakesHighlights />
+        <SweepstakesMinting
+          setSelectedChain={setSelectedChain}
+          selectedChain={selectedChain}
+          ttsContract={ttsContract}
+          supply={supply}
+          mooneyContract={mooneyContract}
+          mooneyETHContract={mooneyETHContract}
+        />
+      </div>
     </main>
   )
 }
