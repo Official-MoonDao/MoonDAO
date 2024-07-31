@@ -35,6 +35,7 @@ import { useSubHats } from '@/lib/hats/useSubHats'
 import { useTeamData } from '@/lib/team/useTeamData'
 import useTeamSplit from '@/lib/team/useTeamSplit'
 import ChainContext from '@/lib/thirdweb/chain-context'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { TwitterIcon } from '@/components/assets'
@@ -61,7 +62,6 @@ import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceTableABI from '../../const/abis/MarketplaceTable.json'
 import TeamABI from '../../const/abis/Team.json'
-import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 
 export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   const router = useRouter()
@@ -134,7 +134,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     nft?.metadata?.id,
   ])
 
-  // get native balance for multisig
+  // get native balance for multisigj
   useEffect(() => {
     async function getNativeBalance() {
       const provider = sdk?.getProvider()
