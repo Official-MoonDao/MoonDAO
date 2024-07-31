@@ -88,7 +88,7 @@ export default function Join() {
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
               <Tier
-                price={0.1}
+                price={0.0111}
                 label="Become a Citizen"
                 description="Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission."
                 points={[
@@ -106,7 +106,7 @@ export default function Join() {
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
               <Tier
-                price={0.5}
+                price={0.0333}
                 label="Create a Team"
                 description="Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future. Be a part of Team Space."
                 points={[
