@@ -3,7 +3,6 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Fragment } from 'react'
 import { useEffect } from 'react'
 import { useSwipeDirection } from '../../../lib/utils/hooks/useSwipeDirection'
-import { TreasuryAndMobileLogo } from '../../assets'
 import { LogoSidebar, LogoSidebarLight } from '../../assets'
 import { navigation } from './Navigation'
 import NavigationLink from './NavigationLink'
@@ -24,7 +23,7 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
     if (sidebarOpen && swipeDirection === 'left') {
       setSidebarOpen(false)
     }
-  }, [swipeDirection])
+  }, [swipeDirection, sidebarOpen, setSidebarOpen])
 
   return (
     <Transition.Root show={sidebarOpen} as={Fragment}>

@@ -5,8 +5,8 @@ import ContentLayout from '../components/layout/ContentLayout'
 
 const ThankYou: React.FC = () => {
   return (
-    <section id="main-section" className="overflow-auto">
-      <Container containerwidth>
+    <section className="overflow-auto">
+      <Container>
         <ContentLayout
           header="Thank You"
           headerSize="max(25px, 4vw)"
@@ -16,7 +16,7 @@ const ThankYou: React.FC = () => {
               <Link href="/" className="text-white underline">
                 CLICK HERE
               </Link>
-              &nbsp; to go back to the homepage
+              &nbsp; to go back to the homepage.
             </>
           }
         />

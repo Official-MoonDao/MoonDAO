@@ -68,40 +68,41 @@ function WinnerSkeleton() {
 export function SweepstakesWinners({ ttsContract, supply }: any) {
   const [winners, setWinners] = useState<Winner[]>([])
 
-  async function getWinners() {
-    const winners = []
-
-    for (let i = 0; i <= 10; i++) {
-      try {
-        const randomWordsId = await ttsContract.call('requestIds', [i])
-        if (randomWordsId) {
-          const { randomWords } = await ttsContract.call('getRequestStatus', [
-            randomWordsId,
-          ])
-
-          const winningTokenId = await randomWords[0].mod(supply)
-
-          const ownerOfWinningTokenId = await ttsContract.call('ownerOf', [
-            winningTokenId.toString(),
-          ])
-
-          const winner = {
-            tokenId: winningTokenId,
-            address: ownerOfWinningTokenId,
-          }
-
-          // winners.push(winner)
-          winners.push(winner)
-        }
-      } catch (err) {
-        console.log(err)
-      }
-    }
-    setWinners(winners.reverse())
-  }
-
   useEffect(() => {
+    async function getWinners() {
+      const winners = []
+
+      for (let i = 0; i <= 10; i++) {
+        try {
+          const randomWordsId = await ttsContract.call('requestIds', [i])
+          if (randomWordsId) {
+            const { randomWords } = await ttsContract.call('getRequestStatus', [
+              randomWordsId,
+            ])
+
+            const winningTokenId = await randomWords[0].mod(supply)
+
+            const ownerOfWinningTokenId = await ttsContract.call('ownerOf', [
+              winningTokenId.toString(),
+            ])
+
+            const winner = {
+              tokenId: winningTokenId,
+              address: ownerOfWinningTokenId,
+            }
+
+            // winners.push(winner)
+            winners.push(winner)
+          }
+        } catch (err) {
+          console.log(err)
+        }
+      }
+      setWinners(winners.reverse())
+    }
+
     let refresh: any
+
     if (ttsContract && supply) {
       getWinners()
       refresh = setInterval(() => {
