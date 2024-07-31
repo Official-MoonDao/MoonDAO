@@ -82,7 +82,7 @@ export default function Join() {
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
               <Tier
-                price={0.1}
+                price={0.0111}
                 label="Become a Citizen"
                 description="Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission."
                 points={[
