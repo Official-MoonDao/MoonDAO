@@ -171,7 +171,7 @@ export default function Directory() {
   useEffect(() => {
     if (router.query.type || router.asPath === '/directory')
       shallowQueryRoute({ type: tab })
-  }, [tab])
+  }, [tab, shallowQueryRoute, router])
 
   useChainDefault()
 
