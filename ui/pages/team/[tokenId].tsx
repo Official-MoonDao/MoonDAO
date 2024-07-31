@@ -513,17 +513,13 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
 
                   <SlidingCardMenu>
                     <div className="flex gap-4">
-                      {hats?.[0].id &&
-                        hats?.map((hat: any, i: number) => (
-                          <TeamMembers
-                            key={'hat-' + i}
-                            selectedChain={selectedChain}
-                            hatId={hat.id}
-                            hatsContract={hatsContract}
-                            citizenConract={citizenConract}
-                            wearers={hat.wearers}
-                          />
-                        ))}
+                      {hats?.[0].id && (
+                        <TeamMembers
+                          hats={hats}
+                          hatsContract={hatsContract}
+                          citizenConract={citizenConract}
+                        />
+                      )}
                     </div>
                   </SlidingCardMenu>
                 </div>
