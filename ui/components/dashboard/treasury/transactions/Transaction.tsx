@@ -1,4 +1,5 @@
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
+import Image from 'next/image'
 import { allowedAssets } from '../../../../lib/dashboard/dashboard-utils.ts/asset-config'
 import { assetImageExtension } from '../../../../lib/dashboard/dashboard-utils.ts/asset-config'
 import { getHumanTime } from '../../../../lib/dashboard/dashboard-utils.ts/getHumanTime'
@@ -29,24 +30,32 @@ const Transaction = ({ data, loading }: any) => {
     <article className="relative w-[336px] sm:w-[400px] xl:w-full font-RobotoMono">
       {/*Warning circle*/}
       <div
-        className={`${!loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
-          ? 'absolute top-1 right-3 text-red-300 opacity-50 z-50'
-          : 'hidden'
-          }`}
+        className={`${
+          !loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
+            ? 'absolute top-1 right-3 text-red-300 opacity-50 z-50'
+            : 'hidden'
+        }`}
       >
         <ExclamationCircleIcon className="h-8 w-8" />
       </div>
       {/*Main container*/}
       <div
-        className={`${!loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
-          ? 'opacity-80 bg-gray-200 dark:bg-slate-800'
-          : 'hover:scale-105'
-          } inner-container-background relative mt-5 flex items-center w-[336px] sm:w-[400px] xl:w-full py-[10px] px-3 ${loading && 'loading-component'
-          } transition-all duration-150`}
+        className={`${
+          !loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
+            ? 'opacity-80 bg-gray-200 dark:bg-slate-800'
+            : 'hover:scale-105'
+        } inner-container-background relative mt-5 flex items-center w-[336px] sm:w-[400px] xl:w-full py-[10px] px-3 ${
+          loading && 'loading-component'
+        } transition-all duration-150`}
       >
         {/*Logo*/}
-        <img className="h-[60px] w-[60px] " src={image} alt="Asset Logo." />
-
+        <Image
+          className="h-[60px] w-[60px] "
+          src={image}
+          height={60}
+          width={60}
+          alt="Asset Logo."
+        />
 
         {/*All the information */}
         <div className="ml-5 2xl:ml-7 flex flex-col">
@@ -56,8 +65,9 @@ const Transaction = ({ data, loading }: any) => {
               {loading ? '' : sent ? <ArrowUp /> : <ArrowDown />}
             </span>
             <p
-              className={`text ml-3 text-xl text-moon-orange ${loading && 'loading-line'
-                }`}
+              className={`text ml-3 text-xl text-moon-orange ${
+                loading && 'loading-line'
+              }`}
             >
               {sent ? 'Sent' : 'Received'}
             </p>
@@ -73,8 +83,9 @@ const Transaction = ({ data, loading }: any) => {
           {/*Date and Etherscan Link*/}
           <div className="mt-2 flex items-center text-sm">
             <p
-              className={`text-gray-900 opacity-70 dark:text-white ${loading && 'loading-line'
-                }`}
+              className={`text-gray-900 opacity-70 dark:text-white ${
+                loading && 'loading-line'
+              }`}
             >
               {timeStr} ago
             </p>

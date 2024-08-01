@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import React from 'react'
 import BlurBackground from '../../layout/BlurBackground'
 import AnnouncementContent from './AnnouncementContent'
@@ -34,10 +35,12 @@ const Announcement = React.forwardRef(
             {loading ? (
               <div className="loading-line h-16 w-16 rounded-full"></div>
             ) : (
-              <img
-                alt={`${name} Discord's Avatar`}
+              <Image
                 src={avatar}
                 className="h-[60px] w-auto rounded-full object-cover lg:h-[85px] lg:border lg:border-detail-light lg:border-opacity-75 lg:p-1 lg:dark:border-detail-dark"
+                width={60}
+                height={60}
+                alt={`${name} Discord's Avatar`}
               />
             )}
 
@@ -74,10 +77,12 @@ const Announcement = React.forwardRef(
           <div className="mt-2 grid gap-4 lg:mt-4 2xl:mt-6">
             {attachments &&
               attachments.map((attachment: any, i: number) => (
-                <img
+                <Image
                   className="h-auto max-w-[300px] lg:max-w-[400px] 2xl:max-w-[450px]"
                   key={'announcement-attachment' + i}
                   src={attachment.url}
+                  width={300}
+                  height={300}
                 />
               ))}
           </div>
