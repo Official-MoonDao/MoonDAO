@@ -83,6 +83,7 @@ const Announcement = React.forwardRef(
                   src={attachment.url}
                   width={300}
                   height={300}
+                  alt="Annoucement Attachment"
                 />
               ))}
           </div>
