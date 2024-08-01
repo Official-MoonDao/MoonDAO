@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { assetImageExtension } from '../../../../lib/dashboard/dashboard-utils.ts/asset-config'
 
 type AssetProps = {
@@ -24,12 +25,18 @@ const Asset = ({ name, amount, usd, address, loading }: AssetProps) => {
         {loading ? (
           <div className="loading-line h-8 w-8 rounded-full"></div>
         ) : (
-          <img className="h-auto w-7 2xl:w-8" src={image} alt="Asset Logo." />
+          <Image
+            className="h-auto w-7 2xl:w-8"
+            src={image}
+            alt="Asset Logo."
+            width={100}
+            height={100}
+          />
         )}
         <a
           href={assetLink}
-          target='_blank'
-          rel='noreferrer'
+          target="_blank"
+          rel="noreferrer"
           className={`ml-3 tracking-wide text-moon-orange 2xl:ml-4 text-xl ${
             loading && 'loading-line'
           }`}
