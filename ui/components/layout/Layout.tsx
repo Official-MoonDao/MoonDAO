@@ -76,10 +76,10 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
             </div>
           </Link>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">
-            <div className="pl-6 mb-4 flex justify-center items-center">
+            <div className="h-[50px] pl-6 mb-4 flex justify-center items-center">
               <PrivyConnectWallet />
 
-              <div className="relative right-2">
+              <div className="relative lg:right-4">
                 <CitizenProfileLink
                   selectedChain={selectedChain}
                   citizenContract={citizenContract}

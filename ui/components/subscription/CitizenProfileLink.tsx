@@ -23,7 +23,7 @@ export default function CitizenProfileLink({
   if (citizenNft?.metadata?.id) {
     return (
       <Link href={`/citizen/${citizenNft?.metadata?.id}`} passHref>
-        <div className="rounded-full overflow-hidden">
+        <div className="rounded-full overflow-hidden animate-fadeIn">
           <ThirdwebNftMedia
             className=""
             metadata={citizenNft.metadata}
