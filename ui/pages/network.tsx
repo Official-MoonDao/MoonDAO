@@ -14,6 +14,7 @@ import React, { useState, useEffect, useContext } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
@@ -27,7 +28,12 @@ import Search from '@/components/layout/Search'
 import Tab from '@/components/layout/Tab'
 import CitizenABI from '../const/abis/Citizen.json'
 
-export default function Directory() {
+type NetworkProps = {
+  _teams: NFT[]
+  _citizens: NFT[]
+}
+
+export default function Network({ _teams, _citizens }: NetworkProps) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const address = useAddress() // Add this line to get the user's address
 
@@ -92,16 +98,11 @@ export default function Directory() {
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
 
-  const {
-    data: teams,
-    isLoading: isLoadingTeams,
-    error,
-  } = useNFTs(teamContract, { start: 0, count: 100 })
+  const [citizens, setCitizens] = useState<NFT[]>(_citizens)
+  const [teams, setTeams] = useState<NFT[]>(_teams)
 
-  const { data: citizens, isLoading: isLoadingCitizens } = useNFTs(
-    citizenContract,
-    { start: 0, count: 100 }
-  )
+  const { data: allTeams } = useNFTs(teamContract)
+  const { data: allCitizens } = useNFTs(citizenContract)
 
   const [filteredTeams, setFilteredTeams] = useState<NFT[]>([])
   const [filteredCitizens, setFilteredCitizens] = useState<NFT[]>([])
@@ -115,7 +116,15 @@ export default function Directory() {
     }
   }, [router])
 
-  //only show public nfts that are whitelisted
+  //re-render citizens and teams on client side
+  useEffect(() => {
+    if (allTeams && allCitizens) {
+      setTeams(allTeams)
+      setCitizens(allCitizens)
+    }
+  }, [allTeams, allCitizens])
+
+  //fitler citizens by public, not blocked and not expired
   useEffect(() => {
     if (teamContract) {
       const filteredPublicTeams: any = teams?.filter(
@@ -141,6 +150,7 @@ export default function Directory() {
     }
   }, [teams, teamContract])
 
+  //filter teams by public, not blocked and not expired
   useEffect(() => {
     if (citizenContract) {
       const filteredPublicCitizens: any = citizens?.filter(
@@ -336,4 +346,23 @@ export default function Directory() {
       </Container>
     </section>
   )
+}
+
+export async function getStaticProps() {
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
+
+  const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
+  const _teams = await teamContract.erc721.getAll()
+
+  const citizenContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
+  const _citizens = await citizenContract.erc721.getAll()
+
+  return {
+    props: {
+      _teams,
+      _citizens,
+    },
+    revalidate: 60,
+  }
 }
