@@ -181,7 +181,7 @@ export default function CitizenDetailPage({
                       {nft?.metadata.description ? (
                         <p
                           id="profile-description-container"
-                          className="w-full"
+                          className="w-full pr-12"
                         >
                           {nft?.metadata.description || ''}
                         </p>
