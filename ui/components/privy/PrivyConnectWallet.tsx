@@ -94,7 +94,11 @@ export function PrivyConnectWallet() {
             {/*Address and Toggle open/close button*/}
             <div className="flex items-center w-full h-full justify-center">
               <p className="text-xs">
-                {ens ? ens : `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                {ens
+                  ? ens
+                  : address
+                  ? `${address?.slice(0, 6)}...${address?.slice(-4)}`
+                  : ''}
               </p>
             </div>
             {/*Menu that opens up*/}

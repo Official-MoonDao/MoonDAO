@@ -58,7 +58,7 @@ function HoldersList({ data, itemsPerPage = 10 }: any) {
 
     setCurrentItems(data.slice(itemOffset, endOffset))
     setPageCount(Math.ceil(data.length / itemsPerPage))
-  }, [itemOffset, itemsPerPage])
+  }, [data, itemOffset, itemsPerPage])
   const handlePageClick = (event: any) => {
     const newOffset = (event.selected * itemsPerPage) % data.length
     setItemOffset(newOffset)
