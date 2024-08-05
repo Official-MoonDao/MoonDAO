@@ -12,6 +12,7 @@ import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { LogoSidebarLight, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
+import CookieBanner from './CookieBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
@@ -109,6 +110,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         </section>
       </main>
 
+      <CookieBanner />
       <Toaster />
     </div>
   )

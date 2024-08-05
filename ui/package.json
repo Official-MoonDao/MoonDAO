@@ -88,6 +88,7 @@
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
     "@types/formidable": "^3.4.5",
     "@types/google-spreadsheet": "^3.3.2",
+    "@types/gtag.js": "^0.0.20",
     "@types/jest": "^29.5.3",
     "@types/node": "^20.4.1",
     "@types/nodemailer": "^6.4.14",
