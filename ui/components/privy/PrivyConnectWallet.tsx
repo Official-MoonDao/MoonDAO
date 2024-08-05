@@ -1,6 +1,6 @@
-import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { allChains } from '@thirdweb-dev/chains'
+import { allChains, Chain } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
@@ -15,9 +15,18 @@ import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
 import ERC20 from '../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import { CopyIcon } from '../assets'
+import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import { LinkAccounts } from './LinkAccounts'
 
-export function PrivyConnectWallet() {
+type PrivyConnectWalletProps = {
+  citizenContract?: any
+  type?: 'mobile' | 'desktop'
+}
+
+export function PrivyConnectWallet({
+  citizenContract,
+  type,
+}: PrivyConnectWalletProps) {
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
@@ -109,15 +118,27 @@ export function PrivyConnectWallet() {
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="w-[245px] lg:w-[270px] absolute left-0 text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn mt-2 p-4 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[100]"
+              className="w-[260px] lg:w-[270px] absolute left-0 text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn mt-2 p-4 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[100]"
             >
-              <div className="absolute right-2 w-full flex justify-end">
+              <div
+                className={`w-full flex ${
+                  type === 'mobile' ? 'justify-between' : 'justify-end'
+                }`}
+              >
+                {type === 'mobile' && (
+                  <div className="h-[10px]">
+                    <CitizenProfileLink
+                      selectedChain={selectedChain}
+                      citizenContract={citizenContract}
+                    />
+                  </div>
+                )}
                 <XMarkIcon
                   className="w-6 h-6 text-black dark:text-white cursor-pointer"
                   onClick={() => setEnabled(false)}
                 />
               </div>
-              <div className="mt-6">
+              <div className="mt-2">
                 <div className="mt-2 flex items-center">
                   <NetworkIcon />
                   <div className="ml-2 bg-dark-cool">
@@ -160,8 +181,8 @@ export function PrivyConnectWallet() {
                   <div className=" w-full flex justify-left items-center gap-4">
                     <Image
                       src="/coins/MOONEY.png"
-                      width={45}
-                      height={45}
+                      width={30}
+                      height={30}
                       alt=""
                     />
                     <p>

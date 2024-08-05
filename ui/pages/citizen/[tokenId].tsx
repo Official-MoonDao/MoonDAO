@@ -328,7 +328,7 @@ export default function CitizenDetailPage({
                           width={30}
                         />
                       }
-                      onClick={() => (window.location.href = '/propose')}
+                      onClick={() => router.push('/propose')}
                     />
                     <TeamAction
                       title="Browse Jobs"
@@ -341,11 +341,11 @@ export default function CitizenDetailPage({
                           width={30}
                         />
                       }
-                      onClick={() => (window.location.href = '/jobs')}
+                      onClick={() => router.push('/jobs')}
                     />
                     <TeamAction
                       title="Get Rewards"
-                      description="Get rewarded for mission-aligned worked towards a lunar settlement."
+                      description="Get rewarded for mission-aligned work towards a lunar settlement."
                       icon={
                         <Image
                           src="../assets/icon-submit.svg"
@@ -355,7 +355,9 @@ export default function CitizenDetailPage({
                         />
                       }
                       onClick={() =>
-                        (window.location.href = 'https://moondao.com/')
+                        window.open(
+                          'https://discord.com/channels/914720248140279868/1179874302447853659'
+                        )
                       }
                     />
                   </div>
