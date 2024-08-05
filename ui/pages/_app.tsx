@@ -22,7 +22,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
 
   return (
     <>
-      <GTag />
+      <GTag GTAG={process.env.NEXT_PUBLIC_GTAG as string} />
       <ChainContext.Provider value={{ selectedChain, setSelectedChain }}>
         <PrivyProvider
           appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
