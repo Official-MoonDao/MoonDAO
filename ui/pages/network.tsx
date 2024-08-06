@@ -1,7 +1,7 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { NFT, useContract, useNFTs } from '@thirdweb-dev/react'
+import { NFT, useContract } from '@thirdweb-dev/react'
 import { useAddress } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, HATS_ADDRESS } from 'const/config'
+import { CITIZEN_ADDRESSES, TEAM_ADDRESSES} from 'const/config'
 import {
   blockedCitizens,
   blockedTeams,
@@ -29,11 +29,11 @@ import Tab from '@/components/layout/Tab'
 import CitizenABI from '../const/abis/Citizen.json'
 
 type NetworkProps = {
-  _teams: NFT[]
-  _citizens: NFT[]
+  filteredTeams: NFT[]
+  filteredCitizens: NFT[]
 }
 
-export default function Network({ _teams, _citizens }: NetworkProps) {
+export default function Network({ filteredTeams, filteredCitizens }: NetworkProps) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const address = useAddress() // Add this line to get the user's address
 
@@ -98,15 +98,6 @@ export default function Network({ _teams, _citizens }: NetworkProps) {
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
 
-  const [citizens, setCitizens] = useState<NFT[]>(_citizens)
-  const [teams, setTeams] = useState<NFT[]>(_teams)
-
-  const { data: allTeams } = useNFTs(teamContract)
-  const { data: allCitizens } = useNFTs(citizenContract)
-
-  const [filteredTeams, setFilteredTeams] = useState<NFT[]>([])
-  const [filteredCitizens, setFilteredCitizens] = useState<NFT[]>([])
-
   const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
@@ -115,64 +106,6 @@ export default function Network({ _teams, _citizens }: NetworkProps) {
       setTab(type as string)
     }
   }, [router])
-
-  //re-render citizens and teams on client side
-  useEffect(() => {
-    if (allTeams && allCitizens) {
-      setTeams(allTeams)
-      setCitizens(allCitizens)
-    }
-  }, [allTeams, allCitizens])
-
-  //fitler citizens by public, not blocked and not expired
-  useEffect(() => {
-    if (teamContract) {
-      const filteredPublicTeams: any = teams?.filter(
-        (nft: any) =>
-          nft.metadata.attributes?.find(
-            (attr: any) => attr.trait_type === 'view'
-          ).value === 'public' && !blockedTeams.includes(nft.metadata.id)
-      )
-
-      const now = Math.floor(Date.now() / 1000)
-
-      const filteredValidTeams: any = filteredPublicTeams?.filter(
-        async (nft: any) => {
-          const expiresAt = await teamContract.call('expiresAt', [
-            nft?.metadata?.id,
-          ])
-
-          return expiresAt.toNumber() > now
-        }
-      )
-
-      setFilteredTeams(filteredValidTeams)
-    }
-  }, [teams, teamContract])
-
-  //filter teams by public, not blocked and not expired
-  useEffect(() => {
-    if (citizenContract) {
-      const filteredPublicCitizens: any = citizens?.filter(
-        (nft: any) =>
-          nft.metadata.attributes?.find(
-            (attr: any) => attr.trait_type === 'view'
-          ).value === 'public' && !blockedCitizens.includes(nft.metadata.id)
-      )
-      const now = Math.floor(Date.now() / 1000)
-
-      const filteredValidCitizens: any = filteredPublicCitizens?.filter(
-        async (nft: any) => {
-          const expiresAt = await citizenContract.call('expiresAt', [
-            nft?.metadata?.id,
-          ])
-
-          return expiresAt.toNumber() > now
-        }
-      )
-      setFilteredCitizens(filteredValidCitizens)
-    }
-  }, [citizens, citizenContract])
 
   useEffect(() => {
     loadByTab(tab)
@@ -351,17 +284,52 @@ export default function Network({ _teams, _citizens }: NetworkProps) {
 export async function getStaticProps() {
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
+  const now = Math.floor(Date.now() / 1000)
 
   const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
-  const _teams = await teamContract.erc721.getAll()
+  const teams = await teamContract.erc721.getAll()
+  const filteredPublicTeams: any = teams?.filter(
+    (nft: any) =>
+      nft.metadata.attributes?.find(
+        (attr: any) => attr.trait_type === 'view'
+      ).value === 'public' && !blockedTeams.includes(nft.metadata.id)
+  )
+
+
+  const filteredValidTeams: any = filteredPublicTeams?.filter(
+    async (nft: any) => {
+      const expiresAt = await teamContract.call('expiresAt', [
+        nft?.metadata?.id,
+      ])
+
+      return expiresAt.toNumber() > now
+    }
+  )
 
   const citizenContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
-  const _citizens = await citizenContract.erc721.getAll()
+  const citizens = await citizenContract.erc721.getAll()
+
+  const filteredPublicCitizens: any = citizens?.filter(
+    (nft: any) =>
+      nft.metadata.attributes?.find(
+        (attr: any) => attr.trait_type === 'view'
+      ).value === 'public' && !blockedCitizens.includes(nft.metadata.id)
+  )
+
+  const filteredValidCitizens: any = filteredPublicCitizens?.filter(
+    async (nft: any) => {
+      const expiresAt = await citizenContract.call('expiresAt', [
+        nft?.metadata?.id,
+      ])
+
+      return expiresAt.toNumber() > now
+    }
+  )
 
   return {
     props: {
-      _teams,
-      _citizens,
+      filteredTeams: filteredValidTeams,
+      filteredCitizens: filteredValidCitizens,
     },
     revalidate: 60,
   }
