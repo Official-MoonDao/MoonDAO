@@ -10,6 +10,8 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
   const parentRef = useRef<HTMLDivElement>(null)
   const [isHovered, setIsHovered] = useState(false)
   const [isHorizontalScrolling, setIsHorizontalScrolling] = useState(false)
+  const [hasStoppedVerticalScroll, setHasStoppedVerticalScroll] =
+    useState(false)
 
   const isElementInViewport = (el: HTMLElement) => {
     const rect = el.getBoundingClientRect()
@@ -30,24 +32,35 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
       if (!container || !parent) return
 
       const isDesktopOrTablet = window.innerWidth > 768 // Adjust the width as needed for tablet breakpoint
-      if (isHovered && isDesktopOrTablet && isElementInViewport(parent)) {
-        const { scrollLeft, scrollWidth, clientWidth } = container
-        const isAtEnd = scrollLeft + clientWidth >= scrollWidth - 2
-        const isAtStart = scrollLeft <= 0
 
-        if (
-          (e.deltaY > 0 && isAtEnd) || // Scrolling down at the end
-          (e.deltaY < 0 && isAtStart) // Scrolling up at the start
-        ) {
-          // Allow vertical scrolling
-          setIsHorizontalScrolling(false)
-          return
+      const inViewport = isElementInViewport(parent)
+
+      if (isHovered && isDesktopOrTablet && inViewport) {
+        if (Math.abs(e.deltaY) === 0) {
+          setHasStoppedVerticalScroll(true)
+        } else if (isHorizontalScrolling) {
+          setHasStoppedVerticalScroll(false)
         }
 
-        // Otherwise, scroll horizontally
-        e.preventDefault()
-        container.scrollLeft += e.deltaY
-        setIsHorizontalScrolling(true)
+        if (hasStoppedVerticalScroll) {
+          const { scrollLeft, scrollWidth, clientWidth } = container
+          const isAtEnd = scrollLeft + clientWidth >= scrollWidth - 2
+          const isAtStart = scrollLeft <= 0
+
+          if (
+            (e.deltaY > 0 && isAtEnd) || // Scrolling down at the end
+            (e.deltaY < 0 && isAtStart) // Scrolling up at the start
+          ) {
+            // Allow vertical scrolling
+            setIsHorizontalScrolling(false)
+            return
+          }
+
+          // Otherwise, scroll horizontally
+          e.preventDefault()
+          container.scrollLeft += e.deltaY
+          setIsHorizontalScrolling(true)
+        }
       } else {
         setIsHorizontalScrolling(false)
       }
@@ -89,12 +102,12 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
     <div
       ref={parentRef}
       className="flex justify-center md:justify-start relative rounded-tl-[20px] rounded-bl-[5vmax] p-4"
-      >
+    >
       <div
         ref={containerRef}
         className="pr-8 flex overflow-x-auto overflow-y-hidden"
         style={{ msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
-        >
+      >
         {children}
       </div>
       <div
