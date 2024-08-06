@@ -5,7 +5,6 @@ import { CITIZEN_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import Script from 'next/script'
 import React from 'react'
 import { useState } from 'react'
 import { useContext } from 'react'
@@ -51,7 +50,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen`}
     >
-      <Script src="https://cdn.splitbee.io/sb.js" />
 
       {/*Mobile menu top bar*/}
       <MobileMenuTop
