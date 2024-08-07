@@ -4,9 +4,8 @@ import { useChain } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import Script from 'next/script'
 import React from 'react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -45,7 +44,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen`}
     >
-      <Script src="https://cdn.splitbee.io/sb.js" />
 
       {/*Mobile menu top bar*/}
       <MobileMenuTop
