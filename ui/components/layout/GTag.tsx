@@ -27,6 +27,11 @@ export default function GTag({ GTAG }: { GTAG: string }) {
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
+
+            gtag('consent', 'default', {
+              'analytics_storage': 'denied'
+            });
+
             gtag('config', '${GTAG}', {
               page_path: window.location.pathname,
             });
