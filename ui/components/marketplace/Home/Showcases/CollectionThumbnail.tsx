@@ -23,7 +23,10 @@ export default function CollectionThumbnail({
 
   if (!metadata) return <Skeleton width="335px" height="100px" />
   return (
-    <Link href={`/marketplace/collection/${collection.assetContractAddress}`}>
+    <Link
+      href={`/marketplace/collection/${collection.assetContractAddress}`}
+      passHref
+    >
       <article className="flex items-center w-[345px] lg:max-w-none hover:lg:bg-gradient-to-br lg:hover:ring-1 ring-moon-white from-moon-gold via-moon-secondary to-moon-gold transition-all duration-150 lg:rounded-xl lg:pl-2 lg:pr-4 lg:py-2 xl:py-3">
         <div className="">
           {/*<p className="font-bold text-lg">{metadata.id}</p>*/}

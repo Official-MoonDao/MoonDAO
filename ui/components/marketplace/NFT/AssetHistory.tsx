@@ -37,7 +37,7 @@ export default function AssetHistory({ contract, tokenId }: AssetHistoryProps) {
         )
       )
     }
-  }, [transferEvents])
+  }, [transferEvents, tokenId])
 
   return (
     <>
