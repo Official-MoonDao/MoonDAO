@@ -22,6 +22,7 @@ export default function TrendingThumbnail({
   return (
     <Link
       href={`/marketplace/collection/${asset?.assetContractAddress}/${asset?.tokenId}`}
+      passHref
     >
       <article className="relative group overflow-hidden">
         {/*Stamps to cut corners*/}
