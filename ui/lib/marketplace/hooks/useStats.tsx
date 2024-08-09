@@ -82,7 +82,7 @@ export function useAssetStats(
         });
       })();
     }
-  }, [assetListings, assetAuctions, contract]);
+  }, [assetListings, assetAuctions, contract, tokenId]);
 
   return stats;
 }
