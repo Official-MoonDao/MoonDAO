@@ -40,6 +40,7 @@ export default function ProfileDirectListing({
         {listing.asset ? (
           <Link
             href={`/collection/${listing.assetContractAddress}/${listing.tokenId}`}
+            passHref
           >
             <MediaRenderer
               className="rounded-xl object-cover"

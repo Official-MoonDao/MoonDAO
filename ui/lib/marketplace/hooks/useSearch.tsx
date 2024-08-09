@@ -10,41 +10,41 @@ export function useSearch(
   const [validAssets, setValidAssets] = useState<any>([])
   const [searchResults, setSearchResults] = useState<any>([])
 
-  function uniqueAssets() {
-    if (validListings || validAuctions) {
-      const listings = validListings
-      const auctions = validAuctions
-      const uniqueAssets: any = []
-      const filteredAssets: any = []
-      const length: number =
-        listings.length > auctions.length ? listings.length : auctions.length
-      for (let i = 0; i < length; i++) {
-        if (
-          listings[i] &&
-          !uniqueAssets.includes(
-            listings[i].assetContractAddress + listings[i].tokenId
-          )
-        ) {
-          const tokenId: any = listings[i].tokenId
-          uniqueAssets.push(listings[i].assetContractAddress + tokenId)
-          filteredAssets.push(listings[i])
-        }
-        if (
-          auctions[i] &&
-          !uniqueAssets.includes(
-            auctions[i].assetContractAddress + auctions[i].tokenId
-          )
-        ) {
-          const tokenId: any = auctions[i].tokenId
-          uniqueAssets.push(auctions[i].assetContractAddress + tokenId)
-          filteredAssets.push(auctions[i])
-        }
-      }
-      setValidAssets(filteredAssets)
-    }
-  }
-
   useEffect(() => {
+    function uniqueAssets() {
+      if (validListings || validAuctions) {
+        const listings = validListings
+        const auctions = validAuctions
+        const uniqueAssets: any = []
+        const filteredAssets: any = []
+        const length: number =
+          listings.length > auctions.length ? listings.length : auctions.length
+        for (let i = 0; i < length; i++) {
+          if (
+            listings[i] &&
+            !uniqueAssets.includes(
+              listings[i].assetContractAddress + listings[i].tokenId
+            )
+          ) {
+            const tokenId: any = listings[i].tokenId
+            uniqueAssets.push(listings[i].assetContractAddress + tokenId)
+            filteredAssets.push(listings[i])
+          }
+          if (
+            auctions[i] &&
+            !uniqueAssets.includes(
+              auctions[i].assetContractAddress + auctions[i].tokenId
+            )
+          ) {
+            const tokenId: any = auctions[i].tokenId
+            uniqueAssets.push(auctions[i].assetContractAddress + tokenId)
+            filteredAssets.push(auctions[i])
+          }
+        }
+        setValidAssets(filteredAssets)
+      }
+    }
+
     uniqueAssets()
   }, [validListings, validAuctions])
 
@@ -57,7 +57,7 @@ export function useSearch(
     )
 
     setSearchResults(results)
-  }, [text])
+  }, [text, validAssets])
 
   //limit search to 4 results
   return searchResults.slice(0, 4)

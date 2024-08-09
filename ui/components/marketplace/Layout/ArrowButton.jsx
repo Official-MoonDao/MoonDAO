@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const ArrowButton = ({ text, position, link }) => {
   return (
-    <Link href={link}>
+    <Link href={link} passHref>
       <button
         className={`${position} font-mono flex text-gray-100 hover:bg-gradient-to-b from-yellow-600  to-moon-secondary hover:text-white duration-150 items-center gap-2 border-[0.6px] hover:border-yellow-600 rounded border-white border-opacity-50 py-3 pl-6 pr-6 font-bold`}
       >
