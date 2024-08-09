@@ -11,7 +11,6 @@ import { useHandleRead } from '../../lib/thirdweb/hooks'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
-import { useMoonPay } from '@/lib/privy/hooks/useMoonPay'
 import ERC20 from '../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import { CopyIcon } from '../assets'
@@ -52,8 +51,6 @@ export function PrivyConnectWallet({
   ])
 
   const importToken = useImportToken(selectedChain)
-
-  const fund = useMoonPay()
 
   function NetworkIcon() {
     return (
@@ -202,7 +199,7 @@ export function PrivyConnectWallet({
               <button
                 className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
                 onClick={async () => {
-                  fund(1)
+                  wallets[selectedWallet].fund()
                 }}
               >
                 <strong>Fund</strong>
