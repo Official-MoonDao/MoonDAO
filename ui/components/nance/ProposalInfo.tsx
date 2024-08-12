@@ -7,6 +7,7 @@ import {
   formatDistanceToNow,
   fromUnixTime,
 } from 'date-fns'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -41,10 +42,12 @@ export function ProposalInfoSkeleton() {
         <div className="mt-2 flex flex-wrap items-center gap-x-6 text-xs">
           {/* Author */}
           <div className="flex items-center gap-x-1">
-            <img
+            <Image
               src={`https://cdn.stamp.fyi/avatar/undefined`}
               alt=""
               className="h-6 w-6 flex-none rounded-full bg-gray-50"
+              width={75}
+              height={75}
             />
             <div>
               <p className="text-gray-500 dark:text-gray-400">Author</p>
@@ -80,9 +83,10 @@ export default function ProposalInfo({
 }) {
   const { proposalIdPrefix } = proposalPacket?.proposalInfo
   const { proposalInfo, ...proposal } = proposalPacket
-  const preTitleDisplay = proposalIdPrefix && proposal.proposalId
-    ? `${proposalIdPrefix}${proposal.proposalId}: `
-    : ''
+  const preTitleDisplay =
+    proposalIdPrefix && proposal.proposalId
+      ? `${proposalIdPrefix}${proposal.proposalId}: `
+      : ''
   const router = useRouter()
   proposal.voteSetup = {
     type: 'quadratic', // could make this dynamic in the future
@@ -188,12 +192,14 @@ export default function ProposalInfo({
         <div className="mt-2 flex flex-row items-center gap-x-6 text-xs">
           {/* Author */}
           <div className="flex items-center gap-x-1">
-            <img
+            <Image
               src={`https://cdn.stamp.fyi/avatar/${
                 proposalPacket.authorAddress || ZERO_ADDRESS
               }`}
               alt=""
               className="h-6 w-6 flex-none rounded-full bg-gray-50"
+              width={75}
+              height={75}
             />
             <div>
               <p className="text-gray-500 dark:text-gray-400">Author</p>

@@ -26,6 +26,7 @@ export default function NewCollectionThumbnail({
       <Link
         className="flex flex-col group items-center"
         href={`/marketplace/collection/${collection.assetContractAddress}`}
+        passHref
       >
         {metadata?.image ? (
           <MediaRenderer

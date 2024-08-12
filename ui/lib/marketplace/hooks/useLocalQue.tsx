@@ -1,29 +1,32 @@
-import { useEffect, useState } from "react";
-import { LocalQue } from "../marketplace-utils";
+import { useEffect, useState } from 'react'
+import { LocalQue } from '../marketplace-utils'
 
 export function useLocalQue(address: string) {
-  const [localQue, setLocalQue] = useState<LocalQue | undefined>(getLocalQue());
+  const [localQue, setLocalQue] = useState<LocalQue | undefined>(getLocalQue())
 
   function getLocalQue() {
-    if (!address) return;
-    const storedQue = localStorage.getItem(`multicallQue-${address}`);
+    if (!address) return
+    const storedQue = localStorage.getItem(`multicallQue-${address}`)
     if (storedQue) {
-      return JSON.parse(storedQue) as LocalQue;
+      return JSON.parse(storedQue) as LocalQue
     }
   }
 
-  function storeLocalQue() {
-    address &&
-      localStorage.setItem(`multicallQue-${address}`, JSON.stringify(localQue));
-  }
+  useEffect(() => {
+    function storeLocalQue() {
+      address &&
+        localStorage.setItem(
+          `multicallQue-${address}`,
+          JSON.stringify(localQue)
+        )
+    }
+
+    if (localQue) storeLocalQue()
+  }, [address, localQue])
 
   useEffect(() => {
-    if (localQue) storeLocalQue();
-  }, [localQue]);
+    if (address) setLocalQue(getLocalQue())
+  }, [address, setLocalQue])
 
-  useEffect(() => {
-    if (address) setLocalQue(getLocalQue());
-  }, [address]);
-
-  return [localQue, setLocalQue];
+  return [localQue, setLocalQue]
 }
