@@ -141,12 +141,6 @@ export default function ProposalEditor() {
   })
   const { handleSubmit, reset, getValues, watch } = methods
 
-  useEffect(() => {
-    if (loadedProposal) {
-      setProposalTitle(loadedProposal.title)
-    }
-  }, [loadedProposal])
-
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
     setMarkdown?.(trimActionsFromBody(b)) // dynamic load so might be undefined
@@ -156,6 +150,12 @@ export default function ProposalEditor() {
     setAttachBudget(true)
     reset(actions[0].payload as RequestBudget)
   }
+
+  useEffect(() => {
+    if (loadedProposal) {
+      restoreFromTitleAndBody(loadedProposal.title, loadedProposal.body)
+    }
+  }, [loadedProposal])
 
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
     let proposal = buildProposal(proposalStatus)

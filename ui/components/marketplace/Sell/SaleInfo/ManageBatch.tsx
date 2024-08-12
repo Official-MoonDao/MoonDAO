@@ -36,7 +36,12 @@ export default function ManageBatch({
     } else if (batchType === 'auction') {
       setBatch(auctionBatch.data.auctions)
     }
-  }, [batchType, listingBatch.data?.listings, auctionBatch.data?.auctions])
+  }, [
+    batchType,
+    listingBatch.data?.listings,
+    auctionBatch.data?.auctions,
+    setBatch,
+  ])
 
   function CreateBatch() {
     return (

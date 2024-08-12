@@ -1,5 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress, useContract } from '@thirdweb-dev/react'
+import { useAddress } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
@@ -7,8 +7,7 @@ import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useHandleWrite } from '../../lib/thirdweb/hooks'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
-import CitizenNFTABI from '../../const/abis/CitizenNFT.json'
-import { CITIZEN_NFT_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
+import { VMOONEY_ADDRESSES } from '../../const/config'
 import { PurhcaseNativeTokenModal } from './PurchaseNativeTokenModal'
 import { Step } from './TransactionStep'
 import { StepLoading } from './TransactionStepLoading'
@@ -64,16 +63,6 @@ export function OnboardingTransactions({
       Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365,
     ])
 
-  const { contract: citizenNFTContract } = useContract(
-    CITIZEN_NFT_ADDRESSES[selectedChain.slug],
-    CitizenNFTABI
-  )
-
-  const { mutateAsync: mintCitizenNFT } = useHandleWrite(
-    citizenNFTContract,
-    'mint'
-  )
-
   const [nativeBalance, setNativeBalance] = useState<any>()
 
   async function getNativeBalance() {
@@ -109,25 +98,9 @@ export function OnboardingTransactions({
       VMOONEY_ADDRESSES[selectedChain.slug],
     ])
 
-    //check for citizen NFT
-    if (
-      selectedChain.slug === 'polygon' &&
-      citizenNFTContract &&
-      selectedLevel.price > 40000
-    ) {
-      const citizenNFTBalance = await citizenNFTContract.call('balanceOf', [
-        address,
-        0,
-      ])
-      if (citizenNFTBalance.toString() > 0) {
-        setCurrStep(5)
-        setStage(2)
-      }
-    }
-
     //check for vmooney, approval, mooney balance, and native balance
     if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
-      setCurrStep(5)
+      setCurrStep(4)
       if (selectedChain.slug !== 'polygon') {
         setStage(2)
       }
@@ -136,7 +109,7 @@ export function OnboardingTransactions({
       !selectedLevel.hasVotingPower &&
       mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1
     ) {
-      setCurrStep(5)
+      setCurrStep(4)
       return setStage(2)
     } else if (
       mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price / 2 - 1 &&
@@ -303,31 +276,6 @@ export function OnboardingTransactions({
                 selectedWallet={selectedWallet}
                 wallets={wallets}
               />
-              {selectedChain.slug === 'polygon' &&
-                selectedLevel.price > 40000 && (
-                  <Step
-                    realStep={currStep}
-                    stepNum={5}
-                    title={'Mint Citizen NFT'}
-                    explanation={
-                      'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
-                    }
-                    action={async () => {
-                      await mintCitizenNFT()
-                        .then(() => {
-                          setChecksLoaded(false)
-                          checkStep()
-                        })
-                        .catch((err) => {
-                          throw err
-                        })
-                    }}
-                    txExplanation={`Mint Citizen Mission Patch NFT`}
-                    selectedChain={selectedChain}
-                    selectedWallet={selectedWallet}
-                    wallets={wallets}
-                  />
-                )}
             </>
           )}
         </>
@@ -359,16 +307,6 @@ export function OnboardingTransactions({
                   'Stake your tokens for voting power within the community.'
                 }
               />
-              {selectedChain.slug === 'polygon' &&
-                selectedLevel.price > 40000 && (
-                  <StepLoading
-                    stepNum={5}
-                    title={'Mint Citizen NFT'}
-                    explanation={
-                      'Mint your Citizen Mission Patch NFT and join the MoonDAO community!'
-                    }
-                  />
-                )}
             </>
           )}
         </>
