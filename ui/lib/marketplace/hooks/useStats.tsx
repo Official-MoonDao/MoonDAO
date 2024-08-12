@@ -157,6 +157,6 @@ export function useCollectionStats(
         });
       })();
     }
-  }, [collectionListings, collectionAuctions]);
+  }, [collectionListings, collectionAuctions, collectionContract]);
   return stats;
 }

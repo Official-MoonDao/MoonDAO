@@ -69,7 +69,7 @@ export default function Lock() {
           VMOONEYLock[1] != 0 &&
           ethers.BigNumber.from(+new Date()).gte(VMOONEYLock[1].mul(1000))
       )
-  }, [VMOONEYLock, address])
+  }, [VMOONEYLock, VMOONEYLockLoading, address])
 
   const [lockAmount, setLockAmount] = useState<string>('0')
   //reset lock amount on chain switch
@@ -111,7 +111,7 @@ export default function Lock() {
   const [hasLock, setHasLock] = useState<boolean>()
   useEffect(() => {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
-  }, [VMOONEYLock, address, createLock])
+  }, [VMOONEYLock, VMOONEYLockLoading, address, createLock])
 
   const { mutateAsync: increaseLock } = useVMOONEYIncreaseLock({
     votingEscrowContract: vMooneyContract,

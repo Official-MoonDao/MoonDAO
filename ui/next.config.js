@@ -8,6 +8,7 @@ module.exports = nextTranslate({
       'cryptologos.cc',
       'gateway.ipfscdn.io',
       'ipfs.cf-ipfs.com',
+      'cdn.discordapp.com',
     ],
   },
   async redirects() {
