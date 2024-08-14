@@ -5,5 +5,5 @@ export function useHandleError(method: string, error: any, args?: any[]) {
     if (args && args.length > 0) {
       if (method && error) console.log('Method:' + method, error)
     }
-  }, [error])
+  }, [error, args, method])
 }

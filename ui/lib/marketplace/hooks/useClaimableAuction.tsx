@@ -15,6 +15,6 @@ export function useClaimableAuction(
       winningBidObj.bidAmount >= +buyoutBidAmount ||
       (winningBidObj.bidAmount > 0 && +endTimestamp < now)
     )
-  }, [winningBidObj, buyoutBidAmount])
+  }, [winningBidObj, buyoutBidAmount, endTimestamp])
   return claimable
 }
