@@ -5,6 +5,7 @@ import { Widget } from '@typeform/embed-react'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -342,16 +343,26 @@ export default function CreateCitizen({
                     htmlFor="link"
                   >
                     <p className="dark:text-white">
-                      I have read and accepted the terms and conditions.
-                      <a
+                      I have read and accepted the
+                      <Link
                         rel="noopener noreferrer"
                         className="text-sky-400"
                         href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"
                         target="_blank"
                       >
                         {' '}
-                        Read MoonDAO's terms and conditions{' '}
-                      </a>{' '}
+                        Terms and Conditions{' '}
+                      </Link>{' '}
+                      and{' '}
+                      <Link
+                        className="text-sky-400"
+                        href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Privacy Policy
+                      </Link>
+                      .
                     </p>
                   </label>
                 </div>
