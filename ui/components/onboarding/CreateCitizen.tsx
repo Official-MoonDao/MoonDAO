@@ -94,6 +94,9 @@ export default function CreateCitizen({
   const submitTypeform = useCallback(async (formResponse: any) => {
     const accessToken = await getAccessToken()
 
+    // Delay the fetch call by 3 seconds
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
     const { formId, responseId } = formResponse
     const responseRes = await fetch(
       `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
@@ -104,6 +107,7 @@ export default function CreateCitizen({
         },
       }
     )
+
     const data = await responseRes.json()
 
     //fomat answers into an object

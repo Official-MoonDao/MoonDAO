@@ -81,6 +81,9 @@ export default function CreateTeam({
   const submitTypeform = useCallback(async (formResponse: any) => {
     const accessToken = await getAccessToken()
 
+    // Delay the fetch call by 3 seconds
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
     //get response from form
     const { formId, responseId } = formResponse
     const responseRes = await fetch(
