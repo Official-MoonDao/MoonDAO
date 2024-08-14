@@ -5,6 +5,7 @@ import { Widget } from '@typeform/embed-react'
 import { TEAM_ADDRESSES, TEAM_CREATOR_ADDRESSES } from 'const/config'
 import { BigNumber, ethers } from 'ethers'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -80,6 +81,9 @@ export default function CreateTeam({
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     const accessToken = await getAccessToken()
+
+    // Delay the fetch call by 3 seconds
+    await new Promise((resolve) => setTimeout(resolve, 3000))
 
     //get response from form
     const { formId, responseId } = formResponse
@@ -297,18 +301,27 @@ export default function CreateTeam({
                       className="mt-px font-light text-gray-700  select-none max-w-[550px]"
                       htmlFor="link"
                     >
-                      <p className="text-black dark:text-white">
-                        I have read and accepted the terms and conditions.
-                        <a
+                      <p className="dark:text-white">
+                        I have read and accepted the
+                        <Link
                           rel="noopener noreferrer"
                           className="text-sky-400"
-                          href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
+                          href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"
                           target="_blank"
                         >
                           {' '}
-                          Learn more{' '}
-                        </a>{' '}
-                        about MoonDAO's terms and conditions
+                          Terms and Conditions{' '}
+                        </Link>{' '}
+                        and the{' '}
+                        <Link
+                          className="text-sky-400"
+                          href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Privacy Policy
+                        </Link>
+                        .
                       </p>
                     </label>
                   </div>
