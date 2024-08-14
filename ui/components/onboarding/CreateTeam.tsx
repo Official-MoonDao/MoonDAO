@@ -312,7 +312,7 @@ export default function CreateTeam({
                           {' '}
                           Terms and Conditions{' '}
                         </Link>{' '}
-                        and{' '}
+                        and the{' '}
                         <Link
                           className="text-sky-400"
                           href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
