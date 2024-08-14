@@ -44,6 +44,9 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
       try {
         const accessToken = await getAccessToken()
 
+        // Delay the fetch call by 3 seconds
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+
         //get response from form
         const { formId, responseId } = formResponse
 
