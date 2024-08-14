@@ -17,7 +17,7 @@ const MobileMenuTop = ({
   citizenContract,
 }: MobileMenuTop) => {
   return (
-    <div className="relative z-10 flex flex-1 flex-col overflow-hidden md:hidden">
+    <div className="relative z-10 flex flex-1 flex-col md:hidden">
       <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 justify-between bg-white shadow dark:bg-slate-950">
         <button
           type="button"
