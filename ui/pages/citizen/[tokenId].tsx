@@ -433,7 +433,7 @@ export default function CitizenDetailPage({
                       className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:hover:pl-5"
                       onClick={() => router.push('/lock')}
                     >
-                      {'Stake $MOONEY'}
+                      {'Get Voting Power'}
                     </StandardButton>
                     <StandardButton
                       className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:hover:pl-5"
