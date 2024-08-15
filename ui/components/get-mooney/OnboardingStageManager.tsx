@@ -190,7 +190,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
     <StageContainer>
       <div className="flex flex-col font-RobotoMono items-center">
         <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
-          SELECT MEMBERSHIP
+          GET $MOONEY
         </h1>
 
         <ContributionLevels
@@ -226,7 +226,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
             </Link>{' '}
             {` and `}
             <Link className="text-moon-gold" href="/lock">
-              stake
+              lock
             </Link>{' '}
             {`some or all of that for any amount of
               time between one week and four years to maximize voting power.

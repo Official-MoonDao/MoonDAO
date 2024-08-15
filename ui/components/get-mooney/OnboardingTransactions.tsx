@@ -233,7 +233,7 @@ export function OnboardingTransactions({
                 stepNum={3}
                 title={'Token Approval'}
                 explanation={
-                  'Approve the $MOONEY tokens for staking. This prepares your tokens for the next step.'
+                  'Approve the $MOONEY tokens for locking. This prepares your tokens for the next step.'
                 }
                 action={async () => {
                   await approveMooney()
@@ -255,9 +255,9 @@ export function OnboardingTransactions({
               <Step
                 realStep={currStep}
                 stepNum={4}
-                title={'Stake $MOONEY'}
+                title={'Lock $MOONEY'}
                 explanation={
-                  'Stake your tokens for voting power within the community.'
+                  'Lock your tokens for voting power within the community.'
                 }
                 action={async () => {
                   await createLock()
@@ -297,14 +297,14 @@ export function OnboardingTransactions({
                 stepNum={3}
                 title={'Token Approval'}
                 explanation={
-                  'Approve the $MOONEY tokens for staking. This prepares your tokens for the next step.'
+                  'Approve the $MOONEY tokens for locking. This prepares your tokens for the next step.'
                 }
               />
               <StepLoading
                 stepNum={4}
-                title={'Stake $MOONEY'}
+                title={'Lock $MOONEY'}
                 explanation={
-                  'Stake your tokens for voting power within the community.'
+                  'Lock your tokens for voting power within the community.'
                 }
               />
             </>
