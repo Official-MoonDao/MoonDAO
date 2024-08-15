@@ -8,10 +8,10 @@ import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBala
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
-import L2Toggle from '../../components/lock/L2Toggle'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
+import L2Toggle from '../lock/L2Toggle'
 import { ContributionLevels } from './ContributionLevels'
 import { InvolvementOptions } from './InvolvementOptions'
 import { OnboardingCongrats } from './OnboardingCongrats'
@@ -80,7 +80,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
         }))
       })
     }
-  }, [selectedLevel.price, address, selectedChain])
+  }, [selectedLevel.price, address, selectedChain, generateNativeRoute, user])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
@@ -100,7 +100,13 @@ export function OnboardingStageManager({ usdQuotes }: any) {
         }
       }
     }
-  }, [selectedLevel.price, totalLocked, totalMooneyBalance, selectedChain])
+  }, [
+    selectedLevel.price,
+    totalLocked,
+    totalMooneyBalance,
+    selectedChain,
+    selectedLevel,
+  ])
 
   useEffect(() => {
     if (stage > 0) {
@@ -128,7 +134,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
       const width = stageWidth * (stage - 1)
 
       return width
-    }, [trackRef.current, stage])
+    }, [trackRef, stage])
 
     return (
       <>
