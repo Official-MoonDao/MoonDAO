@@ -6,7 +6,7 @@ import { useEffect, useState, useRef, useMemo, useContext } from 'react'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
-import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
+import { useUniswapTokens } from '../../lib/uniswap/hooks/useUniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
@@ -16,6 +16,7 @@ import { ContributionLevels } from './ContributionLevels'
 import { InvolvementOptions } from './InvolvementOptions'
 import { OnboardingCongrats } from './OnboardingCongrats'
 import { OnboardingTransactions } from './OnboardingTransactions'
+import { nativeOnChain } from '@uniswap/smart-order-router'
 
 /*
 Onboarding Stages:
@@ -59,12 +60,12 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   const totalMooneyBalance = useTotalMooneyBalance(address)
   const { totalLocked } = useValidVP(address)
 
-  const { MOONEY, NATIVE_TOKEN, DAI } = useUniswapTokens(selectedChain)
+  const { MOONEY } = useUniswapTokens(selectedChain)
 
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price + 1,
     MOONEY,
-    NATIVE_TOKEN
+    nativeOnChain(selectedChain.chainId)
   )
 
   useEffect(() => {
@@ -80,7 +81,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
         }))
       })
     }
-  }, [selectedLevel.price, address, selectedChain, generateNativeRoute, user])
+  }, [selectedLevel.price, address, selectedChain, user])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
