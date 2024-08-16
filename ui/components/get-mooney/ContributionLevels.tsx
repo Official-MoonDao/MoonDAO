@@ -163,16 +163,15 @@ export function ContributionLevels({
       <ContributionLevel
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"
-        title="Explorer"
-        intro="Begin your journey with MoonDAO, participate in governance and decision making by voting on projects, proposals, and treasury spending. 
+        title="20k"
+        intro="Take your first small step with MoonDAO and participate in governance. 
         "
         mooneyValue={20000}
         usdQuote={usdQuotes[0]}
         points={[
-          '10,000 $MOONEY which you own and can use as you wish, such as purchasing items in the MoonDAO Marketplace',
-          ' 10,000 $MOONEY staked for one year to co-govern MoonDAO. At the end of one year, your 10,000 $MOONEY unlocks to use as you wish',
-          'Unlike traditional organizations, you retain full ownership of your assets and there is no annual fee, dues, or middleman',
-          'MoonDAO Marketplace Access',
+          '10,000 $MOONEY for personal use, like buying from the Marketplace',
+          '10,000 $vMOONEY, locked for one year to vote and co-govern MoonDAO',
+          'Retain full ownership of $MOONEY and locked voting $vMOONEY',
         ]}
         hasVotingPower
         selectedLevel={selectedLevel}
@@ -182,15 +181,13 @@ export function ContributionLevels({
       <ContributionLevel
         lightIcon="/onboarding-icons/citizen-white.svg"
         darkIcon="/onboarding-icons/citizen-black.svg"
-        title="Voyager"
-        intro="Play a more active role in building the largest Space Network-State focused on becoming multi-planetary with full voting power."
+        title="100k"
+        intro="Engage more actively in building and governing MoonDAO."
         mooneyValue={100000}
         usdQuote={usdQuotes[1]}
         points={[
-          '50,000 $MOONEY which you own and can use as you wish, such as purchasing items in the MoonDAO Marketplace',
-          ' 50,000 $MOONEY staked for one year to co-govern MoonDAO. At the end of one year, your 50,000 $MOONEY unlocks to use as you wish',
-          'Expanded access including governance and project channels',
-          'Everything in the Explorer Tier',
+          '50,000 $MOONEY for personal use, like buying from the Marketplace',
+          '50,000 $vMOONEY, locked for one year to vote and co-govern MoonDAO',
         ]}
         hasVotingPower
         selectedLevel={selectedLevel}
@@ -201,15 +198,14 @@ export function ContributionLevels({
       <ContributionLevel
         lightIcon="/onboarding-icons/industry-white.svg"
         darkIcon="/onboarding-icons/industry-black.svg"
-        title="Pioneer"
-        intro="For those that deeply support the ideals of decentralized access to space and are dedicated to making it happen, this is for you.
+        title="500k"
+        intro="For dedicated supporters of decentralized space access.
         "
         mooneyValue={500000}
         usdQuote={usdQuotes[2]}
         points={[
-          '250,000 $MOONEY which you own and can use as you wish, such as purchasing items in the MoonDAO Marketplace',
-          '250,000 $MOONEY staked for one year to co-govern MoonDAO. At the end of one year, your 250,000 $MOONEY unlocks to use as you wish',
-          'Everything in the Voyager Tier',
+          '250,000 $MOONEY for personal use, like buying from the Marketplace',
+          '250,000 $vMOONEY, locked for one year to vote and co-govern MoonDAO',
         ]}
         hasVotingPower
         selectedLevel={selectedLevel}
