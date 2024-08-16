@@ -56,14 +56,14 @@ export function PrivyConnectWallet() {
 
   useEffect(() => {
     if (wallets?.[0]) {
-      setWalletChainId(+wallets?.[0]?.chainId.split(':')[1])
+      setWalletChainId(+wallets?.[selectedWallet]?.chainId.split(':')[1])
     }
   }, [wallets, selectedWallet])
 
   useEffect(() => {
     if (walletChainId !== selectedChain.chainId) setNetworkMismatch(true)
     else setNetworkMismatch(false)
-  }, [walletChainId, selectedChain])
+  }, [walletChainId, selectedChain, selectedWallet])
 
   //detect outside click
   function handleClickOutside({ target }: any) {
