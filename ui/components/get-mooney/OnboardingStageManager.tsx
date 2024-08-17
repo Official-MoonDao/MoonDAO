@@ -6,16 +6,17 @@ import { useEffect, useState, useRef, useMemo, useContext } from 'react'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
-import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
+import { useUniswapTokens } from '../../lib/uniswap/hooks/useUniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
-import L2Toggle from '../../components/lock/L2Toggle'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
+import L2Toggle from '../lock/L2Toggle'
 import { ContributionLevels } from './ContributionLevels'
 import { InvolvementOptions } from './InvolvementOptions'
 import { OnboardingCongrats } from './OnboardingCongrats'
 import { OnboardingTransactions } from './OnboardingTransactions'
+import { nativeOnChain } from '@uniswap/smart-order-router'
 
 /*
 Onboarding Stages:
@@ -59,12 +60,12 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   const totalMooneyBalance = useTotalMooneyBalance(address)
   const { totalLocked } = useValidVP(address)
 
-  const { MOONEY, NATIVE_TOKEN, DAI } = useUniswapTokens(selectedChain)
+  const { MOONEY } = useUniswapTokens(selectedChain)
 
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price + 1,
     MOONEY,
-    NATIVE_TOKEN
+    nativeOnChain(selectedChain.chainId)
   )
 
   useEffect(() => {
@@ -80,7 +81,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
         }))
       })
     }
-  }, [selectedLevel.price, address, selectedChain])
+  }, [selectedLevel.price, address, selectedChain, user])
 
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
@@ -100,7 +101,13 @@ export function OnboardingStageManager({ usdQuotes }: any) {
         }
       }
     }
-  }, [selectedLevel.price, totalLocked, totalMooneyBalance, selectedChain])
+  }, [
+    selectedLevel.price,
+    totalLocked,
+    totalMooneyBalance,
+    selectedChain,
+    selectedLevel,
+  ])
 
   useEffect(() => {
     if (stage > 0) {
@@ -128,7 +135,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
       const width = stageWidth * (stage - 1)
 
       return width
-    }, [trackRef.current, stage])
+    }, [trackRef, stage])
 
     return (
       <>
@@ -184,7 +191,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
     <StageContainer>
       <div className="flex flex-col font-RobotoMono items-center">
         <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
-          SELECT MEMBERSHIP
+          GET $MOONEY
         </h1>
 
         <ContributionLevels
@@ -220,7 +227,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
             </Link>{' '}
             {` and `}
             <Link className="text-moon-gold" href="/lock">
-              stake
+              lock
             </Link>{' '}
             {`some or all of that for any amount of
               time between one week and four years to maximize voting power.

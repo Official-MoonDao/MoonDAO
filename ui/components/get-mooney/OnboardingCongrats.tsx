@@ -1,4 +1,4 @@
-import { SolarConfetti } from '../../components/assets'
+import { SolarConfetti } from '../assets'
 
 export function OnboardingCongrats({ progress }: any) {
   return (

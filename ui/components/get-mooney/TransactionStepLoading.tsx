@@ -1,4 +1,4 @@
-import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type StepLoadingProps = {
   stepNum: number

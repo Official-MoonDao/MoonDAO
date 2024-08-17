@@ -41,15 +41,15 @@ export default function Governance() {
         {
           name: 'Get $MOONEY',
           description:
-            'Join the MoonDAO community by acquiring our governance token $MOONEY on UniSwap.',
-          href: 'https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
+            'Become a MoonDAO member by acquiring our governance token $MOONEY.',
+          href: '/get-mooney',
           icon: WalletIcon,
-          externalLink: true,
+          externalLink: false,
         },
         {
           name: 'Get Voting Power',
           description:
-            'Voting power is granted to stakeholders, stake $MOONEY to fully participate in co-governance and co-creation.',
+            'Voting power is granted by locking $MOONEY for $vMOONEY to vote and fully participate in co-governance and co-creation.',
           href: '/lock',
           icon: LockClosedIcon,
           externalLink: false,

@@ -2,7 +2,7 @@ import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
-import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type StepProps = {
   realStep: number
