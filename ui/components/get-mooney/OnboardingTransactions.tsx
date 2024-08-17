@@ -5,12 +5,13 @@ import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useHandleWrite } from '../../lib/thirdweb/hooks'
-import { useUniswapTokens } from '../../lib/uniswap/UniswapTokens'
+import { useUniswapTokens } from '../../lib/uniswap/hooks/useUniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { VMOONEY_ADDRESSES } from '../../const/config'
 import { PurhcaseNativeTokenModal } from './PurchaseNativeTokenModal'
 import { Step } from './TransactionStep'
 import { StepLoading } from './TransactionStepLoading'
+import { nativeOnChain } from '@uniswap/smart-order-router'
 
 /*
 Step 1: Purchase MATIC -- Check for MATIC balance > selected level
@@ -41,14 +42,14 @@ export function OnboardingTransactions({
   const { wallets } = useWallets()
 
   //Uniswap
-  const { MOONEY, NATIVE_TOKEN } = useUniswapTokens(selectedChain)
+  const { MOONEY } = useUniswapTokens(selectedChain)
   const [mooneySwapRoute, setMooneySwapRoute] = useState<any>()
   const {
     generateRoute: generateMooneyRoute,
     executeRoute: executeMooneySwapRoute,
   } = useUniversalRouter(
     selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18,
-    NATIVE_TOKEN,
+    nativeOnChain(selectedChain.chainId),
     MOONEY
   )
 

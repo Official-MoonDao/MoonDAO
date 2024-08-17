@@ -1,10 +1,12 @@
-import { Polygon, Sepolia } from '@thirdweb-dev/chains'
+import { Ethereum, Polygon, Sepolia } from '@thirdweb-dev/chains'
 import { Token } from '@uniswap/sdk-core'
 import useTranslation from 'next-translate/useTranslation'
 import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
 import { OnboardingStageManager } from '../components/get-mooney/OnboardingStageManager'
 import Head from '../components/layout/Head'
 import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
+import { useContext, useEffect } from 'react'
+import ChainContext from '@/lib/thirdweb/chain-context'
 
 function JoinCard({ label, text }: any) {
   return (
@@ -23,6 +25,12 @@ function JoinCard({ label, text }: any) {
 
 export default function Join({ usdQuotes }: any) {
   const { t } = useTranslation('common')
+
+  const {selectedChain, setSelectedChain} = useContext(ChainContext)
+
+  useEffect(()=>{
+    setSelectedChain(process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Ethereum : Sepolia)
+  },[])
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
