@@ -2,6 +2,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type TierProps = {
   label: string
@@ -12,6 +13,11 @@ type TierProps = {
   hasCitizen?: boolean
   buttoncta: string
   tierDescription?: string
+  type: string
+  setSelectedType?: Function
+  isLoading: boolean
+  isWhitelisted: boolean
+  setApplyModalEnabled: Function
 }
 
 export default function Tier({
@@ -23,23 +29,27 @@ export default function Tier({
   price,
   onClick,
   hasCitizen = false,
+  type,
+  setSelectedType,
+  isLoading,
+  isWhitelisted,
+  setApplyModalEnabled,
 }: TierProps) {
   const address = useAddress()
   const { login, user, logout } = usePrivy()
-
-  // const { login } = useLogin({
-  //   onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
-  //     if (!wasAlreadyAuthenticated) onClick()
-  //   },
-  // })
 
   const iconStar = './assets/icon-star.svg'
 
   return (
     <section
       id="callout-card-container"
-      className="bg-darkest-cool md:bg-transparent"
+      className="bg-darkest-cool md:bg-transparent z-[50]"
     >
+      {isLoading && (
+        <div className="absolute w-full h-full backdrop-blur-md z-10 flex items-center justify-center">
+          <LoadingSpinner className="scale-[3] relative bottom-12" />
+        </div>
+      )}
       <div className="bg-[#020617] md:mb-5 md:rounded-[5vmax] p-5 md:rounded-tl-[20px]">
         <div
           className="w-full transition-all duration-150 pb-10 cursor-pointer text-white text-opacity-[80%] "
@@ -48,15 +58,22 @@ export default function Tier({
             if (!address) return login()
             if (hasCitizen)
               return toast.error('You have already registered as a citizen')
+            if (isLoading) return
 
-            onClick()
+            setSelectedType && setSelectedType(type)
+
+            if (isWhitelisted) {
+              onClick()
+            } else {
+              setApplyModalEnabled(true)
+            }
           }}
-          >
+        >
           <div className="w-full h-full flex flex-col lg:flex-row ">
             <div className="pt-5 md:pt-0 flex items-center rounded-[2vmax] rounded-tl-[20px] overflow-hidden">
               <Image
                 src={
-                  label === 'Create a Team'
+                  type === 'team'
                     ? '/assets/team_image.png'
                     : '/assets/neil-armstrong-pfp.png'
                 }
@@ -113,7 +130,7 @@ export default function Tier({
           <div className="inline-block ">
             <div className="mt-5 rounded-tl-[10px] rounded-[2vmax] gradient-2">
               <button className="py-2 px-5 hover:pl-7 ease-in-out duration-300">
-                {buttoncta}
+                {isWhitelisted ? buttoncta : 'Apply'}
               </button>
             </div>
           </div>
