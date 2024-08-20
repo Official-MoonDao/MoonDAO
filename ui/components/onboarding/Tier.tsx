@@ -46,8 +46,8 @@ export default function Tier({
       className="bg-darkest-cool md:bg-transparent z-[50]"
     >
       {isLoading && (
-        <div className="absolute w-full h-full backdrop-blur-md z-10 flex items-center justify-center">
-          <LoadingSpinner className="scale-[3] relative bottom-12" />
+        <div className="absolute w-full h-1/2 backdrop-blur-md z-10 flex items-center justify-center">
+          <LoadingSpinner className="scale-[3] relative bottom-10" />
         </div>
       )}
       <div className="bg-[#020617] md:mb-5 md:rounded-[5vmax] p-5 md:rounded-tl-[20px]">
