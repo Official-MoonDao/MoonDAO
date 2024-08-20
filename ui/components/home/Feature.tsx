@@ -1,4 +1,5 @@
 import Image from "next/image"
+import Link from "next/link"
 
 export default function Feature() {
     return (
@@ -14,12 +15,14 @@ export default function Feature() {
                 <div id="image-container" 
                     className="gradient-2 rounded-[5vmax] rounded-tr-[20px] pl-[1vmax] relative max-w-[1200px] z-50"
                     >
-                    <Image id="dude-perfect-image"
-                        width="1160"
-                        height="1160" 
-                        alt="MoonDAO celebrating the launch of their first astronaut (Coby Cotton) in front of Blue Origin's rocket"  
-                        className="mb-[-25vh] rounded-[5vmax] rounded-tr-[20px]" src="/assets/dude-perfect.jpg" 
-                    />
+                    <Link href="/sweepstakes">
+                        <Image id="Meet our astronauts"
+                            width="2014"
+                            height="1336" 
+                            alt="Meet our astronauts, Coby Cotton and Dr.Eiman Jahangir"  
+                            className="mb-[-25vh] rounded-[5vmax] rounded-tr-[20px]" src="/assets/Astronauts.png" 
+                        />
+                    </Link>
                 </div>
             </div>
             <div id="divider" 
