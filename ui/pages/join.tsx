@@ -1,4 +1,5 @@
-import { useAddress, useContract } from '@thirdweb-dev/react'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_WHITELIST_ADDRESSES,
@@ -10,6 +11,7 @@ import { useContext, useState } from 'react'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -24,32 +26,23 @@ export default function Join() {
 
   const { selectedChain } = useContext(ChainContext)
 
+  const sdk = useSDK()
   const address = useAddress()
-  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
 
-  const [selectedType, setSelectedType] = useState<'team' | 'citizen'>()
+  //Selected tier for onboarding flow
+  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
+  //Selected tier for apply modal
+  const [selectedApplyType, setSelectedApplyType] = useState<
+    'team' | 'citizen'
+  >()
+  const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
   )
-
   const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
     address,
   ])
-
-  const [applyModalEnabled, setApplyModalEnabled] = useState(false)
-
-  //whitelist contracts
-  const { contract: citizenWhitelistContract } = useContract(
-    CITIZEN_WHITELIST_ADDRESSES[selectedChain.slug]
-  )
-  const { contract: teamWhitelistContract } = useContract(
-    TEAM_WHITELIST_ADDRESSES[selectedChain.slug]
-  )
-  const { data: isWhitelistedCitizen, isLoading: isLoadingCitizenWhitelist } =
-    useHandleRead(citizenWhitelistContract, 'isWhitelisted', [address])
-  const { data: isWhitelistedTeam, isLoading: isLoadingTeamWhitelist } =
-    useHandleRead(teamWhitelistContract, 'isWhitelisted', [address])
 
   useChainDefault()
 
@@ -107,7 +100,7 @@ export default function Join() {
         >
           {applyModalEnabled && (
             <ApplyModal
-              type={selectedType as string}
+              type={selectedApplyType as string}
               setEnabled={setApplyModalEnabled}
             />
           )}
@@ -123,13 +116,23 @@ export default function Join() {
                 'Early Project Access: Engage in space projects, earn money, and advance your career.',
               ]}
               buttoncta="Become a Citizen"
-              onClick={() => setSelectedTier('citizen')}
+              onClick={async () => {
+                const citizenWhitelistContract = await sdk?.getContract(
+                  CITIZEN_WHITELIST_ADDRESSES[selectedChain.slug]
+                )
+                const isWhitelisted = await citizenWhitelistContract?.call(
+                  'isWhitelisted',
+                  [address]
+                )
+                if (isWhitelisted) {
+                  setSelectedTier('citizen')
+                } else {
+                  setSelectedApplyType('citizen')
+                  setApplyModalEnabled(true)
+                }
+              }}
               hasCitizen={+citizenBalance > 0}
               type="citizen"
-              setSelectedType={setSelectedType}
-              isLoading={isLoadingCitizenWhitelist}
-              isWhitelisted={isWhitelistedCitizen}
-              setApplyModalEnabled={setApplyModalEnabled}
             />
             <Tier
               price={0.0333}
@@ -143,12 +146,22 @@ export default function Join() {
                 'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
               ]}
               buttoncta="Create a Team"
-              onClick={() => setSelectedTier('team')}
+              onClick={async () => {
+                const teamWhitelistContract = await sdk?.getContract(
+                  TEAM_WHITELIST_ADDRESSES[selectedChain.slug]
+                )
+                const isWhitelisted = await teamWhitelistContract?.call(
+                  'isWhitelisted',
+                  [address]
+                )
+                if (isWhitelisted) {
+                  setSelectedTier('team')
+                } else {
+                  setSelectedApplyType('team')
+                  setApplyModalEnabled(true)
+                }
+              }}
               type="team"
-              setSelectedType={setSelectedType}
-              isLoading={isLoadingTeamWhitelist}
-              isWhitelisted={isWhitelistedTeam}
-              setApplyModalEnabled={setApplyModalEnabled}
             />
           </div>
         </ContentLayout>
