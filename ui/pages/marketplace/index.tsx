@@ -117,7 +117,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
             {filteredListings &&
               filteredListings.map((listing: TeamListingType, i: number) => (
                 <MarketplaceListing
-                  key={`job-${i}`}
+                  key={`listing-${i}`}
                   listing={listing}
                   selectedChain={selectedChain}
                   teamContract={teamContract}
