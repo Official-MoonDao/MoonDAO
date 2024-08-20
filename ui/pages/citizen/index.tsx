@@ -1,9 +1,8 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES } from 'const/config'
+import { CITIZEN_ADDRESSES, CITIZEN_WHITELIST_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -11,6 +10,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import ApplyModal from '@/components/onboarding/ApplyModal'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
 import Tier from '@/components/onboarding/Tier'
 
@@ -29,6 +29,15 @@ export default function Join() {
   const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
     address,
   ])
+
+  const [applyModalEnabled, setApplyModalEnabled] = useState(false)
+
+  const { contract: citizenWhitelistContract } = useContract(
+    CITIZEN_WHITELIST_ADDRESSES[selectedChain.slug]
+  )
+
+  const { data: isWhitelistedCitizen, isLoading: isLoadingCitizenWhitelist } =
+    useHandleRead(citizenWhitelistContract, 'isWhitelisted', [address])
 
   useChainDefault()
 
@@ -79,6 +88,9 @@ export default function Join() {
             </>
           }
         >
+          {applyModalEnabled && (
+            <ApplyModal type="citizen" setEnabled={setApplyModalEnabled} />
+          )}
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
               <Tier
@@ -94,6 +106,10 @@ export default function Join() {
                 buttoncta="Become a Citizen"
                 onClick={() => setSelectedTier('citizen')}
                 hasCitizen={+citizenBalance > 0}
+                type="citizen"
+                isLoading={isLoadingCitizenWhitelist}
+                isWhitelisted={isWhitelistedCitizen}
+                setApplyModalEnabled={setApplyModalEnabled}
               />
             </div>
           </div>
