@@ -1,7 +1,7 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT, useContract } from '@thirdweb-dev/react'
 import { useAddress } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES, TEAM_ADDRESSES} from 'const/config'
+import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import {
   blockedCitizens,
   blockedTeams,
@@ -22,6 +22,7 @@ import ContentLayout from '../components/layout/ContentLayout'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
 import InnerPreFooter from '../components/layout/InnerPreFooter'
+import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
@@ -33,7 +34,10 @@ type NetworkProps = {
   filteredCitizens: NFT[]
 }
 
-export default function Network({ filteredTeams, filteredCitizens }: NetworkProps) {
+export default function Network({
+  filteredTeams,
+  filteredCitizens,
+}: NetworkProps) {
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
   const address = useAddress() // Add this line to get the user's address
 
@@ -188,10 +192,7 @@ export default function Network({ filteredTeams, filteredCitizens }: NetworkProp
           isProfile
         >
           <>
-            <div
-              id="card-grid-container"
-              className="h-full mb-10 grid grid-cols-1 min-[1100px]:grid-cols-2 min-[1450px]:grid-cols-3 mt-5 gap-5 items-start"
-            >
+            <CardGridContainer>
               {cachedNFTs?.[0] ? (
                 cachedNFTs
                   ?.slice((pageIdx - 1) * 9, pageIdx * 9)
@@ -225,7 +226,7 @@ export default function Network({ filteredTeams, filteredCitizens }: NetworkProp
                   ))}
                 </>
               )}
-            </div>
+            </CardGridContainer>
             <Frame noPadding marginBottom="0px">
               <div
                 id="pagination-container"
@@ -290,11 +291,9 @@ export async function getStaticProps() {
   const teams = await teamContract.erc721.getAll()
   const filteredPublicTeams: any = teams?.filter(
     (nft: any) =>
-      nft.metadata.attributes?.find(
-        (attr: any) => attr.trait_type === 'view'
-      ).value === 'public' && !blockedTeams.includes(nft.metadata.id)
+      nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
+        .value === 'public' && !blockedTeams.includes(nft.metadata.id)
   )
-
 
   const filteredValidTeams: any = filteredPublicTeams?.filter(
     async (nft: any) => {
@@ -311,9 +310,8 @@ export async function getStaticProps() {
 
   const filteredPublicCitizens: any = citizens?.filter(
     (nft: any) =>
-      nft.metadata.attributes?.find(
-        (attr: any) => attr.trait_type === 'view'
-      ).value === 'public' && !blockedCitizens.includes(nft.metadata.id)
+      nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
+        .value === 'public' && !blockedCitizens.includes(nft.metadata.id)
   )
 
   const filteredValidCitizens: any = filteredPublicCitizens?.filter(
