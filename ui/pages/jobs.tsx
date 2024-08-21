@@ -1,3 +1,4 @@
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import {
   JOBS_TABLE_ADDRESSES,
@@ -6,6 +7,7 @@ import {
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
@@ -14,37 +16,24 @@ import Frame from '@/components/layout/Frame'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 
-export default function Jobs() {
+type JobsProps = {
+  jobs: JobType[]
+}
+
+export default function Jobs({ jobs }: JobsProps) {
   const { selectedChain } = useContext(ChainContext)
 
-  const [jobs, setJobs] = useState<JobType[]>()
   const [filteredJobs, setFilteredJobs] = useState<JobType[]>()
   const [input, setInput] = useState('')
-
-  const { contract: jobTableContract }: any = useContract(
-    JOBS_TABLE_ADDRESSES[selectedChain.slug]
-  )
 
   const { contract: teamContract } = useContract(
     TEAM_ADDRESSES[selectedChain.slug]
   )
 
   useEffect(() => {
-    async function getAllJobs() {
-      const jobBoardTableName = await jobTableContract.call('getTableName')
-      const statement = `SELECT * FROM ${jobBoardTableName}`
-
-      const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
-      const data = await res.json()
-      setJobs(data)
-    }
-    if (jobTableContract) getAllJobs()
-  }, [jobTableContract])
-
-  useEffect(() => {
     if (jobs && input != '') {
       setFilteredJobs(
-        jobs.filter((job) => {
+        jobs.filter((job: JobType) => {
           return job.title.toLowerCase().includes(input.toLowerCase())
         })
       )
@@ -96,4 +85,35 @@ export default function Jobs() {
       </Container>
     </section>
   )
+}
+
+export async function getStaticProps() {
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
+
+  const jobTableContract = await sdk.getContract(
+    JOBS_TABLE_ADDRESSES[chain.slug]
+  )
+  const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
+
+  const jobBoardTableName = await jobTableContract.call('getTableName')
+
+  const statement = `SELECT * FROM ${jobBoardTableName}`
+
+  const allJobsRes = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
+  const allJobs = await allJobsRes.json()
+
+  const now = Math.floor(Date.now() / 1000)
+
+  const validJobs = allJobs.filter(async (job: JobType) => {
+    const teamExpiration = await teamContract.call('expiresAt', [job.teamId])
+    return teamExpiration.toNumber() > now
+  })
+
+  return {
+    props: {
+      jobs: validJobs,
+    },
+    revalidate: 60,
+  }
 }

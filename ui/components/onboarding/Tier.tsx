@@ -14,10 +14,6 @@ type TierProps = {
   buttoncta: string
   tierDescription?: string
   type: string
-  setSelectedType?: Function
-  isLoading: boolean
-  isWhitelisted: boolean
-  setApplyModalEnabled: Function
 }
 
 export default function Tier({
@@ -30,10 +26,6 @@ export default function Tier({
   onClick,
   hasCitizen = false,
   type,
-  setSelectedType,
-  isLoading,
-  isWhitelisted,
-  setApplyModalEnabled,
 }: TierProps) {
   const address = useAddress()
   const { login, user, logout } = usePrivy()
@@ -45,11 +37,6 @@ export default function Tier({
       id="callout-card-container"
       className="bg-darkest-cool md:bg-transparent z-[50]"
     >
-      {isLoading && (
-        <div className="absolute w-full h-full backdrop-blur-md z-10 flex items-center justify-center">
-          <LoadingSpinner className="scale-[3] relative bottom-12" />
-        </div>
-      )}
       <div className="bg-[#020617] md:mb-5 md:rounded-[5vmax] p-5 md:rounded-tl-[20px]">
         <div
           className="w-full transition-all duration-150 pb-10 cursor-pointer text-white text-opacity-[80%] "
@@ -58,15 +45,8 @@ export default function Tier({
             if (!address) return login()
             if (hasCitizen)
               return toast.error('You have already registered as a citizen')
-            if (isLoading) return
 
-            setSelectedType && setSelectedType(type)
-
-            if (isWhitelisted) {
-              onClick()
-            } else {
-              setApplyModalEnabled(true)
-            }
+            onClick()
           }}
         >
           <div className="w-full h-full flex flex-col lg:flex-row ">
@@ -130,7 +110,7 @@ export default function Tier({
           <div className="inline-block ">
             <div className="mt-5 rounded-tl-[10px] rounded-[2vmax] gradient-2">
               <button className="py-2 px-5 hover:pl-7 ease-in-out duration-300">
-                {isWhitelisted ? buttoncta : 'Apply'}
+                {buttoncta}
               </button>
             </div>
           </div>

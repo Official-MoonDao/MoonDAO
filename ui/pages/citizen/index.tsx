@@ -1,4 +1,4 @@
-import { useAddress, useContract } from '@thirdweb-dev/react'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, CITIZEN_WHITELIST_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -17,10 +17,13 @@ import Tier from '@/components/onboarding/Tier'
 export default function Join() {
   const { t } = useTranslation('common')
 
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContext)
 
+  const sdk = useSDK()
   const address = useAddress()
+
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
+  const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
@@ -29,15 +32,6 @@ export default function Join() {
   const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
     address,
   ])
-
-  const [applyModalEnabled, setApplyModalEnabled] = useState(false)
-
-  const { contract: citizenWhitelistContract } = useContract(
-    CITIZEN_WHITELIST_ADDRESSES[selectedChain.slug]
-  )
-
-  const { data: isWhitelistedCitizen, isLoading: isLoadingCitizenWhitelist } =
-    useHandleRead(citizenWhitelistContract, 'isWhitelisted', [address])
 
   useChainDefault()
 
@@ -104,12 +98,22 @@ export default function Join() {
                   'Early Project Access: Engage in space projects, earn money, and advance your career.',
                 ]}
                 buttoncta="Become a Citizen"
-                onClick={() => setSelectedTier('citizen')}
+                onClick={async () => {
+                  const citizenWhitelistContract = await sdk?.getContract(
+                    CITIZEN_WHITELIST_ADDRESSES[selectedChain.slug]
+                  )
+                  const isWhitelisted = await citizenWhitelistContract?.call(
+                    'isWhitelisted',
+                    [address]
+                  )
+                  if (isWhitelisted) {
+                    setSelectedTier('citizen')
+                  } else {
+                    setApplyModalEnabled(true)
+                  }
+                }}
                 hasCitizen={+citizenBalance > 0}
                 type="citizen"
-                isLoading={isLoadingCitizenWhitelist}
-                isWhitelisted={isWhitelistedCitizen}
-                setApplyModalEnabled={setApplyModalEnabled}
               />
             </div>
           </div>
