@@ -1,17 +1,13 @@
 import {
   GlobeAmericasIcon,
   RocketLaunchIcon,
-  ShieldCheckIcon,
   TicketIcon,
 } from '@heroicons/react/24/outline'
 import useTranslation from 'next-translate/useTranslation'
-import { useRouter } from 'next/router'
 import Head from '@/components/layout/Head'
 import { PageCards } from '@/components/layout/PageCards'
 
 export default function Marketplace() {
-  const router = useRouter()
-
   const sections: any = [
     {
       sectionName: 'Missions',
@@ -39,18 +35,6 @@ export default function Marketplace() {
         },
       ],
     },
-    // {
-    //   sectionName: 'Digital Assets',
-    //   pages: [
-    //     {
-    //       name: 'MoonDAO Shields',
-    //       description:
-    //         'Grab these one of a kind digital collectibles and be a part of the FIRST MoonDAO collection.',
-    //       icon: ShieldCheckIcon,
-    //       href: '/marketplace/collection/0xE71f58663f80b61f5D127D9DE9d554ca66dED5f1',
-    //     },
-    //   ],
-    // },
   ]
 
   const { t } = useTranslation('common')
