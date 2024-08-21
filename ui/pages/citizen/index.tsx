@@ -1,9 +1,8 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { useAddress, useContract } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES } from 'const/config'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import { CITIZEN_ADDRESSES, CITIZEN_WHITELIST_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -11,16 +10,20 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import ApplyModal from '@/components/onboarding/ApplyModal'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
 import Tier from '@/components/onboarding/Tier'
 
 export default function Join() {
   const { t } = useTranslation('common')
 
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContext)
 
+  const sdk = useSDK()
   const address = useAddress()
+
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
+  const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
@@ -79,6 +82,9 @@ export default function Join() {
             </>
           }
         >
+          {applyModalEnabled && (
+            <ApplyModal type="citizen" setEnabled={setApplyModalEnabled} />
+          )}
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
               <Tier
@@ -92,8 +98,22 @@ export default function Join() {
                   'Early Project Access: Engage in space projects, earn money, and advance your career.',
                 ]}
                 buttoncta="Become a Citizen"
-                onClick={() => setSelectedTier('citizen')}
+                onClick={async () => {
+                  const citizenWhitelistContract = await sdk?.getContract(
+                    CITIZEN_WHITELIST_ADDRESSES[selectedChain.slug]
+                  )
+                  const isWhitelisted = await citizenWhitelistContract?.call(
+                    'isWhitelisted',
+                    [address]
+                  )
+                  if (isWhitelisted) {
+                    setSelectedTier('citizen')
+                  } else {
+                    setApplyModalEnabled(true)
+                  }
+                }}
                 hasCitizen={+citizenBalance > 0}
+                type="citizen"
               />
             </div>
           </div>

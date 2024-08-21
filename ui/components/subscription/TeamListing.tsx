@@ -1,5 +1,6 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
+import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -26,6 +27,7 @@ type TeamListingProps = {
   marketplaceTableContract?: any
   refreshListings?: any
   editable?: boolean
+  teamName?: string
 }
 
 export default function TeamListing({
@@ -35,6 +37,7 @@ export default function TeamListing({
   marketplaceTableContract,
   refreshListings,
   editable,
+  teamName,
 }: TeamListingProps) {
   const address = useAddress()
 
@@ -89,13 +92,23 @@ export default function TeamListing({
                     pb-5 flex-row items-end pr-5 justify-between
                 `}
             >
-              <h2
-                id="main-header"
-                className={`z-20 pt-[20px] static-sub-header font-GoodTimes flex items-center 
+              <div className="flex flex-col">
+                {teamName && (
+                  <Link
+                    href={`/team/${listing.teamId}`}
+                    className="font-bold text-light-warm"
+                  >
+                    {teamName}
+                  </Link>
+                )}
+                <h2
+                  id="main-header"
+                  className={`z-20 pt-[20px] static-sub-header font-GoodTimes flex items-center 
         text-left`}
-              >
-                {listing.title}
-              </h2>
+                >
+                  {listing.title}
+                </h2>
+              </div>
               {editable && (
                 <div className="flex gap-4 ml-4">
                   <button
@@ -135,9 +148,7 @@ export default function TeamListing({
             </span>
             <div id="description-and-id-container" className="relative z-50">
               <div id="description-and-id" className="description">
-                <div className="flex opacity-[70%]">
-                  {listing.description}
-                </div>
+                <div className="flex opacity-[70%]">{listing.description}</div>
                 <div>
                   {`${listing.price} 
                   ${listing.currency}`}
@@ -145,7 +156,7 @@ export default function TeamListing({
                 <span
                   id="mobile-button-container"
                   className="md:hidden flex pt-5 pb-5 justify-start w-full"
-                  >
+                >
                   <StandardButton
                     textColor="text-white"
                     borderRadius="rounded-tl-[10px] rounded-[2vmax]"

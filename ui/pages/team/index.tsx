@@ -1,21 +1,26 @@
-import { useAddress } from '@thirdweb-dev/react'
-import useTranslation from 'next-translate/useTranslation'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import { TEAM_WHITELIST_ADDRESSES } from 'const/config'
 import Link from 'next/link'
 import { useContext, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
+import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import ApplyModal from '@/components/onboarding/ApplyModal'
 import CreateTeam from '@/components/onboarding/CreateTeam'
 import Tier from '@/components/onboarding/Tier'
 
 export default function TeamJoin() {
   const { selectedChain } = useContext(ChainContext)
 
+  const sdk = useSDK()
   const address = useAddress()
+
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
+  const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   useChainDefault()
 
@@ -64,6 +69,9 @@ export default function TeamJoin() {
             </>
           }
         >
+          {applyModalEnabled && (
+            <ApplyModal type="team" setEnabled={setApplyModalEnabled} />
+          )}
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
               <Tier
@@ -78,7 +86,21 @@ export default function TeamJoin() {
                   'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
                 ]}
                 buttoncta="Create a Team"
-                onClick={() => setSelectedTier('team')}
+                onClick={async () => {
+                  const teamWhitelistContract = await sdk?.getContract(
+                    TEAM_WHITELIST_ADDRESSES[selectedChain.slug]
+                  )
+                  const isWhitelisted = await teamWhitelistContract?.call(
+                    'isWhitelisted',
+                    [address]
+                  )
+                  if (isWhitelisted) {
+                    setSelectedTier('team')
+                  } else {
+                    setApplyModalEnabled(true)
+                  }
+                }}
+                type="team"
               />
             </div>
           </div>

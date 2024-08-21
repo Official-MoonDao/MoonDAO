@@ -2,6 +2,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type TierProps = {
   label: string
@@ -12,6 +13,7 @@ type TierProps = {
   hasCitizen?: boolean
   buttoncta: string
   tierDescription?: string
+  type: string
 }
 
 export default function Tier({
@@ -23,22 +25,17 @@ export default function Tier({
   price,
   onClick,
   hasCitizen = false,
+  type,
 }: TierProps) {
   const address = useAddress()
   const { login, user, logout } = usePrivy()
-
-  // const { login } = useLogin({
-  //   onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
-  //     if (!wasAlreadyAuthenticated) onClick()
-  //   },
-  // })
 
   const iconStar = './assets/icon-star.svg'
 
   return (
     <section
       id="callout-card-container"
-      className="bg-darkest-cool md:bg-transparent"
+      className="bg-darkest-cool md:bg-transparent z-[50]"
     >
       <div className="bg-[#020617] md:mb-5 md:rounded-[5vmax] p-5 md:rounded-tl-[20px]">
         <div
@@ -51,12 +48,12 @@ export default function Tier({
 
             onClick()
           }}
-          >
+        >
           <div className="w-full h-full flex flex-col lg:flex-row ">
             <div className="pt-5 md:pt-0 flex items-center rounded-[2vmax] rounded-tl-[20px] overflow-hidden">
               <Image
                 src={
-                  label === 'Create a Team'
+                  type === 'team'
                     ? '/assets/team_image.png'
                     : '/assets/neil-armstrong-pfp.png'
                 }

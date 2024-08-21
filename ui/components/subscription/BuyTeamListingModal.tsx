@@ -21,7 +21,6 @@ import useTeamEmail from '@/lib/team/useTeamEmail'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { TeamListing } from '@/components/subscription/TeamListing'
 import Modal from '../layout/Modal'
-import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type BuyListingModalProps = {
@@ -63,7 +62,9 @@ export default function BuyTeamListingModal({
   })
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  const { data: owns } = useHandleRead(citizenContract, 'getOwnedToken')
+  const { data: owns } = useHandleRead(citizenContract, 'getOwnedToken', [
+    address,
+  ])
   const { data: citizenNft } = useNFT(citizenContract, owns)
 
   const citizenEmail = useCitizenEmail(citizenNft)
@@ -92,7 +93,6 @@ export default function BuyTeamListingModal({
 
   async function buyListing() {
     const price = Number(listing.price)
-    console.log(recipient)
     setIsLoading(true)
     let receipt
     try {
@@ -116,7 +116,6 @@ export default function BuyTeamListingModal({
       }
 
       if (receipt) {
-        console.log(receipt)
         const accessToken = await getAccessToken()
 
         const etherscanUrl =
@@ -130,7 +129,6 @@ export default function BuyTeamListingModal({
         const shipping = Object.values(shippingInfo).join(', ')
 
         //send email to entity w/ purchase details
-        console.log(teamEmail)
         const res = await fetch('/api/nodemailer/marketplace-purchase', {
           method: 'POST',
           headers: {

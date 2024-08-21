@@ -1,73 +1,169 @@
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { useContract } from '@thirdweb-dev/react'
 import {
-  GlobeAmericasIcon,
-  RocketLaunchIcon,
-  ShieldCheckIcon,
-  TicketIcon,
-} from '@heroicons/react/24/outline'
-import useTranslation from 'next-translate/useTranslation'
-import { useRouter } from 'next/router'
-import Head from '../../components/layout/Head'
-import { PageCards } from '../../components/layout/PageCards'
+  MARKETPLACE_TABLE_ADDRESSES,
+  TABLELAND_ENDPOINT,
+  TEAM_ADDRESSES,
+} from 'const/config'
+import { useContext, useEffect, useState } from 'react'
+import useTeamSplit from '@/lib/team/useTeamSplit'
+import ChainContext from '@/lib/thirdweb/chain-context'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
+import CardGridContainer from '@/components/layout/CardGridContainer'
+import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import Frame from '@/components/layout/Frame'
+import Head from '@/components/layout/Head'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import Search from '@/components/layout/Search'
+import TeamListing, {
+  TeamListing as TeamListingType,
+} from '@/components/subscription/TeamListing'
 
-export default function Marketplace() {
-  const router = useRouter()
+type MarketplaceProps = {
+  listings: TeamListingType[]
+}
 
-  const sections: any = [
-    {
-      sectionName: 'Missions',
-      pages: [
-        {
-          name: 'Ticket To Space',
-          description:
-            'We randomly selected one member of the MoonDAO community to win an opportunity to go to space!',
-          href: '/sweepstakes',
-          icon: RocketLaunchIcon,
-        },
-        {
-          name: 'Zero Gravity',
-          description:
-            "Experience lunar and zero gravity alongside NASA astronauts as part of MoonDAO's astronaut training program.",
-          href: '/zero-gravity',
-          icon: TicketIcon,
-        },
-        {
-          name: 'LifeShip',
-          description:
-            'Be a part of an off-world backup of life on Earth by sending your DNA to the surface on the Moon. Moondao has partnered with LifeShip.',
-          href: '/lifeship',
-          icon: GlobeAmericasIcon,
-        },
-      ],
-    },
-    // {
-    //   sectionName: 'Digital Assets',
-    //   pages: [
-    //     {
-    //       name: 'MoonDAO Shields',
-    //       description:
-    //         'Grab these one of a kind digital collectibles and be a part of the FIRST MoonDAO collection.',
-    //       icon: ShieldCheckIcon,
-    //       href: '/marketplace/collection/0xE71f58663f80b61f5D127D9DE9d554ca66dED5f1',
-    //     },
-    //   ],
-    // },
-  ]
+type MarketplaceListingProps = {
+  selectedChain: any
+  listing: TeamListingType
+  teamContract: any
+  marketplaceTableContract: any
+}
 
-  const { t } = useTranslation('common')
+function MarketplaceListing({
+  selectedChain,
+  listing,
+  teamContract,
+  marketplaceTableContract,
+}: MarketplaceListingProps) {
+  const [teamName, setTeamName] = useState<string>()
+  const teamSplitAddress = useTeamSplit(teamContract, listing.teamId)
+
+  useEffect(() => {
+    async function getTeamName() {
+      const teamNft = await teamContract.erc721.get(listing.teamId)
+      setTeamName(teamNft.metadata.name)
+    }
+    if (listing) getTeamName()
+  }, [listing, teamContract])
 
   return (
-    <div className="animate-fadeIn">
-      <Head title={t('marketplaceTitle')} description={t('marketplaceDesc')} />
+    <TeamListing
+      selectedChain={selectedChain}
+      listing={listing}
+      teamContract={teamContract}
+      marketplaceTableContract={marketplaceTableContract}
+      teamSplitAddress={teamSplitAddress}
+      teamName={teamName}
+    />
+  )
+}
 
-      {/*Section containing cards with links*/}
-      <PageCards
-        id="marketplace-cards"
-        sections={sections}
-        title="Marketplace"
-        description={
-          'Your gateway to digital collectibles, space training experiences, products, and once-in-a-lifetime opportunities like our Ticket to Space sweepstakes.'
-        }
-      />
+export default function Marketplace({ listings }: MarketplaceProps) {
+  const { selectedChain } = useContext(ChainContext)
+
+  const [filteredListings, setFilteredListings] = useState<TeamListingType[]>()
+  const [input, setInput] = useState('')
+
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug]
+  )
+  const { contract: marketplaceTableContract } = useContract(
+    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug]
+  )
+
+  useEffect(() => {
+    if (listings && input != '') {
+      setFilteredListings(
+        listings.filter((listing: TeamListingType) => {
+          return listing.title.toLowerCase().includes(input.toLowerCase())
+        })
+      )
+    } else {
+      setFilteredListings(listings)
+    }
+  }, [listings, input])
+
+  const descriptionSection = (
+    <div>
+      <Frame
+        bottomLeft="20px"
+        topLeft="5vmax"
+        marginBottom="30px"
+        marginTop="30px"
+        noPadding
+      >
+        <Search input={input} setInput={setInput} />
+      </Frame>
     </div>
   )
+
+  return (
+    <section id="jobs-container" className="overflow-hidden">
+      <Head title="Marketplace" image="" />
+      <Container>
+        <ContentLayout
+          header="Marketplace"
+          headerSize="max(20px, 3vw)"
+          description={descriptionSection}
+          preFooter={<NoticeFooter />}
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+        >
+          <CardGridContainer>
+            {filteredListings &&
+              filteredListings.map((listing: TeamListingType, i: number) => (
+                <MarketplaceListing
+                  key={`listing-${i}`}
+                  listing={listing}
+                  selectedChain={selectedChain}
+                  teamContract={teamContract}
+                  marketplaceTableContract={marketplaceTableContract}
+                />
+              ))}
+          </CardGridContainer>
+        </ContentLayout>
+      </Container>
+    </section>
+  )
+}
+
+export async function getStaticProps() {
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
+
+  const marketplaceTableContract = await sdk.getContract(
+    MARKETPLACE_TABLE_ADDRESSES[chain.slug]
+  )
+  const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
+
+  const marketplaceTableName = await marketplaceTableContract.call(
+    'getTableName'
+  )
+
+  const statement = `SELECT * FROM ${marketplaceTableName}`
+
+  const allListingsRes = await fetch(
+    `${TABLELAND_ENDPOINT}?statement=${statement}`
+  )
+  const allListings = await allListingsRes.json()
+
+  const now = Math.floor(Date.now() / 1000)
+
+  const validListings = allListings.filter(async (listing: TeamListingType) => {
+    const teamExpiration = await teamContract.call('expiresAt', [
+      listing.teamId,
+    ])
+    return teamExpiration.toNumber() > now
+  })
+
+  return {
+    props: {
+      listings: validListings,
+    },
+    revalidate: 60,
+  }
 }
