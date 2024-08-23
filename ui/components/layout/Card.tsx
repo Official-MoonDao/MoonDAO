@@ -23,7 +23,7 @@ export default function Card({ icon, header, paragraph, link, hovertext, inline,
     
     const cardContent = (
         <span id="card-container" 
-            className="flex flex-col h-full relative bg-dark-cool"
+            className="flex z-40 flex-col h-full relative bg-dark-cool"
             >
             <div id="top-left-corner-rounding" 
                 className="bg-darkest-cool rounded-[20px] w-[50%] h-[50%] absolute top-0 left-0"

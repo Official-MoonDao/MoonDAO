@@ -377,6 +377,18 @@ a {
     background-position: top left;
   }
 
+  .divider-11 {
+    background-image: url('/assets/divider-11.svg');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+  }  
+
+  .divider-12 {
+    background-image: url('/assets/divider-12.svg');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+  }  
+
   /*Featured images*/
   .feature-1 {
     background-image: url('/assets/feature-1.svg');
