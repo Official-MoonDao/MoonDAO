@@ -1,5 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState } from 'react'
+import { createSession, destroySession } from '../iron-session/iron-session'
 import { getAttribute } from '../utils/nft'
 
 export default function useTeamEmail(nft: any) {
@@ -9,12 +10,14 @@ export default function useTeamEmail(nft: any) {
 
   useEffect(() => {
     async function getTeamEmail() {
+      const accessToken = await getAccessToken()
+
+      await createSession(accessToken)
+
       const formResponseId = getAttribute(
         nft?.metadata?.attributes,
         'formId'
       ).value
-
-      const accessToken = await getAccessToken()
 
       const res = await fetch(
         `/api/typeform/response?formId=${process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID}&responseId=${formResponseId}`,
@@ -33,6 +36,7 @@ export default function useTeamEmail(nft: any) {
       ).email
 
       setEmail(teamEmail)
+      await destroySession(accessToken)
     }
 
     if (nft) getTeamEmail()

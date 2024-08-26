@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
@@ -81,6 +82,7 @@ export default function CreateTeam({
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     const accessToken = await getAccessToken()
+    await createSession(accessToken)
 
     // Delay the fetch call by 3 seconds
     await new Promise((resolve) => setTimeout(resolve, 3000))
@@ -106,6 +108,7 @@ export default function CreateTeam({
 
     setTeamData(cleanedTeamFormData)
     setStage(2)
+    await destroySession(accessToken)
   }, [])
 
   return (
@@ -329,6 +332,8 @@ export default function CreateTeam({
                     label="Check Out"
                     isDisabled={!agreedToCondition || isLoadingMint}
                     action={async () => {
+                      const accessToken = await getAccessToken()
+                      await createSession(accessToken)
                       try {
                         const cost = await teamContract?.call(
                           'getRenewalPrice',
@@ -448,6 +453,7 @@ export default function CreateTeam({
                         console.error(err)
                         setIsLoadingMint(false)
                       }
+                      await destroySession(accessToken)
                     }}
                   />
                   {isLoadingMint && (
