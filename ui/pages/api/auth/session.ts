@@ -1,4 +1,3 @@
-// Inside your Next.js API route
 import { getIronSession } from 'iron-session'
 import { secureHeaders } from 'middleware/secureHeaders'
 import { NextApiRequest, NextApiResponse } from 'next'
