@@ -98,7 +98,7 @@ export default function CreateCitizen({
     await createSession(accessToken)
 
     // Delay the fetch call by 3 seconds
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
     const { formId, responseId } = formResponse
     const responseRes = await fetch(

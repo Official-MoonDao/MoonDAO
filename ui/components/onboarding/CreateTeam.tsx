@@ -85,7 +85,7 @@ export default function CreateTeam({
     await createSession(accessToken)
 
     // Delay the fetch call by 3 seconds
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
     //get response from form
     const { formId, responseId } = formResponse
