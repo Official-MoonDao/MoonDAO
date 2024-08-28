@@ -1,13 +1,9 @@
-import { UserIcon } from '@heroicons/react/24/outline'
 import { Chain } from '@thirdweb-dev/chains'
-import {
-  MediaRenderer,
-  useAddress,
-  useContract,
-  ThirdwebNftMedia,
-} from '@thirdweb-dev/react'
-import Link from 'next/link'
+import { ThirdwebNftMedia } from '@thirdweb-dev/react'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
 import useCitizen from '@/lib/citizen/useCitizen'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type CitizenProfileLinkProps = {
   selectedChain: Chain
@@ -18,20 +14,33 @@ export default function CitizenProfileLink({
   selectedChain,
   citizenContract,
 }: CitizenProfileLinkProps) {
-  const citizenNft = useCitizen(selectedChain)
+  const router = useRouter()
+  const citizenNft = useCitizen(selectedChain, citizenContract)
+
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   if (citizenNft?.metadata?.id) {
     return (
-      <Link href={`/citizen/${citizenNft?.metadata?.id}`} passHref>
+      <button
+        onClick={async () => {
+          setIsLoading(true)
+          await router.push(`/citizen/${citizenNft?.metadata?.id}`)
+          setIsLoading(false)
+        }}
+      >
         <div className="rounded-full overflow-hidden animate-fadeIn">
-          <ThirdwebNftMedia
-            className=""
-            metadata={citizenNft.metadata}
-            width="40px"
-            height="40px"
-          />
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : (
+            <ThirdwebNftMedia
+              className=""
+              metadata={citizenNft.metadata}
+              width="40px"
+              height="40px"
+            />
+          )}
         </div>
-      </Link>
+      </button>
     )
   }
 }
