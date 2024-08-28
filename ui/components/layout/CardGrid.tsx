@@ -30,7 +30,7 @@ const CardGrid: React.FC<CardGridProps> = ({ cards, singleCol = false, threeCol 
       bottomLeft="20px">
       <div id="grid-container" 
         className={`
-          grid gap-[30px] max-w-[1200px] 
+          
           ${singleCol ? "grid-cols-1" : 
           threeCol ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1 lg:grid-cols-2"}
         `}

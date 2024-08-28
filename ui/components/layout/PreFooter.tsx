@@ -9,7 +9,7 @@ export default function PreFooter({ mode = 'Default' }) {
                     <div id="background-gradient" className={`gradient-1 w-full h-full absolute bottom-0 left-0 overflow-hidden md:rounded-bl-[5vmax] ${mode === 'compact' ? 'rounded-tr-[5vmax] rounded-tl-[5vmax] md:rounded-tl-[20px]' : ''}`}>
                     </div>
                     {mode === 'Default' && (
-                        <div id="bottom-right-divider" className="hidden md:block divider-7 bg-bottom absolute bottom-[-2px] right-[-20%] md:right-0 w-[60%] md:w-[60%] lg:w-[40%] h-full">
+                        <div id="bottom-right-divider" className="hidden md:block  bg-bottom absolute bottom-[-2px] right-[-20%] md:right-0 w-[60%] md:w-[60%] lg:w-[40%] h-full">
                         </div>
                     )}
                 </div>

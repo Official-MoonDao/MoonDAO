@@ -3,7 +3,7 @@ export default function CardSkeleton() {
     <span
       id="link-frame"
       className={`
-              card-container min-w-[300px] w-[65vw] md:w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
+              card-container  md:w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
         
           `}
     >
