@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import formatTeamFormData from '@/lib/typeform/teamFormData'
@@ -43,9 +44,10 @@ export default function TeamMetadataModal({
   const submitTypeform = useCallback(
     async (formResponse: any) => {
       const accessToken = await getAccessToken()
+      await createSession(accessToken)
 
       // Delay the fetch call by 3 seconds
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      await new Promise((resolve) => setTimeout(resolve, 5000))
 
       //get response from form
       const { formId, responseId } = formResponse
@@ -73,6 +75,7 @@ export default function TeamMetadataModal({
       } catch (err: any) {
         console.log(err)
       }
+      await destroySession(accessToken)
     },
     [teamTableContract, newTeamImage]
   )
@@ -131,6 +134,8 @@ export default function TeamMetadataModal({
             <PrivyWeb3Button
               label="Submit"
               action={async () => {
+                const accessToken = await getAccessToken()
+                await createSession(accessToken)
                 try {
                   const rawMetadataRes = await fetch(resolvedMetadata.url)
                   const rawMetadata = await rawMetadataRes.json()
@@ -189,6 +194,7 @@ export default function TeamMetadataModal({
                 } catch (err) {
                   console.log(err)
                 }
+                await destroySession(accessToken)
               }}
             />
           </div>

@@ -1,6 +1,7 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
+import { createSession, destroySession } from '../iron-session/iron-session'
 import { getAttribute } from '../utils/nft'
 
 export default function useCitizenEmail(nft: any) {
@@ -12,12 +13,12 @@ export default function useCitizenEmail(nft: any) {
   useEffect(() => {
     async function getCitizenEmail() {
       if (nft.owner !== address) return setEmail('')
+      const accessToken = await getAccessToken()
+      await createSession(accessToken)
       const formResponseId = getAttribute(
         nft?.metadata?.attributes,
         'formId'
       ).value
-
-      const accessToken = await getAccessToken()
 
       const res = await fetch(
         `/api/typeform/response?formId=${process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID}&responseId=${formResponseId}`,
@@ -36,6 +37,7 @@ export default function useCitizenEmail(nft: any) {
       )?.email
 
       setEmail(citizenEmail)
+      await destroySession(accessToken)
     }
 
     if (nft && address) getCitizenEmail()

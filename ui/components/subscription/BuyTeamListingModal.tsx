@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import useTeamEmail from '@/lib/team/useTeamEmail'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { TeamListing } from '@/components/subscription/TeamListing'
@@ -94,6 +95,8 @@ export default function BuyTeamListingModal({
   async function buyListing() {
     const price = Number(listing.price)
     setIsLoading(true)
+    const accessToken = await getAccessToken()
+    await createSession(accessToken)
     let receipt
     try {
       if (+listing.price <= 0) {
@@ -116,8 +119,6 @@ export default function BuyTeamListingModal({
       }
 
       if (receipt) {
-        const accessToken = await getAccessToken()
-
         const etherscanUrl =
           process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
             ? 'https://arbiscan.io/tx/'
@@ -129,7 +130,7 @@ export default function BuyTeamListingModal({
         const shipping = Object.values(shippingInfo).join(', ')
 
         //send email to entity w/ purchase details
-        const res = await fetch('/api/nodemailer/marketplace-purchase', {
+        const res = await fetch('/api/marketplace/marketplace-purchase', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -142,7 +143,7 @@ export default function BuyTeamListingModal({
             quantity: 1,
             tx: transactionLink,
             shipping,
-            teamEmail: teamEmail,
+            teamEmail,
           }),
         })
 
@@ -165,6 +166,7 @@ export default function BuyTeamListingModal({
         toast.error('Insufficient funds')
       }
     }
+    await destroySession(accessToken)
     setIsLoading(false)
   }
 

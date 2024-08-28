@@ -1,6 +1,6 @@
 import { privyAuth } from 'middleware/privyAuth'
 import withMiddleware from 'middleware/withMiddleware'
-import { transporter, opEmail } from '../../../lib/nodemailer/nodemailer'
+import { transporter, opEmail } from '@/lib/nodemailer/nodemailer'
 
 const MARKETPLACE_PURHCASE_FIELDS: any = {
   address: 'Address',

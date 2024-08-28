@@ -10,6 +10,7 @@ import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import formatCitizenFormData from '@/lib/typeform/citizenFormData'
 import deleteResponse from '@/lib/typeform/deleteResponse'
@@ -41,11 +42,11 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
 
   const submitTypeform = useCallback(
     async (formResponse: any) => {
+      const accessToken = await getAccessToken()
+      await createSession(accessToken)
       try {
-        const accessToken = await getAccessToken()
-
         // Delay the fetch call by 3 seconds
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+        await new Promise((resolve) => setTimeout(resolve, 5000))
 
         //get response from form
         const { formId, responseId } = formResponse
@@ -85,6 +86,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
       } catch (err: any) {
         console.log(err)
       }
+      await destroySession(accessToken)
     },
     [citizenTableContract]
   )
@@ -156,6 +158,8 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
             <PrivyWeb3Button
               label="Submit"
               action={async () => {
+                const accessToken = await getAccessToken()
+                await createSession(accessToken)
                 try {
                   const rawMetadataRes = await fetch(resolvedMetadata.url)
                   const rawMetadata = await rawMetadataRes.json()
@@ -217,6 +221,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
                 } catch (err) {
                   console.log(err)
                 }
+                await destroySession(accessToken)
               }}
             />
           </div>

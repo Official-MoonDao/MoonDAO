@@ -13,6 +13,7 @@ import useWindowSize from '../../lib/team/use-window-size'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatCitizenFormData, {
@@ -94,9 +95,10 @@ export default function CreateCitizen({
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     const accessToken = await getAccessToken()
+    await createSession(accessToken)
 
     // Delay the fetch call by 3 seconds
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
     const { formId, responseId } = formResponse
     const responseRes = await fetch(
@@ -130,6 +132,7 @@ export default function CreateCitizen({
     setCitizenData(cleanedCitizenFormData as any)
 
     setStage(2)
+    await destroySession(accessToken)
   }, [])
 
   return (
@@ -370,6 +373,9 @@ export default function CreateCitizen({
                   label="Check Out"
                   isDisabled={!agreedToCondition || isLoadingMint}
                   action={async () => {
+                    const accessToken = await getAccessToken()
+                    await createSession(accessToken)
+
                     //sign message
 
                     if (!citizenImage)
@@ -440,6 +446,7 @@ export default function CreateCitizen({
                       console.error(err)
                       setIsLoadingMint(false)
                     }
+                    await destroySession(accessToken)
                   }}
                 />
                 {isLoadingMint && (
