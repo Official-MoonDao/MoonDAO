@@ -50,7 +50,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                         <div id="graphic-element-container"
                             >
                             <div id="graphic-element" 
-                                className="gradient-10 w-full h-full rounded-bl-[2vmax] md:rounded-bl-[5vmax] absolute top-0 left-0"
+                                className="gradient-10 w-full h-full rounded-bl-[2vmax] md:rounded-bl-[1vmax] md:rounded-bl-[2vmax] absolute top-0 left-0"
                             ></div>
                         </div>
                         <div id="content-container" 
