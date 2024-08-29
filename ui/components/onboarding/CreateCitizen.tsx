@@ -19,6 +19,7 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatCitizenFormData, {
   CitizenData,
 } from '@/lib/typeform/citizenFormData'
+import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import CitizenABI from '../../const/abis/Citizen.json'
 import Container from '../layout/Container'
@@ -97,10 +98,10 @@ export default function CreateCitizen({
     const accessToken = await getAccessToken()
     await createSession(accessToken)
 
-    // Delay the fetch call by 3 seconds
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-
     const { formId, responseId } = formResponse
+
+    await waitForResponse(formId, responseId, accessToken)
+
     const responseRes = await fetch(
       `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
       {

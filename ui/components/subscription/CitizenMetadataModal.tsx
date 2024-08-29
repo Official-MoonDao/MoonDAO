@@ -7,13 +7,13 @@ import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
-import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import formatCitizenFormData from '@/lib/typeform/citizenFormData'
 import deleteResponse from '@/lib/typeform/deleteResponse'
+import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import Modal from '../layout/Modal'
@@ -45,11 +45,10 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
       const accessToken = await getAccessToken()
       await createSession(accessToken)
       try {
-        // Delay the fetch call by 3 seconds
-        await new Promise((resolve) => setTimeout(resolve, 5000))
-
         //get response from form
         const { formId, responseId } = formResponse
+
+        await waitForResponse(formId, responseId, accessToken)
 
         const responseRes = await fetch(
           `/api/typeform/response?formId=${formId}&responseId=${responseId}`,

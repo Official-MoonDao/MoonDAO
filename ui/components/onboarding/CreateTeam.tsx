@@ -16,6 +16,7 @@ import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
+import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import TeamABI from '../../const/abis/Team.json'
@@ -84,11 +85,11 @@ export default function CreateTeam({
     const accessToken = await getAccessToken()
     await createSession(accessToken)
 
-    // Delay the fetch call by 3 seconds
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-
     //get response from form
     const { formId, responseId } = formResponse
+
+    await waitForResponse(formId, responseId, accessToken)
+
     const responseRes = await fetch(
       `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
       {
