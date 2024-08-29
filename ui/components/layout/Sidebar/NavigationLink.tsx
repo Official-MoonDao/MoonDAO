@@ -64,7 +64,7 @@ const Dropdown = ({ item, router, setSidebarOpen }: any) => {
       as="div"
       defaultOpen={
         item?.children?.some((e: any) => e.href === router.pathname) ||
-        item.href === '/info'
+        item.href === '/join'
       }
       onClick={({ target }: any) => {
         if (item.href) {

@@ -1,150 +1,171 @@
-import { Polygon, Sepolia } from '@thirdweb-dev/chains'
-import { Token } from '@uniswap/sdk-core'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import {
+  CITIZEN_ADDRESSES,
+  CITIZEN_WHITELIST_ADDRESSES,
+  TEAM_WHITELIST_ADDRESSES,
+} from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
-import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
+import Link from 'next/link'
+import { useContext, useState } from 'react'
+import ChainContext from '../lib/thirdweb/chain-context'
+import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Head from '../components/layout/Head'
-import { OnboardingStageManager } from '../components/onboarding/OnboardingStageManager'
-import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
+import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import ApplyModal from '@/components/onboarding/ApplyModal'
+import CreateCitizen from '@/components/onboarding/CreateCitizen'
+import CreateTeam from '@/components/onboarding/CreateTeam'
+import Tier from '@/components/onboarding/Tier'
 
-function JoinCard({ label, text }: any) {
-  return (
-    <div className="flex">
-      <div>
-        <dt className="text-lg font-RobotoMono font-medium text-left lg:text-left text-gray-950 dark:text-white">
-          {label}
-        </dt>
-        <dd className="mt-5 lg:mt-4 xl:mt-6 text-sm sm:text-base lg:text-sm xl:text-base sm:mt-6 max-w-[698px] text-left lg:text-left text-gray-600 dark:text-white dark:opacity-60">
-          {text}
-        </dd>
-      </div>
-    </div>
-  )
-}
-
-export default function Join({ usdQuotes }: any) {
+export default function Join() {
   const { t } = useTranslation('common')
+
+  const { selectedChain } = useContext(ChainContext)
+
+  const sdk = useSDK()
+  const address = useAddress()
+
+  //Selected tier for onboarding flow
+  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
+  //Selected tier for apply modal
+  const [selectedApplyType, setSelectedApplyType] = useState<
+    'team' | 'citizen'
+  >()
+  const [applyModalEnabled, setApplyModalEnabled] = useState(false)
+
+  const { contract: citizenContract } = useContract(
+    CITIZEN_ADDRESSES[selectedChain.slug]
+  )
+  const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
+    address,
+  ])
+
+  useChainDefault()
+
+  if (selectedTier === 'citizen') {
+    return (
+      <CreateCitizen
+        address={address}
+        selectedChain={selectedChain}
+        setSelectedTier={setSelectedTier}
+      />
+    )
+  }
+
+  if (selectedTier === 'team') {
+    return (
+      <CreateTeam
+        address={address}
+        selectedChain={selectedChain}
+        setSelectedTier={setSelectedTier}
+      />
+    )
+  }
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
       <Head title={t('joinTitle')} description={t('joinDesc')} />
-      <OnboardingStageManager usdQuotes={usdQuotes} />
-
-      <div className="mt-12">
-        <div className="">
-          <h2 className="text-2xl text-[#071732] dark:text-white font-GoodTimes lg:text-4xl xl:text-4xl text-center">
-            Why Join MoonDAO?
-          </h2>
-        </div>
-        <dl className="mt-8 lg:mt-12 space-y-10 lg:space-y-0 lg:grid lg:gap-x-6 lg:gap-y-12 lg:grid-cols-2">
-          <JoinCard
-            label={`Help Decentralize Access to Space`}
-            text={` Ensure our multi-planetary future isn’t the exclusive domain of a few
-          governments and billionaires. By working together to support a
-          borderless, decentralized future that's open to all dedicated to
-          building off-world, irrespective of national borders or geopolitics.
-          MoonDAO is coordinating engineers, scientists, researchers, artists,
-          devs, and space enthusiasts from all over the world to accelerate
-          progress.`}
-          />
-          <JoinCard
-            label={`Shape Our Community’s Destiny`}
-            text={` Be an integral part of MoonDAO's vibrant community by actively
-                  participating in discussions, governance, voting, and
-                  initiatives. Shape the community's direction, voice your
-                  ideas, and foster connections with fellow members. Your input
-                  counts in building a strong and supportive network that
-                  propels us toward a shared interstellar future.`}
-          />
-          <JoinCard
-            label={`Co-Create a Lunar Settlement`}
-            text={`              Participate in shaping MoonDAO's direction through
-                  governance—guide the allocation of resources in our treasury,
-                  influence organizational decisions, and participate in direct
-                  governance as well as leadership elections.`}
-          />
-          <JoinCard
-            label={`Get Funding for R&D`}
-            text={`   MoonDAO helps fund research and development projects from all
-                  over the world that are helping to decentralize access to
-                  space. Have a revolutionary idea? Pitch it to our community to
-                  get your project funded. Want to join a cutting edge team?
-                  Join a MoonDAO project.`}
-          />
-          <JoinCard
-            label={`Network with Space Professionals`}
-            text={`Connect and collaborate with a global network of like-minded
-            visionaries, builders, and thought leaders, fostering
-            innovation toward an open-source and open-space policy
-            framework, including gaining access to funding opportunities
-            or builders that can bring things to fruition.`}
-          />
-          <JoinCard
-            label={`Savings on Space Ventures`}
-            text={` Use your $MOONEY to access discounts on space-related products
-                  and services through the MoonDAO marketplace, including our
-                  DNA Mission to the Moon, digital assets, and more. Stay up to
-                  date as we take steps to make it available for community
-                  members to list their own offerings for $MOONEY!`}
-          />
-          <JoinCard
-            label={`Access to Extraordinary Events`}
-            text={`Enjoy access to exclusive events like our Ticket to Space
-            sweepstakes, Zero Gravity training with NASA astronauts, and
-            other unforgettable experiences.`}
-          />
-          <JoinCard
-            label={`Let’s Build Together`}
-            text={`             MoonDAO is only getting started with everything it plans to
-                  achieve and you can help shape the directions and achievements
-                  of the world’s largest Space Network State as humanity moves
-                  off-world.`}
-          />
-        </dl>
-        <div className="flex justify-center">
-          <button
-            className="mt-10 lg:mt-14 px-8 py-4 md:w-[400px] w-full bg-moon-orange text-white font-RobotoMono font-bold hover:scale-105 transition-all duration-150 hover:bg-white hover:text-moon-orange"
-            onClick={() => {
-              //smooth scroll to top of window
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-          >
-            Join MoonDAO
-          </button>
-        </div>
-      </div>
+      <Container>
+        <ContentLayout
+          header="Join MoonDAO"
+          headerSize="max(20px, 3vw)"
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+          description={
+            <>
+              Be part of the first open-source, interplanetary network state
+              dedicated to establishing a permanent human presence on the Moon
+              and beyond. Registration is currently invite-only, but you can
+              send an email to{' '}
+              <Link href="mailto:info@moondao.com">info@moondao.com</Link> if
+              you think you'd be a good fit.
+            </>
+          }
+          preFooter={
+            <>
+              <NoticeFooter
+                defaultTitle="Need Help?"
+                defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+                defaultButtonText="Submit a Ticket"
+                defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+              />
+            </>
+          }
+        >
+          {applyModalEnabled && (
+            <ApplyModal
+              type={selectedApplyType as string}
+              setEnabled={setApplyModalEnabled}
+            />
+          )}
+          <div className="mb-10 flex flex-col gap-10">
+            <Tier
+              price={0.0111}
+              label="Become a Citizen"
+              description="Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission."
+              points={[
+                'Unique Identity: Create a personalized, AI-generated passport image representing your on-chain identity.',
+                'Professional Networking: Connect with top space startups, non-profits, and ambitious teams.',
+                'Career Advancement: Access jobs, gigs, hackathons, and more; building on-chain credentials to showcase your experience.',
+                'Early Project Access: Engage in space projects, earn money, and advance your career.',
+              ]}
+              buttoncta="Become a Citizen"
+              onClick={async () => {
+                const citizenWhitelistContract = await sdk?.getContract(
+                  CITIZEN_WHITELIST_ADDRESSES[selectedChain.slug]
+                )
+                const isWhitelisted = await citizenWhitelistContract?.call(
+                  'isWhitelisted',
+                  [address]
+                )
+                if (isWhitelisted) {
+                  setSelectedTier('citizen')
+                } else {
+                  setSelectedApplyType('citizen')
+                  setApplyModalEnabled(true)
+                }
+              }}
+              hasCitizen={+citizenBalance > 0}
+              type="citizen"
+            />
+            <Tier
+              price={0.0333}
+              label="Create a Team"
+              description="Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future. Be a part of Team Space."
+              points={[
+                'Funding Access: Obtain seed funding from MoonDAO for your bold projects and initiatives.',
+                'Professional Network: Hire top talent including full-time roles or posting bounties, and connect with other cutting-edge organizations.',
+                'Marketplace Listing: Sell products and services in a dedicated space marketplace, whether payload space or satellite imagery.',
+                'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
+                'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
+              ]}
+              buttoncta="Create a Team"
+              onClick={async () => {
+                const teamWhitelistContract = await sdk?.getContract(
+                  TEAM_WHITELIST_ADDRESSES[selectedChain.slug]
+                )
+                const isWhitelisted = await teamWhitelistContract?.call(
+                  'isWhitelisted',
+                  [address]
+                )
+                if (isWhitelisted) {
+                  setSelectedTier('team')
+                } else {
+                  setSelectedApplyType('team')
+                  setApplyModalEnabled(true)
+                }
+              }}
+              type="team"
+            />
+          </div>
+        </ContentLayout>
+      </Container>
     </div>
   )
-}
-
-export async function getStaticProps() {
-  const DAI = new Token(
-    137,
-    DAI_ADDRESSES['polygon'],
-    18,
-    'DAI',
-    'DAI Stablecoin'
-  )
-
-  const MOONEY = new Token(
-    137,
-    MOONEY_ADDRESSES['polygon'],
-    18,
-    'MOONEY',
-    'MOONEY (PoS)'
-  )
-
-  const levelOneRoute = await pregenSwapRoute(Polygon, 20000, MOONEY, DAI)
-  const levelTwoRoute = await pregenSwapRoute(Polygon, 100000, MOONEY, DAI)
-  const levelThreeRoute = await pregenSwapRoute(Polygon, 500000, MOONEY, DAI)
-
-  const usdQuotes = [levelOneRoute, levelTwoRoute, levelThreeRoute].map(
-    (swapRoute) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18
-  )
-
-  return {
-    props: {
-      usdQuotes,
-    },
-    revalidate: 60,
-  }
 }

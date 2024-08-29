@@ -32,7 +32,7 @@ export default function WebsiteHead({
       <meta property="og:type" content="website" key="meta-ogweb" />
       <meta
         property="og:url"
-        content="https://app.moondao.com/"
+        content="https://moondao.com/"
         key="meta-ogurl"
       />
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />

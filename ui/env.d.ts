@@ -19,5 +19,9 @@ namespace NodeJS {
     FIREBASE_PROJECT_ID: string
     FIREBASE_MSG_SENDER_ID: string
     FIREBASE_APP_ID: string
+    COMFYICU_API_KEY: string
+    S3_UPLOAD_KEY: string
+    S3_UPLOAD_SECRET: string
+    S3_UPLOAD_BUCKET: string
   }
 }
