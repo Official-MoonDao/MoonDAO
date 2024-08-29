@@ -61,7 +61,7 @@ export default function Footer() {
                     </div>
                 </span>
             </div>
-            <div className="flex items-center justify-center min-h-[150px] md:min-h-[0px]"> 
+            <div className="flex items-center justify-center min-h-[80px] md:min-h-[0px]"> 
                 <Link className="pr-5 opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/Legal/Website-Privacy-Policy" target="_blank">Privacy Policy</Link>
                 <span>&nbsp;|&nbsp;</span>
                 <Link className="pl-5 opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions" target="_blank">Terms of Service</Link>

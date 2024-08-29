@@ -8,7 +8,7 @@ import PartnerSection from '../components/home/PartnerSection'
 import Video from '../components/home/Video'
 import WebsiteHead from '../components/layout/Head'
 import Container from '../components/layout/Container'
-import Footer from '../components/layout/Footer'
+import SpeakerSection from '../components/home/SpeakerSection'
 
 export default function Home() {
   return (
@@ -22,10 +22,10 @@ export default function Home() {
         <Callout1 />
         <Callout2 />
         <Feature />
+        <SpeakerSection />
         <Callout3 />
         <PartnerSection />
         <PageEnder />
-        <Footer />
       </div>
     </Container>
   )
