@@ -21,7 +21,7 @@ const ColorsAndSocials = ({
       </button> */}
       {/* <hr className="border-none rounded-sm w-[1px] inline-block h-6 bg-black dark:bg-gray-400" /> */}
       <Link
-        className="opacity-[50%] hover:opacity-[100%] hover:scale-105 duration-150 ease-in-out"
+        className="opacity-[50%] hover:opacity-[100%] hover:scale-105 duration-150 ease-in-out max-[265px]:hidden"
         aria-label="Link to Discord"
         href="https://discord.gg/moondao"
         target="_blank"
@@ -31,7 +31,7 @@ const ColorsAndSocials = ({
         <DiscordIcon />
       </Link>
       <Link
-        className="ml-5 opacity-[50%] hover:opacity-[100%] hover:scale-105 duration-150 ease-in-out"
+        className="ml-5 opacity-[50%] hover:opacity-[100%] hover:scale-105 duration-150 ease-in-out max-[330px]:hidden"
         aria-label="Link to Twitter"
         href="https://github.com/Official-MoonDao"
         target="_blank"

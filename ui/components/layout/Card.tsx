@@ -146,7 +146,7 @@ export default function Card({
                       : 'text-center justify-center md:justify-start'
                   }
               `}
-              >
+            >
               {header && header}
               {metadata?.name ? metadata.name : profile && 'Anon'}
             </h2>
@@ -154,9 +154,7 @@ export default function Card({
           {subheader && subheader}
           <div id="description-and-id-container" className="relative z-50">
             <div id="description-and-id" className="description text-left">
-              <div className="flex opacity-[70%]">
-                {paragraph}
-              </div>
+              <div className="flex opacity-[70%]">{paragraph}</div>
               {metadata?.id ? (
                 <div id="details-container" className="mt-4">
                   <p id="org-description">

@@ -93,6 +93,9 @@ export default function Callout3() {
             >
             <CardGrid cards={cardData} />
           </div>
+          <div 
+            className="divider-11 w-[200px] h-[200px] md:w-[200px] lg:w-[300px] h-full absolute bottom-[-3px] right-0"
+          ></div>
         </section>
     )
 }
