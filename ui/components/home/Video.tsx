@@ -7,7 +7,7 @@ export default function Video() {
                 className="ml-[20px] md:ml-[40px] max-w-[1200px] w-full"
                 >
                 <div id="video-wrapper" 
-                    className="pt-[56.25%] relative rounded-lg z-10"
+                    className="pt-[56.25%] relative rounded-lg z-40"
                     >
                     <iframe id="video" 
                         className="absolute left-0 rounded-[20px] top-0" 

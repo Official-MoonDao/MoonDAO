@@ -1,7 +1,8 @@
-import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { allChains } from '@thirdweb-dev/chains'
-import { useAddress, useContract } from '@thirdweb-dev/react'
+import { allChains, Chain } from '@thirdweb-dev/chains'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -14,9 +15,148 @@ import { useImportToken } from '../../lib/utils/import-token'
 import ERC20 from '../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import { CopyIcon } from '../assets'
+import FormInput from '../forms/FormInput'
+import Modal from '../layout/Modal'
+import CitizenProfileLink from '../subscription/CitizenProfileLink'
+import NetworkSelector from '../thirdweb/NetworkSelector'
 import { LinkAccounts } from './LinkAccounts'
+import { PrivyWeb3Button } from './PrivyWeb3Button'
 
-export function PrivyConnectWallet() {
+type PrivyConnectWalletProps = {
+  citizenContract?: any
+  type?: 'mobile' | 'desktop'
+}
+
+const selectedNativeToken: any = {
+  arbitrum: 'ETH',
+  ethereum: 'ETH',
+  sepolia: 'ETH',
+  polygon: 'MATIC',
+}
+
+function SendModal({
+  selectedChain,
+  networkIcon,
+  mooneyContract,
+  setEnabled,
+  nativeBalance,
+  mooneyBalance,
+}: any) {
+  const sdk = useSDK()
+
+  const [to, setTo] = useState<string>()
+  const [amount, setAmount] = useState<number>()
+  const [selectedToken, setSelectedToken] = useState<string>('native')
+
+  const [balance, setBalance] = useState()
+
+  useEffect(() => {
+    if (selectedToken === 'native') {
+      setBalance(nativeBalance)
+    } else if (selectedToken === 'mooney') {
+      setBalance(mooneyBalance)
+    }
+  }, [selectedToken, nativeBalance, mooneyBalance])
+
+  return (
+    <Modal id="send-modal-backdrop" setEnabled={setEnabled}>
+      <form
+        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md"
+        onSubmit={async (e) => {
+          e.preventDefault()
+
+          if (!to || !amount) {
+            return toast.error('Please fill in all fields')
+          } else if (to.length !== 42 || !to.startsWith('0x')) {
+            return toast.error('Invalid address')
+          } else if (amount <= 0) {
+            return toast.error('Invalid amount')
+          }
+
+          const formattedAmount = ethers.utils.parseEther(amount.toString())
+
+          try {
+            if (selectedToken === 'native') {
+              if (+amount > nativeBalance)
+                return toast.error('Insufficient funds')
+
+              const signer = sdk?.getSigner()
+
+              await signer?.sendTransaction({
+                to,
+                value: formattedAmount,
+              })
+            } else if (selectedToken === 'mooney') {
+              if (+amount > mooneyBalance)
+                return toast.error('Insufficient funds')
+
+              await mooneyContract.call('transfer', [to, formattedAmount])
+            }
+          } catch (err) {
+            console.log(err)
+          }
+        }}
+      >
+        <div className="w-full flex items-center justify-between">
+          <div>
+            <h2 className="font-GoodTimes">{'Send Funds'}</h2>
+          </div>
+          <button
+            type="button"
+            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            onClick={() => setEnabled(false)}
+          >
+            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+          </button>
+        </div>
+
+        <NetworkSelector />
+
+        <div className="flex gap-4 items-center">
+          <select
+            className="`w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+            onChange={({ target }) => setSelectedToken(target.value)}
+          >
+            <option value={'native'}>
+              {selectedNativeToken[selectedChain.slug]}
+            </option>
+            <option value={'mooney'}>{'MOONEY'}</option>
+          </select>
+
+          {selectedToken === 'native' ? (
+            networkIcon
+          ) : (
+            <Image src="/coins/MOONEY.png" width={30} height={30} alt="" />
+          )}
+
+          <p>{balance && balance}</p>
+        </div>
+
+        <FormInput
+          value={to}
+          onChange={({ target }: any) => setTo(target.value)}
+          placeholder="To"
+        />
+        <FormInput
+          value={amount}
+          onChange={({ target }: any) => setAmount(target.value)}
+          placeholder="Amount"
+        />
+        <PrivyWeb3Button
+          className="w-full"
+          label="Send"
+          type="submit"
+          action={() => {}}
+        />
+      </form>
+    </Modal>
+  )
+}
+
+export function PrivyConnectWallet({
+  citizenContract,
+  type,
+}: PrivyConnectWalletProps) {
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
@@ -27,10 +167,18 @@ export function PrivyConnectWallet() {
   const ens = _ensData?.name
   const nativeBalance = useNativeBalance()
   const [walletChainId, setWalletChainId] = useState(1)
-  const { login, logout, user, authenticated, connectWallet }: any = usePrivy()
+  const {
+    login,
+    logout,
+    user,
+    authenticated,
+    connectWallet,
+    exportWallet,
+  }: any = usePrivy()
   const { wallets } = useWallets()
 
   const [enabled, setEnabled] = useState(false)
+  const [sendModalEnabled, setSendModalEnabled] = useState(false)
 
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug],
@@ -47,8 +195,16 @@ export function PrivyConnectWallet() {
     return (
       <Image
         src={`/icons/networks/${selectedChain.slug}.svg`}
-        width={30}
-        height={30}
+        width={
+          selectedChain.slug === 'ethereum' || selectedChain.slug === 'sepolia'
+            ? 25
+            : 30
+        }
+        height={
+          selectedChain.slug === 'ethereum' || selectedChain.slug === 'sepolia'
+            ? 25
+            : 30
+        }
         alt="Network Icon"
       />
     )
@@ -70,7 +226,9 @@ export function PrivyConnectWallet() {
     if (
       target.closest('#privy-connect-wallet-dropdown') ||
       target.closest('#privy-connect-wallet') ||
-      target.closest('#headlessui-dialog-panel')
+      target.closest('#privy-modal-content') ||
+      target.closest('#headlessui-dialog-panel') ||
+      target.closest('#send-modal-backdrop')
     )
       return
     setEnabled(false)
@@ -86,7 +244,7 @@ export function PrivyConnectWallet() {
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className={`w-[125px] md:w-[175px] md:full relative flex flex-col items-right justify-center px-3 md:px-5 py-2 md:py-3 gradient-2 font-RobotoMono z-[10] rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300`}
+            className={`cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] gradient-2 font-RobotoMono z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300`}
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}
@@ -106,18 +264,42 @@ export function PrivyConnectWallet() {
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="w-[245px] lg:w-[270px] absolute left-0 text-sm font-RobotoMono animate-fadeIn mt-2 p-4 flex flex-col bg-white text-black dark:text-white dark:bg-[#0A0E22] divide-y-2 divide-[#FFFFFF14] gap-2 z-[100]"
+              className="w-[260px] lg:w-[270px] absolute left-0 text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn mt-2 p-2 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[100] max-h-[70%] overflow-y-scroll"
             >
-              <div className="absolute right-2 w-full flex justify-end">
+              {sendModalEnabled && (
+                <SendModal
+                  selectedChain={selectedChain}
+                  setEnabled={setSendModalEnabled}
+                  networkIcon={<NetworkIcon />}
+                  mooneyContract={mooneyContract}
+                  nativeBalance={nativeBalance}
+                  mooneyBalance={(mooneyBalance?.toString() / 10 ** 18).toFixed(
+                    2
+                  )}
+                />
+              )}
+              <div
+                className={`w-full flex ${
+                  type === 'mobile' ? 'justify-between' : 'justify-end'
+                }`}
+              >
+                {type === 'mobile' && (
+                  <div className="h-[10px]">
+                    <CitizenProfileLink
+                      selectedChain={selectedChain}
+                      citizenContract={citizenContract}
+                    />
+                  </div>
+                )}
                 <XMarkIcon
                   className="w-6 h-6 text-black dark:text-white cursor-pointer"
                   onClick={() => setEnabled(false)}
                 />
               </div>
-              <div className="mt-6">
+              <div className="relative mt-2">
                 <div className="mt-2 flex items-center">
                   <NetworkIcon />
-                  <div className="ml-2">
+                  <div className="ml-2 bg-dark-cool">
                     <p className="uppercase font-normal inline-block">
                       {
                         allChains.find(
@@ -144,7 +326,7 @@ export function PrivyConnectWallet() {
               {networkMistmatch ? (
                 <div>
                   <button
-                    className="w-full mt-4 p-2 border text-black dark:text-white hover:scale-105 transition-all duration-150 dark:border-white dark:hover:bg-white dark:hover:text-moon-orange"
+                    className="w-full mt-4 p-2 border hover:scale-105 transition-all duration-150 hover:border-light-warm hover:text-light-warm rounded-lg"
                     onClick={() => {
                       wallets[selectedWallet].switchChain(selectedChain.chainId)
                     }}
@@ -157,8 +339,8 @@ export function PrivyConnectWallet() {
                   <div className=" w-full flex justify-left items-center gap-4">
                     <Image
                       src="/coins/MOONEY.png"
-                      width={45}
-                      height={45}
+                      width={30}
+                      height={30}
                       alt=""
                     />
                     <p>
@@ -174,6 +356,24 @@ export function PrivyConnectWallet() {
                   </div>
                 </div>
               )}
+
+              <button
+                className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
+                onClick={async () => {
+                  wallets[selectedWallet].fund()
+                }}
+              >
+                <strong>Fund</strong>
+              </button>
+
+              <button
+                className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
+                onClick={async () => {
+                  setSendModalEnabled(true)
+                }}
+              >
+                <strong>Send</strong>
+              </button>
 
               <div className="pt-1">
                 <p className="font-semibold">Wallets:</p>
@@ -212,6 +412,18 @@ export function PrivyConnectWallet() {
                       )}
                     </div>
                   ))}
+                  {wallets[selectedWallet]?.walletClientType === 'privy' && (
+                    <button
+                      className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
+                      onClick={() => {
+                        exportWallet().catch(() => {
+                          toast.error('Please select a privy wallet to export.')
+                        })
+                      }}
+                    >
+                      Export Wallet
+                    </button>
+                  )}
                   <button
                     className="w-full gradient-3 p-1 pr-2 pl-2 text-dark-cool"
                     onClick={async () => {
@@ -232,7 +444,7 @@ export function PrivyConnectWallet() {
                     <strong>Import Token</strong>
                   </button> */}
                   <button
-                    className="w-full mt-4 p-1 rounded-sm text-white transition-all duration-150 gradient-2 hover:bg-white hover:text-moon-orange"
+                    className="w-full mt-4 p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
                     onClick={async () => {
                       wallets.forEach((wallet) => wallet.disconnect())
                       logout()

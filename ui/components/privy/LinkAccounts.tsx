@@ -22,7 +22,6 @@ export function LinkAccounts({ user }: any) {
     if (user.linkedAccounts) {
       let linkedAccounts: any = {}
       user.linkedAccounts.forEach((acc: any) => {
-        console.log(acc)
         if (acc.walletClientType !== 'privy') {
           linkedAccounts[acc.type] = true
         }

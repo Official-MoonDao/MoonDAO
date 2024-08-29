@@ -5,9 +5,8 @@ const privy = new PrivyClient(
   process.env.PRIVY_APP_SECRET as string
 )
 
-export async function verifyPrivyAuth(auth: any) {
+export async function verifyPrivyAuth(accessToken: string = '') {
   try {
-    const accessToken = auth.replace('Bearer ', '')
     const verifiedClaims = await privy.verifyAuthToken(accessToken)
     return verifiedClaims
   } catch (err) {

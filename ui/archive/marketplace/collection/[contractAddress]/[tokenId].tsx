@@ -45,7 +45,8 @@ export default function TokenPage({
   contractAddress,
   tokenId,
 }: TokenPageProps) {
-  useChainDefault('l2')
+  useChainDefault()
+
   const router = useRouter()
   const address = useAddress()
 

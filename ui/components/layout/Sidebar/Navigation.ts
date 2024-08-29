@@ -1,15 +1,28 @@
 import {
   BuildingLibraryIcon,
+  ClipboardDocumentListIcon,
   FolderIcon,
   PlusIcon,
   RocketLaunchIcon,
+  Squares2X2Icon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
+import IconOrg from '../../assets/IconOrg'
 
 export const navigation = [
   {
     name: 'Join MoonDAO',
     href: '/join',
     icon: PlusIcon,
+    children: [
+      { name: 'Become a Citizen', href: '/citizen' },
+      { name: 'Create a Team', href: '/team' },
+    ],
+  },
+  {
+    name: 'Network',
+    href: '/network',
+    icon: IconOrg,
   },
   {
     name: 'Info',
@@ -41,9 +54,9 @@ export const navigation = [
       },
       {
         name: 'Get $MOONEY',
-        href: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet',
+        href: '/get-mooney',
       },
-      { name: 'Lock $MOONEY', href: '/lock' },
+      { name: 'Get Voting Power', href: '/lock' },
     ],
   },
   {
@@ -60,5 +73,10 @@ export const navigation = [
       //   dynamicHref: '/marketplace/collection/[contractAddress]',
       // },
     ],
+  },
+  {
+    name: 'Jobs',
+    href: '/jobs',
+    icon: ClipboardDocumentListIcon,
   },
 ]

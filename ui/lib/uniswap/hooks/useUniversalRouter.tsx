@@ -11,14 +11,14 @@ import {
 import { SwapRouter, UniswapTrade } from '@uniswap/universal-router-sdk'
 import { ethers } from 'ethers'
 import { useContext } from 'react'
-import { UNIVERSAL_ROUTER_ADDRESSES } from '../../../const/config'
+import { UNIVERSAL_ROUTER_ADDRESSES, ZERO_ADDRESS } from '../../../const/config'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
 import ChainContext from '../../thirdweb/chain-context'
 
 export function useUniversalRouter(
   swapAmnt: number,
-  tokenIn: Token,
-  tokenOut: Token
+  tokenIn: any,
+  tokenOut: any
 ) {
   const sdk = useSDK()
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -34,7 +34,7 @@ export function useUniversalRouter(
       })
 
       const options: SwapOptionsUniversalRouter = {
-        recipient: wallets[selectedWallet].address,
+        recipient: wallets[selectedWallet]?.address || ZERO_ADDRESS,
         slippageTolerance: new Percent(50, 10_000),
         type: SwapType.UNIVERSAL_ROUTER,
       }

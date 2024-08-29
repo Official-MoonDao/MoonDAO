@@ -1,6 +1,7 @@
-import { useAddress } from '@thirdweb-dev/react'
+import { useAddress, useContract } from '@thirdweb-dev/react'
 //Network warning
 import { useChain } from '@thirdweb-dev/react'
+import { CITIZEN_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -11,6 +12,7 @@ import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
 import { LogoSidebarLight, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
+import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import CookieBanner from './CookieBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
@@ -34,6 +36,10 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const chain = useChain()
   const { selectedChain } = useContext(ChainContext)
 
+  const { contract: citizenContract } = useContract(
+    CITIZEN_ADDRESSES[selectedChain.slug]
+  )
+
   const [currentLang, setCurrentLang] = useState(router.locale)
   const { t } = useTranslation('common')
   //Background is defined in this root div.
@@ -50,6 +56,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         setSidebarOpen={setSidebarOpen}
         lightMode={lightMode}
         setLightMode={setLightMode}
+        citizenContract={citizenContract}
       />
 
       <MobileSidebar
@@ -68,8 +75,15 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
             </div>
           </Link>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">
-            <div className="pl-6 mb-4 flex justify-center">
+            <div className="h-[50px] pl-6 mb-4 flex justify-center items-center">
               <PrivyConnectWallet />
+
+              <div className="relative lg:right-4">
+                <CitizenProfileLink
+                  selectedChain={selectedChain}
+                  citizenContract={citizenContract}
+                />
+              </div>
             </div>
             <nav className="flex flex-col px-4 overflow-y-auto h-[calc(75vh-2rem)] pb-[4rem]">
               {navigation.map((item, i) => (
@@ -101,9 +115,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           className={`mt-4 flex flex-col md:w-[90%] lg:px-14 xl:px-16 2xl:px-20`}
         >
           {/*Connect Wallet and Preferred network warning*/}
-          <div
-            className={`pr-8 max-h-[0px] md:max-h-full md:mb-4 lg:mb-2 flex flex-col items-end invisible md:visible`}
-          ></div>
           {children}
         </section>
       </main>

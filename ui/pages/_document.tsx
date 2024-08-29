@@ -23,6 +23,8 @@ class WebsiteDocument extends Document {
           <meta name="theme-color" content="#54c3ff" />
 
           <link rel="icon" href="/favicon.ico" />
+
+          {/* Scripts for Image Generator */}
         </Head>
         <body className="overflow-hidden relative">
           <div className="w-full gradient-9 max-h-[100vh] h-full fixed top-0 left-0"></div>

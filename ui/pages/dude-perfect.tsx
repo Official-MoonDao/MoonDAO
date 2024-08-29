@@ -12,14 +12,16 @@ import ColorsAndSocials from '../components/layout/Sidebar/ColorsAndSocials'
 const DudePerfect: React.FC = () => {
   const title = '🚀 We Sent Dude Perfect to SPACE!'
   const description =
-    '🚀 Launching Coby Cotton to space was only the beginning! MoonDAO’s mission is to create a self-sustaining, self-governing colony on the Moon!'
+    '🚀 Launching Coby Cotton to space was only the beginning! MoonDAO’s mission is to create a self-sustaining, self-governing colony on the Moon!' 
   const image = '/assets/dp-og.jpg'
 
   return (
     <>
       <WebsiteHead title={title} description={description} image={image} />
-      <Container fullWidth>
-        <ContentLayout popOverEffect mainPadding
+      <Container containerwidth>
+        <ContentLayout 
+          popOverEffect 
+          mainPadding
           header="Hey Dude Perfect frens, let's go to space together!"
           headerSize="max(20px, 3vmax)"
           description={
