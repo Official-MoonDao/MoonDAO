@@ -289,8 +289,10 @@ export async function getStaticProps() {
 
   const teams = [] //replace with teamContract.erc721.getAll() if all teams load
   for (let i = 0; i < totalTeams; i++) {
-    const team = await teamContract.erc721.get(i)
-    teams.push(team)
+    if (!blockedTeams.includes(i)) {
+      const team = await teamContract.erc721.get(i)
+      teams.push(team)
+    }
   }
 
   const filteredPublicTeams: any = teams?.filter(
@@ -314,8 +316,10 @@ export async function getStaticProps() {
 
   const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
   for (let i = 0; i < totalCitizens.toNumber(); i++) {
-    const citizen = await citizenContract.erc721.get(i)
-    citizens.push(citizen)
+    if (!blockedCitizens.includes(i)) {
+      const citizen = await citizenContract.erc721.get(i)
+      citizens.push(citizen)
+    }
   }
 
   const filteredPublicCitizens: any = citizens?.filter(

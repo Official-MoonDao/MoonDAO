@@ -509,7 +509,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const teamContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
   const nft = await teamContract.erc721.get(tokenId)
 
-  if (!nft || !nft.metadata.uri || blockedCitizens.includes(nft.metadata.id)) {
+  if (
+    !nft ||
+    !nft.metadata.uri ||
+    blockedCitizens.includes(Number(nft.metadata.id))
+  ) {
     return {
       notFound: true,
     }
