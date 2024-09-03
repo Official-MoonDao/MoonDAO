@@ -1,6 +1,5 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT, useContract } from '@thirdweb-dev/react'
-import { useAddress } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import {
   blockedCitizens,
@@ -21,7 +20,6 @@ import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
-import InnerPreFooter from '../components/layout/InnerPreFooter'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
@@ -38,8 +36,7 @@ export default function Network({
   filteredTeams,
   filteredCitizens,
 }: NetworkProps) {
-  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
-  const address = useAddress() // Add this line to get the user's address
+  const { selectedChain }: any = useContext(ChainContext)
 
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -288,7 +285,16 @@ export async function getStaticProps() {
   const now = Math.floor(Date.now() / 1000)
 
   const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
-  const teams = await teamContract.erc721.getAll()
+  const totalTeams = await teamContract.call('totalSupply')
+
+  const teams = [] //replace with teamContract.erc721.getAll() if all teams load
+  for (let i = 0; i < totalTeams; i++) {
+    if (!blockedTeams.includes(i)) {
+      const team = await teamContract.erc721.get(i)
+      teams.push(team)
+    }
+  }
+
   const filteredPublicTeams: any = teams?.filter(
     (nft: any) =>
       nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
@@ -306,7 +312,15 @@ export async function getStaticProps() {
   )
 
   const citizenContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
-  const citizens = await citizenContract.erc721.getAll()
+  const totalCitizens = await citizenContract.call('totalSupply')
+
+  const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
+  for (let i = 0; i < totalCitizens.toNumber(); i++) {
+    if (!blockedCitizens.includes(i)) {
+      const citizen = await citizenContract.erc721.get(i)
+      citizens.push(citizen)
+    }
+  }
 
   const filteredPublicCitizens: any = citizens?.filter(
     (nft: any) =>
