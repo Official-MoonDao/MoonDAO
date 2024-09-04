@@ -7,7 +7,7 @@ interface LogoProps {
     link?: string;
 }
 
-export default function Logo({ logo, alt, link }: LogoProps) {
+export default function BrandLogo({ logo, alt, link }: LogoProps) {
     return (
         <div 
             id="logo-container" 

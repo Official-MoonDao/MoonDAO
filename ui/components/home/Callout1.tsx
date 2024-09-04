@@ -8,10 +8,6 @@ export default function Callout1() {
         className="md:rounded-bl-[5vmax] z-20 relative w-[100%] h-[100%] bg-white mt-[-2vmax] pt-[2vmax] pb-0 lg:pb-10"
       >
         <div
-          id="bottom-right-divider"
-          className="divider-12 absolute bottom-[-2px] right-0 w-[250px] md:w-[350px] h-full overflow-visible"
-        ></div>
-        <div
           id="content-container"
           className="compact-lg flex flex-col-reverse justify-end lg:flex-row items-start lg:items-center min-h-[250px] md:min-h-[400px] p-5 pt-10 pb-0 md:p-10 md:pt-10 lg:max-w-[1200px]"
         >
