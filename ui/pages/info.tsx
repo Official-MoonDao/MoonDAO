@@ -1,6 +1,6 @@
 import React from 'react'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import CardGrid from '../components/layout/CardGrid'
+import IndexCardGrid from '../components/layout/IndexCardGrid'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -109,7 +109,7 @@ const Info: React.FC = () => {
             isProfile
           >
             <div className="mt-10 mb-10 flex justify-center">
-              <CardGrid cards={cardData} singleCol={false} />
+              <IndexCardGrid cards={cardData} singleCol={false} />
             </div>
           </ContentLayout>
         </Container>
