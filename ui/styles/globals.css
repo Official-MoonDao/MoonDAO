@@ -211,6 +211,10 @@ a {
     @apply text-[#071732] dark:text-white font-GoodTimes text-center text-3xl lg:text-5xl xl:text-[54px] lg:text-left;
   }
 
+  .last-updated {
+    @apply text-[#071732] dark:text-white font-GoodTimes text-center text-xs lg:text-sm xl:text-[10px] lg:text-left opacity-75;
+  }
+
   .title-text-colors {
     @apply text-[#071732] dark:text-white;
   }

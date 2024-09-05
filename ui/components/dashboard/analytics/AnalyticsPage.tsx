@@ -39,6 +39,7 @@ function Label({ text }: { text: string }) {
 export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<any>()
   const [lightMode] = useState(false)
+  const [dateUpdated, setDateUpdated] = useState<string>("")
   const { tokens } = useAssets()
   const {
     balance,
@@ -50,6 +51,11 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     getVMOONEYData().then((data) => {
+      const today = new Date()
+      const formattedDate = `${today.getFullYear()}-${(today.getMonth() + 1)
+        .toString()
+        .padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`
+      setDateUpdated(formattedDate)
       setAnalyticsData(data)
     })
   }, [])
@@ -64,6 +70,7 @@ export default function AnalyticsPage() {
       className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-6 lg:px-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center"
     >
       <h1 className="page-title">Analytics</h1>
+      <p className="last-updated">Figures current as of: {dateUpdated}</p>
       {/*Stats frame*/}
       <Frame>
         <Label text="Voting Power Key Figures" />
