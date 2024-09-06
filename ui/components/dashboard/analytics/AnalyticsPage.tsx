@@ -70,7 +70,7 @@ export default function AnalyticsPage() {
       className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-6 lg:px-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center"
     >
       <h1 className="page-title">Analytics</h1>
-      <p className="last-updated">Figures current as of: {dateUpdated}</p>
+      <p className="sub-title">Figures current as of: {dateUpdated}</p>
       {/*Stats frame*/}
       <Frame>
         <Label text="Voting Power Key Figures" />
