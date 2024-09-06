@@ -22,7 +22,7 @@ import dynamic from 'next/dynamic';
 import { NoticeFooter } from '@/components/layout/NoticeFooter';
 
 // Dynamically import CardGrid to prevent SSR-related issues
-const CardGrid = dynamic(() => import('../components/layout/CardGrid'), {
+const IndexCardGrid = dynamic(() => import('../components/layout/IndexCardGrid'), {
   ssr: false,
 });
 
@@ -39,7 +39,7 @@ const Governance: React.FC = () => {
     setIsClient(true);
   }, []);
 
-  const cardData = [
+  const indexCardData = [
     {
       icon: "/assets/icon-wallet.svg",
       iconAlt: 'Export Wallet',
@@ -200,7 +200,7 @@ const Governance: React.FC = () => {
             isProfile
           >
           <div className="mt-10 mb-10 flex justify-center">
-            <CardGrid cards={cardData} singleCol={false} />
+            <IndexCardGrid cards={indexCardData} singleCol={false} />
           </div>
           </ContentLayout>
         </Container>

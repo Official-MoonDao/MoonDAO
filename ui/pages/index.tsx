@@ -9,6 +9,7 @@ import Video from '../components/home/Video'
 import WebsiteHead from '../components/layout/Head'
 import Container from '../components/layout/Container'
 import SpeakerSection from '../components/home/SpeakerSection'
+import Footer from '../components/layout/Footer'
 
 export default function Home() {
   return (
@@ -26,6 +27,7 @@ export default function Home() {
         <Callout3 />
         <PartnerSection />
         <PageEnder />
+        <Footer />
       </div>
     </Container>
   )

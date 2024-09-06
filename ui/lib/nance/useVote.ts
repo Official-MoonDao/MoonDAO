@@ -42,7 +42,7 @@ export default function useVote(
         proposal,
         type: type as ProposalType,
         choice: encryptedChoice as string,
-        app: 'app.moondao.com',
+        app: 'moondao.com',
         privacy: 'shutter',
       })
     } else {
@@ -52,7 +52,7 @@ export default function useVote(
         type: type as ProposalType,
         choice: choice as number | number[] | string,
         reason,
-        app: 'app.moondao.com',
+        app: 'moondao.com',
       })
     }
   }, [selectedWallet, space, proposal, type, choice, reason, privacy, wallets])
