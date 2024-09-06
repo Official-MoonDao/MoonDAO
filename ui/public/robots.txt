@@ -3,7 +3,7 @@ User-agent: *
 Disallow: 
 
 # Host
-Host: app.moondao.com
+Host: moondao.com
 
 # Sitemaps
-Sitemap: app.moondao.com/sitemap.xml
+Sitemap: moondao.com/sitemap.xml
