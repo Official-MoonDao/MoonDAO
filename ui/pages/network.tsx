@@ -1,5 +1,5 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { NFT, useContract } from '@thirdweb-dev/react'
+import { NFT } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import {
   blockedCitizens,
@@ -9,9 +9,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect, useContext } from 'react'
-import ChainContext from '../lib/thirdweb/chain-context'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
+import React, { useState, useEffect } from 'react'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -25,7 +23,6 @@ import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import Tab from '@/components/layout/Tab'
-import CitizenABI from '../const/abis/Citizen.json'
 
 type NetworkProps = {
   filteredTeams: NFT[]
@@ -36,8 +33,6 @@ export default function Network({
   filteredTeams,
   filteredCitizens,
 }: NetworkProps) {
-  const { selectedChain }: any = useContext(ChainContext)
-
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
 
@@ -73,29 +68,20 @@ export default function Network({
     // shallowQueryRoute({ type: tab })
   }
 
-  // Citizen and Entity Data
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug]
-  )
-  const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug],
-    CitizenABI
-  )
-
-  const { data: totalTeams } = useHandleRead(teamContract, 'totalSupply')
-  const { data: totalCitizens } = useHandleRead(citizenContract, 'totalSupply')
-
   const [maxPage, setMaxPage] = useState(1)
 
   useEffect(() => {
-    if (!totalTeams || !totalCitizens) return
-    if (tab === 'teams') setMaxPage(Math.ceil(totalTeams?.toNumber() / 9))
-    if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens?.toNumber() / 9))
-    if (tab === 'all')
-      setMaxPage(
-        Math.ceil((totalTeams.toNumber() + totalCitizens.toNumber()) / 9)
-      )
-  }, [totalTeams, totalCitizens, tab])
+    const totalTeams =
+      input != '' ? filterBySearch(filteredTeams).length : filteredTeams.length
+    const totalCitizens =
+      input != ''
+        ? filterBySearch(filteredCitizens).length
+        : filteredCitizens.length
+
+    if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 9))
+    if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 9))
+    if (tab === 'all') setMaxPage(Math.ceil((totalTeams + totalCitizens) / 9))
+  }, [tab, input, filteredCitizens, filteredTeams])
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
 
