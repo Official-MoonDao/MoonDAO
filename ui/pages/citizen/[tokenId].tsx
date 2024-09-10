@@ -301,7 +301,7 @@ export default function CitizenDetailPage({
           description={nft.metadata.description}
           image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
         />
-        {!isDeleted && (
+        {!isDeleted && subIsValid && (
           <div id="entity-actions-container" className=" z-30">
             {isManager || address === nft.owner ? (
               <div
