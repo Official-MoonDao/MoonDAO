@@ -1,5 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
+import { useFundWallet, usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { TEAM_ADDRESSES, TEAM_CREATOR_ADDRESSES } from 'const/config'
@@ -80,6 +80,8 @@ export default function CreateTeam({
   const pfpRef = useRef<HTMLDivElement | null>(null)
 
   const nativeBalance = useNativeBalance()
+
+  const { fundWallet } = useFundWallet()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     const accessToken = await getAccessToken()
@@ -345,8 +347,18 @@ export default function CreateTeam({
                           .formatEther(cost.toString())
                           .toString()
 
-                        if (nativeBalance < formattedCost) {
-                          return toast.error('Insufficient balance')
+                        const estimatedMaxGas = 0.0003
+
+                        const totalCost =
+                          Number(formattedCost) + estimatedMaxGas
+
+                        if (nativeBalance < totalCost) {
+                          const roundedCost =
+                            Math.ceil(+totalCost * 100000) / 100000
+
+                          return await fundWallet(address, {
+                            amount: String(roundedCost),
+                          })
                         }
 
                         const adminHatMetadataBlob = new Blob(
