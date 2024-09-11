@@ -1,5 +1,6 @@
 import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { TrashIcon } from '@heroicons/react/24/outline'
 import { useAddress, useResolvedMediaType, useSDK } from '@thirdweb-dev/react'
 import { HATS_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
@@ -50,7 +51,7 @@ function HatOption({ hat }: any) {
   }, [])
 
   return (
-    <option key={hat.id} value={hat.id}>
+    <option key={hat.id} value={hat.id} className="bg-[#0f152f] text-white">
       {hatMetadata?.name}
     </option>
   )
@@ -72,7 +73,7 @@ function TeamMember({
   return (
     <>
       {hat.wearers.map((w: any, i: number) => (
-        <div key={`modal-team-member-wearer-${i}`}>
+        <div key={`modal-team-member-wearer-${i}`} className="bg-dark-cool rounded-[1vmax] mb-2 p-5">
           <div className="flex justify-between">
             <p className="font-bold">{hatData.name}</p>
             <button
@@ -111,10 +112,10 @@ function TeamMember({
                 }
               }}
             >
-              <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+              <TrashIcon className="h-6 w-6 text-white" aria-hidden="true" />
             </button>
           </div>
-          <p>{w.id}</p>
+          <p>{`${w.id.slice(0, 5)}...${w.id.slice(-5)}`}</p>
         </div>
       ))}
     </>
@@ -158,10 +159,16 @@ function TeamManageMembersModal({
 
   const { queueSafeTx } = useSafe(multisigAddress)
 
+  const [isValidAddress, setIsValidAddress] = useState(false)
+
+  const validateEthereumAddress = (address: string) => {
+    return address.length === 42 && address.startsWith('0x')
+  }
+
   return (
     <Modal id="team-manage-members-modal" setEnabled={setEnabled}>
-      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md">
-        <div className="w-full flex items-center justify-between">
+      <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 py-0 bg-gradient-to-b from-dark-cool to-darkest-cool h-screen md:h-auto">
+        <div className="w-full flex mt-5 mb-2 items-end justify-between">
           <h2 className="font-GoodTimes">{`Manage Members`}</h2>
           <button
             type="button"
@@ -172,20 +179,22 @@ function TeamManageMembersModal({
           </button>
         </div>
 
-        <div className="mt-4 w-full flex flex-col divide-y-2 max-h-[500px] overflow-auto">
-          {hats.map((hat: any, i: number) => (
-            <TeamMember
-              key={`modal-team-member-${i}`}
-              hat={hat}
-              selectedChain={selectedChain}
-              hatsContract={hatsContract}
-              teamContract={teamContract}
-              teamId={teamId}
-              queueSafeTx={queueSafeTx}
-              setHasDeletedMember={setHasDeletedMember}
-              managerHatId={managerHatId}
-            />
-          ))}
+        <div className="border-b-[3px] border-dark-cool rounded-[2vmax] w-full">
+          <div className="px-2 pb-0 rounded-[2vmax] bg-darkest-cool w-full flex flex-col max-h-[500px] overflow-auto border-t-[10px] border-b-[10px] border-darkest-cool">
+            {hats.map((hat: any, i: number) => (
+              <TeamMember
+                key={`modal-team-member-${i}`}
+                hat={hat}
+                selectedChain={selectedChain}
+                hatsContract={hatsContract}
+                teamContract={teamContract}
+                teamId={teamId}
+                queueSafeTx={queueSafeTx}
+                setHasDeletedMember={setHasDeletedMember}
+                managerHatId={managerHatId}
+              />
+            ))}
+          </div>
         </div>
         {hasDeletedMember && (
           <p>
@@ -206,13 +215,10 @@ function TeamManageMembersModal({
         )}
         <hr></hr>
         <form
-          className="w-full flex flex-col gap-2 items-start justify-start bg-[#080C20] rounded-md"
+          className="w-full flex flex-col gap-2 items-start justify-start rounded-[2vmax]"
           onSubmit={async (e) => {
             e.preventDefault()
-            if (
-              newMemberAddress.length !== 42 ||
-              !newMemberAddress.startsWith('0x')
-            )
+            if (!validateEthereumAddress(newMemberAddress))
               return toast.error('Invalid address')
 
             const iface = new ethers.utils.Interface(HatsABI)
@@ -243,6 +249,7 @@ function TeamManageMembersModal({
                 toast.success('Member added successfully')
               }
               setNewMemberAddress('')
+              setIsValidAddress(false)
             } catch (err: any) {
               console.log(err.message)
               if (
@@ -256,33 +263,51 @@ function TeamManageMembersModal({
             }
           }}
         >
-          <div className="w-full flex items-center justify-between">
+          <div className="w-full mb-2 flex items-center justify-between">
             <div>
               <h2 className="font-GoodTimes">{'Add a Member'}</h2>
             </div>
           </div>
-          <div className="w-full flex flex-col gap-4">
-            <select
-              className="p-2 bg-[#0f152f]"
-              onChange={({ target }) => setSelectedHatId(target.value)}
-              value={selectedHatId}
-            >
-              {reversedHats.map((hat: any) => (
-                <HatOption key={hat.id} hat={hat} />
-              ))}
-            </select>
+          <div className="w-full flex flex-col gap-1">
+            <div className="relative w-full">
+              <select
+                className="w-full p-2 px-5 bg-[#0f152f] appearance-none rounded-t-[20px] rounded-b-[5px] text-white border border-[#2a3052] focus:outline-none focus:ring-2 focus:ring-light-warm"
+                onChange={({ target }) => setSelectedHatId(target.value)}
+                value={selectedHatId}
+                style={{
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                }}
+              >
+                {reversedHats.map((hat: any) => (
+                  <HatOption key={hat.id} hat={hat} />
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
+            </div>
             <input
-              className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+              className="w-full p-2 px-5 bg-[#0f152f] rounded-[5px] mt-[3px] text-white border border-[#2a3052] focus:outline-none focus:ring-2 focus:ring-light-warm"
               placeholder="Member Address"
               value={newMemberAddress}
-              onChange={({ target }: any) => setNewMemberAddress(target.value)}
+              onChange={({ target }: any) => {
+                setNewMemberAddress(target.value)
+                const newIsValidAddress = validateEthereumAddress(target.value)
+                setIsValidAddress(newIsValidAddress)
+              }}
             />
           </div>
           <PrivyWeb3Button
             label="Add Member"
             type="submit"
-            className="mt-4 w-full gradient-2 rounded-[5vmax]"
+            className={`w-full mt-[-1px] w-full gradient-2 rounded-[2vmax] rounded-tr-[5px] ${
+              !isValidAddress ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
             action={() => {}}
+            isDisabled={!isValidAddress}
           />
           {hasAddedMember && (
             <p>
