@@ -37,7 +37,7 @@ export default function Tier({
       id="callout-card-container"
       className="bg-darkest-cool md:bg-transparent z-[50]"
     >
-      <div className="bg-[#020617] md:mb-5 md:rounded-[5vmax] p-5 md:rounded-tl-[20px]">
+      <div className="bg-[#020617]  md:rounded-[5vmax] p-5 md:rounded-tl-[20px]">
         <div
           className="w-full transition-all duration-150 pb-10 cursor-pointer text-white text-opacity-[80%] "
           onClick={() => {
