@@ -8,7 +8,10 @@ import AnalyticsSkeleton from './AnalyticsSkeleton'
 
 function Frame(props: any) {
   return (
-    <div className="mt-3 px-5 lg:px-10 xl:px-10 py-5 inner-container-background w-[336px] sm:w-[400px] lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col items-center">
+    <div
+      id="analytics-page"
+      className="mt-3 px-5 lg:px-10 xl:px-10 py-5 bg-[#020617] rounded-2xl w-full lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col"
+    >
       {props.children}
     </div>
   )
@@ -28,18 +31,8 @@ function Data({ text, value }: any) {
   )
 }
 
-function Label({ text }: { text: string }) {
-  return (
-    <div className="my-4 leading-relaxed flex w-full flex-col items-center justify-center text-center title-text-colors font-semibold text-xl lg:text-3xl 2xl:text-4xl font-RobotoMono">
-      {text}
-    </div>
-  )
-}
-
-export default function AnalyticsPage() {
+export default function AnalyticsPage({ setDateUpdated }: any) {
   const [analyticsData, setAnalyticsData] = useState<any>()
-  const [lightMode] = useState(false)
-  const [dateUpdated, setDateUpdated] = useState<string>("")
   const { tokens } = useAssets()
   const {
     balance,
@@ -65,17 +58,14 @@ export default function AnalyticsPage() {
   if (!analyticsData) return <AnalyticsSkeleton />
 
   return (
-    <div
-      id="analytics-page"
-      className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-6 lg:px-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center"
-    >
-      <h1 className="page-title">Analytics</h1>
-      <p className="sub-title">Figures current as of: {dateUpdated}</p>
+    <>
       {/*Stats frame*/}
       <Frame>
-        <Label text="Voting Power Key Figures" />
+        <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
+          {'Voting Power Key Figures'}
+        </h1>
         <div
-          className="flex flex-col  tems-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10'>
+          className="mt-6 flex flex-col  tems-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10'>
 "
         >
           <Data
@@ -107,7 +97,7 @@ export default function AnalyticsPage() {
         </div>
       </Frame>
       {/* Marketplace Platform Fee Split */}
-      <Frame>
+      {/* <Frame>
         {!isLoadingSplit && (
           <div className="w-3/4 2xl:w-full">
             <Label text={'Marketplace Platform Fee Split (L2 $MOONEY)'} />
@@ -118,7 +108,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
         )}
-      </Frame>
-    </div>
+      </Frame> */}
+    </>
   )
 }

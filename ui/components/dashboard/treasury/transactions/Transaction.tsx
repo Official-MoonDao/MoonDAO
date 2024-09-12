@@ -24,8 +24,6 @@ const Transaction = ({ data, loading }: any) => {
     ? `/coins/${name}.${assetImageExtension[name]}`
     : '/coins/DEFAULT.png'
 
-  console.log(value)
-
   return (
     <article className="relative w-[336px] sm:w-[400px] xl:w-full font-RobotoMono">
       {/*Warning circle*/}
