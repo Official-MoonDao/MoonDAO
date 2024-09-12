@@ -28,13 +28,6 @@ export default function TreasuryPage() {
     error: assetsError,
   } = useAssets()
 
-  //This one is now misfiring all the time, commenting out for now.
-  /**if (etherscanError)
-    errorToast(
-      'Connection with Etherscan failed. Contact MoonDAO if the problem persists 🚀'
-    )
-    */
-
   const { t } = useTranslation('common')
   //Some margin left added on md screen size to compensate for change in layout
   return (
