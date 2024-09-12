@@ -3,10 +3,9 @@ import { useAddress } from '@thirdweb-dev/react'
 import { TEAM_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Modal from '../layout/Modal'
-import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export function SubscriptionModal({
