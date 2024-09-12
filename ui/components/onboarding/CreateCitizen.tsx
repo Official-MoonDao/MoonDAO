@@ -1,5 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
+import { useFundWallet, usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
 import { CITIZEN_ADDRESSES } from 'const/config'
@@ -71,11 +71,9 @@ export default function CreateCitizen({
 
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
 
-  const checkboxRef = useRef(null)
+  const { fundWallet } = useFundWallet()
 
   const { isMobile } = useWindowSize()
-
-  const { windowSize } = useWindowSize()
 
   useEffect(() => {
     if (stage > lastStage) {
@@ -182,6 +180,33 @@ export default function CreateCitizen({
                   stage={stage}
                   generateInBG
                 />
+                {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+                  <button
+                    onClick={() => {
+                      setCitizenData({
+                        name: 'Test',
+                        description: 'Testing',
+                        email: 'test@test.com',
+                        discord: '',
+                        website: 'https://moondao.com',
+                        twitter: '',
+                        location: 'Earth',
+                        view: 'public',
+                        formResponseId: '0000',
+                        newsletterSub: false,
+                      })
+
+                      const file = new File([''], 'test.png', {
+                        type: 'image/png',
+                      })
+
+                      setCitizenImage(file)
+                      setStage(2)
+                    }}
+                  >
+                    Use Testing Data
+                  </button>
+                )}
               </StageContainer>
             )}
             {/* Upload & Create Image */}
@@ -394,8 +419,17 @@ export default function CreateCitizen({
                         .formatEther(cost.toString())
                         .toString()
 
-                      if (nativeBalance < formattedCost) {
-                        return toast.error('Insufficient balance')
+                      const estimatedMaxGas = 0.0001
+
+                      const totalCost = Number(formattedCost) + estimatedMaxGas
+
+                      if (nativeBalance < totalCost) {
+                        const roundedCost =
+                          Math.ceil(+totalCost * 10000) / 10000
+
+                        return await fundWallet(address, {
+                          amount: String(roundedCost),
+                        })
                       }
 
                       const renamedCitizenImage = renameFile(
