@@ -146,9 +146,8 @@ export default function TeamListing({
                 </div>
               )}
             </span>
-            <div id="description-and-id-container" className="relative z-50">
-              <div id="description-and-id" className="description">
-                <div className="flex opacity-[70%]">{listing.description}</div>
+            <div id="listing-id-container" className="relative z-50">
+              <div id="listing-id" className="listing">
                 <div>
                   {`${listing.price} 
                   ${listing.currency}`}
@@ -170,7 +169,7 @@ export default function TeamListing({
                       setEnabledBuyListingModal(true)
                     }}
                   >
-                    {'Buy Now'}
+                    {'See More'}
                   </StandardButton>
                 </span>
               </div>
@@ -183,7 +182,7 @@ export default function TeamListing({
                   setEnabledBuyListingModal(true)
                 }}
               >
-                <span className="hidden md:block">{'Buy Now'}</span>
+                <span className="hidden md:block">{'See More'}</span>
               </span>
             </div>
           </span>
