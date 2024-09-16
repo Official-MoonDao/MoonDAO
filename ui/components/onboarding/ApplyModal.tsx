@@ -1,6 +1,7 @@
 //Modal for tier application typeform
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Widget } from '@typeform/embed-react'
+import { useCallback } from 'react'
 import toast from 'react-hot-toast'
 import Modal from '../layout/Modal'
 
@@ -10,6 +11,11 @@ type ApplyModalProps = {
 }
 
 export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
+  const submitTypeform = useCallback(async () => {
+    toast.success('Application submitted!')
+    setEnabled(false)
+  }, [setEnabled])
+
   return (
     <Modal id="apply-modal-backdrop" setEnabled={setEnabled}>
       <div className="mt-32 w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-4 md:p-8 bg-darkest-cool rounded-md">
@@ -32,10 +38,7 @@ export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
               ? (process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_APP_FORM_ID as string)
               : (process.env.NEXT_PUBLIC_TYPEFORM_TEAM_APP_FORM_ID as string)
           }
-          onSubmit={() => {
-            toast.success('Application submitted!')
-            setEnabled(false)
-          }}
+          onSubmit={submitTypeform}
           height={500}
         />
       </div>
