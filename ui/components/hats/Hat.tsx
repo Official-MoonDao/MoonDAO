@@ -1,17 +1,40 @@
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
 import { Chain } from '@thirdweb-dev/chains'
+import { NFT, ThirdwebNftMedia } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { useHatData } from '@/lib/hats/useHatData'
 
 type HatProps = {
   selectedChain: Chain
   hatsContract: any
   hat: any
+  teamImage?: boolean
+  teamContract?: any
 }
 
-export function Hat({ selectedChain, hatsContract, hat }: HatProps) {
+export function Hat({
+  selectedChain,
+  hatsContract,
+  hat,
+  teamImage,
+  teamContract,
+}: HatProps) {
   const router = useRouter()
   const hatData = useHatData(selectedChain, hatsContract, hat.id)
+
+  const [teamNFT, setTeamNFT] = useState<NFT>()
+
+  useEffect(() => {
+    async function getTeamNFT() {
+      const nft = await teamContract.erc721.get(hat.teamId)
+      setTeamNFT(nft)
+    }
+
+    if (teamContract && teamImage) {
+      getTeamNFT()
+    }
+  }, [hat.teamId, teamContract, teamImage])
 
   return (
     <button
@@ -23,6 +46,15 @@ export function Hat({ selectedChain, hatsContract, hat }: HatProps) {
       }}
     >
       <div className="flex items-center gap-5">
+        {teamNFT && (
+          <div className="rounded-[2.5vmax] rounded-tl-[10px] overflow-hidden">
+            <ThirdwebNftMedia
+              metadata={teamNFT.metadata}
+              width="150px"
+              height="150px"
+            />
+          </div>
+        )}
         <div>
           <p className="font-GoodTimes">{hatData.name}</p>
           <p>{hatData.description}</p>

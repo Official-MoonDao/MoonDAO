@@ -400,7 +400,7 @@ export default function CitizenDetailPage({
               <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
                 <div id="vote-title-section" className="flex justify-between">
                   <h2 className="header font-GoodTimes opacity-[50%]">
-                    Voting Power
+                    Governance
                   </h2>
                 </div>
                 <div className="mt-5 flex flex-col gap-5">
@@ -466,6 +466,8 @@ export default function CitizenDetailPage({
                           selectedChain={selectedChain}
                           hat={hat}
                           hatsContract={hatsContract}
+                          teamImage
+                          teamContract={teamContract}
                         />
                       </div>
                     ))}
