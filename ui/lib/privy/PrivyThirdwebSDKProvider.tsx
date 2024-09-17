@@ -17,8 +17,11 @@ export function PrivyThirdwebSDKProvider({ selectedChain, children }: any) {
       try {
         const wallet = wallets[selectedWallet]
         const provider = await wallet?.getEthersProvider()
-        const { id: walletId } = wallet.meta
-        if (walletId === 'com.coinbase.wallet')
+        const walletClientType = wallet.walletClientType
+        if (
+          walletClientType === 'coinbase_wallet' ||
+          walletClientType === 'privy'
+        )
           await wallet?.switchChain(selectedChain.chainId)
         setSigner(provider?.getSigner())
       } catch (err: any) {
