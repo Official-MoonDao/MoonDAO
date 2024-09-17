@@ -413,7 +413,9 @@ export default function CitizenDetailPage({
                   <div>
                     <p className="text-xl">{`Voting Power`}</p>
                     <p className="text-2xl">
-                      {VMOONEYBalance ? VMOONEYBalance?.toLocaleString() : 0}
+                      {VMOONEYBalance
+                        ? Number(VMOONEYBalance?.toFixed(0)).toLocaleString()
+                        : 0}
                     </p>
                   </div>
                 </div>
@@ -421,11 +423,7 @@ export default function CitizenDetailPage({
                   <div className="flex flex-col md:flex-row mt-4 md:px-4 flex items-start xl:items-end gap-2">
                     <StandardButton
                       className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:rounded-bl-[20px] md:hover:pl-5"
-                      onClick={() =>
-                        window.open(
-                          'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
-                        )
-                      }
+                      onClick={() => router.push('/get-mooney')}
                     >
                       {'Get $MOONEY'}
                     </StandardButton>
