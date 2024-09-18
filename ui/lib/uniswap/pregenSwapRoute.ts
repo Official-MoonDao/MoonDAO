@@ -1,18 +1,15 @@
 import { Chain } from '@thirdweb-dev/chains'
-import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
-import {
-  AlphaRouter,
-  SwapOptionsUniversalRouter,
-  SwapType,
-} from '@uniswap/smart-order-router'
+import { CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
+import { AlphaRouter, SwapType } from '@uniswap/smart-order-router'
+import { ZERO_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
 import { initSDK } from '../thirdweb/thirdweb'
 
 export async function pregenSwapRoute(
   selectedChain: Chain,
   swapAmnt: number | string,
-  tokenIn: Token,
-  tokenOut: Token
+  tokenIn: any,
+  tokenOut: any
 ) {
   try {
     const provider: any = initSDK(selectedChain).getProvider()
@@ -21,8 +18,8 @@ export async function pregenSwapRoute(
       provider,
     })
 
-    const options: SwapOptionsUniversalRouter = {
-      recipient: '0x0000000000000000000000000000000000000000',
+    const options = {
+      recipient: ZERO_ADDRESS,
       slippageTolerance: new Percent(50, 10_000),
       type: SwapType.UNIVERSAL_ROUTER,
     }
@@ -39,6 +36,6 @@ export async function pregenSwapRoute(
 
     return route
   } catch (err: any) {
-    console.log('Issue creating uniswap route : ', err.message)
+    console.log(err)
   }
 }

@@ -41,6 +41,12 @@ export default function NativeToMooney({ selectedChain }: any) {
   const [swapRoute, setSwapRoute] = useState<SwapRoute>()
   const [estimatedGasUsedUSD, setEstimatedGasUsedUSD] = useState<any>(0)
 
+  const { generateRoute, executeRoute } = useUniversalRouter(
+    amount,
+    inputToken,
+    outputToken
+  )
+
   useEffect(() => {
     const native = nativeOnChain(selectedChain.chainId)
     const mooney = new Token(
@@ -55,26 +61,18 @@ export default function NativeToMooney({ selectedChain }: any) {
     setOutputToken(mooney)
   }, [selectedChain])
 
-  const { generateRoute, executeRoute } = useUniversalRouter(
-    amount,
-    inputToken,
-    outputToken
-  )
-
   useEffect(() => {
     generateRoute(TradeType.EXACT_INPUT).then((route) => {
       setSwapRoute(route)
       setOutput(route?.route[0].rawQuote.toString() / 10 ** 18 || 0)
-
       const estimatedGasUSD = route?.estimatedGasUsedUSD.toFixed(2)
-
       if (estimatedGasUSD < 0.01) {
         setEstimatedGasUsedUSD('<0.01')
       } else {
         setEstimatedGasUsedUSD(estimatedGasUSD || 0)
       }
     })
-  }, [amount, selectedChain, inputToken, address])
+  }, [amount, inputToken, outputToken, address, generateRoute])
 
   return (
     <div className="max-w-[500px] w-full flex flex-col gap-1">

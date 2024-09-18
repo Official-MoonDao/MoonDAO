@@ -1,13 +1,7 @@
-//WIP
 import { useWallets } from '@privy-io/react-auth'
 import { useSDK } from '@thirdweb-dev/react'
-import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
-import {
-  AlphaRouter,
-  SwapOptionsUniversalRouter,
-  SwapRoute,
-  SwapType,
-} from '@uniswap/smart-order-router'
+import { CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
+import { AlphaRouter, SwapType } from '@uniswap/smart-order-router'
 import { SwapRouter, UniswapTrade } from '@uniswap/universal-router-sdk'
 import { ethers } from 'ethers'
 import { useContext } from 'react'
@@ -32,8 +26,7 @@ export function useUniversalRouter(
         chainId: selectedChain.chainId,
         provider,
       })
-
-      const options: SwapOptionsUniversalRouter = {
+      const options = {
         recipient: wallets[selectedWallet]?.address || ZERO_ADDRESS,
         slippageTolerance: new Percent(50, 10_000),
         type: SwapType.UNIVERSAL_ROUTER,
@@ -48,14 +41,13 @@ export function useUniversalRouter(
         tradeType,
         options
       )
-
       return route
     } catch (err: any) {
-      console.log('Issue creating uniswap route : ', err.message)
+      console.log(err)
     }
   }
 
-  async function executeRoute(swapRoute: SwapRoute) {
+  async function executeRoute(swapRoute: any) {
     const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
 
