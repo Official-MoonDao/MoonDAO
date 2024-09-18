@@ -3,10 +3,14 @@ import { CITIZEN_ADDRESSES, CITIZEN_WHITELIST_ADDRESSES } from 'const/config'
 import { useContext, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
-import Tier from '@/components/onboarding/Tier'
 import ApplyModal from '@/components/onboarding/ApplyModal'
+import Tier from '@/components/onboarding/Tier'
 
-const CitizenTier = () => {
+type CitizenTierProps = {
+  setSelectedTier: Function
+}
+
+const CitizenTier = ({ setSelectedTier }: CitizenTierProps) => {
   const { selectedChain } = useContext(ChainContext)
   const sdk = useSDK()
   const address = useAddress()
@@ -24,12 +28,12 @@ const CitizenTier = () => {
     const citizenWhitelistContract = await sdk?.getContract(
       CITIZEN_WHITELIST_ADDRESSES[selectedChain.slug]
     )
-    const isWhitelisted = await citizenWhitelistContract?.call('isWhitelisted', [
-      address,
-    ])
+    const isWhitelisted = await citizenWhitelistContract?.call(
+      'isWhitelisted',
+      [address]
+    )
     if (isWhitelisted) {
-      // Logic for becoming a citizen
-      console.log('Citizen whitelist check passed')
+      setSelectedTier('citizen')
     } else {
       setApplyModalEnabled(true)
     }
@@ -38,10 +42,7 @@ const CitizenTier = () => {
   return (
     <div id="citizen-tier-container">
       {applyModalEnabled && (
-        <ApplyModal
-          type="citizen"
-          setEnabled={setApplyModalEnabled}
-        />
+        <ApplyModal type="citizen" setEnabled={setApplyModalEnabled} />
       )}
       <Tier
         price={0.0111}
