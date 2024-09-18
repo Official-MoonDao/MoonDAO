@@ -12,7 +12,7 @@ module.exports = nextTranslate({
       'b507f59d2508ebfb5e70996008095782.ipfscdn.io',
       'r2.comfy.icu',
       'cdn.discordapp.com',
-      'cdn.stamp.fyi'
+      'cdn.stamp.fyi',
     ],
   },
   async redirects() {
@@ -183,8 +183,10 @@ module.exports = nextTranslate({
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback.fs = false
+      config.resolve.fallback.path = false
       config.resolve.fallback.tls = false
       config.resolve.fallback.net = false
+      config.resolve.fallback.Browser = false
       config.resolve.fallback.child_process = false
     }
     return config
