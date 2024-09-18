@@ -8,7 +8,7 @@ import { useLightMode } from '../lib/utils/hooks/useLightMode'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
-import BackgroundEffect from '../components/layout/BackgroundEffect'
+
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const [selectedChain, setSelectedChain]: any = useState<Chain>(
@@ -23,7 +23,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
 
   return (
     <>
-      <BackgroundEffect />
+      
       <GTag GTAG={process.env.NEXT_PUBLIC_GTAG as string} />
       <ChainContext.Provider value={{ selectedChain, setSelectedChain }}>
         <PrivyProvider
