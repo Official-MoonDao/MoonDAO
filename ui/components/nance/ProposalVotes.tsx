@@ -58,14 +58,9 @@ export default function ProposalVotes({
   }
 
   return (
-    <div
-      className="flex flex-col"
-      style={{
-        maxHeight: 'calc(100vh - 20rem)',
-      }}
-    >
-      <div className="overflow-y-scroll pt-2">
-        <div className="">
+    <div className="flex flex-col h-full">
+      <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
+        <div className="mb-4">
           {isSimpleVoting && (
             <>
               <div className="flex justify-between">
@@ -136,7 +131,7 @@ export default function ProposalVotes({
           </div>
         </div>
 
-        <ul role="list" className="space-y-2 pt-2">
+        <ul role="list" className="space-y-2">
           {votes?.map((vote) => (
             <li key={vote.id}>
               <div
@@ -216,11 +211,13 @@ export default function ProposalVotes({
         </ul>
       </div>
 
-      <NewVoteButton
-        snapshotSpace={SNAPSHOT_SPACE_NAME}
-        snapshotProposal={proposalInfo}
-        refetch={refetch}
-      />
+      <div className="mt-auto pt-4">
+        <NewVoteButton
+          snapshotSpace={SNAPSHOT_SPACE_NAME}
+          snapshotProposal={proposalInfo}
+          refetch={refetch}
+        />
+      </div>
     </div>
   )
 }

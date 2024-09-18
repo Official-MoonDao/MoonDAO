@@ -168,6 +168,7 @@ export default function ProposalList() {
                 className="relative flex inner-container-background justify-between gap-x-6 px-4 py-5 border-transparent border-[1px] hover:border-white transition-all duration-150 sm:px-6"
               >
                 <ProposalInfo
+                showTitle={true}
                   proposalPacket={{
                     ...proposal,
                     proposalInfo: packet.proposalInfo,

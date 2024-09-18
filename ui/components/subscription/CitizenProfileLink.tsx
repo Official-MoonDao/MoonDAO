@@ -28,15 +28,15 @@ export default function CitizenProfileLink({
           setIsLoading(false)
         }}
       >
-        <div className="rounded-full overflow-hidden animate-fadeIn">
+        <div className="rounded-[100%] w-[40px] h-[40px] overflow-hidden  animate-fadeIn">
           {isLoading ? (
             <LoadingSpinner />
           ) : (
             <ThirdwebNftMedia
               className=""
               metadata={citizenNft.metadata}
-              width="40px"
-              height="40px"
+              width="100%"
+              height="100%"
             />
           )}
         </div>
