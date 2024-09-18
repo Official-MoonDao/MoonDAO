@@ -1,15 +1,15 @@
+import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useContext, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
-import { useAddress } from '@thirdweb-dev/react'
-import Head from '@/components/layout/Head'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
+import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
 import CreateTeam from '@/components/onboarding/CreateTeam'
-import Pricing from '@/components/layout/Pricing'
+import Pricing from '@/components/onboarding/Pricing'
 
 export default function Join() {
   const { t } = useTranslation('common')
@@ -74,7 +74,7 @@ export default function Join() {
           }
         >
           {/* Pricing component displays both tiers */}
-          <Pricing />
+          <Pricing setSelectedTier={setSelectedTier} />
         </ContentLayout>
       </Container>
     </div>

@@ -9,7 +9,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import ApplyModal from '@/components/onboarding/ApplyModal'
 import CreateTeam from '@/components/onboarding/CreateTeam'
-import TeamTier from '@/components/layout/TeamTier'
+import TeamTier from '@/components/onboarding/TeamTier'
 
 export default function TeamJoin() {
   const { selectedChain } = useContext(ChainContext)
@@ -71,11 +71,11 @@ export default function TeamJoin() {
           {applyModalEnabled && (
             <ApplyModal type="team" setEnabled={setApplyModalEnabled} />
           )}
-          
+
           {/* Use the TeamTier component to display team tier */}
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
-              <TeamTier />
+              <TeamTier setSelectedTier={setSelectedTier} />
             </div>
           </div>
         </ContentLayout>
