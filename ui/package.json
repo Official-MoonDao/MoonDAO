@@ -41,7 +41,7 @@
     "@typeform/embed": "^4.5.0",
     "@typeform/embed-react": "^3.17.0",
     "@uniswap/sdk-core": "^4.0.7",
-    "@uniswap/smart-order-router": "3.19.3",
+    "@uniswap/smart-order-router": "^3.19.2",
     "@uniswap/universal-router-sdk": "^2.0.2",
     "@upstash/ratelimit": "^2.0.1",
     "@upstash/redis": "^1.33.0",
