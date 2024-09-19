@@ -1,21 +1,29 @@
 import moment from 'moment'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 
-const L1_SUBGRAPH_URL =
+const ETH_SUBGRAPH_URL =
   'https://api.studio.thegraph.com/query/38443/vmooney/v0.1.834'
 
-const L2_SUBGRAPH_URL =
+const POLYGON_SUBGRAPH_URL =
   'https://api.studio.thegraph.com/query/38443/vmooney-l2/v0.0.1'
+
+const ARB_SUBGRAPH_URL =
+  'https://api.studio.thegraph.com/query/38443/vmooney-arb/v0.0.1'
 
 const now = new Date().getTime() / 1000
 
-const L1Client: any = createClient({
-  url: L1_SUBGRAPH_URL,
+const EthClient: any = createClient({
+  url: ETH_SUBGRAPH_URL,
   exchanges: [fetchExchange, cacheExchange],
 })
 
-const L2Client: any = createClient({
-  url: L2_SUBGRAPH_URL,
+const PolygonClient: any = createClient({
+  url: POLYGON_SUBGRAPH_URL,
+  exchanges: [fetchExchange, cacheExchange],
+})
+
+const ArbClient: any = createClient({
+  url: ARB_SUBGRAPH_URL,
   exchanges: [fetchExchange, cacheExchange],
 })
 
@@ -48,30 +56,41 @@ export async function getVMOONEYData() {
   let totalHolders = 0
   let totalVMooney = 0
 
-  const L1Res = await L1Client.query(query).toPromise()
-  const L2Res = await L2Client.query(query).toPromise()
-  const holders = L1Res.data.holders.map((h: any, i: number, arr: any) => {
+  const EthRes = await EthClient.query(query).toPromise()
+  const PolygonRes = await PolygonClient.query(query).toPromise()
+  const ArbRes = await ArbClient.query(query).toPromise()
+
+  const holders = EthRes.data.holders.map((h: any, i: number, arr: any) => {
     totalHolders++
-    const l2h = L2Res.data.holders.find((l2h: any) => l2h.address === h.address)
+    const polygonHolder = PolygonRes.data.holders.find(
+      (pH: any) => pH.address === h.address
+    )
 
-    const l1mooney = h.totalLocked / 10 ** 18
-    const l1vmooney = calcVMOONEY(l1mooney, h.locktime)
+    const arbHolder = ArbRes.data.holders.find(
+      (aH: any) => aH.address === h.address
+    )
 
-    const l2mooney = l2h.totalLocked / 10 ** 18
-    const l2vmooney = calcVMOONEY(l2mooney, l2h.locktime)
+    const ethMooney = h.totalLocked / 10 ** 18
+    const ethVMooney = calcVMOONEY(ethMooney, h.locktime)
+
+    const polygonMooney = polygonHolder.totalLocked / 10 ** 18
+    const polygonVMooney = calcVMOONEY(polygonMooney, polygonHolder.locktime)
+
+    const arbMooney = arbHolder.totalLocked / 10 ** 18
+    const arbVMooney = calcVMOONEY(arbMooney, arbHolder.locktime)
+
+    const holderTotalMooney = ethMooney + polygonMooney + arbMooney
+    const holderTotalVMooney = ethVMooney + polygonVMooney + arbVMooney
 
     const holder = {
       x: moment.unix(h.initialLock).format('YYYY-MM-DD HH:mm'),
       y: totalHolders,
       id: `${h.id.slice(0, 4)}...${h.id.slice(-4)}`,
       address: h.id,
-      // locktime: moment
-      //   .unix(h.locktime < l2h.locktime ? l2h.locktime : h.locktime)
-      //   .format('YYYY-MM-DD'),
-      totalLocked: l1mooney + l2mooney,
-      totalvMooney: l1vmooney + l2vmooney,
+      totalLocked: holderTotalMooney,
+      totalvMooney: holderTotalVMooney,
     }
-    totalVMooney += l1vmooney + l2vmooney
+    totalVMooney += holderTotalVMooney
 
     return holder
   })
@@ -79,8 +98,9 @@ export async function getVMOONEYData() {
     (a, b) => b.totalvMooney - a.totalvMooney
   )
   const totalLockedMooney =
-    L1Res.data.supplies[0].supply / 10 ** 18 +
-    L2Res.data.supplies[0].supply / 10 ** 18
+    EthRes.data.supplies[0].supply / 10 ** 18 +
+    PolygonRes.data.supplies[0].supply / 10 ** 18 +
+    ArbRes.data.supplies[0].supply / 10 ** 18
   return {
     holders,
     holdersByVMooney,
