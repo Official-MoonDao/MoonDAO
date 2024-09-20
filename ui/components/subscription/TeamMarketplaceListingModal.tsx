@@ -6,6 +6,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import { renameFile } from '@/lib/utils/files'
 import Modal from '../layout/Modal'
@@ -66,6 +67,8 @@ export default function TeamMarketplaceListingModal({
       <form
         className="mt-12 w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md"
         onSubmit={async (e) => {
+          const accessToken = await getAccessToken()
+          await createSession(accessToken)
           e.preventDefault()
           if (
             listingData.title.trim() === '' ||
@@ -118,7 +121,6 @@ export default function TeamMarketplaceListingModal({
                 cleanedData.shipping,
               ])
             }
-
             if (tx?.receipt)
               setTimeout(() => {
                 refreshListings()
@@ -133,6 +135,7 @@ export default function TeamMarketplaceListingModal({
             )
             setIsLoading(false)
           }
+          await destroySession(accessToken)
         }}
       >
         <div className="w-full flex items-center justify-between">
