@@ -1,7 +1,8 @@
+import { useFundWallet } from '@privy-io/react-auth'
 import { ethers } from 'ethers'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
+import viemChains from '@/lib/viem/viemChains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type StepProps = {
@@ -37,8 +38,7 @@ export function Step({
 }: StepProps) {
   const [isProcessingTx, setIsProcessingTx] = useState(false)
 
-  //MoonPay
-  const fund = useMoonPay()
+  const { fundWallet } = useFundWallet()
 
   const stepButtons = useMemo(() => {
     const selectedChainName =
@@ -59,7 +59,13 @@ export function Step({
                   ethers.utils.formatEther(nativeBalance)
                 const levelPrice = nativeAmount + extraFundsForGas
 
-                await fund(levelPrice - +formattedNativeBalance)
+                await fundWallet(wallet.address, {
+                  amount: String(
+                    Math.ceil((levelPrice - +formattedNativeBalance) * 100000) /
+                      100000
+                  ),
+                  chain: viemChains[selectedChain.slug],
+                })
               }}
               disabled={isDisabled || isProcessingTx}
             >
@@ -259,7 +265,7 @@ export function Step({
   }, [
     action,
     extraFundsForGas,
-    fund,
+    fundWallet,
     isDisabled,
     isProcessingTx,
     nativeAmount,
