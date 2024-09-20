@@ -1,6 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
+import { nativeOnChain } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
@@ -11,7 +12,6 @@ import { VMOONEY_ADDRESSES } from '../../const/config'
 import { PurhcaseNativeTokenModal } from './PurchaseNativeTokenModal'
 import { Step } from './TransactionStep'
 import { StepLoading } from './TransactionStepLoading'
-import { nativeOnChain } from '@uniswap/smart-order-router'
 
 /*
 Step 1: Purchase MATIC -- Check for MATIC balance > selected level
