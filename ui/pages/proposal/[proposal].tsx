@@ -71,7 +71,7 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
         <div className="mt-10 mb-10">
           <div className={`grid ${gridCols} gap-8`}>
             <div className="lg:col-span-2 relative">
-              <div className='absolute top-[20px] right-[20px]'>
+              <div className='absolute top-2 right-[20px]'>
                 <DropDownMenu proposalPacket={proposalPacket} />
               </div>
               <div>

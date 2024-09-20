@@ -402,62 +402,64 @@ export default function Lock() {
 
                 {/*Web3 button with actions according context*/}
                 <div className="card-actions mt-4 white-text">
-                  <PrivyWeb3Button
-                    label={
-                      !hasLock
-                        ? t('lock')
-                        : `${t('lockInc')} ${
-                            canIncrease.amount && !canIncrease.time
-                              ? t('amount')
-                              : ''
-                          }  
-                      ${
-                        !canIncrease.amount && canIncrease.time ? t('time') : ''
-                      }`
-                    }
-                    action={async () => {
-                      //check for token allowance
-
-                      const lockAmountBigNum =
-                        ethers.utils.parseEther(lockAmount)
-
-                      const increaseAmount = VMOONEYLock?.[0]
-                        ? lockAmountBigNum.sub(VMOONEYLock?.[0])
-                        : lockAmountBigNum
-
-                      if (increaseAmount.gt(tokenAllowance)) {
-                        const approvalTx: any = await approveToken()
-                        approvalTx?.receipt &&
-                          toast.success('Successfully approved MOONEY for lock')
+                  <div className="rounded-[20px] rounded-tl-[10px] overflow-hidden hover:pl-2">
+                    <PrivyWeb3Button
+                      label={
+                        !hasLock
+                          ? t('lock')
+                          : `${t('lockInc')} ${
+                              canIncrease.amount && !canIncrease.time
+                                ? t('amount')
+                                : ''
+                            }  
+                        ${
+                          !canIncrease.amount && canIncrease.time ? t('time') : ''
+                        }`
                       }
+                      action={async () => {
+                        //check for token allowance
 
-                      const lockTx: any = hasLock
-                        ? await increaseLock?.()
-                        : await createLock?.()
+                        const lockAmountBigNum =
+                          ethers.utils.parseEther(lockAmount)
 
-                      lockTx?.receipt &&
-                        toast.success(
-                          hasLock
-                            ? 'Successfully Increased lock'
-                            : 'Successfully Created lock'
-                        )
-                    }}
-                    className={`hover:!text-title-light 
-                    bg-slate-300
-                    dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
-                    isDisabled={
-                      (!canIncrease.amount &&
-                        !canIncrease.time &&
-                        Number(lockAmount) <=
-                          Number(VMOONEYLock?.[0].toString() / 10 ** 18)) ||
-                      (!canIncrease.amount &&
-                        !canIncrease.time &&
-                        Date.parse(lockTime?.formatted) <
-                          Date.parse(
-                            dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))
-                          ))
-                    }
-                  />
+                        const increaseAmount = VMOONEYLock?.[0]
+                          ? lockAmountBigNum.sub(VMOONEYLock?.[0])
+                          : lockAmountBigNum
+
+                        if (increaseAmount.gt(tokenAllowance)) {
+                          const approvalTx: any = await approveToken()
+                          approvalTx?.receipt &&
+                            toast.success('Successfully approved MOONEY for lock')
+                        }
+
+                        const lockTx: any = hasLock
+                          ? await increaseLock?.()
+                          : await createLock?.()
+
+                        lockTx?.receipt &&
+                          toast.success(
+                            hasLock
+                              ? 'Successfully Increased lock'
+                              : 'Successfully Created lock'
+                          )
+                      }}
+                      className={`hover:!text-title-light 
+                      bg-slate-300
+                      dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
+                      isDisabled={
+                        (!canIncrease.amount &&
+                          !canIncrease.time &&
+                          Number(lockAmount) <=
+                            Number(VMOONEYLock?.[0].toString() / 10 ** 18)) ||
+                        (!canIncrease.amount &&
+                          !canIncrease.time &&
+                          Date.parse(lockTime?.formatted) <
+                            Date.parse(
+                              dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))
+                            ))
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             ) : (

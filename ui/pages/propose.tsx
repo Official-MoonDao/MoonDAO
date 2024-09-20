@@ -16,7 +16,11 @@ export default function NewProposal() {
   const headerText = proposalId ? "Edit Proposal" : "New Proposal"; 
 
   const title = 'New Proposal';
-  const description = 'MoonDAO Projects are mission-driven initiatives led by small teams working together to achieve objectives aligned with our mission. By submitting a proposal, you can seek funding and gain support from the community. Proposals are reviewed by the Senate to ensure they follow best practices and contribute to our shared mission, prior to going up for a DAO-wide community vote. Please refer to our documentation for more details on the project system and the MoonDAO constitution, before getting started.';
+  const description = (
+    <span >
+      <p> <span className='opacity-60'>Submit a proposal to receive financing or support from the MoonDAO community. Proposals are senate-reviewed to ensure the standards of </span><a href="https://docs.moondao.com/Governance/Constitution">our constitution</a><span className='opacity-60'> before being put to a broader community vote. Please refer to our documentation for more details on the </span><a href="https://docs.moondao.com/Projects/Project-System">project system</a><span className='opacity-60'> before getting started.</span></p>
+    </span>
+  );
 
   return (
     <>

@@ -18,11 +18,9 @@ export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
 
   return (
     <Modal id="apply-modal-backdrop" setEnabled={setEnabled}>
-      <div className="mt-32 w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-4 md:p-8 bg-darkest-cool rounded-md">
+      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-5 py-0 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto">
         <div className="w-full flex items-center justify-between">
-          <div>
-            <h2 className="font-GoodTimes">{'Apply'}</h2>
-          </div>
+          <h2 className="font-GoodTimes">{'Apply'}</h2>
           <button
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"

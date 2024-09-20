@@ -50,12 +50,9 @@ export default function TeamListing({
   return (
     <span
       id="link-frame"
-      className={`card-container w-[350px] flex lg:flex-col rounded-[20px] relative overflow-hidden cursor-pointer`}
+      className={`card-container h-full w-[350px] flex lg:flex-col rounded-[20px] relative overflow-hidden cursor-pointer`}
     >
-      <span
-        id="Interactive-Element"
-        className="clip absolute h-full w-full z-10"
-      ></span>
+      
       <span
         id="card-container"
         className={`
