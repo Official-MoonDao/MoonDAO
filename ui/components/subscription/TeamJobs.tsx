@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import Job, { Job as JobType } from '../jobs/Job'
 import StandardButton from '../layout/StandardButton'
-import Button from './Button'
 import Card from './Card'
 import TeamJobModal from './TeamJobModal'
 

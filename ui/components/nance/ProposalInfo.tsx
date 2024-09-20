@@ -176,7 +176,7 @@ export default function ProposalInfo({
       <div className="min-w-0 flex-auto">
         {/* Title and Status */}
         <div className="flex items-center">
-          {showStatus && <ProposalStatus status={proposalPacket.status} className="mr-2" />}
+          <div className="mr-2">{showStatus && <ProposalStatus status={proposalPacket.status} />}</div>
           {showTitle && (
             !linkDisabled ? (
               <Link
@@ -194,7 +194,7 @@ export default function ProposalInfo({
           )}
         </div>
         {/* Metadata */}
-        <div className="mt-2 flex flex-row items-center gap-x-6 text-xs">
+        <div className="mt-2 flex flex-col md:flex-row items-start md:items-center gap-x-6 text-xs">
           {/* Author */}
           <div className="flex items-center gap-x-1">
             <Image
@@ -228,7 +228,9 @@ export default function ProposalInfo({
             </div>
           )}
           {/* Tokens */}
+          <div className="mt-2 md:mt-0"> 
           <RequestingTokensOfProposal actions={proposalPacket.actions} />
+          </div>
           {/* Delegate this proposal if it doesn't have an author */}
           {!proposalPacket.authorAddress && isLinked && !sponsorDisabled && (
             <button
@@ -269,14 +271,14 @@ export default function ProposalInfo({
 
 function ProposalStatus({ status }: { status: string }) {
   const statusColors = {
-    Voting: 'bg-gradient-to-r from-yellow-800 to-yellow-600 text-white text-sm',
+    Voting: 'bg-gradient-to-r from-yellow-300 to-yellow-600 text-yellow-800 text-sm',
     Archived: 'bg-gradient-to-r from-gray-800 to-gray-600 text-white text-sm',
     Approved: 'bg-gradient-to-r from-green-800 to-green-600 text-white text-sm',
     Discussion: 'bg-gradient-to-r from-[#425EEB] to-[#6D3F79] text-white',
     Cancelled: 'bg-gradient-to-r from-red-800 to-red-600 text-white',
   }
 
-  const colorClass = statusColors[status] || 'bg-gray-200 text-gray-800'
+  const colorClass = statusColors[status as keyof typeof statusColors] || 'bg-gray-200 text-gray-800'
 
   return (
     <div>

@@ -51,7 +51,7 @@ function NoResults() {
 
 function ProposalListSkeleton() {
   return (
-    <div className="font-[Lato] mt-4 lg:mt-8">
+    <div className="font-[roboto] mt-4 lg:mt-8">
       <ul className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
         {[...Array(10).keys()].map((n) => (
           <li
@@ -61,7 +61,7 @@ function ProposalListSkeleton() {
             <ProposalInfoSkeleton />
             <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
               <div className="flex sm:flex-col sm:items-end">
-                <div className="dark:bg-gray-700 rounded-md animate-pulse h-4 w-12"></div>
+                <div className="dark:bg-gray-7 rounded-md animate-pulse h-4 w-12"></div>
                 <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
                   <span className="sr-only">Last edited</span>
                   <span className="animate-pulse h-4 w-8 bg-white"></span>
@@ -141,7 +141,8 @@ export default function ProposalList() {
   } else {
     const packet = proposalsPacket
     return (
-      <div className="font-[Lato] mt-4 lg:mt-8">
+    <div className="mx-5 rounded-bl-20px overflow-hidden md:mt-[-40px] md:pt-5">  
+      <div className="font-[roboto] lg:max-w-[800px] lg:ml-5 ">
         <ul
           className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
           id="scrollableUl"
@@ -153,22 +154,23 @@ export default function ProposalList() {
             }}
             hasMore={packet.hasMore}
             loader={
-              <p className="text-center my-2 animate-pulse">Loading...</p>
+              <p className="text-center mt-5  animate-pulse">Loading...</p>
             }
             endMessage={
-              <p className="text-center my-2">
+              <p className="text-center my-5 font-GoodTimes">
                 <b>Yay! You have seen it all</b>
               </p>
             }
             scrollableTarget="scrollableUl"
           >
             {proposals.map((proposal) => (
-              <li
+              <li id="proposal-list-item"
                 key={proposal.uuid}
-                className="relative flex inner-container-background justify-between gap-x-6 px-4 py-5 border-transparent border-[1px] hover:border-white transition-all duration-150 sm:px-6"
+                className="lg:mr-5 relative flex bg-dark-cool mt-5 rounded-[20px] justify-between gap-x-6 px-4 py-5 border-transparent border-[1px] hover:border-light-cool transition-all duration-150 sm:px-6"
               >
                 <ProposalInfo
                 showTitle={true}
+                showStatus={false}
                   proposalPacket={{
                     ...proposal,
                     proposalInfo: packet.proposalInfo,
@@ -216,6 +218,7 @@ export default function ProposalList() {
           </InfiniteScroll>
         </ul>
       </div>
+    </div>  
     )
   }
 }

@@ -59,25 +59,30 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
             linkDisabled
             sponsorDisabled={false}
             coauthorsDisabled={false}
-            showTitle={false}
+            showTitle={true}
             showStatus={true}
           />
         }
-        preFooter={<NoticeFooter />}
+        preFooter={<NoticeFooter darkBackground={true} />}
         mainPadding
         popOverEffect={false}
         isProfile
       >
         <div className="mt-10 mb-10">
           <div className={`grid ${gridCols} gap-8`}>
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 relative">
+              <div className='absolute top-[20px] right-[20px]'>
+                <DropDownMenu proposalPacket={proposalPacket} />
+              </div>
+              <div>
               <MarkdownWithTOC
                 body={proposalPacket.body || '--- No content ---'}
               />
+              </div>
             </div>
 
             {proposalPacket.voteURL && votes && (
-              <div>
+              <div className="mt-[-40px] md:max-h-[95vh] pb-5 md:mt-0 px-[40px] p-5 bg-dark-cool lg:bg-darkest-cool rounded-[20px]">
                 <button
                   className="text-lg font-semibold leading-6 text-gray-900 dark:text-white"
                   id="votes"
@@ -85,12 +90,14 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
                     setQuery({ sortBy: query.sortBy === 'time' ? 'vp' : 'time' })
                   }}
                 >
-                  Votes
+                  <h3 className="font-GoodTimes pb-2 text-gray-400">Votes</h3>
                   <span className="ml-2 text-center text-xs text-gray-300">
                     sort by {query.sortBy === 'vp' ? 'voting power' : 'time'}
                   </span>
                 </button>
+                <div className="pb-5">
                 <ProposalVotes votesOfProposal={votes} refetch={() => mutate()} />
+                </div>
               </div>
             )}
 

@@ -39,9 +39,9 @@ export default function ActionLabel({ action }: { action: Action }) {
 
     return (
       <div className="flex w-full flex-col break-words">
-        <div className="flex lg:flex-col space-y-5">
+        <div className="ml-5 md:ml-0 flex flex-col space-y-5">
           {/* Requested Amount(s) and Justification(s) */}
-          <div className="bg-dark-cool p-10 rounded-[20px]">
+          <div className="bg-dark-cool p-10 mb-3 lg:mb-0 rounded-[20px]">
             <h3 className="text-gray-400 pb-2 font-GoodTimes">Financing</h3>
             {requestBudget.budget.map((item, index) => (
               <div key={index} className="font-semibold">
@@ -58,7 +58,7 @@ export default function ActionLabel({ action }: { action: Action }) {
           <div className="bg-dark-cool pb-10 p-10 rounded-[20px]">
             <h3 className="text-gray-400 font-GoodTimes">Participants</h3>
 
-            <div className="mt-2 space-y-2">
+            <div className="mt-2 space-y-5">
               {combinedTeam.map((member) => (
                 <div
                   key={member.discordUserId || member.address}

@@ -14,7 +14,7 @@ import {
 
 export default function MarkdownWithTOC({ body }: { body: string }) {
   return (
-    <div className="bg-dark-cool border-t-[3px] border-darkest-cool rounded-[20px]">
+    <div className="md:bg-dark-cool rounded-[20px]">
       <article className="w-full prose-full prose-lg prose-indigo break-words text-gray-500 p-10">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}

@@ -1,16 +1,16 @@
+import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useContext, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
-import { useAddress } from '@thirdweb-dev/react'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import ApplyModal from '@/components/onboarding/ApplyModal'
+import CitizenTier from '@/components/onboarding/CitizenTier'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
-import CitizenTier from '@/components/layout/CitizenTier' 
 
 export default function Join() {
   const { t } = useTranslation('common')
@@ -75,11 +75,11 @@ export default function Join() {
           {applyModalEnabled && (
             <ApplyModal type="citizen" setEnabled={setApplyModalEnabled} />
           )}
-          
+
           {/* Use the CitizenTier component to display citizen tier */}
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
-              <CitizenTier />
+              <CitizenTier setSelectedTier={setSelectedTier} />
             </div>
           </div>
         </ContentLayout>

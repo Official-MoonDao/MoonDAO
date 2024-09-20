@@ -211,7 +211,7 @@ export default function ProposalVotes({
         </ul>
       </div>
 
-      <div className="mt-auto pt-4">
+      <div className="mr-0 md:mt-auto pt-4">
         <NewVoteButton
           snapshotSpace={SNAPSHOT_SPACE_NAME}
           snapshotProposal={proposalInfo}

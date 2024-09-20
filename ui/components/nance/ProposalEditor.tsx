@@ -35,7 +35,7 @@ import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
 import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile"
 import { useLocalStorage } from 'react-use'
-
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })
@@ -286,25 +286,27 @@ export default function ProposalEditor() {
 
 
   return (
-    <div className="flex flex-col justify-center items-center animate-fadeIn w-[90vw] md:w-full">
+    <div className="flex flex-col justify-center items-start animate-fadeIn w-[90vw] md:w-full">
       <Head title='Proposal Editor' />
 
-      <div className="w-full sm:w-[90%] lg:w-3/4">
+      <div className="px-5 pt-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <h1 className="page-title py-10">{loadedProposal ? 'Edit Proposal' : 'New Proposal'}</h1>
-
+          <div className="p-5 pb-0 bg-dark-cool">
           <ProposalLocalCache
             proposalCache={proposalCache}
             clearProposalCache={clearProposalCache}
             restoreProposalCache={restoreFromTitleAndBody}
           />
-
+          </div>
+          <div className="p-5 py-0 rounded-[20px] bg-dark-cool">
           <ProposalTitleInput value={proposalTitle} onChange={(s) => {
             setProposalTitle(s)
             console.debug("setProposalTitle", s)
             const cache = proposalCache || { body: loadedProposal?.body || TEMPLATE }
             setProposalCache({ ...cache, title: s, timestamp: getUnixTime(new Date()) })
           }} />
+          </div>
+          <div className="p-5 pt-0 p-5 pt-0 rounded-t-[20px] rounded-b-[0px] bg-dark-cool">
           <NanceEditor
             initialValue={loadedProposal?.body || TEMPLATE}
             fileUploadExternal={ async (val) => {
@@ -314,8 +316,10 @@ export default function ProposalEditor() {
             darkMode={true}
             onEditorChange={(m) => {saveProposalBodyCache()}}
           />
+          </div>
 
-          <Field as="div" className="flex items-center mt-5">
+          <div className="p-5 rounded-b-[20px] rounded-t-[0px] bg-dark-cool">
+          <Field as="div" className="\ flex items-center mt-5">
             <Switch
               checked={attachBudget}
               onChange={(checked) => {
@@ -343,10 +347,11 @@ export default function ProposalEditor() {
               </span>{' '}
             </Label>
           </Field>
+          </div>
 
           {attachBudget && (
             <FormProvider {...methods}>
-              <div className="my-10">
+              <div className="my-10 p-5 rounded-[20px] bg-dark-cool">
                 <RequestBudgetActionForm disableRequiredFields={proposalStatus === "Draft"} />
               </div>
             </FormProvider>
@@ -360,7 +365,7 @@ export default function ProposalEditor() {
                 type="submit"
                 className={classNames(
                   buttonsDisabled && 'tooltip',
-                  'text-sm px-5 py-3 border border-dashed border-moon-orange font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                  'text-sm px-5 py-3 border border-dashed border-dark-warm font-RobotoMono rounded-[20px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
                 )}
                 onClick={() => {
                   setProposalStatus('Draft')
@@ -372,14 +377,15 @@ export default function ProposalEditor() {
                     : 'You need to connect wallet first.'
                 }
               >
-                {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
+                {signingStatus === 'loading' ? 'Signing...' : (proposalId ? 'Save Draft' : '* Post In Ideation Forum')}
+                
               </button>
               {/* SUBMIT */}
               <button
                 type="submit"
                 className={classNames(
                   buttonsDisabled && 'tooltip',
-                  'px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                  'px-5 py-3 gradient-2 border border-transparent font-RobotoMono rounded-[20px] rounded-tl-[10px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
                 )}
                 onClick={() => {
                   const status =
@@ -399,6 +405,9 @@ export default function ProposalEditor() {
               </button>
             </div>
           </div>
+          {!proposalId && (
+            <p className="mt-2 text-sm text-gray-500 text-right pb-5">*Your submission will be <a href="https://discord.com/channels/914720248140279868/1027658256706961509" target="_blank" className="text-white">posted here</a> for community discussion</p>
+          )}
         </form>
       </div>
     </div>
