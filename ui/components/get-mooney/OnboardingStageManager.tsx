@@ -328,7 +328,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
 
         <InvolvementOptions />
         {/*Ticket submission button*/}
-        <button
+        {/* <button
           onClick={() =>
             window.open(
               'https://circles.spect.network/r/8e96f155-c255-4567-bca3-8bec6a0b7867'
@@ -337,7 +337,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
           className="mt-10 rounded-[20px] py-3 px-4 font-bold lg:absolute dark:bg-white bg-gray-800 text-gray-100 hover:scale-105 dark:text-gray-900 hover:text-moon-orange dark:hover:text-moon-orange transition-all duration-105 lg:-bottom-24 lg:left-6 2xl:left-auto 2xl:right-10 text-xl"
         >
           Questions? Submit a ticket
-        </button>
+        </button> */}
       </div>
     </StageContainer>
   )
@@ -371,7 +371,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   ]
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="flex flex-col w-full h-full bg-dark-cool p-5 rounded-[20px]">
       <MultiStepStage steps={steps} />
     </div>
   )
