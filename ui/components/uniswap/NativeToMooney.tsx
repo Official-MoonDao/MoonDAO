@@ -62,18 +62,20 @@ export default function NativeToMooney({ selectedChain }: any) {
   )
 
   useEffect(() => {
-    generateRoute(TradeType.EXACT_INPUT).then((route) => {
-      setSwapRoute(route)
-      setOutput(route?.route[0].rawQuote.toString() / 10 ** 18 || 0)
+    if (amount > 0) {
+      generateRoute(TradeType.EXACT_INPUT).then((route) => {
+        setSwapRoute(route)
+        setOutput(route?.route[0].rawQuote.toString() / 10 ** 18 || 0)
 
-      const estimatedGasUSD = route?.estimatedGasUsedUSD.toFixed(2)
+        const estimatedGasUSD = route?.estimatedGasUsedUSD.toFixed(2)
 
-      if (estimatedGasUSD < 0.01) {
-        setEstimatedGasUsedUSD('<0.01')
-      } else {
-        setEstimatedGasUsedUSD(estimatedGasUSD || 0)
-      }
-    })
+        if (estimatedGasUSD < 0.01) {
+          setEstimatedGasUsedUSD('<0.01')
+        } else {
+          setEstimatedGasUsedUSD(estimatedGasUSD || 0)
+        }
+      })
+    }
   }, [amount, selectedChain, inputToken, address])
 
   return (
