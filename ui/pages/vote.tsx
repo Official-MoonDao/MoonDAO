@@ -82,7 +82,7 @@ export default function SpaceIndex() {
       >
         <Search
           input={keywordInput || ''}
-          setInput={(value) => setKeywordInput(value)}
+          setInput={(value: string) => setKeywordInput(value)}
         />
       </Frame>
     </div>

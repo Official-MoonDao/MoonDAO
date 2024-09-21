@@ -40,7 +40,6 @@ type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })
 
-// Nance Editor
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
 
@@ -101,8 +100,6 @@ export default function ProposalEditor() {
   const [proposalStatus, setProposalStatus] = useState<ProposalStatus>('Discussion')
 
 
-  // get space info to find next Snapshot Vote
-  // we need this to be compliant with the proposal signing format of Snapshot
   const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
   const spaceInfo = spaceInfoData?.data
   const { nextEvents, currentEvent } = spaceInfo || {}
@@ -124,7 +121,7 @@ export default function ProposalEditor() {
     }
   }
 
-  // load proposal if proposalId is present (edit)
+
   const [{ proposalId }] = useQueryParams({ proposalId: StringParam })
   const shouldFetch = !!proposalId
   const { data } = useProposal(
@@ -135,7 +132,7 @@ export default function ProposalEditor() {
 
   const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(`NanceProposalCacheV1-${loadedProposal?.uuid.substring(0, 5) || 'new'}`);
 
-  // request budget form
+
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
   })
@@ -143,7 +140,7 @@ export default function ProposalEditor() {
 
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
-    setMarkdown?.(trimActionsFromBody(b)) // dynamic load so might be undefined
+    setMarkdown?.(trimActionsFromBody(b)) 
     const actions = getActionsFromBody(b);
     if (!actions) return;
     console.debug('loaded action:', actions)
@@ -180,7 +177,7 @@ export default function ProposalEditor() {
     signAndSendProposal(proposal)
   }
 
-  // proposal upload
+
   const { wallet } = useAccount()
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
@@ -192,8 +189,8 @@ export default function ProposalEditor() {
       body: getMarkdown(),
       status,
       voteSetup: {
-        type: 'quadratic', // could make this dynamic in the future
-        choices: ['Yes', 'No', 'Abstain'], // could make this dynamic in the future
+        type: 'quadratic',  
+        choices: ['Yes', 'No', 'Abstain'], 
       },
     } as Proposal
   }
@@ -232,7 +229,6 @@ export default function ProposalEditor() {
               toast.success('Proposal submitted successfully!', {
                 style: toastStyle,
               })
-              // next router push
               router.push(`/proposal/${res.data.uuid}`)
             } else {
               setSigningStatus('error')
@@ -406,7 +402,7 @@ export default function ProposalEditor() {
             </div>
           </div>
           {!proposalId && (
-            <p className="mt-2 text-sm text-gray-500 text-right pb-5">*Your submission will be <a href="https://discord.com/channels/914720248140279868/1027658256706961509" target="_blank" className="text-white">posted here</a> for community discussion</p>
+            <p className="mt-2 text-sm text-gray-500 text-right pb-5">*Your submission will be <a href="https://discord.com/channels/914720248140279868/1027658256706961509" target="_blank" rel="noreferrer" className="text-white">posted here</a> for community discussion</p>
           )}
         </form>
       </div>

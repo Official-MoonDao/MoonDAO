@@ -12,9 +12,8 @@ export default function ActionLabel({ action }: { action: Action }) {
 
     // Combine projectTeam and multisigTeam into one list without duplicates
     const memberMap: Record<string, any> = {};
-
     requestBudget.projectTeam.forEach((member) => {
-      const key = member.discordUserId || member.address;
+      const key = member.discordUserId || member.payoutAddress;
       memberMap[key] = {
         ...member,
         isRocketeer: member.isRocketeer || false,
