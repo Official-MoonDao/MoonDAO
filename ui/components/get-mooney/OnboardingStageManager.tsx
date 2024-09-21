@@ -30,7 +30,7 @@ const isDevEnv = process.env.NODE_ENV === 'development'
 
 function StageContainer({ children }: any) {
   return (
-    <section className="w-[336px] sm:w-[400px] lg:w-full font-RobotoMono">
+    <section className="w-full font-Roboto">
       {children}
     </section>
   )
@@ -190,16 +190,14 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   const StepOne = () => (
     <StageContainer>
       <div className="flex flex-col font-RobotoMono items-center">
-        <h1 className="text-[#071732] dark:text-white font-GoodTimes text-4xl lg:text-5xl text-center">
-          GET $MOONEY
-        </h1>
-
-        <ContributionLevels
-          selectedChain={selectedChain}
-          selectedLevel={selectedLevel}
-          setSelectedLevel={setSelectedLevel}
-          usdQuotes={usdQuotes}
-        />
+        <div className="flex flex-wrap justify-center items-stretch w-full gap-5 ">
+          <ContributionLevels
+            selectedChain={selectedChain}
+            selectedLevel={selectedLevel}
+            setSelectedLevel={setSelectedLevel}
+            usdQuotes={usdQuotes}
+          />
+        </div>
         <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base">
           <p>
             <Link
@@ -212,10 +210,10 @@ export function OnboardingStageManager({ usdQuotes }: any) {
             </Link>
           </p>
         </div>
-        <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base font-[Lato]">
+        <div className="flex flex-col gap-4 mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-darkest-cool  rounded-[20px] p-5 dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base font-[Lato]">
           <p>
             {`
-              Custom Membership: Not seeing what’s right for you? Advanced users can purchase any amount of
+              Custom Membership: Not seeing what's right for you? Advanced users can purchase any amount of
               `}
             <Link
               className="text-moon-gold"
@@ -330,7 +328,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
 
         <InvolvementOptions />
         {/*Ticket submission button*/}
-        <button
+        {/* <button
           onClick={() =>
             window.open(
               'https://circles.spect.network/r/8e96f155-c255-4567-bca3-8bec6a0b7867'
@@ -339,7 +337,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
           className="mt-10 rounded-[20px] py-3 px-4 font-bold lg:absolute dark:bg-white bg-gray-800 text-gray-100 hover:scale-105 dark:text-gray-900 hover:text-moon-orange dark:hover:text-moon-orange transition-all duration-105 lg:-bottom-24 lg:left-6 2xl:left-auto 2xl:right-10 text-xl"
         >
           Questions? Submit a ticket
-        </button>
+        </button> */}
       </div>
     </StageContainer>
   )
@@ -373,7 +371,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   ]
 
   return (
-    <div className="flex flex-col pt-4 w-full h-full">
+    <div className="flex flex-col w-full h-full bg-dark-cool p-5 rounded-[20px]">
       <MultiStepStage steps={steps} />
     </div>
   )

@@ -92,7 +92,7 @@ export default function TeamMetadataModal({
 
   return (
     <Modal id="entity-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="mt-32 w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-4 md:p-8 bg-darkest-cool rounded-md">
+      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto">
         <div className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-GoodTimes ">Update Info</h1>
           <button

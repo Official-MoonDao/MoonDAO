@@ -1,12 +1,15 @@
+import React, { useContext, useEffect } from 'react'
 import { Ethereum, Polygon, Sepolia } from '@thirdweb-dev/chains'
 import { Token } from '@uniswap/sdk-core'
 import useTranslation from 'next-translate/useTranslation'
 import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
 import { OnboardingStageManager } from '../components/get-mooney/OnboardingStageManager'
-import Head from '../components/layout/Head'
+import WebsiteHead from '../components/layout/Head'
 import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
-import { useContext, useEffect } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
+import Container from '../components/layout/Container'
+import ContentLayout from '../components/layout/ContentLayout'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 function JoinCard({ label, text }: any) {
   return (
@@ -25,18 +28,34 @@ function JoinCard({ label, text }: any) {
 
 export default function Join({ usdQuotes }: any) {
   const { t } = useTranslation('common')
+  const { selectedChain, setSelectedChain } = useContext(ChainContext)
 
-  const {selectedChain, setSelectedChain} = useContext(ChainContext)
-
-  useEffect(()=>{
+  useEffect(() => {
     setSelectedChain(process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Ethereum : Sepolia)
-  },[])
+  }, [])
 
   return (
-    <div className="animate-fadeIn flex flex-col items-center">
-      <Head title={t('mooneyTitle')} description={t('mooneyDesc')} />
-      <OnboardingStageManager usdQuotes={usdQuotes} />
-    </div>
+    <>
+      <WebsiteHead title={t('mooneyTitle')} description={t('mooneyDesc')} />
+      <section className="w-[calc(100vw-20px)]">
+        <Container>
+          <ContentLayout
+            header={t('mooneyTitle')}
+            headerSize="max(20px, 3vw)"
+            description={t('mooneyDesc')}
+            preFooter={<NoticeFooter />}
+            mainPadding
+            isProfile
+            mode="compact"
+            popOverEffect={false}
+          >
+            <div className="mb-10 flex justify-center">
+              <OnboardingStageManager usdQuotes={usdQuotes} />
+            </div>
+          </ContentLayout>
+        </Container>
+      </section>
+    </>
   )
 }
 

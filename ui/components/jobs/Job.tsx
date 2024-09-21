@@ -38,7 +38,7 @@ export default function Job({
   const { data: teamNft } = useNFT(teamContract, job.teamId)
 
   return (
-    <div className="flex flex-col justify-between bg-dark-cool rounded-md">
+    <div className="flex flex-col justify-between bg-dark-cool rounded-md lg:w-[500px]">
       <Frame>
         <div className="flex justify-between items-end">
           <div className="flex flex-col">

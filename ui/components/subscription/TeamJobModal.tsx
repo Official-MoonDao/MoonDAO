@@ -45,10 +45,12 @@ export default function TeamJobModal({
         }
   )
 
+  const isValid = jobData.title.trim() !== '' && jobData.description.trim() !== '' && jobData.contactInfo.trim() !== '';
+
   return (
     <Modal id="team-job-modal-backdrop" setEnabled={setEnabled}>
       <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md"
+        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto"
         onSubmit={async (e) => {
           e.preventDefault()
           if (
@@ -103,42 +105,43 @@ export default function TeamJobModal({
             <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </button>
         </div>
-
-        <input
-          type="text"
-          placeholder="Title"
-          className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-          onChange={(e) => {
-            setJobData({ ...jobData, title: e.target.value })
-          }}
-          value={jobData.title}
-        />
-        <textarea
-          placeholder="Description"
-          className="w-full h-[250px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-          onChange={(e) => {
-            setJobData({ ...jobData, description: e.target.value })
-          }}
-          value={jobData.description}
-          style={{ resize: 'none' }}
-          maxLength={500}
-        />
-        <input
-          type="text"
-          placeholder="Application Link"
-          className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-          onChange={(e) => {
-            setJobData({ ...jobData, contactInfo: e.target.value })
-          }}
-          value={jobData.contactInfo}
-        />
+        <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
+          <input
+            type="text"
+            placeholder="Title"
+            className="w-full mt-2 py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px] focus:outline-none focus:ring-2 focus:ring-light-warm"
+            onChange={(e) => {
+              setJobData({ ...jobData, title: e.target.value })
+            }}
+            value={jobData.title}
+          />
+          <textarea
+            placeholder="Description"
+            className="w-full h-[250px] py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm focus:outline-none focus:ring-2 focus:ring-light-warm"
+            onChange={(e) => {
+              setJobData({ ...jobData, description: e.target.value })
+            }}
+            value={jobData.description}
+            style={{ resize: 'none' }}
+            maxLength={500}
+          />
+          <input
+            type="text"
+            placeholder="Application Link"
+            className="w-full py-2 px-5 border-2 rounded-b-[20px] dark:border-0 dark:bg-[#0f152f] focus:outline-none focus:ring-2 focus:ring-light-warm"
+            onChange={(e) => {
+              setJobData({ ...jobData, contactInfo: e.target.value })
+            }}
+            value={jobData.contactInfo}
+          />
+        </div>
 
         <PrivyWeb3Button
           label={edit ? 'Edit Job' : 'Add Job'}
           type="submit"
           isDisabled={isLoading}
           action={() => {}}
-          className="mt-4 w-full gradient-2 rounded-[5vmax]"
+          className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${!isValid ? 'opacity-50 cursor-not-allowed' : ''}`}
         />
         {isLoading && (
           <p className="opacity-60">{`This action may take up to 60 seconds. You can close this modal at any time.`}</p>

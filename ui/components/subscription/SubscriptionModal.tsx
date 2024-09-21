@@ -30,7 +30,7 @@ export function SubscriptionModal({
 
   return (
     <Modal id="subscription-modal" setEnabled={setEnabled}>
-      <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md z-[1000]">
+      <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool h-screen md:h-auto">
         <div className="w-full flex items-center justify-between">
           <h2 className="font-GoodTimes">Extend Subscription</h2>
           <button

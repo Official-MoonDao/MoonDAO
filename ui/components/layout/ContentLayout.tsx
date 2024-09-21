@@ -102,7 +102,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                                     }
                                     <div 
                                         className={`
-                                            pt-2 pb-2 
+                                            pt-2 pb-2 lg:max-w-[800px]
                                             ${isCompact ? 'pb-0 w-full' : 'pb-5 md:pb-20 lg:pb-15 '} 
                                             ${branded ? '' : 'mt-20'}
                                         `}
@@ -149,7 +149,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                         `} 
                         >
 
-                        <div className="rounded-[5vw] rounded-tl-[20px] overflow-hidden">
+                        <div className="overflow-hidden">
                             <div id="content" 
                                 className={` z-50
                                     ${isCompact && !isProfile ? 'md:m-10' : (isCompact ? 'md:m-0 md:mt-5 md:mr-5' : 'm-5')}
