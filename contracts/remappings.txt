@@ -1,2 +1,5 @@
 @openzeppelin/contracts=lib/openzeppelin-contracts/contracts/
 @rari-capital/solmate=lib/solmate/
+@thirdweb-dev/contracts=node_modules/@thirdweb-dev/contracts/
+@chainlink/contracts=node_modules/@chainlink/contracts/
+@paulrberg/contracts=node_modules/@paulrberg/contracts/

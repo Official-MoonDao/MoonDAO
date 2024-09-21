@@ -53,6 +53,10 @@ export const navigation = [
         href: '/propose',
       },
       {
+        name: 'Retroactive Rewards',
+        href: '/projects',
+      },
+      {
         name: 'Get $MOONEY',
         href: '/get-mooney',
       },
