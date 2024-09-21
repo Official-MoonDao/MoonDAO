@@ -74,7 +74,7 @@ export default function Card({
       className="animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full"
     >
       {/* Ensure the card content takes full height */}
-      <div className="flex-grow"> // Added to allow stretching
+      <div className="flex-grow"> 
         <div
           id="card-styling"
           className="bg-darkest-cool rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5"
@@ -234,7 +234,7 @@ export default function Card({
         ></span>
       )}
       {link ? (
-        <Link id="card-link" href={link} className="w-full h-full block">
+        <Link id="card-link" href={link} className="w-full h-full block" target="_blank" rel="noreferrer">
           {cardContent}
         </Link>
       ) : metadata?.name ? (

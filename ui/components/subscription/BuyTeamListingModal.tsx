@@ -172,117 +172,130 @@ export default function BuyTeamListingModal({
 
   return (
     <Modal id="team-marketplace-buy-modal-backdrop" setEnabled={setEnabled}>
-      <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md"
-        onSubmit={(e) => {
-          e.preventDefault()
-        }}
-      >
-        <div className="w-full flex items-center justify-between">
-          <div>
-            <h2 className="font-GoodTimes">{'Buy a Listing'}</h2>
-          </div>
-          <button
-            type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
-        <div>
-          <MediaRenderer src={listing.image} width="200px" height="200px" />
-          <div className="mt-4">
-            <p className="font-GoodTimes">{listing.title}</p>
-            <p className="text-[75%]">{listing.description}</p>
-            <p className="font-bold">{`${listing.price} ${listing.currency}`}</p>
-          </div>
-        </div>
-        <p className="opacity-60">
-          Enter your information, confirm the transaction and wait to receive an
-          email from the vendor.
-        </p>
-        <input
-          className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-          placeholder="Enter your email"
-          value={email}
-          onChange={({ target }) => setEmail(target.value)}
-        />
-        {listing.shipping === 'true' && (
-          <div className="w-full flex flex-col gap-2">
-            <input
-              className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-              placeholder="Street Address"
-              value={shippingInfo.streetAddress}
-              onChange={({ target }) =>
-                setShippingInfo({
-                  ...shippingInfo,
-                  streetAddress: target.value,
-                })
-              }
-            />
-            <div className="w-full flex gap-2">
-              <input
-                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                placeholder="City"
-                value={shippingInfo.city}
-                onChange={({ target }) =>
-                  setShippingInfo({ ...shippingInfo, city: target.value })
-                }
-              />
-              <input
-                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                placeholder="State"
-                value={shippingInfo.state}
-                onChange={({ target }) =>
-                  setShippingInfo({ ...shippingInfo, state: target.value })
-                }
-              />
-            </div>
-            <div className="w-full flex gap-2">
-              <input
-                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                placeholder="Postal Code"
-                value={shippingInfo.postalCode}
-                onChange={({ target }) =>
-                  setShippingInfo({ ...shippingInfo, postalCode: target.value })
-                }
-              />
-              <input
-                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                placeholder="Country"
-                value={shippingInfo.country}
-                onChange={({ target }) =>
-                  setShippingInfo({ ...shippingInfo, country: target.value })
-                }
-              />
-            </div>
-          </div>
-        )}
-        <PrivyWeb3Button
-          label="Buy"
-          action={async () => {
-            if (!email || email.trim() === '' || !email.includes('@'))
-              return toast.error('Please enter a valid email')
-            if (listing.shipping === 'true') {
-              if (
-                shippingInfo.streetAddress.trim() === '' ||
-                shippingInfo.city.trim() === '' ||
-                shippingInfo.state.trim() === '' ||
-                shippingInfo.postalCode.trim() === '' ||
-                shippingInfo.country.trim() === ''
-              )
-                return toast.error('Please fill out all fields')
-            }
-            buyListing()
+      <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-dark-cool h-screen md:h-auto">
+        <form
+          className="w-full flex flex-col gap-2 items-start justify-start"
+          onSubmit={(e) => {
+            e.preventDefault()
           }}
-          className="mt-4 w-full gradient-2 rounded-[5vmax]"
-          isDisabled={isLoading || !teamEmail || !recipient}
-        />
-        {isLoading && (
-          <p>Do not leave the page until the transaction is complete.</p>
-        )}
-      </form>
+        >
+          <div className="w-full flex items-center justify-between">
+            <div>
+              <h2 className="font-GoodTimes">{'Buy a Listing'}</h2>
+            </div>
+            <button
+              type="button"
+              className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+              onClick={() => setEnabled(false)}
+            >
+              <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+            </button>
+          </div>
+          <div>
+            
+            {listing.image && (
+              <div id="image-container" className="rounded-[20px] overflow-hidden my flex flex-wrap w-full">
+              <MediaRenderer src={listing.image} width="100%" height="100%" />
+              </div>
+            )}
+            
+            <div className="mt-4">
+              <p className="font-GoodTimes">{listing.title}</p>
+              <p className="text-[75%]">{listing.description}</p>
+              <p className="font-bold">{`${listing.price} ${listing.currency}`}</p>
+                    <button onClick={()=>{
+          console.log('isLoading', isLoading);
+          console.log('teamEmail', teamEmail);
+          console.log('recipient', recipient);
+        }}>Test</button>
+            </div>
+          </div>
+          <p className="opacity-60">
+            Enter your information, confirm the transaction and wait to receive an
+            email from the vendor.
+          </p>
+          <input
+            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+            placeholder="Enter your email"
+            value={email}
+            onChange={({ target }) => setEmail(target.value)}
+          />
+          {listing.shipping === 'true' && (
+            <div className="w-full flex flex-col gap-2">
+              <input
+                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                placeholder="Street Address"
+                value={shippingInfo.streetAddress}
+                onChange={({ target }) =>
+                  setShippingInfo({
+                    ...shippingInfo,
+                    streetAddress: target.value,
+                  })
+                }
+              />
+              <div className="w-full flex gap-2">
+                <input
+                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                  placeholder="City"
+                  value={shippingInfo.city}
+                  onChange={({ target }) =>
+                    setShippingInfo({ ...shippingInfo, city: target.value })
+                  }
+                />
+                <input
+                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                  placeholder="State"
+                  value={shippingInfo.state}
+                  onChange={({ target }) =>
+                    setShippingInfo({ ...shippingInfo, state: target.value })
+                  }
+                />
+              </div>
+              <div className="w-full flex gap-2">
+                <input
+                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                  placeholder="Postal Code"
+                  value={shippingInfo.postalCode}
+                  onChange={({ target }) =>
+                    setShippingInfo({ ...shippingInfo, postalCode: target.value })
+                  }
+                />
+                <input
+                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                  placeholder="Country"
+                  value={shippingInfo.country}
+                  onChange={({ target }) =>
+                    setShippingInfo({ ...shippingInfo, country: target.value })
+                  }
+                />
+              </div>
+            </div>
+          )}
+          <PrivyWeb3Button
+            label="Buy"
+            action={async () => {
+              if (!email || email.trim() === '' || !email.includes('@'))
+                return toast.error('Please enter a valid email')
+              if (listing.shipping === 'true') {
+                if (
+                  shippingInfo.streetAddress.trim() === '' ||
+                  shippingInfo.city.trim() === '' ||
+                  shippingInfo.state.trim() === '' ||
+                  shippingInfo.postalCode.trim() === '' ||
+                  shippingInfo.country.trim() === ''
+                )
+                  return toast.error('Please fill out all fields')
+              }
+              buyListing()
+            }}
+            className="mt-4 w-full gradient-2 rounded-[5vmax]"
+            isDisabled={isLoading || !teamEmail || !recipient}
+          />
+          {isLoading && (
+            <p>Do not leave the page until the transaction is complete.</p>
+          )}
+        </form>
+      </div>
     </Modal>
   )
 }
