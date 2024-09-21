@@ -70,7 +70,7 @@ export default function Jobs({ jobs }: JobsProps) {
           popOverEffect={false}
           isProfile
         >
-          <div className="pb-32 w-full flex flex-col gap-4">
+          <div className="pb-10 w-full flex flex-col gap-4">
             {filteredJobs &&
               filteredJobs.map((job: JobType, i: number) => (
                 <Job

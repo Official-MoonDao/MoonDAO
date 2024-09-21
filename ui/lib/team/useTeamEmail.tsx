@@ -12,6 +12,7 @@ export default function useTeamEmail(nft: any) {
     async function getTeamEmail() {
       const accessToken = await getAccessToken()
 
+      try{
       await createSession(accessToken)
 
       const formResponseId = getAttribute(
@@ -36,11 +37,16 @@ export default function useTeamEmail(nft: any) {
       ).email
 
       setEmail(teamEmail)
+    } catch(err){
+      console.log(err);
+    }
       await destroySession(accessToken)
     }
 
     if (nft) getTeamEmail()
   }, [nft, getAccessToken])
+
+  
 
   return email
 }

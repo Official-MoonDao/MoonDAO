@@ -65,13 +65,14 @@ function ContributionLevel({
     <div
       className={
         title !== 'Citizen'
-          ? `w-[320px] min-[1300px]:min-h-[900px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[1px] border-black dark:border-white group hover:border-orange-500 font-RobotoMono ${
+          ? `w-full lg:max-w-[350px] h-full group transition-all duration-150 rounded-[25px] cursor-pointer text-white p-5 flex flex-col items-start lg:items-center group hover:border-darkest-cool font-RobotoMono ${
               selectedLevel?.price === mooneyValue
                 ? 'border-moon-orange border-opacity-100'
-                : 'border-opacity-60 dark:border-opacity-20'
+                : 'border-opacity-60 dark:border-opacity-20 bg-dark-cool'
             }`
-          : `w-[320px] min-[1300px]:min-h-[900px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono border-moon-orange border-opacity-100`
+          : `w-full lg:w-[320px] min-[1300px]:min-h-[900px] group transition-all duration-150 rounded-[25px] text-black cursor-pointer dark:text-white pb-8 px-7 flex flex-col items-center border-[2px] group hover:border-orange-500 font-RobotoMono border-moon-orange border-opacity-100`
       }
+      style={{ height: '100%' }} // Ensure the card takes full height
       onClick={() => {
         if (!user) login()
         setSelectedLevel({ price: mooneyValue, hasVotingPower })
@@ -103,17 +104,17 @@ function ContributionLevel({
             usdQuote?.toFixed(0) || ''
           } USD*`}</p>
 
-          <p className="mt-2 p-2 2xl:h-[120px] leading-[18.46px] font-normal">
+          <p className="mt-2 p-2 leading-[18.46px] font-normal">
             {intro}
           </p>
 
           <div
-            className="mt-2 text-left text-sm"
+            className="text-left text-sm"
             style={{ marginBottom: '30px' }}
           >
             {/*Perk List*/}
 
-            <div className="p-2 mt-8 pr-2 2xl:h-[230px] mb-8">
+            <div className="p-2 mt-2 pr-2 ">
               <ul className={`flex flex-col list-disc w-full gap-1`}>
                 {points.map((point, i) => (
                   <div
@@ -159,7 +160,7 @@ export function ContributionLevels({
   usdQuotes,
 }: any) {
   return (
-    <div className="p-4 w-full flex flex-col min-[1300px]:flex-row max-[1300px]:items-center justify-between md:justify-center mt-6 lg:mt-8 gap-8">
+    <div className="p-4 w-full flex flex-col lg:flex-row lg:items-center justify-between mt-6 lg:mt-8 gap-5">
       <ContributionLevel
         lightIcon="/onboarding-icons/explorer-white.svg"
         darkIcon="/onboarding-icons/explorer-black.svg"

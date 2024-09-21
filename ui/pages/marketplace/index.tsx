@@ -9,7 +9,7 @@ import { useContext, useEffect, useState } from 'react'
 import useTeamSplit from '@/lib/team/useTeamSplit'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
-import CardGridContainer from '@/components/layout/CardGridContainer'
+import IndexCardGridContainer from '@/components/layout/IndexCardGridContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -42,8 +42,10 @@ function MarketplaceListing({
 
   useEffect(() => {
     async function getTeamName() {
-      const teamNft = await teamContract.erc721.get(listing.teamId)
-      setTeamName(teamNft.metadata.name)
+      if (teamContract && listing) { // Check if teamContract is defined
+        const teamNft = await teamContract.erc721.get(listing.teamId)
+        setTeamName(teamNft.metadata.name)
+      }
     }
     if (listing) getTeamName()
   }, [listing, teamContract])
@@ -113,7 +115,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           popOverEffect={false}
           isProfile
         >
-          <CardGridContainer>
+          <IndexCardGridContainer>
             {filteredListings &&
               filteredListings.map((listing: TeamListingType, i: number) => (
                 <MarketplaceListing
@@ -124,7 +126,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                   marketplaceTableContract={marketplaceTableContract}
                 />
               ))}
-          </CardGridContainer>
+          </IndexCardGridContainer>
         </ContentLayout>
       </Container>
     </section>

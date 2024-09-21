@@ -1,3 +1,4 @@
+/*
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react'
 import {
   PlusIcon,
@@ -62,3 +63,4 @@ const Summary = ({ type, markdown }: { type: string; markdown: string }) => {
     </Disclosure>
   )
 }
+*/

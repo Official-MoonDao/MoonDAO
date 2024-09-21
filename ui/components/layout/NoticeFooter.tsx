@@ -21,6 +21,7 @@ type NoticeFooterProps = {
   defaultDescription?: string
   defaultButtonText?: string
   defaultButtonLink?: string
+  darkBackground?: boolean;
 }
 
 export function NoticeFooter({
@@ -39,6 +40,7 @@ export function NoticeFooter({
   citizenDescription = "Submit a ticket in the support channel on MoonDAO's Discord!",
   citizenButtonText = 'Submit a Ticket',
   citizenButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050',
+  darkBackground = true,
 }: NoticeFooterProps) {
   const { selectedChain } = useContext(ChainContext)
   const isCitizen = useCitizen(selectedChain)
@@ -89,8 +91,8 @@ export function NoticeFooter({
   ])
 
   return (
-    <div className="p-5 pb-0">
-      <div className="md:pl-10 flex items-center gap-5 lg:ml-[80px] max-w-[970px] gradient-15 md:ml-7 p-5 md:mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
+    <div className={`pb-10 md:pb-0 ${darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5'}`}>
+      <div className="md:pl-10 flex items-center gap-5 lg:ml-[80px] max-w-[970px] gradient-15 mx-5 md:ml-7 p-5 md:mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
         <div id="Image container" className="hidden opacity-[90%] lg:block">
           <Image
             src={notice.image}
@@ -131,7 +133,7 @@ export function NoticeFooter({
           </Link>
         </div>
       </div>
-      <Footer />
+      <Footer darkBackground={darkBackground} />
     </div>
   )
 }
