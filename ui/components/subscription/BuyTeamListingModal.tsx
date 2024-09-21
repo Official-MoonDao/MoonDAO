@@ -203,11 +203,6 @@ export default function BuyTeamListingModal({
               <p className="font-GoodTimes">{listing.title}</p>
               <p className="text-[75%]">{listing.description}</p>
               <p className="font-bold">{`${listing.price} ${listing.currency}`}</p>
-                    <button onClick={()=>{
-          console.log('isLoading', isLoading);
-          console.log('teamEmail', teamEmail);
-          console.log('recipient', recipient);
-        }}>Test</button>
             </div>
           </div>
           <p className="opacity-60">

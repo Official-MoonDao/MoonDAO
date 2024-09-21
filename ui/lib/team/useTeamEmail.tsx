@@ -44,7 +44,6 @@ export default function useTeamEmail(nft: any) {
     }
 
     if (nft) getTeamEmail()
-      console.log('nft', nft);
   }, [nft, getAccessToken])
 
   
