@@ -110,7 +110,7 @@ export default function TeamListing({
           >
             <div className="">
               <MediaRenderer
-                className="w-full rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] max-w-[575px] md:max-w-[500px] pb-5 rounded-br-[5vmax] overflow-hidden"
+                className="w-full rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] max-w-[500px] md:max-w-[500px] pb-5 rounded-br-[5vmax] overflow-hidden"
                 width="100%"
                 height="100%"
                 src={listing.image}
@@ -140,7 +140,13 @@ export default function TeamListing({
                 >
                   {listing.title}
                 </h2>
-                <p>{listing.description}</p>
+                <p>
+                  {listing.image
+                    ? listing.description.length > 100
+                      ? `${listing.description.slice(0, 100)}...`
+                      : listing.description
+                    : listing.description}
+                </p>
               </div>
               {editable && (
                 <div className="flex flex-wrap items-end justify-end w-full gap-4 ml-4 ">

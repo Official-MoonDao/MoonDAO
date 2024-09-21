@@ -27,7 +27,7 @@ const IndexCardGrid: React.FC<CardGridProps> = ({
   threeCol = false,
 }) => {
   return (
-    <div className="rounded-bl-[20px] mb-5">
+    <div className="rounded-bl-[20px] px-5 md:px-0 mb-5">
       <div
         id="index-grid-container"
         className={`

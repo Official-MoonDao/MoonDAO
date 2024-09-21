@@ -198,7 +198,7 @@ export default function TeamMarketplaceListingModal({
             }}
             value={listingData.description}
             style={{ resize: 'none' }}
-            maxLength={500}
+            maxLength={800}
           />
           <div className="flex gap-2">
             <input

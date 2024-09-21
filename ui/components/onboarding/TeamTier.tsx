@@ -7,9 +7,10 @@ import Tier from '@/components/onboarding/Tier'
 
 type TeamTierProps = {
   setSelectedTier: Function
+  buttoncta?: string
 }
 
-const TeamTier = ({ setSelectedTier }: TeamTierProps) => {
+const TeamTier = ({ setSelectedTier, buttoncta }: TeamTierProps) => {
   const { selectedChain } = useContext(ChainContext)
   const sdk = useSDK()
   const address = useAddress()
@@ -47,6 +48,7 @@ const TeamTier = ({ setSelectedTier }: TeamTierProps) => {
           'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
         ]}
         buttoncta="Create a Team"
+        buttoncta={buttoncta || "Create a Team"} 
         onClick={handleTeamClick}
         type="team"
       />

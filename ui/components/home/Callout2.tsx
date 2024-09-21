@@ -1,12 +1,15 @@
+import Link from 'next/link'
 import Speaker from '../home/Speaker'
 import StandardButton from '../layout/StandardButton'
+import CitizenTier from '../onboarding/CitizenTier'
+import TeamTier from '../onboarding/TeamTier'
 
 export default function Callout2() {
   return (
     <section>
       <div
         id="callout2-container"
-        className="z-10 md:rounded-tl-[5vmax] relative flex flex-col items-end lg:items-start justify-end pt-0 lg:pt-5 p-5 pb-[5vmax] md:pr-10 md:pl-10 min-h-[250px] lg:min-h-[600px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40%"
+        className="z-10 md:rounded-tl-[5vmax] relative flex flex-col items-end lg:items-start justify-end pt-0 lg:pt-5  pb-[5vmax] min-h-[250px] lg:min-h-[600px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40%"
         >
         <div id="background-elements">
           <div
@@ -28,8 +31,9 @@ export default function Callout2() {
         </div>
         <div
           id="content"
-          className="relative pt-[220px] lg:pt-20 md:pb-0 w-full pr-5 lg:w-[70%]"
+          className="relative pt-[220px] lg:pt-20 md:pb-0 w-full lg:w-[100%] "
           >
+          <div className="px-5 lg:px-0">
           <h1 className="header font-GoodTimes">
             Space is for<br></br>
             EVERYONE
@@ -48,14 +52,27 @@ export default function Callout2() {
             backgroundColor="bg-white"
             textColor="text-dark-cool"
             borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-            link="https://moondao.com/join"
+            link="https://moondao.com/network"
             paddingOnHover="pl-5"
             >
-            Become A Citizen
+            Join Our Network
           </StandardButton>
         </div>
+          <div className="flex flex-col mt-[40px] md:mt-[100px] lg:mt-[200px] md:px-5">
+            <div className="flex flex-col pb-5">
+              <Link href="/citizen">
+                <CitizenTier setSelectedTier={() => {}} buttoncta="Learn More" />
+              </Link>
+            </div>
+            <div className="flex flex-col">
+              <Link href="/team">
+                <TeamTier setSelectedTier={() => {}} buttoncta="Learn More" />
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
-      <div
+      {/* <div
         id="our-astronauts-section"
         className="sm:px-2 md:p-5 z-50 flex flex-col items-start overflow-hidden"
         >
@@ -80,7 +97,7 @@ export default function Callout2() {
             isWhiteText={true}
           />
         </div>
-      </div>
+      </div> */}
     </section>
   )
 }

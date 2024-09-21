@@ -81,7 +81,7 @@ export default function Card({
         ></div>
         <span
           id="content-container"
-          className={`h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool`}
+          className={`h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between`}
         >
           <span
             id="content"

@@ -8,9 +8,11 @@ import Tier from '@/components/onboarding/Tier'
 
 type CitizenTierProps = {
   setSelectedTier: Function
+  linkButtons?: boolean
+  buttoncta?: string
 }
 
-const CitizenTier = ({ setSelectedTier }: CitizenTierProps) => {
+const CitizenTier = ({ setSelectedTier, linkButtons = false, buttoncta }: CitizenTierProps) => {
   const { selectedChain } = useContext(ChainContext)
   const sdk = useSDK()
   const address = useAddress()
@@ -54,8 +56,9 @@ const CitizenTier = ({ setSelectedTier }: CitizenTierProps) => {
           'Career Advancement: Access jobs, gigs, hackathons, and more; building on-chain credentials to showcase your experience.',
           'Early Project Access: Engage in space projects, earn money, and advance your career.',
         ]}
-        buttoncta="Become a Citizen"
-        onClick={handleCitizenClick}
+        buttoncta={buttoncta || "Become a Citizen"} 
+        onClick={linkButtons ? undefined : handleCitizenClick}
+        buttonLink={linkButtons ? '/citizen' : undefined}
         hasCitizen={+citizenBalance > 0}
         type="citizen"
       />

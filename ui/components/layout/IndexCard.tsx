@@ -51,11 +51,11 @@ export default function IndexCard({
     >
       <div
         id="index-card-styling"
-        className="bg-darkest-cool rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5"
+        className="rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5"
       ></div>
       <span
         id="index-content-container"
-        className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool"
+        className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between "
       >
         <span
           id="index-content"

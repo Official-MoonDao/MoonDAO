@@ -53,7 +53,8 @@ export default function BuyTeamListingModal({
 
   const teamEmail = useTeamEmail(teamNft)
 
-  const [email, setEmail] = useState<string>()
+  const [email, setEmail] = useState<string>('')
+  const [isValidEmail, setIsValidEmail] = useState(false)
   const [shippingInfo, setShippingInfo] = useState({
     streetAddress: '',
     city: '',
@@ -89,8 +90,20 @@ export default function BuyTeamListingModal({
   useEffect(() => {
     if (citizenEmail) {
       setEmail(citizenEmail)
+      setIsValidEmail(validateEmail(citizenEmail))
     }
   }, [citizenEmail])
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  }
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEmail = e.target.value
+    setEmail(newEmail)
+    setIsValidEmail(validateEmail(newEmail))
+  }
 
   async function buyListing() {
     const price = Number(listing.price)
@@ -170,6 +183,29 @@ export default function BuyTeamListingModal({
     setIsLoading(false)
   }
 
+  /*There is a bug with this modal where setEnabled wont work in a button
+  for some reason refactoring it into its own component with its own state works*/
+
+  function Close() {
+    const [close, setClose] = useState(false)
+
+    useEffect(() => {
+      if (close) {
+        setEnabled(false)
+      }
+    }, [close])
+
+    return (
+      <button
+        type="button"
+        className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+        onClick={() => setClose(true)}
+      >
+        <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+      </button>
+    )
+  }
+
   return (
     <Modal id="team-marketplace-buy-modal-backdrop" setEnabled={setEnabled}>
       <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-dark-cool h-screen md:h-auto">
@@ -183,13 +219,8 @@ export default function BuyTeamListingModal({
             <div>
               <h2 className="font-GoodTimes">{'Buy a Listing'}</h2>
             </div>
-            <button
-              type="button"
-              className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={() => setEnabled(false)}
-            >
-              <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-            </button>
+            {/* Use the Close component */}
+            <Close />
           </div>
           <div>
             
@@ -201,7 +232,7 @@ export default function BuyTeamListingModal({
             
             <div className="mt-4">
               <p className="font-GoodTimes">{listing.title}</p>
-              <p className="text-[75%]">{listing.description}</p>
+              <p className="">{listing.description}</p>
               <p className="font-bold">{`${listing.price} ${listing.currency}`}</p>
             </div>
           </div>
@@ -213,7 +244,7 @@ export default function BuyTeamListingModal({
             className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
             placeholder="Enter your email"
             value={email}
-            onChange={({ target }) => setEmail(target.value)}
+            onChange={handleEmailChange}
           />
           {listing.shipping === 'true' && (
             <div className="w-full flex flex-col gap-2">
@@ -269,7 +300,7 @@ export default function BuyTeamListingModal({
           <PrivyWeb3Button
             label="Buy"
             action={async () => {
-              if (!email || email.trim() === '' || !email.includes('@'))
+              if (!isValidEmail)
                 return toast.error('Please enter a valid email')
               if (listing.shipping === 'true') {
                 if (
@@ -283,7 +314,9 @@ export default function BuyTeamListingModal({
               }
               buyListing()
             }}
-            className="mt-4 w-full gradient-2 rounded-[5vmax]"
+            className={`mt-4 w-full gradient-2 rounded-[5vmax] ${
+              !isValidEmail ? 'opacity-50' : ''
+            }`}
             isDisabled={isLoading || !teamEmail || !recipient}
           />
           {isLoading && (
