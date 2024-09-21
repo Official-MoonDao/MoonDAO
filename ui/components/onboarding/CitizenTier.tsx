@@ -5,6 +5,7 @@ import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import ApplyModal from '@/components/onboarding/ApplyModal'
 import Tier from '@/components/onboarding/Tier'
+import { useRouter } from 'next/router'
 
 type CitizenTierProps = {
   setSelectedTier: Function
@@ -13,6 +14,7 @@ type CitizenTierProps = {
 }
 
 const CitizenTier = ({ setSelectedTier, linkButtons = false, buttoncta }: CitizenTierProps) => {
+  const router = useRouter()
   const { selectedChain } = useContext(ChainContext)
   const sdk = useSDK()
   const address = useAddress()
@@ -41,6 +43,14 @@ const CitizenTier = ({ setSelectedTier, linkButtons = false, buttoncta }: Citize
     }
   }
 
+  const handleClick = async () => {
+    if (linkButtons) {
+      router.push('/citizen')
+    } else {
+      await handleCitizenClick()
+    }
+  }
+
   return (
     <div id="citizen-tier-container">
       {applyModalEnabled && (
@@ -57,8 +67,7 @@ const CitizenTier = ({ setSelectedTier, linkButtons = false, buttoncta }: Citize
           'Early Project Access: Engage in space projects, earn money, and advance your career.',
         ]}
         buttoncta={buttoncta || "Become a Citizen"} 
-        onClick={linkButtons ? undefined : handleCitizenClick}
-        buttonLink={linkButtons ? '/citizen' : undefined}
+        onClick={handleClick}
         hasCitizen={+citizenBalance > 0}
         type="citizen"
       />

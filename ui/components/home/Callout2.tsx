@@ -65,8 +65,8 @@ export default function Callout2() {
               </Link>
             </div>
             <div className="flex flex-col">
-              <Link href="/team">
-                <TeamTier setSelectedTier={() => {}} buttoncta="Learn More" />
+              <Link href="/team" passHref>
+                <TeamTier setSelectedTier={() => {}} buttoncta="Learn More" linkToTeamPage={true} />
               </Link>
             </div>
           </div>

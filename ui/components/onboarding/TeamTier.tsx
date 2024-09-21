@@ -4,20 +4,28 @@ import { useContext, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import ApplyModal from '@/components/onboarding/ApplyModal'
 import Tier from '@/components/onboarding/Tier'
+import { useRouter } from 'next/router'
 
 type TeamTierProps = {
   setSelectedTier: Function
   buttoncta?: string
+  linkToTeamPage?: boolean
 }
 
-const TeamTier = ({ setSelectedTier, buttoncta }: TeamTierProps) => {
+const TeamTier = ({ setSelectedTier, buttoncta = "Create a Team", linkToTeamPage = false }: TeamTierProps) => {
   const { selectedChain } = useContext(ChainContext)
   const sdk = useSDK()
   const address = useAddress()
+  const router = useRouter()
 
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   const handleTeamClick = async () => {
+    if (linkToTeamPage) {
+      router.push('/team')
+      return
+    }
+
     const teamWhitelistContract = await sdk?.getContract(
       TEAM_WHITELIST_ADDRESSES[selectedChain.slug]
     )
@@ -33,7 +41,7 @@ const TeamTier = ({ setSelectedTier, buttoncta }: TeamTierProps) => {
 
   return (
     <div id="team-pricing-container">
-      {applyModalEnabled && (
+      {applyModalEnabled && !linkToTeamPage && (
         <ApplyModal type="team" setEnabled={setApplyModalEnabled} />
       )}
       <Tier
@@ -47,8 +55,7 @@ const TeamTier = ({ setSelectedTier, buttoncta }: TeamTierProps) => {
           'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
           'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
         ]}
-        buttoncta="Create a Team"
-        buttoncta={buttoncta || "Create a Team"} 
+        buttoncta={buttoncta}
         onClick={handleTeamClick}
         type="team"
       />
