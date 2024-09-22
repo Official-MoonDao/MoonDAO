@@ -78,7 +78,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                                 >
                                 <div id="title-container" 
                                     className={`
-                                        p-5 pl-0 pb-2 md:pb-0 w-full h-full 
+                                        p-5 pl-0 pb-5 md:pb-0 w-full h-full 
                                         ${isCompact ? '' : 'md:max-w-[700px] lg:max-w-[100%]'}
                                     `}
                                     >

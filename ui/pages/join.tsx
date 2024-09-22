@@ -74,7 +74,7 @@ export default function Join() {
           }
         >
           {/* Pricing component displays both tiers */}
-          <Pricing setSelectedTier={setSelectedTier} />
+          <Pricing setSelectedTier={setSelectedTier}/>
         </ContentLayout>
       </Container>
     </div>

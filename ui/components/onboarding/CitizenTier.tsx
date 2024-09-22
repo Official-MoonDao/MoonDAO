@@ -11,9 +11,10 @@ type CitizenTierProps = {
   setSelectedTier: Function
   linkButtons?: boolean
   buttoncta?: string
+  ifJoinPage?: boolean
 }
 
-const CitizenTier = ({ setSelectedTier, linkButtons = false, buttoncta }: CitizenTierProps) => {
+const CitizenTier = ({ setSelectedTier, linkButtons = false, buttoncta, ifJoinPage = true }: CitizenTierProps) => {
   const router = useRouter()
   const { selectedChain } = useContext(ChainContext)
   const sdk = useSDK()
@@ -51,6 +52,7 @@ const CitizenTier = ({ setSelectedTier, linkButtons = false, buttoncta }: Citize
     }
   }
 
+
   return (
     <div id="citizen-tier-container">
       {applyModalEnabled && (
@@ -60,12 +62,12 @@ const CitizenTier = ({ setSelectedTier, linkButtons = false, buttoncta }: Citize
         price={0.0111}
         label="Become a Citizen"
         description="Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission."
-        points={[
+        points={ifJoinPage ? [ 
           'Unique Identity: Create a personalized, AI-generated passport image representing your on-chain identity.',
           'Professional Networking: Connect with top space startups, non-profits, and ambitious teams.',
           'Career Advancement: Access jobs, gigs, hackathons, and more; building on-chain credentials to showcase your experience.',
           'Early Project Access: Engage in space projects, earn money, and advance your career.',
-        ]}
+        ] : ['']}
         buttoncta={buttoncta || "Become a Citizen"} 
         onClick={handleClick}
         hasCitizen={+citizenBalance > 0}
