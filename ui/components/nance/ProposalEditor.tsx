@@ -361,7 +361,7 @@ export default function ProposalEditor() {
                 type="submit"
                 className={classNames(
                   buttonsDisabled && 'tooltip',
-                  'text-sm px-5 py-3 border border-dashed border-dark-warm font-RobotoMono rounded-[20px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                  'text-sm px-5 py-3 gradient-2 font-RobotoMono rounded-[20px] rounded-tl-[10px] duration-300 opacity-40'
                 )}
                 onClick={() => {
                   setProposalStatus('Draft')

@@ -4,7 +4,7 @@ import { SearchIcon } from '../assets'
 
 export default function Search({ input, setInput }: any) {
   return (
-    <div className="relative px-4 bg-search w-full max-w-[350px] flex items-center space-x-2 text-black dark:text-white">
+    <div className="relative px-4 bg-search w-full max-w-[350px] flex items-center space-x-2 text-black dark:text-white ">
       <div id="search-icon-bg" className="bg-search"></div>
       <Image
         src="/assets/icon-mag.svg"
