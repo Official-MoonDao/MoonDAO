@@ -3,7 +3,7 @@ import { ethers } from 'ethers'
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import viemChains from '@/lib/viem/viemChains'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
+import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
 
 type StepProps = {
   realStep: number
@@ -40,10 +40,19 @@ export function Step({
 
   const { fundWallet } = useFundWallet()
 
-  const stepButtons = useMemo(() => {
-    const selectedChainName =
-      selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+  const selectedChainName = useMemo(() => {
+    let chainName
+    if (selectedChain.slug === 'ethereum') {
+      chainName = 'ETH'
+    } else if (selectedChain.slug === 'polygon') {
+      chainName = 'MATIC'
+    } else if (selectedChain.slug === 'arbitrum') {
+      chainName = 'ETH'
+    }
+    return chainName
+  }, [selectedChain])
 
+  const stepButtons = useMemo(() => {
     switch (realStep) {
       case 1:
         return (

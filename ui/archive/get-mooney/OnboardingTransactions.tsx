@@ -1,3 +1,4 @@
+import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
@@ -8,7 +9,8 @@ import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useHandleWrite } from '../../lib/thirdweb/hooks'
 import { useUniswapTokens } from '../../lib/uniswap/hooks/useUniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
-import { VMOONEY_ADDRESSES } from '../../const/config'
+import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
+import { CHAIN_TOKEN_NAMES, VMOONEY_ADDRESSES } from '../../const/config'
 import { PurhcaseNativeTokenModal } from './PurchaseNativeTokenModal'
 import { Step } from './TransactionStep'
 import { StepLoading } from './TransactionStepLoading'
@@ -33,6 +35,8 @@ export function OnboardingTransactions({
   const address = useAddress()
   const [currStep, setCurrStep] = useState(1)
   const [checksLoaded, setChecksLoaded] = useState(false)
+
+  const [networkMismatch, setNetworkMismatch] = useState(false)
 
   const [enablePurchaseNativeTokenModal, setEnablePurchaseNativeTokenModal] =
     useState(false)
@@ -87,8 +91,28 @@ export function OnboardingTransactions({
     }
   }, [selectedLevel?.nativeSwapRoute])
 
+  useEffect(() => {
+    if (
+      selectedChain.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
+    ) {
+      setNetworkMismatch(true)
+    } else {
+      setNetworkMismatch(false)
+    }
+  }, [selectedChain])
+
   const extraFundsForGas = useMemo(() => {
-    return +selectedChain.chainId === 1 ? 0.05 : 1
+    let gas
+    if (+selectedChain.chainId === 1) {
+      gas = 0.003
+    } else if (+selectedChain.chainId === 137) {
+      gas = 1
+    } else if (+selectedChain.chainId === 42161) {
+      gas = 0.001
+    } else {
+      gas = 0
+    }
+    return gas
   }, [selectedChain])
 
   async function checkStep() {
@@ -150,7 +174,20 @@ export function OnboardingTransactions({
   const nativeAmount =
     selectedLevel.nativeSwapRoute?.route[0].rawQuote.toString() / 10 ** 18
 
-  const selectedChainName = selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+  const selectedChainName = CHAIN_TOKEN_NAMES[selectedChain.slug]
+
+  if (networkMismatch) {
+    return (
+      <div className="flex flex-col p-12">
+        <p className="flex items-center">
+          Please switch your wallet to {selectedChain.name} to continue.
+        </p>
+        <div className="mt-4">
+          <PrivyWeb3Button label="" action={() => {}} />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-2 lg:mt-5 flex flex-col items-center text-slate-950 dark:text-white">
@@ -188,7 +225,7 @@ export function OnboardingTransactions({
                     nativeBalance
                   ).toFixed(5)
                 : '...'
-            } ${selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'}`}
+            } ${selectedChainName}`}
             selectedChain={selectedChain}
             selectedWallet={selectedWallet}
             wallets={wallets}
