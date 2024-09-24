@@ -93,18 +93,20 @@ export default function NetworkSelector() {
             />
             {'Arbitrum'}
           </button>
-          <button
-            className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-            onClick={() => selectChain(Sepolia)}
-          >
-            <Image
-              src="/icons/networks/ethereum.svg"
-              width={13}
-              height={13}
-              alt="Sepolia"
-            />
-            {'Sepolia'}
-          </button>
+          {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+            <button
+              className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
+              onClick={() => selectChain(Sepolia)}
+            >
+              <Image
+                src="/icons/networks/ethereum.svg"
+                width={13}
+                height={13}
+                alt="Sepolia"
+              />
+              {'Sepolia'}
+            </button>
+          )}
         </div>
       )}
     </div>
