@@ -1,5 +1,4 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { Chain } from '@thirdweb-dev/chains'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -12,7 +11,7 @@ Button States:
 */
 
 type PrivyWeb3BtnProps = {
-  label: string
+  label: any
   type?: string
   action: Function
   isDisabled?: boolean
