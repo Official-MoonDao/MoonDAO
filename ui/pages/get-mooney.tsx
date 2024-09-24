@@ -32,8 +32,10 @@ export default function Join({ usdQuotes }: any) {
             mode="compact"
             popOverEffect={false}
           >
+                      <div className="mt-3 px-5 pb-10 lg:px-7 xl:px-9 w-full">
             <NetworkSelector />
             <NativeToMooney selectedChain={selectedChain} />
+            </div>
           </ContentLayout>
         </Container>
       </section>
