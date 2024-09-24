@@ -67,7 +67,7 @@ export function ImageGenerator({
           )}
           {(currImage && !inputImage) || image ? (
             <StageButton className="" onClick={submitImage}>
-              Save Design
+              Next
             </StageButton>
           ) : (
             <></>

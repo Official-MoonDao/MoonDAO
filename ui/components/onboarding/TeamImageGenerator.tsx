@@ -40,7 +40,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
         <FileInput file={inputImage} setFile={setInputImage} />
         {currImage || inputImage ? (
           <StageButton className="" onClick={submitImage}>
-            Save Design
+            Next
           </StageButton>
         ) : (
           <></>
