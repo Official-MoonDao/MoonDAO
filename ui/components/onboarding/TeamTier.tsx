@@ -7,9 +7,10 @@ import Tier from '@/components/onboarding/Tier'
 
 type TeamTierProps = {
   setSelectedTier: Function
+  compact?: boolean
 }
 
-const TeamTier = ({ setSelectedTier }: TeamTierProps) => {
+const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
   const { selectedChain } = useContext(ChainContext)
   const sdk = useSDK()
   const address = useAddress()
@@ -49,6 +50,7 @@ const TeamTier = ({ setSelectedTier }: TeamTierProps) => {
         buttoncta="Create a Team"
         onClick={handleTeamClick}
         type="team"
+        compact={compact}
       />
     </div>
   )

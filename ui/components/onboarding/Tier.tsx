@@ -14,6 +14,7 @@ type TierProps = {
   buttoncta: string
   tierDescription?: string
   type: string
+  compact?: boolean
 }
 
 export default function Tier({
@@ -26,6 +27,7 @@ export default function Tier({
   onClick,
   hasCitizen = false,
   type,
+  compact = false,
 }: TierProps) {
   const address = useAddress()
   const { login, user, logout } = usePrivy()
@@ -39,7 +41,9 @@ export default function Tier({
     >
       <div className="bg-[#020617]  md:rounded-[5vmax] p-5 md:rounded-tl-[20px]">
         <div
-          className="w-full transition-all duration-150 pb-10 cursor-pointer text-white text-opacity-[80%] "
+          className={`w-full transition-all duration-150 ${
+            !compact && 'pb-10'
+          } cursor-pointer text-white text-opacity-[80%]`}
           onClick={() => {
             if (!address && user) logout()
             if (!address) return login()
@@ -85,35 +89,38 @@ export default function Tier({
             </div>
           </div>
           <div className="mt-2 lg:mt-5">
-            {points.map((p, i) => {
-              const [title, description] = p.split(': ')
-              return (
-                <div
-                  key={`${label}-tier-point-${i}`}
-                  className="flex flex-row bg-opacity-3 pb-2 rounded-sm space-x-2"
-                >
-                  <Image
-                    alt="Bullet Point"
-                    src={iconStar}
-                    width={30}
-                    height={30}
-                  ></Image>
-                  <p>
-                    <strong>{title}:</strong> {description}
-                  </p>
-                </div>
-              )
-            })}
+            {!compact &&
+              points.map((p, i) => {
+                const [title, description] = p.split(': ')
+                return (
+                  <div
+                    key={`${label}-tier-point-${i}`}
+                    className="flex flex-row bg-opacity-3 pb-2 rounded-sm space-x-2"
+                  >
+                    <Image
+                      alt="Bullet Point"
+                      src={iconStar}
+                      width={30}
+                      height={30}
+                    ></Image>
+                    <p>
+                      <strong>{title}:</strong> {description}
+                    </p>
+                  </div>
+                )
+              })}
             <br></br>
             {tierDescription}
           </div>
-          <div className="inline-block ">
-            <div className="mt-5 rounded-tl-[10px] rounded-[2vmax] gradient-2">
-              <button className="py-2 px-5 hover:pl-7 ease-in-out duration-300">
-                {buttoncta}
-              </button>
+          {!compact && (
+            <div className="inline-block ">
+              <div className="mt-5 rounded-tl-[10px] rounded-[2vmax] gradient-2">
+                <button className="py-2 px-5 hover:pl-7 ease-in-out duration-300">
+                  {buttoncta}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </section>

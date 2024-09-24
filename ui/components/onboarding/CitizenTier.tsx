@@ -8,9 +8,13 @@ import Tier from '@/components/onboarding/Tier'
 
 type CitizenTierProps = {
   setSelectedTier: Function
+  compact?: boolean
 }
 
-const CitizenTier = ({ setSelectedTier }: CitizenTierProps) => {
+const CitizenTier = ({
+  setSelectedTier,
+  compact = false,
+}: CitizenTierProps) => {
   const { selectedChain } = useContext(ChainContext)
   const sdk = useSDK()
   const address = useAddress()
@@ -58,6 +62,7 @@ const CitizenTier = ({ setSelectedTier }: CitizenTierProps) => {
         onClick={handleCitizenClick}
         hasCitizen={+citizenBalance > 0}
         type="citizen"
+        compact={compact}
       />
     </div>
   )
