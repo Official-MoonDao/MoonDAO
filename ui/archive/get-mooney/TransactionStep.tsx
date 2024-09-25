@@ -40,16 +40,16 @@ export function Step({
 
   const { fundWallet } = useFundWallet()
 
-  const selectedChainName = useMemo(() => {
-    let chainName
+  const nativeTokenName = useMemo(() => {
+    let tokenName
     if (selectedChain.slug === 'ethereum') {
-      chainName = 'ETH'
+      tokenName = 'ETH'
     } else if (selectedChain.slug === 'polygon') {
-      chainName = 'MATIC'
+      tokenName = 'MATIC'
     } else if (selectedChain.slug === 'arbitrum') {
-      chainName = 'ETH'
+      tokenName = 'ETH'
     }
-    return chainName
+    return tokenName
   }, [selectedChain])
 
   const stepButtons = useMemo(() => {
@@ -83,7 +83,7 @@ export function Step({
               ) : isDisabled ? (
                 <LoadingSpinner>{'...loading'}</LoadingSpinner>
               ) : (
-                `Purchase ${selectedChainName} with MoonPay`
+                `Purchase ${nativeTokenName} with MoonPay`
               )}
             </button>
             <button
@@ -117,7 +117,7 @@ export function Step({
               ) : isDisabled ? (
                 <LoadingSpinner>{'...loading'}</LoadingSpinner>
               ) : (
-                `Purchase ${selectedChainName} with Exchange`
+                `Purchase ${nativeTokenName} with Exchange`
               )}
             </button>
           </>
@@ -278,6 +278,7 @@ export function Step({
     isDisabled,
     isProcessingTx,
     nativeAmount,
+    nativeTokenName,
     noTxns,
     realStep,
     selectedChain.chainId,
