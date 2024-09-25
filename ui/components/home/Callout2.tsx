@@ -59,15 +59,10 @@ export default function Callout2() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-5">
-        <Link href="/citizen" passHref>
-          <CitizenTier setSelectedTier={() => {}} compact />
-        </Link>
+      <Link href="/citizen" passHref>
+        <CitizenTier setSelectedTier={() => {}} compact />
+      </Link>
 
-        <Link href="/team" passHref>
-          <TeamTier setSelectedTier={() => {}} compact />
-        </Link>
-      </div>
       <div
         id="our-astronauts-section"
         className="sm:px-2 md:p-5 z-50 flex flex-col items-start overflow-hidden"
