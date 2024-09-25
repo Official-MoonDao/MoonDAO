@@ -47,8 +47,8 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
           'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
           'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
         ]}
-        buttoncta="Create a Team"
-        onClick={handleTeamClick}
+        buttoncta={compact ? "Learn More" : "Create a Team"}
+        onClick={compact ? ()=>{} :handleTeamClick}
         type="team"
         compact={compact}
       />

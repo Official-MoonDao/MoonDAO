@@ -58,8 +58,8 @@ const CitizenTier = ({
           'Career Advancement: Access jobs, gigs, hackathons, and more; building on-chain credentials to showcase your experience.',
           'Early Project Access: Engage in space projects, earn money, and advance your career.',
         ]}
-        buttoncta="Become a Citizen"
-        onClick={handleCitizenClick}
+        buttoncta={compact ? 'Learn More' : "Become a Citizen"}
+        onClick={compact ? ()=>{} : handleCitizenClick}
         hasCitizen={+citizenBalance > 0}
         type="citizen"
         compact={compact}

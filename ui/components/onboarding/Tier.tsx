@@ -37,7 +37,9 @@ export default function Tier({
   return (
     <section
       id="callout-card-container"
-      className="bg-darkest-cool md:bg-transparent z-[50]"
+      className={`bg-darkest-cool md:bg-transparent z-[50] ${
+        compact && 'max-w-[900px]'
+      }`}
     >
       <div className="bg-[#020617]  md:rounded-[5vmax] p-5 md:rounded-tl-[20px]">
         <div
@@ -45,12 +47,14 @@ export default function Tier({
             !compact && 'pb-10'
           } cursor-pointer text-white text-opacity-[80%]`}
           onClick={() => {
-            if (!address && user) logout()
-            if (!address) return login()
-            if (hasCitizen)
-              return toast.error('You have already registered as a citizen')
+            if (!compact) {
+              if (!address && user) logout()
+              if (!address) return login()
+              if (hasCitizen)
+                return toast.error('You have already registered as a citizen')
 
-            onClick()
+              onClick()
+            }
           }}
         >
           <div className="w-full h-full flex flex-col lg:flex-row ">
@@ -86,6 +90,15 @@ export default function Tier({
                   </div>
                 </div>
               </div>
+              {compact && (
+                <div className="inline-block ">
+                  <div className="mt-5 rounded-tl-[10px] rounded-[2vmax] gradient-2">
+                    <button className="py-2 px-5 hover:pl-7 ease-in-out duration-300">
+                      {buttoncta}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="mt-2 lg:mt-5">
@@ -112,6 +125,7 @@ export default function Tier({
             <br></br>
             {tierDescription}
           </div>
+
           {!compact && (
             <div className="inline-block ">
               <div className="mt-5 rounded-tl-[10px] rounded-[2vmax] gradient-2">
