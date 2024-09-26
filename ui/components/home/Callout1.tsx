@@ -27,10 +27,9 @@ export default function Callout1() {
               id="paragraph"
               className="pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]"
             >
-              We are an open source space community where everything is
+              We are an open, global space community where everything is
               proposed, governed, and created by our members. MoonDAO is where
-              space dreamers and serious builders unite. We set ambitious,
-              achievable goals and then work together to make them happen.
+              space dreamers and serious builders unite.
             </p>
             <StandardButton
               backgroundColor="bg-dark-cool"

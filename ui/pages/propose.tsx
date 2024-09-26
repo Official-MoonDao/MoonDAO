@@ -18,7 +18,7 @@ export default function NewProposal() {
   const title = 'New Proposal';
   const description = (
     <span >
-      <p> <span className='opacity-60'>Submit a proposal to receive financing or support from the MoonDAO community. Proposals are senate-reviewed to ensure the standards of </span><a href="https://docs.moondao.com/Governance/Constitution">our constitution</a><span className='opacity-60'> before being put to a broader community vote. Please refer to our documentation for more details on the </span><a href="https://docs.moondao.com/Projects/Project-System">project system</a><span className='opacity-60'> before getting started.</span></p>
+      <p> <span className='opacity-60'>Submit a proposal to receive financing or support from the MoonDAO community. Please refer to </span><a href="https://docs.moondao.com/Projects/Project-System">our documentation</a><span className='opacity-60'> for more details on the project system and governance processes before getting started.</span></p>
     </span>
   );
 

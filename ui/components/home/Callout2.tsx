@@ -34,18 +34,14 @@ export default function Callout2() {
           className="relative pt-[220px] lg:pt-20 md:pb-0 w-full pr-5 lg:w-[70%]"
         >
           <h1 className="header font-GoodTimes">
-            Space is for<br></br>
-            EVERYONE
+            Space Acceleration Network
           </h1>
           <p
             id="paragraph"
             className="pt-2 pb-5 text-lg w-[100%] md:w-[100%] lg:max-w-[500px]"
           >
-            Space should belong to the people, not the select few. We envision a
-            future where space is by the people for the people, irrespective of
-            borders. Our mission is to accelerate the development of a
-            self-sustaining, self-governing settlement on the Moon. Want to help
-            govern and create that future?
+            The Space Acceleration Network is an onchain startup society focused 
+            on building a permanent settlement on the Moon and beyond.
           </p>
           <StandardButton
             backgroundColor="bg-white"
@@ -54,7 +50,7 @@ export default function Callout2() {
             link="/network"
             paddingOnHover="pl-5"
           >
-            Join Our Network
+            Join the Network
           </StandardButton>
         </div>
       </div>
@@ -80,11 +76,11 @@ export default function Callout2() {
             isWhiteText={true}
           />
           <Speaker
-            alt="Dr.Eiman Jahangir"
+            alt="Dr. Eiman Jahangir"
             logo="/assets/astronaut-eiman.png"
-            name="Dr.Eiman Jahangir"
+            name="Dr. Eiman Jahangir"
             subtitle="MoonDAO's 2nd Astronaut"
-            link="https://www.msn.com/en-us/video/money/vanderbilt-doctor-preparing-for-trip-to-space/vi-AA1oSkef?ocid=socialshare&t=2"
+            link="https://www.youtube.com/watch?v=tOnfAtI1BHI"
             isWhiteText={true}
           />
         </div>

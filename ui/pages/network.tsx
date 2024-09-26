@@ -108,9 +108,9 @@ export default function Network({
   const descriptionSection = (
     <div className="pt-2">
       <div className="mb-4">
-        The first open-source, interplanetary network state dedicated to
-        establishing a permanent human presence on the Moon and beyond. Be a
-        part of our multiplanetary future and{' '}
+        The Space Acceleration Network is an onchain startup society 
+        focused on building a permanent settlement on the Moon and beyond. 
+        Be a part of our multiplanetary future and{' '}
         <u>
           <Link href="/join">join the network</Link>
         </u>
@@ -158,9 +158,9 @@ export default function Network({
   return (
     <section id="network-container" className="overflow-hidden">
       <Head
-        title={'The Space Network'}
+        title={'Space Acceleration Network'}
         description={
-          'The first open source, interplanetary network state dedicated to expanding life beyond Earth.'
+          "The Space Acceleration Network is a specialized platform empowering space startups, innovators, industry leaders, and enthusiasts to access funding, resources, and collaborations, fast-tracking humanity's path to a lunar settlement and beyond."
         }
       />
       <Container>

@@ -8,10 +8,10 @@ const indexCardData = [
     iconAlt: "Astronaut",
     header: "Sending Members To Space",
     link: "/sweepstakes",
-    hovertext: "Watch the Video",
+    hovertext: "Meet Our Astronauts",
     paragraph: (
       <>
-        Sent the first crowdraised astronaut to space, through a democratically governed onchain vote. Randomly chose a second regular, everyday person who will be flying in the near future.
+        Sent the first crowdraised astronaut to space, through a democratically governed onchain vote, and randomly chose a second member of the community via an on-chain sweepstakes.
       </>
     )
   },
@@ -19,8 +19,8 @@ const indexCardData = [
     icon: "/assets/icon-ethereum.svg",
     iconAlt: "Ethereum",
     header: "Funding Open Space R&D",
-    link: "https://docs.moondao.com/Projects/Project-System?_gl=1*6w9m8t*_ga*MTA3OTYwMTM0My4xNzAxNzQzMjE4*_ga_QPFCD9VH46*MTcxNjkzNDQ0MC44NS4xLjE3MTY5MzUyNjEuMC4wLjA.",
-    hovertext: "Learn More",
+    link: "/propose",
+    hovertext: "Submit Your Idea",
     paragraph: (
       <>
         Allocated $100,000+ (50+ ETH) to space R&D projects through community governance, like open source time standards for PNT on the Moon (shortlisted by DARPA for a grant).
@@ -42,12 +42,12 @@ const indexCardData = [
   {
     icon: "/assets/icon-dao.svg",
     iconAlt: "DAO",
-    header: "Borderless Space Participation",
+    header: "Space Acceleration Network",
     link: "/join",
-    hovertext: "Join Today",
+    hovertext: "Join the Network",
     paragraph: (
       <>
-        Developed a first-of-its-kind open-source DAO operating system to improve community governance, onboarding, and coordination, making it possible for global participation.
+        The Space Acceleration Network is a startup society that connects space visionaries and organizations with the funding, tools, and support needed to turn bold ideas into reality. 
       </>
     )
   },
