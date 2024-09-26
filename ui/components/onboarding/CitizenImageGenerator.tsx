@@ -51,32 +51,10 @@ export function ImageGenerator({
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col mt-5">
         <FileInput file={inputImage} setFile={setInputImage} />
-        <div className="flex gap-4">
-          {inputImage && (
-            <StageButton
-              onClick={() => {
-                setImage(null)
-                generateImage()
-                if (generateInBG) {
-                  nextStage()
-                }
-              }}
-            >
-              Generate
-            </StageButton>
-          )}
-          {(currImage && !inputImage) || image ? (
-            <StageButton className="" onClick={submitImage}>
-              Next
-            </StageButton>
-          ) : (
-            <></>
-          )}
-        </div>
       </div>
       <div
         id="citizenPic"
-        className="w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left relative flex"
+        className="mt-4 w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left relative flex"
       >
         {currImage && !inputImage && (
           <MediaRenderer
@@ -117,6 +95,26 @@ export function ImageGenerator({
           </>
         )}
       </div>
+      {inputImage && (
+        <StageButton
+          onClick={() => {
+            setImage(null)
+            generateImage()
+            if (generateInBG) {
+              nextStage()
+            }
+          }}
+        >
+          Generate
+        </StageButton>
+      )}
+      {(currImage && !inputImage) || image ? (
+        <StageButton className="" onClick={submitImage}>
+          Next
+        </StageButton>
+      ) : (
+        <></>
+      )}
     </div>
   )
 }
