@@ -1,3 +1,5 @@
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 interface DeploymentConfig {
@@ -28,6 +30,9 @@ const sepoliaConfig =
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
+
+export const DEFAULT_CHAIN =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
 
 export const MOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.MOONEYToken,
