@@ -1,3 +1,5 @@
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 interface DeploymentConfig {
@@ -28,6 +30,9 @@ const sepoliaConfig =
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
+
+export const DEFAULT_CHAIN =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
 
 export const MOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.MOONEYToken,
@@ -181,8 +186,6 @@ export const HATS_PASSTHROUGH_MODULE_ADDRESS =
 export const TABLELAND_ENDPOINT = `https://${
   process.env.NEXT_PUBLIC_CHAIN != 'mainnet' ? 'testnets.' : ''
 }tableland.network/api/v1/query`
-
-
 
 export const CHAIN_TOKEN_NAMES: Index = {
   ethereum: 'ETH',
