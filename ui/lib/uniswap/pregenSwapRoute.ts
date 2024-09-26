@@ -1,5 +1,5 @@
 import { Chain } from '@thirdweb-dev/chains'
-import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
+import { CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
 import {
   AlphaRouter,
   SwapOptionsUniversalRouter,
@@ -11,8 +11,8 @@ import { initSDK } from '../thirdweb/thirdweb'
 export async function pregenSwapRoute(
   selectedChain: Chain,
   swapAmnt: number | string,
-  tokenIn: Token,
-  tokenOut: Token
+  tokenIn: any,
+  tokenOut: any
 ) {
   try {
     const provider: any = initSDK(selectedChain).getProvider()

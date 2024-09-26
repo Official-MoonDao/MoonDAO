@@ -1,12 +1,9 @@
 import { useFundWallet } from '@privy-io/react-auth'
-import { Polygon } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
-import { Token } from '@uniswap/sdk-core'
 import useTranslation from 'next-translate/useTranslation'
 import { useRouter } from 'next/router'
 import React, { useContext } from 'react'
 import toast from 'react-hot-toast'
-import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import viemChains from '@/lib/viem/viemChains'
 import Container from '../components/layout/Container'
@@ -15,10 +12,8 @@ import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import NativeToMooney from '@/components/uniswap/NativeToMooney'
-import { OnboardingStageManager } from '../archive/get-mooney/OnboardingStageManager'
-import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
 
-export default function Join({ usdQuotes }: any) {
+export default function GetMooney() {
   const { t } = useTranslation('common')
   const address = useAddress()
   const router = useRouter()
@@ -35,7 +30,7 @@ export default function Join({ usdQuotes }: any) {
             headerSize="max(20px, 3vw)"
             description={
               <p>
-                {'Getting started with MoonDAO is simple: 1) '}
+                {'Getting started with MoonDAO is simple: '}
                 <button
                   className="font-bold"
                   onClick={() => {
@@ -48,9 +43,9 @@ export default function Join({ usdQuotes }: any) {
                 >
                   {'Fund your account'}
                 </button>
-                {' 2) '}
+                {', '}
                 <button className="font-bold">{'Swap for $MOONEY'}</button>
-                {', our governance token, and 3) '}
+                {', our governance token, and '}
                 <button
                   className="font-bold"
                   onClick={() => {
@@ -59,6 +54,7 @@ export default function Join({ usdQuotes }: any) {
                 >
                   {'Lock for voting power'}
                 </button>
+                {'.'}
               </p>
             }
             preFooter={<NoticeFooter />}
@@ -67,7 +63,7 @@ export default function Join({ usdQuotes }: any) {
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 px-5 pb-10 lg:px-7 xl:px-9 w-full">
+            <div className="mt-3 w-full">
               <NetworkSelector />
               <NativeToMooney selectedChain={selectedChain} />
             </div>
@@ -77,36 +73,3 @@ export default function Join({ usdQuotes }: any) {
     </>
   )
 }
-
-// export async function getStaticProps() {
-//   const DAI = new Token(
-//     137,
-//     DAI_ADDRESSES['polygon'],
-//     18,
-//     'DAI',
-//     'DAI Stablecoin'
-//   )
-
-//   const MOONEY = new Token(
-//     137,
-//     MOONEY_ADDRESSES['polygon'],
-//     18,
-//     'MOONEY',
-//     'MOONEY (PoS)'
-//   )
-
-//   const levelOneRoute = await pregenSwapRoute(Polygon, 20000, MOONEY, DAI)
-//   const levelTwoRoute = await pregenSwapRoute(Polygon, 100000, MOONEY, DAI)
-//   const levelThreeRoute = await pregenSwapRoute(Polygon, 500000, MOONEY, DAI)
-
-//   const usdQuotes = [levelOneRoute, levelTwoRoute, levelThreeRoute].map(
-//     (swapRoute) => swapRoute?.route[0].rawQuote.toString() / 10 ** 18
-//   )
-
-//   return {
-//     props: {
-//       usdQuotes,
-//     },
-//     revalidate: 60,
-//   }
-// }

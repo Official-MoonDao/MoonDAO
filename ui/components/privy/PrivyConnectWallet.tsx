@@ -4,7 +4,7 @@ import { allChains, Chain } from '@thirdweb-dev/chains'
 import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import Image from 'next/image'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -14,7 +14,12 @@ import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
 import viemChains from '@/lib/viem/viemChains'
 import ERC20 from '../../const/abis/ERC20.json'
-import { MOONEY_ADDRESSES } from '../../const/config'
+import {
+  DAI_ADDRESSES,
+  MOONEY_ADDRESSES,
+  USDC_ADDRESSES,
+  USDT_ADDRESSES,
+} from '../../const/config'
 import { CopyIcon } from '../assets'
 import FormInput from '../forms/FormInput'
 import Modal from '../layout/Modal'
@@ -39,9 +44,12 @@ function SendModal({
   selectedChain,
   networkIcon,
   mooneyContract,
+  daiContract,
+  usdcContract,
+  usdtContract,
   setEnabled,
   nativeBalance,
-  mooneyBalance,
+  formattedBalances,
 }: any) {
   const sdk = useSDK()
 
@@ -51,13 +59,36 @@ function SendModal({
 
   const [balance, setBalance] = useState()
 
+  const selectedTokenIcon = useMemo(() => {
+    let icon
+    if (selectedToken === 'native') {
+      icon = networkIcon
+    } else if (selectedToken === 'mooney') {
+      icon = <Image src="/coins/MOONEY.png" width={30} height={30} alt="" />
+    } else if (selectedToken === 'dai') {
+      icon = <Image src="/coins/DAI.svg" width={30} height={30} alt="" />
+    } else if (selectedToken === 'usdc') {
+      icon = <Image src="/coins/USDC.svg" width={30} height={30} alt="" />
+    } else if (selectedToken === 'usdt') {
+      icon = <Image src="/coins/USDT.svg" width={30} height={30} alt="" />
+    }
+
+    return icon
+  }, [selectedToken, networkIcon])
+
   useEffect(() => {
     if (selectedToken === 'native') {
       setBalance(nativeBalance)
     } else if (selectedToken === 'mooney') {
-      setBalance(mooneyBalance)
+      setBalance(formattedBalances.mooney)
+    } else if (selectedToken === 'dai') {
+      setBalance(formattedBalances.dai)
+    } else if (selectedToken === 'usdc') {
+      setBalance(formattedBalances.usdc)
+    } else if (selectedToken === 'usdt') {
+      setBalance(formattedBalances.usdt)
     }
-  }, [selectedToken, nativeBalance, mooneyBalance])
+  }, [selectedToken, nativeBalance, formattedBalances])
 
   return (
     <Modal id="send-modal-backdrop" setEnabled={setEnabled}>
@@ -88,10 +119,25 @@ function SendModal({
                 value: formattedAmount,
               })
             } else if (selectedToken === 'mooney') {
-              if (+amount > mooneyBalance)
+              if (+amount > formattedBalances.mooney)
                 return toast.error('Insufficient funds')
 
               await mooneyContract.call('transfer', [to, formattedAmount])
+            } else if (selectedToken === 'dai') {
+              if (+amount > formattedBalances.dai)
+                return toast.error('Insufficient funds')
+
+              await daiContract.call('transfer', [to, formattedAmount])
+            } else if (selectedToken === 'usdc') {
+              if (+amount > formattedBalances.usdc)
+                return toast.error('Insufficient funds')
+
+              await usdcContract.call('transfer', [to, formattedAmount])
+            } else if (selectedToken === 'usdt') {
+              if (+amount > formattedBalances.usdt)
+                return toast.error('Insufficient funds')
+
+              await usdtContract.call('transfer', [to, formattedAmount])
             }
           } catch (err) {
             console.log(err)
@@ -122,13 +168,12 @@ function SendModal({
               {selectedNativeToken[selectedChain.slug]}
             </option>
             <option value={'mooney'}>{'MOONEY'}</option>
+            <option value={'dai'}>{'DAI'}</option>
+            <option value={'usdc'}>{'USDC'}</option>
+            <option value={'usdt'}>{'USDT'}</option>
           </select>
 
-          {selectedToken === 'native' ? (
-            networkIcon
-          ) : (
-            <Image src="/coins/MOONEY.png" width={30} height={30} alt="" />
-          )}
+          {selectedTokenIcon}
 
           <p>{balance && balance}</p>
         </div>
@@ -166,7 +211,6 @@ export function PrivyConnectWallet({
   const address = useAddress()
   const { data: _ensData } = useENS(address)
   const ens = _ensData?.name
-  const nativeBalance = useNativeBalance()
   const [walletChainId, setWalletChainId] = useState(1)
   const {
     login,
@@ -188,9 +232,74 @@ export function PrivyConnectWallet({
     ERC20.abi
   )
 
+  const { contract: daiContract } = useContract(
+    DAI_ADDRESSES[selectedChain.slug],
+    ERC20.abi
+  )
+
+  const { contract: usdcContract } = useContract(
+    USDC_ADDRESSES[selectedChain.slug],
+    ERC20.abi
+  )
+
+  const { contract: usdtContract } = useContract(
+    USDT_ADDRESSES[selectedChain.slug],
+    ERC20.abi
+  )
+
+  const nativeBalance = useNativeBalance()
+
+  const [formattedBalances, setFormattedBalances] = useState({
+    mooney: 0,
+    dai: 0,
+    usdc: 0,
+    usdt: 0,
+  })
+
   const { data: mooneyBalance } = useHandleRead(mooneyContract, 'balanceOf', [
     address,
   ])
+
+  const { data: daiBalance } = useHandleRead(daiContract, 'balanceOf', [
+    address,
+  ])
+
+  const { data: usdcBalance } = useHandleRead(usdcContract, 'balanceOf', [
+    address,
+  ])
+
+  const { data: usdtBalance } = useHandleRead(usdtContract, 'balanceOf', [
+    address,
+  ])
+
+  useEffect(() => {
+    if (mooneyBalance)
+      setFormattedBalances((prev) => ({
+        ...prev,
+        mooney: +(mooneyBalance.toString() / 10 ** 18).toFixed(2),
+      }))
+  }, [mooneyBalance])
+  useEffect(() => {
+    if (daiBalance)
+      setFormattedBalances((prev) => ({
+        ...prev,
+        dai: +(daiBalance.toString() / 10 ** 18).toFixed(2),
+      }))
+  }, [daiBalance])
+  useEffect(() => {
+    if (usdcBalance)
+      setFormattedBalances((prev) => ({
+        ...prev,
+        usdc: +(usdcBalance.toString() / 10 ** 6).toFixed(2),
+      }))
+  }, [usdcBalance])
+  useEffect(() => {
+    if (usdtBalance)
+      setFormattedBalances((prev) => ({
+        ...prev,
+        usdt: +(usdtBalance.toString() / 10 ** 6).toFixed(2),
+      }))
+  }, [usdtBalance])
 
   const importToken = useImportToken(selectedChain)
 
@@ -288,7 +397,7 @@ export function PrivyConnectWallet({
           {enabled && (
             <div
               id="privy-connect-wallet-dropdown"
-              className="w-[260px] lg:w-[270px] absolute left-0 text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn mt-2 p-2 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[100] lg:max-h-[70%] overflow-y-scroll z-[3000]"
+              className="w-[260px] lg:w-[270px] absolute left-0 text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn mt-2 p-2 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[100] lg:max-h-[70%] overflow-y-scroll overflow-x-hidden z-[3000]"
             >
               {sendModalEnabled && (
                 <SendModal
@@ -296,10 +405,11 @@ export function PrivyConnectWallet({
                   setEnabled={setSendModalEnabled}
                   networkIcon={<NetworkIcon />}
                   mooneyContract={mooneyContract}
+                  daiContract={daiContract}
+                  usdcContract={usdcContract}
+                  usdtContract={usdtContract}
                   nativeBalance={nativeBalance}
-                  mooneyBalance={(mooneyBalance?.toString() / 10 ** 18).toFixed(
-                    2
-                  )}
+                  formattedBalances={formattedBalances}
                 />
               )}
               <div
@@ -360,12 +470,7 @@ export function PrivyConnectWallet({
                       height={30}
                       alt=""
                     />
-                    <p>
-                      {mooneyBalance
-                        ? (mooneyBalance?.toString() / 10 ** 18).toFixed(2) +
-                          ' MOONEY'
-                        : '...'}
-                    </p>
+                    <p>{formattedBalances.mooney + ' MOONEY'}</p>
                   </div>
 
                   <div className=" w-full flex justify-left items-center gap-4">
@@ -376,6 +481,41 @@ export function PrivyConnectWallet({
                         selectedNativeToken[selectedChain.slug]}
                     </p>
                   </div>
+
+                  {formattedBalances.dai > 0 && (
+                    <div className=" w-full flex justify-left items-center gap-4">
+                      <Image
+                        src="/coins/DAI.svg"
+                        width={30}
+                        height={30}
+                        alt=""
+                      />
+                      <p>{formattedBalances.dai + ' DAI'}</p>
+                    </div>
+                  )}
+
+                  {formattedBalances.usdc > 0 && (
+                    <div className=" w-full flex justify-left items-center gap-4">
+                      <Image
+                        src="/coins/USDC.svg"
+                        width={30}
+                        height={30}
+                        alt=""
+                      />
+                      <p>{usdcBalance + ' USDC'}</p>
+                    </div>
+                  )}
+                  {formattedBalances.usdt > 0 && (
+                    <div className=" w-full flex justify-left items-center gap-4">
+                      <Image
+                        src="/coins/USDT.svg"
+                        width={30}
+                        height={30}
+                        alt=""
+                      />
+                      <p>{usdtBalance + ' USDT'}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
