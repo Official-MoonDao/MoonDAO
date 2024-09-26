@@ -33,7 +33,7 @@ export default function NetworkSelector() {
     <div id="network-selector" className="w-[250px] flex flex-col">
       <div
         id="network-selector-dropdown-button"
-        className="flex items-center gap-2 p-2 bg-[#0f152f] rounded-lg"
+        className="flex items-center gap-2 p-2 bg-darkest-cool rounded-lg"
         onClick={(e) => {
           if (e.detail === 0) return e.preventDefault()
           setDropdown((prev) => !prev)

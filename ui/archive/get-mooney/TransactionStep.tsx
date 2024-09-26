@@ -3,7 +3,7 @@ import { ethers } from 'ethers'
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import viemChains from '@/lib/viem/viemChains'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
+import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
 
 type StepProps = {
   realStep: number
@@ -40,10 +40,19 @@ export function Step({
 
   const { fundWallet } = useFundWallet()
 
-  const stepButtons = useMemo(() => {
-    const selectedChainName =
-      selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
+  const nativeTokenName = useMemo(() => {
+    let tokenName
+    if (selectedChain.slug === 'ethereum') {
+      tokenName = 'ETH'
+    } else if (selectedChain.slug === 'polygon') {
+      tokenName = 'MATIC'
+    } else if (selectedChain.slug === 'arbitrum') {
+      tokenName = 'ETH'
+    }
+    return tokenName
+  }, [selectedChain])
 
+  const stepButtons = useMemo(() => {
     switch (realStep) {
       case 1:
         return (
@@ -74,7 +83,7 @@ export function Step({
               ) : isDisabled ? (
                 <LoadingSpinner>{'...loading'}</LoadingSpinner>
               ) : (
-                `Purchase ${selectedChainName} with MoonPay`
+                `Purchase ${nativeTokenName} with MoonPay`
               )}
             </button>
             <button
@@ -108,7 +117,7 @@ export function Step({
               ) : isDisabled ? (
                 <LoadingSpinner>{'...loading'}</LoadingSpinner>
               ) : (
-                `Purchase ${selectedChainName} with Exchange`
+                `Purchase ${nativeTokenName} with Exchange`
               )}
             </button>
           </>
@@ -269,6 +278,7 @@ export function Step({
     isDisabled,
     isProcessingTx,
     nativeAmount,
+    nativeTokenName,
     noTxns,
     realStep,
     selectedChain.chainId,

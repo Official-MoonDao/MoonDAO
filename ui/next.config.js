@@ -1,5 +1,4 @@
 const nextTranslate = require('next-translate')
-const { redirect } = require('next/dist/server/api-utils')
 module.exports = nextTranslate({
   reactStrictMode: true,
   images: {
