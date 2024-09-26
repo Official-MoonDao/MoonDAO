@@ -18,6 +18,6 @@ describe('<PrivyConnectWallet />', () => {
       </ChainContext.Provider>
     )
 
-    cy.get('button').should('have.text', 'SIGN IN')
+    cy.get('button').should('have.text', 'Sign In')
   })
 })

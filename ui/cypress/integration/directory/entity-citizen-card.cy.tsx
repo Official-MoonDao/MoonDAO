@@ -31,7 +31,7 @@ describe('<EntityCitizenCard />', () => {
     )
     cy.get('#entity-citizen-card-description').should(
       'have.text',
-      dummyNft.metadata.description
+      `${dummyNft.metadata.description?.slice(0, 100)}...`
     )
     cy.get('#entity-citizen-card-id').should(
       'have.text',
