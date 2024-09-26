@@ -1,5 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { useFundWallet, usePrivy, useWallets } from '@privy-io/react-auth'
 import { allChains, Chain } from '@thirdweb-dev/chains'
 import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
@@ -12,6 +12,7 @@ import { useHandleRead } from '../../lib/thirdweb/hooks'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
+import viemChains from '@/lib/viem/viemChains'
 import ERC20 from '../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import { CopyIcon } from '../assets'
@@ -177,6 +178,8 @@ export function PrivyConnectWallet({
   }: any = usePrivy()
   const { wallets } = useWallets()
 
+  const { fundWallet } = useFundWallet()
+
   const [enabled, setEnabled] = useState(false)
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
 
@@ -206,6 +209,27 @@ export function PrivyConnectWallet({
             : 30
         }
         alt="Network Icon"
+      />
+    )
+  }
+
+  function NativeTokenIcon() {
+    return (
+      <Image
+        src={`/icons/networks/${
+          selectedChain.slug === 'polygon' ? 'polygon' : 'ethereum'
+        }.svg`}
+        width={
+          selectedChain.slug === 'ethereum' || selectedChain.slug === 'arbitrum'
+            ? 25
+            : 30
+        }
+        height={
+          selectedChain.slug === 'ethereum' || selectedChain.slug === 'arbitrum'
+            ? 25
+            : 30
+        }
+        alt="Native Token Icon"
       />
     )
   }
@@ -297,16 +321,9 @@ export function PrivyConnectWallet({
                 />
               </div>
               <div className="relative mt-2">
+                <NetworkSelector />
                 <div className="mt-2 flex items-center">
-                  <NetworkIcon />
                   <div className="ml-2 bg-dark-cool">
-                    <p className="uppercase font-normal inline-block">
-                      {
-                        allChains.find(
-                          (chain) => chain.chainId === selectedChain.chainId
-                        )?.name
-                      }
-                    </p>
                     <p className="text-sm">{`${address?.slice(
                       0,
                       6
@@ -345,14 +362,19 @@ export function PrivyConnectWallet({
                     />
                     <p>
                       {mooneyBalance
-                        ? (mooneyBalance?.toString() / 10 ** 18).toFixed(2)
+                        ? (mooneyBalance?.toString() / 10 ** 18).toFixed(2) +
+                          ' MOONEY'
                         : '...'}
                     </p>
                   </div>
 
                   <div className=" w-full flex justify-left items-center gap-4">
-                    <NetworkIcon />
-                    <p>{nativeBalance}</p>
+                    <NativeTokenIcon />
+                    <p>
+                      {nativeBalance +
+                        ' ' +
+                        selectedNativeToken[selectedChain.slug]}
+                    </p>
                   </div>
                 </div>
               )}
@@ -360,7 +382,11 @@ export function PrivyConnectWallet({
               <button
                 className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
                 onClick={async () => {
-                  wallets[selectedWallet].fund()
+                  if (!address) return toast.error('Please connect your wallet')
+                  fundWallet(address, {
+                    chain: viemChains[selectedChain.slug],
+                    asset: 'native-currency',
+                  })
                 }}
               >
                 <strong>Fund</strong>
