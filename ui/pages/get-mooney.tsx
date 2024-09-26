@@ -35,7 +35,7 @@ export default function Join({ usdQuotes }: any) {
             headerSize="max(20px, 3vw)"
             description={
               <p>
-                {'Getting started with MoonDAO is simple: 1) '}
+                {'Getting started with MoonDAO is simple: '}
                 <button
                   className="font-bold"
                   onClick={() => {
@@ -48,9 +48,9 @@ export default function Join({ usdQuotes }: any) {
                 >
                   {'Fund your account'}
                 </button>
-                {' 2) '}
+                {', '}
                 <button className="font-bold">{'Swap for $MOONEY'}</button>
-                {', our governance token, and 3) '}
+                {', our governance token, and '}
                 <button
                   className="font-bold"
                   onClick={() => {
@@ -59,6 +59,7 @@ export default function Join({ usdQuotes }: any) {
                 >
                   {'Lock for voting power'}
                 </button>
+                {'.'}
               </p>
             }
             preFooter={<NoticeFooter />}
@@ -67,7 +68,7 @@ export default function Join({ usdQuotes }: any) {
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 px-5 pb-10 lg:px-7 xl:px-9 w-full">
+            <div className="mt-3 w-full">
               <NetworkSelector />
               <NativeToMooney selectedChain={selectedChain} />
             </div>
