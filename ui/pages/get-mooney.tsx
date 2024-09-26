@@ -1,9 +1,14 @@
+import { useFundWallet } from '@privy-io/react-auth'
 import { Polygon } from '@thirdweb-dev/chains'
+import { useAddress } from '@thirdweb-dev/react'
 import { Token } from '@uniswap/sdk-core'
 import useTranslation from 'next-translate/useTranslation'
+import { useRouter } from 'next/router'
 import React, { useContext } from 'react'
+import toast from 'react-hot-toast'
 import { pregenSwapRoute } from '../lib/uniswap/pregenSwapRoute'
 import ChainContext from '@/lib/thirdweb/chain-context'
+import viemChains from '@/lib/viem/viemChains'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -15,7 +20,10 @@ import { DAI_ADDRESSES, MOONEY_ADDRESSES } from '../const/config'
 
 export default function Join({ usdQuotes }: any) {
   const { t } = useTranslation('common')
+  const address = useAddress()
+  const router = useRouter()
   const { selectedChain } = useContext(ChainContext)
+  const { fundWallet } = useFundWallet()
 
   return (
     <>
@@ -25,16 +33,43 @@ export default function Join({ usdQuotes }: any) {
           <ContentLayout
             header={t('mooneyTitle')}
             headerSize="max(20px, 3vw)"
-            description={t('mooneyDesc')}
+            description={
+              <p>
+                {'Getting started with MoonDAO is simple: 1) '}
+                <button
+                  className="font-bold"
+                  onClick={() => {
+                    if (!address)
+                      return toast.error('Please connect your wallet')
+                    fundWallet(address, {
+                      chain: viemChains[selectedChain.slug],
+                    })
+                  }}
+                >
+                  {'Fund your account'}
+                </button>
+                {' 2) '}
+                <button className="font-bold">{'Swap for $MOONEY'}</button>
+                {', our governance token, and 3) '}
+                <button
+                  className="font-bold"
+                  onClick={() => {
+                    router.push('/lock')
+                  }}
+                >
+                  {'Lock for voting power'}
+                </button>
+              </p>
+            }
             preFooter={<NoticeFooter />}
             mainPadding
             isProfile
             mode="compact"
             popOverEffect={false}
           >
-                      <div className="mt-3 px-5 pb-10 lg:px-7 xl:px-9 w-full">
-            <NetworkSelector />
-            <NativeToMooney selectedChain={selectedChain} />
+            <div className="mt-3 px-5 pb-10 lg:px-7 xl:px-9 w-full">
+              <NetworkSelector />
+              <NativeToMooney selectedChain={selectedChain} />
             </div>
           </ContentLayout>
         </Container>
