@@ -53,6 +53,13 @@ export const USDC_ADDRESSES: Index = {
   arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
 }
 
+export const USDT_ADDRESSES: Index = {
+  ethereum: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+  polygon: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+  sepolia: '0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0',
+  arbitrum: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+}
+
 export const MOONEY_DECIMALS = 10 ** 18
 
 export const VMOONEY_ADDRESSES: Index = {
@@ -181,8 +188,6 @@ export const HATS_PASSTHROUGH_MODULE_ADDRESS =
 export const TABLELAND_ENDPOINT = `https://${
   process.env.NEXT_PUBLIC_CHAIN != 'mainnet' ? 'testnets.' : ''
 }tableland.network/api/v1/query`
-
-
 
 export const CHAIN_TOKEN_NAMES: Index = {
   ethereum: 'ETH',
