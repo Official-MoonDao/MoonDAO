@@ -1,5 +1,4 @@
 const nextTranslate = require('next-translate')
-const { redirect } = require('next/dist/server/api-utils')
 module.exports = nextTranslate({
   reactStrictMode: true,
   images: {
@@ -8,6 +7,11 @@ module.exports = nextTranslate({
       'cryptologos.cc',
       'gateway.ipfscdn.io',
       'ipfs.cf-ipfs.com',
+      'ipfscdn.io',
+      'b507f59d2508ebfb5e70996008095782.ipfscdn.io',
+      'r2.comfy.icu',
+      'cdn.discordapp.com',
+      'cdn.stamp.fyi'
     ],
   },
   async redirects() {

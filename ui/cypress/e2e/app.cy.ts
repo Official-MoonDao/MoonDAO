@@ -28,6 +28,12 @@ describe('Main E2E Testing', () => {
     })
   })
 
+  describe('MoonDAO App | Directory', () => {
+    it('should load the directory page', () => {
+      cy.visit('/directory')
+    })
+  })
+
   describe('MoonDAO App | Analytics', () => {
     it('should load the analytics page', () => {
       cy.visit('/analytics')

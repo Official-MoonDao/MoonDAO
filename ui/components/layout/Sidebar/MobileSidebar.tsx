@@ -1,5 +1,6 @@
 import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
 import { Fragment } from 'react'
 import { useEffect } from 'react'
 import { useSwipeDirection } from '../../../lib/utils/hooks/useSwipeDirection'
@@ -79,11 +80,11 @@ const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
                   </button>
                 </div>
               </Transition.Child>
-              <a href="/">
+              <Link href="/" passHref>
                 <div className="mt-2 ml-4 flex flex-shrink-0 items-center px-4">
                   {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
                 </div>
-              </a>
+              </Link>
               <div className="mt-8 h-0 flex-1 overflow-y-auto">
                 <nav className="space-y-1 px-2">
                   {navigation.map((item, i) => (

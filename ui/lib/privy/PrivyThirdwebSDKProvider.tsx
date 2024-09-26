@@ -12,19 +12,23 @@ export function PrivyThirdwebSDKProvider({ selectedChain, children }: any) {
 
   const { user } = usePrivy()
 
-  async function getPrivySigner() {
-    try {
-      const wallet = wallets[selectedWallet]
-      const provider = await wallet?.getEthersProvider()
-      const { id: walletId } = wallet.meta; 
-      if (walletId === "com.coinbase.wallet") await wallet?.switchChain(selectedChain.chainId)
-      setSigner(provider?.getSigner())
-    } catch (err: any) {
-      console.log(err.message)
-    }
-  }
-
   useEffect(() => {
+    async function getPrivySigner() {
+      try {
+        const wallet = wallets[selectedWallet]
+        const provider = await wallet?.getEthersProvider()
+        const walletClientType = wallet.walletClientType
+        if (
+          walletClientType === 'coinbase_wallet' ||
+          walletClientType === 'privy'
+        )
+          await wallet?.switchChain(selectedChain.chainId)
+        setSigner(provider?.getSigner())
+      } catch (err: any) {
+        console.log(err.message)
+      }
+    }
+
     if (user) getPrivySigner()
     else setSigner(null)
   }, [wallets, user, selectedWallet, selectedChain])

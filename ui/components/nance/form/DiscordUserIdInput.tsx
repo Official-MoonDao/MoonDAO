@@ -5,21 +5,26 @@ import {
   ComboboxOption,
   ComboboxOptions,
 } from '@headlessui/react'
+import {
+  PhotoIcon,
+  QuestionMarkCircleIcon,
+  ExclamationCircleIcon,
+} from '@heroicons/react/24/outline'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/solid'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useDebounce } from 'react-use'
 import useDiscordUserSearch, {
   DiscordUser,
 } from '@/lib/nance/DiscordUserSearch'
-import { PhotoIcon, QuestionMarkCircleIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline"
 import { classNames } from '@/lib/utils/tailwind'
-import { LoadingSpinner } from "../../layout/LoadingSpinner"
+import { LoadingSpinner } from '../../layout/LoadingSpinner'
 
 const noUser: DiscordUser = {
   id: '',
   username: '',
   global_name: '',
-  avatar: ''
+  avatar: '',
 }
 
 export default function DiscordUserIdInput({
@@ -39,10 +44,11 @@ export default function DiscordUserIdInput({
   const [username, setUsername] = useState('')
   const [selectedUser, setSelectedUser] = useState<DiscordUser | null>(null)
 
-  const { data, isLoading: loading, error } = useDiscordUserSearch(
-    username,
-    !!username
-  )
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useDiscordUserSearch(username, !!username)
 
   useEffect(() => {
     if (disabled) {
@@ -79,7 +85,11 @@ export default function DiscordUserIdInput({
           )}
           onChange={(event) => setQuery(event.target.value)}
           displayValue={(selectedUser: DiscordUser | undefined) =>
-            selectedUser ? `@${selectedUser.global_name}` : displayVal ? `@${displayVal}` : query
+            selectedUser
+              ? `@${selectedUser.global_name}`
+              : displayVal
+              ? `@${displayVal}`
+              : query
           }
           placeholder="Search..."
           autoComplete="off"
@@ -140,7 +150,9 @@ export default function DiscordUserIdInput({
                 <QuestionMarkCircleIcon className="w-6 h-6 text-gray-400" />
                 <div className="ml-2">
                   <p className="text-sm">No results found</p>
-                  <p className="text-xs text-gray-400">Type a different username</p>
+                  <p className="text-xs text-gray-400">
+                    Type a different username
+                  </p>
                 </div>
               </div>
             </div>
@@ -167,10 +179,12 @@ function DiscordUserInfoEntry({ user }: { user: DiscordUser }) {
   return (
     <div className="flex">
       {user.avatar ? (
-        <img
+        <Image
           src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
           alt=""
           className="h-6 w-6 flex-shrink-0 rounded-full"
+          width={75}
+          height={75}
         />
       ) : (
         <PhotoIcon className="w-6 h-6" />

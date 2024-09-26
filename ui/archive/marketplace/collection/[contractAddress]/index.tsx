@@ -34,7 +34,7 @@ type CollectionPageProps = {
 export default function CollectionPage({
   contractAddress,
 }: CollectionPageProps) {
-  useChainDefault('l2')
+  useChainDefault()
   //Marketplace data
   const { contract: marketplace } = useContract(
     MARKETPLACE_ADDRESS,
@@ -165,7 +165,7 @@ export async function getStaticPaths() {
   const sdk = initSDK(
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
   )
-  const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS)
+  const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS as string)
   const acceptedCollections = await marketplace.roles.get('asset')
 
   const paths = acceptedCollections.map((contractAddress: string) => ({
@@ -204,7 +204,7 @@ export async function getStaticProps({ params }: any) {
   const sdk = initSDK(
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
   )
-  const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS)
+  const marketplace = await sdk.getContract(MARKETPLACE_ADDRESS as string)
   const acceptedCollections = await marketplace.roles.get('asset')
 
   if (!acceptedCollections.includes(contractAddress)) {

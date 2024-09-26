@@ -147,7 +147,10 @@ a {
   visibility: hidden;
 }
 
-/* Home styles */
+#p5_loading {
+  display: none;
+  visibility: hidden;
+}
 
 .mission {
   background-image: linear-gradient(#000000 2%, #282536, #000000 95%);
@@ -208,6 +211,10 @@ a {
     @apply text-[#071732] dark:text-white font-GoodTimes text-center text-3xl lg:text-5xl xl:text-[54px] lg:text-left;
   }
 
+  .sub-title {
+    @apply text-[#071732] dark:text-white font-GoodTimes text-center text-xs lg:text-sm xl:text-[10px] lg:text-left opacity-75;
+  }
+
   .title-text-colors {
     @apply text-[#071732] dark:text-white;
   }
@@ -261,7 +268,7 @@ a {
   }
 
   .gradient-2 {
-    background: linear-gradient(220deg, #6D3F79 5%, #425EEB 95%);
+    background: linear-gradient(90deg,#425EEB 5%, #6D3F79 90%);
   }
 
   .gradient-3 {
@@ -298,7 +305,7 @@ a {
   }
 
   .gradient-10 {
-    background: linear-gradient(90deg, #3344A8 0%, transparent 90%);
+    background: linear-gradient(90deg, #3344A8 0%, transparent 90%), #090d21;
   }
 
   .gradient-11 {
@@ -311,6 +318,24 @@ a {
 
   .gradient-13 {
     background: linear-gradient(0deg, #425EEB 50%,  #090d21 50%);
+  }
+
+  .gradient-14 {
+    background: linear-gradient(0deg,#182254 0%, #020617 20%);
+  }  
+
+  .gradient-15{
+    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+  }
+  .gradient-16 {
+    background: linear-gradient(-90deg, #020617 60%, #090D21 85% )
+  }
+
+/*Mobile footer gradient*/
+  @media(max-width:768px) {
+    .mob-footer-gradient{
+      background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+    }
   }
 
   /*Dividers*/
@@ -377,6 +402,18 @@ a {
     background-position: top left;
   }
 
+  .divider-11 {
+    background-image: url('/assets/divider-11.svg');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+  }  
+
+  .divider-12 {
+    background-image: url('/assets/divider-12.svg');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+  }  
+
   /*Featured images*/
   .feature-1 {
     background-image: url('/assets/feature-1.svg');
@@ -400,17 +437,10 @@ a {
     background-size: contain;
   }
 
-  .feature-4 {
-    background-image: url('/assets/feature-4.svg');
-    background-repeat: no-repeat;
-    background-position: top left;
-    background-size: contain;
-  }
-
 /*Typeface styles*/
 @media(max-width:1399px) {
   .header {
-    font-size: calc(max(2.5vmax, 30px));
+    font-size: calc(max(2.5vmax, 25px));
     line-height: 1.2;
   }
 }
@@ -426,6 +456,12 @@ a {
   font-size: calc(max(2vmin, 20px));
   line-height: 1.2;
   padding-bottom:20px;
+}
+
+.static-sub-header {
+  font-size: 15px;
+  line-height: 1;
+
 }
 
 /*Hide the scrollbar on mobile*/
@@ -509,7 +545,7 @@ html {
   background-repeat: no-repeat;
   background-position: top left;
   width:80%;
-  max-height:220%;
+  max-height:300%;
 
 }
 
@@ -521,7 +557,7 @@ html {
 
   .card-container:hover .clip {
     width: 1000%;
-    height:220%;
+    height:300%;
     transition: all 0.5s ease-in-out .25s;
   }
 
@@ -548,7 +584,7 @@ html {
   }
 
   .hovertext-bg {
-    background: linear-gradient(220deg, #6D3F79 5%, #3344A8 95%);
+    background: linear-gradient(90deg,#3344A8 5%, #6D3F79 90%);
   }
 }
 
@@ -576,5 +612,117 @@ html {
   transition: border-radius 0.25s ease-in-out;
 }
 
+/*Background for the main section of the ContentLayout component*/
+@media(min-width:1100px) {
+  .popout-base-bg {
+    background: linear-gradient(90deg, transparent 40%, rgba(9, 13, 33, 1) 40%);
+  }
+
+  .popout-bg{
+    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+  }
+
+  .innerprefooter-popout-bg {
+    background: linear-gradient(90deg, transparent 50%, #090D21 0%);
+  }
+
+}
+
+@media(max-width:1099px) {
+  .popout-base-bg {
+    background: linear-gradient(90deg, transparent 40%, rgba(9, 13, 33, 1) 40%);
+  }
+
+  .popout-bg{
+    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+  }
+
+  .innerprefooter-popout-bg {
+    background: linear-gradient(90deg, transparent 50%, #090D21 0%);
+  }
+
+}
+
+/*Backgrounds for the title section of the ContentLayout component*/
+.branded {
+  background-image: url('/assets/feature-4.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+  background-size: contain;
+}
+
+.unbranded {
+  background-image: url('/assets/feature-5.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+  background-size: contain;
+}
+
+/*Search and filter button backgrounds*/
+  .bg-filter {
+    background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 95%);
+  }
+
+  .bg-search {
+    background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
+  }
+
+/*Profile page cards background*/
+  .bg-slide-section {
+    background: linear-gradient(90deg, #020617 60%, #090D21 85% )
+  }
+
+  .left-fadeout {
+    background: linear-gradient(90deg, #020617 5%, transparent);
+  }
+
+  .right-fadein {
+    background: linear-gradient(90deg, transparent 5%, #090D21 75%);
+  }
+
+/*Overlay background for the onboarding process background*/
+
+.bg-overlay {
+  background:rgba(0,0,0,.2);
+}
 
 
+/*Sticky bar for the proposal page*/
+.sticky-bar {
+  position: sticky;
+  top: 0;
+  
+}
+
+/* Define your custom colors */
+:root {
+  --dark-cool-color: #182254;     /* Adjust to your dark cool color */
+  --dark-warm-color: #2d121a;     /* Adjust to your dark warm color */
+  --darkest-cool-color: #080c20;  /* Adjust to your darkest cool color */
+}
+
+#ball {
+  position: fixed;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at center, var(--dark-cool-color) 0%, transparent 100%);
+  mix-blend-mode: screen;
+  left: 0;
+  top: 0;
+}
+
+.gradient-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--dark-warm-color), transparent);
+}
+
+body {
+  background-color: var(--darkest-cool-color);
+}

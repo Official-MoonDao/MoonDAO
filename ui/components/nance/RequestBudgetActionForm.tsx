@@ -44,8 +44,8 @@ export default function RequestBudgetActionForm({
   return (
     <div>
       <div className="space-y-12">
-        <div className="border-b border-white/10 pb-12">
-          <h2 className="text-base font-semibold leading-7 text-white">
+        <div className="pb-10">
+          <h2 className="text-base font-semibold font-GoodTimes leading-7 text-white">
             Project team
           </h2>
           {projectTeamFields.map((field, index) => (
@@ -132,8 +132,8 @@ export default function RequestBudgetActionForm({
       </div>
 
       <div className="space-y-12">
-        <div className="border-b border-white/10 pb-12">
-          <h2 className="text-base font-semibold leading-7 text-white">
+        <div className="pb-10">
+          <h2 className="text-base font-semibold font-GoodTimes leading-7 text-white">
             Multisig Team
           </h2>
           <p className="mt-1 text-sm leading-6 text-gray-400">
@@ -167,8 +167,8 @@ export default function RequestBudgetActionForm({
       </div>
 
       <div className="space-y-12">
-        <div className="border-b border-white/10 pb-12">
-          <h2 className="text-base font-semibold leading-7 text-white">
+        <div className="pb-10">
+          <h2 className="text-base font-semibold font-GoodTimes leading-7 text-white">
             Budget
           </h2>
           <p className="mt-1 text-sm leading-6 text-gray-400">

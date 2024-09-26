@@ -1,5 +1,4 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { Chain } from '@thirdweb-dev/chains'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -12,7 +11,8 @@ Button States:
 */
 
 type PrivyWeb3BtnProps = {
-  label: string
+  label: any
+  type?: string
   action: Function
   isDisabled?: boolean
   className?: string
@@ -21,11 +21,18 @@ type PrivyWeb3BtnProps = {
   skipNetworkCheck?: boolean
 }
 
-function Button({ className, onClick, isDisabled, children }: any) {
+function Button({
+  type = 'button',
+  className,
+  onClick,
+  isDisabled,
+  children,
+}: any) {
   return (
     <button
+      type={type}
       // className={`px-8 py-2 w-[200px] rounded-md text-black ${className}`}
-      className={`p-2 rounded-md text-black min-w-[200px] ${className}`}
+      className={`px-5 py-3 text-lg gradient-2 text-white disabled:opacity-50 ${className}`}
       onClick={onClick}
       disabled={isDisabled}
     >
@@ -36,6 +43,7 @@ function Button({ className, onClick, isDisabled, children }: any) {
 
 export function PrivyWeb3Button({
   label,
+  type = 'button',
   action,
   isDisabled = false,
   className = '',
@@ -74,6 +82,7 @@ export function PrivyWeb3Button({
       )}
       {btnState === 1 && (
         <Button
+          type="button"
           className={className}
           onClick={async () => {
             try {
@@ -89,6 +98,7 @@ export function PrivyWeb3Button({
       )}
       {btnState === 2 && (
         <Button
+          type={type}
           className={className}
           onClick={async () => {
             setIsLoading(true)

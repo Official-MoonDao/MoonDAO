@@ -17,7 +17,7 @@ export function AnalyticsProgress({ value }: any) {
     }, 50)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [value])
 
   return (
     <div className="flex items-center gap-2 justify-center">

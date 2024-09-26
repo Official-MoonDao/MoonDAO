@@ -7,12 +7,14 @@ interface MobileMenuTop {
   setSidebarOpen: Function
   lightMode: boolean
   setLightMode: Function
+  citizenContract: any
 }
 
 const MobileMenuTop = ({
   setSidebarOpen,
   lightMode,
   setLightMode,
+  citizenContract,
 }: MobileMenuTop) => {
   return (
     <div className="relative z-10 flex flex-1 flex-col md:hidden">
@@ -29,7 +31,7 @@ const MobileMenuTop = ({
           />
         </button>
         <div className="ml-4 w-full flex justify-center items-center">
-          <PrivyConnectWallet />
+          <PrivyConnectWallet type="mobile" citizenContract={citizenContract} />
         </div>
         <div className="flex items-center">
           <LanguageChange />

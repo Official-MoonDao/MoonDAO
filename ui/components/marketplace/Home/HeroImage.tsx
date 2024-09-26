@@ -1,4 +1,3 @@
-import { useContract, useNFT } from '@thirdweb-dev/react'
 import Image from 'next/image'
 
 export default function HeroImage({ asset }: any) {
@@ -10,7 +9,7 @@ export default function HeroImage({ asset }: any) {
     )
 
   return (
-    <img
+    <Image
       className="w-[300px] hover:ring xl:hover:ring-4 ring-moon-orange transition-all duration-300 h-[362px] object-cover lg:w-[400px] xl:w-[400px] 2xl:w-[536px]  rounded-tl-[99px] rounded-br-[99px]"
       src={asset.asset.image}
       alt="Hero Image"

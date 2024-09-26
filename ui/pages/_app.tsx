@@ -1,5 +1,5 @@
 import { PrivyProvider } from '@privy-io/react-auth'
-import { Chain, Mumbai, Polygon, Sepolia } from '@thirdweb-dev/chains'
+import { Chain, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
@@ -9,9 +9,10 @@ import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
 
+
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const [selectedChain, setSelectedChain]: any = useState<Chain>(
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Sepolia
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   )
 
   const [lightMode, setLightMode] = useLightMode()
@@ -22,7 +23,8 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
 
   return (
     <>
-      <GTag />
+      
+      <GTag GTAG={process.env.NEXT_PUBLIC_GTAG as string} />
       <ChainContext.Provider value={{ selectedChain, setSelectedChain }}>
         <PrivyProvider
           appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}

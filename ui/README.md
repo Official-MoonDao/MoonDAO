@@ -1,6 +1,6 @@
 # MoonDAO App UI
 
-https://app.moondao.com
+https://moondao.com/
 
 ## Run the UI locally
 

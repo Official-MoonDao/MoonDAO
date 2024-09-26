@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import Card from '../layout/Card';
-import CardGrid from "../layout/CardGrid";
+import IndexCard from '../layout/IndexCard';
+import IndexCardGrid from "../layout/IndexCardGrid";
 
-const cardData = [
+const indexCardData = [
   {
     icon: "/assets/icon-astronaut.svg",
     iconAlt: "Astronaut",
     header: "Sending Members To Space",
-    link: "https://www.youtube.com/watch?v=YXXlSG-du7c",
+    link: "/sweepstakes",
     hovertext: "Watch the Video",
     paragraph: (
       <>
@@ -81,17 +81,19 @@ export default function Callout3() {
     const [singleCol, setSingleCol] = useState(false);
 
     return ( 
-        <section id="callout2-container" 
-          className="relative items-start justify-end md:items-start lg:items-start md:justify-end lg:justify-center mt-[25vh]"
+        <section id="callout3-container" 
+          className="relative items-start max-w-[1200px] justify-end md:items-start lg:items-start md:justify-end lg:justify-center mt-[5vmax]"
           >
           <div id="background-elements" 
             className="overflow-visible"
           ></div>
+          <h2 className="header text-center font-GoodTimes pb-5">What MoonDAO Does</h2>  
           <div id="cards-container" 
-            className="rounded-[5vmax] pb-10 rounded-tr-[0px] p-5 md:p-10 overflow-hidden max-w-[1200px]"
+            className="rounded-[5vmax] rounded-tr-[0px] p-5 md:p-10 overflow-hidden max-w-[1200px]"
             >
-            <CardGrid cards={cardData} />
+            <IndexCardGrid cards={indexCardData} />
           </div>
+
         </section>
     )
 }

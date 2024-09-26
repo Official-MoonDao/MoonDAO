@@ -1,25 +1,24 @@
 //WIP, will use to store local batches
-
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react'
 
 export function useLocalStorage(key: string) {
-  const [localData, setLocalData] = useState<any>();
-
-  function getLocalData() {
-    const localData = localStorage.getItem(key);
-    if (localData) {
-      setLocalData(JSON.parse(localData));
-    }
-  }
+  const [localData, setLocalData] = useState<any>()
 
   function storeLocalData(data: any) {
-    const localData = JSON.stringify(data);
-    localStorage.setItem(key, localData);
+    const localData = JSON.stringify(data)
+    localStorage.setItem(key, localData)
   }
 
   useEffect(() => {
-    if (key?.trim() !== "") getLocalData();
-  }, [key]);
+    function getLocalData() {
+      const localData = localStorage.getItem(key)
+      if (localData) {
+        setLocalData(JSON.parse(localData))
+      }
+    }
 
-  return { data: localData, store: storeLocalData };
+    if (key?.trim() !== '') getLocalData()
+  }, [key])
+
+  return { data: localData, store: storeLocalData }
 }

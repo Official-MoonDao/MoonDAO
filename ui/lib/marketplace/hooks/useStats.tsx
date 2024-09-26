@@ -82,7 +82,7 @@ export function useAssetStats(
         });
       })();
     }
-  }, [assetListings, assetAuctions, contract]);
+  }, [assetListings, assetAuctions, contract, tokenId]);
 
   return stats;
 }
@@ -157,6 +157,6 @@ export function useCollectionStats(
         });
       })();
     }
-  }, [collectionListings, collectionAuctions]);
+  }, [collectionListings, collectionAuctions, collectionContract]);
   return stats;
 }

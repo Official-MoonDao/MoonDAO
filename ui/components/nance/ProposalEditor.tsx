@@ -35,12 +35,11 @@ import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
 import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile"
 import { useLocalStorage } from 'react-use'
-
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })
 
-// Nance Editor
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
 
@@ -101,8 +100,6 @@ export default function ProposalEditor() {
   const [proposalStatus, setProposalStatus] = useState<ProposalStatus>('Discussion')
 
 
-  // get space info to find next Snapshot Vote
-  // we need this to be compliant with the proposal signing format of Snapshot
   const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
   const spaceInfo = spaceInfoData?.data
   const { nextEvents, currentEvent } = spaceInfo || {}
@@ -124,7 +121,7 @@ export default function ProposalEditor() {
     }
   }
 
-  // load proposal if proposalId is present (edit)
+
   const [{ proposalId }] = useQueryParams({ proposalId: StringParam })
   const shouldFetch = !!proposalId
   const { data } = useProposal(
@@ -135,27 +132,27 @@ export default function ProposalEditor() {
 
   const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(`NanceProposalCacheV1-${loadedProposal?.uuid.substring(0, 5) || 'new'}`);
 
-  // request budget form
+
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
   })
   const { handleSubmit, reset, getValues, watch } = methods
 
-  useEffect(() => {
-    if (loadedProposal) {
-      setProposalTitle(loadedProposal.title)
-    }
-  }, [loadedProposal])
-
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
-    setMarkdown?.(trimActionsFromBody(b)) // dynamic load so might be undefined
+    setMarkdown?.(trimActionsFromBody(b)) 
     const actions = getActionsFromBody(b);
     if (!actions) return;
     console.debug('loaded action:', actions)
     setAttachBudget(true)
     reset(actions[0].payload as RequestBudget)
   }
+
+  useEffect(() => {
+    if (loadedProposal) {
+      restoreFromTitleAndBody(loadedProposal.title, loadedProposal.body)
+    }
+  }, [loadedProposal])
 
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
     let proposal = buildProposal(proposalStatus)
@@ -180,7 +177,7 @@ export default function ProposalEditor() {
     signAndSendProposal(proposal)
   }
 
-  // proposal upload
+
   const { wallet } = useAccount()
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
@@ -192,8 +189,8 @@ export default function ProposalEditor() {
       body: getMarkdown(),
       status,
       voteSetup: {
-        type: 'quadratic', // could make this dynamic in the future
-        choices: ['Yes', 'No', 'Abstain'], // could make this dynamic in the future
+        type: 'quadratic',  
+        choices: ['Yes', 'No', 'Abstain'], 
       },
     } as Proposal
   }
@@ -232,7 +229,6 @@ export default function ProposalEditor() {
               toast.success('Proposal submitted successfully!', {
                 style: toastStyle,
               })
-              // next router push
               router.push(`/proposal/${res.data.uuid}`)
             } else {
               setSigningStatus('error')
@@ -286,25 +282,27 @@ export default function ProposalEditor() {
 
 
   return (
-    <div className="flex flex-col justify-center items-center animate-fadeIn w-[90vw] md:w-full">
+    <div className="flex flex-col justify-center items-start animate-fadeIn w-[90vw] md:w-full">
       <Head title='Proposal Editor' />
 
-      <div className="w-full sm:w-[90%] lg:w-3/4">
+      <div className="px-5 pt-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <h1 className="page-title py-10">{loadedProposal ? 'Edit Proposal' : 'New Proposal'}</h1>
-
+          <div className="p-5 pb-0 bg-dark-cool">
           <ProposalLocalCache
             proposalCache={proposalCache}
             clearProposalCache={clearProposalCache}
             restoreProposalCache={restoreFromTitleAndBody}
           />
-
+          </div>
+          <div className="p-5 py-0 rounded-[20px] bg-dark-cool">
           <ProposalTitleInput value={proposalTitle} onChange={(s) => {
             setProposalTitle(s)
             console.debug("setProposalTitle", s)
             const cache = proposalCache || { body: loadedProposal?.body || TEMPLATE }
             setProposalCache({ ...cache, title: s, timestamp: getUnixTime(new Date()) })
           }} />
+          </div>
+          <div className="p-5 pt-0 p-5 pt-0 rounded-t-[20px] rounded-b-[0px] bg-dark-cool">
           <NanceEditor
             initialValue={loadedProposal?.body || TEMPLATE}
             fileUploadExternal={ async (val) => {
@@ -314,8 +312,10 @@ export default function ProposalEditor() {
             darkMode={true}
             onEditorChange={(m) => {saveProposalBodyCache()}}
           />
+          </div>
 
-          <Field as="div" className="flex items-center mt-5">
+          <div className="p-5 rounded-b-[20px] rounded-t-[0px] bg-dark-cool">
+          <Field as="div" className="\ flex items-center mt-5">
             <Switch
               checked={attachBudget}
               onChange={(checked) => {
@@ -343,10 +343,11 @@ export default function ProposalEditor() {
               </span>{' '}
             </Label>
           </Field>
+          </div>
 
           {attachBudget && (
             <FormProvider {...methods}>
-              <div className="my-10">
+              <div className="my-10 p-5 rounded-[20px] bg-dark-cool">
                 <RequestBudgetActionForm disableRequiredFields={proposalStatus === "Draft"} />
               </div>
             </FormProvider>
@@ -360,7 +361,7 @@ export default function ProposalEditor() {
                 type="submit"
                 className={classNames(
                   buttonsDisabled && 'tooltip',
-                  'text-sm px-5 py-3 border border-dashed border-moon-orange font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                  'text-sm px-5 py-3 border border-dashed border-dark-warm font-RobotoMono rounded-[20px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
                 )}
                 onClick={() => {
                   setProposalStatus('Draft')
@@ -372,14 +373,15 @@ export default function ProposalEditor() {
                     : 'You need to connect wallet first.'
                 }
               >
-                {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
+                {signingStatus === 'loading' ? 'Signing...' : (proposalId ? 'Save Draft' : '* Post In Ideation Forum')}
+                
               </button>
               {/* SUBMIT */}
               <button
                 type="submit"
                 className={classNames(
                   buttonsDisabled && 'tooltip',
-                  'px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                  'px-5 py-3 gradient-2 border border-transparent font-RobotoMono rounded-[20px] rounded-tl-[10px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
                 )}
                 onClick={() => {
                   const status =
@@ -399,6 +401,9 @@ export default function ProposalEditor() {
               </button>
             </div>
           </div>
+          {!proposalId && (
+            <p className="mt-2 text-sm text-gray-500 text-right pb-5">*Your submission will be <a href="https://discord.com/channels/914720248140279868/1027658256706961509" target="_blank" rel="noreferrer" className="text-white">posted here</a> for community discussion</p>
+          )}
         </form>
       </div>
     </div>

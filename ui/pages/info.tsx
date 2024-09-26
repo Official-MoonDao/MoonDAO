@@ -1,121 +1,121 @@
-import React from 'react';
-import PreFooter from '../components/layout/PreFooter';
-import Container from '../components/layout/Container';
-import ContentLayout from '../components/layout/ContentLayout';
-import WebsiteHead from '../components/layout/Head';
-import CardGrid from '../components/layout/CardGrid';
-import Image from 'next/image'
+import React from 'react'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import IndexCardGrid from '../components/layout/IndexCardGrid'
+import Container from '../components/layout/Container'
+import ContentLayout from '../components/layout/ContentLayout'
+import WebsiteHead from '../components/layout/Head'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 const cardData = [
   {
-    icon: "/assets/icon-news.svg",
-    iconAlt: "News and Updates",
-    header: "News & Updates",
-    link: "/news",
-    hovertext: "Read More",
+    icon: '/assets/icon-news.svg',
+    iconAlt: 'News and Updates',
+    header: 'News & Updates',
+    link: '/news',
+    hovertext: 'Read More',
     paragraph: (
       <>
-        Weekly updates from MoonDAO about projects, proposals, open votes, and other initiatives. Be sure to subscribe to get updates in your inbox.
+        Weekly updates from MoonDAO about projects, proposals, open votes, and
+        other initiatives. Be sure to subscribe to get updates in your inbox.
       </>
     ),
-    inline: true
+    inline: true,
   },
   {
-    icon: "/assets/icon-about.svg",
-    iconAlt: "About MoonDAO",
-    header: "About MoonDAO",
-    link: "/about",
-    hovertext: "Learn About MoonDAO",
+    icon: '/assets/icon-about.svg',
+    iconAlt: 'About MoonDAO',
+    header: 'About MoonDAO',
+    link: '/about',
+    hovertext: 'Learn About MoonDAO',
     paragraph: (
       <>
-        Learn about how MoonDAO operates, how you can contribute or propose a project, read about our mission and vision, and more.
+        Learn about how MoonDAO operates, how you can contribute or propose a
+        project, read about our mission and vision, and more.
       </>
     ),
-    inline: true
+    inline: true,
   },
   {
-    icon: "/assets/icon-constitution.svg",
-    iconAlt: "Constitution",
-    header: "Our Constitution",
-    link: "https://docs.moondao.com/Governance/Constitution",
-    hovertext: "Read the Constitution",
+    icon: '/assets/icon-constitution.svg',
+    iconAlt: 'Constitution',
+    header: 'Our Constitution',
+    link: 'https://docs.moondao.com/Governance/Constitution',
+    hovertext: 'Read the Constitution',
     paragraph: (
       <>
-        This foundational document guides our governance processes, including the roles of the Senate, Member House, Executive Branch, and more.
+        This foundational document guides our governance processes, including
+        the roles of the Senate, Member House, Executive Branch, and more.
       </>
     ),
-    inline: true
+    inline: true,
   },
   {
-    icon: "/assets/icon-events.svg",
-    iconAlt: "Events",
-    header: "Our Events",
-    link: "/events",
-    hovertext: "Attend an Event",
+    icon: '/assets/icon-events.svg',
+    iconAlt: 'Events',
+    header: 'Our Events',
+    link: '/events',
+    hovertext: 'Attend an Event',
     paragraph: (
       <>
-        Get started by attending one of our upcoming online events to find out how you can contribute to our plans by helping out on a project.
+        Get started by attending one of our upcoming online events to find out
+        how you can contribute to our plans by helping out on a project.
       </>
     ),
-    inline: true
+    inline: true,
   },
   {
-    icon: "/assets/icon-analytics.svg",
-    iconAlt: "MoonDAO Analytics",
-    header: "Analytics",
-    link: "/analytics",
-    hovertext: "Learn More",
+    icon: '/assets/icon-analytics.svg',
+    iconAlt: 'MoonDAO Analytics',
+    header: 'Analytics',
+    link: '/analytics',
+    hovertext: 'Learn More',
     paragraph: (
       <>
-        Transparent data and analytics related to our treasury, token, transactions, and more.
+        Transparent data and analytics related to our treasury, token,
+        transactions, and more.
       </>
     ),
-    inline: true
-  }
-];
+    inline: true,
+  },
+]
 
 const Info: React.FC = () => {
-  const title = "Information Center";
-  const description =
-    "Learn More About The Internet's Space Program";
-  const image = "/assets/moondao-og.jpg";
+  const title = 'Information Center'
+  const description = "Learn More About The Internet's Space Program"
+  const image = '/assets/moondao-og.jpg'
+
+  useChainDefault()
 
   return (
     <>
       <WebsiteHead title={title} description={description} image={image} />
       <section className="w-[calc(100vw-20px)]">
-        <Container 
-          >
+        <Container>
           <ContentLayout
             header="Info Center"
             headerSize="max(20px, 3vw)"
             description={
               <>
-                Learn more about the Internet's Space Program with the latest news and project updates, dive into the documentation, join an upcoming online event, or explore transparent analytics about our treasury and transactions.
+                Learn more about the Internet's Space Program with the latest
+                news and project updates, dive into the documentation, join an
+                upcoming online event, or explore transparent analytics about
+                our treasury and transactions.
               </>
             }
-            preFooter={
-              <>
-                <PreFooter 
-                  mode='compact'
-                />
-              </>
-            }
+            preFooter={<NoticeFooter />}
             mainPadding
-            mode="compact" 
+            mode="compact"
             popOverEffect={false}
+            isProfile
           >
-            <>
-              <CardGrid 
-                cards={cardData} 
-                singleCol={false}
-              />
-            </>
+            <div className="mt-10 mb-10 flex justify-center">
+              <IndexCardGrid cards={cardData} singleCol={false} />
+            </div>
           </ContentLayout>
         </Container>
       </section>
     </>
-  );
+  )
 }
 
-export default Info; 
+export default Info

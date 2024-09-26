@@ -48,6 +48,7 @@ export default function Hero({ topAssets }: any) {
         {/*Here goes the link to the collection and the image*/}
         <Link
           href={`/marketplace/collection/${heroImageArray[currentSlide]?.assetContractAddress}/${heroImageArray[currentSlide]?.tokenId}`}
+          passHref
         >
           <HeroImage asset={heroImageArray[currentSlide]} />
         </Link>

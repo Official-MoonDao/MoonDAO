@@ -30,8 +30,7 @@ const CardGrid: React.FC<CardGridProps> = ({ cards, singleCol = false, threeCol 
       bottomLeft="20px">
       <div id="grid-container" 
         className={`
-          grid gap-[30px] max-w-[1200px] 
-          ${singleCol ? "grid-cols-1" : 
+          flex flex-wrap ${singleCol ? "grid-cols-1" : 
           threeCol ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1 lg:grid-cols-2"}
         `}
         >
@@ -39,7 +38,8 @@ const CardGrid: React.FC<CardGridProps> = ({ cards, singleCol = false, threeCol 
           <div 
             key={index} 
             className={`flex 
-              ${singleCol ? "max-w-[635px]" : ""}
+              ${singleCol ? "max-w-[635px]" : "flex-1"}
+              flex-col // Added to make cards stretch
             `}
             >
             <Card 
