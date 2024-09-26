@@ -1,23 +1,18 @@
 import { ArrowDownIcon } from '@heroicons/react/24/outline'
+import { Ethereum } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
-import { TradeType } from '@uniswap/sdk-core'
-import { SwapRoute } from '@uniswap/smart-order-router'
+import { Token, TradeType } from '@uniswap/sdk-core'
+import { nativeOnChain, SwapRoute } from '@uniswap/smart-order-router'
+import { CHAIN_TOKEN_NAMES, DAI_ADDRESSES } from 'const/config'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
+import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import GasIcon from '../assets/GasIcon'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-
-const nativeSymbols: any = {
-  ethereum: 'ETH',
-  polygon: 'MATIC',
-  arbitrum: 'ETH',
-  sepolia: 'ETH',
-  'arbitrum-sepolia': 'ETH',
-}
 
 export default function NativeToMooney({ selectedChain }: any) {
   const nativeBalance = useNativeBalance()
@@ -30,8 +25,9 @@ export default function NativeToMooney({ selectedChain }: any) {
   const [output, setOutput] = useState<number>()
   const [swapRoute, setSwapRoute] = useState<SwapRoute>()
   const [estimatedGasUsedUSD, setEstimatedGasUsedUSD] = useState<any>(0)
+  const [usdCost, setUSDCost] = useState<string>()
 
-  const { NATIVE, MOONEY } = useUniswapTokens(selectedChain)
+  const { NATIVE, MOONEY, DAI } = useUniswapTokens(selectedChain)
 
   const { generateRoute, executeRoute } = useUniversalRouter(
     amount,
@@ -54,7 +50,44 @@ export default function NativeToMooney({ selectedChain }: any) {
         }
       })
     }
-  }, [amount, selectedChain, inputToken, outputToken, address])
+  }, [amount, selectedChain, inputToken, outputToken, address, generateRoute])
+
+  useEffect(() => {
+    async function getUSDCost() {
+      try {
+        let nativeToDAISwapRoute
+        if (selectedChain.slug === 'polygon') {
+          nativeToDAISwapRoute = await pregenSwapRoute(
+            selectedChain,
+            amount,
+            nativeOnChain(selectedChain.chainId),
+            DAI
+          )
+        } else {
+          nativeToDAISwapRoute = await pregenSwapRoute(
+            Ethereum,
+            amount,
+            nativeOnChain(Ethereum.chainId),
+            new Token(Ethereum.chainId, DAI_ADDRESSES['ethereum'], 18)
+          )
+        }
+
+        const cost =
+          nativeToDAISwapRoute.route[0].rawQuote.toString() / 10 ** 18
+
+        if (cost < 0.01) setUSDCost('<0.01')
+        else if (cost < 1) setUSDCost(cost.toFixed(2))
+        else setUSDCost(String(Math.ceil(cost)))
+      } catch (err) {
+        console.log(err)
+        setUSDCost('0')
+      }
+    }
+
+    if (amount > 0) {
+      getUSDCost()
+    }
+  }, [amount, DAI, selectedChain])
 
   return (
     <div className="max-w-[500px] w-full flex flex-col gap-1">
@@ -77,9 +110,16 @@ export default function NativeToMooney({ selectedChain }: any) {
               height={15}
               alt=""
             />
-            <p>{nativeSymbols[selectedChain?.slug]}</p>
+            <p>{CHAIN_TOKEN_NAMES[selectedChain?.slug]}</p>
           </div>
         </div>
+
+        <div className="min-h-[25px]">
+          {usdCost && (
+            <p className="opacity-50">{`~ $${usdCost.toLocaleString()}`}</p>
+          )}
+        </div>
+
         {address && <p className="opacity-50">{`Balance: ${nativeBalance}`}</p>}
       </div>
       <div className="h-0 w-full flex justify-center items-center z-[5]">
