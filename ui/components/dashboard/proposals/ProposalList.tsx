@@ -22,7 +22,7 @@ export default function ProposalList({
   return (
     <div id="dashboard-proposals">
       <div className="flex flex-row justify-between items-center lg:max-w-[1080px]">
-        <Header text={'Proposals'} />
+        <Header text={'Proposals1'} />
       </div>
 
       <Line />
