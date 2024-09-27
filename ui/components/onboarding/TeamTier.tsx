@@ -39,7 +39,7 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
       <Tier
         price={0.0333}
         label="Create a Team"
-        description="Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future. Be a part of Team Space."
+        description="Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future. We are all a part of Team Space."
         points={[
           'Funding Access: Obtain seed funding from MoonDAO for your bold projects and initiatives.',
           'Professional Network: Hire top talent including full-time roles or posting bounties, and connect with other cutting-edge organizations.',

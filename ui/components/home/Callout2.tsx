@@ -41,7 +41,9 @@ export default function Callout2() {
             className="pt-2 pb-5 text-lg w-[100%] md:w-[100%] lg:max-w-[500px]"
           >
             The Space Acceleration Network is an onchain startup society focused 
-            on building a permanent settlement on the Moon and beyond.
+            on building a permanent settlement on the Moon and beyond. We aim to 
+            connect space visionaries and organizations with the funding, tools, 
+            and support needed to turn bold ideas into reality.
           </p>
           <StandardButton
             backgroundColor="bg-white"
@@ -50,7 +52,7 @@ export default function Callout2() {
             link="/network"
             paddingOnHover="pl-5"
           >
-            Join the Network
+            Explore the Network
           </StandardButton>
         </div>
       </div>

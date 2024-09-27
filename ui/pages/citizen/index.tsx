@@ -54,8 +54,7 @@ export default function Join() {
             <>
               The Space Acceleration Network is an onchain startup society 
               focused on building a permanent settlement on the Moon and beyond. 
-              Please submit an application if you think you'd be a good fit for this 
-              exclusive network.
+              Together we can unlock a multiplanetary future.
             </>
           }
           preFooter={

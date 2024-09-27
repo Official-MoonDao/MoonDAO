@@ -23,7 +23,7 @@ const indexCardData = [
     hovertext: "Submit Your Idea",
     paragraph: (
       <>
-        Allocated $100,000+ (50+ ETH) to space R&D projects through community governance, like open source time standards for PNT on the Moon (shortlisted by DARPA for a grant).
+        Allocated $300,000+ to over 60 projects and space R&D through community governance, like open source time standards for PNT on the Moon (shortlisted by DARPA for a grant).
       </>
     )
   },

@@ -110,7 +110,7 @@ export default function Network({
       <div className="mb-4">
         The Space Acceleration Network is an onchain startup society 
         focused on building a permanent settlement on the Moon and beyond. 
-        Be a part of our multiplanetary future and{' '}
+        Help build our multiplanetary future and{' '}
         <u>
           <Link href="/join">join the network</Link>
         </u>
@@ -160,7 +160,7 @@ export default function Network({
       <Head
         title={'Space Acceleration Network'}
         description={
-          "The Space Acceleration Network is a specialized platform empowering space startups, innovators, industry leaders, and enthusiasts to access funding, resources, and collaborations, fast-tracking humanity's path to a lunar settlement and beyond."
+          "The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond."
         }
       />
       <Container>

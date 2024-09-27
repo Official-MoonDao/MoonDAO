@@ -181,7 +181,35 @@ export default function Lock() {
     <Container>
       <ContentLayout
         header="Lock $MOONEY"
-        description="Manage your $MOONEY lock settings and view your balances."
+        description={
+          <p>
+            {'Playing an active role in MoonDAO governance is simple: '}
+            <button
+              className="underline"
+              onClick={() => {
+                if (!address)
+                  return toast.error('Please connect your wallet')
+                fundWallet(address, {
+                  chain: viemChains[selectedChain.slug],
+                })
+              }}
+            >
+              {'fund your account'}
+            </button>
+            {',  '}
+            <button className="underline">{'swap for $MOONEY'}</button>
+            {', our governance token, and '}
+            <button
+              className="underline"
+              onClick={() => {
+                router.push('/lock')
+              }}
+            >
+              {'lock for voting power'}
+            </button>
+            {'.  '}
+          </p>
+        }
         isProfile
         headerSize="max(20px, 2vw)"
         mode='compact'
