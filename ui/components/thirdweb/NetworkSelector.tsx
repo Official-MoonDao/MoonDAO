@@ -33,7 +33,7 @@ export default function NetworkSelector() {
     <div id="network-selector" className="w-[250px] flex flex-col">
       <div
         id="network-selector-dropdown-button"
-        className="flex items-center gap-2 p-2 bg-[#0f152f] rounded-lg"
+        className="flex items-center gap-2 p-2 bg-darkest-cool rounded-lg"
         onClick={(e) => {
           if (e.detail === 0) return e.preventDefault()
           setDropdown((prev) => !prev)
@@ -93,18 +93,20 @@ export default function NetworkSelector() {
             />
             {'Arbitrum'}
           </button>
-          <button
-            className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-            onClick={() => selectChain(Sepolia)}
-          >
-            <Image
-              src="/icons/networks/ethereum.svg"
-              width={13}
-              height={13}
-              alt="Sepolia"
-            />
-            {'Sepolia'}
-          </button>
+          {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+            <button
+              className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
+              onClick={() => selectChain(Sepolia)}
+            >
+              <Image
+                src="/icons/networks/ethereum.svg"
+                width={13}
+                height={13}
+                alt="Sepolia"
+              />
+              {'Sepolia'}
+            </button>
+          )}
         </div>
       )}
     </div>

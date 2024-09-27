@@ -1,5 +1,4 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { Chain } from '@thirdweb-dev/chains'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -12,7 +11,7 @@ Button States:
 */
 
 type PrivyWeb3BtnProps = {
-  label: string
+  label: any
   type?: string
   action: Function
   isDisabled?: boolean
@@ -20,6 +19,7 @@ type PrivyWeb3BtnProps = {
   onSuccess?: Function
   onError?: Function
   skipNetworkCheck?: boolean
+  requiredChain?: any
 }
 
 function Button({
@@ -51,8 +51,9 @@ export function PrivyWeb3Button({
   onSuccess,
   onError,
   skipNetworkCheck = false,
+  requiredChain,
 }: PrivyWeb3BtnProps) {
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { user, login } = usePrivy()
   const { wallets } = useWallets()
@@ -62,11 +63,18 @@ export function PrivyWeb3Button({
   const [btnState, setBtnState] = useState(0)
 
   useEffect(() => {
+    console.log(requiredChain, selectedChain)
+
     if (!user) {
       setBtnState(0)
     } else if (
       !skipNetworkCheck &&
       selectedChain.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
+    ) {
+      setBtnState(1)
+    } else if (
+      requiredChain &&
+      requiredChain.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
     ) {
       setBtnState(1)
     } else {
@@ -86,6 +94,10 @@ export function PrivyWeb3Button({
           type="button"
           className={className}
           onClick={async () => {
+            if (requiredChain && requiredChain !== selectedChain) {
+              setSelectedChain(requiredChain)
+            }
+
             try {
               await wallets[selectedWallet]?.switchChain(selectedChain.chainId)
             } catch (err: any) {

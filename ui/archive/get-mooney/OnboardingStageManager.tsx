@@ -1,6 +1,7 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
+import { nativeOnChain } from '@uniswap/smart-order-router'
 import Link from 'next/link'
 import { useEffect, useState, useRef, useMemo, useContext } from 'react'
 import ChainContext from '../../lib/thirdweb/chain-context'
@@ -8,15 +9,15 @@ import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBala
 import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useUniswapTokens } from '../../lib/uniswap/hooks/useUniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
+import L2Toggle from '../../components/lock/L2Toggle'
+import NetworkSelector from '../../components/thirdweb/NetworkSelector'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../../const/config'
-import L2Toggle from '../lock/L2Toggle'
 import { ContributionLevels } from './ContributionLevels'
 import { InvolvementOptions } from './InvolvementOptions'
 import { OnboardingCongrats } from './OnboardingCongrats'
 import { OnboardingTransactions } from './OnboardingTransactions'
-import { nativeOnChain } from '@uniswap/smart-order-router'
 
 /*
 Onboarding Stages:
@@ -29,11 +30,7 @@ Onboarding Stages:
 const isDevEnv = process.env.NODE_ENV === 'development'
 
 function StageContainer({ children }: any) {
-  return (
-    <section className="w-full font-Roboto">
-      {children}
-    </section>
-  )
+  return <section className="w-full font-Roboto">{children}</section>
 }
 
 export function OnboardingStageManager({ usdQuotes }: any) {
@@ -244,38 +241,8 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   const StepTwo = () => (
     <StageContainer>
       <div className="flex flex-col items-center lg:items-start px-4 lg:px-7 xl:px-9 lg:max-w-[1080px]">
-        <div className="flex flex-col w-full">
-          <h1 className="font-GoodTimes text-[#071732] dark:text-white text-4xl sm:text-5xl lg:text-4xl xl:text-5xl text-center lg:text-left">
-            Quickstart Onboarding
-          </h1>
-
-          {+selectedChain.chainId === 1 ? (
-            <p className="absolut  mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white  px-2 py-2 xl:py-3 xl:px-4 2xl:max-w-[750px] text-center xl:text-left text-sm xl:text-base font-[Lato]">
-              Warning: The Ticket to Space Sweepstakes is on Polygon. If you
-              continue with Ethereum you must bridge your $MOONEY to Polygon to
-              participate. Learn how to bridge your $MOONEY with our
-              <a
-                className="text-moon-gold"
-                href="https://youtu.be/oQtHjbcbAio?feature=shared"
-              >
-                {' '}
-                video tutorial
-              </a>
-              or read the
-              <a
-                className="text-moon-gold"
-                href="https://wallet.polygon.technology/polygon/bridge/deposit"
-              >
-                {' '}
-                guide
-              </a>
-              .
-            </p>
-          ) : (
-            <div></div>
-          )}
-        </div>
-        <div className="py-4 flex items-center gap-12 w-full">
+        <div className="flex flex-col w-full"></div>
+        <div className="py-4 flex flex-col md:flex-row items-center justify-center gap-12 w-full">
           <button
             className="py-2 px-4 lg:py-3 lg:px-5 lg:self-start transition-all duration-105 hover:scale-105 inline-flex items-center space-x-3 mb-3 lg:mb-0"
             onClick={() => {
@@ -286,7 +253,9 @@ export function OnboardingStageManager({ usdQuotes }: any) {
             <input type="image" src="/backIcon.png" />
             <span>Back</span>
           </button>
-          <L2Toggle />
+          <div className="relative bottom-2 lg:bottom-0">
+            <NetworkSelector />
+          </div>
         </div>
         <OnboardingTransactions
           setStage={setStage}

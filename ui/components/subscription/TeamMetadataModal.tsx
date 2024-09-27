@@ -2,7 +2,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { useContract, useResolvedMediaType } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { TEAM_TABLE_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN, TEAM_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
@@ -132,6 +132,7 @@ export default function TeamMetadataModal({
           <div>
             <p>Submit your new info</p>
             <PrivyWeb3Button
+              requiredChain={DEFAULT_CHAIN}
               label="Submit"
               action={async () => {
                 const accessToken = await getAccessToken()

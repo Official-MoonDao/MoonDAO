@@ -1,4 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { DEFAULT_CHAIN } from 'const/config'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import cleanData from '@/lib/tableland/cleanData'
@@ -45,7 +46,10 @@ export default function TeamJobModal({
         }
   )
 
-  const isValid = jobData.title.trim() !== '' && jobData.description.trim() !== '' && jobData.contactInfo.trim() !== '';
+  const isValid =
+    jobData.title.trim() !== '' &&
+    jobData.description.trim() !== '' &&
+    jobData.contactInfo.trim() !== ''
 
   return (
     <Modal id="team-job-modal-backdrop" setEnabled={setEnabled}>
@@ -137,11 +141,14 @@ export default function TeamJobModal({
         </div>
 
         <PrivyWeb3Button
+          requiredChain={DEFAULT_CHAIN}
           label={edit ? 'Edit Job' : 'Add Job'}
           type="submit"
           isDisabled={isLoading}
           action={() => {}}
-          className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${!isValid ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${
+            !isValid ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         />
         {isLoading && (
           <p className="opacity-60">{`This action may take up to 60 seconds. You can close this modal at any time.`}</p>

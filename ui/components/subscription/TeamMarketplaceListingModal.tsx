@@ -1,6 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { MediaRenderer } from '@thirdweb-dev/react'
+import { DEFAULT_CHAIN } from 'const/config'
 import Image from 'next/image'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
@@ -62,7 +63,8 @@ export default function TeamMarketplaceListingModal({
         }
   )
 
-  const isValid = listingData.title.trim() !== '' &&
+  const isValid =
+    listingData.title.trim() !== '' &&
     listingData.description.trim() !== '' &&
     listingData.price.trim() !== ''
 
@@ -80,6 +82,10 @@ export default function TeamMarketplaceListingModal({
             listingData.price.trim() === ''
           )
             return toast.error('Please fill out all fields')
+
+          if (!listingData.image) {
+            return toast.error('Please upload an image')
+          }
 
           setIsLoading(true)
 
@@ -243,11 +249,14 @@ export default function TeamMarketplaceListingModal({
           </div>
         </div>
         <PrivyWeb3Button
+          requiredChain={DEFAULT_CHAIN}
           label={edit ? 'Edit Listing' : 'Add Listing'}
           type="submit"
           isDisabled={isLoading || !isValid} // Disable if loading or invalid
           action={() => {}}
-          className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${!isValid ? 'opacity-50 cursor-not-allowed' : ''}`} // Updated class for opacity and rounding
+          className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${
+            !isValid ? 'opacity-50 cursor-not-allowed' : ''
+          }`} // Updated class for opacity and rounding
         />
 
         {isLoading && (

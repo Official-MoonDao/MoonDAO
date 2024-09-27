@@ -1,6 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useAddress } from '@thirdweb-dev/react'
-import { TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN, TEAM_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -110,6 +110,7 @@ export function SubscriptionModal({
             } ETH`}
           </p>
           <PrivyWeb3Button
+            requiredChain={DEFAULT_CHAIN}
             label="Extend Subscription"
             type="submit"
             action={() => {}}

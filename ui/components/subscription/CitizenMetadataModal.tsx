@@ -2,7 +2,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { useContract, useResolvedMediaType } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { CITIZEN_TABLE_ADDRESSES } from 'const/config'
+import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -155,6 +155,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
           <div>
             <p>Submit your new info</p>
             <PrivyWeb3Button
+              requiredChain={DEFAULT_CHAIN}
               label="Submit"
               action={async () => {
                 const accessToken = await getAccessToken()
