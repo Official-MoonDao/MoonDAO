@@ -35,9 +35,9 @@ export default function Join({ usdQuotes }: any) {
             headerSize="max(20px, 3vw)"
             description={
               <p>
-                {'Getting started with MoonDAO is simple: 1) '}
+                {'Playing an active role in MoonDAO governance is simple: '}
                 <button
-                  className="font-bold"
+                  className="underline"
                   onClick={() => {
                     if (!address)
                       return toast.error('Please connect your wallet')
@@ -46,19 +46,20 @@ export default function Join({ usdQuotes }: any) {
                     })
                   }}
                 >
-                  {'Fund your account'}
+                  {'fund your account'}
                 </button>
-                {' 2) '}
-                <button className="font-bold">{'Swap for $MOONEY'}</button>
-                {', our governance token, and 3) '}
+                {',  '}
+                <button className="underline">{'swap for $MOONEY'}</button>
+                {', our governance token, and '}
                 <button
-                  className="font-bold"
+                  className="underline"
                   onClick={() => {
                     router.push('/lock')
                   }}
                 >
-                  {'Lock for voting power'}
+                  {'lock for voting power'}
                 </button>
+                {'.  '}
               </p>
             }
             preFooter={<NoticeFooter />}

@@ -108,7 +108,9 @@ export default function Marketplace({ listings }: MarketplaceProps) {
         <ContentLayout
           header="Marketplace"
           headerSize="max(20px, 3vw)"
-          description={descriptionSection}
+          description={
+            <p>Cast your vote for active proposals and view the vote record and history for all past proposals. You can <u><a href="/propose">submit a proposal</a></u> to receive financing or support from the MoonDAO community. Please refer to <u><a href="https://docs.moondao.com/Projects/Project-System" target="_blank">our documentation</a></u> for more details on the project system and governance processes.</p>
+          }
           preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"

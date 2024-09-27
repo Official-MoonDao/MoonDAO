@@ -21,25 +21,25 @@ export default function Callout1() {
           >
             <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold bg-clip-text text-dark-cool bg-gradient-to-r from-red-500 to-blue-500 leading-none">
               MoonDAO is <br></br>
-              Community-Built
+              Permissionless
             </h1>
             <p
               id="paragraph"
               className="pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]"
             >
-              We are an open, global space community where everything is
-              proposed, governed, and created by our members. MoonDAO is where
-              space dreamers and serious builders unite.
+              We are an open source space community where everything is
+              proposed, governed, and created by our members. Co-govern the treasury 
+              by locking $MOONEY to become a fully-fledged voter. 
             </p>
             <StandardButton
               backgroundColor="bg-dark-cool"
               textColor="text-white"
               hoverColor="bg-mid-cool"
               borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-              link="https://moondao.com/discord"
+              link="/get-mooney"
               paddingOnHover="pl-5"
             >
-              Join Our Discord
+              Unlock Voting Power
             </StandardButton>
           </div>
         </div>
