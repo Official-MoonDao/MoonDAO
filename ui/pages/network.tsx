@@ -305,7 +305,7 @@ export async function getStaticProps() {
   return {
     props: {
       filteredTeams: filteredValidTeams.reverse(),
-      filteredCitizens: filteredValidCitizens,
+      filteredCitizens: filteredValidCitizens.reverse(),
     },
     revalidate: 60,
   }
