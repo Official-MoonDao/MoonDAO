@@ -47,6 +47,7 @@ export default function Network({
 
   const [tab, setTab] = useState<string>('teams')
   function loadByTab(tab: string) {
+    setPageIdx(1)
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
     } else if (tab === 'citizens') {
@@ -64,7 +65,6 @@ export default function Network({
           : []
       setCachedNFTs(input != '' ? filterBySearch(nfts) : nfts)
     }
-    // shallowQueryRoute({ type: tab })
   }
 
   const [maxPage, setMaxPage] = useState(1)
