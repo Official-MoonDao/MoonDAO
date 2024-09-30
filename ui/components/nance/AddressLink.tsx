@@ -17,7 +17,7 @@ export function ShortAddressLink({ address }: { address: string | undefined }) {
   } = mainnet
 
   if (!address) {
-    return <span>(sponsor required)</span>
+    return <span>❌ Missing address</span>
   }
 
   return (

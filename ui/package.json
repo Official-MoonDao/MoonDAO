@@ -24,7 +24,7 @@
     "@nance/nance-editor": "1.8.2",
     "@nance/nance-hooks": "^3.1.1",
     "@nance/nance-sdk": "^3.1.1",
-    "@privy-io/react-auth": "^1.78.0",
+    "@privy-io/react-auth": "^1.83.1",
     "@privy-io/server-auth": "^1.7.3",
     "@privy-io/wagmi-connector": "^0.1.12",
     "@react-three/drei": "^9.86.0",
@@ -41,7 +41,7 @@
     "@typeform/embed": "^4.5.0",
     "@typeform/embed-react": "^3.17.0",
     "@uniswap/sdk-core": "^4.0.7",
-    "@uniswap/smart-order-router": "^3.19.2",
+    "@uniswap/smart-order-router": "github:namedotget/smart-order-router#main",
     "@uniswap/universal-router-sdk": "^2.0.2",
     "@upstash/ratelimit": "^2.0.1",
     "@upstash/redis": "^1.33.0",
@@ -94,7 +94,8 @@
     "three": "^0.156.1",
     "typescript": "^5.1.6",
     "urql": "^4.0.4",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "viem": "^2.21.10"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.13",

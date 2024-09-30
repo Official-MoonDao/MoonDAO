@@ -403,7 +403,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         popOverEffect={false}
         branded={false}
         isProfile
-        preFooter={<NoticeFooter />}
+        preFooter={<NoticeFooter darkBackground={true} />}
       >
         <div
           id="page-container"

@@ -1,12 +1,11 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useAddress } from '@thirdweb-dev/react'
-import { TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN, TEAM_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Modal from '../layout/Modal'
-import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export function SubscriptionModal({
@@ -31,7 +30,7 @@ export function SubscriptionModal({
 
   return (
     <Modal id="subscription-modal" setEnabled={setEnabled}>
-      <div className="flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md z-[1000]">
+      <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool h-screen md:h-auto">
         <div className="w-full flex items-center justify-between">
           <h2 className="font-GoodTimes">Extend Subscription</h2>
           <button
@@ -111,6 +110,7 @@ export function SubscriptionModal({
             } ETH`}
           </p>
           <PrivyWeb3Button
+            requiredChain={DEFAULT_CHAIN}
             label="Extend Subscription"
             type="submit"
             action={() => {}}

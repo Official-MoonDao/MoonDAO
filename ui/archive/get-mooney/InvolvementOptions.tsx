@@ -70,7 +70,7 @@ export function InvolvementOptions() {
 
   return (
     <div className="mt-5 flex flex-col xl:flex-row gap-2 xl:gap-3 2xl:gap-8">
-      <Card
+      {/* <Card
         label={'Enter the Sweepstakes'}
         description={'Take the leap, for the chance to win a trip to space!'}
         icon={<TicketIcon width={50} />}
@@ -78,7 +78,7 @@ export function InvolvementOptions() {
         onClick={() => {
           router.push('/sweepstakes')
         }}
-      />
+      /> */}
       <Card
         label={'Stay Informed'}
         description={

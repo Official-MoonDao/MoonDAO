@@ -24,7 +24,7 @@ export default function RequestingTokensOfProposal({
     <div className="flex items-center gap-x-1">
       <BanknotesIcon className="h-6 w-6 flex-none rounded-full text-gray-900 dark:text-white" />
       <div>
-        <p className="text-gray-500">Requesting</p>
+        <p className="text-gray-500 dark:text-gray-400">Requesting</p>
         <div className="text-center">
           <TokensOfProposal actions={actions} />
         </div>

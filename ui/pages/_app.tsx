@@ -9,6 +9,7 @@ import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
 
+
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const [selectedChain, setSelectedChain]: any = useState<Chain>(
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
@@ -22,6 +23,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
 
   return (
     <>
+      
       <GTag GTAG={process.env.NEXT_PUBLIC_GTAG as string} />
       <ChainContext.Provider value={{ selectedChain, setSelectedChain }}>
         <PrivyProvider

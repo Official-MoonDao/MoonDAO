@@ -1,5 +1,6 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress, useSDK } from '@thirdweb-dev/react'
+import { DEFAULT_CHAIN } from 'const/config'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -23,10 +24,10 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
   async function donate() {
     //check network
     if (
-      selectedChain.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
+      DEFAULT_CHAIN.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
     ) {
       toast.error(`Please switch to ${selectedChain.name}`)
-      return wallets[selectedWallet]?.switchChain(selectedChain.chainId)
+      return wallets[selectedWallet]?.switchChain(DEFAULT_CHAIN.chainId)
     }
 
     try {

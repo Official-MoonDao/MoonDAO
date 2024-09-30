@@ -1,3 +1,5 @@
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 interface DeploymentConfig {
@@ -29,6 +31,9 @@ const sepoliaConfig =
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
 
+export const DEFAULT_CHAIN =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+
 export const MOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.MOONEYToken,
   polygon: polygonConfig.MOONEYToken,
@@ -53,6 +58,13 @@ export const USDC_ADDRESSES: Index = {
   arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
 }
 
+export const USDT_ADDRESSES: Index = {
+  ethereum: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+  polygon: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+  sepolia: '0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0',
+  arbitrum: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+}
+
 export const MOONEY_DECIMALS = 10 ** 18
 
 export const VMOONEY_ADDRESSES: Index = {
@@ -69,27 +81,27 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 }
 
 export const CITIZEN_ADDRESSES: Index = {
-  arbitrum: '0x932BFF3f7af8c720041691e7e9a12Ae4c55fCA13',
+  arbitrum: '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002',
   sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x00531A1996d00366fad0C9d21726F91060C3D333',
+  arbitrum: '0x8F14E436fa0fFcD4239733686d190F1e4F1b84E6',
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
-  arbitrum: '0xEdEf4749b01679D2FA633af01dAf951C01c7809a',
+  arbitrum: '0xd594DBF360D666c94615Fb186AF3cB1018Be1616',
   sepolia: '',
 }
 
 export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0x8459ccdE1b2D89685995Dd01223d1469ed73a4b9',
+  arbitrum: '0x755D48e6C3744B723bd0326C57F99A92a3Ca3287',
   sepolia: '',
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0xc8c2374e1756325dBa674C972d9c302C53865CbD',
+  arbitrum: '0xa7879adeFc81884c76342741FbDdE5BfDceAaB36',
   sepolia: '',
 }
 
@@ -181,3 +193,10 @@ export const HATS_PASSTHROUGH_MODULE_ADDRESS =
 export const TABLELAND_ENDPOINT = `https://${
   process.env.NEXT_PUBLIC_CHAIN != 'mainnet' ? 'testnets.' : ''
 }tableland.network/api/v1/query`
+
+export const CHAIN_TOKEN_NAMES: Index = {
+  ethereum: 'ETH',
+  polygon: 'MATIC',
+  arbitrum: 'ETH',
+  sepolia: 'ETH',
+}

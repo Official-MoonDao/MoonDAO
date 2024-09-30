@@ -34,7 +34,6 @@ export default function Network({
   filteredCitizens,
 }: NetworkProps) {
   const router = useRouter()
-  const shallowQueryRoute = useShallowQueryRoute()
 
   const [input, setInput] = useState('')
   function filterBySearch(nfts: NFT[]) {
@@ -46,8 +45,9 @@ export default function Network({
     })
   }
 
-  const [tab, setTab] = useState<string>('all')
+  const [tab, setTab] = useState<string>('teams')
   function loadByTab(tab: string) {
+    setPageIdx(1)
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
     } else if (tab === 'citizens') {
@@ -65,7 +65,6 @@ export default function Network({
           : []
       setCachedNFTs(input != '' ? filterBySearch(nfts) : nfts)
     }
-    // shallowQueryRoute({ type: tab })
   }
 
   const [maxPage, setMaxPage] = useState(1)
@@ -80,7 +79,6 @@ export default function Network({
 
     if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 9))
     if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 9))
-    if (tab === 'all') setMaxPage(Math.ceil((totalTeams + totalCitizens) / 9))
   }, [tab, input, filteredCitizens, filteredTeams])
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
@@ -88,20 +86,8 @@ export default function Network({
   const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
-    const type = router.query.type
-    if (type) {
-      setTab(type as string)
-    }
-  }, [router])
-
-  useEffect(() => {
     loadByTab(tab)
   }, [tab, input, filteredTeams, filteredCitizens, router.query])
-
-  useEffect(() => {
-    if (router.query.type || router.asPath === '/directory')
-      shallowQueryRoute({ type: tab })
-  }, [tab, shallowQueryRoute, router])
 
   useChainDefault()
 
@@ -125,14 +111,6 @@ export default function Network({
       >
         <Frame noPadding>
           <div className="flex flex-wrap text-sm bg-filter">
-            <Tab
-              tab="all"
-              currentTab={tab}
-              setTab={setTab}
-              icon="/../.././assets/icon-star.svg"
-            >
-              All
-            </Tab>
             <Tab
               tab="teams"
               currentTab={tab}
@@ -326,8 +304,8 @@ export async function getStaticProps() {
 
   return {
     props: {
-      filteredTeams: filteredValidTeams,
-      filteredCitizens: filteredValidCitizens,
+      filteredTeams: filteredValidTeams.reverse(),
+      filteredCitizens: filteredValidCitizens.reverse(),
     },
     revalidate: 60,
   }

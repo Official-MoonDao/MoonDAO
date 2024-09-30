@@ -1,5 +1,8 @@
+import Link from 'next/link'
 import Speaker from '../home/Speaker'
 import StandardButton from '../layout/StandardButton'
+import CitizenTier from '../onboarding/CitizenTier'
+import TeamTier from '../onboarding/TeamTier'
 
 export default function Callout2() {
   return (
@@ -7,7 +10,7 @@ export default function Callout2() {
       <div
         id="callout2-container"
         className="z-10 md:rounded-tl-[5vmax] relative flex flex-col items-end lg:items-start justify-end pt-0 lg:pt-5 p-5 pb-[5vmax] md:pr-10 md:pl-10 min-h-[250px] lg:min-h-[600px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40%"
-        >
+      >
         <div id="background-elements">
           <div
             id="background-gradient"
@@ -29,7 +32,7 @@ export default function Callout2() {
         <div
           id="content"
           className="relative pt-[220px] lg:pt-20 md:pb-0 w-full pr-5 lg:w-[70%]"
-          >
+        >
           <h1 className="header font-GoodTimes">
             Space is for<br></br>
             EVERYONE
@@ -37,7 +40,7 @@ export default function Callout2() {
           <p
             id="paragraph"
             className="pt-2 pb-5 text-lg w-[100%] md:w-[100%] lg:max-w-[500px]"
-            >
+          >
             Space should belong to the people, not the select few. We envision a
             future where space is by the people for the people, irrespective of
             borders. Our mission is to accelerate the development of a
@@ -48,21 +51,26 @@ export default function Callout2() {
             backgroundColor="bg-white"
             textColor="text-dark-cool"
             borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-            link="https://moondao.com/join"
+            link="/network"
             paddingOnHover="pl-5"
-            >
-            Become A Citizen
+          >
+            Join Our Network
           </StandardButton>
         </div>
       </div>
+
+      <Link href="/citizen" passHref>
+        <CitizenTier setSelectedTier={() => {}} compact />
+      </Link>
+
       <div
         id="our-astronauts-section"
         className="sm:px-2 md:p-5 z-50 flex flex-col items-start overflow-hidden"
-        >
+      >
         <div
           id="astronauts-container"
           className="p-1 flex flex-wrap w-full justify-center sm:justify-around md:justify-start lg:ml-[5%] gap-5 scale-[90%] md:scale-[100%] lg:scale-[115%] my-[20px] z-50"
-          >
+        >
           <Speaker
             alt="Coby Cotton"
             logo="/assets/astronaut-coby.png"

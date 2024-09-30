@@ -1,4 +1,5 @@
 import useTranslation from 'next-translate/useTranslation'
+import React from 'react'
 import { useEffect, useState } from 'react'
 import AnalyticsPage from '../components/dashboard/analytics/AnalyticsPage'
 import TreasuryPage from '../components/dashboard/treasury/TreasuryPage'

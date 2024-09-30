@@ -1,5 +1,6 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress, useSDK } from '@thirdweb-dev/react'
+import { DEFAULT_CHAIN } from 'const/config'
 import Image from 'next/image'
 import { useContext } from 'react'
 import toast from 'react-hot-toast'
@@ -64,12 +65,12 @@ export default function TeamTreasury({
               onClick={async () => {
                 if (!address) return toast.error('Please connect your wallet')
                 if (!splitAddress) return toast.error('No split address found')
-                console.log(splitAddress)
-                if (
-                  selectedChain.chainId !==
+
+                const walletChainId =
                   +wallets[selectedWallet]?.chainId.split(':')[1]
-                ) {
-                  wallets[selectedWallet]?.switchChain(selectedChain.chainId)
+
+                if (DEFAULT_CHAIN.chainId !== walletChainId) {
+                  wallets[selectedWallet]?.switchChain(DEFAULT_CHAIN.chainId)
                   return toast.error(`Please switch to ${selectedChain.name}`)
                 }
 

@@ -27,7 +27,7 @@ export default function Home() {
         <Callout3 />
         <PartnerSection />
         <PageEnder />
-        <Footer />
+        <Footer darkBackground={true} />
       </div>
     </Container>
   )

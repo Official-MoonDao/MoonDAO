@@ -25,7 +25,7 @@ export function LockData({
 }: any) {
   const { t } = useTranslation('common')
   return (
-    <section id="lock-data" className="mt-6 xl:mt-6 xl:w-3/4">
+    <section id="lock-data" className="mt-6 xl:mt-6 xl:w-3/4 bg-dark-cool rounded-[20px] overflow-hidden">
       {/*Lock Data*/}
       {hasLock && (
         <>

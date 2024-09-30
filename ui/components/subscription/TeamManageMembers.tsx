@@ -2,11 +2,14 @@ import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { TrashIcon } from '@heroicons/react/24/outline'
 import { useAddress, useResolvedMediaType, useSDK } from '@thirdweb-dev/react'
-import { HATS_ADDRESS } from 'const/config'
+import { DEFAULT_CHAIN, HATS_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import useCitizen from '@/lib/citizen/useCitizen'
 import { useHatData } from '@/lib/hats/useHatData'
+import useHatNames from '@/lib/hats/useHatNames'
+import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useSafe from '@/lib/safe/useSafe'
 import HatsABI from '../../const/abis/Hats.json'
 import Modal from '../layout/Modal'
@@ -57,8 +60,13 @@ function HatOption({ hat }: any) {
   )
 }
 
-function TeamMember({
-  hat,
+function TeamMemberName({ selectedChain, address }: any) {
+  const citizenNFT = useCitizen(selectedChain, undefined, address)
+  return <p className="font-bold">{citizenNFT?.metadata?.name}</p>
+}
+
+function TeamMembers({
+  wearer,
   selectedChain,
   hatsContract,
   teamContract,
@@ -68,56 +76,72 @@ function TeamMember({
   managerHatId,
 }: any) {
   const sdk = useSDK()
-  const hatData = useHatData(selectedChain, hatsContract, hat.id)
+
+  const hatNames = useHatNames(hatsContract, wearer.hatIds)
 
   return (
     <>
-      {hat.wearers.map((w: any, i: number) => (
-        <div key={`modal-team-member-wearer-${i}`} className="bg-dark-cool rounded-[1vmax] mb-2 p-5">
-          <div className="flex justify-between">
-            <p className="font-bold">{hatData.name}</p>
-            <button
-              onClick={async () => {
-                try {
-                  const memberHatPassthroughModuleAddress =
-                    await teamContract?.call('memberPassthroughModule', [
-                      teamId,
-                    ])
-
-                  const iface = new ethers.utils.Interface(HatsABI)
-                  const txData = iface.encodeFunctionData(
-                    'setHatWearerStatus',
-                    [hat.id, w.id, false, true]
-                  )
-
-                  if (hat.id === hatIdDecimalToHex(managerHatId.toString())) {
-                    await queueSafeTx({
-                      to: HATS_ADDRESS,
-                      data: txData,
-                      value: '0',
-                      gasLimit: 1000000,
-                    })
-                    setHasDeletedMember(true)
-                  } else {
-                    const signer = sdk?.getSigner()
-                    await signer?.sendTransaction({
-                      to: memberHatPassthroughModuleAddress,
-                      data: txData,
-                      value: '0',
-                      gasLimit: 1000000,
-                    })
-                  }
-                } catch (err) {
-                  console.log(err)
-                }
-              }}
+      <div
+        key={`modal-team-member-wearer-${wearer.address}`}
+        className="bg-dark-cool rounded-[1vmax] mb-2 p-5"
+      >
+        <TeamMemberName
+          selectedChain={selectedChain}
+          address={wearer.address}
+        />
+        <p>{`${wearer.address.slice(0, 5)}...${wearer.address.slice(-5)}`}</p>
+        <div className="mt-2 flex flex-col gap-2">
+          {hatNames?.map((hatName: any) => (
+            <div
+              key={`team-member-hat-${wearer.address}-${hatName.name}`}
+              className="flex items-start"
             >
-              <TrashIcon className="h-6 w-6 text-white" aria-hidden="true" />
-            </button>
-          </div>
-          <p>{`${w.id.slice(0, 5)}...${w.id.slice(-5)}`}</p>
+              <button
+                onClick={async () => {
+                  try {
+                    const memberHatPassthroughModuleAddress =
+                      await teamContract?.call('memberPassthroughModule', [
+                        teamId,
+                      ])
+
+                    const iface = new ethers.utils.Interface(HatsABI)
+                    const txData = iface.encodeFunctionData(
+                      'setHatWearerStatus',
+                      [hatName.hatId, wearer.address, false, true]
+                    )
+
+                    if (
+                      hatName.hatId ===
+                      hatIdDecimalToHex(managerHatId.toString())
+                    ) {
+                      await queueSafeTx({
+                        to: HATS_ADDRESS,
+                        data: txData,
+                        value: '0',
+                        gasLimit: 1000000,
+                      })
+                      setHasDeletedMember(true)
+                    } else {
+                      const signer = sdk?.getSigner()
+                      await signer?.sendTransaction({
+                        to: memberHatPassthroughModuleAddress,
+                        data: txData,
+                        value: '0',
+                        gasLimit: 1000000,
+                      })
+                    }
+                  } catch (err) {
+                    console.log(err)
+                  }
+                }}
+              >
+                <TrashIcon className="h-6 w-6 text-white" aria-hidden="true" />
+              </button>
+              <p className="">{hatName.name}</p>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </>
   )
 }
@@ -137,6 +161,8 @@ function TeamManageMembersModal({
   const address = useAddress()
 
   const reversedHats = hats.slice().reverse()
+
+  const uniqueWearers = useUniqueHatWearers(hats)
 
   //Add member form
   const [hasAddedMember, setHasAddedMember] = useState<boolean>(false)
@@ -181,19 +207,20 @@ function TeamManageMembersModal({
 
         <div className="border-b-[3px] border-dark-cool rounded-[2vmax] w-full">
           <div className="px-2 pb-0 rounded-[2vmax] bg-darkest-cool w-full flex flex-col max-h-[500px] overflow-auto border-t-[10px] border-b-[10px] border-darkest-cool">
-            {hats.map((hat: any, i: number) => (
-              <TeamMember
-                key={`modal-team-member-${i}`}
-                hat={hat}
-                selectedChain={selectedChain}
-                hatsContract={hatsContract}
-                teamContract={teamContract}
-                teamId={teamId}
-                queueSafeTx={queueSafeTx}
-                setHasDeletedMember={setHasDeletedMember}
-                managerHatId={managerHatId}
-              />
-            ))}
+            {uniqueWearers?.[0] &&
+              uniqueWearers.map((w: any, i: number) => (
+                <TeamMembers
+                  key={`modal-team-member-${i}`}
+                  wearer={w}
+                  selectedChain={selectedChain}
+                  hatsContract={hatsContract}
+                  teamContract={teamContract}
+                  teamId={teamId}
+                  queueSafeTx={queueSafeTx}
+                  setHasDeletedMember={setHasDeletedMember}
+                  managerHatId={managerHatId}
+                />
+              ))}
           </div>
         </div>
         {hasDeletedMember && (
@@ -284,7 +311,11 @@ function TeamManageMembersModal({
                 ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <svg
+                  className="fill-current h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                >
                   <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                 </svg>
               </div>
@@ -301,6 +332,7 @@ function TeamManageMembersModal({
             />
           </div>
           <PrivyWeb3Button
+            requiredChain={DEFAULT_CHAIN}
             label="Add Member"
             type="submit"
             className={`w-full mt-[-1px] w-full gradient-2 rounded-[2vmax] rounded-tr-[5px] ${

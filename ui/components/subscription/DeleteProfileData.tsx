@@ -1,5 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useResolvedMediaType } from '@thirdweb-dev/react'
+import { DEFAULT_CHAIN } from 'const/config'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
@@ -9,6 +10,7 @@ import deleteResponse from '@/lib/typeform/deleteResponse'
 import { getAttribute } from '@/lib/utils/nft'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type DeleteProfileDataProps = {
   nft: any
@@ -57,10 +59,11 @@ function DeleteProfileDataModal({
           >
             Cancel
           </StandardButton>
-          <StandardButton
-            className="gradient-2"
-            disabled={isLoading}
-            onClick={async () => {
+          <PrivyWeb3Button
+            requiredChain={DEFAULT_CHAIN}
+            label={isLoading ? 'Loading...' : 'Delete'}
+            isDisabled={isLoading}
+            action={async () => {
               const accessToken = await getAccessToken()
               await createSession(accessToken)
               setIsLoading(true)
@@ -130,9 +133,7 @@ function DeleteProfileDataModal({
               setIsLoading(false)
               await destroySession(accessToken)
             }}
-          >
-            {isLoading ? 'Loading...' : 'Delete'}
-          </StandardButton>
+          />
         </div>
       </div>
     </Modal>
