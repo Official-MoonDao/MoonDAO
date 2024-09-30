@@ -31,6 +31,49 @@ function calcVMOONEY(mooney: any, locktime: any) {
   return Math.sqrt(mooney * ((locktime - now) / (4 * 365 * 86400)))
 }
 
+function mapHolders(data: any, totalHolders: number) {
+  let totalVMooney = 0
+  const holders = data.holders.map((h: any) => {
+    totalHolders++
+
+    const mooney = h.totalLocked / 10 ** 18
+    const vmooney = calcVMOONEY(mooney, h.locktime)
+
+    const holder = {
+      x: moment.unix(h.initialLock).format('YYYY-MM-DD HH:mm'),
+      y: totalHolders,
+      id: `${h.id.slice(0, 4)}...${h.id.slice(-4)}`,
+      address: h.id,
+      totalLocked: mooney,
+      totalvMooney: vmooney,
+      initialLock: h.initialLock,
+    }
+    totalVMooney += vmooney
+
+    return holder
+  })
+  return { holders, totalVMooney }
+}
+
+function combineHolders(holders: any[]) {
+  const holderMap: { [key: string]: any } = {}
+
+  holders.forEach((holder) => {
+    if (holderMap[holder.address]) {
+      holderMap[holder.address].totalLocked += holder.totalLocked
+      holderMap[holder.address].totalvMooney += holder.totalvMooney
+      holderMap[holder.address].initialLock = Math.min(
+        holderMap[holder.address].initialLock,
+        holder.initialLock
+      )
+    } else {
+      holderMap[holder.address] = { ...holder }
+    }
+  })
+
+  return Object.values(holderMap)
+}
+
 export async function getVMOONEYData() {
   const query: any = `
     query {
@@ -56,53 +99,36 @@ export async function getVMOONEYData() {
   let totalHolders = 0
   let totalVMooney = 0
 
-  const EthRes = await EthClient.query(query).toPromise()
-  const PolygonRes = await PolygonClient.query(query).toPromise()
-  const ArbRes = await ArbClient.query(query).toPromise()
+  const ethRes = await EthClient.query(query).toPromise()
+  const polygonRes = await PolygonClient.query(query).toPromise()
+  const arbRes = await ArbClient.query(query).toPromise()
 
-  const holders = EthRes.data.holders.map((h: any, i: number, arr: any) => {
-    totalHolders++
-    const polygonHolder = PolygonRes.data.holders.find(
-      (pH: any) => pH.address === h.address
-    )
+  const ethData = mapHolders(ethRes.data, totalHolders)
+  totalVMooney += ethData.totalVMooney
+  const ethHolders = ethData.holders
 
-    const arbHolder = ArbRes.data.holders.find(
-      (aH: any) => aH.address === h.address
-    )
+  const polygonData = mapHolders(polygonRes.data, totalHolders)
+  totalVMooney += polygonData.totalVMooney
+  const polygonHolders = polygonData.holders
 
-    const ethMooney = h.totalLocked / 10 ** 18
-    const ethVMooney = calcVMOONEY(ethMooney, h.locktime)
+  const arbData = mapHolders(arbRes.data, totalHolders)
+  totalVMooney += arbData.totalVMooney
+  const arbHolders = arbData.holders
 
-    const polygonMooney = polygonHolder.totalLocked / 10 ** 18
-    const polygonVMooney = calcVMOONEY(polygonMooney, polygonHolder.locktime)
+  const allHolders = [...ethHolders, ...polygonHolders, ...arbHolders]
+  const combinedHolders = combineHolders(allHolders)
 
-    const arbMooney = arbHolder.totalLocked / 10 ** 18
-    const arbVMooney = calcVMOONEY(arbMooney, arbHolder.locktime)
-
-    const holderTotalMooney = ethMooney + polygonMooney + arbMooney
-    const holderTotalVMooney = ethVMooney + polygonVMooney + arbVMooney
-
-    const holder = {
-      x: moment.unix(h.initialLock).format('YYYY-MM-DD HH:mm'),
-      y: totalHolders,
-      id: `${h.id.slice(0, 4)}...${h.id.slice(-4)}`,
-      address: h.id,
-      totalLocked: holderTotalMooney,
-      totalvMooney: holderTotalVMooney,
-    }
-    totalVMooney += holderTotalVMooney
-
-    return holder
-  })
-  const holdersByVMooney = [...holders].sort(
+  const holdersByVMooney = [...combinedHolders].sort(
     (a, b) => b.totalvMooney - a.totalvMooney
   )
+
   const totalLockedMooney =
-    EthRes.data.supplies[0].supply / 10 ** 18 +
-    PolygonRes.data.supplies[0].supply / 10 ** 18 +
-    ArbRes.data.supplies[0].supply / 10 ** 18
+    (ethRes.data.supplies[0]?.supply || 0) / 10 ** 18 +
+    (polygonRes.data.supplies[0]?.supply || 0) / 10 ** 18 +
+    (arbRes.data.supplies[0]?.supply || 0) / 10 ** 18
+
   return {
-    holders,
+    holders: combinedHolders,
     holdersByVMooney,
     totals: {
       vMooney: totalVMooney,
