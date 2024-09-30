@@ -1,8 +1,6 @@
 import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import useEntitySplit from '@/lib/team/useTeamSplit'
-import useTeamSplit from '@/lib/team/useTeamSplit'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
@@ -17,8 +15,6 @@ export default function TeamMarketplace({
 }: any) {
   const [listings, setListings] = useState<TeamListingType[]>()
   const [listingModalEnabled, setListingModalEnabled] = useState(false)
-
-  const teamSplitAddress = useTeamSplit(teamContract, teamId)
 
   async function getEntityMarketplaceListings() {
     const marketplaceTableName = await marketplaceTableContract.call(
@@ -62,12 +58,11 @@ export default function TeamMarketplace({
           {listings?.[0] &&
             listings.map((listing, i) => (
               <TeamListing
-                key={`entity-marketplace-listing-${i}`}
+                key={`team-listing-${i}`}
                 selectedChain={selectedChain}
                 listing={listing}
                 marketplaceTableContract={marketplaceTableContract}
                 teamContract={teamContract}
-                teamSplitAddress={teamSplitAddress}
                 editable={isManager}
                 refreshListings={getEntityMarketplaceListings}
               />
