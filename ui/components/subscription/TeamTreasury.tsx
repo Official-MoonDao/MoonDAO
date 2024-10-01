@@ -35,7 +35,7 @@ export default function TeamTreasury({
   const { selectedWallet } = useContext(PrivyWalletContext)
 
   return (
-    <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+    <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-24 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
       <div className="flex flex-col">
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center pr-12">
           <div className="flex gap-5 opacity-[50%]">
@@ -60,7 +60,7 @@ export default function TeamTreasury({
             >
               {'Treasury'}
             </StandardButton>
-            <StandardButton
+            {/* <StandardButton
               className="min-w-[200px] gradient-2 rounded-[5vmax]"
               onClick={async () => {
                 if (!address) return toast.error('Please connect your wallet')
@@ -98,7 +98,7 @@ export default function TeamTreasury({
               }}
             >
               {'Release to Treasury'}
-            </StandardButton>
+            </StandardButton> */}
           </div>
         </div>
         <div className="mt-4 flex items-center gap-4">
@@ -138,7 +138,7 @@ export default function TeamTreasury({
             </p>
           </div>
         </div>
-        <div className="mt-4">
+        {/* <div className="mt-4">
           <div className="flex gap-5 opacity-[50%]">
             <Image
               src={'/assets/icon-contract.svg'}
@@ -164,7 +164,7 @@ export default function TeamTreasury({
               </p>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   )
