@@ -54,7 +54,7 @@ export const navigation = [
       },
       {
         name: 'Retroactive Rewards',
-        href: '/projects',
+        href: '/rewards',
       },
       {
         name: 'Get $MOONEY',

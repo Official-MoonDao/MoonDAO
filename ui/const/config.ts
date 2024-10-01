@@ -82,7 +82,7 @@ export const PROJECT_TABLE_ADDRESSES: Index = {
   sepolia: '0x1559E0d51d1AA3410ADb184934aea1d2293Ca93A',
 }
 export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
-  sepolia: '0xBA726bd5cDAe6319aAA67081e28aC11A8fc5FbF0',
+  sepolia: '0x3FF2fd19cCb309674BbeD2d71Fab4ee6c07f212e',
 }
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
