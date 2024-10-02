@@ -14,12 +14,11 @@ export default defineConfig({
       framework: 'next',
       bundler: 'webpack',
     },
-    // excludeSpecPattern: [
-    //   'cypress/integration/layout/**',
-    //   'cypress/integration/lock/**',
-    //   'cypress/integration/privy/**',
-    //   'cypress/integration/shopify/**',
-    //   'cypress/integration/directory/**',
-    // ],
+    excludeSpecPattern: [
+      // 'cypress/integration/layout/**',
+      // 'cypress/integration/lock/**',
+      // 'cypress/integration/privy/**',
+      // 'cypress/integration/shopify/**',
+    ],
   },
 })
