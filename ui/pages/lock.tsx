@@ -1,6 +1,8 @@
+import { useFundWallet } from '@privy-io/react-auth'
 import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
+import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import React from 'react'
 import { toast } from 'react-hot-toast'
@@ -17,26 +19,30 @@ import {
 } from '../lib/tokens/ve-token'
 import { bigNumberToDate, dateOut, dateToReadable } from '../lib/utils/dates'
 import { NumberType, transformNumber } from '../lib/utils/numbers'
+import viemChains from '@/lib/viem/viemChains'
 import Balance from '../components/Balance'
 import TimeRange from '../components/TimeRange'
+import Container from '../components/layout/Container'
+import ContentLayout from '../components/layout/ContentLayout'
 import Head from '../components/layout/Head'
 import L2Toggle from '../components/lock/L2Toggle'
 import { LockData } from '../components/lock/LockData'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import LockPresets from '../components/thirdweb/LockPresets'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrow from '../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
-import Container from '../components/layout/Container'
-import ContentLayout from '../components/layout/ContentLayout'
-import { NoticeFooter } from '@/components/layout/NoticeFooter' 
 
 export default function Lock() {
+  const router = useRouter()
   const { selectedChain }: any = useContext(ChainContext)
   const address = useAddress()
   const sdk = useSDK()
+
+  const { fundWallet } = useFundWallet()
 
   // get mooney contract (useContract assigns wrong abi for proxy)
   const [mooneyContract, setMooneyContract] = useState()
@@ -183,17 +189,26 @@ export default function Lock() {
         header="Lock $MOONEY"
         description={
           <p>
+<<<<<<< HEAD
             {'Playing an active role in MoonDAO governance is simple: '}
             <button
               className="underline"
               onClick={() => {
                 if (!address)
                   return toast.error('Please connect your wallet')
+=======
+            {'Getting started with MoonDAO is simple: '}
+            <button
+              className="font-bold"
+              onClick={() => {
+                if (!address) return toast.error('Please connect your wallet')
+>>>>>>> f9befaa9610e41c076bdb6ce1238688ac44016dc
                 fundWallet(address, {
                   chain: viemChains[selectedChain.slug],
                 })
               }}
             >
+<<<<<<< HEAD
               {'fund your account'}
             </button>
             {',  '}
@@ -208,17 +223,31 @@ export default function Lock() {
               {'lock for voting power'}
             </button>
             {'.  '}
+=======
+              {'Fund your account'}
+            </button>
+            {', '}
+            <button
+              className="font-bold"
+              onClick={() => router.push('/get-mooney')}
+            >
+              {'Swap for $MOONEY'}
+            </button>
+            {', our governance token, and '}
+            <button className="font-bold">{'Lock for voting power'}</button>
+            {'.'}
+>>>>>>> f9befaa9610e41c076bdb6ce1238688ac44016dc
           </p>
         }
         isProfile
         headerSize="max(20px, 2vw)"
-        mode='compact'
+        mode="compact"
         mainPadding
         preFooter={<NoticeFooter />}
       >
         <main className="animate-fadeIn font-RobotoMono">
           <Head title="Voting Power" />
-          <div className="mt-3 px-5 pb-10 lg:px-7 xl:px-9 w-full">
+          <div className="mt-3 w-full">
             <LockData
               hasLock={hasLock}
               VMOONEYBalance={VMOONEYBalance}
@@ -318,7 +347,9 @@ export default function Lock() {
                       </p>
                       <p className="tracking-wider text-sm text-light-text dark:text-white mt-3">
                         {t('lockDesc2')}
-                        {hasLock && canIncrease.amount ? t('lockAmountNote') : ''}
+                        {hasLock && canIncrease.amount
+                          ? t('lockAmountNote')
+                          : ''}
                       </p>
                     </label>
 
@@ -453,7 +484,9 @@ export default function Lock() {
                                     : ''
                                 }  
                             ${
-                              !canIncrease.amount && canIncrease.time ? t('time') : ''
+                              !canIncrease.amount && canIncrease.time
+                                ? t('time')
+                                : ''
                             }`
                           }
                           action={async () => {
@@ -469,7 +502,9 @@ export default function Lock() {
                             if (increaseAmount.gt(tokenAllowance)) {
                               const approvalTx: any = await approveToken()
                               approvalTx?.receipt &&
-                                toast.success('Successfully approved MOONEY for lock')
+                                toast.success(
+                                  'Successfully approved MOONEY for lock'
+                                )
                             }
 
                             const lockTx: any = hasLock
@@ -490,12 +525,16 @@ export default function Lock() {
                             (!canIncrease.amount &&
                               !canIncrease.time &&
                               Number(lockAmount) <=
-                                Number(VMOONEYLock?.[0].toString() / 10 ** 18)) ||
+                                Number(
+                                  VMOONEYLock?.[0].toString() / 10 ** 18
+                                )) ||
                             (!canIncrease.amount &&
                               !canIncrease.time &&
                               Date.parse(lockTime?.formatted) <
                                 Date.parse(
-                                  dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))
+                                  dateToReadable(
+                                    bigNumberToDate(VMOONEYLock?.[1])
+                                  )
                                 ))
                           }
                         />

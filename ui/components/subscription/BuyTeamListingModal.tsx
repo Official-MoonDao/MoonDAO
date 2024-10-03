@@ -13,6 +13,7 @@ import {
   TEAM_ADDRESSES,
   MOONEY_ADDRESSES,
   USDC_ADDRESSES,
+  DEFAULT_CHAIN,
 } from 'const/config'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -158,16 +159,31 @@ export default function BuyTeamListingModal({
       setEnabled(false)
     } catch (err: any) {
       console.log(err)
-      if (
-        err.message.startsWith('insufficient funds') ||
-        err?.reason?.includes('insufficient-balance') ||
-        err?.reason?.includes('transfer amount exceeds balance')
-      ) {
+      if (err && !err.message.startsWith('user rejected transaction')) {
         toast.error('Insufficient funds')
       }
     }
     await destroySession(accessToken)
     setIsLoading(false)
+  }
+
+  //There is a bug where setEnabled can't be called from a button in the main component
+  function Close() {
+    const [close, setClose] = useState(false)
+
+    useEffect(() => {
+      if (close) setEnabled(false)
+    }, [close])
+
+    return (
+      <button
+        type="button"
+        className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+        onClick={() => setClose(true)}
+      >
+        <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+      </button>
+    )
   }
 
   return (
@@ -183,22 +199,18 @@ export default function BuyTeamListingModal({
             <div>
               <h2 className="font-GoodTimes">{'Buy a Listing'}</h2>
             </div>
-            <button
-              type="button"
-              className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={() => setEnabled(false)}
-            >
-              <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-            </button>
+            <Close />
           </div>
           <div>
-            
             {listing.image && (
-              <div id="image-container" className="rounded-[20px] overflow-hidden my flex flex-wrap w-full">
-              <MediaRenderer src={listing.image} width="100%" height="100%" />
+              <div
+                id="image-container"
+                className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
+              >
+                <MediaRenderer src={listing.image} width="100%" height="100%" />
               </div>
             )}
-            
+
             <div className="mt-4">
               <p className="font-GoodTimes">{listing.title}</p>
               <p className="text-[75%]">{listing.description}</p>
@@ -206,8 +218,8 @@ export default function BuyTeamListingModal({
             </div>
           </div>
           <p className="opacity-60">
-            Enter your information, confirm the transaction and wait to receive an
-            email from the vendor.
+            Enter your information, confirm the transaction and wait to receive
+            an email from the vendor.
           </p>
           <input
             className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
@@ -252,7 +264,10 @@ export default function BuyTeamListingModal({
                   placeholder="Postal Code"
                   value={shippingInfo.postalCode}
                   onChange={({ target }) =>
-                    setShippingInfo({ ...shippingInfo, postalCode: target.value })
+                    setShippingInfo({
+                      ...shippingInfo,
+                      postalCode: target.value,
+                    })
                   }
                 />
                 <input
@@ -267,6 +282,7 @@ export default function BuyTeamListingModal({
             </div>
           )}
           <PrivyWeb3Button
+            requiredChain={DEFAULT_CHAIN}
             label="Buy"
             action={async () => {
               if (!email || email.trim() === '' || !email.includes('@'))

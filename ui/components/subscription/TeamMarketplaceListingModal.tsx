@@ -1,6 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { MediaRenderer } from '@thirdweb-dev/react'
+import { DEFAULT_CHAIN } from 'const/config'
 import Image from 'next/image'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
@@ -248,6 +249,7 @@ export default function TeamMarketplaceListingModal({
           </div>
         </div>
         <PrivyWeb3Button
+          requiredChain={DEFAULT_CHAIN}
           label={edit ? 'Edit Listing' : 'Add Listing'}
           type="submit"
           isDisabled={isLoading || !isValid} // Disable if loading or invalid

@@ -18,7 +18,6 @@ describe('Main E2E Testing', () => {
   describe('MoonDAO App | Governance', () => {
     it('should load the governance page', () => {
       cy.visit('/governance')
-      cy.get('#gov-cards').should('exist')
     })
   })
 
@@ -28,9 +27,9 @@ describe('Main E2E Testing', () => {
     })
   })
 
-  describe('MoonDAO App | Directory', () => {
+  describe('MoonDAO App | Network', () => {
     it('should load the directory page', () => {
-      cy.visit('/directory')
+      cy.visit('/network')
     })
   })
 

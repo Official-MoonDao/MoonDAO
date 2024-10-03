@@ -1,9 +1,8 @@
-import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES, CITIZEN_WHITELIST_ADDRESSES } from 'const/config'
-import { useContext, useState } from 'react'
+import { useAddress, useContract } from '@thirdweb-dev/react'
+import { CITIZEN_ADDRESSES } from 'const/config'
+import { useContext } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
-import ApplyModal from '@/components/onboarding/ApplyModal'
 import Tier from '@/components/onboarding/Tier'
 
 type CitizenTierProps = {
@@ -16,10 +15,7 @@ const CitizenTier = ({
   compact = false,
 }: CitizenTierProps) => {
   const { selectedChain } = useContext(ChainContext)
-  const sdk = useSDK()
   const address = useAddress()
-
-  const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
@@ -28,26 +24,12 @@ const CitizenTier = ({
     address,
   ])
 
-  const handleCitizenClick = async () => {
-    const citizenWhitelistContract = await sdk?.getContract(
-      CITIZEN_WHITELIST_ADDRESSES[selectedChain.slug]
-    )
-    const isWhitelisted = await citizenWhitelistContract?.call(
-      'isWhitelisted',
-      [address]
-    )
-    if (isWhitelisted) {
-      setSelectedTier('citizen')
-    } else {
-      setApplyModalEnabled(true)
-    }
+  const handleCitizenClick = () => {
+    setSelectedTier('citizen')
   }
 
   return (
     <div id="citizen-tier-container">
-      {applyModalEnabled && (
-        <ApplyModal type="citizen" setEnabled={setApplyModalEnabled} />
-      )}
       <Tier
         price={0.0111}
         label="Become a Citizen"
@@ -58,8 +40,8 @@ const CitizenTier = ({
           'Career Advancement: Access jobs, gigs, hackathons, and more; building on-chain credentials to showcase your experience.',
           'Early Project Access: Engage in space projects, earn money, and advance your career.',
         ]}
-        buttoncta={compact ? 'Learn More' : "Become a Citizen"}
-        onClick={compact ? ()=>{} : handleCitizenClick}
+        buttoncta={compact ? 'Learn More' : 'Become a Citizen'}
+        onClick={compact ? () => {} : handleCitizenClick}
         hasCitizen={+citizenBalance > 0}
         type="citizen"
         compact={compact}
