@@ -5,6 +5,7 @@ import { useMarketFeeSplitStats } from '../../../lib/thirdweb/hooks/useMarketFee
 import { getVMOONEYData } from '../../../lib/tokens/ve-subgraph'
 import { AnalyticsProgress } from './AnalyticsProgress'
 import AnalyticsSkeleton from './AnalyticsSkeleton'
+import BarChart from './BarChart'
 
 function Frame(props: any) {
   return (
@@ -60,6 +61,12 @@ export default function AnalyticsPage({ setDateUpdated }: any) {
   return (
     <>
       {/*Stats frame*/}
+      <Frame>
+        <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
+          {'Governance Power Over Time'}
+        </h1>
+        <BarChart holdersData={analyticsData.holders}/>
+      </Frame>
       <Frame>
         <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
           {'Voting Power Key Figures'}
