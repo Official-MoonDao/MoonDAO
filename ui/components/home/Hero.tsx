@@ -58,7 +58,7 @@ export default function Hero() {
           <p id="paragraph-content" 
             className="mr-5 max-w-[350px] pb-5 pt-2 text-lg w-full md:w-[100%] md:max-w-[350px] lg:max-w-[500px]"
             >
-            MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement.
+            MoonDAO is accelerating our multiplanetary future with a global network and open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement.
           </p>
           <MailingList/>
         </div>

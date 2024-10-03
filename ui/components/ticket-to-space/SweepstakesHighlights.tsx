@@ -73,14 +73,13 @@ export default function SweepstakesHighlights() {
             aspects of human spaceflight.
           </p>
           <p className="mt-3 text-[#1F212B] dark:text-white px-2 py-2 xl:py-3 xl:px-4 text-sm xl:text-base">
-            Eiman was selected via the Ticket to Space sweepstakes and is a
-            long-time member of MoonDAO.{' '}
+            Eiman is a long-time member of MoonDAO was selected via the Ticket to Space sweepstakes, flying to space as part of Blue Origin's NS-26 mission.{' '}
             <u>
               <Link
-                href="https://docs.moondao.com/Reference/Nested-Docs/About-Eiman-Jahangir"
+                href="https://www.youtube.com/watch?v=tOnfAtI1BHI"
                 target="_blank"
               >
-                Read more about Eiman
+                Watch the launch video
               </Link>
             </u>
             .

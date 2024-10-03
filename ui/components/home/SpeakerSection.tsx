@@ -32,14 +32,14 @@ export default function SpeakerSection() {
                 alt="Charlie Duke"
                 logo="/assets/Speaker-Charlie-Duke.png"
                 name="Charlie Duke"
-                subtitle="NASA Astronaut"
-                link="https://www.youtube.com/watch?v=lcKy3l4-LkE&t=1s"
+                subtitle="Apollo 16 Moonwalker, NASA Astronaut"
+                link="https://www.youtube.com/watch?v=79dThcv3PdU"
               />
               <Speaker
                 alt="Doug Hurley"
                 logo="/assets/Speaker-Doug-Hurley.png"
                 name="Doug Hurley"
-                subtitle="NASA Astronaut"
+                subtitle="NASA and SpaceX Astronaut"
                 link="https://www.youtube.com/watch?v=JLXwyZIOy5k"
               />
               <Speaker
@@ -47,7 +47,7 @@ export default function SpeakerSection() {
                 logo="/assets/Speaker-Nicole-Stott.png"
                 name="Nicole Stott"
                 subtitle="NASA Astronaut"
-                link="https://www.youtube.com/watch?v=WwtP38hDSOc&t=18s"
+                link="https://www.youtube.com/watch?v=WwtP38hDSOc"
               />
               <Speaker
                 alt="Robert Zubrin"
@@ -64,9 +64,9 @@ export default function SpeakerSection() {
                 link="https://www.youtube.com/watch?v=xVQE0HPbbHw"
               />
               <Speaker
-                alt="Dr.Phil Metzger"
+                alt="Dr. Phil Metzger"
                 logo="/assets/Speaker-Phil-Metzger.png"
-                name="Dr.Phil Metzger"
+                name="Dr. Phil Metzger"
                 subtitle="Planetary Physicist"
                 link="https://www.youtube.com/watch?v=jTt6wOJPTeQ"
               />
@@ -89,7 +89,7 @@ export default function SpeakerSection() {
             >
               <Image
                 src="/../assets/icon-youtube.svg"
-                alt="Follow MoonDAO on YouTube"
+                alt="Subscribe on YouTube"
                 width="50"
                 height="50"
               />
@@ -99,7 +99,7 @@ export default function SpeakerSection() {
                 id="youtube-text"
                 className="md:text-center px-5 leading-none font-GoodTimes text-dark-cool"
               >
-                <span className="block md:inline">Follow MoonDAO &nbsp;</span>
+                <span className="block md:inline">Subscribe &nbsp;</span>
                 <span className="block md:inline">on YouTube</span>
               </p>
             </div>
