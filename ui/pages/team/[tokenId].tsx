@@ -38,6 +38,7 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { TwitterIcon } from '@/components/assets'
+import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -327,6 +328,9 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                   ) : (
                     <></>
                   )}
+                  <div className="mt-2">
+                    <Address address={nft.owner} />
+                  </div>
                 </div>
               </div>
             </div>

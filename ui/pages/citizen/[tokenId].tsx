@@ -37,6 +37,7 @@ import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
 import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
+import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -276,6 +277,9 @@ export default function CitizenDetailPage({
                 ) : (
                   <></>
                 )}
+                <div className="mt-2 lg:ml-5">
+                  <Address address={nft.owner} />
+                </div>
               </div>
             </div>
           </div>
