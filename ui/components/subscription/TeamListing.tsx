@@ -1,10 +1,9 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import StandardButton from '../layout/StandardButton'
 import BuyTeamListingModal from './BuyTeamListingModal'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
@@ -23,22 +22,20 @@ type TeamListingProps = {
   selectedChain: any
   listing: TeamListing
   teamContract: any
-  teamSplitAddress: string | undefined
   marketplaceTableContract?: any
   refreshListings?: any
   editable?: boolean
-  teamName?: string
+  teamName?: boolean
 }
 
 export default function TeamListing({
   selectedChain,
   listing,
-  teamSplitAddress,
   marketplaceTableContract,
+  teamContract,
   refreshListings,
   editable,
   teamName,
-
 }: TeamListingProps) {
   const address = useAddress()
 
@@ -48,10 +45,28 @@ export default function TeamListing({
 
   const [isDeleting, setIsDeleting] = useState(false)
 
+  const [teamData, setTeamData] = useState<any>()
+
+  useEffect(() => {
+    async function getTeamData() {
+      if (teamContract && listing) {
+        // Check if teamContract is defined
+        const teamNft = await teamContract.erc721.get(listing.teamId)
+        setTeamData({
+          name: teamNft.metadata.name,
+          multisigAddress: teamNft.owner,
+        })
+      }
+    }
+    if (listing) getTeamData()
+  }, [listing, teamContract])
+
   return (
     <span
       id="link-frame"
-      className={`card-container h-full w-full flex lg:flex-col rounded-[20px] relative overflow-hidden ${!editable ? 'cursor-pointer' : ''}`}
+      className={`card-container h-full w-full flex lg:flex-col rounded-[20px] relative overflow-hidden ${
+        !editable ? 'cursor-pointer' : ''
+      }`}
       onClick={() => {
         if (!address) return toast.error('Please connect your wallet')
         if (!editable) {
@@ -59,35 +74,34 @@ export default function TeamListing({
         }
       }}
     >
-
       {!editable ? (
         <>
-        <span
-          id="Interactive-Element"
-          className="clip absolute h-full w-full z-10"
-        ></span>
-        <div
-        id="card-styling"
-        className={`
+          <span
+            id="Interactive-Element"
+            className="clip absolute h-full w-full z-10"
+          ></span>
+          <div
+            id="card-styling"
+            className={`
           bg-darkest-cool rounded-[20px] w-[43%] h-[30%] absolute top-0 left-0 pb-5
       `}
-      ></div>
-      </>
+          ></div>
+        </>
       ) : (
         <>
-        <span
-          id="Static-Element"
-          className="divider-8 absolute w-[80%] h-full z-10"
-        ></span>
-        <div
-        id="card-styling"
-        className={`
+          <span
+            id="Static-Element"
+            className="divider-8 absolute w-[80%] h-full z-10"
+          ></span>
+          <div
+            id="card-styling"
+            className={`
           bg-darkest-cool rounded-[20px] w-[23%] h-[20%] absolute top-0 left-0 pb-5
       `}
-      ></div>
-      </>
+          ></div>
+        </>
       )}
-      
+
       <span
         id="card-container"
         className={`
@@ -125,12 +139,12 @@ export default function TeamListing({
                 `}
             >
               <div className="flex min-h-[100px] pb-5 flex-col">
-                {teamName && (
+                {teamName && teamData?.name && (
                   <Link
                     href={`/team/${listing.teamId}`}
                     className="font-bold text-light-cool"
                   >
-                    {teamName}
+                    {teamData.name}
                   </Link>
                 )}
                 <h2
@@ -189,8 +203,7 @@ export default function TeamListing({
                   {`${listing.price} 
                   ${listing.currency}`}
                 </div>
-                <div id="listing-description">
-                </div>  
+                <div id="listing-description"></div>
                 <span
                   id="mobile-button-container"
                   className="md:hidden flex pt-5 pb-5 justify-start w-full"
@@ -198,8 +211,6 @@ export default function TeamListing({
                   {/* Removed StandardButton here */}
                 </span>
               </div>
-
-
             </div>
           </span>
         </span>
@@ -217,7 +228,7 @@ export default function TeamListing({
           <BuyTeamListingModal
             selectedChain={selectedChain}
             listing={listing}
-            recipient={teamSplitAddress}
+            recipient={teamData.multisigAddress}
             setEnabled={setEnabledBuyListingModal}
           />
         )}

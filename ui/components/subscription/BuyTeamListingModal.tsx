@@ -159,7 +159,7 @@ export default function BuyTeamListingModal({
       setEnabled(false)
     } catch (err: any) {
       console.log(err)
-      if (err) {
+      if (err && !err.message.startsWith('user rejected transaction')) {
         toast.error('Insufficient funds')
       }
     }

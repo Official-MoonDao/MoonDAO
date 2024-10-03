@@ -6,14 +6,13 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
-import useTeamSplit from '@/lib/team/useTeamSplit'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
-import IndexCardGridContainer from '@/components/layout/IndexCardGridContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
+import IndexCardGridContainer from '@/components/layout/IndexCardGridContainer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import TeamListing, {
@@ -22,44 +21,6 @@ import TeamListing, {
 
 type MarketplaceProps = {
   listings: TeamListingType[]
-}
-
-type MarketplaceListingProps = {
-  selectedChain: any
-  listing: TeamListingType
-  teamContract: any
-  marketplaceTableContract: any
-}
-
-function MarketplaceListing({
-  selectedChain,
-  listing,
-  teamContract,
-  marketplaceTableContract,
-}: MarketplaceListingProps) {
-  const [teamName, setTeamName] = useState<string>()
-  const teamSplitAddress = useTeamSplit(teamContract, listing.teamId)
-
-  useEffect(() => {
-    async function getTeamName() {
-      if (teamContract && listing) { // Check if teamContract is defined
-        const teamNft = await teamContract.erc721.get(listing.teamId)
-        setTeamName(teamNft.metadata.name)
-      }
-    }
-    if (listing) getTeamName()
-  }, [listing, teamContract])
-
-  return (
-    <TeamListing
-      selectedChain={selectedChain}
-      listing={listing}
-      teamContract={teamContract}
-      marketplaceTableContract={marketplaceTableContract}
-      teamSplitAddress={teamSplitAddress}
-      teamName={teamName}
-    />
-  )
 }
 
 export default function Marketplace({ listings }: MarketplaceProps) {
@@ -118,12 +79,13 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           <IndexCardGridContainer>
             {filteredListings &&
               filteredListings.map((listing: TeamListingType, i: number) => (
-                <MarketplaceListing
-                  key={`listing-${i}`}
-                  listing={listing}
+                <TeamListing
+                  key={`team-listing-${i}`}
                   selectedChain={selectedChain}
+                  listing={listing}
                   teamContract={teamContract}
                   marketplaceTableContract={marketplaceTableContract}
+                  teamName
                 />
               ))}
           </IndexCardGridContainer>
