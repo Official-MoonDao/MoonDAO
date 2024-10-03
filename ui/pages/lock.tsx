@@ -189,26 +189,16 @@ export default function Lock() {
         header="Lock $MOONEY"
         description={
           <p>
-<<<<<<< HEAD
             {'Playing an active role in MoonDAO governance is simple: '}
             <button
               className="underline"
               onClick={() => {
-                if (!address)
-                  return toast.error('Please connect your wallet')
-=======
-            {'Getting started with MoonDAO is simple: '}
-            <button
-              className="font-bold"
-              onClick={() => {
                 if (!address) return toast.error('Please connect your wallet')
->>>>>>> f9befaa9610e41c076bdb6ce1238688ac44016dc
                 fundWallet(address, {
                   chain: viemChains[selectedChain.slug],
                 })
               }}
             >
-<<<<<<< HEAD
               {'fund your account'}
             </button>
             {',  '}
@@ -223,20 +213,6 @@ export default function Lock() {
               {'lock for voting power'}
             </button>
             {'.  '}
-=======
-              {'Fund your account'}
-            </button>
-            {', '}
-            <button
-              className="font-bold"
-              onClick={() => router.push('/get-mooney')}
-            >
-              {'Swap for $MOONEY'}
-            </button>
-            {', our governance token, and '}
-            <button className="font-bold">{'Lock for voting power'}</button>
-            {'.'}
->>>>>>> f9befaa9610e41c076bdb6ce1238688ac44016dc
           </p>
         }
         isProfile

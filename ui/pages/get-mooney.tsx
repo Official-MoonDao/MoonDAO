@@ -30,11 +30,7 @@ export default function GetMooney() {
             headerSize="max(20px, 3vw)"
             description={
               <p>
-<<<<<<< HEAD
                 {'Playing an active role in MoonDAO governance is simple: '}
-=======
-                {'Getting started with MoonDAO is simple: '}
->>>>>>> f9befaa9610e41c076bdb6ce1238688ac44016dc
                 <button
                   className="underline"
                   onClick={() => {
@@ -47,13 +43,8 @@ export default function GetMooney() {
                 >
                   {'fund your account'}
                 </button>
-<<<<<<< HEAD
                 {',  '}
                 <button className="underline">{'swap for $MOONEY'}</button>
-=======
-                {', '}
-                <button className="font-bold">{'Swap for $MOONEY'}</button>
->>>>>>> f9befaa9610e41c076bdb6ce1238688ac44016dc
                 {', our governance token, and '}
                 <button
                   className="underline"
@@ -63,11 +54,7 @@ export default function GetMooney() {
                 >
                   {'lock for voting power'}
                 </button>
-<<<<<<< HEAD
                 {'.  '}
-=======
-                {'.'}
->>>>>>> f9befaa9610e41c076bdb6ce1238688ac44016dc
               </p>
             }
             preFooter={<NoticeFooter />}
