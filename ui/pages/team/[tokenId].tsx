@@ -292,7 +292,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     )}
 
                     {/*Subscription Extension Container*/}
-                    {isManager || address === nft.owner ? (
+                    {/* {isManager || address === nft.owner ? (
                       <div id="manager-container" className="relative">
                         {expiresAt && (
                           <div id="expires-container" className="">
@@ -318,17 +318,17 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                       </div>
                     ) : (
                       <></>
-                    )}
+                    )} */}
                   </div>
-                  {isManager || address === nft.owner ? (
+                  {/* {isManager || address === nft.owner ? (
                     <p className="opacity-50 mt-2 text-sm">
                       {'Exp: '}
                       {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                     </p>
                   ) : (
                     <></>
-                  )}
-                  <div className="mt-2">
+                  )} */}
+                  <div className="mt-4">
                     <Address address={nft.owner} />
                   </div>
                 </div>

@@ -235,7 +235,7 @@ export default function CitizenDetailPage({
                         )}
                       </div>
                     ) : null}
-                    {address === nft.owner ? (
+                    {/* {address === nft.owner ? (
                       <div id="manager-container">
                         {expiresAt && (
                           <div
@@ -266,18 +266,18 @@ export default function CitizenDetailPage({
                       </div>
                     ) : (
                       <></>
-                    )}
+                    )} */}
                   </div>
                 </div>
-                {address === nft.owner ? (
+                {/* {address === nft.owner ? (
                   <p className="opacity-50 mt-2 lg:ml-5 text-sm">
                     {'Exp: '}
                     {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                   </p>
                 ) : (
                   <></>
-                )}
-                <div className="mt-2 lg:ml-5">
+                )} */}
+                <div className="mt-4 lg:ml-5">
                   <Address address={nft.owner} />
                 </div>
               </div>
