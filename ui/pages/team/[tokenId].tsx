@@ -38,6 +38,7 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { TwitterIcon } from '@/components/assets'
+import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -291,7 +292,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     )}
 
                     {/*Subscription Extension Container*/}
-                    {isManager || address === nft.owner ? (
+                    {/* {isManager || address === nft.owner ? (
                       <div id="manager-container" className="relative">
                         {expiresAt && (
                           <div id="expires-container" className="">
@@ -317,16 +318,19 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                       </div>
                     ) : (
                       <></>
-                    )}
+                    )} */}
                   </div>
-                  {isManager || address === nft.owner ? (
+                  {/* {isManager || address === nft.owner ? (
                     <p className="opacity-50 mt-2 text-sm">
                       {'Exp: '}
                       {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                     </p>
                   ) : (
                     <></>
-                  )}
+                  )} */}
+                  <div className="mt-4">
+                    <Address address={nft.owner} />
+                  </div>
                 </div>
               </div>
             </div>
