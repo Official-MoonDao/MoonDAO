@@ -1,5 +1,5 @@
-import React from 'react';
-import { Bar } from 'react-chartjs-2';
+import React from 'react'
+import { Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,10 +8,10 @@ import {
   Title,
   Tooltip,
   Legend
-} from 'chart.js';
+} from 'chart.js'
 
 // Register the necessary components for Chart.js
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const xDates = [
   "Sat Dec 31 2022 19:00:00 GMT-0600 (Central Standard Time)",
@@ -77,22 +77,22 @@ const BarChart = ({holdersData}: any) => {
         borderWidth: 2,
         // Border and gradient settings
         backgroundColor: (ctx: any) => {
-          const chart = ctx.chart;
-          const { ctx: chartContext, chartArea } = chart;
+          const chart = ctx.chart
+          const { ctx: chartContext, chartArea } = chart
 
           if (!chartArea) {
-            return null;
+            return null
           }
           // Create gradient fill
-          const gradient = chartContext.createLinearGradient(0, 0, 0, chartArea.bottom);
-          gradient.addColorStop(0, '#425EEB');
-          gradient.addColorStop(1, '#6D3F79');
+          const gradient = chartContext.createLinearGradient(0, 0, 0, chartArea.bottom)
+          gradient.addColorStop(0, '#425EEB')
+          gradient.addColorStop(1, '#6D3F79')
 
-          return gradient;
+          return gradient
         },
       }
     ]
-  };
+  }
 
   // Configuration options for the chart
   const options = {
@@ -129,7 +129,7 @@ const BarChart = ({holdersData}: any) => {
     }
   }
 
-  return <Bar data={data} options={options} />;
-};
+  return <Bar data={data} options={options} />
+}
 
-export default BarChart;
+export default BarChart
