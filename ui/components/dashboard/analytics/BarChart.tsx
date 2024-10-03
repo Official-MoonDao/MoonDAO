@@ -21,6 +21,7 @@ const xDates = [
   "Sun Dec 31 2023 19:00:00 GMT-0600 (Central Standard Time)",
   "Sun Mar 31 2024 19:00:00 GMT-0500 (Central Daylight Time)",
   "Sun Jun 30 2024 19:00:00 GMT-0500 (Central Daylight Time)",
+  "Mon Sep 30 2024 19:00:00 GMT-0500 (Central Daylight Time)"
 ]
 
 const xLabels = [
@@ -30,7 +31,8 @@ const xLabels = [
   "2023Q3",
   "2023Q4",
   "2024Q1",
-  "2024Q2"
+  "2024Q2",
+  "2024Q3"
 ]
 
 function sumValuesBeforeDate(dates: any, values: any, targetDate: any) {
