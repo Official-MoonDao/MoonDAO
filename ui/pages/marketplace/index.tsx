@@ -5,6 +5,7 @@ import {
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
+import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
@@ -70,7 +71,25 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           header="Marketplace"
           headerSize="max(20px, 3vw)"
           description={
-            <p>Cast your vote for active proposals and view the vote record and history for all past proposals. You can <u><a href="/propose">submit a proposal</a></u> to receive financing or support from the MoonDAO community. Please refer to <u><a href="https://docs.moondao.com/Projects/Project-System" target="_blank" rel="noreferrer">our documentation</a></u> for more details on the project system and governance processes.</p>
+            <p>
+              Cast your vote for active proposals and view the vote record and
+              history for all past proposals. You can{' '}
+              <u>
+                <Link href="/propose">submit a proposal</Link>
+              </u>{' '}
+              to receive financing or support from the MoonDAO community. Please
+              refer to{' '}
+              <u>
+                <Link
+                  href="https://docs.moondao.com/Projects/Project-System"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  our documentation
+                </Link>
+              </u>{' '}
+              for more details on the project system and governance processes.
+            </p>
           }
           preFooter={<NoticeFooter />}
           mainPadding
