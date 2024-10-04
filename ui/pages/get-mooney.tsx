@@ -44,7 +44,14 @@ export default function GetMooney() {
                   {'fund your account'}
                 </button>
                 {',  '}
-                <button className="underline">{'swap for $MOONEY'}</button>
+                <button
+                  className="underline"
+                  onClick={() => {
+                    router.push('/get-mooney')
+                  }}
+                >
+                  {'swap for $MOONEY'}
+                </button>
                 {', our governance token, and '}
                 <button
                   className="underline"
