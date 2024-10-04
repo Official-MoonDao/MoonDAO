@@ -9,7 +9,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -34,6 +34,7 @@ export default function Network({
   filteredCitizens,
 }: NetworkProps) {
   const router = useRouter()
+  const shallowQueryRoute = useShallowQueryRoute()
 
   const [input, setInput] = useState('')
   function filterBySearch(nfts: NFT[]) {
@@ -47,7 +48,6 @@ export default function Network({
 
   const [tab, setTab] = useState<string>('teams')
   function loadByTab(tab: string) {
-    setPageIdx(1)
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
     } else if (tab === 'citizens') {
@@ -67,6 +67,23 @@ export default function Network({
     }
   }
 
+  const handleTabChange = useCallback(
+    (newTab: string) => {
+      setTab(newTab)
+      setPageIdx(1)
+      shallowQueryRoute({ tab: newTab, page: '1' })
+    },
+    [shallowQueryRoute]
+  )
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setPageIdx(newPage)
+      shallowQueryRoute({ tab, page: newPage.toString() })
+    },
+    [shallowQueryRoute, tab]
+  )
+
   const [maxPage, setMaxPage] = useState(1)
 
   useEffect(() => {
@@ -84,6 +101,16 @@ export default function Network({
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
 
   const [pageIdx, setPageIdx] = useState(1)
+
+  useEffect(() => {
+    const { tab: urlTab, page: urlPage } = router.query
+    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens')) {
+      setTab(urlTab as string)
+    }
+    if (urlPage && !isNaN(Number(urlPage))) {
+      setPageIdx(Number(urlPage))
+    }
+  }, [router.query])
 
   useEffect(() => {
     loadByTab(tab)
@@ -114,7 +141,7 @@ export default function Network({
             <Tab
               tab="teams"
               currentTab={tab}
-              setTab={setTab}
+              setTab={handleTabChange}
               icon="/../.././assets/icon-org.svg"
             >
               Teams
@@ -122,7 +149,7 @@ export default function Network({
             <Tab
               tab="citizens"
               currentTab={tab}
-              setTab={setTab}
+              setTab={handleTabChange}
               icon="/../.././assets/icon-passport.svg"
             >
               Citizens
@@ -196,7 +223,7 @@ export default function Network({
                 <button
                   onClick={() => {
                     if (pageIdx > 1) {
-                      setPageIdx(pageIdx - 1)
+                      handlePageChange(pageIdx - 1)
                     }
                   }}
                   className={`pagination-button ${
@@ -217,7 +244,7 @@ export default function Network({
                 <button
                   onClick={() => {
                     if (pageIdx < maxPage) {
-                      setPageIdx(pageIdx + 1)
+                      handlePageChange(pageIdx + 1)
                     }
                   }}
                   className={`pagination-button ${
