@@ -1,6 +1,7 @@
 import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
 import Image from 'next/image'
+import toast from 'react-hot-toast'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import FileInput from '../layout/FileInput'
 import { StageButton } from './StageButton'
@@ -98,11 +99,14 @@ export function ImageGenerator({
       {inputImage && (
         <StageButton
           onClick={() => {
-            setImage(null)
-            generateImage()
-            if (generateInBG) {
-              nextStage()
-            }
+            toast.error(
+              'The image generator is currently down, please try again later.'
+            )
+            // setImage(null)
+            // generateImage()
+            // if (generateInBG) {
+            //   nextStage()
+            // }
           }}
         >
           Generate
