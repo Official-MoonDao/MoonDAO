@@ -50,14 +50,12 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   }, [listings, input])
 
   const descriptionSection = (
-    <div>
-      <Frame
-        bottomLeft="20px"
-        topLeft="5vmax"
-        marginBottom="30px"
-        marginTop="30px"
-        noPadding
-      >
+    <div className="pt-2">
+      <div className="mb-4">
+        Discover space products and services from top innovators and teams in
+        the Space Acceleration Network, available for direct on-chain purchase.
+      </div>
+      <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
         <Search input={input} setInput={setInput} />
       </Frame>
     </div>
@@ -70,27 +68,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
         <ContentLayout
           header="Marketplace"
           headerSize="max(20px, 3vw)"
-          description={
-            <p>
-              Cast your vote for active proposals and view the vote record and
-              history for all past proposals. You can{' '}
-              <u>
-                <Link href="/propose">submit a proposal</Link>
-              </u>{' '}
-              to receive financing or support from the MoonDAO community. Please
-              refer to{' '}
-              <u>
-                <Link
-                  href="https://docs.moondao.com/Projects/Project-System"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  our documentation
-                </Link>
-              </u>{' '}
-              for more details on the project system and governance processes.
-            </p>
-          }
+          description={descriptionSection}
           preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"

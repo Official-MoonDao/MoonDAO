@@ -5,6 +5,7 @@ import {
 } from '@heroicons/react/24/solid'
 import { NanceProvider } from '@nance/nance-hooks'
 import { StringParam, useQueryParams, withDefault } from 'next-query-params'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useDebounce } from 'react-use'
 import { NANCE_API_URL } from '../lib/nance/constants'
@@ -13,8 +14,8 @@ import ProposalList from '../components/nance/ProposalList'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
-import Search from '@/components/layout/Search'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import Search from '@/components/layout/Search'
 
 const links = [
   {
@@ -72,19 +73,26 @@ export default function SpaceIndex() {
   }, [])
 
   const descriptionSection = (
-    <div>
-      <Frame
-        bottomLeft="20px"
-        topLeft="5vmax"
-        marginBottom="30px"
-        marginTop="30px"
-        noPadding
-      >
-        <Search
-          input={keywordInput || ''}
-          setInput={(value: string) => setKeywordInput(value)}
-        />
-      </Frame>
+    <div className="pt-2">
+      <p>
+        Cast your vote for active proposals and view the vote record and history
+        for all past proposals. You can{' '}
+        <u>
+          <Link href="/propose">submit a proposal</Link>
+        </u>{' '}
+        to receive financing or support from the MoonDAO community. Please refer
+        to{' '}
+        <u>
+          <Link
+            href="https://docs.moondao.com/Projects/Project-System"
+            target="_blank"
+            rel="noreferrer"
+          >
+            our documentation
+          </Link>
+        </u>{' '}
+        for more details on the project system and governance processes.
+      </p>
     </div>
   )
 
@@ -96,7 +104,7 @@ export default function SpaceIndex() {
           header="Proposals"
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
-          preFooter={<NoticeFooter darkBackground/>}
+          preFooter={<NoticeFooter darkBackground />}
           mainPadding
           mode="compact"
           popOverEffect={false}
