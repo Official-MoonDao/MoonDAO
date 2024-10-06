@@ -5,6 +5,7 @@ import {
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
+import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
@@ -49,14 +50,12 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   }, [listings, input])
 
   const descriptionSection = (
-    <div>
-      <Frame
-        bottomLeft="20px"
-        topLeft="5vmax"
-        marginBottom="30px"
-        marginTop="30px"
-        noPadding
-      >
+    <div className="pt-2">
+      <div className="mb-4">
+        Discover space products and services from top innovators and teams in
+        the Space Acceleration Network, available for direct on-chain purchase.
+      </div>
+      <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
         <Search input={input} setInput={setInput} />
       </Frame>
     </div>

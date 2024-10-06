@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 import { CopyIcon } from '../assets'
+import Address from '../layout/Address'
 import StandardButton from '../layout/StandardButton'
 
 type TeamTreasuryProps = {
@@ -42,24 +43,7 @@ export default function TeamTreasury({
             </StandardButton>
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-4">
-          {multisigAddress ? (
-            <button
-              className="text-2xl flex pl-5 items-center gap-2 text-light-warm font-RobotoMono inline-block text-center w-full lg:text-left xl:text-lg"
-              onClick={() => {
-                navigator.clipboard.writeText(multisigAddress)
-                toast.success('Address copied to clipboard')
-              }}
-            >
-              {multisigAddress?.slice(0, 6) +
-                '...' +
-                multisigAddress?.slice(-4)}
-              <CopyIcon />
-            </button>
-          ) : (
-            <div className="mt-4 w-[200px] h-[50px] bg-[#ffffff25] animate-pulse" />
-          )}
-        </div>
+        <div className="mt-4 flex items-center gap-4"></div>
         <div className="p-4">
           <div className="mt-4 flex gap-4 items-center text-lg">
             <p>{`MOONEY :`}</p>

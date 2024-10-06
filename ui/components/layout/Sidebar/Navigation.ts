@@ -11,7 +11,7 @@ import IconOrg from '../../assets/IconOrg'
 
 export const navigation = [
   {
-    name: 'Join MoonDAO',
+    name: 'Join',
     href: '/join',
     icon: PlusIcon,
     children: [
