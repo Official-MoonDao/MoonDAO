@@ -31,7 +31,7 @@ export function Hat({
       setTeamNFT(nft)
     }
 
-    if (teamContract && teamImage) {
+    if (teamContract?.erc721?.get && teamImage && hat.teamId) {
       getTeamNFT()
     }
   }, [hat.teamId, teamContract, teamImage])
