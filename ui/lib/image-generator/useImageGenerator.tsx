@@ -26,16 +26,26 @@ export default function useImageGenerator(
 
       const accessToken = await getAccessToken()
 
-      const jobId = await fetch(generateApiRoute, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ url }),
-      })
-        .then((res) => res.json())
-        .catch((e) => console.error(e))
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+      const jobId = await Promise.race([
+        fetch(generateApiRoute, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ url }),
+          signal: controller.signal,
+        }).then((res) => res.json()),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error('Request timed out after 5 seconds')),
+            5000
+          )
+        ),
+      ]).finally(() => clearTimeout(timeoutId))
 
       if (!jobId?.id) {
         throw new Error('Failed to create a comfy icu job')
