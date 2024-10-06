@@ -1,6 +1,7 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useS3Upload } from 'next-s3-upload'
 import { useState } from 'react'
+import { fitImage } from '../utils/images'
 
 export default function useImageGenerator(
   generateApiRoute: string,
@@ -8,32 +9,46 @@ export default function useImageGenerator(
   setImage: Function
 ) {
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string>()
 
   const { getAccessToken } = usePrivy()
   const { uploadToS3 } = useS3Upload()
 
   async function generateImage() {
+    setIsLoading(true)
+
     if (!inputImage) {
-      return console.error('userImage is not defined')
+      return console.error('inputImage is not defined')
     }
 
-    const { url } = await uploadToS3(inputImage)
+    try {
+      const { url } = await uploadToS3(inputImage)
 
-    const accessToken = await getAccessToken()
+      const accessToken = await getAccessToken()
 
-    const jobId = await fetch(generateApiRoute, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ url }),
-    })
-      .then((res) => res.json())
-      .catch((e) => console.error(e))
+      const jobId = await fetch(generateApiRoute, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ url }),
+      })
+        .then((res) => res.json())
+        .catch((e) => console.error(e))
 
-    setIsLoading(true)
-    await checkJobStatus(jobId.id)
+      if (!jobId?.id) {
+        throw new Error('Failed to create a comfy icu job')
+      }
+
+      await checkJobStatus(jobId.id)
+    } catch (err: any) {
+      console.log(err)
+      setIsLoading(false)
+      const fittedImage = await fitImage(inputImage, 1024, 1024)
+      setImage(fittedImage)
+      setError('Unable to generate an image, please try again later.')
+    }
   }
 
   const checkJobStatus = async (jobId: string) => {
@@ -54,6 +69,13 @@ export default function useImageGenerator(
 
     if (job.status === 'ERROR') {
       console.error('job failed')
+      setError(
+        'Unable to generate an image, please try again with a different picture.'
+      )
+      if (inputImage) {
+        const fittedImage = await fitImage(inputImage, 1024, 1024)
+        setImage(fittedImage)
+      }
     }
 
     if (job.status === 'COMPLETED') {
@@ -76,5 +98,5 @@ export default function useImageGenerator(
     }
   }
 
-  return { generateImage, isLoading }
+  return { generateImage, isLoading, error }
 }
