@@ -259,7 +259,7 @@ export default function CreateCitizen({
                       }
                     </p>
                   )}
-                  {inputImage === citizenImage || generateError ? (
+                  {inputImage?.name === citizenImage?.name || generateError ? (
                     <p className="mt-2 w-full text-left opacity-[50%]">
                       {'Unable to generate an image, please try again later.'}
                     </p>
