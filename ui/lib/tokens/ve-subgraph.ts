@@ -98,21 +98,31 @@ export async function getVMOONEYData() {
     `
   let totalHolders = 0
   let totalVMooney = 0
+  let totalMooney = 0
 
   const ethRes = await EthClient.query(query).toPromise()
   const polygonRes = await PolygonClient.query(query).toPromise()
   const arbRes = await ArbClient.query(query).toPromise()
 
   const ethData = mapHolders(ethRes.data, totalHolders)
-  totalVMooney += ethData.totalVMooney
+  const ethVMooney = ethData.totalVMooney
+  const ethMooney = (ethRes.data.supplies[0]?.supply || 0) / 10 ** 18
+  totalVMooney += ethVMooney
+  totalMooney += ethMooney
   const ethHolders = ethData.holders
 
   const polygonData = mapHolders(polygonRes.data, totalHolders)
-  totalVMooney += polygonData.totalVMooney
+  const polygonVMooney = polygonData.totalVMooney
+  const polygonMooney = (polygonRes.data.supplies[0]?.supply || 0) / 10 ** 18
+  totalVMooney += polygonVMooney
+  totalMooney += polygonMooney
   const polygonHolders = polygonData.holders
 
   const arbData = mapHolders(arbRes.data, totalHolders)
-  totalVMooney += arbData.totalVMooney
+  const arbVMooney = arbData.totalVMooney
+  const arbMooney = (arbRes.data.supplies[0]?.supply || 0) / 10 ** 18
+  totalVMooney += arbVMooney
+  totalMooney += arbMooney
   const arbHolders = arbData.holders
 
   const allHolders = [...ethHolders, ...polygonHolders, ...arbHolders]
@@ -122,17 +132,26 @@ export async function getVMOONEYData() {
     (a, b) => b.totalvMooney - a.totalvMooney
   )
 
-  const totalLockedMooney =
-    (ethRes.data.supplies[0]?.supply || 0) / 10 ** 18 +
-    (polygonRes.data.supplies[0]?.supply || 0) / 10 ** 18 +
-    (arbRes.data.supplies[0]?.supply || 0) / 10 ** 18
-
   return {
     holders: combinedHolders,
     holdersByVMooney,
     totals: {
-      vMooney: totalVMooney,
-      Mooney: totalLockedMooney,
+      all: {
+        vMooney: totalVMooney,
+        Mooney: totalMooney,
+      },
+      ethereum: {
+        vMooney: ethVMooney,
+        Mooney: ethMooney,
+      },
+      polygon: {
+        vMooney: polygonVMooney,
+        Mooney: polygonMooney,
+      },
+      arbitrum: {
+        vMooney: arbVMooney,
+        Mooney: arbMooney,
+      },
     },
   }
 }
