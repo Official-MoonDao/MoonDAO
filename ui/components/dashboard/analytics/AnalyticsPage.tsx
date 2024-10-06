@@ -1,8 +1,9 @@
 import useTranslation from 'next-translate/useTranslation'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useAssets } from '../../../lib/dashboard/hooks'
 import { useMarketFeeSplitStats } from '../../../lib/thirdweb/hooks/useMarketFeeSplitStats'
 import { getVMOONEYData } from '../../../lib/tokens/ve-subgraph'
+import AnalyticsChainSelector from './AnalyticsChainSelector'
 import { AnalyticsProgress } from './AnalyticsProgress'
 import AnalyticsSkeleton from './AnalyticsSkeleton'
 import BarChart from './BarChart'
@@ -34,6 +35,8 @@ function Data({ text, value }: any) {
 
 export default function AnalyticsPage({ setDateUpdated }: any) {
   const [analyticsData, setAnalyticsData] = useState<any>()
+  const [analyticsChain, setAnalyticsChain] = useState<string>('all')
+
   const { tokens } = useAssets()
   const {
     balance,
@@ -42,6 +45,13 @@ export default function AnalyticsPage({ setDateUpdated }: any) {
   } = useMarketFeeSplitStats()
 
   const circulatingSupply = 2618632244 - tokens[0]?.balance
+
+  const circulatingMooneyStaked = useMemo(() => {
+    return (
+      (analyticsData?.totals[analyticsChain].Mooney / circulatingSupply) *
+      100
+    ).toFixed(1)
+  }, [analyticsData, analyticsChain, circulatingSupply])
 
   useEffect(() => {
     getVMOONEYData().then((data) => {
@@ -65,27 +75,35 @@ export default function AnalyticsPage({ setDateUpdated }: any) {
         <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
           {'Governance Power Over Time'}
         </h1>
-        <BarChart holdersData={analyticsData.holders}/>
+        <BarChart holdersData={analyticsData.holders} />
       </Frame>
       <Frame>
-        <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
-          {'Voting Power Key Figures'}
-        </h1>
+        <div className="flex justify-between">
+          <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
+            {'Voting Power Key Figures'}
+          </h1>
+          <div>
+            <AnalyticsChainSelector
+              analyticsChain={analyticsChain}
+              setAnalyticsChain={setAnalyticsChain}
+            />
+          </div>
+        </div>
         <div
           className="mt-6 flex flex-col  tems-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10'>
 "
         >
           <Data
             text={'Total Voting Power'}
-            value={Math.round(analyticsData.totals.vMooney).toLocaleString(
-              'en-US'
-            )}
+            value={Math.round(
+              analyticsData.totals[analyticsChain].vMooney
+            ).toLocaleString('en-US')}
           />
           <Data
             text={'Locked $MOONEY'}
-            value={Math.round(analyticsData.totals.Mooney).toLocaleString(
-              'en-US'
-            )}
+            value={Math.round(
+              analyticsData.totals[analyticsChain].Mooney
+            ).toLocaleString('en-US')}
           />
           {/*Pie chart*/}
           <div className="justify-left flex w-full flex-col p-2 pb-4 text-center border border-slate-950 dark:border-white border-opacity-20">
@@ -93,12 +111,7 @@ export default function AnalyticsPage({ setDateUpdated }: any) {
               Circulating MOONEY Staked
             </p>
             <div className="mt-3">
-              <AnalyticsProgress
-                value={(
-                  (analyticsData.totals.Mooney / circulatingSupply) *
-                  100
-                ).toFixed(1)}
-              />
+              <AnalyticsProgress value={circulatingMooneyStaked} />
             </div>
           </div>
         </div>
