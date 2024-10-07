@@ -16,7 +16,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function ArbitrumBridge() {
   const address = useAddress()
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const { setSelectedChain } = useContext(ChainContext)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [amount, setAmount] = useState<any>(0)
@@ -56,7 +56,10 @@ export default function ArbitrumBridge() {
       l1Signer: signer,
     })
     const depositReceipt = await depositTx.wait()
-    toast.success('')
+    toast.success(
+      'Your ETH has been bridged to Arbitrum. Please wait up to 15 minutes.',
+      { duration: 10000 }
+    )
     return depositReceipt
   }
   async function withdrawEth() {
@@ -71,6 +74,9 @@ export default function ArbitrumBridge() {
       from: wallets[selectedWallet]?.address,
     })
     const withdrawReceipt = await withdrawTx.wait()
+    toast.success(
+      'Your ETH has been withdrawn from Arbitrum. Please wait up to 7 days.'
+    )
     return withdrawReceipt
   }
   async function depositMooney() {
@@ -90,6 +96,10 @@ export default function ArbitrumBridge() {
       l2Provider,
     })
     const depositReceipt = await depositTx.wait()
+    toast.success(
+      'Your MOONEY has been bridged to Arbitrum. Please wait up to 15 minutes.',
+      { duration: 10000 }
+    )
     return depositReceipt
   }
   async function withdrawMooney() {
@@ -107,6 +117,9 @@ export default function ArbitrumBridge() {
       l2Signer: signer,
     })
     const withdrawReceipt = await withdrawTx.wait()
+    toast.success(
+      'Your MOONEY has been withdrawn from Arbitrum. Please wait up to 7 days.'
+    )
     return withdrawReceipt
   }
 
@@ -178,7 +191,6 @@ export default function ArbitrumBridge() {
             pattern="[0-9]*[.,]?[0-9]*"
             onChange={({ target }) => {
               setAmount(target.value)
-              console.log(target.value)
             }}
           />
 
@@ -243,8 +255,12 @@ export default function ArbitrumBridge() {
               }
             }
           } catch (err: any) {
-            if (err.message.includes('insufficient funds'))
-              toast.error('Insufficient funds.')
+            console.log(err.message)
+            if (
+              err.message.includes('insufficient funds') ||
+              err.message.includes('No retryable data found in error')
+            )
+              toast.error('Insufficient balance')
           }
         }}
       />
