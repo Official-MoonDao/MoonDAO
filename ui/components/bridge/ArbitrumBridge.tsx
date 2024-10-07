@@ -1,9 +1,5 @@
 import { getL2Network, EthBridger, Erc20Bridger } from '@arbitrum/sdk'
-import {
-  ArrowDownIcon,
-  ChevronDownIcon,
-  ChevronUpDownIcon,
-} from '@heroicons/react/24/outline'
+import { ArrowDownIcon, ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import { Arbitrum, Ethereum } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
@@ -18,7 +14,7 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
-export default function ArbitrumBridge2() {
+export default function ArbitrumBridge() {
   const address = useAddress()
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -205,9 +201,9 @@ export default function ArbitrumBridge2() {
         )}
       </div>
       <div className="h-0 w-full flex justify-center items-center z-[5]">
-        <button className="p-4 bg-[#29253f] rounded-full">
+        <div className="p-4 bg-[#29253f] rounded-full">
           <ArrowDownIcon width={25} height={25} />
-        </button>
+        </div>
       </div>
 
       <div className="flex flex-col p-4 gap-2 bg-darkest-cool min-h-[150px] rounded-lg">

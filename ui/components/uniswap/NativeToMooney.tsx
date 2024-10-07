@@ -123,9 +123,9 @@ export default function NativeToMooney({ selectedChain }: any) {
         {address && <p className="opacity-50">{`Balance: ${nativeBalance}`}</p>}
       </div>
       <div className="h-0 w-full flex justify-center items-center z-[5]">
-        <button className="p-4 bg-[#29253f] rounded-full">
+        <div className="p-4 bg-[#29253f] rounded-full">
           <ArrowDownIcon width={25} height={25} />
-        </button>
+        </div>
       </div>
 
       <div className="flex flex-col p-4 gap-2 bg-darkest-cool min-h-[150px] rounded-lg">
