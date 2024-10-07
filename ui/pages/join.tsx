@@ -46,7 +46,7 @@ export default function Join() {
       <Head title={t('joinTitle')} description={t('joinDesc')} />
       <Container>
         <ContentLayout
-          header="Join MoonDAO"
+          header="Join the Network"
           headerSize="max(20px, 3vw)"
           mainPadding
           mode="compact"
@@ -54,12 +54,9 @@ export default function Join() {
           isProfile
           description={
             <>
-              Be part of the first open-source, interplanetary network state
-              dedicated to establishing a permanent human presence on the Moon
-              and beyond. Registration is currently invite-only, but you can
-              send an email to{' '}
-              <Link href="mailto:info@moondao.com">info@moondao.com</Link> if
-              you think you'd be a good fit.
+              The Space Acceleration Network is an onchain startup society 
+              focused on building a permanent settlement on the Moon and beyond.
+              Together we can unlock a multiplanetary future.
             </>
           }
           preFooter={

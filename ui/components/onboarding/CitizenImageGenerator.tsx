@@ -1,6 +1,7 @@
 import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
 import Image from 'next/image'
+import toast from 'react-hot-toast'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import FileInput from '../layout/FileInput'
 import { StageButton } from './StageButton'
@@ -14,11 +15,11 @@ export function ImageGenerator({
   nextStage,
   generateInBG,
 }: any) {
-  const { generateImage, isLoading: generating } = useImageGenerator(
-    '/api/image-gen/citizen-image',
-    inputImage,
-    setImage
-  )
+  const {
+    generateImage,
+    isLoading: generating,
+    error: generateError,
+  } = useImageGenerator('/api/image-gen/citizen-image', inputImage, setImage)
 
   async function submitImage() {
     if (!document.getElementById('citizenPic'))
@@ -95,8 +96,12 @@ export function ImageGenerator({
           </>
         )}
       </div>
+      {generateError && (
+        <p className="mt-2 ml-2 opacity-[50%]">{generateError}</p>
+      )}
       {inputImage && (
         <StageButton
+          className=""
           onClick={() => {
             setImage(null)
             generateImage()
@@ -105,13 +110,11 @@ export function ImageGenerator({
             }
           }}
         >
-          Generate
+          {generating ? 'loading...' : 'Generate'}
         </StageButton>
       )}
       {(currImage && !inputImage) || image ? (
-        <StageButton className="" onClick={submitImage}>
-          Next
-        </StageButton>
+        <StageButton onClick={submitImage}>Next</StageButton>
       ) : (
         <></>
       )}

@@ -5,13 +5,11 @@ import { DEFAULT_CHAIN } from 'const/config'
 import Image from 'next/image'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import { renameFile } from '@/lib/utils/files'
 import Modal from '../layout/Modal'
-import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { TeamListing } from './TeamListing'
 
@@ -73,9 +71,9 @@ export default function TeamMarketplaceListingModal({
       <form
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto" // Updated styles
         onSubmit={async (e) => {
+          e.preventDefault()
           const accessToken = await getAccessToken()
           await createSession(accessToken)
-          e.preventDefault()
           if (
             listingData.title.trim() === '' ||
             listingData.description.trim() === '' ||

@@ -49,7 +49,11 @@ export default function CreateCitizen({
   const [inputImage, setInputImage] = useState<File>()
   //Final Image for Citizen Profile
   const [citizenImage, setCitizenImage] = useState<any>()
-  const { generateImage } = useImageGenerator(
+  const {
+    generateImage,
+    isLoading: generating,
+    error: generateError,
+  } = useImageGenerator(
     '/api/image-gen/citizen-image',
     inputImage,
     setCitizenImage
@@ -249,10 +253,18 @@ export default function CreateCitizen({
                   />
 
                   {!citizenImage && (
-                    <p className="opacity-[50%]">
-                      Please note that it may take up to a couple of minutes for
-                      your image to be generated.
+                    <p className="mt-2 opacity-[50%]">
+                      {
+                        'Please note that it may take up to a couple of minutes for your image to be generated.'
+                      }
                     </p>
+                  )}
+                  {inputImage?.name === citizenImage?.name || generateError ? (
+                    <p className="mt-2 w-full text-left opacity-[50%]">
+                      {'Unable to generate an image, please try again later.'}
+                    </p>
+                  ) : (
+                    <></>
                   )}
                 </div>
                 {citizenImage && (
