@@ -124,7 +124,7 @@ export function PrivyWeb3Button({
             }
             setIsLoading(false)
           }}
-          isDisabled={isDisabled}
+          isDisabled={isDisabled || isLoading}
         >
           {isLoading ? 'loading...' : label}
         </Button>
