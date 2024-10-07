@@ -1,19 +1,16 @@
 import useTranslation from 'next-translate/useTranslation'
 import React from 'react'
-import { useEffect, useState } from 'react'
+import { getVMOONEYData } from '@/lib/tokens/ve-subgraph'
 import AnalyticsPage from '../components/dashboard/analytics/AnalyticsPage'
 import TreasuryPage from '../components/dashboard/treasury/TreasuryPage'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
-import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
-export default function Analytics() {
+export default function Analytics({ vMooneyData, dateUpdated }: any) {
   const { t } = useTranslation('common')
-
-  const [dateUpdated, setDateUpdated] = useState<string>('')
 
   const descriptionSection = (
     <div className="h-[50px] p-2 flex gap-2 items-center">
@@ -44,7 +41,7 @@ export default function Analytics() {
           isProfile
         >
           <div className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-6 lg:px-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center">
-            <AnalyticsPage setDateUpdated={setDateUpdated} />
+            <AnalyticsPage vMooneyData={vMooneyData} />
             <TreasuryPage />
           </div>
         </ContentLayout>
@@ -53,4 +50,19 @@ export default function Analytics() {
   )
 }
 
-// add locales for Analytics title and desc
+export async function getStaticProps() {
+  const vMooneyData = await getVMOONEYData()
+
+  const today = new Date()
+  const formattedDate = `${today.getFullYear()}-${(today.getMonth() + 1)
+    .toString()
+    .padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`
+
+  return {
+    props: {
+      vMooneyData,
+      dateUpdated: formattedDate,
+    },
+    revalidate: 60,
+  }
+}

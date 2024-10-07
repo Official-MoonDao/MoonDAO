@@ -1,8 +1,6 @@
 import useTranslation from 'next-translate/useTranslation'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useAssets } from '../../../lib/dashboard/hooks'
-import { useMarketFeeSplitStats } from '../../../lib/thirdweb/hooks/useMarketFeeSplitStats'
-import { getVMOONEYData } from '../../../lib/tokens/ve-subgraph'
 import AnalyticsChainSelector from './AnalyticsChainSelector'
 import { AnalyticsProgress } from './AnalyticsProgress'
 import AnalyticsSkeleton from './AnalyticsSkeleton'
@@ -33,49 +31,31 @@ function Data({ text, value }: any) {
   )
 }
 
-export default function AnalyticsPage({ setDateUpdated }: any) {
-  const [analyticsData, setAnalyticsData] = useState<any>()
+export default function AnalyticsPage({ vMooneyData }: any) {
   const [analyticsChain, setAnalyticsChain] = useState<string>('all')
 
   const { tokens } = useAssets()
-  const {
-    balance,
-    released,
-    isLoading: isLoadingSplit,
-  } = useMarketFeeSplitStats()
 
   const circulatingSupply = 2618632244 - tokens[0]?.balance
 
   const circulatingMooneyStaked = useMemo(() => {
     return (
-      (analyticsData?.totals[analyticsChain].Mooney / circulatingSupply) *
+      (vMooneyData?.totals[analyticsChain].Mooney / circulatingSupply) *
       100
     ).toFixed(1)
-  }, [analyticsData, analyticsChain, circulatingSupply])
-
-  useEffect(() => {
-    getVMOONEYData().then((data) => {
-      const today = new Date()
-      const formattedDate = `${today.getFullYear()}-${(today.getMonth() + 1)
-        .toString()
-        .padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`
-      setDateUpdated(formattedDate)
-      setAnalyticsData(data)
-    })
-  }, [])
+  }, [vMooneyData, analyticsChain, circulatingSupply])
 
   const { t } = useTranslation('common')
 
-  if (!analyticsData) return <AnalyticsSkeleton />
+  if (!vMooneyData) return <AnalyticsSkeleton />
 
   return (
     <>
-      {/*Stats frame*/}
       <Frame>
         <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
           {'Governance Power Over Time'}
         </h1>
-        <BarChart holdersData={analyticsData.holders} />
+        <BarChart holdersData={vMooneyData.holders} />
       </Frame>
       <Frame>
         <div className="flex justify-between">
@@ -96,13 +76,13 @@ export default function AnalyticsPage({ setDateUpdated }: any) {
           <Data
             text={'Total Voting Power'}
             value={Math.round(
-              analyticsData.totals[analyticsChain].vMooney
+              vMooneyData.totals[analyticsChain].vMooney
             ).toLocaleString('en-US')}
           />
           <Data
             text={'Locked $MOONEY'}
             value={Math.round(
-              analyticsData.totals[analyticsChain].Mooney
+              vMooneyData.totals[analyticsChain].Mooney
             ).toLocaleString('en-US')}
           />
           {/*Pie chart*/}
@@ -116,19 +96,6 @@ export default function AnalyticsPage({ setDateUpdated }: any) {
           </div>
         </div>
       </Frame>
-      {/* Marketplace Platform Fee Split */}
-      {/* <Frame>
-        {!isLoadingSplit && (
-          <div className="w-3/4 2xl:w-full">
-            <Label text={'Marketplace Platform Fee Split (L2 $MOONEY)'} />
-            <div className="flex flex-col items-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10">
-              <Data text="Current Balance" value={balance} />
-              <Data text="Sent to Treasury" value={released.treasury} />
-              <Data text="Burned" value={released.burn} />
-            </div>
-          </div>
-        )}
-      </Frame> */}
     </>
   )
 }
