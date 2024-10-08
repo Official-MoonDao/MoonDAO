@@ -12,6 +12,8 @@ import { initSDK } from '../../lib/thirdweb/thirdweb'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { MOONEY_ADDRESSES } from '../../const/config'
+import Frame from '../layout/Frame'
+import Tab from '../layout/Tab'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function ArbitrumBridge() {
@@ -21,10 +23,11 @@ export default function ArbitrumBridge() {
   const { wallets } = useWallets()
   const [amount, setAmount] = useState<any>(0)
   const [inputToken, setInputToken] = useState('eth')
-  const [withdraw, setWithdraw] = useState(false)
+  const [bridgeType, setBridgeType] = useState('deposit')
   const [ethMooneyBalance, setEthMooneyBalance] = useState<any>()
   const [arbMooneyBalance, setArbMooneyBalance] = useState<any>()
   const [balance, setBalance] = useState(0)
+  const [skipNetworkCheck, setSkipNetworkCheck] = useState(false)
 
   const nativeBalance = useNativeBalance()
 
@@ -75,7 +78,8 @@ export default function ArbitrumBridge() {
     })
     const withdrawReceipt = await withdrawTx.wait()
     toast.success(
-      'Your ETH has been withdrawn from Arbitrum. Please wait up to 7 days.'
+      'Your ETH has been withdrawn from Arbitrum. Please wait up to 7 days.',
+      { duration: 10000 }
     )
     return withdrawReceipt
   }
@@ -118,9 +122,17 @@ export default function ArbitrumBridge() {
     })
     const withdrawReceipt = await withdrawTx.wait()
     toast.success(
-      'Your MOONEY has been withdrawn from Arbitrum. Please wait up to 7 days.'
+      'Your MOONEY has been withdrawn from Arbitrum. Please wait up to 7 days.',
+      { duration: 10000 }
     )
     return withdrawReceipt
+  }
+
+  async function temporarilySkipNetworkCheck() {
+    setSkipNetworkCheck(true)
+    setTimeout(() => {
+      setSkipNetworkCheck(false)
+    }, 100)
   }
 
   function TokenSymbol() {
@@ -167,21 +179,50 @@ export default function ArbitrumBridge() {
   useEffect(() => {
     if (inputToken === 'eth') {
       setBalance(nativeBalance)
-    } else {
+    } else if (inputToken === 'mooney' && bridgeType === 'deposit') {
       setBalance(ethMooneyBalance)
+    } else if (inputToken === 'mooney' && bridgeType === 'withdraw') {
+      setBalance(arbMooneyBalance)
     }
-  }, [ethMooneyBalance, arbMooneyBalance, nativeBalance, inputToken])
+  }, [
+    ethMooneyBalance,
+    arbMooneyBalance,
+    nativeBalance,
+    inputToken,
+    bridgeType,
+  ])
 
   useEffect(() => {
-    if (withdraw) {
+    temporarilySkipNetworkCheck()
+    if (bridgeType === 'withdraw') {
       setSelectedChain(Arbitrum)
     } else {
       setSelectedChain(Ethereum)
     }
-  }, [withdraw, setSelectedChain])
+  }, [bridgeType, setSelectedChain])
 
   return (
     <div className="max-w-[500px] w-full flex flex-col gap-1">
+      <Frame noPadding>
+        <div className="flex flex-wrap text-sm bg-filter">
+          <Tab
+            tab="deposit"
+            currentTab={bridgeType}
+            setTab={setBridgeType}
+            icon=""
+          >
+            Deposit
+          </Tab>
+          <Tab
+            tab="withdraw"
+            currentTab={bridgeType}
+            setTab={setBridgeType}
+            icon=""
+          >
+            Withdraw
+          </Tab>
+        </div>
+      </Frame>
       <div className="flex flex-col p-4 gap-2 bg-darkest-cool min-h-[150px] rounded-lg">
         <p className="opacity-50">You Pay</p>
         <div className="flex justify-between">
@@ -200,6 +241,14 @@ export default function ArbitrumBridge() {
               setInputToken(inputToken === 'eth' ? 'mooney' : 'eth')
             }}
           >
+            {bridgeType === 'withdraw' && (
+              <Image
+                src="/icons/networks/arbitrum.svg"
+                width={20}
+                height={20}
+                alt=""
+              />
+            )}
             <TokenSymbol />
             <p>{inputToken.toLocaleUpperCase()}</p>
             <ChevronUpDownIcon width={20} height={20} />
@@ -223,12 +272,14 @@ export default function ArbitrumBridge() {
         <div className="flex justify-between items-center">
           <p className="md:text-2xl">{amount?.toLocaleString() || 0}</p>
           <div className="p-2 flex items-center gap-2 bg-black rounded-full">
-            <Image
-              src="/icons/networks/arbitrum.svg"
-              width={20}
-              height={20}
-              alt=""
-            />
+            {bridgeType === 'deposit' && (
+              <Image
+                src="/icons/networks/arbitrum.svg"
+                width={20}
+                height={20}
+                alt=""
+              />
+            )}
             <TokenSymbol />
             <p>{inputToken.toLocaleUpperCase()}</p>
           </div>
@@ -236,12 +287,13 @@ export default function ArbitrumBridge() {
       </div>
 
       <PrivyWeb3Button
-        requiredChain={withdraw ? Arbitrum : Ethereum}
+        skipNetworkCheck={skipNetworkCheck}
+        requiredChain={bridgeType === 'withdraw' ? Arbitrum : Ethereum}
         className="mt-2 rounded-[5vmax] rounded-tl-[20px]"
-        label={'Bridge'}
+        label={bridgeType === 'deposit' ? 'Bridge' : 'Withdraw'}
         action={async () => {
           try {
-            if (withdraw) {
+            if (bridgeType === 'withdraw') {
               if (inputToken === 'eth') {
                 await withdrawEth()
               } else {
@@ -266,8 +318,12 @@ export default function ArbitrumBridge() {
       />
       <div className="bg-darkest-cool p-4 rounded-lg">
         <p className="opacity-[50%]">
-          Bridging can take up to 15 minutes after the transaction has been
-          confirmed.
+          {`${
+            bridgeType === 'deposit' ? 'Bridging' : 'Withdrawing'
+          } can take up to ${
+            bridgeType === 'deposit' ? '15 minutes' : '7 days'
+          } after
+          the transaction has been confirmed.`}
         </p>
       </div>
     </div>
