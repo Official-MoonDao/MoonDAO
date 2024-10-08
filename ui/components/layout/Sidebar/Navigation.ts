@@ -57,6 +57,7 @@ export const navigation = [
         href: '/get-mooney',
       },
       { name: 'Get Voting Power', href: '/lock' },
+      {name:'Bridge', href:'/bridge'}
     ],
   },
   {
