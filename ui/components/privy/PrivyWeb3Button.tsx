@@ -71,6 +71,7 @@ export function PrivyWeb3Button({
     ) {
       setBtnState(1)
     } else if (
+      !skipNetworkCheck &&
       requiredChain &&
       requiredChain.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
     ) {
