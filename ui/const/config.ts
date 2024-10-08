@@ -79,10 +79,10 @@ export const CITIZEN_TABLE_ADDRESSES: Index = {
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
-  sepolia: '0x1559E0d51d1AA3410ADb184934aea1d2293Ca93A',
+  'arbitrum-sepolia': '0x6B9b4AF44f904CA19af304507ab0CE9c8b1c6a0c',
 }
 export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
-  sepolia: '0x3FF2fd19cCb309674BbeD2d71Fab4ee6c07f212e',
+  'arbitrum-sepolia': '0xd1D57F18252D06a6b28DE96B6cbF7F4283A4F205',
 }
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {

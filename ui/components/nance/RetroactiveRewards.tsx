@@ -6,15 +6,10 @@ import {
 import { NanceProvider } from '@nance/nance-hooks'
 import { useProposalsInfinite } from '@nance/nance-hooks'
 import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import {
-  PROJECT_TABLE_ADDRESSES,
-  DISTRIBUTION_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
-} from 'const/config'
+import { DISTRIBUTION_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
 //const solver = require('javascript-lp-solver');
-import solver from 'javascript-lp-solver'
 import _ from 'lodash'
 import { StringParam, useQueryParams, withDefault } from 'next-query-params'
 import { useState, useEffect } from 'react'
@@ -27,11 +22,14 @@ import {
   SnapshotGraphqlProposalVotingInfo,
   useVotingPower,
 } from '@/lib/snapshot'
+import { iterativeNormalization, minimizeL1Distance } from '@/lib/utils/voting'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import ProposalList from '@/components/nance/ProposalList'
+import StandardButton from '../layout/StandardButton'
+import StandardButtonRight from '../layout/StandardButtonRight'
 
 type ProjectType = {
   id: string
@@ -43,170 +41,14 @@ export type RetroactiveRewardsProps = {
   projects: ProjectType[]
   //distributionTableContract: any
   distributions: []
-}
-
-// Function to minimize L1 distance
-function minimizeL1Distance(D, V) {
-  const numDistributions = V.length // Number of distributions in V
-  const numComponents = D.length // Length of the distributions
-
-  // Initialize variables for the LP problem
-  const variables = {}
-
-  // Initialize constraints
-  const constraints = {}
-
-  // Constraint: sum of c_i equals 1
-  constraints['sum_c'] = { equal: 1 }
-
-  // Constraints: c_i >= 0
-  for (let i = 0; i < numDistributions; i++) {
-    constraints['c' + i + '_nonneg'] = { min: 0 }
-  }
-
-  // Constraints: z_k >= 0
-  for (let k = 0; k < numComponents; k++) {
-    constraints['z' + k + '_nonneg'] = { min: 0 }
-  }
-
-  // Constraints for absolute differences
-  for (let k = 0; k < numComponents; k++) {
-    // Initialize constraints for each k
-    constraints['abs_diff_pos_k' + k] = { max: D[k] }
-    constraints['abs_diff_neg_k' + k] = { max: -D[k] }
-  }
-
-  // Build variables
-  for (let i = 0; i < numDistributions; i++) {
-    const variableName = 'c' + i
-    variables[variableName] = {
-      cost: 0, // c_i does not contribute to the objective function directly
-      sum_c: 1, // Coefficient in the sum_c constraint
-      ['c' + i + '_nonneg']: 1, // Coefficient in its non-negativity constraint
-    }
-
-    // Coefficients in the absolute difference constraints
-    for (let k = 0; k < numComponents; k++) {
-      const V_ik = V[i][k]
-      variables[variableName]['abs_diff_pos_k' + k] = V_ik
-      variables[variableName]['abs_diff_neg_k' + k] = -V_ik
-    }
-  }
-
-  for (let k = 0; k < numComponents; k++) {
-    const variableName = 'z' + k
-    variables[variableName] = {
-      cost: 1, // z_k contributes to the objective function
-      ['z' + k + '_nonneg']: 1, // Coefficient in its non-negativity constraint
-    }
-
-    // Coefficient in the absolute difference constraints
-    variables[variableName]['abs_diff_pos_k' + k] = -1
-    variables[variableName]['abs_diff_neg_k' + k] = -1
-  }
-
-  // Define the model for the LP solver
-  const model = {
-    optimize: 'cost',
-    opType: 'min',
-    constraints: constraints,
-    variables: variables,
-  }
-
-  // Solve the LP problem
-  const results = solver.Solve(model)
-
-  // Extract coefficients c_i from the results
-  const coefficients = []
-  for (let i = 0; i < numDistributions; i++) {
-    coefficients.push(results['c' + i] || 0)
-  }
-  return coefficients
-}
-
-function fillIn(distributions, projects) {
-  const numProjects = projects.length
-
-  const numVotes = distributions.length
-  const votes = Array.from({ length: numVotes }, () =>
-    Array(numProjects).fill(NaN)
-  )
-  for (const [citizenIndex, d] of distributions.entries()) {
-    const { address, year, quarter, distribution: dist } = d
-    for (const [projectIndex, project] of projects.entries()) {
-      const projectId = project.id
-      votes[citizenIndex][projectIndex] = dist[projectId]
-    }
-  }
-
-  let newVotes = []
-  let newDistributionSums = []
-  for (let loop = 0; loop < 10; loop++) {
-    // compute column wise averages
-    const projectAverages = []
-    for (let j = 0; j < numProjects; j++) {
-      let sum = 0
-      let count = 0
-      for (let i = 0; i < numVotes; i++) {
-        if (!isNaN(votes[i][j])) {
-          sum += votes[i][j]
-          count += 1
-        }
-      }
-      projectAverages.push(sum / count)
-    }
-
-    newVotes = _.cloneDeep(votes)
-    for (let j = 0; j < numProjects; j++) {
-      for (let i = 0; i < numVotes; i++) {
-        if (isNaN(newVotes[i][j])) {
-          newVotes[i][j] = projectAverages[j]
-        }
-      }
-    }
-
-    newDistributionSums = []
-    for (let j = 0; j < numProjects; j++) {
-      newDistributionSums.push(_.sum(newVotes[j]))
-    }
-
-    for (let j = 0; j < numProjects; j++) {
-      for (let i = 0; i < numVotes; i++) {
-        if (!isNaN(votes[i][j])) {
-          votes[i][j] = (votes[i][j] / newDistributionSums[i]) * 100
-        }
-      }
-    }
-  }
-
-  const testVotes = [
-    [0.1, 0.2, 0.7],
-    [0.1, 0.1, 0.8],
-    [0.1, 0, 0.9],
-  ]
-
-  //return newVotes
-  // recreate distributions
-  const newDistributions = []
-  for (let i = 0; i < numVotes; i++) {
-    const distribution = {}
-    for (let j = 0; j < numProjects; j++) {
-      distribution[projects[j].id] = newVotes[i][j]
-    }
-    newDistributions.push({
-      address: distributions[i].address,
-      year: distributions[i].year,
-      quarter: distributions[i].quarter,
-      distribution,
-    })
-  }
-  return [newDistributions, newVotes]
+  refreshRewards: () => void
 }
 
 export function RetroactiveRewards({
   projects,
   //distributionTableContract,
   distributions: currentDistributions,
+  refreshRewards,
 }: RetroactiveRewardsProps) {
   const [distributions, setDistributions] = useState<{ [key: string]: number }>(
     {}
@@ -214,11 +56,146 @@ export function RetroactiveRewards({
   console.log('projects')
   console.log(projects)
   console.log('current')
-  console.log(currentDistributions)
+  console.log(_.cloneDeep(currentDistributions))
+
+  const testDistributions = [
+    {
+      // Pablo/R1
+      address: '0x679d87D8640e66778c3419D164998E720D7495f6',
+      distribution: {
+        //'1': 0,
+        '2': 50,
+        '4': 30,
+        '3': 20,
+        '5': 0,
+      },
+      id: 1,
+      quarter: 2,
+      year: 2024,
+    },
+    {
+      // Mitchie/R2
+      address: '0x9fDf876a50EA8f95017dCFC7709356887025B5BB',
+      distribution: {
+        '1': 23,
+        '2': 24,
+        '4': 49,
+        '5': 4,
+      },
+      id: 2,
+      quarter: 2,
+      year: 2024,
+    },
+    {
+      //Phil/R3
+      address: '0x6bFd9e435cF6194c967094959626ddFF4473a836',
+      distribution: {
+        '1': 31,
+        '2': 12,
+        '4': 42,
+        '3': 10,
+        '5': 5,
+      },
+      id: 3,
+      quarter: 2,
+      year: 2024,
+    },
+    {
+      //R4
+      address: '0x0000000000000000000000000000000000000004',
+      distribution: {
+        '1': 20,
+        '2': 20,
+        '4': 30,
+        '3': 20,
+        '5': 10,
+      },
+      id: 4,
+      quarter: 2,
+      year: 2024,
+    },
+    {
+      //R5
+      address: '0x0000000000000000000000000000000000000005',
+      distribution: {
+        '1': 30.25,
+        '2': 30.25,
+        '4': 30.25,
+        '3': 9.25,
+      },
+      id: 5,
+      quarter: 2,
+      year: 2024,
+    },
+    {
+      //R6
+      address: '0x0000000000000000000000000000000000000006',
+      distribution: {
+        '1': 35,
+        '4': 35,
+        '3': 20,
+        '5': 10,
+      },
+      id: 6,
+      quarter: 2,
+      year: 2024,
+    },
+    {
+      //R7
+      address: '0x0000000000000000000000000000000000000007',
+      distribution: {
+        '1': 20.5,
+        '2': 22.5,
+        '4': 38.5,
+        '3': 16.5,
+        '5': 2,
+      },
+      id: 7,
+      quarter: 2,
+      year: 2024,
+    },
+    {
+      //R8
+      address: '0x0000000000000000000000000000000000000008',
+      distribution: {
+        '1': 48,
+        '2': 28,
+        '3': 18,
+        '5': 6,
+      },
+      id: 8,
+      quarter: 2,
+      year: 2024,
+    },
+  ]
+  //TODO remove
+  currentDistributions = testDistributions
+
   const [year, setYear] = useState(new Date().getFullYear())
+  const [edit, setEdit] = useState(false)
+  // TODO don't spoof to pablos address
+  const userAddress = useAddress()
+  // TODO use current quarter
   const [quarter, setQuarter] = useState(
-    Math.floor((new Date().getMonth() + 3) / 3)
+    Math.floor((new Date().getMonth() + 3) / 3) - 2
   )
+  // Check if the user already has a distribution for the current quarter
+  useEffect(() => {
+    if (currentDistributions && userAddress) {
+      for (const d of currentDistributions) {
+        if (
+          d.year === year &&
+          d.quarter === quarter &&
+          d.address.toLowerCase() === userAddress.toLowerCase()
+        ) {
+          setDistributions(d.distribution)
+          setEdit(true)
+          break
+        }
+      }
+    }
+  }, [year, quarter, userAddress, currentDistributions])
+
   const TEST_NANCE_SPACE_NAME = 'moondao.eth'
   const cycle = 'All'
   const keyword = ''
@@ -238,101 +215,146 @@ export function RetroactiveRewards({
   const groupedDistributions = {}
   const projectIdToEstimatedAllocation = {}
   const votingPower = {}
-  // TODO don't spoof to pablos address
-  //const userAddress = useAddress()
-  const userAddress = '0x679d87D8640e66778c3419D164998E720D7495f6'
+  console.log('userAddress')
+  console.log(userAddress)
+  //const userAddress = '0x679d87D8640e66778c3419D164998E720D7495f6'
 
   const addresses = []
-  const TEST_SNAPSHOT_SPACE_NAME = 'moondao.eth'
+  //const TEST_SNAPSHOT_SPACE_NAME = 'moondao.eth'
+  const SNAPSHOT_SPACE_NAME = 'tomoondao.eth'
 
   // TODO set to selected chain
-  const citizenDisitributions = []
+  const citizenDistributions = []
   const nonCitizenDistributions = []
   for (const d of currentDistributions) {
-    const isCitizen = useCitizen(Sepolia, '', d.address)
+    const isCitizen = useCitizen(ArbitrumSepolia, '', d.address)
     if (isCitizen) {
-      citizenDisitributions.push(d)
+      citizenDistributions.push(d)
     } else {
-      nonCitizenDistributions.push(d)
+      // TODO undo
+      //nonCitizenDistributions.push(d)
+      citizenDistributions.push(d)
     }
   }
-  const [filledInCitizenDistributions, votes] = fillIn(
-    citizenDisitributions,
-    projects
-  )
-  for (const d of nonCitizenDistributions) {
-    //nonCitizenDistributions.distribution
-    const desiredDistribution = []
-    const dist = d.distribution
-    for (const [projectIndex, project] of projects.entries()) {
-      const projectId = project.id
-      desiredDistribution.push(dist[projectId])
-    }
-    const actualDistribution = minimizeL1Distance(desiredDistribution, votes)
-    for (const [projectIndex, project] of projects.entries()) {
-      const projectId = project.id
-      d.distribution[projectId] = actualDistribution[projectIndex]
-    }
-  }
-  const allDistributions = [
-    ...filledInCitizenDistributions,
-    ...nonCitizenDistributions,
-  ]
+  console.log('citizenDistributions')
+  console.log(citizenDistributions)
+  console.log('nonCitizenDistributions')
+  console.log(nonCitizenDistributions)
 
-  if (currentDistributions) {
-    //const filledInDistributions =
-    //const fill = fillIn(currentDistributions, projects)
-    //const filledInDistributions = currentDistributions
-    for (const d of allDistributions) {
-      const { address, year, quarter, distribution: dist } = d
-      //groupedDistributions['address'].push(address)
-      addresses.push(address)
-      const { data: _vp } = useVotingPower(
-        // TODO use real address
-        //address,
-        '0x679d87D8640e66778c3419D164998E720D7495f6',
-        TEST_SNAPSHOT_SPACE_NAME,
-        //'moondao.eth',
-        //proposal?.id || ''
-        //'https://testnet.snapshot.org/#/moondao.eth/proposal/0x0581832b2bc87afb9d23b8bb0a2454d21be75bd33ef92d757cbc67ea45ac685e'
-        '0x0581832b2bc87afb9d23b8bb0a2454d21be75bd33ef92d757cbc67ea45ac685e'
-      )
-      console.log('_vp')
-      console.log(_vp)
-      if (_vp) {
-        votingPower[address] = _vp.vp
+  // All projects need at least one citizen distribution to do iterative normalization
+  const doAllProjectsHaveCitizenDistribution = (
+    projects,
+    citizenDistributions
+  ) => {
+    const projectsWithVotes = new Set()
+    for (const d of citizenDistributions) {
+      for (const [projectId, percentage] of Object.entries(d.distribution)) {
+        projectsWithVotes.add(projectId)
       }
-      for (const [key, value] of Object.entries(dist)) {
-        if (!groupedDistributions[key]) {
-          groupedDistributions[key] = []
+    }
+    console.log('projectsWithVotes')
+    console.log(projectsWithVotes)
+    for (const project of projects) {
+      if (!projectsWithVotes.has(String(project.id))) {
+        return false
+      }
+    }
+    return true
+  }
+  const allProjectsHaveCitizenDistribution =
+    doAllProjectsHaveCitizenDistribution(projects, citizenDistributions)
+  console.log('allProjectsHaveCitizenDistribution')
+  console.log(allProjectsHaveCitizenDistribution)
+
+  if (allProjectsHaveCitizenDistribution) {
+    const [filledInCitizenDistributions, votes] = iterativeNormalization(
+      citizenDistributions,
+      projects
+    )
+    console.log('filledInCitizenDistributions')
+    console.log(filledInCitizenDistributions)
+    for (const d of nonCitizenDistributions) {
+      //nonCitizenDistributions.distribution
+      const desiredDistribution = []
+      const dist = d.distribution
+      for (const [projectIndex, project] of projects.entries()) {
+        const projectId = project.id
+        desiredDistribution.push(dist[projectId])
+      }
+      const actualDistribution = minimizeL1Distance(desiredDistribution, votes)
+      for (const [projectIndex, project] of projects.entries()) {
+        const projectId = project.id
+        // TODO uncomment and don't update the original object, instead make a copy
+        //d.distribution[projectId] = _.cloneDeep(actualDistribution[projectIndex])
+      }
+    }
+    const allDistributions = [
+      ...filledInCitizenDistributions,
+      ...nonCitizenDistributions,
+    ]
+
+    if (currentDistributions) {
+      //const filledInDistributions =
+      //const filledInDistributions = currentDistributions
+      for (const d of allDistributions) {
+        const { address, year, quarter, distribution: dist } = d
+        //groupedDistributions['address'].push(address)
+        addresses.push(address)
+        const { data: _vp } = useVotingPower(
+          // TODO use real address
+          //address,
+          '0x679d87D8640e66778c3419D164998E720D7495f6',
+          SNAPSHOT_SPACE_NAME,
+          //'moondao.eth',
+          //proposal?.id || ''
+          //'https://testnet.snapshot.org/#/moondao.eth/proposal/0x0581832b2bc87afb9d23b8bb0a2454d21be75bd33ef92d757cbc67ea45ac685e'
+          //'0x0581832b2bc87afb9d23b8bb0a2454d21be75bd33ef92d757cbc67ea45ac685e'
+          '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
+        )
+        console.log('_vp')
+        console.log(_vp)
+        if (_vp) {
+          votingPower[address] = _vp.vp
         }
-        groupedDistributions[key].push(value)
+        for (const [key, value] of Object.entries(dist)) {
+          if (!groupedDistributions[key]) {
+            groupedDistributions[key] = []
+          }
+          groupedDistributions[key].push(value)
+        }
       }
-    }
-    const votingPowerSum = _.sum(Object.values(votingPower))
-    for (const [projectId, percentages] of Object.entries(
-      groupedDistributions
-    )) {
-      const sumProduct = _.sum(
-        percentages.map((p, i) => p * votingPower[addresses[i]])
-      )
-      const sumProductPercentage = sumProduct / votingPowerSum
-      projectIdToEstimatedAllocation[projectId] = sumProductPercentage
-    }
-    // normalize projectIdToEstimatedAllocation
-    const sum = _.sum(Object.values(projectIdToEstimatedAllocation))
-    for (const [projectId, percentage] of Object.entries(
-      projectIdToEstimatedAllocation
-    )) {
-      projectIdToEstimatedAllocation[projectId] = (percentage / sum) * 100
+      const votingPowerSum = _.sum(Object.values(votingPower))
+      for (const [projectId, percentages] of Object.entries(
+        groupedDistributions
+      )) {
+        const sumProduct = _.sum(
+          percentages.map((p, i) => p * votingPower[addresses[i]])
+        )
+        const sumProductPercentage = sumProduct / votingPowerSum
+        projectIdToEstimatedAllocation[projectId] = sumProductPercentage
+      }
+      // normalize projectIdToEstimatedAllocation
+      const sum = _.sum(Object.values(projectIdToEstimatedAllocation))
+      for (const [projectId, percentage] of Object.entries(
+        projectIdToEstimatedAllocation
+      )) {
+        projectIdToEstimatedAllocation[projectId] = (percentage / sum) * 100
+      }
     }
   }
 
   // TODO dynamically set chain
-  const chain = Sepolia
+  const chain = ArbitrumSepolia
   const { contract: distributionTableContract } = useContract(
     DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
   )
+  //const sdk = initSDK(chain)
+
+  //const distributionTableContract = await sdk.getContract(
+  //DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
+  //)
+  console.log('distributionTableContract')
+  console.log(distributionTableContract)
 
   const handleDistributionChange = (projectId: string, value: number) => {
     setDistributions((prev) => ({
@@ -342,6 +364,7 @@ export function RetroactiveRewards({
   }
 
   const handleSubmit = async () => {
+    // Validate percentage
     const totalPercentage = Object.values(distributions).reduce(
       (sum, value) => sum + value,
       0
@@ -350,15 +373,16 @@ export function RetroactiveRewards({
       alert('Total distribution must equal 100%')
       return
     }
+
+    // Fill in empty values with 0
+    // Missing values are assumed to be projects which the user is a contributor to
+    // and will be filled in with iterative normalization
     for (const project of projects) {
       if (
         !(project.id in distributions) &&
         !(
-          // TODO change to contributors
-          (
-            userAddress in project.allocation ||
-            userAddress.toLowerCase() in project.allocation
-          )
+          userAddress in project.contributors ||
+          userAddress.toLowerCase() in project.contributors
         )
       ) {
         distributions[project.id] = 0
@@ -366,22 +390,39 @@ export function RetroactiveRewards({
     }
 
     try {
-      //const sdk = initSDK(chain)
-
-      //const distributionTableContract = await sdk.getContract(
-      //DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
-      //)
-      await distributionTableContract.call('insertIntoTable', [
-        quarter,
-        year,
-        JSON.stringify(distributions),
-      ])
-      alert('Distribution submitted successfully!')
+      if (edit) {
+        await distributionTableContract.call('updateTableCol', [
+          quarter,
+          year,
+          JSON.stringify(distributions),
+        ])
+        alert('Distribution edited successfully!')
+        refreshRewards()
+      } else {
+        await distributionTableContract.call('insertIntoTable', [
+          quarter,
+          year,
+          JSON.stringify(distributions),
+        ])
+        alert('Distribution submitted successfully!')
+        refreshRewards()
+      }
     } catch (error) {
       console.error('Error submitting distribution:', error)
       alert('Error submitting distribution. Please try again.')
     }
   }
+  const handleDelete = async () => {
+    try {
+      await distributionTableContract.call('deleteFromTable', [quarter, year])
+      alert('Distribution deleted successfully!')
+      refreshRewards()
+    } catch (error) {
+      console.error('Error deleting distribution:', error)
+      alert('Error deleting distribution. Please try again.')
+    }
+  }
+
   const idToTitle = projects.reduce((acc, project) => {
     acc[project.id] = project.title
     return acc
@@ -390,6 +431,8 @@ export function RetroactiveRewards({
   const { tokens } = useAssets()
   console.log('tokens')
   console.log(tokens)
+  const VMOONEY_ROUND_TO = 10_000
+  const numQuartersPastQ4Y2022 = (year - 2022) * 4 + quarter - 1
   let ethBudget = 0
   let mooneyBudget = 0
   if (tokens && tokens[0]) {
@@ -397,16 +440,14 @@ export function RetroactiveRewards({
     mooneyBudget = 15_000_000 * 0.95 ** numQuartersPastQ4Y2022
   }
 
-  const VMOONEY_ROUND_TO = 10_000
-  const numQuartersPastQ4Y2022 = (year - 2022) * 4 + quarter - 1
-
   const addressToPercentagePayout = {}
   for (const project of projects) {
     const projectId = project.id
     const allocation = projectIdToEstimatedAllocation[projectId]
-    // TODO change to contributors
-    const contributors = project.allocation
-    for (const [contributerAddress, proportion] of contributors.entries()) {
+    const contributors = project.contributors
+    for (const [contributerAddress, proportion] of Object.entries(
+      contributors
+    )) {
       if (contributerAddress in addressToPercentagePayout) {
         addressToPercentagePayout[contributerAddress] += proportion * allocation
       } else {
@@ -450,7 +491,9 @@ export function RetroactiveRewards({
             {projects &&
               projects.map((project, i: number) => (
                 <div key={i} className="flex items-center justify-between">
-                  <div>{project.title}</div>
+                  <a href={project.finalReportLink} target="_blank">
+                    {project.title}
+                  </a>
                   <input
                     type="number"
                     value={distributions[project.id] || ''}
@@ -464,20 +507,37 @@ export function RetroactiveRewards({
                     min="1"
                     max="100"
                     disabled={
-                      // TODO change to contributors
-                      userAddress in project.allocation ||
-                      userAddress.toLowerCase() in project.allocation
+                      !userAddress ||
+                      userAddress in project.contributors ||
+                      userAddress.toLowerCase() in project.contributors
                     }
                   />
                 </div>
               ))}
-            <button
-              onClick={handleSubmit}
-              className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              Submit Distribution
-            </button>
-            <div> Current Estimated Distributions </div>
+            {projects && (
+              <span>
+                <StandardButton
+                  onClick={handleSubmit}
+                  className="gradient-2 rounded-full"
+                  //className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                  {edit ? 'Edit' : 'Submit'} Distribution
+                </StandardButton>
+                {edit && (
+                  <StandardButton
+                    onClick={handleDelete}
+                    //className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    className="gradient-1 rounded-full"
+                  >
+                    Delete Distribution
+                  </StandardButton>
+                )}
+              </span>
+            )}
+
+            {allProjectsHaveCitizenDistribution && (
+              <div> Current Estimated Distributions </div>
+            )}
             {Object.entries(groupedDistributions).map(
               ([projectId, percentages], i) => (
                 <div key={i} className="flex items-center justify-between">

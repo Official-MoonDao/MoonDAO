@@ -59,6 +59,7 @@
     "gsap": "^3.12.2",
     "html2canvas": "^1.4.1",
     "iron-session": "^8.0.3",
+    "javascript-lp-solver": "^0.4.24",
     "jsbi": "3.2.5",
     "merkletreejs": "^0.3.11",
     "moment": "^2.29.4",

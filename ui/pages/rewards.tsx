@@ -1,10 +1,11 @@
 import { NanceProvider } from '@nance/nance-hooks'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import {
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
 } from 'const/config'
+import { useRouter } from 'next/router'
 import { NANCE_API_URL } from '../lib/nance/constants'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import {
@@ -17,17 +18,24 @@ export default function Rewards({
   //distributionTableContract,
   distributions,
 }: RetroactiveRewardsProps) {
+  const router = useRouter()
   return (
     <NanceProvider apiUrl={NANCE_API_URL}>
-      <RetroactiveRewards projects={projects} distributions={distributions} />
+      <RetroactiveRewards
+        projects={projects}
+        distributions={distributions}
+        refreshRewards={() => router.reload()}
+      />
     </NanceProvider>
   )
 }
 
 export async function getStaticProps() {
   // TODO dynamically set chain
-  const chain = Sepolia
+  const chain = ArbitrumSepolia
   const sdk = initSDK(chain)
+  console.log('chain.slug')
+  console.log(chain.slug)
 
   const projectTableContract = await sdk.getContract(
     PROJECT_TABLE_ADDRESSES[chain.slug]
@@ -38,22 +46,31 @@ export async function getStaticProps() {
   )
 
   const projectBoardTableName = await projectTableContract.call('getTableName')
-  const distributionTableName =
-    await distributionTableContract.call('getTableName')
+  console.log('projectBoardTableName')
+  console.log(projectBoardTableName)
+  const distributionTableName = await distributionTableContract.call(
+    'getTableName'
+  )
+  console.log('distributionTableName')
+  console.log(distributionTableName)
 
   const now = Math.floor(Date.now() / 1000)
   const currentYear = new Date().getFullYear()
   // TODO don't use last quarter
-  const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
+  const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 2
   //const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3)
   //
   const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
+  console.log('projectStatement')
+  console.log(projectStatement)
   const allProjectsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
   )
   const allProjects = await allProjectsRes.json()
 
   const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
+  console.log('distributionStatement')
+  console.log(distributionStatement)
   const allDistributionsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
   )
