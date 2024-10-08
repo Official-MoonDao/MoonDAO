@@ -10,7 +10,6 @@ import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { initSDK } from '../../lib/thirdweb/thirdweb'
 import ChainContext from '@/lib/thirdweb/chain-context'
-import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import Frame from '../layout/Frame'
 import Tab from '../layout/Tab'
@@ -18,18 +17,17 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function ArbitrumBridge() {
   const address = useAddress()
-  const { setSelectedChain } = useContext(ChainContext)
+  const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [amount, setAmount] = useState<any>(0)
   const [inputToken, setInputToken] = useState('eth')
   const [bridgeType, setBridgeType] = useState('deposit')
+  const [nativeBalance, setNativeBalance] = useState<any>(0)
   const [ethMooneyBalance, setEthMooneyBalance] = useState<any>()
   const [arbMooneyBalance, setArbMooneyBalance] = useState<any>()
   const [balance, setBalance] = useState(0)
   const [skipNetworkCheck, setSkipNetworkCheck] = useState(false)
-
-  const nativeBalance = useNativeBalance()
 
   async function approveMooney(signer: any, erc20Bridger: any) {
     const sdk = initSDK(Ethereum)
@@ -174,7 +172,30 @@ export default function ArbitrumBridge() {
       getEthMooneyBalance()
       getArbMooneyBalance()
     }
-  }, [address])
+  }, [address, selectedChain])
+
+  useEffect(() => {
+    async function getEthBalance() {
+      const provider = initSDK(Ethereum).getProvider()
+      const balance = await provider.getBalance(wallets[selectedWallet].address)
+      if (bridgeType === 'deposit') {
+        setNativeBalance((+balance / 10 ** 18).toFixed(5))
+      }
+    }
+
+    async function getArbBalance() {
+      const provider = initSDK(Arbitrum).getProvider()
+      const balance = await provider.getBalance(wallets[selectedWallet].address)
+      if (bridgeType === 'withdraw') {
+        setNativeBalance((+balance / 10 ** 18).toFixed(5))
+      }
+    }
+
+    if (address) {
+      getEthBalance()
+      getArbBalance()
+    }
+  }, [address, wallets, bridgeType, inputToken])
 
   useEffect(() => {
     if (inputToken === 'eth') {
