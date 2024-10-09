@@ -56,5 +56,7 @@
   "analyticsTitle": "Analytics",
   "analyticsDesc": "Fully transparent stats and analytics related to our community and the MoonDAO Treasury, including total holdings and all transactions.",
   "eventsTitle": "Events",
-  "eventsDesc": "Get involved with MoonDAO by attending one of our upcoming online events or find out how you can contribute to our ambitious plans by helping out on a project."
+  "eventsDesc": "Get involved with MoonDAO by attending one of our upcoming online events or find out how you can contribute to our ambitious plans by helping out on a project.",
+  "bridgeTitle": "Bridge",
+  "bridgeDesc": "Bridge ETH or MOONEY from Ethereum to Arbitrum."
 }

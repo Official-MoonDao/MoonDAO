@@ -1,5 +1,6 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
+import MARKETPLACE_ABI from 'const/abis/MarketplaceTable.json'
 import {
   MARKETPLACE_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
@@ -99,7 +100,8 @@ export async function getStaticProps() {
   const sdk = initSDK(chain)
 
   const marketplaceTableContract = await sdk.getContract(
-    MARKETPLACE_TABLE_ADDRESSES[chain.slug]
+    MARKETPLACE_TABLE_ADDRESSES[chain.slug],
+    MARKETPLACE_ABI
   )
   const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
 

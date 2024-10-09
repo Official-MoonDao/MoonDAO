@@ -103,14 +103,11 @@ export function ImageGenerator({
         <StageButton
           className=""
           onClick={() => {
-            toast.error(
-              'The image generator is currently down, please try again later.'
-            )
-            // setImage(null)
-            // generateImage()
-            // if (generateInBG) {
-            //   nextStage()
-            // }
+            setImage(null)
+            generateImage()
+            if (generateInBG) {
+              nextStage()
+            }
           }}
         >
           {generating ? 'loading...' : 'Generate'}
