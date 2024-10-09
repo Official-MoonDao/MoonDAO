@@ -33,7 +33,8 @@ export default function Rewards({
 
 export async function getStaticProps() {
   // TODO dynamically set chain
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain =
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
   const sdk = initSDK(chain)
   console.log('chain.slug')
   console.log(chain.slug)

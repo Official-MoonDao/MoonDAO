@@ -5,7 +5,7 @@ import { CITIZEN_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 
-export default function useCitizen(
+export function useCitizen(
   selectedChain: Chain,
   citizenContract?: any,
   citizenAddress?: string
@@ -56,4 +56,14 @@ export default function useCitizen(
   ])
 
   return citizenNFT
+}
+
+export function useCitizens(
+  selectedChain: Chain,
+  citizenContract?: any,
+  citizenAddresses?: string[]
+) {
+  return citizenAddresses.map((address) => {
+    return useCitizen(selectedChain, citizenContract, address)
+  })
 }

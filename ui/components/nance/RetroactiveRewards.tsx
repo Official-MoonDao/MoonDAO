@@ -6,7 +6,7 @@ import {
 import { NanceProvider } from '@nance/nance-hooks'
 import { useProposalsInfinite } from '@nance/nance-hooks'
 import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
-import { useChain } from '@thirdweb-dev/react'
+import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { DISTRIBUTION_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
 //const solver = require('javascript-lp-solver');
@@ -14,13 +14,13 @@ import _ from 'lodash'
 import { StringParam, useQueryParams, withDefault } from 'next-query-params'
 import { useState, useEffect } from 'react'
 import { useDebounce } from 'react-use'
-import useCitizen from '@/lib/citizen/useCitizen'
+import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { NANCE_API_URL } from '@/lib/nance/constants'
 import {
   SnapshotGraphqlProposalVotingInfo,
-  useVotingPower,
+  useVotingPowers,
 } from '@/lib/snapshot'
 import { iterativeNormalization, minimizeL1Distance } from '@/lib/utils/voting'
 import Container from '@/components/layout/Container'
@@ -53,7 +53,8 @@ export function RetroactiveRewards({
   const [distributions, setDistributions] = useState<{ [key: string]: number }>(
     {}
   )
-  const chain = useChain()
+  const chain =
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
   console.log('projects')
   console.log(projects)
   console.log('current')
@@ -148,26 +149,28 @@ export function RetroactiveRewards({
 
   const groupedDistributions = {}
   const projectIdToEstimatedAllocation = {}
-  const votingPower = {}
+  //const votingPower = {}
   console.log('userAddress')
   console.log(userAddress)
   //const userAddress = '0x679d87D8640e66778c3419D164998E720D7495f6'
 
-  const addresses = []
   //const TEST_SNAPSHOT_SPACE_NAME = 'moondao.eth'
   const SNAPSHOT_SPACE_NAME = 'tomoondao.eth'
 
   // TODO set to selected chain
   const citizenDistributions = []
   const nonCitizenDistributions = []
-  for (const d of currentDistributions) {
-    const isCitizen = useCitizen(chain, '', d.address)
+
+  const addresses = currentDistributions.map((d) => d.address)
+  const isCitizens = useCitizens(chain, '', addresses)
+  console.log('isCitizens')
+  console.log(isCitizens)
+  for (const [i, d] of currentDistributions.entries()) {
+    const isCitizen = isCitizens[i]
     if (isCitizen) {
       citizenDistributions.push(d)
     } else {
-      // TODO undo
       nonCitizenDistributions.push(d)
-      //citizenDistributions.push(d)
     }
   }
   console.log('citizenDistributions')
@@ -231,29 +234,26 @@ export function RetroactiveRewards({
     if (currentDistributions) {
       //const filledInDistributions =
       //const filledInDistributions = currentDistributions
+      const allAddresses = allDistributions.map((d) => d.address)
+      const votingPowers = useVotingPowers(
+        allAddresses,
+        SNAPSHOT_SPACE_NAME,
+        '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
+      ).map((vp) => vp.vp)
+      // set undefined votingPower to 0
+      for (const [i, vp] of votingPowers.entries()) {
+        if (vp === undefined) {
+          votingPowers[i] = 0
+        }
+      }
+
       for (const d of allDistributions) {
         const { address, year, quarter, distribution: dist } = d
-        //groupedDistributions['address'].push(address)
-        addresses.push(address)
         const { data: _vp } = useVotingPower(
-          // TODO use real address
           address,
-          //'0x679d87D8640e66778c3419D164998E720D7495f6',
           SNAPSHOT_SPACE_NAME,
-          //'moondao.eth',
-          //proposal?.id || ''
-          //'https://testnet.snapshot.org/#/moondao.eth/proposal/0x0581832b2bc87afb9d23b8bb0a2454d21be75bd33ef92d757cbc67ea45ac685e'
-          //'0x0581832b2bc87afb9d23b8bb0a2454d21be75bd33ef92d757cbc67ea45ac685e'
           '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
         )
-        console.log('_vp')
-        console.log(_vp)
-        if (_vp && _vp.vp) {
-          votingPower[address] = _vp.vp
-        } else {
-          console.log('no vp for address: ', address)
-          continue
-        }
         for (const [key, value] of Object.entries(dist)) {
           if (!groupedDistributions[key]) {
             groupedDistributions[key] = []
@@ -261,14 +261,14 @@ export function RetroactiveRewards({
           groupedDistributions[key].push(value)
         }
       }
-      const votingPowerSum = _.sum(Object.values(votingPower))
+      const votingPowerSum = _.sum(votingPowers)
       if (votingPowerSum > 0) {
         votingPowerSumIsNonZero = true
         for (const [projectId, percentages] of Object.entries(
           groupedDistributions
         )) {
           const sumProduct = _.sum(
-            percentages.map((p, i) => p * votingPower[addresses[i]])
+            percentages.map((p, i) => p * votingPowers[i])
           )
           const sumProductPercentage = sumProduct / votingPowerSum
           projectIdToEstimatedAllocation[projectId] = sumProductPercentage
@@ -439,7 +439,11 @@ export function RetroactiveRewards({
             {projects &&
               projects.map((project, i: number) => (
                 <div key={i} className="flex items-center justify-between">
-                  <a href={project.finalReportLink} target="_blank">
+                  <a
+                    href={project.finalReportLink}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     {project.title}
                   </a>
                   <input

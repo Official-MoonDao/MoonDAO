@@ -241,6 +241,16 @@ export function useVotingPower(
   )
 }
 
+export function useVotingPowers(
+  addresses: string[],
+  space: string,
+  proposal: string
+) {
+  return addresses.map((address) => {
+    return useVotingPower(address, space, proposal)
+  })
+}
+
 // map indexed choice number to choice string
 export function getChoiceLabel(
   type: ProposalType,

@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
-import useCitizen from '@/lib/citizen/useCitizen'
+import { useCitizen } from '@/lib/citizen/useCitizen'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import Footer from './Footer'
 
