@@ -476,7 +476,6 @@ export default function CreateCitizen({
                         ],
                         {
                           value: cost,
-                          gasLimit: 1000000,
                         }
                       )
 
