@@ -55,10 +55,12 @@ export default function AnalyticsPage({ vMooneyData }: any) {
         <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
           {'Governance Power Over Time'}
         </h1>
-        <BarChart holdersData={vMooneyData.holders} />
+        <div className="w-full">
+          <BarChart holdersData={vMooneyData.holders} />
+        </div>
       </Frame>
       <Frame>
-        <div className="flex justify-between">
+        <div className="flex flex-col md:flex-row justify-between">
           <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
             {'Voting Power Key Figures'}
           </h1>

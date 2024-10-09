@@ -47,7 +47,10 @@ export default function TreasuryPage() {
         {loadingAssets || !tokens[0] ? (
           <AssetSkeletons />
         ) : (
-          <div className="mt-4 xl:mt-7" id="dashboard-treasury-assets">
+          <div
+            className="mt-4 xl:mt-7 text-center md:text-left"
+            id="dashboard-treasury-assets"
+          >
             <TreasuryBalance balance={balanceSum} />
             <Assets tokens={tokens} />
           </div>

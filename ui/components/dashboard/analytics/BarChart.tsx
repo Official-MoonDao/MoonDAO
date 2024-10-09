@@ -1,5 +1,3 @@
-import React from 'react'
-import { Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -7,32 +5,34 @@ import {
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 } from 'chart.js'
+import React from 'react'
+import { Bar } from 'react-chartjs-2'
 
 // Register the necessary components for Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const xDates = [
-  "Sat Dec 31 2022 19:00:00 GMT-0600 (Central Standard Time)",
-  "Fri Mar 31 2023 19:00:00 GMT-0500 (Central Daylight Time)",
-  "Fri Jun 30 2023 19:00:00 GMT-0500 (Central Daylight Time)",
-  "Sat Sep 30 2023 19:00:00 GMT-0500 (Central Daylight Time)",
-  "Sun Dec 31 2023 19:00:00 GMT-0600 (Central Standard Time)",
-  "Sun Mar 31 2024 19:00:00 GMT-0500 (Central Daylight Time)",
-  "Sun Jun 30 2024 19:00:00 GMT-0500 (Central Daylight Time)",
-  "Mon Sep 30 2024 19:00:00 GMT-0500 (Central Daylight Time)"
+  'Sat Dec 31 2022 19:00:00 GMT-0600 (Central Standard Time)',
+  'Fri Mar 31 2023 19:00:00 GMT-0500 (Central Daylight Time)',
+  'Fri Jun 30 2023 19:00:00 GMT-0500 (Central Daylight Time)',
+  'Sat Sep 30 2023 19:00:00 GMT-0500 (Central Daylight Time)',
+  'Sun Dec 31 2023 19:00:00 GMT-0600 (Central Standard Time)',
+  'Sun Mar 31 2024 19:00:00 GMT-0500 (Central Daylight Time)',
+  'Sun Jun 30 2024 19:00:00 GMT-0500 (Central Daylight Time)',
+  'Mon Sep 30 2024 19:00:00 GMT-0500 (Central Daylight Time)',
 ]
 
 const xLabels = [
-  "2022Q4",
-  "2023Q1",
-  "2023Q2",
-  "2023Q3",
-  "2023Q4",
-  "2024Q1",
-  "2024Q2",
-  "2024Q3"
+  '2022Q4',
+  '2023Q1',
+  '2023Q2',
+  '2023Q3',
+  '2023Q4',
+  '2024Q1',
+  '2024Q2',
+  '2024Q3',
 ]
 
 function sumValuesBeforeDate(dates: any, values: any, targetDate: any) {
@@ -60,7 +60,7 @@ function sumValuesBeforeDate(dates: any, values: any, targetDate: any) {
 
 let vMooneyData: any = []
 
-const BarChart = ({holdersData}: any) => {
+const BarChart = ({ holdersData }: any) => {
   const holderDates = holdersData.map((holder: any) => holder.x)
   const holdervMooney = holdersData.map((holder: any) => holder.totalvMooney)
 
@@ -86,14 +86,19 @@ const BarChart = ({holdersData}: any) => {
             return null
           }
           // Create gradient fill
-          const gradient = chartContext.createLinearGradient(0, 0, 0, chartArea.bottom)
+          const gradient = chartContext.createLinearGradient(
+            0,
+            0,
+            0,
+            chartArea.bottom
+          )
           gradient.addColorStop(0, '#425EEB')
           gradient.addColorStop(1, '#6D3F79')
 
           return gradient
         },
-      }
-    ]
+      },
+    ],
   }
 
   // Configuration options for the chart
@@ -103,32 +108,32 @@ const BarChart = ({holdersData}: any) => {
       legend: {
         position: 'top',
         labels: {
-          color: '#FFFFFF'
+          color: '#FFFFFF',
         },
       },
       title: {
         display: false,
-      }
+      },
     },
     scales: {
       x: {
         ticks: {
-          color: '#fff'
-        }
+          color: '#fff',
+        },
       },
       y: {
         beginAtZero: true,
         ticks: {
-          color: '#fff'
-        }
-      }
+          color: '#fff',
+        },
+      },
     },
     elements: {
       bar: {
         borderSkipped: false, // keep borders on all sides
         borderRadius: 5,
-      }
-    }
+      },
+    },
   }
 
   return <Bar data={data} options={options} />

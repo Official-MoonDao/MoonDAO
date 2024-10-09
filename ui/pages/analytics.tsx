@@ -40,7 +40,7 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
           popOverEffect={false}
           isProfile
         >
-          <div className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-6 lg:px-16 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center">
+          <div className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-6 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center">
             <AnalyticsPage vMooneyData={vMooneyData} />
             <TreasuryPage />
           </div>
