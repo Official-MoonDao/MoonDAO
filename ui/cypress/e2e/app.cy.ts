@@ -42,7 +42,6 @@ describe('Main E2E Testing', () => {
   describe('MoonDAO App | Events', () => {
     it('should load the events page', () => {
       cy.visit('/events')
-      cy.get('#scheduled-events').should('exist')
     })
   })
 

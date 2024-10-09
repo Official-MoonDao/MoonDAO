@@ -91,7 +91,11 @@ export default function TeamMarketplaceListingModal({
 
           let imageIpfsLink
 
-          if (typeof listingData.image === 'string') {
+          if (
+            typeof listingData.image === 'string' &&
+            listingData.image !== 'ipfs://undefined' &&
+            listingData.image !== 'ipfs://'
+          ) {
             imageIpfsLink = listingData.image
           } else {
             const renamedListingImage = renameFile(

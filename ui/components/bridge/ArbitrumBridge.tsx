@@ -224,26 +224,28 @@ export default function ArbitrumBridge() {
 
   return (
     <div className="max-w-[500px] w-full flex flex-col gap-1">
-      <Frame noPadding>
-        <div className="flex flex-wrap text-sm bg-filter">
-          <Tab
-            tab="deposit"
-            currentTab={bridgeType}
-            setTab={setBridgeType}
-            icon=""
-          >
-            Deposit
-          </Tab>
-          <Tab
-            tab="withdraw"
-            currentTab={bridgeType}
-            setTab={setBridgeType}
-            icon=""
-          >
-            Withdraw
-          </Tab>
-        </div>
-      </Frame>
+      <div className="ml-1">
+        <Frame noPadding>
+          <div className="flex flex-wrap text-sm bg-filter">
+            <Tab
+              tab="deposit"
+              currentTab={bridgeType}
+              setTab={setBridgeType}
+              icon=""
+            >
+              Deposit
+            </Tab>
+            <Tab
+              tab="withdraw"
+              currentTab={bridgeType}
+              setTab={setBridgeType}
+              icon=""
+            >
+              Withdraw
+            </Tab>
+          </div>
+        </Frame>
+      </div>
       <div className="flex flex-col p-4 gap-2 bg-darkest-cool min-h-[150px] rounded-lg">
         <p className="opacity-50">You Pay</p>
         <div className="flex justify-between">

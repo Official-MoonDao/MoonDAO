@@ -5,7 +5,9 @@ import {
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
+import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Job, { Job as JobType } from '../components/jobs/Job'
@@ -15,6 +17,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
+import CitizenTier from '@/components/onboarding/CitizenTier'
 
 type JobsProps = {
   jobs: JobType[]
@@ -22,6 +25,7 @@ type JobsProps = {
 
 export default function Jobs({ jobs }: JobsProps) {
   const { selectedChain } = useContext(ChainContext)
+  const { citizen } = useContext(CitizenContext)
 
   const [filteredJobs, setFilteredJobs] = useState<JobType[]>()
   const [input, setInput] = useState('')
@@ -70,17 +74,26 @@ export default function Jobs({ jobs }: JobsProps) {
           popOverEffect={false}
           isProfile
         >
-          <div className="pb-10 w-full flex flex-col gap-4">
-            {filteredJobs &&
-              filteredJobs.map((job: JobType, i: number) => (
-                <Job
-                  key={`job-${i}`}
-                  job={job}
-                  showTeam
-                  teamContract={teamContract}
-                />
-              ))}
-          </div>
+          {citizen ? (
+            <div className="pb-10 w-full flex flex-col gap-4">
+              {filteredJobs &&
+                filteredJobs.map((job: JobType, i: number) => (
+                  <Job
+                    key={`job-${i}`}
+                    job={job}
+                    showTeam
+                    teamContract={teamContract}
+                  />
+                ))}
+            </div>
+          ) : (
+            <>
+              <p className="">{'You must be a citizen to view jobs.'}</p>
+              <Link href="/citizen" passHref>
+                <CitizenTier setSelectedTier={() => {}} compact />
+              </Link>
+            </>
+          )}
         </ContentLayout>
       </Container>
     </section>
