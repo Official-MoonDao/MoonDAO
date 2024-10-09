@@ -1,16 +1,17 @@
-import solver from 'javascript-lp-solver'
+import { Solve } from '@bygdle/javascript-lp-solver'
 import _ from 'lodash'
+import { Distribution, Project } from '@/components/nance/RetroactiveRewards'
 
 // Function to minimize L1 distance
-export function minimizeL1Distance(D, V) {
+export function minimizeL1Distance(D: number[], V: number[][]) {
   const numDistributions = V.length // Number of distributions in V
   const numComponents = D.length // Length of the distributions
 
   // Initialize variables for the LP problem
-  const variables = {}
+  const variables: { [key: string]: { [key: string]: number } } = {}
 
   // Initialize constraints
-  const constraints = {}
+  const constraints: { [key: string]: { [key: string]: number } } = {}
 
   // Constraint: sum of c_i equals 1
   constraints['sum_c'] = { equal: 1 }
@@ -62,15 +63,16 @@ export function minimizeL1Distance(D, V) {
   }
 
   // Define the model for the LP solver
+  const opType: 'min' = 'min'
   const model = {
     optimize: 'cost',
-    opType: 'min',
+    opType: opType,
     constraints: constraints,
     variables: variables,
   }
 
   // Solve the LP problem
-  const results = solver.Solve(model)
+  const results = Solve(model)
 
   // Extract coefficients c_i from the results
   const coefficients = []
@@ -80,7 +82,7 @@ export function minimizeL1Distance(D, V) {
   return coefficients
 }
 
-export function iterativeNormalization(distributions, projects) {
+export function iterativeNormalization(distributions: any, projects: any) {
   const numProjects = projects.length
 
   const numVotes = distributions.length
@@ -97,8 +99,8 @@ export function iterativeNormalization(distributions, projects) {
     }
   }
 
-  let newVotes = []
-  let newDistributionSums = []
+  let newVotes: number[][] = []
+  let newDistributionSums: number[] = []
   for (let loop = 0; loop < 20; loop++) {
     // compute column wise averages
     const projectAverages = []
@@ -144,7 +146,7 @@ export function iterativeNormalization(distributions, projects) {
   // recreate distributions
   const newDistributions = []
   for (let i = 0; i < numVotes; i++) {
-    const distribution = {}
+    const distribution: { [key: string]: number } = {}
     for (let j = 0; j < numProjects; j++) {
       distribution[projects[j].id] = newVotes[i][j]
     }
@@ -155,5 +157,7 @@ export function iterativeNormalization(distributions, projects) {
       distribution,
     })
   }
-  return [newDistributions, newVotes]
+  let return_tuple: [any[], number[][]] = [newDistributions, newVotes]
+  return return_tuple
+  //return [newDistributions, newVotes]
 }

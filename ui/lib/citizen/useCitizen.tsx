@@ -60,10 +60,42 @@ export function useCitizen(
 
 export function useCitizens(
   selectedChain: Chain,
-  citizenContract?: any,
-  citizenAddresses?: string[]
+  citizenAddresses: string[],
+  citizenContract?: any
 ) {
-  return citizenAddresses.map((address) => {
-    return useCitizen(selectedChain, citizenContract, address)
-  })
+  const sdk = useSDK()
+  const { wallets } = useWallets()
+  const [areCitizens, setAreCitizens] = useState<boolean[]>([])
+
+  useEffect(() => {
+    async function getAreCitizens() {
+      try {
+        let contract
+        if (citizenContract) {
+          contract = citizenContract
+        } else {
+          contract = await sdk?.getContract(
+            CITIZEN_ADDRESSES[selectedChain.slug]
+          )
+        }
+
+        const areCitizens = await Promise.all(
+          citizenAddresses.map(async (address) => {
+            const ownedTokenId = await contract?.call('getOwnedToken', [
+              address,
+            ])
+            return !!ownedTokenId
+          })
+        )
+
+        setAreCitizens(areCitizens)
+      } catch (err: any) {
+        console.error(err)
+      }
+    }
+
+    if (sdk && selectedChain) getAreCitizens()
+  }, [sdk, selectedChain, citizenContract, citizenAddresses, wallets])
+
+  return areCitizens
 }

@@ -80,7 +80,7 @@ export async function getStaticProps() {
 
   const distributions = allDistributions
 
-  //const validProjects = allProjects.filter(async (project: ProjectType) => {
+  //const validProjects = allProjects.filter(async (project: Project) => {
   //const teamExpiration = await teamContract.call('expiresAt', [
   //project.teamId,
   //])

@@ -31,16 +31,24 @@ import ProposalList from '@/components/nance/ProposalList'
 import StandardButton from '../layout/StandardButton'
 import StandardButtonRight from '../layout/StandardButtonRight'
 
-type ProjectType = {
+export type Project = {
   id: string
   title: string
+  contributors: { [key: string]: number }
+  finalReportLink: string
   // ... other project properties
+}
+export type Distribution = {
+  year: number
+  quarter: number
+  address: string
+  distribution: { [key: string]: number }
 }
 
 export type RetroactiveRewardsProps = {
-  projects: ProjectType[]
+  projects: Project[]
   //distributionTableContract: any
-  distributions: []
+  distributions: Distribution[]
   refreshRewards: () => void
 }
 
@@ -147,8 +155,11 @@ export function RetroactiveRewards({
   console.log('proposalDataArray')
   console.log(proposalDataArray)
 
-  const groupedDistributions = {}
-  const projectIdToEstimatedAllocation = {}
+  // object with key string and values as list of number
+  const groupedDistributions: { [key: string]: number[] } = {}
+  // object with key string and values as number
+
+  const projectIdToEstimatedAllocation: { [key: string]: number } = {}
   //const votingPower = {}
   console.log('userAddress')
   console.log(userAddress)
@@ -162,7 +173,7 @@ export function RetroactiveRewards({
   const nonCitizenDistributions = []
 
   const addresses = currentDistributions.map((d) => d.address)
-  const isCitizens = useCitizens(chain, '', addresses)
+  const isCitizens = useCitizens(chain, addresses)
   console.log('isCitizens')
   console.log(isCitizens)
   for (const [i, d] of currentDistributions.entries()) {
@@ -173,6 +184,15 @@ export function RetroactiveRewards({
       nonCitizenDistributions.push(d)
     }
   }
+  const { data: _vps } = useVotingPowers(
+    addresses,
+    SNAPSHOT_SPACE_NAME,
+    '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
+  )
+  const votingPowers = _vps ? _vps.map((vp) => (vp ? vp.vp : 0)) : []
+  const addressToVotingPower = Object.fromEntries(
+    addresses.map((address, i) => [address, votingPowers[i]])
+  )
   console.log('citizenDistributions')
   console.log(citizenDistributions)
   console.log('nonCitizenDistributions')
@@ -180,8 +200,8 @@ export function RetroactiveRewards({
 
   // All projects need at least one citizen distribution to do iterative normalization
   const doAllProjectsHaveCitizenDistribution = (
-    projects,
-    citizenDistributions
+    projects: Project[],
+    citizenDistributions: Distribution[]
   ) => {
     const projectsWithVotes = new Set()
     for (const d of citizenDistributions) {
@@ -226,34 +246,25 @@ export function RetroactiveRewards({
         //d.distribution[projectId] = _.cloneDeep(actualDistribution[projectIndex])
       }
     }
-    const allDistributions = [
+    const allDistributions: Distribution[] = [
       ...filledInCitizenDistributions,
       ...nonCitizenDistributions,
     ]
+    //const allAddresses = allDistributions.map((d) => d.address)
+    // set undefined votingPower to 0
+    //for (const [i, vp] of votingPowers.entries()) {
+    //if (vp === undefined) {
+    //votingPowers[i] = 0
+    //}
+    //}
 
     if (currentDistributions) {
       //const filledInDistributions =
       //const filledInDistributions = currentDistributions
-      const allAddresses = allDistributions.map((d) => d.address)
-      const votingPowers = useVotingPowers(
-        allAddresses,
-        SNAPSHOT_SPACE_NAME,
-        '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
-      ).map((vp) => vp.vp)
-      // set undefined votingPower to 0
-      for (const [i, vp] of votingPowers.entries()) {
-        if (vp === undefined) {
-          votingPowers[i] = 0
-        }
-      }
 
+      const allAddresses = allDistributions.map((d) => d.address)
       for (const d of allDistributions) {
         const { address, year, quarter, distribution: dist } = d
-        const { data: _vp } = useVotingPower(
-          address,
-          SNAPSHOT_SPACE_NAME,
-          '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
-        )
         for (const [key, value] of Object.entries(dist)) {
           if (!groupedDistributions[key]) {
             groupedDistributions[key] = []
@@ -261,14 +272,14 @@ export function RetroactiveRewards({
           groupedDistributions[key].push(value)
         }
       }
-      const votingPowerSum = _.sum(votingPowers)
+      const votingPowerSum = _.sum(Object.values(addressToVotingPower))
       if (votingPowerSum > 0) {
         votingPowerSumIsNonZero = true
         for (const [projectId, percentages] of Object.entries(
           groupedDistributions
         )) {
           const sumProduct = _.sum(
-            percentages.map((p, i) => p * votingPowers[i])
+            percentages.map((p, i) => p * addressToVotingPower[allAddresses[i]])
           )
           const sumProductPercentage = sumProduct / votingPowerSum
           projectIdToEstimatedAllocation[projectId] = sumProductPercentage
@@ -321,6 +332,7 @@ export function RetroactiveRewards({
       if (
         !(project.id in distributions) &&
         !(
+          !userAddress ||
           userAddress in project.contributors ||
           userAddress.toLowerCase() in project.contributors
         )
@@ -331,7 +343,7 @@ export function RetroactiveRewards({
 
     try {
       if (edit) {
-        await distributionTableContract.call('updateTableCol', [
+        await distributionTableContract?.call('updateTableCol', [
           quarter,
           year,
           JSON.stringify(distributions),
@@ -339,7 +351,7 @@ export function RetroactiveRewards({
         alert('Distribution edited successfully!')
         refreshRewards()
       } else {
-        await distributionTableContract.call('insertIntoTable', [
+        await distributionTableContract?.call('insertIntoTable', [
           quarter,
           year,
           JSON.stringify(distributions),
@@ -354,7 +366,7 @@ export function RetroactiveRewards({
   }
   const handleDelete = async () => {
     try {
-      await distributionTableContract.call('deleteFromTable', [quarter, year])
+      await distributionTableContract?.call('deleteFromTable', [quarter, year])
       alert('Distribution deleted successfully!')
       refreshRewards()
     } catch (error) {
@@ -363,10 +375,10 @@ export function RetroactiveRewards({
     }
   }
 
-  const idToTitle = projects.reduce((acc, project) => {
-    acc[project.id] = project.title
-    return acc
-  }, {})
+  const idToTitle: { [key: string]: string } = {}
+  for (const project of projects) {
+    idToTitle[project.id] = project.title
+  }
 
   const { tokens } = useAssets()
   console.log('tokens')
@@ -388,7 +400,7 @@ export function RetroactiveRewards({
     mooneyBudget = 15_000_000 * 0.95 ** numQuartersPastQ4Y2022
   }
 
-  const addressToPercentagePayout = {}
+  const addressToPercentagePayout: { [key: string]: number } = {}
   for (const project of projects) {
     const projectId = project.id
     const allocation = projectIdToEstimatedAllocation[projectId]
@@ -403,8 +415,8 @@ export function RetroactiveRewards({
       }
     }
   }
-  const addressToEthPayout = {}
-  const addressToMooneyPayout = {}
+  const addressToEthPayout: { [key: string]: number } = {}
+  const addressToMooneyPayout: { [key: string]: number } = {}
   for (const [address, percentage] of Object.entries(
     addressToPercentagePayout
   )) {
@@ -473,7 +485,7 @@ export function RetroactiveRewards({
                   className="gradient-2 rounded-full"
                   //className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 >
-                  {edit ? 'Edit' : 'Submit'} Distribution
+                  {edit ? 'Edit Distribution' : 'Submit Distribution'}
                 </StandardButton>
                 {edit && (
                   <StandardButton

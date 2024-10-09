@@ -59,7 +59,6 @@
     "gsap": "^3.12.2",
     "html2canvas": "^1.4.1",
     "iron-session": "^8.0.3",
-    "javascript-lp-solver": "^0.4.24",
     "jsbi": "3.2.5",
     "merkletreejs": "^0.3.11",
     "moment": "^2.29.4",
@@ -98,12 +97,14 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@bygdle/javascript-lp-solver": "^0.4.26",
     "@tailwindcss/typography": "^0.5.13",
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
     "@types/formidable": "^3.4.5",
     "@types/google-spreadsheet": "^3.3.2",
     "@types/gtag.js": "^0.0.20",
     "@types/jest": "^29.5.3",
+    "@types/lodash": "^4.17.10",
     "@types/node": "^20.4.1",
     "@types/nodemailer": "^6.4.14",
     "@types/react": "^18.2.15",
