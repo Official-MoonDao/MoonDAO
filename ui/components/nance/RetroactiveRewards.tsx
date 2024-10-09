@@ -6,7 +6,7 @@ import {
 import { NanceProvider } from '@nance/nance-hooks'
 import { useProposalsInfinite } from '@nance/nance-hooks'
 import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
-import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { useChain } from '@thirdweb-dev/react'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { DISTRIBUTION_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
 //const solver = require('javascript-lp-solver');
@@ -53,6 +53,7 @@ export function RetroactiveRewards({
   const [distributions, setDistributions] = useState<{ [key: string]: number }>(
     {}
   )
+  const chain = useChain()
   console.log('projects')
   console.log(projects)
   console.log('current')
@@ -100,76 +101,9 @@ export function RetroactiveRewards({
       quarter: 2,
       year: 2024,
     },
-    {
-      //R4
-      address: '0x0000000000000000000000000000000000000004',
-      distribution: {
-        '1': 20,
-        '2': 20,
-        '4': 30,
-        '3': 20,
-        '5': 10,
-      },
-      id: 4,
-      quarter: 2,
-      year: 2024,
-    },
-    {
-      //R5
-      address: '0x0000000000000000000000000000000000000005',
-      distribution: {
-        '1': 30.25,
-        '2': 30.25,
-        '4': 30.25,
-        '3': 9.25,
-      },
-      id: 5,
-      quarter: 2,
-      year: 2024,
-    },
-    {
-      //R6
-      address: '0x0000000000000000000000000000000000000006',
-      distribution: {
-        '1': 35,
-        '4': 35,
-        '3': 20,
-        '5': 10,
-      },
-      id: 6,
-      quarter: 2,
-      year: 2024,
-    },
-    {
-      //R7
-      address: '0x0000000000000000000000000000000000000007',
-      distribution: {
-        '1': 20.5,
-        '2': 22.5,
-        '4': 38.5,
-        '3': 16.5,
-        '5': 2,
-      },
-      id: 7,
-      quarter: 2,
-      year: 2024,
-    },
-    {
-      //R8
-      address: '0x0000000000000000000000000000000000000008',
-      distribution: {
-        '1': 48,
-        '2': 28,
-        '3': 18,
-        '5': 6,
-      },
-      id: 8,
-      quarter: 2,
-      year: 2024,
-    },
   ]
   //TODO remove
-  currentDistributions = testDistributions
+  //currentDistributions = testDistributions
 
   const [year, setYear] = useState(new Date().getFullYear())
   const [edit, setEdit] = useState(false)
@@ -227,13 +161,13 @@ export function RetroactiveRewards({
   const citizenDistributions = []
   const nonCitizenDistributions = []
   for (const d of currentDistributions) {
-    const isCitizen = useCitizen(ArbitrumSepolia, '', d.address)
+    const isCitizen = useCitizen(chain, '', d.address)
     if (isCitizen) {
       citizenDistributions.push(d)
     } else {
       // TODO undo
-      //nonCitizenDistributions.push(d)
-      citizenDistributions.push(d)
+      nonCitizenDistributions.push(d)
+      //citizenDistributions.push(d)
     }
   }
   console.log('citizenDistributions')
@@ -265,6 +199,7 @@ export function RetroactiveRewards({
     doAllProjectsHaveCitizenDistribution(projects, citizenDistributions)
   console.log('allProjectsHaveCitizenDistribution')
   console.log(allProjectsHaveCitizenDistribution)
+  let votingPowerSumIsNonZero = false
 
   if (allProjectsHaveCitizenDistribution) {
     const [filledInCitizenDistributions, votes] = iterativeNormalization(
@@ -302,8 +237,8 @@ export function RetroactiveRewards({
         addresses.push(address)
         const { data: _vp } = useVotingPower(
           // TODO use real address
-          //address,
-          '0x679d87D8640e66778c3419D164998E720D7495f6',
+          address,
+          //'0x679d87D8640e66778c3419D164998E720D7495f6',
           SNAPSHOT_SPACE_NAME,
           //'moondao.eth',
           //proposal?.id || ''
@@ -313,8 +248,11 @@ export function RetroactiveRewards({
         )
         console.log('_vp')
         console.log(_vp)
-        if (_vp) {
+        if (_vp && _vp.vp) {
           votingPower[address] = _vp.vp
+        } else {
+          console.log('no vp for address: ', address)
+          continue
         }
         for (const [key, value] of Object.entries(dist)) {
           if (!groupedDistributions[key]) {
@@ -324,27 +262,29 @@ export function RetroactiveRewards({
         }
       }
       const votingPowerSum = _.sum(Object.values(votingPower))
-      for (const [projectId, percentages] of Object.entries(
-        groupedDistributions
-      )) {
-        const sumProduct = _.sum(
-          percentages.map((p, i) => p * votingPower[addresses[i]])
-        )
-        const sumProductPercentage = sumProduct / votingPowerSum
-        projectIdToEstimatedAllocation[projectId] = sumProductPercentage
-      }
-      // normalize projectIdToEstimatedAllocation
-      const sum = _.sum(Object.values(projectIdToEstimatedAllocation))
-      for (const [projectId, percentage] of Object.entries(
-        projectIdToEstimatedAllocation
-      )) {
-        projectIdToEstimatedAllocation[projectId] = (percentage / sum) * 100
+      if (votingPowerSum > 0) {
+        votingPowerSumIsNonZero = true
+        for (const [projectId, percentages] of Object.entries(
+          groupedDistributions
+        )) {
+          const sumProduct = _.sum(
+            percentages.map((p, i) => p * votingPower[addresses[i]])
+          )
+          const sumProductPercentage = sumProduct / votingPowerSum
+          projectIdToEstimatedAllocation[projectId] = sumProductPercentage
+        }
+        // normalize projectIdToEstimatedAllocation
+        const sum = _.sum(Object.values(projectIdToEstimatedAllocation))
+        for (const [projectId, percentage] of Object.entries(
+          projectIdToEstimatedAllocation
+        )) {
+          projectIdToEstimatedAllocation[projectId] = (percentage / sum) * 100
+        }
       }
     }
   }
 
   // TODO dynamically set chain
-  const chain = ArbitrumSepolia
   const { contract: distributionTableContract } = useContract(
     DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
   )
@@ -434,9 +374,17 @@ export function RetroactiveRewards({
   const VMOONEY_ROUND_TO = 10_000
   const numQuartersPastQ4Y2022 = (year - 2022) * 4 + quarter - 1
   let ethBudget = 0
+  let usdBudget = 0
   let mooneyBudget = 0
   if (tokens && tokens[0]) {
-    ethBudget = tokens[0].balance * 0.05
+    for (const token of tokens) {
+      if (token.symbol !== 'MOONEY') {
+        usdBudget += token.usd
+      }
+    }
+    const ethPrice = tokens[0].usd / tokens[0].balance
+    const ethValue = usdBudget / ethPrice
+    ethBudget = ethValue * 0.05
     mooneyBudget = 15_000_000 * 0.95 ** numQuartersPastQ4Y2022
   }
 
@@ -535,7 +483,7 @@ export function RetroactiveRewards({
               </span>
             )}
 
-            {allProjectsHaveCitizenDistribution && (
+            {allProjectsHaveCitizenDistribution && votingPowerSumIsNonZero && (
               <div> Current Estimated Distributions </div>
             )}
             {Object.entries(groupedDistributions).map(

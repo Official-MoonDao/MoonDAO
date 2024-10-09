@@ -1,5 +1,6 @@
 import { NanceProvider } from '@nance/nance-hooks'
 import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { useChain } from '@thirdweb-dev/react'
 import {
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
@@ -32,7 +33,7 @@ export default function Rewards({
 
 export async function getStaticProps() {
   // TODO dynamically set chain
-  const chain = ArbitrumSepolia
+  const chain = useChain()
   const sdk = initSDK(chain)
   console.log('chain.slug')
   console.log(chain.slug)
