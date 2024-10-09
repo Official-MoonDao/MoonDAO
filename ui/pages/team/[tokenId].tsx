@@ -33,12 +33,12 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { useTeamData } from '@/lib/team/useTeamData'
-import useTeamSplit from '@/lib/team/useTeamSplit'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { TwitterIcon } from '@/components/assets'
+import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -110,8 +110,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     subIsValid,
     isLoading: isLoadingTeamData,
   } = useTeamData(teamContract, hatsContract, nft)
-
-  const splitAddress = useTeamSplit(teamContract, tokenId)
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
 
@@ -121,12 +119,6 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   )
   const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner)
 
-  const { data: splitMOONEYBalance } = useMOONEYBalance(
-    mooneyContract,
-    splitAddress
-  )
-
-  const [splitNativeBalance, setSplitNativeBalance] = useState<number>(0)
   const [nativeBalance, setNativeBalance] = useState<number>(0)
 
   //Subscription Data
@@ -142,19 +134,10 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
       setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
     }
 
-    async function getSplitNativeBalance() {
-      const provider = sdk?.getProvider()
-      const balance: any = await provider?.getBalance(splitAddress as string)
-      setSplitNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
-    }
-
     if (sdk && nft?.owner) {
       getNativeBalance()
     }
-    if (splitAddress) {
-      getSplitNativeBalance()
-    }
-  }, [sdk, nft, splitAddress])
+  }, [sdk, nft])
 
   useChainDefault()
 
@@ -303,13 +286,13 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         className="flex items-center max-w-[290px]"
                       >
                         {!isDeleted && subIsValid && (
-                          <TeamDonation splitAddress={splitAddress} />
+                          <TeamDonation recipient={nft?.owner} />
                         )}
                       </div>
                     )}
 
                     {/*Subscription Extension Container*/}
-                    {isManager || address === nft.owner ? (
+                    {/* {isManager || address === nft.owner ? (
                       <div id="manager-container" className="relative">
                         {expiresAt && (
                           <div id="expires-container" className="">
@@ -335,16 +318,19 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                       </div>
                     ) : (
                       <></>
-                    )}
+                    )} */}
                   </div>
-                  {isManager || address === nft.owner ? (
+                  {/* {isManager || address === nft.owner ? (
                     <p className="opacity-50 mt-2 text-sm">
                       {'Exp: '}
                       {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                     </p>
                   ) : (
                     <></>
-                  )}
+                  )} */}
+                  <div className="mt-4">
+                    <Address address={nft.owner} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -403,7 +389,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
         popOverEffect={false}
         branded={false}
         isProfile
-        preFooter={<NoticeFooter />}
+        preFooter={<NoticeFooter darkBackground={true} />}
       >
         <div
           id="page-container"
@@ -540,13 +526,9 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               {/* Mooney and Voting Power */}
               {isManager && (
                 <TeamTreasury
-                  selectedChain={selectedChain}
                   multisigAddress={nft.owner}
-                  splitAddress={splitAddress}
                   mutlisigMooneyBalance={MOONEYBalance}
                   multisigNativeBalance={nativeBalance}
-                  splitMooneyBalance={splitMOONEYBalance}
-                  splitNativeBalance={splitNativeBalance}
                 />
               )}
               {/* General Actions */}
@@ -562,13 +544,9 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
               </p>
               {isManager && (
                 <TeamTreasury
-                  selectedChain={selectedChain}
                   multisigAddress={nft.owner}
-                  splitAddress={splitAddress}
                   mutlisigMooneyBalance={MOONEYBalance}
                   multisigNativeBalance={nativeBalance}
-                  splitMooneyBalance={splitMOONEYBalance}
-                  splitNativeBalance={splitNativeBalance}
                 />
               )}
             </Frame>
@@ -587,7 +565,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
   const nft = await teamContract.erc721.get(tokenId)
 
-  if (!nft || !nft.metadata.uri || blockedTeams.includes(Number(nft.metadata.id))) {
+  if (
+    !nft ||
+    !nft.metadata.uri ||
+    blockedTeams.includes(Number(nft.metadata.id))
+  ) {
     return {
       notFound: true,
     }

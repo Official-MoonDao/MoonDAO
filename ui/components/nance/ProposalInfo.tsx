@@ -18,7 +18,6 @@ import useAccount from '../../lib/nance/useAccountAddress'
 import { useSignProposal } from '../../lib/nance/useSignProposal'
 import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import { AddressLink } from './AddressLink'
-import ProposalStatusIcon from './ProposalStatusIcon'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
 import VotingInfo from './VotingInfo'
 
@@ -74,12 +73,16 @@ export default function ProposalInfo({
   linkDisabled = false,
   sponsorDisabled = true,
   coauthorsDisabled = true,
+  showTitle = true,
+  showStatus = true, 
 }: {
   proposalPacket: ProposalPacket
   votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
   linkDisabled?: boolean
   sponsorDisabled?: boolean
   coauthorsDisabled?: boolean
+  showTitle?: boolean
+  showStatus?: boolean 
 }) {
   const { proposalIdPrefix } = proposalPacket?.proposalInfo
   const { proposalInfo, ...proposal } = proposalPacket
@@ -95,8 +98,8 @@ export default function ProposalInfo({
   const { isLinked, wallet } = useAccount()
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
 
-  // get space info to find next Snapshot Vote
-  // we need this to be compliant with the proposal signing format of Snapshot
+  // Get space info to find next Snapshot Vote
+  // We need this to be compliant with the proposal signing format of Snapshot
   const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
   const spaceInfo = spaceInfoData?.data
   const { nextEvents, currentEvent } = spaceInfo || {}
@@ -118,7 +121,7 @@ export default function ProposalInfo({
     }
   }
 
-  // proposal upload
+  // Proposal upload
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, proposal?.uuid)
   const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
@@ -146,7 +149,7 @@ export default function ProposalInfo({
               toast.success('Proposal submitted successfully!', {
                 style: toastStyle,
               })
-              // next router push
+              // Next router push
               router.push(`/proposal/${res.data.uuid}`)
             } else {
               setSigningStatus('error')
@@ -170,26 +173,28 @@ export default function ProposalInfo({
 
   return (
     <div className="flex min-w-0 flex-col gap-x-4 sm:flex-row">
-      <ProposalStatusIcon status={proposalPacket.status} />
       <div className="min-w-0 flex-auto">
-        {/* Title */}
-        <p className="text-base font-semibold">
-          {!linkDisabled ? (
-            <Link
-              href={`/proposal/${
-                proposalPacket.proposalId?.toString() || proposalPacket.uuid
-              }`}
-              passHref
-            >
-              <span className="absolute inset-x-0 -top-px bottom-0" />
-              {`${preTitleDisplay}${proposalPacket.title}`}
-            </Link>
-          ) : (
-            <span>{`${preTitleDisplay}${proposalPacket.title}`}</span>
+        {/* Title and Status */}
+        <div className="flex items-center">
+          <div className="mr-2">{showStatus && <ProposalStatus status={proposalPacket.status} />}</div>
+          {showTitle && (
+            !linkDisabled ? (
+              <Link
+                href={`/proposal/${
+                  proposalPacket.proposalId?.toString() || proposalPacket.uuid
+                }`}
+                passHref
+              >
+                <span className="absolute inset-x-0 -top-px bottom-0" />
+                {`${preTitleDisplay}${proposalPacket.title}`}
+              </Link>
+            ) : (
+              <span>{`${preTitleDisplay}${proposalPacket.title}`}</span>
+            )
           )}
-        </p>
+        </div>
         {/* Metadata */}
-        <div className="mt-2 flex flex-row items-center gap-x-6 text-xs">
+        <div className="mt-2 flex flex-col md:flex-row items-start md:items-center gap-x-6 text-xs">
           {/* Author */}
           <div className="flex items-center gap-x-1">
             <Image
@@ -208,29 +213,24 @@ export default function ProposalInfo({
               </div>
             </div>
           </div>
-          {/* Due / Cycle */}
-          <div className="flex items-center gap-x-1">
-            <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full text-gray-900 dark:text-white" />
-            {['Voting'].includes(proposalPacket.status) && votingInfo ? (
-              <div>
-                <p className="text-gray-500 dark:text-gray-400">Due</p>
-                <div className="text-center">
-                  {formatDistanceToNow(fromUnixTime(votingInfo.end), {
-                    addSuffix: true,
-                  })}
+                    {/* Due / Cycle */}
+                    {proposalPacket.status === "Voting" && votingInfo?.end && (
+            <div className="flex items-center gap-x-1">
+              <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full text-gray-900 dark:text-white" />
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">Due</p>
+                  <div className="text-center">
+                    {formatDistanceToNow(fromUnixTime(votingInfo.end), {
+                      addSuffix: true,
+                    })}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div>
-                <p className="text-gray-500 dark:text-gray-400">Cycle</p>
-                <div className="text-center">
-                  {proposalPacket.governanceCycle}
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
           {/* Tokens */}
+          <div className="mt-2 md:mt-0"> 
           <RequestingTokensOfProposal actions={proposalPacket.actions} />
+          </div>
           {/* Delegate this proposal if it doesn't have an author */}
           {!proposalPacket.authorAddress && isLinked && !sponsorDisabled && (
             <button
@@ -250,7 +250,7 @@ export default function ProposalInfo({
         {/* Coauthor */}
         {!coauthorsDisabled && proposal.coauthors && (
           <div className="text-xs ml-7">
-            <p className="text-gray-500 dark:text-gray-400">Coauthors</p>
+            <p className="text-gray-500 dark:text-gray-400">Sponsor</p>
             {proposal.coauthors.map((coauthor, index) => {
               return (
                 <p key={index}>
@@ -265,6 +265,28 @@ export default function ProposalInfo({
           <VotingInfo votingInfo={votingInfo} />
         </div>
       </div>
+    </div>
+  )
+}
+
+function ProposalStatus({ status }: { status: string }) {
+  const statusColors = {
+    Voting: 'bg-gradient-to-r from-yellow-300 to-yellow-600 text-yellow-800 text-sm',
+    Archived: 'bg-gradient-to-r from-gray-800 to-gray-600 text-white text-sm',
+    Approved: 'bg-gradient-to-r from-green-800 to-green-600 text-white text-sm',
+    Discussion: 'bg-gradient-to-r from-[#425EEB] to-[#6D3F79] text-white',
+    Cancelled: 'bg-gradient-to-r from-red-800 to-red-600 text-white',
+  }
+
+  const colorClass = statusColors[status as keyof typeof statusColors] || 'bg-gray-200 text-gray-800'
+
+  return (
+    <div>
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass} font-GoodTimes inline-block`}
+      >
+        {status}
+      </span>
     </div>
   )
 }

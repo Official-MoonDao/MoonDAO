@@ -51,7 +51,7 @@ export function useUniversalRouter(
 
       return route
     } catch (err: any) {
-      console.log('Issue creating uniswap route : ', err.message)
+      console.log('Issue creating uniswap route : ', err)
     }
   }
 

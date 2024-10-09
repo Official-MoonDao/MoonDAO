@@ -37,6 +37,7 @@ import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
 import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
+import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -234,7 +235,7 @@ export default function CitizenDetailPage({
                         )}
                       </div>
                     ) : null}
-                    {address === nft.owner ? (
+                    {/* {address === nft.owner ? (
                       <div id="manager-container">
                         {expiresAt && (
                           <div
@@ -265,17 +266,20 @@ export default function CitizenDetailPage({
                       </div>
                     ) : (
                       <></>
-                    )}
+                    )} */}
                   </div>
                 </div>
-                {address === nft.owner ? (
+                {/* {address === nft.owner ? (
                   <p className="opacity-50 mt-2 lg:ml-5 text-sm">
                     {'Exp: '}
                     {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                   </p>
                 ) : (
                   <></>
-                )}
+                )} */}
+                <div className="mt-4 lg:ml-5">
+                  <Address address={nft.owner} />
+                </div>
               </div>
             </div>
           </div>
@@ -400,7 +404,7 @@ export default function CitizenDetailPage({
               <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
                 <div id="vote-title-section" className="flex justify-between">
                   <h2 className="header font-GoodTimes opacity-[50%]">
-                    Voting Power
+                    Governance
                   </h2>
                 </div>
                 <div className="mt-5 flex flex-col gap-5">
@@ -413,7 +417,9 @@ export default function CitizenDetailPage({
                   <div>
                     <p className="text-xl">{`Voting Power`}</p>
                     <p className="text-2xl">
-                      {VMOONEYBalance ? VMOONEYBalance?.toLocaleString() : 0}
+                      {VMOONEYBalance
+                        ? Number(VMOONEYBalance?.toFixed(0)).toLocaleString()
+                        : 0}
                     </p>
                   </div>
                 </div>
@@ -421,11 +427,7 @@ export default function CitizenDetailPage({
                   <div className="flex flex-col md:flex-row mt-4 md:px-4 flex items-start xl:items-end gap-2">
                     <StandardButton
                       className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:rounded-bl-[20px] md:hover:pl-5"
-                      onClick={() =>
-                        window.open(
-                          'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet'
-                        )
-                      }
+                      onClick={() => router.push('/get-mooney')}
                     >
                       {'Get $MOONEY'}
                     </StandardButton>
@@ -466,6 +468,8 @@ export default function CitizenDetailPage({
                           selectedChain={selectedChain}
                           hat={hat}
                           hatsContract={hatsContract}
+                          teamImage
+                          teamContract={teamContract}
                         />
                       </div>
                     ))}

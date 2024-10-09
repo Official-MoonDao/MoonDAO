@@ -5,7 +5,7 @@ type TabProps = {
   currentTab: string
   setTab: Function
   children: any
-  icon: string
+  icon?: string
 }
 
 export default function Tab({
@@ -24,14 +24,16 @@ export default function Tab({
       onClick={() => setTab(tab)}
     >
       <div id="all-tab" className="flex items-center justify-start">
-        <div
-          id="icon-container"
-          className={`
+        {icon && (
+          <div
+            id="icon-container"
+            className={`
             ${currentTab === tab ? '' : 'opacity-80 '}
           `}
-        >
-          <Image src={icon} alt="" width={20} height={20} />
-        </div>
+          >
+            <Image src={icon} alt="" width={20} height={20} />
+          </div>
+        )}
         <div id="text-container" className="pl-2">
           {children}
         </div>

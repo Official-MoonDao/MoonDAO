@@ -1,5 +1,6 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress, useSDK } from '@thirdweb-dev/react'
+import { DEFAULT_CHAIN } from 'const/config'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -8,10 +9,10 @@ import StandardButton from '../layout/StandardButton'
 import Card from './Card'
 
 type TeamDonationProps = {
-  splitAddress: string | undefined
+  recipient: string | undefined
 }
 
-export default function TeamDonation({ splitAddress }: TeamDonationProps) {
+export default function TeamDonation({ recipient }: TeamDonationProps) {
   const { selectedChain } = useContext(ChainContext)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -23,10 +24,10 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
   async function donate() {
     //check network
     if (
-      selectedChain.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
+      DEFAULT_CHAIN.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
     ) {
       toast.error(`Please switch to ${selectedChain.name}`)
-      return wallets[selectedWallet]?.switchChain(selectedChain.chainId)
+      return wallets[selectedWallet]?.switchChain(DEFAULT_CHAIN.chainId)
     }
 
     try {
@@ -36,7 +37,7 @@ export default function TeamDonation({ splitAddress }: TeamDonationProps) {
       if (donationAmount <= 0) return toast.error('Please enter a valid amount')
 
       await signer.sendTransaction({
-        to: splitAddress,
+        to: recipient,
         value: String(+donationAmount * 10 ** 18),
       })
     } catch (err: any) {

@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
+import CitizenProvider from '@/lib/citizen/CitizenProvider'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
@@ -44,11 +45,13 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
           }}
         >
           <PrivyThirdwebSDKProvider selectedChain={selectedChain}>
-            <Layout lightMode={lightMode} setLightMode={setLightMode}>
-              <NextQueryParamProvider>
-                <Component {...pageProps} />
-              </NextQueryParamProvider>
-            </Layout>
+            <CitizenProvider selectedChain={selectedChain}>
+              <Layout lightMode={lightMode} setLightMode={setLightMode}>
+                <NextQueryParamProvider>
+                  <Component {...pageProps} />
+                </NextQueryParamProvider>
+              </Layout>
+            </CitizenProvider>
           </PrivyThirdwebSDKProvider>
         </PrivyProvider>
       </ChainContext.Provider>

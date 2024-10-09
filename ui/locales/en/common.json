@@ -44,7 +44,7 @@
   "welcomeTitle": "Welcome",
   "welcomeDesc": "Welcome to the future of space exploration with MoonDAO! Be part of our community-driven initiative to democratize access to space and accelerate our multiplanetary future. Mission Control is your gateway to all things MoonDAO.",
   "mooneyTitle": "Get $MOONEY",
-  "mooneyDesc": "Getting $MOONEY is now easier than ever with a simple login, wallet creation, and onboarding flow that will walk you through everything you need to join our borderless, permissionless community.",
+  "mooneyDesc": "Getting $MOONEY is now easier than ever with a simple swap.",
   "joinTitle": "Join",
   "joinDesc": "Joining MoonDAO is now easier than ever with a simple login, wallet creation, and onboarding flow that will walk you through everything you need to join our borderless, permissionless community.",
   "infoTitle": "Info",
@@ -56,5 +56,7 @@
   "analyticsTitle": "Analytics",
   "analyticsDesc": "Fully transparent stats and analytics related to our community and the MoonDAO Treasury, including total holdings and all transactions.",
   "eventsTitle": "Events",
-  "eventsDesc": "Get involved with MoonDAO by attending one of our upcoming online events or find out how you can contribute to our ambitious plans by helping out on a project."
+  "eventsDesc": "Get involved with MoonDAO by attending one of our upcoming online events or find out how you can contribute to our ambitious plans by helping out on a project.",
+  "bridgeTitle": "Bridge",
+  "bridgeDesc": "Bridge ETH or MOONEY from Ethereum to Arbitrum."
 }

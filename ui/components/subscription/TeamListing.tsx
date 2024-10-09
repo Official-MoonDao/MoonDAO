@@ -1,10 +1,9 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import StandardButton from '../layout/StandardButton'
 import BuyTeamListingModal from './BuyTeamListingModal'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
@@ -23,18 +22,17 @@ type TeamListingProps = {
   selectedChain: any
   listing: TeamListing
   teamContract: any
-  teamSplitAddress: string | undefined
   marketplaceTableContract?: any
   refreshListings?: any
   editable?: boolean
-  teamName?: string
+  teamName?: boolean
 }
 
 export default function TeamListing({
   selectedChain,
   listing,
-  teamSplitAddress,
   marketplaceTableContract,
+  teamContract,
   refreshListings,
   editable,
   teamName,
@@ -47,30 +45,78 @@ export default function TeamListing({
 
   const [isDeleting, setIsDeleting] = useState(false)
 
+  const [teamData, setTeamData] = useState<any>()
+
+  useEffect(() => {
+    async function getTeamData() {
+      if (teamContract && listing) {
+        // Check if teamContract is defined
+        const teamNft = await teamContract.erc721.get(listing.teamId)
+        setTeamData({
+          name: teamNft.metadata.name,
+          multisigAddress: teamNft.owner,
+        })
+      }
+    }
+    if (listing) getTeamData()
+  }, [listing, teamContract])
+
   return (
     <span
       id="link-frame"
-      className={`card-container w-[350px] flex lg:flex-col rounded-[20px] relative overflow-hidden cursor-pointer`}
+      className={`card-container h-full w-full flex lg:flex-col rounded-[20px] relative overflow-hidden ${
+        !editable ? 'cursor-pointer' : ''
+      }`}
+      onClick={() => {
+        if (!address) return toast.error('Please connect your wallet')
+        if (!editable) {
+          setEnabledBuyListingModal(true)
+        }
+      }}
     >
-      <span
-        id="Interactive-Element"
-        className="clip absolute h-full w-full z-10"
-      ></span>
+      {!editable ? (
+        <>
+          <span
+            id="Interactive-Element"
+            className="clip absolute h-full w-full z-10"
+          ></span>
+          <div
+            id="card-styling"
+            className={`
+          bg-darkest-cool rounded-[20px] w-[43%] h-[30%] absolute top-0 left-0 pb-5
+      `}
+          ></div>
+        </>
+      ) : (
+        <>
+          <span
+            id="Static-Element"
+            className="divider-8 absolute w-[80%] h-full z-10"
+          ></span>
+          <div
+            id="card-styling"
+            className={`
+          bg-darkest-cool rounded-[20px] w-[23%] h-[20%] absolute top-0 left-0 pb-5
+      `}
+          ></div>
+        </>
+      )}
+
       <span
         id="card-container"
         className={`
-        card-container animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full min-h-[200px] min-w-[350px] max-w-[600px]
+        card-container animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full min-h-[200px]
     `}
       >
         <div
           id="card-styling"
           className={`
-            bg-darkest-cool rounded-[20px] min-w-[30%] h-[30%] absolute top-0 left-0 pb-5
+            bg-gradient-to-tl from-transparent from-50% to-darkest-cool to-50% rounded-[20px] w-[43%] h-[30%] absolute top-0 left-0 pb-5
         `}
         ></div>
         <span
           id="content-container"
-          className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-r-[3px] border-darkest-cool"
+          className="h-full w-full lg:max-w-[575px] p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between"
         >
           <span
             id="content"
@@ -78,7 +124,7 @@ export default function TeamListing({
           >
             <div className="">
               <MediaRenderer
-                className="w-full rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] rounded-br-[5vmax] overflow-hidden"
+                className="w-full rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] max-w-[575px] md:max-w-[500px] pb-5 rounded-br-[5vmax] overflow-hidden"
                 width="100%"
                 height="100%"
                 src={listing.image}
@@ -89,30 +135,34 @@ export default function TeamListing({
               id="title-section"
               className={`
                     flex 
-                    pb-5 flex-row items-end pr-5 justify-between
+                    pb-5 flex flex-col items-start pr-5 justify-between
                 `}
             >
-              <div className="flex flex-col">
-                {teamName && (
+              <div className="flex min-h-[100px] pb-5 flex-col">
+                {teamName && teamData?.name && (
                   <Link
                     href={`/team/${listing.teamId}`}
-                    className="font-bold text-light-warm"
+                    className="font-bold text-light-cool"
                   >
-                    {teamName}
+                    {teamData.name}
                   </Link>
                 )}
                 <h2
                   id="main-header"
-                  className={`z-20 pt-[20px] static-sub-header font-GoodTimes flex items-center 
+                  className={`z-20 pt-[10px] pb-[10px] static-sub-header font-GoodTimes flex items-center 
         text-left`}
                 >
                   {listing.title}
                 </h2>
+                <p>{listing.description}</p>
               </div>
               {editable && (
-                <div className="flex gap-4 ml-4">
+                <div className="flex flex-wrap items-end justify-end w-full gap-4 ml-4 ">
                   <button
-                    onClick={() => setEnabledMarketplaceListingModal(true)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setEnabledMarketplaceListingModal(true)
+                    }}
                   >
                     {!isDeleting && (
                       <PencilIcon className="h-6 w-6 text-light-warm" />
@@ -122,7 +172,8 @@ export default function TeamListing({
                     <LoadingSpinner className="scale-[75%]" />
                   ) : (
                     <button
-                      onClick={async () => {
+                      onClick={async (event) => {
+                        event.stopPropagation()
                         setIsDeleting(true)
                         try {
                           await marketplaceTableContract.call(
@@ -146,45 +197,20 @@ export default function TeamListing({
                 </div>
               )}
             </span>
-            <div id="description-and-id-container" className="relative z-50">
-              <div id="description-and-id" className="description">
-                <div className="flex opacity-[70%]">{listing.description}</div>
+            <div id="listing-id-container" className="relative z-50">
+              <div id="listing-id" className="listing">
                 <div>
                   {`${listing.price} 
                   ${listing.currency}`}
                 </div>
+                <div id="listing-description"></div>
                 <span
                   id="mobile-button-container"
                   className="md:hidden flex pt-5 pb-5 justify-start w-full"
                 >
-                  <StandardButton
-                    textColor="text-white"
-                    borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-                    link="#"
-                    paddingOnHover="pl-5"
-                    className="gradient-2"
-                    styleOnly={true}
-                    onClick={() => {
-                      if (!address)
-                        return toast.error('Please connect your wallet')
-                      setEnabledBuyListingModal(true)
-                    }}
-                  >
-                    {'Buy Now'}
-                  </StandardButton>
+                  {/* Removed StandardButton here */}
                 </span>
               </div>
-
-              <span
-                id="hovertext-container"
-                className="hovertext absolute left-0 bottom-[-320px] ml-[-20px] w-[calc(100%+40px)] h-[calc(100%+300px)] p-[20px] text-lg rounded-[10px] text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
-                onClick={() => {
-                  if (!address) return toast.error('Please connect your wallet')
-                  setEnabledBuyListingModal(true)
-                }}
-              >
-                <span className="hidden md:block">{'Buy Now'}</span>
-              </span>
             </div>
           </span>
         </span>
@@ -202,7 +228,7 @@ export default function TeamListing({
           <BuyTeamListingModal
             selectedChain={selectedChain}
             listing={listing}
-            recipient={teamSplitAddress}
+            recipient={teamData.multisigAddress}
             setEnabled={setEnabledBuyListingModal}
           />
         )}

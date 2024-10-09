@@ -2,7 +2,7 @@ import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { TrashIcon } from '@heroicons/react/24/outline'
 import { useAddress, useResolvedMediaType, useSDK } from '@thirdweb-dev/react'
-import { HATS_ADDRESS } from 'const/config'
+import { DEFAULT_CHAIN, HATS_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -193,7 +193,7 @@ function TeamManageMembersModal({
 
   return (
     <Modal id="team-manage-members-modal" setEnabled={setEnabled}>
-      <div className="mt-24 w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 py-0 bg-gradient-to-b from-dark-cool to-darkest-cool h-screen md:h-auto">
+      <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 py-0 bg-gradient-to-b from-dark-cool to-darkest-cool h-screen md:h-auto">
         <div className="w-full flex mt-5 mb-2 items-end justify-between">
           <h2 className="font-GoodTimes">{`Manage Members`}</h2>
           <button
@@ -332,6 +332,7 @@ function TeamManageMembersModal({
             />
           </div>
           <PrivyWeb3Button
+            requiredChain={DEFAULT_CHAIN}
             label="Add Member"
             type="submit"
             className={`w-full mt-[-1px] w-full gradient-2 rounded-[2vmax] rounded-tr-[5px] ${

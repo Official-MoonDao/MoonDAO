@@ -9,7 +9,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import ApplyModal from '@/components/onboarding/ApplyModal'
 import CreateTeam from '@/components/onboarding/CreateTeam'
-import TeamTier from '@/components/layout/TeamTier'
+import TeamTier from '@/components/onboarding/TeamTier'
 
 export default function TeamJoin() {
   const { selectedChain } = useContext(ChainContext)
@@ -40,7 +40,7 @@ export default function TeamJoin() {
       />
       <Container>
         <ContentLayout
-          header="Join MoonDAO"
+          header="Join the Network"
           headerSize="max(20px, 3vw)"
           mainPadding
           mode="compact"
@@ -48,12 +48,9 @@ export default function TeamJoin() {
           isProfile
           description={
             <>
-              Be part of the first open-source, interplanetary network state
-              dedicated to establishing a permanent human presence on the Moon
-              and beyond. Registration is currently invite-only, but you can
-              send an email to{' '}
-              <Link href="mailto:info@moondao.com">info@moondao.com</Link> if
-              you think you'd be a good fit.
+              The Space Acceleration Network is an onchain startup society 
+              focused on building a permanent settlement on the Moon and beyond. 
+              Together we can unlock a multiplanetary future.
             </>
           }
           preFooter={
@@ -71,11 +68,11 @@ export default function TeamJoin() {
           {applyModalEnabled && (
             <ApplyModal type="team" setEnabled={setApplyModalEnabled} />
           )}
-          
+
           {/* Use the TeamTier component to display team tier */}
           <div className="flex flex-col">
             <div className="mb-10 z-50 flex flex-col">
-              <TeamTier />
+              <TeamTier setSelectedTier={setSelectedTier} />
             </div>
           </div>
         </ContentLayout>

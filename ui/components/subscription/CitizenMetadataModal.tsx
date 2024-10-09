@@ -2,7 +2,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { useContract, useResolvedMediaType } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { CITIZEN_TABLE_ADDRESSES } from 'const/config'
+import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -110,7 +110,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
 
   return (
     <Modal id="citizen-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="mt-32 w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-4 md:p-8 bg-darkest-cool rounded-md">
+      <div className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[650px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto">
         <div className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-GoodTimes">Update Info</h1>
           <button
@@ -155,6 +155,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
           <div>
             <p>Submit your new info</p>
             <PrivyWeb3Button
+              requiredChain={DEFAULT_CHAIN}
               label="Submit"
               action={async () => {
                 const accessToken = await getAccessToken()

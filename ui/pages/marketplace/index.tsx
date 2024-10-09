@@ -1,19 +1,20 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
+import MARKETPLACE_ABI from 'const/abis/MarketplaceTable.json'
 import {
   MARKETPLACE_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
+import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
-import useTeamSplit from '@/lib/team/useTeamSplit'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
-import CardGridContainer from '@/components/layout/CardGridContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
+import IndexCardGridContainer from '@/components/layout/IndexCardGridContainer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import TeamListing, {
@@ -22,42 +23,6 @@ import TeamListing, {
 
 type MarketplaceProps = {
   listings: TeamListingType[]
-}
-
-type MarketplaceListingProps = {
-  selectedChain: any
-  listing: TeamListingType
-  teamContract: any
-  marketplaceTableContract: any
-}
-
-function MarketplaceListing({
-  selectedChain,
-  listing,
-  teamContract,
-  marketplaceTableContract,
-}: MarketplaceListingProps) {
-  const [teamName, setTeamName] = useState<string>()
-  const teamSplitAddress = useTeamSplit(teamContract, listing.teamId)
-
-  useEffect(() => {
-    async function getTeamName() {
-      const teamNft = await teamContract.erc721.get(listing.teamId)
-      setTeamName(teamNft.metadata.name)
-    }
-    if (listing) getTeamName()
-  }, [listing, teamContract])
-
-  return (
-    <TeamListing
-      selectedChain={selectedChain}
-      listing={listing}
-      teamContract={teamContract}
-      marketplaceTableContract={marketplaceTableContract}
-      teamSplitAddress={teamSplitAddress}
-      teamName={teamName}
-    />
-  )
 }
 
 export default function Marketplace({ listings }: MarketplaceProps) {
@@ -86,14 +51,12 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   }, [listings, input])
 
   const descriptionSection = (
-    <div>
-      <Frame
-        bottomLeft="20px"
-        topLeft="5vmax"
-        marginBottom="30px"
-        marginTop="30px"
-        noPadding
-      >
+    <div className="pt-2">
+      <div className="mb-4">
+        Discover space products and services from top innovators and teams in
+        the Space Acceleration Network, available for direct on-chain purchase.
+      </div>
+      <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
         <Search input={input} setInput={setInput} />
       </Frame>
     </div>
@@ -113,18 +76,19 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           popOverEffect={false}
           isProfile
         >
-          <CardGridContainer>
+          <IndexCardGridContainer>
             {filteredListings &&
               filteredListings.map((listing: TeamListingType, i: number) => (
-                <MarketplaceListing
-                  key={`listing-${i}`}
-                  listing={listing}
+                <TeamListing
+                  key={`team-listing-${i}`}
                   selectedChain={selectedChain}
+                  listing={listing}
                   teamContract={teamContract}
                   marketplaceTableContract={marketplaceTableContract}
+                  teamName
                 />
               ))}
-          </CardGridContainer>
+          </IndexCardGridContainer>
         </ContentLayout>
       </Container>
     </section>
@@ -136,7 +100,8 @@ export async function getStaticProps() {
   const sdk = initSDK(chain)
 
   const marketplaceTableContract = await sdk.getContract(
-    MARKETPLACE_TABLE_ADDRESSES[chain.slug]
+    MARKETPLACE_TABLE_ADDRESSES[chain.slug],
+    MARKETPLACE_ABI
   )
   const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
 

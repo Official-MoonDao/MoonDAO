@@ -9,7 +9,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -46,7 +46,7 @@ export default function Network({
     })
   }
 
-  const [tab, setTab] = useState<string>('all')
+  const [tab, setTab] = useState<string>('teams')
   function loadByTab(tab: string) {
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
@@ -65,8 +65,24 @@ export default function Network({
           : []
       setCachedNFTs(input != '' ? filterBySearch(nfts) : nfts)
     }
-    // shallowQueryRoute({ type: tab })
   }
+
+  const handleTabChange = useCallback(
+    (newTab: string) => {
+      setTab(newTab)
+      setPageIdx(1)
+      shallowQueryRoute({ tab: newTab, page: '1' })
+    },
+    [shallowQueryRoute]
+  )
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setPageIdx(newPage)
+      shallowQueryRoute({ tab, page: newPage.toString() })
+    },
+    [shallowQueryRoute, tab]
+  )
 
   const [maxPage, setMaxPage] = useState(1)
 
@@ -80,7 +96,6 @@ export default function Network({
 
     if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 9))
     if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 9))
-    if (tab === 'all') setMaxPage(Math.ceil((totalTeams + totalCitizens) / 9))
   }, [tab, input, filteredCitizens, filteredTeams])
 
   const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
@@ -88,29 +103,27 @@ export default function Network({
   const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
-    const type = router.query.type
-    if (type) {
-      setTab(type as string)
+    const { tab: urlTab, page: urlPage } = router.query
+    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens')) {
+      setTab(urlTab as string)
     }
-  }, [router])
+    if (urlPage && !isNaN(Number(urlPage))) {
+      setPageIdx(Number(urlPage))
+    }
+  }, [router.query])
 
   useEffect(() => {
     loadByTab(tab)
   }, [tab, input, filteredTeams, filteredCitizens, router.query])
-
-  useEffect(() => {
-    if (router.query.type || router.asPath === '/directory')
-      shallowQueryRoute({ type: tab })
-  }, [tab, shallowQueryRoute, router])
 
   useChainDefault()
 
   const descriptionSection = (
     <div className="pt-2">
       <div className="mb-4">
-        The first open-source, interplanetary network state dedicated to
-        establishing a permanent human presence on the Moon and beyond. Be a
-        part of our multiplanetary future and{' '}
+        The Space Acceleration Network is an onchain startup society 
+        focused on building a permanent settlement on the Moon and beyond. 
+        Help build our multiplanetary future and{' '}
         <u>
           <Link href="/join">join the network</Link>
         </u>
@@ -126,17 +139,9 @@ export default function Network({
         <Frame noPadding>
           <div className="flex flex-wrap text-sm bg-filter">
             <Tab
-              tab="all"
-              currentTab={tab}
-              setTab={setTab}
-              icon="/../.././assets/icon-star.svg"
-            >
-              All
-            </Tab>
-            <Tab
               tab="teams"
               currentTab={tab}
-              setTab={setTab}
+              setTab={handleTabChange}
               icon="/../.././assets/icon-org.svg"
             >
               Teams
@@ -144,7 +149,7 @@ export default function Network({
             <Tab
               tab="citizens"
               currentTab={tab}
-              setTab={setTab}
+              setTab={handleTabChange}
               icon="/../.././assets/icon-passport.svg"
             >
               Citizens
@@ -158,9 +163,9 @@ export default function Network({
   return (
     <section id="network-container" className="overflow-hidden">
       <Head
-        title={'The Space Network'}
+        title={'Space Acceleration Network'}
         description={
-          'The first open source, interplanetary network state dedicated to expanding life beyond Earth.'
+          "The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond."
         }
       />
       <Container>
@@ -218,7 +223,7 @@ export default function Network({
                 <button
                   onClick={() => {
                     if (pageIdx > 1) {
-                      setPageIdx(pageIdx - 1)
+                      handlePageChange(pageIdx - 1)
                     }
                   }}
                   className={`pagination-button ${
@@ -239,7 +244,7 @@ export default function Network({
                 <button
                   onClick={() => {
                     if (pageIdx < maxPage) {
-                      setPageIdx(pageIdx + 1)
+                      handlePageChange(pageIdx + 1)
                     }
                   }}
                   className={`pagination-button ${
@@ -326,8 +331,8 @@ export async function getStaticProps() {
 
   return {
     props: {
-      filteredTeams: filteredValidTeams,
-      filteredCitizens: filteredValidCitizens,
+      filteredTeams: filteredValidTeams.reverse(),
+      filteredCitizens: filteredValidCitizens.reverse(),
     },
     revalidate: 60,
   }

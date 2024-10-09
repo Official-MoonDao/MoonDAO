@@ -1,8 +1,9 @@
+import { useFundWallet } from '@privy-io/react-auth'
 import { ethers } from 'ethers'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useMoonPay } from '../../lib/privy/hooks/useMoonPay'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
+import viemChains from '@/lib/viem/viemChains'
+import { LoadingSpinner } from '../../components/layout/LoadingSpinner'
 
 type StepProps = {
   realStep: number
@@ -37,13 +38,21 @@ export function Step({
 }: StepProps) {
   const [isProcessingTx, setIsProcessingTx] = useState(false)
 
-  //MoonPay
-  const fund = useMoonPay()
+  const { fundWallet } = useFundWallet()
+
+  const nativeTokenName = useMemo(() => {
+    let tokenName
+    if (selectedChain.slug === 'ethereum') {
+      tokenName = 'ETH'
+    } else if (selectedChain.slug === 'polygon') {
+      tokenName = 'MATIC'
+    } else if (selectedChain.slug === 'arbitrum') {
+      tokenName = 'ETH'
+    }
+    return tokenName
+  }, [selectedChain])
 
   const stepButtons = useMemo(() => {
-    const selectedChainName =
-      selectedChain.slug === 'ethereum' ? 'ETH' : 'MATIC'
-
     switch (realStep) {
       case 1:
         return (
@@ -59,7 +68,13 @@ export function Step({
                   ethers.utils.formatEther(nativeBalance)
                 const levelPrice = nativeAmount + extraFundsForGas
 
-                await fund(levelPrice - +formattedNativeBalance)
+                await fundWallet(wallet.address, {
+                  amount: String(
+                    Math.ceil((levelPrice - +formattedNativeBalance) * 100000) /
+                      100000
+                  ),
+                  chain: viemChains[selectedChain.slug],
+                })
               }}
               disabled={isDisabled || isProcessingTx}
             >
@@ -68,7 +83,7 @@ export function Step({
               ) : isDisabled ? (
                 <LoadingSpinner>{'...loading'}</LoadingSpinner>
               ) : (
-                `Purchase ${selectedChainName} with MoonPay`
+                `Purchase ${nativeTokenName} with MoonPay`
               )}
             </button>
             <button
@@ -102,7 +117,7 @@ export function Step({
               ) : isDisabled ? (
                 <LoadingSpinner>{'...loading'}</LoadingSpinner>
               ) : (
-                `Purchase ${selectedChainName} with Exchange`
+                `Purchase ${nativeTokenName} with Exchange`
               )}
             </button>
           </>
@@ -259,10 +274,11 @@ export function Step({
   }, [
     action,
     extraFundsForGas,
-    fund,
+    fundWallet,
     isDisabled,
     isProcessingTx,
     nativeAmount,
+    nativeTokenName,
     noTxns,
     realStep,
     selectedChain.chainId,

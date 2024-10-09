@@ -1,6 +1,7 @@
 import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
 import Image from 'next/image'
+import toast from 'react-hot-toast'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import FileInput from '../layout/FileInput'
 import { StageButton } from './StageButton'
@@ -14,11 +15,11 @@ export function ImageGenerator({
   nextStage,
   generateInBG,
 }: any) {
-  const { generateImage, isLoading: generating } = useImageGenerator(
-    '/api/image-gen/citizen-image',
-    inputImage,
-    setImage
-  )
+  const {
+    generateImage,
+    isLoading: generating,
+    error: generateError,
+  } = useImageGenerator('/api/image-gen/citizen-image', inputImage, setImage)
 
   async function submitImage() {
     if (!document.getElementById('citizenPic'))
@@ -51,32 +52,10 @@ export function ImageGenerator({
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col mt-5">
         <FileInput file={inputImage} setFile={setInputImage} />
-        <div className="flex gap-4">
-          {inputImage && (
-            <StageButton
-              onClick={() => {
-                setImage(null)
-                generateImage()
-                if (generateInBG) {
-                  nextStage()
-                }
-              }}
-            >
-              Generate
-            </StageButton>
-          )}
-          {(currImage && !inputImage) || image ? (
-            <StageButton className="" onClick={submitImage}>
-              Save Design
-            </StageButton>
-          ) : (
-            <></>
-          )}
-        </div>
       </div>
       <div
         id="citizenPic"
-        className="w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left relative flex"
+        className="mt-4 w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left relative flex"
       >
         {currImage && !inputImage && (
           <MediaRenderer
@@ -117,6 +96,28 @@ export function ImageGenerator({
           </>
         )}
       </div>
+      {generateError && (
+        <p className="mt-2 ml-2 opacity-[50%]">{generateError}</p>
+      )}
+      {inputImage && (
+        <StageButton
+          className=""
+          onClick={() => {
+            setImage(null)
+            generateImage()
+            if (generateInBG) {
+              nextStage()
+            }
+          }}
+        >
+          {generating ? 'loading...' : 'Generate'}
+        </StageButton>
+      )}
+      {(currImage && !inputImage) || image ? (
+        <StageButton onClick={submitImage}>Next</StageButton>
+      ) : (
+        <></>
+      )}
     </div>
   )
 }

@@ -1,15 +1,15 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { MediaRenderer } from '@thirdweb-dev/react'
+import { DEFAULT_CHAIN } from 'const/config'
 import Image from 'next/image'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { pinImageToIPFS } from '@/lib/ipfs/pin'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import { renameFile } from '@/lib/utils/files'
 import Modal from '../layout/Modal'
-import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { TeamListing } from './TeamListing'
 
@@ -61,12 +61,19 @@ export default function TeamMarketplaceListingModal({
         }
   )
 
+  const isValid =
+    listingData.title.trim() !== '' &&
+    listingData.description.trim() !== '' &&
+    listingData.price.trim() !== ''
+
   return (
     <Modal id="team-marketplace-listing-modal-backdrop" setEnabled={setEnabled}>
       <form
-        className="mt-12 w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-darkest-cool rounded-md"
+        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto" // Updated styles
         onSubmit={async (e) => {
           e.preventDefault()
+          const accessToken = await getAccessToken()
+          await createSession(accessToken)
           if (
             listingData.title.trim() === '' ||
             listingData.description.trim() === '' ||
@@ -74,13 +81,21 @@ export default function TeamMarketplaceListingModal({
           )
             return toast.error('Please fill out all fields')
 
+          if (!listingData.image) {
+            return toast.error('Please upload an image')
+          }
+
           setIsLoading(true)
 
           const cleanedData = cleanData(listingData)
 
           let imageIpfsLink
 
-          if (typeof listingData.image === 'string') {
+          if (
+            typeof listingData.image === 'string' &&
+            listingData.image !== 'ipfs://undefined' &&
+            listingData.image !== 'ipfs://'
+          ) {
             imageIpfsLink = listingData.image
           } else {
             const renamedListingImage = renameFile(
@@ -118,7 +133,6 @@ export default function TeamMarketplaceListingModal({
                 cleanedData.shipping,
               ])
             }
-
             if (tx?.receipt)
               setTimeout(() => {
                 refreshListings()
@@ -133,6 +147,7 @@ export default function TeamMarketplaceListingModal({
             )
             setIsLoading(false)
           }
+          await destroySession(accessToken)
         }}
       >
         <div className="w-full flex items-center justify-between">
@@ -168,79 +183,82 @@ export default function TeamMarketplaceListingModal({
             )}
           </>
         )}
+        <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
+          <input
+            type="file"
+            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px]"
+            onChange={(e: any) =>
+              setListingData({ ...listingData, image: e.target.files[0] })
+            }
+          />
 
-        <input
-          type="file"
-          className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-          onChange={(e: any) =>
-            setListingData({ ...listingData, image: e.target.files[0] })
-          }
-        />
-
-        <input
-          type="text"
-          placeholder="Title"
-          className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-          onChange={(e) => {
-            setListingData({ ...listingData, title: e.target.value })
-          }}
-          value={listingData.title}
-        />
-        <textarea
-          placeholder="Description"
-          className="w-full h-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-          onChange={(e) => {
-            setListingData({ ...listingData, description: e.target.value })
-          }}
-          value={listingData.description}
-          style={{ resize: 'none' }}
-          maxLength={500}
-        />
-        <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Price"
+            placeholder="Title"
             className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
             onChange={(e) => {
-              setListingData({ ...listingData, price: e.target.value })
+              setListingData({ ...listingData, title: e.target.value })
             }}
-            value={listingData.price}
+            value={listingData.title}
           />
-
-          <select
-            className="p-2 bg-[#0f152f]"
-            onChange={(e) =>
-              setListingData({ ...listingData, currency: e.target.value })
-            }
-            value={listingData.currency}
-          >
-            <option value="ETH">ETH</option>
-            <option value="MOONEY">MOONEY</option>
-            <option value="DAI">DAI</option>
-            <option value="USDC">USDC</option>
-          </select>
-        </div>
-        <div className="w-full flex gap-2">
-          <p className="p-2">Require shipping address</p>
-          <input
-            className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-            type="checkbox"
-            checked={listingData.shipping === 'true'}
-            onChange={({ target }) =>
-              setListingData({
-                ...listingData,
-                shipping: String(target.checked),
-              })
-            }
+          <textarea
+            placeholder="Description"
+            className="w-full h-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+            onChange={(e) => {
+              setListingData({ ...listingData, description: e.target.value })
+            }}
+            value={listingData.description}
+            style={{ resize: 'none' }}
+            maxLength={500}
           />
-        </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Price"
+              className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+              onChange={(e) => {
+                setListingData({ ...listingData, price: e.target.value })
+              }}
+              value={listingData.price}
+            />
 
+            <select
+              className="p-2 bg-[#0f152f]"
+              onChange={(e) =>
+                setListingData({ ...listingData, currency: e.target.value })
+              }
+              value={listingData.currency}
+            >
+              <option value="ETH">ETH</option>
+              <option value="MOONEY">MOONEY</option>
+              <option value="DAI">DAI</option>
+              <option value="USDC">USDC</option>
+            </select>
+          </div>
+          <div className="w-full flex gap-2">
+            <p className="p-2">Require shipping address</p>
+            <input
+              className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+              type="checkbox"
+              checked={listingData.shipping === 'true'}
+              onChange={({ target }) =>
+                setListingData({
+                  ...listingData,
+                  shipping: String(target.checked),
+                })
+              }
+            />
+          </div>
+        </div>
         <PrivyWeb3Button
+          requiredChain={DEFAULT_CHAIN}
           label={edit ? 'Edit Listing' : 'Add Listing'}
           type="submit"
-          isDisabled={isLoading}
+          isDisabled={isLoading || !isValid} // Disable if loading or invalid
           action={() => {}}
-          className="w-full gradient-2 rounded-[5vmax]"
+          className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${
+            !isValid ? 'opacity-50 cursor-not-allowed' : ''
+          }`} // Updated class for opacity and rounding
         />
 
         {isLoading && (

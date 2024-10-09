@@ -1,18 +1,13 @@
-'use client';
-
 import { Token } from '@uniswap/sdk-core'
+import { nativeOnChain } from '@uniswap/smart-order-router';
 import { DAI_ADDRESSES, MOONEY_ADDRESSES } from 'const/config'
 import {useMemo } from 'react'
 
-if (typeof window !== "undefined") {
-  // @ts-ignore
-    window.Browser = {
-      T: () => {
-      }
-    };
-  }
-
 export function useUniswapTokens(selectedChain: any) {
+
+  const NATIVE = useMemo(() => {
+    return nativeOnChain(selectedChain.chainId)
+  }, [selectedChain])
 
   const MOONEY = useMemo(() => {
     return new Token(
@@ -29,5 +24,5 @@ export function useUniswapTokens(selectedChain: any) {
     )
   }, [selectedChain])
 
-  return { MOONEY, DAI }
+  return { NATIVE,MOONEY, DAI }
 }
