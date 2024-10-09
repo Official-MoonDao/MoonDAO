@@ -11,7 +11,7 @@ import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
-import formatCitizenFormData from '@/lib/typeform/citizenFormData'
+import { formatCitizenFormData } from '@/lib/typeform/citizenFormData'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
@@ -74,7 +74,8 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
           const subRes = await subscribeToNewsletter(citizenData.email)
           if (subRes.ok) {
             toast.success(
-              'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
+              'Successfully subscribed to the newsletter! Open your email and confirm your subscription.',
+              { duration: 5000 }
             )
           }
         }
