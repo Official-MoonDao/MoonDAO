@@ -64,7 +64,6 @@ export function useCitizens(
   citizenContract?: any
 ) {
   const sdk = useSDK()
-  const { wallets } = useWallets()
   const [areCitizens, setAreCitizens] = useState<boolean[]>([])
 
   useEffect(() => {
@@ -95,7 +94,7 @@ export function useCitizens(
     }
 
     if (sdk && selectedChain) getAreCitizens()
-  }, [sdk, selectedChain, citizenContract, citizenAddresses, wallets])
+  }, [])
 
   return areCitizens
 }

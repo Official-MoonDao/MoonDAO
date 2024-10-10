@@ -16,7 +16,6 @@ import {
 
 export default function Rewards({
   projects,
-  //distributionTableContract,
   distributions,
 }: RetroactiveRewardsProps) {
   const router = useRouter()
@@ -36,8 +35,6 @@ export async function getStaticProps() {
   const chain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
   const sdk = initSDK(chain)
-  console.log('chain.slug')
-  console.log(chain.slug)
 
   const projectTableContract = await sdk.getContract(
     PROJECT_TABLE_ADDRESSES[chain.slug]
@@ -48,13 +45,9 @@ export async function getStaticProps() {
   )
 
   const projectBoardTableName = await projectTableContract.call('getTableName')
-  console.log('projectBoardTableName')
-  console.log(projectBoardTableName)
   const distributionTableName = await distributionTableContract.call(
     'getTableName'
   )
-  console.log('distributionTableName')
-  console.log(distributionTableName)
 
   const now = Math.floor(Date.now() / 1000)
   const currentYear = new Date().getFullYear()
@@ -63,31 +56,18 @@ export async function getStaticProps() {
   //const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3)
   //
   const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
-  console.log('projectStatement')
-  console.log(projectStatement)
   const allProjectsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
   )
   const allProjects = await allProjectsRes.json()
 
   const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
-  console.log('distributionStatement')
-  console.log(distributionStatement)
   const allDistributionsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
   )
   const allDistributions = await allDistributionsRes.json()
 
   const distributions = allDistributions
-
-  //const validProjects = allProjects.filter(async (project: Project) => {
-  //const teamExpiration = await teamContract.call('expiresAt', [
-  //project.teamId,
-  //])
-  //return teamExpiration.toNumber() > now
-  //})
-  console.log('distributions')
-  console.log(distributions)
 
   return {
     props: {
