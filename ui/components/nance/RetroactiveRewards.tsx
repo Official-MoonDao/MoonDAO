@@ -316,7 +316,9 @@ export function RetroactiveRewards({
           JSON.stringify(distributions),
         ])
         alert('Distribution edited successfully!')
-        refreshRewards()
+        setTimeout(() => {
+          refreshRewards()
+        }, 5000)
       } else {
         await distributionTableContract?.call('insertIntoTable', [
           quarter,
@@ -324,7 +326,9 @@ export function RetroactiveRewards({
           JSON.stringify(distributions),
         ])
         alert('Distribution submitted successfully!')
-        refreshRewards()
+        setTimeout(() => {
+          refreshRewards()
+        }, 5000)
       }
     } catch (error) {
       console.error('Error submitting distribution:', error)
@@ -335,7 +339,9 @@ export function RetroactiveRewards({
     try {
       await distributionTableContract?.call('deleteFromTable', [quarter, year])
       alert('Distribution deleted successfully!')
-      refreshRewards()
+      setTimeout(() => {
+        refreshRewards()
+      }, 5000)
     } catch (error) {
       console.error('Error deleting distribution:', error)
       alert('Error deleting distribution. Please try again.')
