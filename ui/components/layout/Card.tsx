@@ -74,7 +74,7 @@ export default function Card({
       className="animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full"
     >
       {/* Ensure the card content takes full height */}
-      <div className="flex-grow"> 
+      <div className="flex-grow">
         <div
           id="card-styling"
           className="bg-darkest-cool rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5"
@@ -90,7 +90,10 @@ export default function Card({
             }`}
           >
             {orgimage && (
-              <div id="featured-image-container" className="z-50 animate-fadeIn">
+              <div
+                id="featured-image-container"
+                className="z-50 animate-fadeIn"
+              >
                 <Frame noPadding marginBottom="0px">
                   <Image
                     id="featured-image"
@@ -165,7 +168,9 @@ export default function Card({
                         : metadata.description}
                     </p>
                     {type === 'citizen' && citizenDiscord && (
-                      <div id="handle-container">Discord: @{citizenDiscord}</div>
+                      <div id="handle-container">
+                        Discord: @{citizenDiscord}
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -199,7 +204,7 @@ export default function Card({
               {hovertext && (
                 <span
                   id="hovertext-container"
-                  className="hovertext absolute left-0 bottom-[-320px] ml-[-20px] w-[calc(100%+40px)] h-[calc(100%+300px)] p-[20px] text-lg rounded-[10px] text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
+                  className="hovertext absolute left-0 bottom-[-320px] ml-[-20px] w-[calc(100%+40px)] h-[calc(100%+325px)] p-[20px] text-lg rounded-[10px] text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
                 >
                   <span id="hovertext" className="hidden md:block">
                     {hovertext}
@@ -234,7 +239,13 @@ export default function Card({
         ></span>
       )}
       {link ? (
-        <Link id="card-link" href={link} className="w-full h-full block" target="_blank" rel="noreferrer">
+        <Link
+          id="card-link"
+          href={link}
+          className="w-full h-full block"
+          target="_blank"
+          rel="noreferrer"
+        >
           {cardContent}
         </Link>
       ) : metadata?.name ? (

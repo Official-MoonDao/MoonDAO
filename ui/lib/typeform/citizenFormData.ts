@@ -8,15 +8,12 @@ export type CitizenData = {
   discord?: string
   twitter?: string
   website?: string
-  view: string
+  view?: string
   newsletterSub: boolean
   formResponseId: string
 }
 
-export default function formatCitizenFormData(
-  answers: any[],
-  responseId: string
-) {
+export function formatCitizenFormData(answers: any[], responseId: string) {
   return {
     name: answerByFieldId(answers, 'RkBAEVN40hLw').text,
     email: answerByFieldId(answers, 'LzGGOX3e8Sfv').email,
@@ -30,6 +27,15 @@ export default function formatCitizenFormData(
         ? 'public'
         : 'private',
     newsletterSub: answerByFieldId(answers, 'EnRjgahQqOFG')?.boolean,
+    formResponseId: responseId,
+  } as CitizenData
+}
+
+export function formatCitizenShortFormData(answers: any[], responseId: string) {
+  return {
+    name: answerByFieldId(answers, '14C5JA01MntJ').text,
+    email: answerByFieldId(answers, 'JEiG9XCW6M73').email,
+    newsletterSub: answerByFieldId(answers, '7fpED6TCJcrI')?.boolean,
     formResponseId: responseId,
   } as CitizenData
 }
