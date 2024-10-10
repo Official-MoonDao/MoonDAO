@@ -63,11 +63,6 @@ export default function PartnerSection() {
                 link="/network"
               />
               <BrandLogo
-                alt="OpenLunar Logo"
-                logo="./../assets/logo-openlunar.svg"
-                link="/network"
-              /> 
-              <BrandLogo
                 alt="CryoDAO Logo"
                 logo="./../assets/logo-cryodao.svg"
                 link="/network"
