@@ -178,7 +178,11 @@ export default function CreateCitizen({
               <StageContainer
                 className={`mb-10`}
                 title="Design"
-                description="Create your unique and personalized astronaut profile picture using AI! Upload a photo of yourself, or an avatar that represents you well. Please make sure the photo contains a face. Image generation may take up to a minute, so please fill in your profile in the next step while your image is being generated."
+                description={
+                  <>
+                    <b>Create your unique and personalized AI passport photo.</b> The uploaded photo <u>MUST</u> contain a face, but it can be a photo of yourself or an avatar that represents you well. Image generation may take up to a minute, so please continue to the next step to fill out your profile.
+                  </>
+                }
               >
                 <ImageGenerator
                   image={citizenImage}
