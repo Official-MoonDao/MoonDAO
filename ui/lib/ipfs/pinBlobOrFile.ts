@@ -30,8 +30,9 @@ export async function pinBlobOrFile(blob: Blob | File): Promise<PinResponse> {
     const { cid } = await pin.json()
     const url = `${IPFS_GATEWAY}/ipfs/${cid}`
     return { cid, url }
-  } catch (e) {
-    toast.error(`Error pinning file to IPFS`)
-    return Promise.reject(e)
+  } catch (err: any) {
+    console.log(err)
+    toast.error(`Error pinning file to IPFS`, { duration: 10000 })
+    return Promise.reject(err)
   }
 }
