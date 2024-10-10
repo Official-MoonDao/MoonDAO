@@ -51,17 +51,7 @@ export default function PartnerSection() {
                 alt="OpenLunar Logo"
                 logo="./../assets/logo-openlunar.svg"
                 link="/network"
-              />
-              <BrandLogo
-                alt="Space For Humanity Logo"
-                logo="/../assets/logo-spaceforhumanity.png"
-                link="/network"
-              /> 
-              <BrandLogo
-                alt="The Mars Society Logo"
-                logo="/../assets/logo-marssociety.png"
-                link="/network"
-              />              
+              />           
               <BrandLogo
                 alt="Lifeship Logo"
                 logo="./../assets/logo-lifeship.svg"
