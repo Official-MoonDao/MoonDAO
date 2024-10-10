@@ -136,7 +136,7 @@ const BarChart = ({ holdersData }: any) => {
     },
   }
 
-  return <Bar data={data} options={options} />
+  return <Bar data={data} options={options as any} />
 }
 
 export default BarChart
