@@ -27,9 +27,6 @@ export default function IndexCard({
   hovertext,
   metadata,
 }: IndexCardProps) {
-  icon = icon ?? '/assets/icon-passport.svg'
-  iconAlt = iconAlt ?? 'Star'
-
   const router = useRouter()
 
   const [citizenDiscord, setCitizenDiscord] = useState<string | undefined>()
@@ -63,14 +60,18 @@ export default function IndexCard({
             isLoadingRoute && 'animate-pulse'
           }`}
         >
-          <Image
-            id="index-featured-icon"
-            src={icon}
-            alt={iconAlt}
-            width="250"
-            height="250"
-            className="z-20 w-[100px] h-[100px] pb-5"
-          />
+          {icon || iconAlt ? (
+            <Image
+              id="index-featured-icon"
+              src={icon || ''}
+              alt={iconAlt || ''}
+              width="250"
+              height="250"
+              className="z-20 w-[100px] h-[100px] pb-5"
+            />
+          ) : (
+            <></>
+          )}
           <h2
             id="index-main-header"
             className="z-20 pt-[20px] mb-5 static-sub-header font-GoodTimes text-center justify-center md:justify-start"

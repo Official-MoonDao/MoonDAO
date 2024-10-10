@@ -5,8 +5,6 @@ import Asset from './Asset'
 const Assets = ({ tokens }: any) => {
   return (
     <section className="mt-8 flex flex-col">
-      <h3 className='title-text-colors text-2xl font-RobotoMono text-center 2xl:text-left'>DAO Assets</h3>
-
       {tokens
         .filter((token: any) => allowedAssets[token.symbol])
         .map((token: any, i: number) => (
