@@ -60,6 +60,50 @@ export function RetroactiveRewards({
   )
   const chain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+  const testDistributions = [
+    {
+      // Pablo/R1
+      address: '0x679d87D8640e66778c3419D164998E720D7495f6',
+      distribution: {
+        //'1': 0,
+        '2': 50,
+        '4': 30,
+        '3': 20,
+        '5': 0,
+      },
+      id: 1,
+      quarter: 2,
+      year: 2024,
+    },
+    {
+      // Mitchie/R2
+      address: '0x9fDf876a50EA8f95017dCFC7709356887025B5BB',
+      distribution: {
+        '1': 23,
+        '2': 24,
+        '4': 49,
+        '5': 4,
+      },
+      id: 2,
+      quarter: 2,
+      year: 2024,
+    },
+    {
+      //Phil/R3
+      address: '0x6bFd9e435cF6194c967094959626ddFF4473a836',
+      distribution: {
+        '1': 31,
+        '2': 12,
+        '4': 42,
+        '3': 10,
+        '5': 5,
+      },
+      id: 3,
+      quarter: 2,
+      year: 2024,
+    },
+  ]
+  //currentDistributions = testDistributions
 
   const [year, setYear] = useState(new Date().getFullYear())
   const [edit, setEdit] = useState(false)
@@ -116,10 +160,14 @@ export function RetroactiveRewards({
     SNAPSHOT_SPACE_NAME,
     '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
   )
+  console.log('votingPowers')
+  console.log(_vps)
   const votingPowers = _vps ? _vps.map((vp) => (vp ? vp.vp : 0)) : []
-  const addressToVotingPower = Object.fromEntries(
-    addresses.map((address, i) => [address, votingPowers[i]])
+  const addressToQuadraticVotingPower = Object.fromEntries(
+    addresses.map((address, i) => [address, Math.sqrt(votingPowers[i])])
   )
+  console.log('addressToQuadraticVotingPower')
+  console.log(addressToQuadraticVotingPower)
   console.log('citizenDistributions')
   console.log(citizenDistributions)
   console.log('nonCitizenDistributions')
@@ -177,13 +225,6 @@ export function RetroactiveRewards({
       ...filledInCitizenDistributions,
       ...nonCitizenDistributions,
     ]
-    //const allAddresses = allDistributions.map((d) => d.address)
-    // set undefined votingPower to 0
-    //for (const [i, vp] of votingPowers.entries()) {
-    //if (vp === undefined) {
-    //votingPowers[i] = 0
-    //}
-    //}
 
     if (currentDistributions) {
       const allAddresses = allDistributions.map((d) => d.address)
@@ -196,16 +237,16 @@ export function RetroactiveRewards({
           groupedDistributions[key].push(value)
         }
       }
-      const votingPowerSum = _.sum(Object.values(addressToVotingPower))
-      console.log('votingPowerSum')
-      console.log(votingPowerSum)
+      const votingPowerSum = _.sum(Object.values(addressToQuadraticVotingPower))
       if (votingPowerSum > 0) {
         votingPowerSumIsNonZero = true
         for (const [projectId, percentages] of Object.entries(
           groupedDistributions
         )) {
           const sumProduct = _.sum(
-            percentages.map((p, i) => p * addressToVotingPower[allAddresses[i]])
+            percentages.map(
+              (p, i) => p * addressToQuadraticVotingPower[allAddresses[i]]
+            )
           )
           const sumProductPercentage = sumProduct / votingPowerSum
           projectIdToEstimatedAllocation[projectId] = sumProductPercentage
@@ -325,29 +366,35 @@ export function RetroactiveRewards({
     ethBudget = ethValue * 0.05
     mooneyBudget = 15_000_000 * 0.95 ** numQuartersPastQ4Y2022
   }
+  console.log('ethBudget')
+  console.log(ethBudget)
 
-  const addressToPercentagePayout: { [key: string]: number } = {}
+  const addressToPayoutProportion: { [key: string]: number } = {}
   for (const project of projects) {
     const projectId = project.id
     const allocation = projectIdToEstimatedAllocation[projectId]
     const contributors = project.contributors
-    for (const [contributerAddress, proportion] of Object.entries(
+    for (const [contributerAddress, contributorPercentage] of Object.entries(
       contributors
     )) {
-      if (contributerAddress in addressToPercentagePayout) {
-        addressToPercentagePayout[contributerAddress] += proportion * allocation
+      if (contributerAddress in addressToPayoutProportion) {
+        addressToPayoutProportion[contributerAddress] +=
+          (contributorPercentage / 100) * (allocation / 100)
       } else {
-        addressToPercentagePayout[contributerAddress] = proportion * allocation
+        addressToPayoutProportion[contributerAddress] =
+          (contributorPercentage / 100) * (allocation / 100)
       }
     }
   }
+  console.log('addressToPayoutProportion')
+  console.log(addressToPayoutProportion)
   const addressToEthPayout: { [key: string]: number } = {}
   const addressToMooneyPayout: { [key: string]: number } = {}
-  for (const [address, percentage] of Object.entries(
-    addressToPercentagePayout
+  for (const [address, proportion] of Object.entries(
+    addressToPayoutProportion
   )) {
-    addressToEthPayout[address] = (percentage / 100) * ethBudget
-    addressToMooneyPayout[address] = (percentage / 100) * mooneyBudget
+    addressToEthPayout[address] = proportion * ethBudget
+    addressToMooneyPayout[address] = proportion * mooneyBudget
   }
   const ethPayoutCSV = Object.entries(addressToEthPayout)
     .map(([address, eth]) => `${address},${eth}`)
@@ -355,6 +402,10 @@ export function RetroactiveRewards({
   const mooneyPayoutCSV = Object.entries(addressToMooneyPayout)
     .map(([address, mooney]) => `${address},${mooney}`)
     .join('\n')
+  console.log('ethPayoutCSV')
+  console.log(ethPayoutCSV)
+  console.log('mooneyPayoutCSV')
+  console.log(mooneyPayoutCSV)
 
   return (
     <section id="projects-container" className="overflow-hidden">
@@ -409,7 +460,6 @@ export function RetroactiveRewards({
                 <StandardButton
                   onClick={handleSubmit}
                   className="gradient-2 rounded-full"
-                  //className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 >
                   {edit ? 'Edit Distribution' : 'Submit Distribution'}
                 </StandardButton>
@@ -434,7 +484,9 @@ export function RetroactiveRewards({
                 ([projectId, percentages], i) => (
                   <div key={i} className="flex items-center justify-between">
                     <div>{idToTitle[projectId]}</div>
-                    <div>{projectIdToEstimatedAllocation[projectId]}%</div>
+                    <div>
+                      {projectIdToEstimatedAllocation[projectId].toFixed(1)}%
+                    </div>
                     {tokens && tokens[0] && (
                       <div>
                         {Math.round(
