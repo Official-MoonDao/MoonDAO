@@ -129,11 +129,6 @@ export default function PartnerSection() {
                 logo="/../assets/logo-msn.svg"
                 link="https://www.msn.com/en-us/money/other/representation-matters-vanderbilt-doctor-to-become-first-nashvillian-to-go-outer-space/ar-AA1oRGNM?ocid=BingNewsVerp"
               />
-              <BrandLogo
-                alt="Read about MoonDAO on Space.com"
-                logo="/../assets/logo-spacedotcom.svg"
-                link="https://www.space.com/blue-origin-eiman-jahangir-suborbital-flight-moondao"
-              />
             </div>
           </div>
         </div>
