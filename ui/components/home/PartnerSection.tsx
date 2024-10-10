@@ -48,6 +48,11 @@ export default function PartnerSection() {
                 link="/network"
               />
               <BrandLogo
+                alt="OpenLunar Logo"
+                logo="./../assets/logo-openlunar.svg"
+                link="/network"
+              />           
+              <BrandLogo
                 alt="Lifeship Logo"
                 logo="./../assets/logo-lifeship.svg"
                 link="/network"
@@ -65,11 +70,6 @@ export default function PartnerSection() {
               <BrandLogo
                 alt="CryoDAO Logo"
                 logo="./../assets/logo-cryodao.svg"
-                link="/network"
-              />
-              <BrandLogo
-                alt="LunARC Logo"
-                logo="./../assets/logo-lunarc.svg"
                 link="/network"
               />
             </div>
@@ -133,6 +133,11 @@ export default function PartnerSection() {
                 alt="Read about MoonDAO on MSN"
                 logo="/../assets/logo-msn.svg"
                 link="https://www.msn.com/en-us/money/other/representation-matters-vanderbilt-doctor-to-become-first-nashvillian-to-go-outer-space/ar-AA1oRGNM?ocid=BingNewsVerp"
+              />
+              <BrandLogo
+                alt="Read about MoonDAO on Space.com"
+                logo="/../assets/logo-spacedotcom.svg"
+                link="https://www.space.com/blue-origin-eiman-jahangir-suborbital-flight-moondao"
               />
             </div>
           </div>
