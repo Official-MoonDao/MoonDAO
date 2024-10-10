@@ -5,7 +5,7 @@ import BrandLogo from './BrandLogo'
 export default function PartnerSection() {
   return (
     <>
-      <section className="flex max-w-[1200px] items-center justify-center lg:pb-5 md:px-10">
+      <section className="flex max-w-[1200px] items-center justify-center lg:pb-5 px-1">
         <Link href="/team" passHref>
           <TeamTier setSelectedTier={() => {}} compact />
         </Link>
@@ -51,17 +51,7 @@ export default function PartnerSection() {
                 alt="OpenLunar Logo"
                 logo="./../assets/logo-openlunar.svg"
                 link="/network"
-              />
-              <BrandLogo
-                alt="Space For Humanity Logo"
-                logo="/../assets/logo-spaceforhumanity.png"
-                link="/network"
-              /> 
-              <BrandLogo
-                alt="The Mars Society Logo"
-                logo="/../assets/logo-marssociety.png"
-                link="/network"
-              />              
+              />           
               <BrandLogo
                 alt="Lifeship Logo"
                 logo="./../assets/logo-lifeship.svg"
@@ -104,6 +94,11 @@ export default function PartnerSection() {
               id="teams"
               className="p-5 pt-0 flex flex-row flex flex-row flex-wrap justify-center"
             >
+              <BrandLogo
+                alt="Read about MoonDAO on Space.com"
+                logo="/../assets/logo-spacedotcom.svg"
+                link="https://www.space.com/blue-origin-eiman-jahangir-suborbital-flight-moondao"
+              />
               <BrandLogo
                 alt="Read about MoonDAO on Forbes"
                 logo="/../assets/logo-forbes.svg"
