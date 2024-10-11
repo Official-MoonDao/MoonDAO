@@ -17,14 +17,14 @@ module.exports = nextTranslate({
   async redirects() {
     return [
       {
-        source: '/',
+        source: '/:path*',
         has: [
           {
             type: 'host',
             value: 'app.moondao.com',
           },
         ],
-        destination: 'https://moondao.com',
+        destination: 'https://moondao.com/:path*',
         permanent: true,
       },
       {
