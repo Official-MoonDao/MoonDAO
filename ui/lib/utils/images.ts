@@ -14,30 +14,15 @@ export async function fitImage(
         return
       }
 
-      let newWidth = img.width
-      let newHeight = img.height
-
-      // Calculate the scaling factor to fit within maxWidth and maxHeight
-      const scale = Math.min(maxWidth / img.width, maxHeight / img.height)
-
-      // Only scale down, don't enlarge
-      if (scale < 1) {
-        newWidth = img.width * scale
-        newHeight = img.height * scale
-      }
-
-      // Set canvas size
-      canvas.width = maxWidth === maxHeight ? maxWidth : newWidth
-      canvas.height = maxWidth === maxHeight ? maxHeight : newHeight
+      // Set canvas size to maxWidth and maxHeight
+      canvas.width = maxWidth
+      canvas.height = maxHeight
 
       // Clear the canvas to ensure transparency
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // If it's a square output, center the image
-      const x = maxWidth === maxHeight ? (maxWidth - newWidth) / 2 : 0
-      const y = maxWidth === maxHeight ? (maxHeight - newHeight) / 2 : 0
-
-      ctx.drawImage(img, x, y, newWidth, newHeight)
+      // Stretch the image to fit the canvas
+      ctx.drawImage(img, 0, 0, maxWidth, maxHeight)
 
       canvas.toBlob((blob) => {
         if (blob) {

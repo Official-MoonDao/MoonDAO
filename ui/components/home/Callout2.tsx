@@ -56,10 +56,11 @@ export default function Callout2() {
           </StandardButton>
         </div>
       </div>
-
-      <Link href="/citizen" passHref>
-        <CitizenTier setSelectedTier={() => {}} compact />
-      </Link>
+      <div className="md:pr-5">
+        <Link href="/citizen" passHref>
+          <CitizenTier setSelectedTier={() => {}} compact />
+        </Link>
+      </div>
 
       <div
         id="our-astronauts-section"
