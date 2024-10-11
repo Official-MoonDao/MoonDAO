@@ -11,11 +11,22 @@ module.exports = nextTranslate({
       'b507f59d2508ebfb5e70996008095782.ipfscdn.io',
       'r2.comfy.icu',
       'cdn.discordapp.com',
-      'cdn.stamp.fyi'
+      'cdn.stamp.fyi',
     ],
   },
   async redirects() {
     return [
+      {
+        source: '/',
+        has: [
+          {
+            type: 'host',
+            value: 'app.moondao.com',
+          },
+        ],
+        destination: 'https://moondao.com',
+        permanent: true,
+      },
       {
         source: '/docs',
         destination: 'https://docs.moondao.com/',
