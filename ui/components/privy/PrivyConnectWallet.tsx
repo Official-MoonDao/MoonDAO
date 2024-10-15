@@ -12,6 +12,7 @@ import { useHandleRead } from '../../lib/thirdweb/hooks'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
+import useTokenBalance from '@/lib/tokens/hooks/useTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
 import ERC20 from '../../const/abis/ERC20.json'
 import {
@@ -256,48 +257,41 @@ export function PrivyConnectWallet({
     usdt: 0,
   })
 
-  const { data: mooneyBalance } = useHandleRead(mooneyContract, 'balanceOf', [
-    address,
-  ])
-
-  const { data: daiBalance } = useHandleRead(daiContract, 'balanceOf', [
-    address,
-  ])
-
-  const { data: usdcBalance } = useHandleRead(usdcContract, 'balanceOf', [
-    address,
-  ])
-
-  const { data: usdtBalance } = useHandleRead(usdtContract, 'balanceOf', [
-    address,
-  ])
+  const mooneyBalance = useTokenBalance(
+    mooneyContract,
+    18,
+    wallets[selectedWallet]
+  )
+  const daiBalance = useTokenBalance(daiContract, 18, wallets[selectedWallet])
+  const usdcBalance = useTokenBalance(usdcContract, 6, wallets[selectedWallet])
+  const usdtBalance = useTokenBalance(usdtContract, 6, wallets[selectedWallet])
 
   useEffect(() => {
     if (mooneyBalance)
       setFormattedBalances((prev) => ({
         ...prev,
-        mooney: +(mooneyBalance.toString() / 10 ** 18).toFixed(2),
+        mooney: mooneyBalance.toFixed(2),
       }))
   }, [mooneyBalance])
   useEffect(() => {
     if (daiBalance)
       setFormattedBalances((prev) => ({
         ...prev,
-        dai: +(daiBalance.toString() / 10 ** 18).toFixed(2),
+        dai: daiBalance.toFixed(2),
       }))
   }, [daiBalance])
   useEffect(() => {
     if (usdcBalance)
       setFormattedBalances((prev) => ({
         ...prev,
-        usdc: +(usdcBalance.toString() / 10 ** 6).toFixed(2),
+        usdc: usdcBalance.toFixed(2),
       }))
   }, [usdcBalance])
   useEffect(() => {
     if (usdtBalance)
       setFormattedBalances((prev) => ({
         ...prev,
-        usdt: +(usdtBalance.toString() / 10 ** 6).toFixed(2),
+        usdt: usdtBalance.toFixed(2),
       }))
   }, [usdtBalance])
 

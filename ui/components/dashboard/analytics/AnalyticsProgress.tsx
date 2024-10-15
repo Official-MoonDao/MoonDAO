@@ -5,6 +5,7 @@ export function AnalyticsProgress({ value }: any) {
   const [progress, setProgress] = useState<number>(0)
 
   useEffect(() => {
+    setProgress(0)
     const interval = setInterval(() => {
       setProgress((prevProgress: any) => {
         if (prevProgress < value) {
@@ -14,7 +15,7 @@ export function AnalyticsProgress({ value }: any) {
           return prevProgress
         }
       })
-    }, 50)
+    }, 25)
 
     return () => clearInterval(interval)
   }, [value])
