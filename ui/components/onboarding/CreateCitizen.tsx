@@ -180,7 +180,13 @@ export default function CreateCitizen({
                 title="Design"
                 description={
                   <>
-                    <b>Create your unique and personalized AI passport photo.</b> The uploaded photo <u>MUST</u> contain a face, but it can be a photo of yourself or an avatar that represents you well. Image generation may take up to a minute, so please continue to the next step to fill out your profile.
+                    <b>
+                      Create your unique and personalized AI passport photo.
+                    </b>{' '}
+                    The uploaded photo <u>MUST</u> contain a face, but it can be
+                    a photo of yourself or an avatar that represents you well.
+                    Image generation may take up to a minute, so please continue
+                    to the next step to fill out your profile.
                   </>
                 }
               >
@@ -514,6 +520,13 @@ export default function CreateCitizen({
             )}
           </div>
         </div>
+        {/* Dev Buttons */}
+        {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+          <div className="flex flex-row justify-center gap-4">
+            <button onClick={() => setStage(stage - 1)}>BACK</button>
+            <button onClick={() => setStage(stage + 1)}>NEXT</button>
+          </div>
+        )}
       </ContentLayout>
     </Container>
   )
