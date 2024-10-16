@@ -2,11 +2,15 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { useContract, useResolvedMediaType } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
+import {
+  CITIZEN_TABLE_ADDRESSES,
+  CK_NEWSLETTER_FORM_ID,
+  DEFAULT_CHAIN,
+} from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
+import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
@@ -38,7 +42,7 @@ export function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const { contract: citizenTableContract } = useContract(
     CITIZEN_TABLE_ADDRESSES[selectedChain.slug]
   )
-  const subscribeToNewsletter = useNewsletterSub()
+  const subscribeToNewsletter = useSubscribe(CK_NEWSLETTER_FORM_ID)
 
   const submitTypeform = useCallback(
     async (formResponse: any) => {
