@@ -36,6 +36,11 @@ jobs:
       NEXT_PUBLIC_TYPEFORM_CITIZEN_APP_FORM_ID: ${{secrets.NEXT_PUBLIC_TYPEFORM_CITIZEN_APP_FORM_ID}}
       NEXT_PUBLIC_TYPEFORM_TEAM_APP_FORM_ID: ${{secrets.NEXT_PUBLIC_TYPEFORM_TEAM_APP_FORM_ID}}
       COMFYICU_API_KEY: ${{secrets.COMFYICU_API_KEY}}
+      S3_UPLOAD_KEY: ${{secrets.S3_UPLOAD_KEY}}
+      S3_UPLOAD_SECRET: ${{secrets.S3_UPLOAD_SECRET}}
+      S3_UPLOAD_BUCKET: ${{secrets.S3_UPLOAD_BUCKET}}
+      S3_UPLOAD_REGION: ${{secrets.S3_UPLOAD_REGION}}
+      IRON_SESSION: ${{secrets.IRON_SESSION}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
