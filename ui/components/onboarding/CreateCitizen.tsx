@@ -16,8 +16,9 @@ import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
-import formatCitizenFormData, {
+import {
   CitizenData,
+  formatCitizenShortFormData,
 } from '@/lib/typeform/citizenFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
@@ -117,22 +118,26 @@ export default function CreateCitizen({
     const data = await responseRes.json()
 
     //fomat answers into an object
-    const citizenFormData = formatCitizenFormData(data.answers, responseId)
+    const citizenShortFormData = formatCitizenShortFormData(
+      data.answers,
+      responseId
+    )
 
     //subscribe to newsletter
-    if (citizenFormData.newsletterSub) {
-      const subRes = await subscribeToNewsletter(citizenFormData.email)
+    if (citizenShortFormData.newsletterSub) {
+      const subRes = await subscribeToNewsletter(citizenShortFormData.email)
       if (subRes.ok) {
         toast.success(
-          'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
+          'Successfully subscribed to the newsletter! Open your email and confirm your subscription.',
+          { duration: 5000 }
         )
       }
     }
 
     //escape single quotes and remove emojis
-    const cleanedCitizenFormData = cleanData(citizenFormData)
+    const cleanedCitizenShortFormData = cleanData(citizenShortFormData)
 
-    setCitizenData(cleanedCitizenFormData as any)
+    setCitizenData(cleanedCitizenShortFormData as any)
 
     setStage(2)
     await destroySession(accessToken)
@@ -173,7 +178,11 @@ export default function CreateCitizen({
               <StageContainer
                 className={`mb-10`}
                 title="Design"
-                description="Create your unique and personalized astronaut profile picture using AI! Upload a photo of yourself, or an avatar that represents you well. Please make sure the photo contains a face. Image generation may take up to a minute, so please fill in your profile in the next step while your image is being generated."
+                description={
+                  <>
+                    <b>Create your unique and personalized AI passport photo.</b> The uploaded photo <u>MUST</u> contain a face, but it can be a photo of yourself or an avatar that represents you well. Image generation may take up to a minute, so please continue to the next step to fill out your profile.
+                  </>
+                }
               >
                 <ImageGenerator
                   image={citizenImage}
@@ -220,7 +229,8 @@ export default function CreateCitizen({
                   <Widget
                     className="w-[100%]"
                     id={
-                      process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string
+                      process.env
+                        .NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string
                     }
                     onSubmit={submitTypeform}
                     height={700}
@@ -414,8 +424,6 @@ export default function CreateCitizen({
                     const accessToken = await getAccessToken()
                     await createSession(accessToken)
 
-                    //sign message
-
                     if (!citizenImage)
                       return toast.error(
                         'Please wait for your image to finish generating.'
@@ -465,13 +473,13 @@ export default function CreateCitizen({
                         [
                           address,
                           citizenData.name,
-                          citizenData.description,
+                          '',
                           `ipfs://${newImageIpfsHash}`,
-                          citizenData.location,
-                          citizenData.discord,
-                          citizenData.twitter,
-                          citizenData.website,
-                          citizenData.view,
+                          '',
+                          '',
+                          '',
+                          '',
+                          'public',
                           citizenData.formResponseId,
                         ],
                         {

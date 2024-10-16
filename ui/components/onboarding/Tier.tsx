@@ -81,7 +81,7 @@ export default function Tier({
                     <div className="flex flex-col pt-5 items-start">
                       <div className="flex flex-row items-center space-x-2">
                         <p className="text-lg md:text-2xl">{price} ETH</p>
-                        <p className="text-sm">/Year</p>
+                        <p className="text-sm">(Arbitrum) /Year</p>
                       </div>
                       <p className="text-[#753F73] text-sm md:text-lg">
                         &#10003; 12 Month Passport

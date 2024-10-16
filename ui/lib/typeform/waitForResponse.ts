@@ -18,7 +18,7 @@ export default async function waitForResponse(
   if (data.answers) {
     return true
   } else {
-    await new Promise((resolve) => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, 2000))
     await waitForResponse(formId, repsonseId, accessToken)
   }
 }
