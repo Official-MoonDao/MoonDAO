@@ -8,6 +8,7 @@ import { useAssets } from '@/lib/dashboard/hooks'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { useVotingPowers } from '@/lib/snapshot'
 import { iterativeNormalization, minimizeL1Distance } from '@/lib/utils/voting'
+import Asset from '@/components/dashboard/treasury/balance/Asset'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -19,6 +20,7 @@ export type Project = {
   title: string
   contributors: { [key: string]: number }
   finalReportLink: string
+  MPD: number
 }
 export type Distribution = {
   year: number
@@ -243,19 +245,21 @@ export function RetroactiveRewards({
   }
 
   const { tokens } = useAssets()
-  const VMOONEY_ROUND_TO = 10_000
   const numQuartersPastQ4Y2022 = (year - 2022) * 4 + quarter - 1
   let ethBudget = 0
+  let usdValue = 0
   let usdBudget = 0
   let mooneyBudget = 0
+  let ethPrice = 0
   if (tokens && tokens[0]) {
     for (const token of tokens) {
       if (token.symbol !== 'MOONEY') {
-        usdBudget += token.usd
+        usdValue += token.usd
       }
     }
-    const ethPrice = tokens[0].usd / tokens[0].balance
-    const ethValue = usdBudget / ethPrice
+    ethPrice = tokens[0].usd / tokens[0].balance
+    const ethValue = usdValue / ethPrice
+    usdBudget = usdValue * 0.05
     ethBudget = ethValue * 0.05
     mooneyBudget = 15_000_000 * 0.95 ** numQuartersPastQ4Y2022
   }
@@ -308,7 +312,8 @@ export function RetroactiveRewards({
       <Head title="Projects" image="" />
       <Container>
         <ContentLayout
-          header="Projects"
+          header={'Q' + quarter + ' ' + year + ' Retroactive Rewards'}
+          description="Distribute rewards to contributors based on their contributions."
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding
@@ -316,36 +321,67 @@ export function RetroactiveRewards({
           popOverEffect={false}
           isProfile
         >
-          <div className="pb-8 w-full flex flex-col gap-4">
-            <div className="mb-4">
-              <label className="mr-2">
-                Q{quarter} {year}
-              </label>
-              {userAddress && (
-                <label className="ml-4 mr-2">
-                  Voting Power:{' '}
-                  {addressToQuadraticVotingPower[userAddress] ** 2 || 0}
-                </label>
-              )}
-              <label className="ml-4 mr-2">
-                Total Rewards: {ethBudget.toFixed(1)} ETH
-                &nbsp;&nbsp;&nbsp;&nbsp;
-                {Number(mooneyBudget.toPrecision(3)).toLocaleString()} MOONEY
-              </label>
-              {userAddress && (
-                <label className="ml-4 mr-2">
-                  Your Estimated Reward: {addressToEthPayout[userAddress] || 0}{' '}
-                  ETH &nbsp;&nbsp;&nbsp;&nbsp;
-                  {addressToMooneyPayout[userAddress] || 0} MOONEY
-                </label>
-              )}
-            </div>
-          </div>
-          <div className="pb-32 w-full flex flex-col gap-4">
+          <section className="w-full flex flex-row items-center sm:items-start">
+            <section className="mt-8 flex flex-col w-1/3">
+              <h3 className="title-text-colors text-2xl font-GoodTimes">
+                Total Rewards
+              </h3>
+              <Asset
+                name="ETH"
+                amount={String(ethBudget.toFixed(1))}
+                usd={String(usdBudget.toFixed(2))}
+              />
+              <Asset
+                name="MOONEY"
+                amount={Number(mooneyBudget.toPrecision(3)).toLocaleString()}
+                usd=""
+              />
+            </section>
+            {userAddress && (
+              <section className="mt-8 flex flex-col px-4 w-1/3">
+                <h3 className="title-text-colors text-2xl font-GoodTimes">
+                  Your Rewards
+                </h3>
+                <Asset
+                  name="ETH"
+                  amount={String(addressToEthPayout[userAddress] || 0)}
+                  usd={String(
+                    userAddress in addressToEthPayout
+                      ? ethPrice * addressToEthPayout[userAddress]
+                      : 0
+                  )}
+                />
+                <Asset
+                  name="MOONEY"
+                  amount={String(addressToMooneyPayout[userAddress] || 0)}
+                  usd=""
+                />
+              </section>
+            )}
+            {userAddress && (
+              <section className="mt-8 flex flex-col px-4 w-1/3">
+                <h3 className="title-text-colors text-2xl font-GoodTimes">
+                  Voting Power
+                </h3>
+                <Asset
+                  name="MOONEY"
+                  amount={String(
+                    addressToQuadraticVotingPower[userAddress] ** 2 || 0
+                  )}
+                  usd=""
+                />
+              </section>
+            )}
+          </section>
+
+          <div className="pb-32 w-full flex flex-col gap-4 py-2">
+            <h3 className="title-text-colors text-2xl font-GoodTimes">
+              Distribute
+            </h3>
             <div>
               {projects &&
                 projects.map((project, i: number) => (
-                  <div key={i} className="flex items-center w-full">
+                  <div key={i} className="flex items-center w-full py-1">
                     <div className="w-24">
                       <input
                         type="number"
@@ -375,8 +411,9 @@ export function RetroactiveRewards({
                         rel="noreferrer"
                         className="mr-2"
                       >
-                        <u>{project.title}</u>
+                        <u>MDP {project.MPD}:</u>
                       </a>
+                      {project.title}
                     </div>
                     {allProjectsHaveCitizenDistribution &&
                       votingPowerSumIsNonZero &&
