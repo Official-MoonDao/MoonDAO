@@ -1,9 +1,10 @@
+import { CK_NEWSLETTER_FORM_ID } from 'const/config'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { useNewsletterSub } from '../../lib/convert-kit/useNewsletterSub'
+import useSubscribe from '@/lib/convert-kit/useSubscribe'
 
 export function NewsletterSubModal({ setEnabled }: any) {
-  const subscribeToNewsletter = useNewsletterSub()
+  const subscribeToNewsletter = useSubscribe(CK_NEWSLETTER_FORM_ID)
   const [email, setEmail] = useState<string>()
 
   return (
