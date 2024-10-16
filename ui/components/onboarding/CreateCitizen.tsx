@@ -2,7 +2,11 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useFundWallet, usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { CITIZEN_ADDRESSES } from 'const/config'
+import {
+  CITIZEN_ADDRESSES,
+  CK_NETWORK_SIGNUP_FORM_ID,
+  CK_NETWORK_SIGNUP_TAG_ID,
+} from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -10,7 +14,8 @@ import { useRouter } from 'next/router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
-import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
+import useSubscribe from '@/lib/convert-kit/useSubscribe'
+import useTag from '@/lib/convert-kit/useTag'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
@@ -93,7 +98,8 @@ export default function CreateCitizen({
 
   const pfpRef = useRef<HTMLDivElement | null>(null)
 
-  const subscribeToNewsletter = useNewsletterSub()
+  const subscribeToNetworkSignup = useSubscribe(CK_NETWORK_SIGNUP_FORM_ID)
+  const tagToNetworkSignup = useTag(CK_NETWORK_SIGNUP_TAG_ID)
 
   const nativeBalance = useNativeBalance()
 
@@ -124,14 +130,9 @@ export default function CreateCitizen({
     )
 
     //subscribe to newsletter
-    if (citizenShortFormData.newsletterSub) {
-      const subRes = await subscribeToNewsletter(citizenShortFormData.email)
-      if (subRes.ok) {
-        toast.success(
-          'Successfully subscribed to the newsletter! Open your email and confirm your subscription.',
-          { duration: 5000 }
-        )
-      }
+    const subRes = await subscribeToNetworkSignup(citizenShortFormData.email)
+    if (subRes.ok) {
+      console.log('Subscribed to network signup')
     }
 
     //escape single quotes and remove emojis
@@ -497,6 +498,10 @@ export default function CreateCitizen({
                         mintTx.receipt.logs[0].topics[3],
                         16
                       ).toString()
+
+                      if (mintedTokenId) {
+                        await tagToNetworkSignup(citizenData.email)
+                      }
 
                       setTimeout(() => {
                         setIsLoadingMint(false)
