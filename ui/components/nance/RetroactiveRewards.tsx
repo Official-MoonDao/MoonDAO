@@ -402,6 +402,7 @@ export function RetroactiveRewards({
                           userAddress.toLowerCase() in project.contributors
                         }
                       />
+                      <span>%</span>
                     </div>
                     &nbsp;&nbsp;&nbsp;&nbsp;
                     <div className="flex-1 px-4">
