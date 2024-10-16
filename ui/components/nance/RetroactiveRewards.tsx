@@ -1,35 +1,18 @@
-import {
-  PlusIcon,
-  QueueListIcon,
-  MagnifyingGlassIcon,
-} from '@heroicons/react/24/solid'
-import { NanceProvider } from '@nance/nance-hooks'
-import { useProposalsInfinite } from '@nance/nance-hooks'
-import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
 import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import { DISTRIBUTION_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
-//const solver = require('javascript-lp-solver');
+import { DISTRIBUTION_TABLE_ADDRESSES } from 'const/config'
 import _ from 'lodash'
-import { StringParam, useQueryParams, withDefault } from 'next-query-params'
 import { useState, useEffect } from 'react'
-import { useDebounce } from 'react-use'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
-import { NANCE_API_URL } from '@/lib/nance/constants'
-import {
-  SnapshotGraphqlProposalVotingInfo,
-  useVotingPowers,
-} from '@/lib/snapshot'
+import { useVotingPowers } from '@/lib/snapshot'
 import { iterativeNormalization, minimizeL1Distance } from '@/lib/utils/voting'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import ProposalList from '@/components/nance/ProposalList'
 import StandardButton from '../layout/StandardButton'
-import StandardButtonRight from '../layout/StandardButtonRight'
 
 export type Project = {
   id: string
@@ -52,10 +35,10 @@ export type RetroactiveRewardsProps = {
 
 export function RetroactiveRewards({
   projects,
-  distributions: currentDistributions,
+  distributions,
   refreshRewards,
 }: RetroactiveRewardsProps) {
-  const [distributions, setDistributions] = useState<{ [key: string]: number }>(
+  const [distribution, setDistribution] = useState<{ [key: string]: number }>(
     {}
   )
   const chain =
@@ -103,100 +86,60 @@ export function RetroactiveRewards({
       year: 2024,
     },
   ]
-  //currentDistributions = testDistributions
+  distributions = testDistributions
 
-  const [year, setYear] = useState(new Date().getFullYear())
+  const year = new Date().getFullYear()
   const [edit, setEdit] = useState(false)
   const userAddress = useAddress()
   // TODO use current quarter
-  const [quarter, setQuarter] = useState(
-    Math.floor((new Date().getMonth() + 3) / 3) - 2
-  )
-  console.log('currentDistributions')
-  console.log(currentDistributions)
-
+  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 2
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
-    if (currentDistributions && userAddress) {
-      for (const d of currentDistributions) {
+    if (distributions && userAddress) {
+      for (const d of distributions) {
         if (
           d.year === year &&
           d.quarter === quarter &&
           d.address.toLowerCase() === userAddress.toLowerCase()
         ) {
-          setDistributions(d.distribution)
+          setDistribution(d.distribution)
           setEdit(true)
           break
         }
       }
     }
-  }, [userAddress, currentDistributions])
+  }, [userAddress, distributions])
 
-  const groupedDistributions: { [key: string]: number[] } = {}
+  const projectIdToListOfPercentage: { [key: string]: number[] } = {}
+  const projectIdToEstimatedPercentage: { [key: string]: number } = {}
 
-  const projectIdToEstimatedAllocation: { [key: string]: number } = {}
-  const SNAPSHOT_SPACE_NAME = 'tomoondao.eth'
-
-  const citizenDistributions = []
-  const nonCitizenDistributions = []
-
-  const addresses = currentDistributions
-    ? currentDistributions.map((d) => d.address)
-    : []
+  const addresses = distributions ? distributions.map((d) => d.address) : []
   const isCitizens = useCitizens(chain, addresses)
-  //const isCitizens = Array(addresses.length).fill(true)
-  console.log('isCitizens')
-  console.log(isCitizens)
-  for (const [i, d] of currentDistributions.entries()) {
-    const isCitizen = isCitizens[i]
-    if (isCitizen) {
-      citizenDistributions.push(d)
-    } else {
-      nonCitizenDistributions.push(d)
-    }
-  }
+  const citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
+  const nonCitizenDistributions = distributions?.filter(
+    (_, i) => !isCitizens[i]
+  )
+
+  const SNAPSHOT_SPACE_NAME = 'tomoondao.eth'
+  const SNAPSHOT_ID =
+    '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
   const { data: _vps } = useVotingPowers(
     addresses,
     SNAPSHOT_SPACE_NAME,
-    '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
+    SNAPSHOT_ID
   )
-  console.log('votingPowers')
-  console.log(_vps)
   const votingPowers = _vps ? _vps.map((vp) => (vp ? vp.vp : 0)) : []
   const addressToQuadraticVotingPower = Object.fromEntries(
     addresses.map((address, i) => [address, Math.sqrt(votingPowers[i])])
   )
-  console.log('addressToQuadraticVotingPower')
-  console.log(addressToQuadraticVotingPower)
-  console.log('citizenDistributions')
-  console.log(citizenDistributions)
-  console.log('nonCitizenDistributions')
-  console.log(nonCitizenDistributions)
+  const userHasVotingPower =
+    userAddress in addressToQuadraticVotingPower &&
+    addressToQuadraticVotingPower[userAddress] > 0
 
   // All projects need at least one citizen distribution to do iterative normalization
-  const doAllProjectsHaveCitizenDistribution = (
-    projects: Project[],
-    citizenDistributions: Distribution[]
-  ) => {
-    const projectsWithVotes = new Set()
-    for (const d of citizenDistributions) {
-      for (const [projectId, percentage] of Object.entries(d.distribution)) {
-        projectsWithVotes.add(projectId)
-      }
-    }
-    console.log('projectsWithVotes')
-    console.log(projectsWithVotes)
-    for (const project of projects) {
-      if (!projectsWithVotes.has(String(project.id))) {
-        return false
-      }
-    }
-    return true
-  }
-  const allProjectsHaveCitizenDistribution =
-    doAllProjectsHaveCitizenDistribution(projects, citizenDistributions)
-  console.log('allProjectsHaveCitizenDistribution')
-  console.log(allProjectsHaveCitizenDistribution)
+  const allProjectsHaveCitizenDistribution = projects.every(({ id }) =>
+    citizenDistributions.some(({ distribution }) => id in distribution)
+  )
   let votingPowerSumIsNonZero = false
 
   if (allProjectsHaveCitizenDistribution) {
@@ -204,86 +147,75 @@ export function RetroactiveRewards({
       citizenDistributions,
       projects
     )
-    console.log('filledInCitizenDistributions')
-    console.log(filledInCitizenDistributions)
+    const bestFitNonCitizenDistributions = []
     for (const d of nonCitizenDistributions) {
-      //nonCitizenDistributions.distribution
       const desiredDistribution = []
       const dist = d.distribution
       for (const [projectIndex, project] of projects.entries()) {
-        const projectId = project.id
-        desiredDistribution.push(dist[projectId])
+        desiredDistribution.push(dist[project.id])
       }
       const actualDistribution = minimizeL1Distance(desiredDistribution, votes)
-      for (const [projectIndex, project] of projects.entries()) {
-        const projectId = project.id
-        // TODO uncomment and don't update the original object, instead make a copy
-        //d.distribution[projectId] = _.cloneDeep(actualDistribution[projectIndex])
+      const newDistribution: { [key: string]: number } = {
+        address: d.address,
+        year: d.year,
+        quarter: d.quarter,
+        distribution: actualDistribution,
       }
+      bestFitNonCitizenDistributions.push(newDistribution)
     }
     const allDistributions: Distribution[] = [
       ...filledInCitizenDistributions,
-      ...nonCitizenDistributions,
+      ...bestFitNonCitizenDistributions,
     ]
 
-    if (currentDistributions) {
+    if (distributions) {
       const allAddresses = allDistributions.map((d) => d.address)
       for (const d of allDistributions) {
         const { address, year, quarter, distribution: dist } = d
         for (const [key, value] of Object.entries(dist)) {
-          if (!groupedDistributions[key]) {
-            groupedDistributions[key] = []
+          if (!projectIdToListOfPercentage[key]) {
+            projectIdToListOfPercentage[key] = []
           }
-          groupedDistributions[key].push(value)
+          projectIdToListOfPercentage[key].push(value)
         }
       }
       const votingPowerSum = _.sum(Object.values(addressToQuadraticVotingPower))
       if (votingPowerSum > 0) {
         votingPowerSumIsNonZero = true
         for (const [projectId, percentages] of Object.entries(
-          groupedDistributions
+          projectIdToListOfPercentage
         )) {
-          const sumProduct = _.sum(
-            percentages.map(
-              (p, i) => p * addressToQuadraticVotingPower[allAddresses[i]]
-            )
-          )
-          const sumProductPercentage = sumProduct / votingPowerSum
-          projectIdToEstimatedAllocation[projectId] = sumProductPercentage
+          projectIdToEstimatedPercentage[projectId] =
+            _.sum(
+              percentages.map(
+                (p, i) => p * addressToQuadraticVotingPower[allAddresses[i]]
+              )
+            ) / votingPowerSum
         }
-        // normalize projectIdToEstimatedAllocation
-        const sum = _.sum(Object.values(projectIdToEstimatedAllocation))
+        // normalize projectIdToEstimatedPercentage
+        const sum = _.sum(Object.values(projectIdToEstimatedPercentage))
         for (const [projectId, percentage] of Object.entries(
-          projectIdToEstimatedAllocation
+          projectIdToEstimatedPercentage
         )) {
-          projectIdToEstimatedAllocation[projectId] = (percentage / sum) * 100
+          projectIdToEstimatedPercentage[projectId] = (percentage / sum) * 100
         }
       }
     }
   }
 
-  // TODO dynamically set chain
   const { contract: distributionTableContract } = useContract(
     DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
   )
-  //const sdk = initSDK(chain)
-
-  //const distributionTableContract = await sdk.getContract(
-  //DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
-  //)
-  console.log('distributionTableContract')
-  console.log(distributionTableContract)
 
   const handleDistributionChange = (projectId: string, value: number) => {
-    setDistributions((prev) => ({
+    setDistribution((prev) => ({
       ...prev,
       [projectId]: Math.min(100, Math.max(1, value)),
     }))
   }
 
   const handleSubmit = async () => {
-    // Validate percentage
-    const totalPercentage = Object.values(distributions).reduce(
+    const totalPercentage = Object.values(distribution).reduce(
       (sum, value) => sum + value,
       0
     )
@@ -297,14 +229,14 @@ export function RetroactiveRewards({
     // and will be filled in with iterative normalization
     for (const project of projects) {
       if (
-        !(project.id in distributions) &&
+        !(project.id in distribution) &&
         !(
           !userAddress ||
           userAddress in project.contributors ||
           userAddress.toLowerCase() in project.contributors
         )
       ) {
-        distributions[project.id] = 0
+        distribution[project.id] = 0
       }
     }
 
@@ -313,7 +245,7 @@ export function RetroactiveRewards({
         await distributionTableContract?.call('updateTableCol', [
           quarter,
           year,
-          JSON.stringify(distributions),
+          JSON.stringify(distribution),
         ])
         alert('Distribution edited successfully!')
         setTimeout(() => {
@@ -323,7 +255,7 @@ export function RetroactiveRewards({
         await distributionTableContract?.call('insertIntoTable', [
           quarter,
           year,
-          JSON.stringify(distributions),
+          JSON.stringify(distribution),
         ])
         alert('Distribution submitted successfully!')
         setTimeout(() => {
@@ -354,8 +286,6 @@ export function RetroactiveRewards({
   }
 
   const { tokens } = useAssets()
-  console.log('tokens')
-  console.log(tokens)
   const VMOONEY_ROUND_TO = 10_000
   const numQuartersPastQ4Y2022 = (year - 2022) * 4 + quarter - 1
   let ethBudget = 0
@@ -372,28 +302,31 @@ export function RetroactiveRewards({
     ethBudget = ethValue * 0.05
     mooneyBudget = 15_000_000 * 0.95 ** numQuartersPastQ4Y2022
   }
-  console.log('ethBudget')
-  console.log(ethBudget)
 
+  const projectIdToETHPayout: { [key: string]: number } = {}
+  const projectIdToMooneyPayout: { [key: string]: number } = {}
+  for (const project of projects) {
+    const percentage = projectIdToEstimatedPercentage[project.id]
+    projectIdToETHPayout[project.id] = (percentage / 100) * ethBudget
+    projectIdToMooneyPayout[project.id] = (percentage / 100) * mooneyBudget
+  }
   const addressToPayoutProportion: { [key: string]: number } = {}
   for (const project of projects) {
     const projectId = project.id
-    const allocation = projectIdToEstimatedAllocation[projectId]
+    const projectPercentage = projectIdToEstimatedPercentage[projectId]
     const contributors = project.contributors
     for (const [contributerAddress, contributorPercentage] of Object.entries(
       contributors
     )) {
       if (contributerAddress in addressToPayoutProportion) {
         addressToPayoutProportion[contributerAddress] +=
-          (contributorPercentage / 100) * (allocation / 100)
+          (contributorPercentage / 100) * (projectPercentage / 100)
       } else {
         addressToPayoutProportion[contributerAddress] =
-          (contributorPercentage / 100) * (allocation / 100)
+          (contributorPercentage / 100) * (projectPercentage / 100)
       }
     }
   }
-  console.log('addressToPayoutProportion')
-  console.log(addressToPayoutProportion)
   const addressToEthPayout: { [key: string]: number } = {}
   const addressToMooneyPayout: { [key: string]: number } = {}
   for (const [address, proportion] of Object.entries(
@@ -426,42 +359,90 @@ export function RetroactiveRewards({
           popOverEffect={false}
           isProfile
         >
-          <div className="pb-32 w-full flex flex-col gap-4">
+          <div className="pb-8 w-full flex flex-col gap-4">
             <div className="mb-4">
-              <label className="mr-2">Year: {year}</label>
-              <label className="ml-4 mr-2">Quarter: {quarter}</label>
+              <label className="mr-2">
+                Q{quarter} {year}
+              </label>
+              <label className="ml-4 mr-2">
+                Voting Power:{' '}
+                {addressToQuadraticVotingPower[userAddress] ** 2 || 0}
+              </label>
+              <label className="ml-4 mr-2">
+                Total Rewards: {ethBudget.toFixed(1)} ETH
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                {Number(mooneyBudget.toPrecision(3)).toLocaleString()} MOONEY
+              </label>
+              <label className="ml-4 mr-2">
+                Your Estimated Reward: {addressToEthPayout[userAddress] || 0}{' '}
+                ETH &nbsp;&nbsp;&nbsp;&nbsp;
+                {addressToMooneyPayout[userAddress] || 0} MOONEY
+              </label>
             </div>
-            {projects &&
-              projects.map((project, i: number) => (
-                <div key={i} className="flex items-center justify-between">
-                  <a
-                    href={project.finalReportLink}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {project.title}
-                  </a>
-                  <input
-                    type="number"
-                    value={distributions[project.id] || ''}
-                    onChange={(e) =>
-                      handleDistributionChange(
-                        project.id,
-                        parseInt(e.target.value)
-                      )
-                    }
-                    className="border rounded px-2 py-1 w-20"
-                    min="1"
-                    max="100"
-                    disabled={
-                      !userAddress ||
-                      userAddress in project.contributors ||
-                      userAddress.toLowerCase() in project.contributors
-                    }
-                  />
-                </div>
-              ))}
-            {projects && (
+          </div>
+          <div className="pb-32 w-full flex flex-col gap-4">
+            <div>
+              {projects &&
+                projects.map((project, i: number) => (
+                  <div key={i} className="flex items-center w-full">
+                    <div className="w-24">
+                      <input
+                        type="number"
+                        value={distribution[project.id] || ''}
+                        onChange={(e) =>
+                          handleDistributionChange(
+                            project.id,
+                            parseInt(e.target.value)
+                          )
+                        }
+                        className="border rounded px-2 py-1 w-20"
+                        min="1"
+                        max="100"
+                        disabled={
+                          !userHasVotingPower ||
+                          !userAddress ||
+                          userAddress in project.contributors ||
+                          userAddress.toLowerCase() in project.contributors
+                        }
+                      />
+                    </div>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <div className="flex-1 px-4">
+                      <a
+                        href={project.finalReportLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mr-2"
+                      >
+                        <u>{project.title}</u>
+                      </a>
+                    </div>
+                    {allProjectsHaveCitizenDistribution &&
+                      votingPowerSumIsNonZero &&
+                      tokens &&
+                      tokens[0] && (
+                        <>
+                          <div className="w-16 text-right px-4">
+                            {projectIdToEstimatedPercentage[project.id].toFixed(
+                              1
+                            )}
+                            %
+                          </div>
+                          <div className="px-4">
+                            {projectIdToETHPayout[project.id].toFixed(1)} ETH
+                          </div>
+                          <div className="w-48 px-4">
+                            {Number(
+                              projectIdToMooneyPayout[project.id].toPrecision(3)
+                            ).toLocaleString()}{' '}
+                            MOONEY
+                          </div>
+                        </>
+                      )}
+                  </div>
+                ))}
+            </div>
+            {projects && userHasVotingPower ? (
               <span>
                 <StandardButton
                   onClick={handleSubmit}
@@ -479,42 +460,16 @@ export function RetroactiveRewards({
                   </StandardButton>
                 )}
               </span>
+            ) : (
+              <span>
+                <StandardButton
+                  link="/lock"
+                  className="gradient-2 rounded-full"
+                >
+                  Get Voting Power
+                </StandardButton>
+              </span>
             )}
-
-            {allProjectsHaveCitizenDistribution && votingPowerSumIsNonZero && (
-              <div> Current Estimated Distributions </div>
-            )}
-            {allProjectsHaveCitizenDistribution &&
-              votingPowerSumIsNonZero &&
-              Object.entries(groupedDistributions).map(
-                ([projectId, percentages], i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div>{idToTitle[projectId]}</div>
-                    <div>
-                      {projectIdToEstimatedAllocation[projectId].toFixed(1)}%
-                    </div>
-                    {tokens && tokens[0] && (
-                      <div>
-                        {Math.round(
-                          ethBudget * projectIdToEstimatedAllocation[projectId]
-                        ) / 100}{' '}
-                        ETH
-                      </div>
-                    )}
-                    <div>
-                      {(
-                        Math.round(
-                          (mooneyBudget *
-                            projectIdToEstimatedAllocation[projectId]) /
-                            100 /
-                            VMOONEY_ROUND_TO
-                        ) * VMOONEY_ROUND_TO
-                      ).toLocaleString()}{' '}
-                      MOONEY
-                    </div>
-                  </div>
-                )
-              )}
           </div>
         </ContentLayout>
       </Container>
