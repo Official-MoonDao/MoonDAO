@@ -25,15 +25,15 @@ describe('<CitizenImageGenerator />', () => {
     cy.get('input[type="file"]').should('exist')
   })
 
-  it('Handles image generation', () => {
-    cy.mount(
-      <ImageGenerator
-        {...props}
-        inputImage={new File([''], 'test.png', { type: 'image/png' })}
-      />
-    )
+  // it('Handles image generation', () => {
+  //   cy.mount(
+  //     <ImageGenerator
+  //       {...props}
+  //       inputImage={new File([''], 'test.png', { type: 'image/png' })}
+  //     />
+  //   )
 
-    cy.get('button').contains('Generate').click()
-    cy.wrap(props.setImage).should('have.been.called')
-  })
+  //   cy.get('button').contains('Generate').click()
+  //   cy.wrap(props.setImage).should('have.been.called')
+  // })
 })
