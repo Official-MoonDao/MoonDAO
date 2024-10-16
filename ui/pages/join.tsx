@@ -43,7 +43,11 @@ export default function Join() {
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head title={t('joinTitle')} description={t('joinDesc')} />
+      <Head
+        title={t('joinTitle')}
+        description={t('joinDesc')}
+        image="/og/join-the-network.png"
+      />
       <Container>
         <ContentLayout
           header="Join the Network"
@@ -54,7 +58,7 @@ export default function Join() {
           isProfile
           description={
             <>
-              The Space Acceleration Network is an onchain startup society 
+              The Space Acceleration Network is an onchain startup society
               focused on building a permanent settlement on the Moon and beyond.
               Together we can unlock a multiplanetary future.
             </>
