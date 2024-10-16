@@ -480,6 +480,13 @@ export default function CreateTeam({
               )}
             </div>
           </div>
+          {/* Dev Buttons */}
+          {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+            <div className="flex flex-row justify-center gap-4">
+              <button onClick={() => setStage(stage - 1)}>BACK</button>
+              <button onClick={() => setStage(stage + 1)}>NEXT</button>
+            </div>
+          )}
         </ContentLayout>
       </div>
     </Container>

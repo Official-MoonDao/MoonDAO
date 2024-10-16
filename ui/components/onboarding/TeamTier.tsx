@@ -24,7 +24,7 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
     const isWhitelisted = await teamWhitelistContract?.call('isWhitelisted', [
       address,
     ])
-    if (isWhitelisted) {
+    if (isWhitelisted || process.env.NEXT_PUBLIC_ENV === 'dev') {
       setSelectedTier('team')
     } else {
       setApplyModalEnabled(true)
