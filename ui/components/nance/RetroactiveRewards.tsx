@@ -381,7 +381,10 @@ export function RetroactiveRewards({
             <div>
               {projects &&
                 projects.map((project, i: number) => (
-                  <div key={i} className="flex items-center w-full py-1">
+                  <div
+                    key={i}
+                    className="flex items-center w-full py-1 text-[18px]"
+                  >
                     <div className="w-24">
                       <input
                         type="number"
@@ -405,7 +408,7 @@ export function RetroactiveRewards({
                       <span>%</span>
                     </div>
                     &nbsp;&nbsp;&nbsp;&nbsp;
-                    <div className="flex-1 px-4">
+                    <div className="flex-1 px-8">
                       <a
                         href={project.finalReportLink}
                         target="_blank"
