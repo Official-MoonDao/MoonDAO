@@ -89,6 +89,7 @@ export function RetroactiveRewards({
     addresses.map((address, i) => [address, Math.sqrt(votingPowers[i])])
   )
   const userHasVotingPower =
+    userAddress &&
     userAddress in addressToQuadraticVotingPower &&
     addressToQuadraticVotingPower[userAddress] > 0
 
@@ -111,7 +112,7 @@ export function RetroactiveRewards({
         desiredDistribution.push(dist[project.id])
       }
       const actualDistribution = minimizeL1Distance(desiredDistribution, votes)
-      const newDistribution: { [key: string]: number } = {
+      const newDistribution = {
         address: d.address,
         year: d.year,
         quarter: d.quarter,
@@ -320,20 +321,24 @@ export function RetroactiveRewards({
               <label className="mr-2">
                 Q{quarter} {year}
               </label>
-              <label className="ml-4 mr-2">
-                Voting Power:{' '}
-                {addressToQuadraticVotingPower[userAddress] ** 2 || 0}
-              </label>
+              {userAddress && (
+                <label className="ml-4 mr-2">
+                  Voting Power:{' '}
+                  {addressToQuadraticVotingPower[userAddress] ** 2 || 0}
+                </label>
+              )}
               <label className="ml-4 mr-2">
                 Total Rewards: {ethBudget.toFixed(1)} ETH
                 &nbsp;&nbsp;&nbsp;&nbsp;
                 {Number(mooneyBudget.toPrecision(3)).toLocaleString()} MOONEY
               </label>
-              <label className="ml-4 mr-2">
-                Your Estimated Reward: {addressToEthPayout[userAddress] || 0}{' '}
-                ETH &nbsp;&nbsp;&nbsp;&nbsp;
-                {addressToMooneyPayout[userAddress] || 0} MOONEY
-              </label>
+              {userAddress && (
+                <label className="ml-4 mr-2">
+                  Your Estimated Reward: {addressToEthPayout[userAddress] || 0}{' '}
+                  ETH &nbsp;&nbsp;&nbsp;&nbsp;
+                  {addressToMooneyPayout[userAddress] || 0} MOONEY
+                </label>
+              )}
             </div>
           </div>
           <div className="pb-32 w-full flex flex-col gap-4">
