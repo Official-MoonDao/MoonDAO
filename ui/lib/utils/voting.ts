@@ -159,5 +159,4 @@ export function iterativeNormalization(distributions: any, projects: any) {
   }
   let return_tuple: [any[], number[][]] = [newDistributions, newVotes]
   return return_tuple
-  //return [newDistributions, newVotes]
 }

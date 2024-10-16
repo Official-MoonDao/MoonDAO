@@ -31,7 +31,6 @@ export default function Rewards({
 }
 
 export async function getStaticProps() {
-  // TODO dynamically set chain
   const chain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
   const sdk = initSDK(chain)
@@ -53,8 +52,6 @@ export async function getStaticProps() {
   const currentYear = new Date().getFullYear()
   // TODO don't use last quarter
   const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 2
-  //const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3)
-  //
   const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
   const allProjectsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
