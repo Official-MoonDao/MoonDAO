@@ -5,35 +5,22 @@ describe('runIterativeNormalization', () => {
       // Source: https://docs.google.com/spreadsheets/d/1oEYeNjJNXQOzP332UO53zo_iWpMmvyEZLXGmgYiJuKE/edit?gid=658868670#gid=658868670
     const testDistributions = [
       {
-        // R1
-        address: '0x0000000000000000000000000000000000000001',
         distribution: {
-          //'1': 0,
           '2': 50,
           '4': 30,
           '3': 20,
           '5': 0,
         },
-        id: 1,
-        quarter: 2,
-        year: 2024,
       },
       {
-        // R2
-        address: '0x0000000000000000000000000000000000000002',
         distribution: {
           '1': 23,
           '2': 24,
           '4': 49,
           '5': 4,
         },
-        id: 2,
-        quarter: 2,
-        year: 2024,
       },
       {
-        //R3
-        address: '0x0000000000000000000000000000000000000003',
         distribution: {
           '1': 31,
           '2': 12,
@@ -41,13 +28,8 @@ describe('runIterativeNormalization', () => {
           '3': 10,
           '5': 5,
         },
-        id: 3,
-        quarter: 2,
-        year: 2024,
       },
       {
-        //R4
-        address: '0x0000000000000000000000000000000000000004',
         distribution: {
           '1': 20,
           '2': 20,
@@ -55,39 +37,24 @@ describe('runIterativeNormalization', () => {
           '3': 20,
           '5': 10,
         },
-        id: 4,
-        quarter: 2,
-        year: 2024,
       },
       {
-        //R5
-        address: '0x0000000000000000000000000000000000000005',
         distribution: {
           '1': 30.25,
           '2': 30.25,
           '4': 30.25,
           '3': 9.25,
         },
-        id: 5,
-        quarter: 2,
-        year: 2024,
       },
       {
-        //R6
-        address: '0x0000000000000000000000000000000000000006',
         distribution: {
           '1': 35,
           '4': 35,
           '3': 20,
           '5': 10,
         },
-        id: 6,
-        quarter: 2,
-        year: 2024,
       },
       {
-        //R7
-        address: '0x0000000000000000000000000000000000000007',
         distribution: {
           '1': 20.5,
           '2': 22.5,
@@ -95,22 +62,14 @@ describe('runIterativeNormalization', () => {
           '3': 16.5,
           '5': 2,
         },
-        id: 7,
-        quarter: 2,
-        year: 2024,
       },
       {
-        //R8
-        address: '0x0000000000000000000000000000000000000008',
         distribution: {
           '1': 48,
           '2': 28,
           '3': 18,
           '5': 6,
         },
-        id: 8,
-        quarter: 2,
-        year: 2024,
       },
     ]
 
