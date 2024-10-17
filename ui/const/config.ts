@@ -174,7 +174,7 @@ export const TICKET_TO_SPACE_ADDRESS =
     : '0x5283b6035cfa7bb884b7f6a146fa6824ec9773c7' //mumbai
 
 export const CK_NEWSLETTER_FORM_ID = '3715552'
-export const CK_NETWORK_SIGNUP_FORM_ID = 'a057b636df'
+export const CK_NETWORK_SIGNUP_FORM_ID = '7238581'
 export const CK_NETWORK_SIGNUP_TAG_ID = '5470351'
 
 export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
