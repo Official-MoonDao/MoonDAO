@@ -88,7 +88,11 @@ export default function Jobs({ jobs }: JobsProps) {
             </div>
           ) : (
             <>
-              <p className="">{'You must be a citizen to view jobs.'}</p>
+              <p className="">
+                {
+                  '⚠️ You must be a Citizen of the Space Acceleration Network to view the job board. If you are already a Citizen, please sign in.'
+                }
+              </p>
               <Link href="/citizen" passHref>
                 <CitizenTier setSelectedTier={() => {}} compact />
               </Link>
