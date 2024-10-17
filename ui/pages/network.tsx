@@ -167,6 +167,7 @@ export default function Network({
         description={
           "The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond."
         }
+        image="/og/network.png"
       />
       <Container>
         <ContentLayout

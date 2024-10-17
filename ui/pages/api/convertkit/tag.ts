@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { NEWSLETTER_FORM_ID } from '../../../const/config'
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,8 +9,8 @@ export default async function handler(
   switch (method) {
     case 'POST':
       try {
-        const { email } = req.body
-        const formResultEndpoint = `https://api.convertkit.com/v3/forms/${NEWSLETTER_FORM_ID}/subscribe`
+        const { email, tagId } = req.body
+        const formResultEndpoint = `https://api.convertkit.com/v3/tags/${tagId}/subscribe`
         const response = await fetch(formResultEndpoint, {
           method: 'POST',
           headers: {

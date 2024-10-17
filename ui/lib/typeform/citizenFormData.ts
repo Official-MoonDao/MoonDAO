@@ -35,7 +35,6 @@ export function formatCitizenShortFormData(answers: any[], responseId: string) {
   return {
     name: answerByFieldId(answers, '14C5JA01MntJ').text,
     email: answerByFieldId(answers, 'JEiG9XCW6M73').email,
-    newsletterSub: answerByFieldId(answers, '7fpED6TCJcrI')?.boolean,
     formResponseId: responseId,
   } as CitizenData
 }

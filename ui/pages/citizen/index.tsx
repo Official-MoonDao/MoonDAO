@@ -41,6 +41,7 @@ export default function Join() {
         description={
           'Join the first interplanetary network state dedicated to expanding life beyond Earth.'
         }
+        image="/og/become-a-citizen.png"
       />
       <Container>
         <ContentLayout
@@ -52,8 +53,8 @@ export default function Join() {
           isProfile
           description={
             <>
-              The Space Acceleration Network is an onchain startup society 
-              focused on building a permanent settlement on the Moon and beyond. 
+              The Space Acceleration Network is an onchain startup society
+              focused on building a permanent settlement on the Moon and beyond.
               Together we can unlock a multiplanetary future.
             </>
           }
