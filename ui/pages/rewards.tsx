@@ -1,13 +1,10 @@
-import { NanceProvider } from '@nance/nance-hooks'
-import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
-import { useChain } from '@thirdweb-dev/react'
+import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import {
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
 } from 'const/config'
 import { useRouter } from 'next/router'
-import { NANCE_API_URL } from '../lib/nance/constants'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import {
   RetroactiveRewards,
@@ -20,13 +17,11 @@ export default function Rewards({
 }: RetroactiveRewardsProps) {
   const router = useRouter()
   return (
-    <NanceProvider apiUrl={NANCE_API_URL}>
       <RetroactiveRewards
         projects={projects}
         distributions={distributions}
         refreshRewards={() => router.reload()}
       />
-    </NanceProvider>
   )
 }
 
@@ -48,27 +43,24 @@ export async function getStaticProps() {
     'getTableName'
   )
 
-  const now = Math.floor(Date.now() / 1000)
   const currentYear = new Date().getFullYear()
   // TODO don't use last quarter
   const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 2
   const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
-  const allProjectsRes = await fetch(
+  const projectsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
   )
-  const allProjects = await allProjectsRes.json()
+  const projects = await projectsRes.json()
 
   const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
-  const allDistributionsRes = await fetch(
+  const distributionsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
   )
-  const allDistributions = await allDistributionsRes.json()
-
-  const distributions = allDistributions
+  const distributions = await distributionsRes.json()
 
   return {
     props: {
-      projects: allProjects,
+      projects: projects,
       distributions,
     },
     revalidate: 60,

@@ -6,16 +6,11 @@ import { Distribution, Project } from '@/components/nance/RetroactiveRewards'
 function minimizeL1Distance(D: number[], V: number[][]) {
   const numDistributions = V.length // Number of distributions in V
   const numComponents = D.length // Length of the distributions
-
-  // Initialize variables for the LP problem
   const variables: { [key: string]: { [key: string]: number } } = {}
-
-  // Initialize constraints
   const constraints: { [key: string]: { [key: string]: number } } = {}
 
   // Constraint: sum of c_i equals 1
   constraints['sum_c'] = { equal: 1 }
-
   // Constraints: c_i >= 0
   for (let i = 0; i < numDistributions; i++) {
     constraints['c' + i + '_nonneg'] = { min: 0 }
@@ -33,7 +28,6 @@ function minimizeL1Distance(D: number[], V: number[][]) {
     constraints['abs_diff_neg_k' + k] = { max: -D[k] }
   }
 
-  // Build variables
   for (let i = 0; i < numDistributions; i++) {
     const variableName = 'c' + i
     variables[variableName] = {
@@ -62,7 +56,6 @@ function minimizeL1Distance(D: number[], V: number[][]) {
     variables[variableName]['abs_diff_neg_k' + k] = -1
   }
 
-  // Define the model for the LP solver
   const opType: 'min' = 'min'
   const model = {
     optimize: 'cost',
@@ -70,11 +63,7 @@ function minimizeL1Distance(D: number[], V: number[][]) {
     constraints: constraints,
     variables: variables,
   }
-
-  // Solve the LP problem
   const results = Solve(model)
-
-  // Extract coefficients c_i from the results
   const coefficients = []
   for (let i = 0; i < numDistributions; i++) {
     coefficients.push(results['c' + i] || 0)
