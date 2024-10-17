@@ -1,4 +1,4 @@
-import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import { DISTRIBUTION_TABLE_ADDRESSES } from 'const/config'
 import _ from 'lodash'
