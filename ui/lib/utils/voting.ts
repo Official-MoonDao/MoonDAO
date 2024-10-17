@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { Distribution, Project } from '@/components/nance/RetroactiveRewards'
 
 // Function to minimize L1 distance
-export function minimizeL1Distance(D: number[], V: number[][]) {
+function minimizeL1Distance(D: number[], V: number[][]) {
   const numDistributions = V.length // Number of distributions in V
   const numComponents = D.length // Length of the distributions
 
@@ -82,7 +82,7 @@ export function minimizeL1Distance(D: number[], V: number[][]) {
   return coefficients
 }
 
-export function getBestFitDistributions(
+function getBestFitDistributions(
   distributions: any,
   projects: any,
   votes: any
@@ -185,7 +185,7 @@ export function runIterativeNormalization(distributions: any, projects: any) {
   return return_tuple
 }
 
-export function runQuadraticVoting(
+function runQuadraticVoting(
   distributions: Distribution[],
   addressToQuadraticVotingPower: any
 ) {
@@ -203,7 +203,6 @@ export function runQuadraticVoting(
   }
   const votingPowerSum = _.sum(Object.values(addressToQuadraticVotingPower))
   if (votingPowerSum > 0) {
-    votingPowerSumIsNonZero = true
     for (const [projectId, percentages] of Object.entries(
       projectIdToListOfPercentage
     )) {
@@ -223,4 +222,26 @@ export function runQuadraticVoting(
     }
   }
   return projectIdToEstimatedPercentage
+}
+
+export function computeRewardPercentages(
+  citizenDistributions: any,
+  nonCitizenDistributions: any,
+  projects: any,
+  addressToQuadraticVotingPower: any
+) {
+  const [filledInCitizenDistributions, votes] = runIterativeNormalization(
+    citizenDistributions,
+    projects
+  )
+  const bestFitNonCitizenDistributions = getBestFitDistributions(
+    nonCitizenDistributions,
+    projects,
+    votes
+  )
+  const allDistributions: Distribution[] = [
+    ...filledInCitizenDistributions,
+    ...bestFitNonCitizenDistributions,
+  ]
+  return runQuadraticVoting(allDistributions, addressToQuadraticVotingPower)
 }

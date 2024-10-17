@@ -1,6 +1,6 @@
-import { iterativeNormalization } from '../../../lib/utils/voting'
+import { runIterativeNormalization } from '../../../lib/utils/voting'
 
-describe('iterativeNormalization', () => {
+describe('runIterativeNormalization', () => {
   it('should normalize distributions correctly', () => {
       // Source: https://docs.google.com/spreadsheets/d/1oEYeNjJNXQOzP332UO53zo_iWpMmvyEZLXGmgYiJuKE/edit?gid=658868670#gid=658868670
     const testDistributions = [
@@ -122,7 +122,7 @@ describe('iterativeNormalization', () => {
       { id: '5', title: 'Project 5' },
     ]
 
-    const [normalizedDistributions, votes] = iterativeNormalization(
+    const [normalizedDistributions, votes] = runIterativeNormalization(
       testDistributions,
       projects
     )

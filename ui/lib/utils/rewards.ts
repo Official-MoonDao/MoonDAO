@@ -47,7 +47,7 @@ export function getPayouts(
   for (const project of projects) {
     const projectId = project.id
     const projectPercentage = projectIdToEstimatedPercentage[projectId]
-    const contributors = project.contributors
+    const contributors: { [key: string]: number } = project.contributors
     for (const [contributerAddress, contributorPercentage] of Object.entries(
       contributors
     )) {
