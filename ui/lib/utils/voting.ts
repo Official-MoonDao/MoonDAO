@@ -82,7 +82,31 @@ export function minimizeL1Distance(D: number[], V: number[][]) {
   return coefficients
 }
 
-export function iterativeNormalization(distributions: any, projects: any) {
+export function getBestFitDistributions(
+  distributions: any,
+  projects: any,
+  votes: any
+) {
+  const bestFitDistributions = []
+  for (const d of distributions) {
+    const desiredDistribution = []
+    const dist = d.distribution
+    for (const [projectIndex, project] of projects.entries()) {
+      desiredDistribution.push(dist[project.id])
+    }
+    const actualDistribution = minimizeL1Distance(desiredDistribution, votes)
+    const newDistribution = {
+      address: d.address,
+      year: d.year,
+      quarter: d.quarter,
+      distribution: actualDistribution,
+    }
+    bestFitDistributions.push(newDistribution)
+  }
+  return bestFitDistributions
+}
+
+export function runIterativeNormalization(distributions: any, projects: any) {
   const numProjects = projects.length
 
   const numVotes = distributions.length
@@ -159,4 +183,44 @@ export function iterativeNormalization(distributions: any, projects: any) {
   }
   let return_tuple: [any[], number[][]] = [newDistributions, newVotes]
   return return_tuple
+}
+
+export function runQuadraticVoting(
+  distributions: Distribution[],
+  addressToQuadraticVotingPower: any
+) {
+  const projectIdToEstimatedPercentage: { [key: string]: number } = {}
+  const projectIdToListOfPercentage: { [key: string]: number[] } = {}
+  const allAddresses = distributions.map((d) => d.address)
+  for (const d of distributions) {
+    const { address, year, quarter, distribution: dist } = d
+    for (const [key, value] of Object.entries(dist)) {
+      if (!projectIdToListOfPercentage[key]) {
+        projectIdToListOfPercentage[key] = []
+      }
+      projectIdToListOfPercentage[key].push(value)
+    }
+  }
+  const votingPowerSum = _.sum(Object.values(addressToQuadraticVotingPower))
+  if (votingPowerSum > 0) {
+    votingPowerSumIsNonZero = true
+    for (const [projectId, percentages] of Object.entries(
+      projectIdToListOfPercentage
+    )) {
+      projectIdToEstimatedPercentage[projectId] =
+        _.sum(
+          percentages.map(
+            (p, i) => p * addressToQuadraticVotingPower[allAddresses[i]]
+          )
+        ) / votingPowerSum
+    }
+    // normalize projectIdToEstimatedPercentage
+    const sum = _.sum(Object.values(projectIdToEstimatedPercentage))
+    for (const [projectId, percentage] of Object.entries(
+      projectIdToEstimatedPercentage
+    )) {
+      projectIdToEstimatedPercentage[projectId] = (percentage / sum) * 100
+    }
+  }
+  return projectIdToEstimatedPercentage
 }
