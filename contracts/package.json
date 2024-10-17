@@ -7,11 +7,7 @@
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol"
   },
-  "dependencies": {
-    "@chainlink/contracts": "^1.2.0",
-    "@paulrberg/contracts": "^3.7.0",
-    "@thirdweb-dev/contracts": "^3.15.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@typechain/ethers-v5": "^7.0.1",
     "@typescript-eslint/eslint-plugin": "^4.29.1",

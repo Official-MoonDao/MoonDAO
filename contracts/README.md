@@ -38,18 +38,11 @@ pip install vyper==0.2.4
 # Install Git submodules
 forge install
 
-# Install chainlink
-npm install @chainlink/contracts
-npm i @paulrberg/contracts
-
-
-
 # Compile Solidity and Vyper contracts
 yarn compile
 
 # Deploy stack for local development
 yarn dev-deploy
-
 ```
 
 ### Running a node
