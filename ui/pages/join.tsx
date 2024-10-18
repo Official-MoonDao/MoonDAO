@@ -46,7 +46,7 @@ export default function Join() {
       <Head
         title={t('joinTitle')}
         description={t('joinDesc')}
-        image="/og/join-the-network.png"
+        image="https://ipfs.io/ipfs/QmbbjvWBUAXPPibj4ZbzzErVaZBSD99r3dbt5CGQMd5Bkh"
       />
       <Container>
         <ContentLayout

@@ -75,7 +75,6 @@ export default function CreateCitizen({
     website: '',
     twitter: '',
     formResponseId: '',
-    newsletterSub: false,
   })
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
@@ -213,7 +212,6 @@ export default function CreateCitizen({
                         location: 'Earth',
                         view: 'public',
                         formResponseId: '0000',
-                        newsletterSub: false,
                       })
 
                       const file = new File([''], 'test.png', {
