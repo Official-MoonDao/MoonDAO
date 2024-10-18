@@ -7,7 +7,8 @@ import {
 import _ from 'lodash'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
-import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
+import useWindowSize from '@/lib/team/use-window-size'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
@@ -48,6 +49,7 @@ export function RetroactiveRewards({
 }: RetroactiveRewardsProps) {
   const chain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+  const { isMobile } = useWindowSize()
 
   const userAddress = useAddress()
   const year = new Date().getFullYear()
@@ -222,8 +224,14 @@ export function RetroactiveRewards({
           popOverEffect={false}
           isProfile
         >
-          <section className="w-full flex flex-row items-center sm:items-start">
-            <section className="mt-8 flex flex-col w-1/3">
+          <section
+            className={`w-full flex ${
+              isMobile ? 'flex-col items-center' : 'flex-row items-start'
+            }`}
+          >
+            <section
+              className={`mt-8 flex flex-col ${isMobile ? '' : 'w-1/3'}`}
+            >
               <h3 className="title-text-colors text-2xl font-GoodTimes">
                 Total Q{quarter} Rewards
               </h3>
@@ -239,7 +247,9 @@ export function RetroactiveRewards({
               />
             </section>
             {userAddress && (
-              <section className="mt-8 flex flex-col px-4 w-1/3">
+              <section
+                className={`mt-8 flex flex-col px-4 ${isMobile ? '' : 'w-1/3'}`}
+              >
                 <h3 className="title-text-colors text-2xl font-GoodTimes">
                   Your Rewards
                 </h3>
@@ -260,7 +270,9 @@ export function RetroactiveRewards({
               </section>
             )}
             {userAddress && (
-              <section className="mt-8 flex flex-col px-4 w-1/3">
+              <section
+                className={`mt-8 flex flex-col px-4 ${isMobile ? '' : 'w-1/3'}`}
+              >
                 <h3 className="title-text-colors text-2xl font-GoodTimes">
                   Voting Power
                 </h3>
