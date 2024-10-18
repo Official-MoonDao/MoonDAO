@@ -62,7 +62,10 @@ export default function Jobs({ jobs }: JobsProps) {
 
   return (
     <section id="jobs-container" className="overflow-hidden">
-      <Head title="Jobs" image="/og/jobs.png" />
+      <Head
+        title="Jobs"
+        image="https://ipfs.io/ipfs/QmSuJQjNWDQn5Wht6d6PqUoten6DVm3cLocoHxi85G9N8T"
+      />
       <Container>
         <ContentLayout
           header="Jobs"

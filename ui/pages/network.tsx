@@ -121,9 +121,9 @@ export default function Network({
   const descriptionSection = (
     <div className="pt-2">
       <div className="mb-4">
-        The Space Acceleration Network is an onchain startup society 
-        focused on building a permanent settlement on the Moon and beyond. 
-        Help build our multiplanetary future and{' '}
+        The Space Acceleration Network is an onchain startup society focused on
+        building a permanent settlement on the Moon and beyond. Help build our
+        multiplanetary future and{' '}
         <u>
           <Link href="/join">join the network</Link>
         </u>
@@ -165,9 +165,9 @@ export default function Network({
       <Head
         title={'Space Acceleration Network'}
         description={
-          "The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond."
+          'The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond.'
         }
-        image="/og/network.png"
+        image="https://ipfs.io/ipfs/QmbExwDgVoDYpThFaVRRxUkusHnXxMj3Go8DdWrXg1phxi"
       />
       <Container>
         <ContentLayout

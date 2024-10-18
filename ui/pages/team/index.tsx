@@ -37,7 +37,7 @@ export default function TeamJoin() {
       <Head
         title={'Create a Team'}
         description={'Create a Team within the MoonDAO Network.'}
-        image="/og/create-a-team.png"
+        image="https://ipfs.io/ipfs/QmX7FHDoRhsQ4Ube179qjCnvcVQqwJhVRRASUGLEeqwdh2"
       />
       <Container>
         <ContentLayout

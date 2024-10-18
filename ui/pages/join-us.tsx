@@ -15,7 +15,11 @@ const JoinUs: React.FC = () => {
 
   return (
     <>
-      <WebsiteHead title={title} description={description} image={image} />
+      <WebsiteHead
+        title={title}
+        description={description}
+        image="https://ipfs.io/ipfs/QmbbjvWBUAXPPibj4ZbzzErVaZBSD99r3dbt5CGQMd5Bkh"
+      />
       <section className="w-[calc(100vw-20px)]">
         <Container>
           <ContentLayout

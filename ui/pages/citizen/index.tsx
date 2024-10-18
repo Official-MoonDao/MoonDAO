@@ -41,7 +41,7 @@ export default function Join() {
         description={
           'Join the first interplanetary network state dedicated to expanding life beyond Earth.'
         }
-        image="/og/become-a-citizen.png"
+        image="https://ipfs.io/ipfs/QmUG1fcYnnzkhTFwSvMAy1gcFcq99VCk3Eps1L9g6qkt49"
       />
       <Container>
         <ContentLayout

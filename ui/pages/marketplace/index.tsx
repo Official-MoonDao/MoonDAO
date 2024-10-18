@@ -64,7 +64,10 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
   return (
     <section id="jobs-container" className="overflow-hidden">
-      <Head title="Marketplace" image="/og/marketplace.png" />
+      <Head
+        title="Marketplace"
+        image="https://ipfs.io/ipfs/QmTtEyhgwcE1xyqap4nvaXyPpMBnfskRPtnz7i1jpGnw5M"
+      />
       <Container>
         <ContentLayout
           header="Marketplace"
