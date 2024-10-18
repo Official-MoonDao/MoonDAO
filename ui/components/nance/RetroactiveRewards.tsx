@@ -322,7 +322,11 @@ export function RetroactiveRewards({
                         rel="noreferrer"
                         className="mr-2"
                       >
-                        <u>MDP {project.MPD}:</u>
+                        {project.MPD ? (
+                          <u>MDP {project.MPD}:</u>
+                        ) : (
+                          <u>Project:</u>
+                        )}
                       </a>
                       {project.title}
                     </div>
