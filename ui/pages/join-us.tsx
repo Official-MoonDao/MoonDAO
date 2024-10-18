@@ -11,14 +11,12 @@ const JoinUs: React.FC = () => {
   const title = '🚀 Get the latest news and updates from MoonDAO'
   const description =
     'Sign up for the MoonDAO newsletter to learn more about how you can participate.'
-  const image = '/assets/dp-og.jpg'
 
   return (
     <>
       <WebsiteHead
         title={title}
         description={description}
-        image="https://ipfs.io/ipfs/QmbbjvWBUAXPPibj4ZbzzErVaZBSD99r3dbt5CGQMd5Bkh"
       />
       <section className="w-[calc(100vw-20px)]">
         <Container>
