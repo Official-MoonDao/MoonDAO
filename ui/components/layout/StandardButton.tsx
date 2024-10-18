@@ -1,7 +1,7 @@
 type StandardButtonProps = {
   className?: string
   children?: React.ReactNode
-  onClick?: Function
+  onClick?: any
   disabled?: boolean
   backgroundColor?: string
   hoverColor?: string
