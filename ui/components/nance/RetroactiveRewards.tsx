@@ -1,6 +1,9 @@
 import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import { DISTRIBUTION_TABLE_ADDRESSES } from 'const/config'
+import {
+  DISTRIBUTION_TABLE_ADDRESSES,
+  SNAPSHOT_RETROACTIVE_REWARDS_ID,
+} from 'const/config'
 import _ from 'lodash'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
@@ -80,12 +83,10 @@ export function RetroactiveRewards({
 
   const addresses = distributions ? distributions.map((d) => d.address) : []
 
-  const SNAPSHOT_ID =
-    '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
   const { data: _vps } = useVotingPowers(
     addresses,
     SNAPSHOT_SPACE_NAME,
-    SNAPSHOT_ID
+    SNAPSHOT_RETROACTIVE_REWARDS_ID
   )
   const votingPowers = _vps ? _vps.map((vp) => (vp ? vp.vp : 0)) : []
   const addressToQuadraticVotingPower = Object.fromEntries(
@@ -154,21 +155,6 @@ export function RetroactiveRewards({
       })
       return
     }
-    // Fill in empty values with 0
-    // Missing values are assumed to be projects which the user is a contributor to
-    // and will be filled in with iterative normalization
-    for (const project of projects) {
-      if (
-        !(project.id in distribution) &&
-        !(
-          !userAddress ||
-          userAddress in project.contributors ||
-          userAddress.toLowerCase() in project.contributors
-        )
-      ) {
-        distribution[project.id] = 0
-      }
-    }
     try {
       if (edit) {
         await distributionTableContract?.call('updateTableCol', [
@@ -220,8 +206,11 @@ export function RetroactiveRewards({
   }
 
   return (
-    <section id="projects-container" className="overflow-hidden">
-      <Head title="Projects" image="" />
+    <section id="rewards-container" className="overflow-hidden">
+      <Head
+        title="Rewards"
+        description="Distribute rewards to contributors based on their contributions."
+      />
       <Container>
         <ContentLayout
           header={'Q' + quarter + ' ' + year + ' Retroactive Rewards'}

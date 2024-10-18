@@ -17,11 +17,11 @@ export default function Rewards({
 }: RetroactiveRewardsProps) {
   const router = useRouter()
   return (
-      <RetroactiveRewards
-        projects={projects}
-        distributions={distributions}
-        refreshRewards={() => router.reload()}
-      />
+    <RetroactiveRewards
+      projects={projects}
+      distributions={distributions}
+      refreshRewards={() => router.reload()}
+    />
   )
 }
 
@@ -60,7 +60,7 @@ export async function getStaticProps() {
 
   return {
     props: {
-      projects: projects,
+      projects,
       distributions,
     },
     revalidate: 60,
