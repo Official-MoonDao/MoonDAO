@@ -28,7 +28,15 @@ export default function WebsiteHead({
         key="meta-ogtitle"
       />
       <meta property="og:description" content={description} key="meta-ogdesc" />
-      <meta property="og:image" content={image} key="meta-ogimage" />
+      <meta
+        property="og:image"
+        content={
+          image.startsWith('http')
+            ? image
+            : `${process.env.ALLOWED_ORIGIN}${image}`
+        }
+        key="meta-ogimage"
+      />
       <meta property="og:type" content="website" key="meta-ogweb" />
       <meta property="og:url" content="https://moondao.com/" key="meta-ogurl" />
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
@@ -45,7 +53,9 @@ export default function WebsiteHead({
       <meta
         name="twitter:image"
         content={
-          image.startsWith('http') ? image : `${window.location.origin}${image}`
+          image.startsWith('http')
+            ? image
+            : `${process.env.ALLOWED_ORIGIN}${image}`
         }
         key="meta-twimage"
       />
