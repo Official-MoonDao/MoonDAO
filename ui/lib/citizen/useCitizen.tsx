@@ -5,7 +5,7 @@ import { CITIZEN_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 
-export default function useCitizen(
+export function useCitizen(
   selectedChain: Chain,
   citizenContract?: any,
   citizenAddress?: string
@@ -56,4 +56,45 @@ export default function useCitizen(
   ])
 
   return citizenNFT
+}
+
+export function useCitizens(
+  selectedChain: Chain,
+  citizenAddresses: string[],
+  citizenContract?: any
+) {
+  const sdk = useSDK()
+  const [areCitizens, setAreCitizens] = useState<boolean[]>([])
+
+  useEffect(() => {
+    async function getAreCitizens() {
+      try {
+        let contract
+        if (citizenContract) {
+          contract = citizenContract
+        } else {
+          contract = await sdk?.getContract(
+            CITIZEN_ADDRESSES[selectedChain.slug]
+          )
+        }
+
+        const areCitizens = await Promise.all(
+          citizenAddresses.map(async (address) => {
+            const ownedTokenId = await contract?.call('getOwnedToken', [
+              address,
+            ])
+            return !!ownedTokenId
+          })
+        )
+
+        setAreCitizens(areCitizens)
+      } catch (err: any) {
+        console.error(err)
+      }
+    }
+
+    if (sdk && selectedChain) getAreCitizens()
+  }, [])
+
+  return areCitizens
 }

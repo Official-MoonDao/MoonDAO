@@ -2,7 +2,7 @@ import { Chain } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import useCitizen from '@/lib/citizen/useCitizen'
+import { useCitizen } from '@/lib/citizen/useCitizen'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type CitizenProfileLinkProps = {
