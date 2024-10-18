@@ -1,5 +1,6 @@
 import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
@@ -13,8 +14,11 @@ export default function TeamMarketplace({
   teamId,
   isManager,
 }: any) {
+  const router = useRouter()
+
   const [listings, setListings] = useState<TeamListingType[]>()
   const [listingModalEnabled, setListingModalEnabled] = useState(false)
+  const [queriedListingId, setQueriedListingId] = useState<number>()
 
   async function getEntityMarketplaceListings() {
     const marketplaceTableName = await marketplaceTableContract.call(
@@ -32,8 +36,27 @@ export default function TeamMarketplace({
     if (marketplaceTableContract) getEntityMarketplaceListings()
   }, [marketplaceTableContract, teamId])
 
+  useEffect(() => {
+    if (router.query.listing) {
+      function scrollToMarketplace() {
+        const teamMarketplace = document.getElementById('team-marketplace')
+        if (teamMarketplace) {
+          teamMarketplace.scrollIntoView({ behavior: 'smooth' })
+        }
+      }
+
+      const timeout = setTimeout(scrollToMarketplace, 3000)
+      setQueriedListingId(Number(router.query.listing))
+
+      return () => clearTimeout(timeout)
+    }
+  }, [router.query.listingId])
+
   return (
-    <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+    <div
+      id="team-marketplace"
+      className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+    >
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
         <div className="flex gap-5 opacity-[50%]">
           <Image
@@ -65,6 +88,7 @@ export default function TeamMarketplace({
                 teamContract={teamContract}
                 editable={isManager}
                 refreshListings={getEntityMarketplaceListings}
+                queriedListingId={queriedListingId}
               />
             ))}
         </div>

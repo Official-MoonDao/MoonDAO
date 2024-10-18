@@ -1,6 +1,18 @@
-//StandardButton.tsx
-import PropTypes from 'prop-types'
-import React from 'react'
+type StandardButtonProps = {
+  className?: string
+  children?: React.ReactNode
+  onClick?: any
+  disabled?: boolean
+  backgroundColor?: string
+  hoverColor?: string
+  hoverEffect?: boolean
+  borderRadius?: string
+  link?: string
+  paddingOnHover?: string
+  textColor?: string
+  styleOnly?: boolean
+  type?: 'button' | 'submit' | 'reset'
+}
 
 export default function StandardButton({
   className = '',
@@ -9,13 +21,14 @@ export default function StandardButton({
   disabled = false,
   backgroundColor = 'dark-cool',
   hoverColor = 'mid-cool',
+  hoverEffect = true,
   borderRadius = 'rounded',
   link = '#',
   paddingOnHover = 'pl-5',
   textColor = 'text-white',
   styleOnly = false,
   type = 'button',
-}) {
+}: StandardButtonProps) {
   const buttonContent = (
     <button
       className={`
@@ -26,8 +39,12 @@ export default function StandardButton({
       `}
       onClick={onClick || null}
       style={{ paddingLeft: '0' }}
-      onMouseEnter={(e) => (e.currentTarget.style.paddingLeft = '10px')}
-      onMouseLeave={(e) => (e.currentTarget.style.paddingLeft = '0')}
+      onMouseEnter={(e) =>
+        hoverEffect && (e.currentTarget.style.paddingLeft = '10px')
+      }
+      onMouseLeave={(e) =>
+        hoverEffect && (e.currentTarget.style.paddingLeft = '0')
+      }
       type={type as any}
       disabled={disabled}
     >
@@ -44,19 +61,4 @@ export default function StandardButton({
   )
 
   return styleOnly ? buttonContent : <a href={link}>{buttonContent}</a>
-}
-
-StandardButton.propTypes = {
-  className: PropTypes.string,
-  children: PropTypes.node.isRequired,
-  onClick: PropTypes.func,
-  disabled: PropTypes.bool,
-  backgroundColor: PropTypes.string,
-  hoverColor: PropTypes.string,
-  borderRadius: PropTypes.string,
-  link: PropTypes.string,
-  paddingOnHover: PropTypes.string,
-  textColor: PropTypes.string,
-  styleOnly: PropTypes.bool,
-  type: PropTypes.any,
 }

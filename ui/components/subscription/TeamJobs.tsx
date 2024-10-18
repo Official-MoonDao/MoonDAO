@@ -85,8 +85,9 @@ export default function TeamJobs({
         ) : (
           <div className="flex flex-col gap-4 ">
             <p>
-              You must be a Citizen or a Manager of the team to view the job
-              board.
+              {
+                '⚠️ You must be a Citizen of the Space Acceleration Network or a Manager of the team to view the job board. If you are already a Citizen or Manager, please sign in.'
+              }
             </p>
             <StandardButton
               className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"

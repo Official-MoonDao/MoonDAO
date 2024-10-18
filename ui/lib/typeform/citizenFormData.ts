@@ -9,7 +9,6 @@ export type CitizenData = {
   twitter?: string
   website?: string
   view?: string
-  newsletterSub: boolean
   formResponseId: string
 }
 
@@ -26,7 +25,6 @@ export function formatCitizenFormData(answers: any[], responseId: string) {
       answerByFieldId(answers, 'W0uayCnonUN7').boolean === true
         ? 'public'
         : 'private',
-    newsletterSub: answerByFieldId(answers, 'EnRjgahQqOFG')?.boolean,
     formResponseId: responseId,
   } as CitizenData
 }
