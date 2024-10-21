@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import CitizenContext from './citizen-context'
-import useCitizen from './useCitizen'
+import { useCitizen } from './useCitizen'
 
 export default function CitizenProvider({ selectedChain, children }: any) {
   const [citizen, setCitizen] = useState<any>()

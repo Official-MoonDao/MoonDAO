@@ -90,6 +90,15 @@ export const CITIZEN_TABLE_ADDRESSES: Index = {
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
+export const PROJECT_TABLE_ADDRESSES: Index = {
+  arbitrum: '0xAc9A5abf9E7a2199De4DA57d1240c9d2c9df2C16',
+  'arbitrum-sepolia': '0x6B9b4AF44f904CA19af304507ab0CE9c8b1c6a0c',
+}
+export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
+  arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
+  'arbitrum-sepolia': '0xd1D57F18252D06a6b28DE96B6cbF7F4283A4F205',
+}
+
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0xd594DBF360D666c94615Fb186AF3cB1018Be1616',
   sepolia: '',
@@ -202,3 +211,6 @@ export const CHAIN_TOKEN_NAMES: Index = {
   arbitrum: 'ETH',
   sepolia: 'ETH',
 }
+
+export const SNAPSHOT_RETROACTIVE_REWARDS_ID =
+  '0xa38f7cfeb73b166aea0b65432230bc19faf5411e7f86cc8ea3b961d7c72c85ed'
