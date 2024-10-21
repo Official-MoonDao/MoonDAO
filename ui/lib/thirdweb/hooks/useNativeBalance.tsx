@@ -9,33 +9,31 @@ export function useNativeBalance() {
   const [nativeBalance, setNativeBalance] = useState<any>()
 
   useEffect(() => {
-    const fetchBalanceAndListen = async () => {
+    let provider: any
+
+    async function handleBalanceChange() {
+      const address = wallets[selectedWallet].address
+      const balance = await provider.getBalance(address)
+      setNativeBalance((+balance / 10 ** 18).toFixed(5))
+    }
+
+    async function getBalanceAndListen() {
       if (wallets[selectedWallet]) {
-        const provider = await wallets[selectedWallet].getEthersProvider()
-        const address = wallets[selectedWallet].address
-
-        const getNativeBalance = async () => {
-          const balance = await provider.getBalance(address)
-          setNativeBalance((+balance / 10 ** 18).toFixed(5))
-        }
-
-        await getNativeBalance()
-
-        // Listen for balance changes
-        const handleBalanceChange = async () => {
-          await getNativeBalance()
-        }
+        provider = await wallets[selectedWallet].getEthersProvider()
+        await handleBalanceChange()
 
         provider.on('block', handleBalanceChange)
-
-        // Cleanup listener on unmount
-        return () => {
-          provider.off('block', handleBalanceChange)
-        }
       }
     }
 
-    fetchBalanceAndListen()
+    getBalanceAndListen()
+
+    // Cleanup listener on unmount
+    return () => {
+      if (provider) {
+        provider.off('block', handleBalanceChange)
+      }
+    }
   }, [wallets, selectedWallet])
 
   return nativeBalance
