@@ -78,7 +78,7 @@ export default function SpeakerSection() {
         id="youtube-callout-container"
         className="flex px-5 justify-center max-w-[1200px]"
       >
-        <Link href="https://www.youtube.com/@officialmoondao">
+        <Link href="https://www.youtube.com/@officialmoondao?sub_confirmation=1">
           <div
             id="youtube-callout"
             className="inline-flex items-center justify-center group"
