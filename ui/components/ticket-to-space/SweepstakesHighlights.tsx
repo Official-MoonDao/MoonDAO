@@ -76,7 +76,7 @@ export default function SweepstakesHighlights() {
             Eiman is a long-time member of MoonDAO was selected via the Ticket to Space sweepstakes, flying to space as part of Blue Origin's NS-26 mission.{' '}
             <u>
               <Link
-                href="https://www.youtube.com/watch?v=tOnfAtI1BHI"
+                href="https://www.youtube.com/watch?v=O8Z5HVXOwsk"
                 target="_blank"
               >
                 Watch the launch video
