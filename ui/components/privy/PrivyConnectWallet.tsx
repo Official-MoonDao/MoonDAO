@@ -12,7 +12,7 @@ import { useHandleRead } from '../../lib/thirdweb/hooks'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
-import useTokenBalance from '@/lib/tokens/hooks/useTokenBalance'
+import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
 import ERC20 from '../../const/abis/ERC20.json'
 import {
@@ -257,20 +257,16 @@ export function PrivyConnectWallet({
     usdt: 0,
   })
 
-  const mooneyBalance = useTokenBalance(
-    mooneyContract,
-    18,
-    wallets[selectedWallet]
-  )
-  const daiBalance = useTokenBalance(daiContract, 18, wallets[selectedWallet])
-  const usdcBalance = useTokenBalance(usdcContract, 6, wallets[selectedWallet])
-  const usdtBalance = useTokenBalance(usdtContract, 6, wallets[selectedWallet])
+  const mooneyBalance = useWatchTokenBalance(mooneyContract, 18)
+  const daiBalance = useWatchTokenBalance(daiContract, 18)
+  const usdcBalance = useWatchTokenBalance(usdcContract, 6)
+  const usdtBalance = useWatchTokenBalance(usdtContract, 6)
 
   useEffect(() => {
-    if (mooneyBalance)
+    if (mooneyBalance >= 0)
       setFormattedBalances((prev) => ({
         ...prev,
-        mooney: mooneyBalance.toFixed(2),
+        mooney: mooneyBalance?.toFixed(2),
       }))
   }, [mooneyBalance])
   useEffect(() => {
