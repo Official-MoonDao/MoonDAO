@@ -16,7 +16,6 @@ import useWindowSize from '@/lib/team/use-window-size'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import {
   computeRewardPercentages,
-  runIterativeNormalization,
 } from '@/lib/utils/voting'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
 import Container from '@/components/layout/Container'
@@ -62,7 +61,6 @@ export function RetroactiveRewards({
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
     {}
   )
-
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
     if (distributions && userAddress) {

@@ -2,7 +2,11 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useFundWallet, usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { CITIZEN_ADDRESSES } from 'const/config'
+import {
+  CITIZEN_ADDRESSES,
+  CK_NETWORK_SIGNUP_FORM_ID,
+  CK_NETWORK_SIGNUP_TAG_ID,
+} from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -10,7 +14,8 @@ import { useRouter } from 'next/router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
-import { useNewsletterSub } from '@/lib/convert-kit/useNewsletterSub'
+import useSubscribe from '@/lib/convert-kit/useSubscribe'
+import useTag from '@/lib/convert-kit/useTag'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
@@ -70,7 +75,6 @@ export default function CreateCitizen({
     website: '',
     twitter: '',
     formResponseId: '',
-    newsletterSub: false,
   })
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
@@ -93,7 +97,8 @@ export default function CreateCitizen({
 
   const pfpRef = useRef<HTMLDivElement | null>(null)
 
-  const subscribeToNewsletter = useNewsletterSub()
+  const subscribeToNetworkSignup = useSubscribe(CK_NETWORK_SIGNUP_FORM_ID)
+  const tagToNetworkSignup = useTag(CK_NETWORK_SIGNUP_TAG_ID)
 
   const nativeBalance = useNativeBalance()
 
@@ -124,14 +129,9 @@ export default function CreateCitizen({
     )
 
     //subscribe to newsletter
-    if (citizenShortFormData.newsletterSub) {
-      const subRes = await subscribeToNewsletter(citizenShortFormData.email)
-      if (subRes.ok) {
-        toast.success(
-          'Successfully subscribed to the newsletter! Open your email and confirm your subscription.',
-          { duration: 5000 }
-        )
-      }
+    const subRes = await subscribeToNetworkSignup(citizenShortFormData.email)
+    if (subRes.ok) {
+      console.log('Subscribed to network signup')
     }
 
     //escape single quotes and remove emojis
@@ -180,7 +180,13 @@ export default function CreateCitizen({
                 title="Design"
                 description={
                   <>
-                    <b>Create your unique and personalized AI passport photo.</b> The uploaded photo <u>MUST</u> contain a face, but it can be a photo of yourself or an avatar that represents you well. Image generation may take up to a minute, so please continue to the next step to fill out your profile.
+                    <b>
+                      Create your unique and personalized AI passport photo.
+                    </b>{' '}
+                    The uploaded photo <u>MUST</u> contain a face, but it can be
+                    a photo of yourself or an avatar that represents you well.
+                    Image generation may take up to a minute, so please continue
+                    to the next step to fill out your profile.
                   </>
                 }
               >
@@ -206,7 +212,6 @@ export default function CreateCitizen({
                         location: 'Earth',
                         view: 'public',
                         formResponseId: '0000',
-                        newsletterSub: false,
                       })
 
                       const file = new File([''], 'test.png', {
@@ -492,6 +497,10 @@ export default function CreateCitizen({
                         16
                       ).toString()
 
+                      if (mintedTokenId) {
+                        await tagToNetworkSignup(citizenData.email)
+                      }
+
                       setTimeout(() => {
                         setIsLoadingMint(false)
                         router.push(`/citizen/${mintedTokenId}`)
@@ -514,6 +523,13 @@ export default function CreateCitizen({
             )}
           </div>
         </div>
+        {/* Dev Buttons */}
+        {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+          <div className="flex flex-row justify-center gap-4">
+            <button onClick={() => setStage(stage - 1)}>BACK</button>
+            <button onClick={() => setStage(stage + 1)}>NEXT</button>
+          </div>
+        )}
       </ContentLayout>
     </Container>
   )

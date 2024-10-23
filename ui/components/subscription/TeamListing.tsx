@@ -1,9 +1,15 @@
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowTurnUpRightIcon,
+  ArrowUpRightIcon,
+  PencilIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline'
 import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
+import StandardButton from '../layout/StandardButton'
 import BuyTeamListingModal from './BuyTeamListingModal'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
@@ -26,6 +32,7 @@ type TeamListingProps = {
   refreshListings?: any
   editable?: boolean
   teamName?: boolean
+  queriedListingId?: number
 }
 
 export default function TeamListing({
@@ -36,12 +43,15 @@ export default function TeamListing({
   refreshListings,
   editable,
   teamName,
+  queriedListingId,
 }: TeamListingProps) {
   const address = useAddress()
 
   const [enabledMarketplaceListingModal, setEnabledMarketplaceListingModal] =
     useState(false)
-  const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(false)
+  const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(
+    queriedListingId === listing.id
+  )
 
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -68,7 +78,6 @@ export default function TeamListing({
         !editable ? 'cursor-pointer' : ''
       }`}
       onClick={() => {
-        if (!address) return toast.error('Please connect your wallet')
         if (!editable) {
           setEnabledBuyListingModal(true)
         }
@@ -147,6 +156,24 @@ export default function TeamListing({
                     {teamData.name}
                   </Link>
                 )}
+                <div className="flex justify-between items-center">
+                  <p>{`# ${listing.id}`}</p>
+                  <StandardButton
+                    className="gradient-2"
+                    onClick={(e: any) => {
+                      e.stopPropagation()
+                      const link = `${window.location.origin}/team/${listing.teamId}?listing=${listing.id}`
+                      navigator.clipboard.writeText(link)
+                      toast.success('Link copied to clipboard')
+                    }}
+                    hoverEffect={false}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ArrowUpRightIcon className="h-4 w-4" />
+                      {'Share'}
+                    </div>
+                  </StandardButton>
+                </div>
                 <h2
                   id="main-header"
                   className={`z-20 pt-[10px] pb-[10px] static-sub-header font-GoodTimes flex items-center 
@@ -228,7 +255,7 @@ export default function TeamListing({
           <BuyTeamListingModal
             selectedChain={selectedChain}
             listing={listing}
-            recipient={teamData.multisigAddress}
+            recipient={teamData?.multisigAddress}
             setEnabled={setEnabledBuyListingModal}
           />
         )}

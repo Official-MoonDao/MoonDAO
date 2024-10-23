@@ -9,7 +9,6 @@ export type CitizenData = {
   twitter?: string
   website?: string
   view?: string
-  newsletterSub: boolean
   formResponseId: string
 }
 
@@ -26,7 +25,6 @@ export function formatCitizenFormData(answers: any[], responseId: string) {
       answerByFieldId(answers, 'W0uayCnonUN7').boolean === true
         ? 'public'
         : 'private',
-    newsletterSub: answerByFieldId(answers, 'EnRjgahQqOFG')?.boolean,
     formResponseId: responseId,
   } as CitizenData
 }
@@ -35,7 +33,6 @@ export function formatCitizenShortFormData(answers: any[], responseId: string) {
   return {
     name: answerByFieldId(answers, '14C5JA01MntJ').text,
     email: answerByFieldId(answers, 'JEiG9XCW6M73').email,
-    newsletterSub: answerByFieldId(answers, '7fpED6TCJcrI')?.boolean,
     formResponseId: responseId,
   } as CitizenData
 }

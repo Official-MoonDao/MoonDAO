@@ -11,11 +11,13 @@ const JoinUs: React.FC = () => {
   const title = '🚀 Get the latest news and updates from MoonDAO'
   const description =
     'Sign up for the MoonDAO newsletter to learn more about how you can participate.'
-  const image = '/assets/dp-og.jpg'
 
   return (
     <>
-      <WebsiteHead title={title} description={description} image={image} />
+      <WebsiteHead
+        title={title}
+        description={description}
+      />
       <section className="w-[calc(100vw-20px)]">
         <Container>
           <ContentLayout

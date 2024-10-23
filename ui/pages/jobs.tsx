@@ -62,7 +62,10 @@ export default function Jobs({ jobs }: JobsProps) {
 
   return (
     <section id="jobs-container" className="overflow-hidden">
-      <Head title="Jobs" image="" />
+      <Head
+        title="Jobs"
+        image="https://ipfs.io/ipfs/QmSuJQjNWDQn5Wht6d6PqUoten6DVm3cLocoHxi85G9N8T"
+      />
       <Container>
         <ContentLayout
           header="Jobs"
@@ -88,7 +91,11 @@ export default function Jobs({ jobs }: JobsProps) {
             </div>
           ) : (
             <>
-              <p className="">{'You must be a citizen to view jobs.'}</p>
+              <p className="">
+                {
+                  '⚠️ You must be a Citizen of the Space Acceleration Network to view the job board. If you are already a Citizen, please sign in.'
+                }
+              </p>
               <Link href="/citizen" passHref>
                 <CitizenTier setSelectedTier={() => {}} compact />
               </Link>

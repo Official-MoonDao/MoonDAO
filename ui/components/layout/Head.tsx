@@ -1,3 +1,4 @@
+// Page Metadata
 import Head from 'next/head'
 
 const defaultTitle = "MoonDAO: The Internet's Space Program"
@@ -30,11 +31,7 @@ export default function WebsiteHead({
       <meta property="og:description" content={description} key="meta-ogdesc" />
       <meta property="og:image" content={image} key="meta-ogimage" />
       <meta property="og:type" content="website" key="meta-ogweb" />
-      <meta
-        property="og:url"
-        content="https://moondao.com/"
-        key="meta-ogurl"
-      />
+      <meta property="og:url" content="https://moondao.com/" key="meta-ogurl" />
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta
         name="twitter:title"

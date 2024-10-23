@@ -83,7 +83,7 @@ export default function Callout2() {
             logo="/assets/astronaut-eiman.png"
             name="Dr. Eiman Jahangir"
             subtitle="MoonDAO's 2nd Astronaut"
-            link="https://www.youtube.com/watch?v=tOnfAtI1BHI"
+            link="https://www.youtube.com/watch?v=O8Z5HVXOwsk"
             isWhiteText={true}
           />
         </div>

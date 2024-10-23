@@ -212,6 +212,7 @@ export default function BuyTeamListingModal({
             )}
 
             <div className="mt-4">
+              <p>{`# ${listing.id}`}</p>
               <p className="font-GoodTimes">{listing.title}</p>
               <p className="text-[75%]">{listing.description}</p>
               <p className="font-bold">{`${listing.price} ${listing.currency}`}</p>

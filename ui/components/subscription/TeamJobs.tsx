@@ -1,8 +1,10 @@
 //EntityJobs.tsx
 import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Job, { Job as JobType } from '../jobs/Job'
+import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import Card from './Card'
 import TeamJobModal from './TeamJobModal'
@@ -11,13 +13,16 @@ type TeamJobsProps = {
   teamId: string
   jobTableContract: any
   isManager: boolean
+  isCitizen: any
 }
 
 export default function TeamJobs({
   teamId,
   jobTableContract,
   isManager,
+  isCitizen,
 }: TeamJobsProps) {
+  const router = useRouter()
   const [jobs, setJobs] = useState<JobType[]>()
   const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
 
@@ -62,21 +67,41 @@ export default function TeamJobs({
             </StandardButton>
           )}
         </div>
-        <div className="flex flex-col max-h-[500px] overflow-auto gap-4">
-          {jobs?.[0] ? (
-            jobs.map((job, i) => (
-              <Job
-                key={`team-job-${i}`}
-                job={job}
-                jobTableContract={jobTableContract}
-                editable={isManager}
-                refreshJobs={getEntityJobs}
-              />
-            ))
-          ) : (
-            <p className="p-4 pt-6">{`This team hasn't listed any open roles yet.`}</p>
-          )}
-        </div>
+        {isManager || isCitizen ? (
+          <SlidingCardMenu>
+            <div className="flex gap-4">
+              {jobs?.[0] ? (
+                jobs.map((job, i) => (
+                  <Job
+                    key={`team-job-${i}`}
+                    job={job}
+                    jobTableContract={jobTableContract}
+                    editable={isManager}
+                    refreshJobs={getEntityJobs}
+                  />
+                ))
+              ) : (
+                <p className="p-4 pt-6">{`This team hasn't listed any open roles yet.`}</p>
+              )}
+            </div>
+          </SlidingCardMenu>
+        ) : (
+          <div className="flex flex-col gap-4 ">
+            <p>
+              {
+                '⚠️ You must be a Citizen of the Space Acceleration Network or a Manager of the team to view the job board. If you are already a Citizen or Manager, please sign in.'
+              }
+            </p>
+            <StandardButton
+              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
+              onClick={() => {
+                router.push('/citizen')
+              }}
+            >
+              Become a Citizen
+            </StandardButton>
+          </div>
+        )}
 
         {teamJobModalEnabled && (
           <TeamJobModal

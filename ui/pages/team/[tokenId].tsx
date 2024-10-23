@@ -31,6 +31,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { useTeamData } from '@/lib/team/useTeamData'
 import ChainContext from '@/lib/thirdweb/chain-context'
@@ -45,8 +46,6 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
-import StandardButton from '@/components/layout/StandardButton'
-import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamAction from '@/components/subscription/TeamAction'
@@ -71,6 +70,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
 
   //privy
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const { citizen } = useContext(CitizenContext)
   const [teamMetadataModalEnabled, setTeamMetadataModalEnabled] =
     useState(false)
   const [teamSubscriptionModalEnabled, setTeamSubscriptionModalEnabled] =
@@ -515,6 +515,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                 teamId={tokenId}
                 jobTableContract={jobTableContract}
                 isManager={isManager}
+                isCitizen={citizen}
               />
               <TeamMarketplace
                 selectedChain={selectedChain}
