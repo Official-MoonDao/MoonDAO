@@ -14,9 +14,7 @@ import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { useVotingPowers } from '@/lib/snapshot'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
-import {
-  computeRewardPercentages,
-} from '@/lib/utils/voting'
+import { computeRewardPercentages } from '@/lib/utils/voting'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
