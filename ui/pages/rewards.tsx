@@ -1,4 +1,5 @@
 import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import ProjectABI from 'const/abis/Project.json'
 import {
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
@@ -31,7 +32,8 @@ export async function getStaticProps() {
   const sdk = initSDK(chain)
 
   const projectTableContract = await sdk.getContract(
-    PROJECT_TABLE_ADDRESSES[chain.slug]
+    PROJECT_TABLE_ADDRESSES[chain.slug],
+    ProjectABI
   )
 
   const distributionTableContract = await sdk.getContract(
@@ -44,8 +46,7 @@ export async function getStaticProps() {
   )
 
   const currentYear = new Date().getFullYear()
-  // TODO don't use last quarter
-  const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 2
+  const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
   const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
   const projectsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`

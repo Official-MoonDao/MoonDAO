@@ -202,12 +202,14 @@ function runQuadraticVoting(
           )
         ) / votingPowerSum
     }
+    const budgetPercentMinusCommunityFund = 90
     // normalize projectIdToEstimatedPercentage
     const sum = _.sum(Object.values(projectIdToEstimatedPercentage))
     for (const [projectId, percentage] of Object.entries(
       projectIdToEstimatedPercentage
     )) {
-      projectIdToEstimatedPercentage[projectId] = (percentage / sum) * 100
+      projectIdToEstimatedPercentage[projectId] =
+        (percentage / sum) * budgetPercentMinusCommunityFund
     }
   }
   return projectIdToEstimatedPercentage
@@ -223,6 +225,7 @@ export function computeRewardPercentages(
     citizenDistributions,
     projects
   )
+
   const bestFitNonCitizenDistributions = getBestFitDistributions(
     nonCitizenDistributions,
     projects,

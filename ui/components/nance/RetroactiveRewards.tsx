@@ -7,12 +7,12 @@ import {
 import _ from 'lodash'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
-import useWindowSize from '@/lib/team/use-window-size'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { useVotingPowers } from '@/lib/snapshot'
+import useWindowSize from '@/lib/team/use-window-size'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import { computeRewardPercentages } from '@/lib/utils/voting'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
@@ -27,7 +27,7 @@ export type Project = {
   title: string
   contributors: { [key: string]: number }
   finalReportLink: string
-  MPD: number
+  MDP: number
 }
 export type Distribution = {
   year: number
@@ -53,8 +53,7 @@ export function RetroactiveRewards({
 
   const userAddress = useAddress()
   const year = new Date().getFullYear()
-  // TODO use current quarter
-  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 2
+  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
@@ -255,16 +254,20 @@ export function RetroactiveRewards({
                 </h3>
                 <Asset
                   name="ETH"
-                  amount={String(addressToEthPayout[userAddress] || 0)}
+                  amount={String(
+                    addressToEthPayout[userAddress].toFixed(2) || 0
+                  )}
                   usd={String(
                     userAddress in addressToEthPayout
-                      ? ethPrice * addressToEthPayout[userAddress]
+                      ? (ethPrice * addressToEthPayout[userAddress]).toFixed(2)
                       : 0
                   )}
                 />
                 <Asset
                   name="MOONEY"
-                  amount={String(addressToMooneyPayout[userAddress] || 0)}
+                  amount={String(
+                    addressToMooneyPayout[userAddress].toFixed() || 0
+                  )}
                   usd=""
                 />
               </section>
@@ -334,8 +337,8 @@ export function RetroactiveRewards({
                         rel="noreferrer"
                         className="mr-2"
                       >
-                        {project.MPD ? (
-                          <u>MDP {project.MPD}:</u>
+                        {project.MDP ? (
+                          <u>MDP {project.MDP}:</u>
                         ) : (
                           <u>Project:</u>
                         )}
@@ -346,7 +349,7 @@ export function RetroactiveRewards({
                       <>
                         <div className="w-16 text-right px-4">
                           {projectIdToEstimatedPercentage[project.id].toFixed(
-                            1
+                            2
                           )}
                           %
                         </div>
