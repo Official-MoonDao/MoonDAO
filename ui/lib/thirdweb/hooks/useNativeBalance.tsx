@@ -1,8 +1,11 @@
 import { useWallets } from '@privy-io/react-auth'
+import { useAddress, useSDK } from '@thirdweb-dev/react'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
 
 export function useNativeBalance() {
+  const sdk = useSDK()
+  const address = useAddress()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
@@ -10,16 +13,21 @@ export function useNativeBalance() {
 
   useEffect(() => {
     let provider: any
+    let isMounted = true
+
+    const wallet = wallets[selectedWallet]
 
     async function handleBalanceChange() {
-      const address = wallets[selectedWallet].address
-      const balance = await provider.getBalance(address)
-      setNativeBalance((+balance / 10 ** 18).toFixed(5))
+      if (!isMounted) return
+      try {
+        const balance = await provider.getBalance(wallet.address)
+        setNativeBalance((+balance / 10 ** 18).toFixed(5))
+      } catch (err) {}
     }
 
     async function getBalanceAndListen() {
-      if (wallets[selectedWallet]) {
-        provider = await wallets[selectedWallet].getEthersProvider()
+      if (wallet) {
+        provider = sdk?.getProvider()
         await handleBalanceChange()
 
         provider.on('block', handleBalanceChange)
@@ -28,13 +36,14 @@ export function useNativeBalance() {
 
     getBalanceAndListen()
 
-    // Cleanup listener on unmount
+    // Cleanup listener on unmount or when selectedWallet changes
     return () => {
+      isMounted = false
       if (provider) {
         provider.off('block', handleBalanceChange)
       }
     }
-  }, [wallets, selectedWallet])
+  }, [sdk, address, wallets, selectedWallet])
 
   return nativeBalance
 }
