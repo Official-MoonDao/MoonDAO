@@ -13,6 +13,7 @@ export default function TeamMarketplace({
   teamContract,
   teamId,
   isManager,
+  isCitizen,
 }: any) {
   const router = useRouter()
 
@@ -89,6 +90,7 @@ export default function TeamMarketplace({
                 editable={isManager}
                 refreshListings={getEntityMarketplaceListings}
                 queriedListingId={queriedListingId}
+                isCitizen={isCitizen}
               />
             ))}
         </div>

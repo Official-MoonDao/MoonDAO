@@ -1,6 +1,8 @@
+import { CITIZEN_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
 import { privyAuth } from 'middleware/privyAuth'
 import withMiddleware from 'middleware/withMiddleware'
 import { transporter, opEmail } from '@/lib/nodemailer/nodemailer'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 
 const MARKETPLACE_PURHCASE_FIELDS: any = {
   address: 'Address',
@@ -16,7 +18,7 @@ const generateEmailContent = (data: any) => {
     ''
   )
 
-  const { address, email, item, value, quantity, shipping, tx } =
+  const { address, email, item, value, currency, quantity, shipping, tx } =
     JSON.parse(data)
 
   const htmlData = `
@@ -28,13 +30,14 @@ const generateEmailContent = (data: any) => {
     <label for="item"><strong>Item</strong></label>
     <p>${item}</p>
     <label for="value"><strong>Value</strong></label>
-    <p>${value}</p>
+    <p>${value} ${currency}</p>
     <label for="quantity"><strong>Quantity</strong></label>
     <p>${quantity}</p>
     <label for="shipping"><strong>Shipping Address</strong></label>
     <p>${shipping}</p>
     <label for="tx"><strong>Transaction</strong></label>
     <p>${tx}</p>
+    <p>Please verify the transaction before fulfilling the order.</p>
     </div>
     `
 
@@ -51,7 +54,54 @@ async function handler(req: any, res: any) {
       return res.status(400).send({ message: 'Bad request' })
     }
 
-    const { teamEmail } = JSON.parse(data)
+    const { teamEmail, txReceipt, isCitizen, recipient, value, decimals } =
+      JSON.parse(data)
+
+    let verifiedCitizen = false
+    let fromIsNotCitizen = false
+
+    const sdk = initSDK(DEFAULT_CHAIN)
+
+    try {
+      const citizenContract = await sdk?.getContract(
+        CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug]
+      )
+
+      const ownedTokenId = await citizenContract?.call('getOwnedToken', [
+        txReceipt.from,
+      ])
+
+      if (ownedTokenId) {
+        verifiedCitizen = true
+      }
+    } catch (err: any) {
+      if (isCitizen) {
+        fromIsNotCitizen = true
+      }
+    }
+
+    if (isCitizen && !verifiedCitizen) {
+      fromIsNotCitizen = true
+    }
+
+    if (fromIsNotCitizen) {
+      return res.status(400).json({ message: 'Citizen cannot be verified' })
+    }
+
+    const provider = sdk?.getProvider()
+    const currBlockNumber = await provider?.getBlockNumber()
+    if (currBlockNumber - txReceipt.blockNumber > 2) {
+      return res.status(400).json({ message: 'Transaction is invalid' })
+    }
+
+    if (recipient !== txReceipt.to) {
+      return res.status(400).json({ message: 'Recipient is incorrect' })
+    }
+
+    const txValue = Number(txReceipt.logs[0]?.data) / 10 ** +decimals
+    if (+value !== txValue) {
+      return res.status(400).json({ message: 'Transaction is invalid' })
+    }
 
     try {
       await transporter.sendMail({
@@ -64,7 +114,13 @@ async function handler(req: any, res: any) {
       return res.status(200).json({ success: true })
     } catch (err: any) {
       console.log(err)
-      return res.status(400).json({ message: err.message })
+      return res.status(400).json({
+        message: err.message,
+        blockNumbers: {
+          currBlockNumber,
+          txReceipt: txReceipt.blockNumber,
+        },
+      })
     }
   } else {
     res.status(405).send({ message: 'Method not allowed' })

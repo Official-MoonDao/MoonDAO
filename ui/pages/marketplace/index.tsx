@@ -8,6 +8,7 @@ import {
 } from 'const/config'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Container from '@/components/layout/Container'
@@ -27,6 +28,7 @@ type MarketplaceProps = {
 
 export default function Marketplace({ listings }: MarketplaceProps) {
   const { selectedChain } = useContext(ChainContext)
+  const { citizen } = useContext(CitizenContext)
 
   const [filteredListings, setFilteredListings] = useState<TeamListingType[]>()
   const [input, setInput] = useState('')
@@ -89,6 +91,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                   teamContract={teamContract}
                   marketplaceTableContract={marketplaceTableContract}
                   teamName
+                  isCitizen={citizen}
                 />
               ))}
           </IndexCardGridContainer>
