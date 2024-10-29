@@ -33,6 +33,7 @@ type TeamListingProps = {
   editable?: boolean
   teamName?: boolean
   queriedListingId?: number
+  isCitizen?: boolean
 }
 
 export default function TeamListing({
@@ -44,6 +45,7 @@ export default function TeamListing({
   editable,
   teamName,
   queriedListingId,
+  isCitizen,
 }: TeamListingProps) {
   const address = useAddress()
 
@@ -147,7 +149,7 @@ export default function TeamListing({
                     pb-5 flex flex-col items-start pr-5 justify-between
                 `}
             >
-              <div className="flex min-h-[100px] pb-5 flex-col">
+              <div className="w-full flex min-h-[100px] pb-5 flex-col">
                 {teamName && teamData?.name && (
                   <Link
                     href={`/team/${listing.teamId}`}
@@ -156,7 +158,7 @@ export default function TeamListing({
                     {teamData.name}
                   </Link>
                 )}
-                <div className="flex justify-between items-center">
+                <div className="w-full flex justify-between items-center">
                   <p>{`# ${listing.id}`}</p>
                   <StandardButton
                     className="gradient-2"
@@ -227,7 +229,11 @@ export default function TeamListing({
             <div id="listing-id-container" className="relative z-50">
               <div id="listing-id" className="listing">
                 <div>
-                  {`${listing.price} 
+                  {`${
+                    isCitizen
+                      ? listing.price
+                      : +listing.price + +listing.price * 0.1
+                  } 
                   ${listing.currency}`}
                 </div>
                 <div id="listing-description"></div>
