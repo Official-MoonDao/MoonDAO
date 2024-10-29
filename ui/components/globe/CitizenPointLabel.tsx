@@ -1,8 +1,12 @@
+type CitizenPointLabelProps = {
+  formattedAddress: string
+  citizens: any[]
+}
+
 export default function CitizenPointLabel({
   formattedAddress,
-  name,
   citizens,
-}: any) {
+}: CitizenPointLabelProps) {
   return (
     <div className="hidden md:block absolute w-[50vw] h-[50vh] max-w-[500px] z-[100]">
       <p className="font-bold text-2xl break-words max-w-[200px]">

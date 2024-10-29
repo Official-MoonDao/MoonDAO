@@ -5,27 +5,31 @@ import useGlobeSize from '@/lib/globe/useGlobeSize'
 import CitizenPointLabel from './CitizenPointLabel'
 import CitizenPointModal from './CitizenPointModal'
 
-export default function Earth({ pointsData }: any) {
+type EarthProps = {
+  pointsData: any[]
+}
+
+export default function Earth({ pointsData }: EarthProps) {
   const size = useGlobeSize()
-  const ref = useRef<GlobeMethods | undefined>()
+  const globeRef = useRef<GlobeMethods | undefined>()
   const [selectedPoint, setSelectedPoint] = useState(null)
   const [pointModalEnabled, setPointModalEnabled] = useState(false)
 
   useEffect(() => {
     //Change point of view to the center of the US
-    if (ref.current) {
-      ref.current.pointOfView({
+    if (globeRef.current) {
+      globeRef.current.pointOfView({
         lat: 39.8283,
         lng: -98.5795,
         altitude: 2,
       })
     }
-  }, [ref])
+  }, [globeRef])
 
   return (
     <div>
       <Globe
-        ref={ref}
+        ref={globeRef}
         width={size.width}
         height={size.height}
         backgroundColor="#00000000"
@@ -41,7 +45,6 @@ export default function Earth({ pointsData }: any) {
           ReactDOMServer.renderToString(
             <CitizenPointLabel
               formattedAddress={d.formattedAddress}
-              name={d.name}
               citizens={d.citizens}
             />
           )
