@@ -2,7 +2,15 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import Modal from '../layout/Modal'
 
-export default function CitizenPointModal({ selectedPoint, setEnabled }: any) {
+type CitizenPointModalProps = {
+  selectedPoint: any
+  setEnabled: (enabled: boolean) => void
+}
+
+export default function CitizenPointModal({
+  selectedPoint,
+  setEnabled,
+}: CitizenPointModalProps) {
   return (
     <Modal id="point-modal" setEnabled={setEnabled}>
       <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-dark-cool h-screen md:h-auto">
