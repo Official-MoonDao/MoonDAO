@@ -27,11 +27,15 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '../layout/StandardButton'
 
+export type Metadata = {
+  social: string
+}
 export type Competitor = {
   id: string
   deprize: number
   title: string
   treasury: string
+  metadata: Metadata
 }
 export type Distribution = {
   deprize: number
@@ -52,7 +56,6 @@ export function DePrize({
   distributions,
   refreshRewards,
 }: DePrizeProps) {
-  console.log('competitors', competitors)
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const { isMobile } = useWindowSize()
 
@@ -100,18 +103,14 @@ export function DePrize({
     ERC20.abi
   )
   const prizeBalance = useWatchTokenBalance(prizeContract, PRIZE_DECIMALS)
-  console.log('prizeBalance', prizeBalance)
   const tokenBalances = useTokenBalances(
     prizeContract,
     PRIZE_DECIMALS,
     addresses
   )
-  console.log('tokenBalances', tokenBalances)
   const addressToQuadraticVotingPower = Object.fromEntries(
     addresses.map((address, i) => [address, Math.sqrt(tokenBalances[i])])
   )
-  console.log('userAddress', userAddress)
-  console.log('addressToQuadraticVotingPower', addressToQuadraticVotingPower)
   const votingPowerSumIsNonZero =
     _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const userHasVotingPower =
@@ -119,7 +118,6 @@ export function DePrize({
     (userAddress.toLowerCase() in addressToQuadraticVotingPower ||
       userAddress in addressToQuadraticVotingPower) &&
     addressToQuadraticVotingPower[userAddress.toLowerCase()] > 0
-  console.log('userHasVotingPower', userHasVotingPower)
 
   // All competitors need at least one citizen distribution to do iterative normalization
   const isCitizens = useCitizens(chain, addresses)
@@ -130,15 +128,8 @@ export function DePrize({
   const allCompetitorsHaveCitizenDistribution = competitors.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
-  console.log(
-    'allCompetitorsHaveCitizenDistribution',
-    allCompetitorsHaveCitizenDistribution
-  )
-  //const readyToRunVoting =
-  //allCompetitorsHaveCitizenDistribution && votingPowerSumIsNonZero
   const readyToRunVoting = votingPowerSumIsNonZero
 
-  console.log('distributions', distributions)
   const budgetPercent = 100
   const competitorIdToEstimatedPercentage: { [key: string]: number } =
     runQuadraticVoting(
@@ -158,12 +149,12 @@ export function DePrize({
   )
   const prizeBudget = 2_500_000
   const prizePrice = 1
-  const competitorIdToPrizePayout = {}
-  for (const competitor of competitors) {
-    competitorIdToPrizePayout[competitor.id] =
-      (prizeBudget * competitorIdToEstimatedPercentage[competitor.id]) / 100
-  }
-  console.log('competitorIdToPrizePayout', competitorIdToPrizePayout)
+  const competitorIdToPrizePayout = Object.fromEntries(
+    competitors.map(({ id }) => [
+      id,
+      (prizeBudget * competitorIdToEstimatedPercentage[id]) / 100,
+    ])
+  )
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
@@ -264,7 +255,7 @@ export function DePrize({
                 name="PRIZE"
                 amount={Number(prizeBudget.toPrecision(3)).toLocaleString()}
                 usd={Number(
-                  prizeBudget.toPrecision(3) * prizePrice
+                  (prizeBudget * prizePrice).toPrecision(3)
                 ).toLocaleString()}
               />
             </section>
