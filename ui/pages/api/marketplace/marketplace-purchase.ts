@@ -18,7 +18,7 @@ const generateEmailContent = (data: any) => {
     ''
   )
 
-  const { address, email, item, value, currency, quantity, shipping, tx } =
+  const { address, email, item, value, currency, quantity, shipping, txLink } =
     JSON.parse(data)
 
   const htmlData = `
@@ -36,7 +36,7 @@ const generateEmailContent = (data: any) => {
     <label for="shipping"><strong>Shipping Address</strong></label>
     <p>${shipping}</p>
     <label for="tx"><strong>Transaction</strong></label>
-    <p>${tx}</p>
+    <p>${txLink}</p>
     <p>Please verify the transaction before fulfilling the order.</p>
     </div>
     `
@@ -54,13 +54,15 @@ async function handler(req: any, res: any) {
       return res.status(400).send({ message: 'Bad request' })
     }
 
-    const { teamEmail, txReceipt, isCitizen, recipient, value, decimals } =
+    const { teamEmail, txHash, isCitizen, recipient, value, decimals } =
       JSON.parse(data)
 
     let verifiedCitizen = false
     let fromIsNotCitizen = false
 
     const sdk = initSDK(DEFAULT_CHAIN)
+    const provider = sdk?.getProvider()
+    const txReceipt = await provider?.getTransactionReceipt(txHash)
 
     try {
       const citizenContract = await sdk?.getContract(
@@ -88,7 +90,6 @@ async function handler(req: any, res: any) {
       return res.status(400).json({ message: 'Citizen cannot be verified' })
     }
 
-    const provider = sdk?.getProvider()
     const currBlockNumber = await provider?.getBlockNumber()
     if (currBlockNumber - txReceipt.blockNumber > 2) {
       return res.status(400).json({ message: 'Transaction is invalid' })
