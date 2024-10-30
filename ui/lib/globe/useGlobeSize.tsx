@@ -4,12 +4,12 @@ export default function useGlobeSize() {
   const [size, setSize] = useState({ width: 500, height: 500 })
   useEffect(() => {
     let width, height
-    if (window?.innerWidth > 1000) {
+    if (window?.innerWidth > 1500) {
       width = 1000
     } else if (window?.innerWidth > 500) {
-      width = window.innerWidth * 0.6
+      width = window.innerWidth * 0.7
     } else {
-      width = window.innerWidth * 0.8
+      width = window.innerWidth * 0.9
     }
     height = width
     setSize({ width, height })
