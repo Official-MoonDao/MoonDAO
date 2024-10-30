@@ -66,8 +66,12 @@ export default function NetworkMap({
           popOverEffect={false}
           isProfile
         >
-          <div className="w-full flex justify-center items-center z-[100] min-h-[50vh] p-2 bg-dark-cool">
-            <div className={`${tab !== 'earth' && 'hidden'}`}>
+          <div className="w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+            <div
+              className={`flex items-center justify-center ${
+                tab !== 'earth' && 'hidden'
+              }`}
+            >
               <Earth pointsData={citizensLocationData} />
             </div>
             <div className={`${tab !== 'moon' && 'hidden'}`}>
@@ -81,100 +85,105 @@ export default function NetworkMap({
 }
 
 export async function getStaticProps() {
-  const sdk = initSDK(DEFAULT_CHAIN)
-
-  const citizenContract = await sdk.getContract(
-    CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug]
-  )
-
-  const totalCitizens = await citizenContract.call('totalSupply')
-
-  const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
-  for (let i = 0; i < totalCitizens.toNumber(); i++) {
-    if (!blockedCitizens.includes(i)) {
-      const citizen = await citizenContract.erc721.get(i)
-      citizens.push(citizen)
-    }
-  }
-
-  const filteredValidCitizens = citizens.filter(async (c: any) => {
-    const now = Math.floor(Date.now() / 1000)
-    const expiresAt = await citizenContract.call('expiresAt', [c.metadata.id])
-    const view = getAttribute(c.metadata.attributes, 'view').value
-    return (
-      expiresAt.toNumber() > now &&
-      view === 'public' &&
-      !blockedCitizens.includes(c.metadata.id)
-    )
-  })
-
   let citizensLocationData = []
+  if (process.env.NEXT_PUBLIC_ENV === 'prod') {
+    const sdk = initSDK(DEFAULT_CHAIN)
 
-  //Get location data for each citizen
-  for (const citizen of filteredValidCitizens) {
-    const citizenLocation = getAttribute(
-      citizen?.metadata?.attributes as any[],
-      'location'
-    ).value
+    const citizenContract = await sdk.getContract(
+      CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug]
+    )
 
-    let locationData
-    if (citizenLocation !== '') {
-      const locationRes = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${citizenLocation}&key=${process.env.GOOGLE_MAPS_API_KEY}`
-      )
-      locationData = await locationRes.json()
-    } else {
-      locationData = {
-        results: [
-          {
-            formatted_address: 'Antartica',
-            geometry: { location: { lat: -90, lng: 0 } },
-          },
-        ],
+    const totalCitizens = await citizenContract.call('totalSupply')
+
+    const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
+    for (let i = 0; i < totalCitizens.toNumber(); i++) {
+      if (!blockedCitizens.includes(i)) {
+        const citizen = await citizenContract.erc721.get(i)
+        citizens.push(citizen)
       }
     }
 
-    citizensLocationData.push({
-      id: citizen.metadata.id,
-      name: citizen.metadata.name,
-      location: citizenLocation,
-      formattedAddress:
-        locationData.results?.[0]?.formatted_address || 'Antartica',
-      image: citizen.metadata.image,
-      lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
-      lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
+    const filteredValidCitizens = citizens.filter(async (c: any) => {
+      const now = Math.floor(Date.now() / 1000)
+      const expiresAt = await citizenContract.call('expiresAt', [c.metadata.id])
+      const view = getAttribute(c.metadata.attributes, 'view').value
+      return (
+        expiresAt.toNumber() > now &&
+        view === 'public' &&
+        !blockedCitizens.includes(c.metadata.id)
+      )
     })
-  }
 
-  // Group citizens by lat and lng
-  const locationMap = new Map()
+    //Get location data for each citizen
+    for (const citizen of filteredValidCitizens) {
+      const citizenLocation = getAttribute(
+        citizen?.metadata?.attributes as any[],
+        'location'
+      ).value
 
-  for (const citizen of citizensLocationData) {
-    const key = `${citizen.lat},${citizen.lng}`
-    if (!locationMap.has(key)) {
-      locationMap.set(key, {
-        citizens: [citizen],
-        names: [citizen.name],
-        formattedAddress: citizen.formattedAddress,
-        lat: citizen.lat,
-        lng: citizen.lng, // Add formattedAddress as the first element
+      let locationData
+      if (citizenLocation !== '') {
+        const locationRes = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${citizenLocation}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+        )
+        locationData = await locationRes.json()
+      } else {
+        locationData = {
+          results: [
+            {
+              formatted_address: 'Antartica',
+              geometry: { location: { lat: -90, lng: 0 } },
+            },
+          ],
+        }
+      }
+
+      citizensLocationData.push({
+        id: citizen.metadata.id,
+        name: citizen.metadata.name,
+        location: citizenLocation,
+        formattedAddress:
+          locationData.results?.[0]?.formatted_address || 'Antartica',
+        image: citizen.metadata.image,
+        lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
+        lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
       })
-    } else {
-      const existing = locationMap.get(key)
-      existing.names.push(citizen.name)
-      existing.citizens.push(citizen)
     }
-  }
 
-  // Convert the map back to an array
-  citizensLocationData = Array.from(locationMap.values()).map((entry: any) => ({
-    ...entry,
-    color: entry.citizens.length > 1 ? '#6d3f79' : '#3142a2', // Concatenate names with line breaks
-    size:
-      entry.citizens.length > 1
-        ? Math.min(entry.citizens.length * 0.01, 0.4)
-        : 0.01,
-  }))
+    // Group citizens by lat and lng
+    const locationMap = new Map()
+
+    for (const citizen of citizensLocationData) {
+      const key = `${citizen.lat},${citizen.lng}`
+      if (!locationMap.has(key)) {
+        locationMap.set(key, {
+          citizens: [citizen],
+          names: [citizen.name],
+          formattedAddress: citizen.formattedAddress,
+          lat: citizen.lat,
+          lng: citizen.lng, // Add formattedAddress as the first element
+        })
+      } else {
+        const existing = locationMap.get(key)
+        existing.names.push(citizen.name)
+        existing.citizens.push(citizen)
+      }
+    }
+
+    // Convert the map back to an array
+    citizensLocationData = Array.from(locationMap.values()).map(
+      (entry: any) => ({
+        ...entry,
+        color: entry.citizens.length > 1 ? '#6d3f79' : '#3142a2', // Concatenate names with line breaks
+        size:
+          entry.citizens.length > 1
+            ? Math.min(entry.citizens.length * 0.01, 0.4)
+            : 0.01,
+      })
+    )
+  } else {
+    citizensLocationData = dummyData
+  }
 
   return {
     props: {
@@ -183,3 +192,82 @@ export async function getStaticProps() {
     revalidate: 600,
   }
 }
+
+const dummyData = [
+  {
+    citizens: [
+      {
+        id: '1',
+        name: 'Ryan',
+        location: '',
+        formattedAddress: 'Antartica',
+        image:
+          'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeifh2vwvfxfy6fevqkirldplgp47sfblcfvhn7nsxo4z4krsuulf2e/',
+        lat: -90,
+        lng: 0,
+      },
+      {
+        id: '2',
+        name: 'name.get',
+        location: 'Earth',
+        formattedAddress: 'Antartica',
+        image:
+          'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeibo5na6nkatvor7bqisybzwtmh5n4l4wuws3uiyoqvjuuqwzwobna/',
+        lat: -90,
+        lng: 0,
+      },
+    ],
+    formattedAddress: 'Antartica',
+    lat: -90,
+    lng: 0,
+    color: '#6d3f79',
+    size: 0.25,
+    __threeObj: {
+      metadata: {
+        version: 4.6,
+        type: 'Object',
+        generator: 'Object3D.toJSON',
+      },
+      geometries: [
+        {
+          uuid: '7e55f1cb-1786-4ead-a9a3-3a92bff0065f',
+          type: 'CylinderGeometry',
+          radiusTop: 1,
+          radiusBottom: 1,
+          height: 1,
+          radialSegments: 12,
+          heightSegments: 1,
+          openEnded: false,
+          thetaStart: 0,
+          thetaLength: 6.283185307179586,
+        },
+      ],
+      materials: [
+        {
+          uuid: '32e00fa5-5a98-40bf-96cb-87f177a1e1f2',
+          type: 'MeshLambertMaterial',
+          color: 7159673,
+          emissive: 0,
+          envMapRotation: [0, 0, 0, 'XYZ'],
+          reflectivity: 1,
+          refractionRatio: 0.98,
+          blendColor: 0,
+        },
+      ],
+      object: {
+        uuid: 'fa1437ae-f457-4a04-8532-7cc914681cc7',
+        type: 'Mesh',
+        layers: 1,
+        matrix: [
+          -0.8726646259971648, 5.378210990769368e-33, 6.850820741191227e-17, 0,
+          6.850820741191227e-17, 1.9377047211159066e-16, 0.8726646259971648, 0,
+          -1.5407439555097887e-31, 25, -5.551115123125783e-15, 0,
+          7.4987989133092885e-31, -100, 1.2246467991473532e-14, 1,
+        ],
+        up: [0, 1, 0],
+        geometry: '7e55f1cb-1786-4ead-a9a3-3a92bff0065f',
+        material: '32e00fa5-5a98-40bf-96cb-87f177a1e1f2',
+      },
+    },
+  },
+]
