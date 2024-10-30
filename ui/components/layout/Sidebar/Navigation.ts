@@ -6,6 +6,7 @@ import {
   RocketLaunchIcon,
   Squares2X2Icon,
   UserGroupIcon,
+  MoonIcon,
 } from '@heroicons/react/24/outline'
 import IconOrg from '../../assets/IconOrg'
 
@@ -18,6 +19,11 @@ export const navigation = [
       { name: 'Become a Citizen', href: '/citizen' },
       { name: 'Create a Team', href: '/team' },
     ],
+  },
+  {
+    name: 'De-Prize',
+    href: '/deprize',
+    icon: MoonIcon,
   },
   {
     name: 'Network',
@@ -37,7 +43,7 @@ export const navigation = [
       },
       { name: 'Events', href: '/events' },
       { name: 'Analytics', href: '/analytics' },
-      { name: 'Current Projects', href: '/current-projects'}
+      { name: 'Current Projects', href: '/current-projects' },
     ],
   },
   {

@@ -94,10 +94,21 @@ export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x4c2d6567D81A34117E894b6fDC97C9824f80D961',
   'arbitrum-sepolia': '0xF0A3DB6161D1Ee7B99197CDeD4EdFc462EAE80e0',
 }
+export const COMPETITOR_TABLE_ADDRESSES: Index = {
+  sepolia: '0xb5D65d5867eBF99556a0F79fF6eB5A1F5680bFBc',
+}
 export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
   'arbitrum-sepolia': '0xd1D57F18252D06a6b28DE96B6cbF7F4283A4F205',
 }
+export const DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES: Index = {
+  sepolia: '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
+}
+// TODO don't hard code, pull from d-prize contract
+export const PRIZE_TOKEN_ADDRESSES: Index = {
+  sepolia: '0xf2a29F67fb5e6d7B9682591c0fD100d357dA85A7',
+}
+export const PRIZE_DECIMALS = 18
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0xd594DBF360D666c94615Fb186AF3cB1018Be1616',

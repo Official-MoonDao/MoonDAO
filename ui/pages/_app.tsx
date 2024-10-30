@@ -14,6 +14,8 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const [selectedChain, setSelectedChain]: any = useState<Chain>(
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   )
+  console.log('selectedChain')
+  console.log(selectedChain)
 
   const [lightMode, setLightMode] = useLightMode()
 
