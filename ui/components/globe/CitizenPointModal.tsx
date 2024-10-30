@@ -22,6 +22,7 @@ export default function CitizenPointModal({
           </div>
 
           <button
+            id="close-modal"
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
             onClick={() => setEnabled(false)}
