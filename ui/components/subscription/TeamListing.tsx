@@ -1,5 +1,4 @@
 import {
-  ArrowTurnUpRightIcon,
   ArrowUpRightIcon,
   PencilIcon,
   TrashIcon,
@@ -8,6 +7,7 @@ import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
 import BuyTeamListingModal from './BuyTeamListingModal'
@@ -150,31 +150,32 @@ export default function TeamListing({
                 `}
             >
               <div className="w-full flex min-h-[100px] pb-5 flex-col">
-                {teamName && teamData?.name && (
-                  <Link
-                    href={`/team/${listing.teamId}`}
-                    className="font-bold text-light-cool"
-                  >
-                    {teamData.name}
-                  </Link>
-                )}
-                <div className="w-full flex justify-between items-center">
-                  <p>{`# ${listing.id}`}</p>
-                  <StandardButton
-                    className="gradient-2"
-                    onClick={(e: any) => {
-                      e.stopPropagation()
-                      const link = `${window.location.origin}/team/${listing.teamId}?listing=${listing.id}`
-                      navigator.clipboard.writeText(link)
-                      toast.success('Link copied to clipboard')
-                    }}
-                    hoverEffect={false}
-                  >
-                    <div className="flex items-center gap-2">
-                      <ArrowUpRightIcon className="h-4 w-4" />
-                      {'Share'}
-                    </div>
-                  </StandardButton>
+                <div className="flex items-center justify-between w-full">
+                  {teamName && teamData?.name && (
+                    <Link
+                      href={`/team/${listing.teamId}`}
+                      className="font-bold text-light-cool"
+                    >
+                      {teamData.name}
+                    </Link>
+                  )}
+                  <div className="w-full flex items-center justify-end">
+                    <StandardButton
+                      className="gradient-2"
+                      onClick={(e: any) => {
+                        e.stopPropagation()
+                        const link = `${window.location.origin}/team/${listing.teamId}?listing=${listing.id}`
+                        navigator.clipboard.writeText(link)
+                        toast.success('Link copied to clipboard')
+                      }}
+                      hoverEffect={false}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ArrowUpRightIcon className="h-4 w-4" />
+                        {'Share'}
+                      </div>
+                    </StandardButton>
+                  </div>
                 </div>
                 <h2
                   id="main-header"
@@ -228,14 +229,17 @@ export default function TeamListing({
             </span>
             <div id="listing-id-container" className="relative z-50">
               <div id="listing-id" className="listing">
-                <div>
+                <p className="font-bold">
                   {`${
                     isCitizen
-                      ? listing.price
-                      : +listing.price + +listing.price * 0.1
+                      ? truncateTokenValue(listing.price, listing.currency)
+                      : truncateTokenValue(
+                          +listing.price + +listing.price * 0.1,
+                          listing.currency
+                        )
                   } 
                   ${listing.currency}`}
-                </div>
+                </p>
                 <div id="listing-description"></div>
                 <span
                   id="mobile-button-container"
