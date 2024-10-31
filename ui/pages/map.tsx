@@ -66,12 +66,8 @@ export default function NetworkMap({
           popOverEffect={false}
           isProfile
         >
-          <div className="w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
-            <div
-              className={`flex items-center justify-center ${
-                tab !== 'earth' && 'hidden'
-              }`}
-            >
+          <div className="w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] bg-dark-cool shadow-[10px_0_20px_-5px_#112341] overflow-hidden">
+            <div className={`${tab !== 'earth' && 'hidden'}`}>
               <Earth pointsData={citizensLocationData} />
             </div>
             <div className={`${tab !== 'moon' && 'hidden'}`}>
