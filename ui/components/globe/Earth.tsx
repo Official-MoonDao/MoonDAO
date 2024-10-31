@@ -27,7 +27,7 @@ export default function Earth({ pointsData }: EarthProps) {
   }, [globeRef])
 
   return (
-    <div>
+    <>
       <Globe
         ref={globeRef}
         width={size.width}
@@ -61,6 +61,6 @@ export default function Earth({ pointsData }: EarthProps) {
           setEnabled={setPointModalEnabled}
         />
       )}
-    </div>
+    </>
   )
 }
