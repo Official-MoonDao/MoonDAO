@@ -11,6 +11,7 @@ export default function useTokenBalances(
 
   useEffect(() => {
     async function getBalances() {
+      if (!tokenContract) return
       const balances = await Promise.all(
         addresses.map(async (address) => {
           const balance = await tokenContract.call('balanceOf', [address])
@@ -21,6 +22,6 @@ export default function useTokenBalances(
     }
 
     getBalances()
-  }, [])
+  }, [tokenContract, addresses])
   return tokenBalances
 }

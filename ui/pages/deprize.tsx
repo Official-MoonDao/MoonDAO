@@ -53,7 +53,7 @@ export async function getStaticProps() {
   const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE deprize = ${dePrizeId} AND year = ${currentYear} AND quarter = ${currentQuarter}`
   const distributionsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
-  j
+  )
   const distributions = await distributionsRes.json()
 
   return {
