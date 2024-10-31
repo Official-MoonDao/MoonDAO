@@ -150,12 +150,14 @@ export function DePrize({
   )
   const prizeBudget = 2_500_000
   const prizePrice = 1
-  const competitorIdToPrizePayout = Object.fromEntries(
-    competitors.map(({ id }) => [
-      id,
-      (prizeBudget * competitorIdToEstimatedPercentage[id]) / 100,
-    ])
-  )
+  const competitorIdToPrizePayout = competitors
+    ? Object.fromEntries(
+        competitors.map(({ id }) => [
+          id,
+          (prizeBudget * competitorIdToEstimatedPercentage[id]) / 100,
+        ])
+      )
+    : {}
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
