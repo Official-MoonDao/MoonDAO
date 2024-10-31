@@ -21,7 +21,9 @@ export default function Rewards({ competitors, distributions }: DePrizeProps) {
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  // TODO uncomment
+  //const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = process.env.NEXT_PUBLIC_CHAIN === Sepolia
   const sdk = initSDK(chain)
 
   const competitorTableContract = await sdk.getContract(
