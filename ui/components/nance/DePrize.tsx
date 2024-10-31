@@ -32,6 +32,7 @@ export type Metadata = {
 }
 export type Competitor = {
   id: string
+  name: string
   deprize: number
   title: string
   treasury: string

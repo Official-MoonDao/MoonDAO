@@ -1,6 +1,4 @@
 import { useContext, useEffect, useState } from 'react'
-import PrivyWalletContext from '../privy/privy-wallet-context'
-import { useWallets } from './useWallets'
 
 export default function useTokenBalances(
   tokenContract: any,
