@@ -7,7 +7,7 @@ export default function useGlobeSize() {
     if (window?.innerWidth > 1500) {
       width = 1000
     } else if (window?.innerWidth > 500) {
-      width = window.innerWidth * 0.7
+      width = window.innerWidth * 0.6
     } else {
       width = window.innerWidth * 0.9
     }
