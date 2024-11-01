@@ -4,7 +4,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useState } from 'react'
-import { MeshStandardMaterial } from 'three'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
 
@@ -26,6 +25,7 @@ interface CardProps {
   horizontalscroll?: boolean
   role?: string
   profile?: boolean
+  prettyLink?: string
 }
 
 export default function Card({
@@ -46,6 +46,7 @@ export default function Card({
   role,
   horizontalscroll = false,
   profile = false,
+  prettyLink,
 }: CardProps) {
   icon =
     type === 'team'
@@ -253,7 +254,9 @@ export default function Card({
           onClick={async () => {
             setIsLoadingRoute(true)
             const route = await router.push(
-              `/${type === 'team' ? 'team' : 'citizen'}/${metadata.id}`
+              `/${type === 'team' ? 'team' : 'citizen'}/${
+                prettyLink || metadata.id
+              }`
             )
             if (route) setIsLoadingRoute(false)
           }}

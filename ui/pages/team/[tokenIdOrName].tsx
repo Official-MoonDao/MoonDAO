@@ -23,6 +23,8 @@ import {
   JOBS_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
+  TEAM_TABLE_ADDRESSES,
+  TABLELAND_ENDPOINT,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -33,6 +35,7 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useTeamData } from '@/lib/team/useTeamData'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -560,10 +563,30 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  const tokenId: any = params?.tokenId
+  const tokenIdOrName: any = params?.tokenIdOrName
 
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
+
+  //Generate pretty links
+  const teamTableContract = await sdk.getContract(
+    TEAM_TABLE_ADDRESSES[chain.slug]
+  )
+  const teamTableName = await teamTableContract.call('getTableName')
+  const statement = `SELECT name, id FROM ${teamTableName}`
+  const allTeamsRes = await fetch(
+    `${TABLELAND_ENDPOINT}?statement=${statement}`
+  )
+  const allTeams = await allTeamsRes.json()
+  const { prettyLinks } = generatePrettyLinks(allTeams)
+
+  let tokenId
+  if (!Number.isNaN(Number(tokenIdOrName))) {
+    tokenId = tokenIdOrName
+  } else {
+    tokenId = prettyLinks[tokenIdOrName]
+  }
+
   const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
   const nft = await teamContract.erc721.get(tokenId)
 
