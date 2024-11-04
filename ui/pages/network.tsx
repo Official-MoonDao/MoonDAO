@@ -362,6 +362,16 @@ export async function getStaticProps() {
 
   prettyLinks.team = teamIdToPrettyLink
 
+  const citizenPrettyLinkData = filteredValidCitizens.map((nft: any) => ({
+    name: nft?.metadata?.name,
+    id: nft?.metadata?.id,
+  }))
+  const { idToPrettyLink: citizenIdToPrettyLink } = generatePrettyLinks(
+    citizenPrettyLinkData
+  )
+
+  prettyLinks.citizen = citizenIdToPrettyLink
+
   return {
     props: {
       filteredTeams: filteredValidTeams.reverse(),
