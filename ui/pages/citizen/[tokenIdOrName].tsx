@@ -12,7 +12,9 @@ import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
+  CITIZEN_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
+  TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
   VMOONEY_ADDRESSES,
 } from 'const/config'
@@ -26,6 +28,7 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useTeamData } from '@/lib/team/useTeamData'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
@@ -506,10 +509,31 @@ export default function CitizenDetailPage({
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  const tokenId: any = params?.tokenId
+  const tokenIdOrName: any = params?.tokenIdOrName
 
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
+
+  const citizenTableContract = await sdk?.getContract(
+    CITIZEN_TABLE_ADDRESSES[chain.slug]
+  )
+  const citizenTableName = await citizenTableContract?.call('getTableName')
+
+  const statement = `SELECT name, id FROM ${citizenTableName}`
+  const allCitizensRes = await fetch(
+    `${TABLELAND_ENDPOINT}?statement=${statement}`
+  )
+  const allCitizens = await allCitizensRes.json()
+
+  const { prettyLinks } = generatePrettyLinks(allCitizens)
+
+  let tokenId
+  if (!Number.isNaN(Number(tokenIdOrName))) {
+    tokenId = tokenIdOrName
+  } else {
+    tokenId = prettyLinks[tokenIdOrName]
+  }
+
   const teamContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
   const nft = await teamContract.erc721.get(tokenId)
 
