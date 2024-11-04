@@ -3,6 +3,7 @@ import { blockedCitizens } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { getAttribute } from '@/lib/utils/nft'
 import IconOrg from '@/components/assets/IconOrg'
@@ -114,6 +115,13 @@ export async function getStaticProps() {
       )
     })
 
+    const citizenPrettyLinkData = filteredValidCitizens.map((nft: any) => ({
+      name: nft?.metadata?.name,
+      id: nft?.metadata?.id,
+    }))
+
+    const { idToPrettyLink } = generatePrettyLinks(citizenPrettyLinkData)
+
     //Get location data for each citizen
     for (const citizen of filteredValidCitizens) {
       const citizenLocation = getAttribute(
@@ -142,6 +150,7 @@ export async function getStaticProps() {
         id: citizen.metadata.id,
         name: citizen.metadata.name,
         location: citizenLocation,
+        prettyLink: idToPrettyLink[citizen.metadata.id],
         formattedAddress:
           locationData.results?.[0]?.formatted_address || 'Antartica',
         image: citizen.metadata.image,
@@ -174,7 +183,12 @@ export async function getStaticProps() {
     citizensLocationData = Array.from(locationMap.values()).map(
       (entry: any) => ({
         ...entry,
-        color: entry.citizens.length > 1 ? '#6d3f79' : '#3142a2', // Concatenate names with line breaks
+        color:
+          entry.citizens.length > 3
+            ? '#6a3d79'
+            : entry.citizens.length > 1
+            ? '#5e4dbf'
+            : '#5556eb',
         size:
           entry.citizens.length > 1
             ? Math.min(entry.citizens.length * 0.01, 0.4)
@@ -220,7 +234,7 @@ const dummyData = [
     formattedAddress: 'Antartica',
     lat: -90,
     lng: 0,
-    color: '#6d3f79',
+    color: '#5e4dbf',
     size: 0.25,
     __threeObj: {
       metadata: {
