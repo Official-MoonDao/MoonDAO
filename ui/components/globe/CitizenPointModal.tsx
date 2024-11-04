@@ -34,7 +34,7 @@ export default function CitizenPointModal({
           {selectedPoint?.citizens.map((c: any) => (
             <Link
               className="hover:underline hover:scale-105 transition-all duration-300"
-              href={`/citizen/${c.id}`}
+              href={`/citizen/${c.prettyLink}`}
               key={c.id}
               passHref
             >
