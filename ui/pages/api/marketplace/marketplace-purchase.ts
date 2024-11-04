@@ -18,8 +18,17 @@ const generateEmailContent = (data: any) => {
     ''
   )
 
-  const { address, email, item, value, currency, quantity, shipping, txLink } =
-    JSON.parse(data)
+  const {
+    address,
+    email,
+    item,
+    value,
+    currency,
+    quantity,
+    shipping,
+    txLink,
+    isCitizen,
+  } = JSON.parse(data)
 
   const htmlData = `
     <div>
@@ -31,6 +40,12 @@ const generateEmailContent = (data: any) => {
     <p>${item}</p>
     <label for="value"><strong>Value</strong></label>
     <p>${value} ${currency}</p>
+    <label for="citizenship"><strong>Citizenship</strong></label>
+    <p>${
+      isCitizen
+        ? 'Buyer is a citizen (regular price)'
+        : 'Buyer is not a citizen (10% markup)'
+    }</p>
     <label for="quantity"><strong>Quantity</strong></label>
     <p>${quantity}</p>
     <label for="shipping"><strong>Shipping Address</strong></label>
