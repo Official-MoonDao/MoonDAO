@@ -9,7 +9,7 @@ export function generatePrettyLinks(prettyLinkData: PrettyLinkData[]) {
 
   for (let i = 0; i < prettyLinkData.length; i++) {
     // Take the name and replace spaces with hyphens
-    const name = prettyLinkData[i]?.name.toLowerCase() as string
+    const name = prettyLinkData[i]?.name?.toLowerCase() as string
     const id = prettyLinkData[i]?.id as string
     let prettyLink = name.replace(/\s+/g, '-')
 
