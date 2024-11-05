@@ -8,18 +8,20 @@ export function generatePrettyLinks(prettyLinkData: PrettyLinkData[]) {
   const idToPrettyLink: Record<string | number, string> = {}
 
   for (let i = 0; i < prettyLinkData.length; i++) {
-    // Take the name and replace spaces with hyphens
-    const name = prettyLinkData[i]?.name?.toLowerCase() as string
-    const id = prettyLinkData[i]?.id as string
-    let prettyLink = name.replace(/\s+/g, '-')
+    const name = prettyLinkData[i]?.name?.toLowerCase()
+    const id = prettyLinkData[i]?.id
 
-    // Ensure unique keys by appending the index if necessary
-    while (prettyLinks.hasOwnProperty(prettyLink)) {
-      prettyLink = `${prettyLink}-${id}`
+    if (name && id) {
+      let prettyLink = name.replace(/\s+/g, '-')
+
+      // Ensure unique keys by appending the index if necessary
+      while (prettyLinks.hasOwnProperty(prettyLink)) {
+        prettyLink = `${prettyLink}-${id}`
+      }
+
+      prettyLinks[prettyLink] = id
+      idToPrettyLink[id] = prettyLink
     }
-
-    prettyLinks[prettyLink] = id
-    idToPrettyLink[id] = prettyLink
   }
 
   // Return the object
