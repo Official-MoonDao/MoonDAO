@@ -21,30 +21,34 @@ export default function useCitizenEmail(nft: any) {
         'formId'
       ).value
 
-      const citizenFormV1Email = await fetchEmail(
-        process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
-        formResponseId,
-        'LzGGOX3e8Sfv',
-        accessToken
-      )
+      try {
+        const citizenFormV1Email = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+          formResponseId,
+          'LzGGOX3e8Sfv',
+          accessToken
+        )
 
-      const citizenShortFormEmail = await fetchEmail(
-        process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string,
-        formResponseId,
-        'JEiG9XCW6M73',
-        accessToken
-      )
+        const citizenShortFormEmail = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string,
+          formResponseId,
+          'JEiG9XCW6M73',
+          accessToken
+        )
 
-      const citizenEmailFormEmail = await fetchEmail(
-        process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string,
-        formResponseId,
-        'Z3IMkpvJUfdl',
-        accessToken
-      )
+        const citizenEmailFormEmail = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string,
+          formResponseId,
+          'Z3IMkpvJUfdl',
+          accessToken
+        )
 
-      setEmail(
-        citizenEmailFormEmail || citizenShortFormEmail || citizenFormV1Email
-      )
+        setEmail(
+          citizenEmailFormEmail || citizenShortFormEmail || citizenFormV1Email
+        )
+      } catch (err: any) {
+        console.log(err)
+      }
       await destroySession(accessToken)
     }
 
