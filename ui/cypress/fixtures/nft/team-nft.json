@@ -7,15 +7,15 @@
     "attributes": [
       {
         "trait_type": "twitter",
-        "value": ""
+        "value": "Test Twitter"
       },
       {
         "trait_type": "communications",
-        "value": ""
+        "value": "Test Communications"
       },
       {
         "trait_type": "website",
-        "value": ""
+        "value": "Test Website"
       },
       {
         "trait_type": "view",
