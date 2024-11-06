@@ -1,6 +1,7 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useState } from 'react'
 import { createSession, destroySession } from '../iron-session/iron-session'
+import fetchEmail from '../typeform/fetchEmail'
 import { getAttribute } from '../utils/nft'
 
 export default function useTeamEmail(nft: any) {
@@ -12,41 +13,37 @@ export default function useTeamEmail(nft: any) {
     async function getTeamEmail() {
       const accessToken = await getAccessToken()
 
-      try{
-      await createSession(accessToken)
+      try {
+        await createSession(accessToken)
 
-      const formResponseId = getAttribute(
-        nft?.metadata?.attributes,
-        'formId'
-      ).value
+        const formResponseId = getAttribute(
+          nft?.metadata?.attributes,
+          'formId'
+        ).value
 
-      const res = await fetch(
-        `/api/typeform/response?formId=${process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID}&responseId=${formResponseId}`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      )
+        const teamFormV1Email = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
+          formResponseId,
+          'fQU0c6bZ8d0O',
+          accessToken
+        )
 
-      const data = await res.json()
+        const teamEmailFormEmail = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string,
+          formResponseId,
+          'DiJuj1zkZpBc',
+          accessToken
+        )
 
-      const teamEmail = data?.answers?.find(
-        (a: any) => a.field.id === 'fQU0c6bZ8d0O'
-      ).email
-
-      setEmail(teamEmail)
-    } catch(err){
-      console.log(err);
-    }
+        setEmail(teamEmailFormEmail || teamFormV1Email)
+      } catch (err) {
+        console.log(err)
+      }
       await destroySession(accessToken)
     }
 
     if (nft) getTeamEmail()
   }, [nft, getAccessToken])
-
-  
 
   return email
 }
