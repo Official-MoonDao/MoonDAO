@@ -236,6 +236,15 @@ export default function CitizenMetadataModal({
               requiredChain={DEFAULT_CHAIN}
               label="Submit"
               action={async () => {
+                if (
+                  !citizenData.name ||
+                  citizenData.name.trim() === '' ||
+                  !citizenData.description ||
+                  citizenData.description.trim() === ''
+                ) {
+                  return toast.error('Please enter a name and bio.')
+                }
+
                 const accessToken = await getAccessToken()
                 await createSession(accessToken)
                 try {
