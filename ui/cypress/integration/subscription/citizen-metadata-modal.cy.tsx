@@ -1,6 +1,7 @@
 import { PrivyProvider } from '@privy-io/react-auth'
 import { Sepolia } from '@thirdweb-dev/chains'
 import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
+import { getAttribute } from '@/lib/utils/nft'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 
 describe('<CitizenMetadataModal /> ', () => {
@@ -42,27 +43,27 @@ describe('<CitizenMetadataModal /> ', () => {
     cy.get('button').contains('No').click()
     cy.get('input[placeholder="Enter your name"]').should(
       'have.value',
-      'Test Name'
+      nft.metadata.name
     )
-    cy.get('input[placeholder="Enter your description"]').should(
+    cy.get('input[placeholder="Enter your bio"]').should(
       'have.value',
-      'Test Description'
+      nft.metadata.description
     )
     cy.get('input[placeholder="Enter your location"]').should(
       'have.value',
-      'Test Location'
+      getAttribute(nft.metadata.attributes, 'location').value
     )
     cy.get('input[placeholder="Enter your discord username"]').should(
       'have.value',
-      'Test Discord'
+      getAttribute(nft.metadata.attributes, 'discord').value
     )
     cy.get('input[placeholder="Enter your twitter link"]').should(
       'have.value',
-      'Test Twitter'
+      getAttribute(nft.metadata.attributes, 'twitter').value
     )
     cy.get('input[placeholder="Enter your website link"]').should(
       'have.value',
-      'Test Website'
+      getAttribute(nft.metadata.attributes, 'website').value
     )
   })
 
