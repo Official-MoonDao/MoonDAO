@@ -3,7 +3,7 @@
   "metadata": {
     "id": 0,
     "name": "Test Name",
-    "description": "Test Description",
+    "description": "Test Bio",
     "image": "https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeifw3tudimyfep3nvig2fp6s4sbth6p4qpwkgmly3he7bn6dwijxku/",
     "attributes": [
       { "trait_type": "location", "value": "Test Location" },
