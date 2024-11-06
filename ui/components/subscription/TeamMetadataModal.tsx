@@ -10,7 +10,6 @@ import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
-import useTeamEmail from '@/lib/team/useTeamEmail'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
@@ -161,6 +160,7 @@ export default function TeamMetadataModal({
         <div className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-GoodTimes ">Update Info</h1>
           <button
+          id="close-modal"
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
             onClick={() => setEnabled(false)}
@@ -220,6 +220,15 @@ export default function TeamMetadataModal({
               requiredChain={DEFAULT_CHAIN}
               label="Submit"
               action={async () => {
+                if (
+                  !teamData.name ||
+                  teamData.name.trim() === '' ||
+                  !teamData.description ||
+                  teamData.description.trim() === ''
+                ) {
+                  return toast.error('Please enter a name and bio.')
+                }
+
                 const accessToken = await getAccessToken()
                 await createSession(accessToken)
                 try {
