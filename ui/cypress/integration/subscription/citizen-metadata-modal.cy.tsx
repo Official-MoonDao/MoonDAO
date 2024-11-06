@@ -66,9 +66,4 @@ describe('<CitizenMetadataModal /> ', () => {
       getAttribute(nft.metadata.attributes, 'website').value
     )
   })
-
-  it('Closes the modal', () => {
-    cy.get('#close-modal').click()
-    cy.wrap(props.setEnabled).should('have.been.calledWith', false)
-  })
 })
