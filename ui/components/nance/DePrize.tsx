@@ -1,12 +1,17 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import ERC20 from 'const/abis/ERC20.json'
+import REVDeployer from 'const/abis/REVDeployer.json'
 import {
   DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES,
   SNAPSHOT_RETROACTIVE_REWARDS_ID,
   PRIZE_TOKEN_ADDRESSES,
   PRIZE_DECIMALS,
+  REVNET_ADDRESSES,
+  PRIZE_REVNET_ID,
+  BULK_TOKEN_SENDER_ADDRESSES,
 } from 'const/config'
+import { BigNumber } from 'ethers'
 import _ from 'lodash'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
@@ -14,9 +19,11 @@ import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
+import useIsOperator from '@/lib/revnet/hooks/useIsOperator'
 import { useVotingPowers } from '@/lib/snapshot'
 import useWindowSize from '@/lib/team/use-window-size'
 import useTokenBalances from '@/lib/tokens/hooks/useTokenBalances'
+import useTokenSupply from '@/lib/tokens/hooks/useTokenSupply'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import { runQuadraticVoting } from '@/lib/utils/voting'
@@ -103,6 +110,14 @@ export function DePrize({
     PRIZE_TOKEN_ADDRESSES[chain.slug],
     ERC20.abi
   )
+  const { contract: revnetContract } = useContract(
+    REVNET_ADDRESSES[chain.slug],
+    REVDeployer.abi
+  )
+  const { contract: bulkTokenSenderContract } = useContract(
+    BULK_TOKEN_SENDER_ADDRESSES[chain.slug]
+  )
+  const isOperator = useIsOperator(revnetContract, userAddress, PRIZE_REVNET_ID)
   const prizeBalance = useWatchTokenBalance(prizeContract, PRIZE_DECIMALS)
   const tokenBalances = useTokenBalances(
     prizeContract,
@@ -148,7 +163,9 @@ export function DePrize({
     year,
     quarter
   )
-  const prizeBudget = 2_500_000
+  const prizeSupply = useTokenSupply(prizeContract, PRIZE_DECIMALS)
+  const prizeBudget = prizeSupply * 0.1
+  const winnerPool = prizeSupply * 0.3
   const prizePrice = 1
   const competitorIdToPrizePayout = competitors
     ? Object.fromEntries(
@@ -225,6 +242,41 @@ export function DePrize({
       })
     }
   }
+  const handleSend = async () => {
+    try {
+      const addresses = competitors.map((c) => c.treasury)
+      const amounts = competitors.map(
+        (c) => competitorIdToPrizePayout[c.id] * 10 ** PRIZE_DECIMALS
+      )
+      console.log('amounts')
+      console.log(amounts)
+      console.log('addresses')
+      console.log(addresses)
+      console.log('PRIZE_TOKEN_ADDRESSES[chain.slug]')
+      console.log(PRIZE_TOKEN_ADDRESSES[chain.slug])
+      // approve bulk token sender
+      //await prizeContract?.call('approve', [
+      //BULK_TOKEN_SENDER_ADDRESSES[chain.slug],
+      //String(amounts.reduce((a, b) => a + b, 0)),
+      //])
+      await bulkTokenSenderContract?.call('send', [
+        PRIZE_TOKEN_ADDRESSES[chain.slug],
+        addresses.slice(0, 1),
+        amounts.map(String).slice(0, 1),
+      ])
+      toast.success('Rewards sent successfully!', {
+        style: toastStyle,
+      })
+      setTimeout(() => {
+        refreshRewards()
+      }, 5000)
+    } catch (error) {
+      console.error('Error sending rewards:', error)
+      toast.error('Error sending rewards. Please try again.', {
+        style: toastStyle,
+      })
+    }
+  }
 
   return (
     <section id="rewards-container" className="overflow-hidden">
@@ -267,16 +319,19 @@ export function DePrize({
                 className={`mt-8 flex flex-col px-4 ${isMobile ? '' : 'w-1/3'}`}
               >
                 <h3 className="title-text-colors text-2xl font-GoodTimes">
+                  Winner Prize
+                </h3>
+                <Asset name="PRIZE" amount={String(winnerPool)} usd="" />
+              </section>
+            )}
+            {userAddress && (
+              <section
+                className={`mt-8 flex flex-col px-4 ${isMobile ? '' : 'w-1/3'}`}
+              >
+                <h3 className="title-text-colors text-2xl font-GoodTimes">
                   Voting Power
                 </h3>
-                <Asset
-                  name="PRIZE"
-                  amount={String(
-                    addressToQuadraticVotingPower[userAddress.toLowerCase()] **
-                      2 || 0
-                  )}
-                  usd=""
-                />
+                <Asset name="PRIZE" amount={String(prizeBalance)} usd="" />
               </section>
             )}
           </section>
@@ -362,6 +417,14 @@ export function DePrize({
                     className="gradient-1 rounded-full"
                   >
                     Delete Distribution
+                  </StandardButton>
+                )}
+                {isOperator && (
+                  <StandardButton
+                    onClick={handleSend}
+                    className="gradient-2 rounded-full"
+                  >
+                    Send Rewards
                   </StandardButton>
                 )}
               </span>

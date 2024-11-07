@@ -108,6 +108,10 @@ export const DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES: Index = {
 export const PRIZE_TOKEN_ADDRESSES: Index = {
   sepolia: '0xf2a29F67fb5e6d7B9682591c0fD100d357dA85A7',
 }
+export const BULK_TOKEN_SENDER_ADDRESSES: Index = {
+  sepolia: '0xfEcb8E75658d768C9CdB418d81607eF4Dab5d001',
+}
+
 export const PRIZE_DECIMALS = 18
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
@@ -157,6 +161,12 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 export const JOBS_TABLE_ADDRESSES: Index = {
   arbitrum: '0x77092Bff93F16E20795D936AFD90737adf3f3596',
   sepolia: '0x1c588261069604490e73188343B2C930F35ae2EF',
+}
+
+export const PRIZE_REVNET_ID = 50
+
+export const REVNET_ADDRESSES: Index = {
+  sepolia: '0x25bc5d5a708c2e426ef3a5196cc18de6b2d5a3d1',
 }
 
 export const MARKETPLACE_ADDRESS =
