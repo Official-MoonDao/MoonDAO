@@ -342,7 +342,7 @@ export async function getStaticProps() {
     team: {},
     citizen: {},
   }
-  const teamPrettyLinkData = filteredValidTeams.map((nft: any) => ({
+  const teamPrettyLinkData = teams.map((nft: any) => ({
     name: nft?.metadata?.name,
     id: nft?.metadata?.id,
   }))
@@ -351,12 +351,13 @@ export async function getStaticProps() {
 
   prettyLinks.team = teamIdToPrettyLink
 
-  const citizenPrettyLinkData = filteredValidCitizens.map((nft: any) => ({
+  const citizenPrettyLinkData = citizens.map((nft: any) => ({
     name: nft?.metadata?.name,
     id: nft?.metadata?.id,
   }))
   const { idToPrettyLink: citizenIdToPrettyLink } = generatePrettyLinks(
-    citizenPrettyLinkData
+    citizenPrettyLinkData,
+    { allHaveTokenId: true }
   )
 
   prettyLinks.citizen = citizenIdToPrettyLink

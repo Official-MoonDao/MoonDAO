@@ -3,7 +3,14 @@ type PrettyLinkData = {
   id: string | number
 }
 
-export function generatePrettyLinks(prettyLinkData: PrettyLinkData[]) {
+type Options = {
+  allHaveTokenId?: boolean
+}
+
+export function generatePrettyLinks(
+  prettyLinkData: PrettyLinkData[],
+  options: Options = {}
+) {
   const prettyLinks: Record<string, string | number> = {}
   const idToPrettyLink: Record<string | number, string> = {}
 
@@ -11,12 +18,15 @@ export function generatePrettyLinks(prettyLinkData: PrettyLinkData[]) {
     const name = prettyLinkData[i]?.name?.toLowerCase()
     const id = prettyLinkData[i]?.id
 
-    if (name && id) {
+    if (name && id !== null && id !== undefined) {
       let prettyLink = name.replace(/\s+/g, '-')
 
-      // Ensure unique keys by appending the index if necessary
-      while (prettyLinks.hasOwnProperty(prettyLink)) {
+      if (options?.allHaveTokenId) {
         prettyLink = `${prettyLink}-${id}`
+      } else {
+        while (prettyLinks.hasOwnProperty(prettyLink)) {
+          prettyLink = `${prettyLink}-${id}`
+        }
       }
 
       prettyLinks[prettyLink] = id

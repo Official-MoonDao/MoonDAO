@@ -25,6 +25,30 @@ describe('generatePrettyLinks', () => {
     expect(result).to.deep.equal(expectedOutput)
   })
 
+  it('Should generate all pretty links with tokenId appended', () => {
+    const input: any = [
+      { name: 'Test Link', id: 1 },
+      { name: 'Another Link', id: 2 },
+      { name: 'Test Link', id: 3 },
+    ]
+
+    const expectedOutput = {
+      prettyLinks: {
+        'test-link-1': 1,
+        'another-link-2': 2,
+        'test-link-3': 3,
+      },
+      idToPrettyLink: {
+        1: 'test-link-1',
+        2: 'another-link-2',
+        3: 'test-link-3',
+      },
+    }
+
+    const result = generatePrettyLinks(input, { allHaveTokenId: true })
+    expect(result).to.deep.equal(expectedOutput)
+  })
+
   it('Should handle empty inputs', () => {
     const input: any = []
     const expectedOutput = {

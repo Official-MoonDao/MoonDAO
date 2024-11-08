@@ -525,7 +525,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   )
   const allCitizens = await allCitizensRes.json()
 
-  const { prettyLinks } = generatePrettyLinks(allCitizens)
+  const { prettyLinks } = generatePrettyLinks(allCitizens, {
+    allHaveTokenId: true,
+  })
 
   let tokenId
   if (!Number.isNaN(Number(tokenIdOrName))) {
