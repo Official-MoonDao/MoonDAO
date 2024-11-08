@@ -69,8 +69,15 @@ async function handler(req: any, res: any) {
       return res.status(400).send({ message: 'Bad request' })
     }
 
-    const { teamEmail, txHash, isCitizen, recipient, value, decimals } =
-      JSON.parse(data)
+    const {
+      teamEmail,
+      txHash,
+      isCitizen,
+      recipient,
+      value,
+      originalValue,
+      decimals,
+    } = JSON.parse(data)
 
     let verifiedCitizen = false
     let fromIsNotCitizen = false
@@ -116,6 +123,10 @@ async function handler(req: any, res: any) {
 
     const txValue = Number(txReceipt.logs[0]?.data) / 10 ** +decimals
     if (+value !== txValue) {
+      return res.status(400).json({ message: 'Transaction is invalid' })
+    }
+
+    if (!verifiedCitizen && txValue !== originalValue + originalValue * 0.1) {
       return res.status(400).json({ message: 'Transaction is invalid' })
     }
 

@@ -151,6 +151,7 @@ export default function BuyTeamListingModal({
             email,
             item: listing.title,
             value: price,
+            originalValue: +listing.price,
             currency: listing.currency,
             decimals: currencyDecimals[listing.currency],
             quantity: 1,
