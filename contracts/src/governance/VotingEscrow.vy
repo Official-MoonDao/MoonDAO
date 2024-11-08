@@ -94,6 +94,7 @@ epoch: public(uint256)
 point_history: public(Point[100000000000000000000000000000])  # epoch -> unsigned point
 user_point_history: public(HashMap[address, Point[1000000000]])  # user -> Point[user_epoch]
 user_point_epoch: public(HashMap[address, uint256])
+
 slope_changes: public(HashMap[uint256, int128])  # time -> signed slope change
 
 # Aragon's view methods for compatibility
