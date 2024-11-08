@@ -153,6 +153,7 @@ export default function TeamListing({
                 <div className="flex items-center justify-between w-full">
                   {teamName && teamData?.name && (
                     <Link
+                      id="listing-team-name"
                       href={`/team/${listing.teamId}`}
                       className="font-bold text-light-cool"
                     >
@@ -184,11 +185,12 @@ export default function TeamListing({
                 >
                   {listing.title}
                 </h2>
-                <p>{listing.description}</p>
+                <p id="listing-description">{listing.description}</p>
               </div>
               {editable && (
                 <div className="flex flex-wrap items-end justify-end w-full gap-4 ml-4 ">
                   <button
+                    id="edit-listing-button"
                     onClick={(event) => {
                       event.stopPropagation()
                       setEnabledMarketplaceListingModal(true)
@@ -202,6 +204,7 @@ export default function TeamListing({
                     <LoadingSpinner className="scale-[75%]" />
                   ) : (
                     <button
+                      id="delete-listing-button"
                       onClick={async (event) => {
                         event.stopPropagation()
                         setIsDeleting(true)
@@ -234,7 +237,7 @@ export default function TeamListing({
                     isCitizen
                       ? truncateTokenValue(listing.price, listing.currency)
                       : truncateTokenValue(
-                          +listing.price + +listing.price * 0.1,
+                          +listing.price * 1.1,
                           listing.currency
                         )
                   } 

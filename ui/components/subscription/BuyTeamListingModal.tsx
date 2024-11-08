@@ -240,8 +240,8 @@ export default function BuyTeamListingModal({
               <p>{`# ${listing.id}`}</p>
               <p className="font-GoodTimes">{listing.title}</p>
               <p className="text-[75%]">{listing.description}</p>
-              <p className="font-bold">{`${
-                citizen ? listing.price : +listing.price + +listing.price * 0.1
+              <p id="listing-price" className="font-bold">{`${
+                citizen ? listing.price : +listing.price * 1.1
               } ${listing.currency}`}</p>
             </div>
           </div>
