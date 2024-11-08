@@ -229,7 +229,7 @@ export default function TeamListing({
             </span>
             <div id="listing-id-container" className="relative z-50">
               <div id="listing-id" className="listing">
-                <p className="font-bold">
+                <p id="listing-price" className="font-bold">
                   {`${
                     isCitizen
                       ? truncateTokenValue(listing.price, listing.currency)
