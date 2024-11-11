@@ -11,6 +11,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback } from 'react'
+import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -29,11 +30,16 @@ import Tab from '@/components/layout/Tab'
 type NetworkProps = {
   filteredTeams: NFT[]
   filteredCitizens: NFT[]
+  prettyLinks: {
+    team: Record<number, string>
+    citizen: Record<number, string>
+  }
 }
 
 export default function Network({
   filteredTeams,
   filteredCitizens,
+  prettyLinks,
 }: NetworkProps) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -214,6 +220,7 @@ export default function Network({
                             owner={nft.owner}
                             type={type}
                             hovertext="Explore Profile"
+                            prettyLink={prettyLinks?.[type]?.[nft.metadata.id]}
                           />
                         </div>
                       )
@@ -341,10 +348,36 @@ export async function getStaticProps() {
     }
   )
 
+  //Generate pretty links
+  const prettyLinks = {
+    team: {},
+    citizen: {},
+  }
+  const teamPrettyLinkData = teams.map((nft: any) => ({
+    name: nft?.metadata?.name,
+    id: nft?.metadata?.id,
+  }))
+  const { idToPrettyLink: teamIdToPrettyLink } =
+    generatePrettyLinks(teamPrettyLinkData)
+
+  prettyLinks.team = teamIdToPrettyLink
+
+  const citizenPrettyLinkData = citizens.map((nft: any) => ({
+    name: nft?.metadata?.name,
+    id: nft?.metadata?.id,
+  }))
+  const { idToPrettyLink: citizenIdToPrettyLink } = generatePrettyLinks(
+    citizenPrettyLinkData,
+    { allHaveTokenId: true }
+  )
+
+  prettyLinks.citizen = citizenIdToPrettyLink
+
   return {
     props: {
       filteredTeams: filteredValidTeams.reverse(),
       filteredCitizens: filteredValidCitizens.reverse(),
+      prettyLinks,
     },
     revalidate: 60,
   }
