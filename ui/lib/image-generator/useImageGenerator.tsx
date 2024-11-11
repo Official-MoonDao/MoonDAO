@@ -88,6 +88,16 @@ export default function useImageGenerator(
       }
     }
 
+    if (job.status === 'INSUFFICIENT_CREDIT') {
+      setError(
+        'There was an error generating your image, please contact support.'
+      )
+      if (inputImage) {
+        const fittedImage = await fitImage(inputImage, 1024, 1024)
+        setImage(fittedImage)
+      }
+    }
+
     if (job.status === 'COMPLETED') {
       const res = await fetch('/api/image-gen/get-image', {
         method: 'POST',
