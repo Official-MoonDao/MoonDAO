@@ -16,6 +16,7 @@ export default function Modal({ id, setEnabled, children }: ModalProps) {
     <Portal>
       <div
         onMouseDown={(e: any) => {
+          e.stopPropagation()
           if (e.target.id === id) setEnabled(false)
         }}
         id={id}
