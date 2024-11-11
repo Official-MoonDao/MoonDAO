@@ -26,6 +26,8 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import Tab from '@/components/layout/Tab'
+import CitizenABI from '../const/abis/Citizen.json'
+import TeamABI from '../const/abis/Team.json'
 
 type NetworkProps = {
   filteredTeams: NFT[]
@@ -294,7 +296,10 @@ export async function getStaticProps() {
   const sdk = initSDK(chain)
   const now = Math.floor(Date.now() / 1000)
 
-  const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
+  const teamContract = await sdk.getContract(
+    TEAM_ADDRESSES[chain.slug],
+    TeamABI
+  )
   const totalTeams = await teamContract.call('totalSupply')
 
   const teams = [] //replace with teamContract.erc721.getAll() if all teams load
@@ -321,7 +326,10 @@ export async function getStaticProps() {
     }
   )
 
-  const citizenContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
+  const citizenContract = await sdk.getContract(
+    CITIZEN_ADDRESSES[chain.slug],
+    CitizenABI
+  )
   const totalCitizens = await citizenContract.call('totalSupply')
 
   const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
