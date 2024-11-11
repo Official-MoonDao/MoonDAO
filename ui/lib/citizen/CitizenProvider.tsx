@@ -2,13 +2,18 @@ import { useEffect, useState } from 'react'
 import CitizenContext from './citizen-context'
 import { useCitizen } from './useCitizen'
 
-export default function CitizenProvider({ selectedChain, children }: any) {
+export default function CitizenProvider({
+  selectedChain,
+  children,
+  mock = false,
+}: any) {
   const [citizen, setCitizen] = useState<any>()
   const citizenNft = useCitizen(selectedChain)
 
   useEffect(() => {
-    setCitizen(citizenNft)
-  }, [citizenNft])
+    if (mock) setCitizen(mock)
+    else setCitizen(citizenNft)
+  }, [citizenNft, mock])
 
   return (
     <CitizenContext.Provider value={{ citizen, setCitizen }}>

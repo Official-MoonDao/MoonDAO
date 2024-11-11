@@ -1,3 +1,4 @@
+import { MapIcon } from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
@@ -23,6 +24,7 @@ import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
+import StandardButton from '@/components/layout/StandardButton'
 import Tab from '@/components/layout/Tab'
 
 type NetworkProps = {
@@ -138,30 +140,39 @@ export default function Network({
       <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
         <Search input={input} setInput={setInput} />
       </Frame>
-      <div
-        id="filter-container"
-        className="max-w-[350px] border-b-5 border-black"
-      >
-        <Frame noPadding>
-          <div className="flex flex-wrap text-sm bg-filter">
-            <Tab
-              tab="teams"
-              currentTab={tab}
-              setTab={handleTabChange}
-              icon="/../.././assets/icon-org.svg"
-            >
-              Teams
-            </Tab>
-            <Tab
-              tab="citizens"
-              currentTab={tab}
-              setTab={handleTabChange}
-              icon="/../.././assets/icon-passport.svg"
-            >
-              Citizens
-            </Tab>
-          </div>
-        </Frame>
+      <div className="w-full flex gap-4">
+        <div
+          id="filter-container"
+          className="max-w-[350px] border-b-5 border-black"
+        >
+          <Frame noPadding>
+            <div className="flex flex-wrap text-sm bg-filter">
+              <Tab
+                tab="teams"
+                currentTab={tab}
+                setTab={handleTabChange}
+                icon="/../.././assets/icon-org.svg"
+              >
+                Teams
+              </Tab>
+              <Tab
+                tab="citizens"
+                currentTab={tab}
+                setTab={handleTabChange}
+                icon="/../.././assets/icon-passport.svg"
+              >
+                Citizens
+              </Tab>
+            </div>
+          </Frame>
+        </div>
+
+        <StandardButton
+          className="gradient-2 h-[40px]"
+          onClick={() => router.push('/map')}
+        >
+          <MapIcon width={20} height={20} />
+        </StandardButton>
       </div>
     </div>
   )

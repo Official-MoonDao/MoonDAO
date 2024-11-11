@@ -37,7 +37,6 @@ export const navigation = [
       },
       { name: 'Events', href: '/events' },
       { name: 'Analytics', href: '/analytics' },
-      { name: 'Current Projects', href: '/current-projects'}
     ],
   },
   {

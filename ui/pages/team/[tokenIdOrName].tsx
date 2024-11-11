@@ -526,6 +526,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                 teamContract={teamContract}
                 isManager={isManager}
                 teamId={tokenId}
+                isCitizen={citizen}
               />
               {/* Mooney and Voting Power */}
               {isManager && (

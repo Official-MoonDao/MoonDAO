@@ -414,14 +414,16 @@ export default function CitizenDetailPage({
                   <div>
                     <p className="text-xl">{`$MOONEY`}</p>
                     <p className="text-3xl">
-                      {MOONEYBalance ? MOONEYBalance?.toLocaleString() : 0}
+                      {MOONEYBalance
+                        ? Math.round(MOONEYBalance).toLocaleString()
+                        : 0}
                     </p>
                   </div>
                   <div>
                     <p className="text-xl">{`Voting Power`}</p>
                     <p className="text-2xl">
                       {VMOONEYBalance
-                        ? Number(VMOONEYBalance?.toFixed(0)).toLocaleString()
+                        ? Math.round(VMOONEYBalance).toLocaleString()
                         : 0}
                     </p>
                   </div>
