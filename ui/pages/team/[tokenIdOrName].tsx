@@ -23,8 +23,9 @@ import {
   JOBS_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
-  TEAM_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
+  DEFAULT_CHAIN,
+  TEAM_TABLE_NAMES,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -568,12 +569,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
 
-  //Generate pretty links
-  const teamTableContract = await sdk.getContract(
-    TEAM_TABLE_ADDRESSES[chain.slug]
-  )
-  const teamTableName = await teamTableContract.call('getTableName')
-  const statement = `SELECT name, id FROM ${teamTableName}`
+  const statement = `SELECT name, id FROM ${TEAM_TABLE_NAMES[chain.slug]}`
   const allTeamsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${statement}`
   )
@@ -587,7 +583,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     tokenId = prettyLinks[tokenIdOrName]
   }
 
-  const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
+  const teamContract = await sdk.getContract(
+    TEAM_ADDRESSES[chain.slug],
+    TeamABI
+  )
   const nft = await teamContract.erc721.get(tokenId)
 
   if (

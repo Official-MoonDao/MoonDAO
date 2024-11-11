@@ -12,7 +12,7 @@ import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
-  CITIZEN_TABLE_ADDRESSES,
+  CITIZEN_TABLE_NAMES,
   MOONEY_ADDRESSES,
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
@@ -54,6 +54,7 @@ import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamAction from '@/components/subscription/TeamAction'
+import CitizenABI from '../../const/abis/Citizen.json'
 
 export default function CitizenDetailPage({
   nft,
@@ -516,12 +517,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
 
-  const citizenTableContract = await sdk?.getContract(
-    CITIZEN_TABLE_ADDRESSES[chain.slug]
-  )
-  const citizenTableName = await citizenTableContract?.call('getTableName')
-
-  const statement = `SELECT name, id FROM ${citizenTableName}`
+  const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chain.slug]}`
   const allCitizensRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${statement}`
   )
@@ -538,8 +534,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     tokenId = prettyLinks[tokenIdOrName]
   }
 
-  const teamContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
-  const nft = await teamContract.erc721.get(tokenId)
+  const citizenContract = await sdk.getContract(
+    CITIZEN_ADDRESSES[chain.slug],
+    CitizenABI
+  )
+  const nft = await citizenContract.erc721.get(tokenId)
 
   if (
     !nft ||
