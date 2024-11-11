@@ -1,7 +1,25 @@
 import { BigNumber, ethers } from 'ethers'
 
-function stringToNumber(string: any, decimals: any) {
+export function stringToNumber(string: any, decimals: any) {
   return Number(string).toFixed(decimals)
+}
+
+export function truncateTokenValue(value: number | string, token: string) {
+  let truncatedValue
+  const decimalPlaces = value.toString().split('.')[1]?.length || 0
+  if (token === 'ETH') {
+    truncatedValue = Number(value).toFixed(Math.min(decimalPlaces, 5))
+  } else if (
+    token === 'USDC' ||
+    token === 'USDT' ||
+    token === 'DAI' ||
+    token === 'MOONEY'
+  ) {
+    truncatedValue = Number(value).toFixed(Math.min(decimalPlaces, 2))
+  } else {
+    truncatedValue = Number(value)
+  }
+  return parseFloat(String(truncatedValue)).toString()
 }
 
 export enum NumberType {
