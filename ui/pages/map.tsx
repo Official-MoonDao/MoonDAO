@@ -55,7 +55,10 @@ export default function NetworkMap({
 
   return (
     <section id="map-container" className="overflow-hidden">
-      <Head title="Map" />
+      <Head
+        title="Map"
+        image="https://ipfs.io/ipfs/Qmc1FsD9pCw3FoYEQ1zviqXc3DQddyxte6cQ8hv6EvukFr"
+      />
       <Container>
         <ContentLayout
           header="Map"
