@@ -55,7 +55,10 @@ export default function NetworkMap({
 
   return (
     <section id="map-container" className="overflow-hidden">
-      <Head title="Map" />
+      <Head
+        title="Map"
+        image="https://ipfs.io/ipfs/Qmc1FsD9pCw3FoYEQ1zviqXc3DQddyxte6cQ8hv6EvukFr"
+      />
       <Container>
         <ContentLayout
           header="Map"
@@ -120,7 +123,9 @@ export async function getStaticProps() {
       id: nft?.metadata?.id,
     }))
 
-    const { idToPrettyLink } = generatePrettyLinks(citizenPrettyLinkData)
+    const { idToPrettyLink } = generatePrettyLinks(citizenPrettyLinkData, {
+      allHaveTokenId: true,
+    })
 
     //Get location data for each citizen
     for (const citizen of filteredValidCitizens) {
@@ -219,6 +224,7 @@ const dummyData = [
           'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeifh2vwvfxfy6fevqkirldplgp47sfblcfvhn7nsxo4z4krsuulf2e/',
         lat: -90,
         lng: 0,
+        prettyLink: 'ryan-1',
       },
       {
         id: '2',
@@ -229,6 +235,7 @@ const dummyData = [
           'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeibo5na6nkatvor7bqisybzwtmh5n4l4wuws3uiyoqvjuuqwzwobna/',
         lat: -90,
         lng: 0,
+        prettyLink: 'name.get-2',
       },
     ],
     formattedAddress: 'Antartica',
