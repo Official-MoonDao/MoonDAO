@@ -4,7 +4,7 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline'
 import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
-import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
@@ -54,6 +54,7 @@ export default function TeamListing({
   queriedListingId,
   isCitizen,
 }: TeamListingProps) {
+  const router = useRouter()
   const address = useAddress()
 
   const [enabledMarketplaceListingModal, setEnabledMarketplaceListingModal] =
@@ -196,13 +197,16 @@ export default function TeamListing({
                   <div className="w-full flex min-h-[100px] pb-5 flex-col">
                     <div className="flex items-center justify-between w-full">
                       {teamName && teamData?.name && (
-                        <Link
+                        <button
                           id="listing-team-name"
-                          href={`/team/${listing.teamId}`}
                           className="font-bold text-light-cool"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/team/${listing.teamId}`)
+                          }}
                         >
                           {teamData.name}
-                        </Link>
+                        </button>
                       )}
                     </div>
                     <div className="flex items-center justify-between w-full">
@@ -214,7 +218,7 @@ export default function TeamListing({
                         {listing.title}
                       </h2>
                       <StandardButton
-                        className="gradient-2"
+                        className="gradient-2 h-[30px] flex items-center justify-center"
                         onClick={(e: any) => {
                           e.stopPropagation()
                           const link = `${window.location.origin}/team/${listing.teamId}?listing=${listing.id}`
@@ -275,18 +279,48 @@ export default function TeamListing({
                   )}
                 </span>
                 <div id="listing-id-container" className="relative z-50">
-                  <div id="listing-id" className="listing">
-                    <p id="listing-price" className="font-bold">
-                      {`${
-                        isCitizen
-                          ? truncateTokenValue(listing.price, listing.currency)
-                          : truncateTokenValue(
-                              +listing.price * 1.1,
-                              listing.currency
-                            )
-                      } 
+                  <div id="listing-id" className="listing flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <p id="listing-price" className="font-bold">
+                        {`${
+                          isCitizen
+                            ? truncateTokenValue(
+                                listing.price,
+                                listing.currency
+                              )
+                            : truncateTokenValue(
+                                +listing.price * 1.1,
+                                listing.currency
+                              )
+                        } 
                   ${listing.currency}`}
-                    </p>
+                      </p>
+                      {isCitizen && (
+                        <p
+                          className="line-through text-xs"
+                          id="listing-original-price"
+                        >{`${truncateTokenValue(
+                          +listing.price * 1.1,
+                          listing.currency
+                        )} ${listing.currency}`}</p>
+                      )}
+                    </div>
+                    {!isCitizen && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push('/citizen')
+                        }}
+                        className="flex items-center hover:underline"
+                        id="listing-savings"
+                      >
+                        <span className="bg-light-warm p-1 mr-1">{`Save ${
+                          +listing.price * 0.1
+                        } ${listing.currency}`}</span>
+                        {' with citizenship'}
+                      </button>
+                    )}
+
                     {editable && (
                       <p id="listing-status" className="opacity-60">
                         {isExpired
@@ -307,7 +341,7 @@ export default function TeamListing({
                     {!isExpired && !isUpcoming && listing.endTime != 0 && (
                       <p
                         id="listing-end-time"
-                        className="opacity-60 text-sm"
+                        className="mt-2 opacity-60 text-sm"
                       >{`Offer ends in ${daysUntilExpiry} ${
                         +daysUntilExpiry === 1 ? `day` : `days`
                       }`}</p>
