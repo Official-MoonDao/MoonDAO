@@ -3,8 +3,8 @@ import { Sepolia } from '@thirdweb-dev/chains'
 import { Toaster } from 'react-hot-toast'
 import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
+import { Job } from '@/components/jobs/Job'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
-import { Job } from '@/ui/components/jobs/Job'
 
 describe('<TeamJobModal />', () => {
   let job: Job
