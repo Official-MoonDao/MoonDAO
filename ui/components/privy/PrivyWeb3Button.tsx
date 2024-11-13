@@ -79,6 +79,10 @@ export function PrivyWeb3Button({
     } else {
       setBtnState(2)
     }
+
+    if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+      setBtnState(2)
+    }
   }, [wallets, selectedChain, selectedWallet, user, skipNetworkCheck])
 
   return (
