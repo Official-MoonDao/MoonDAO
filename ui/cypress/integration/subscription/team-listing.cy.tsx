@@ -35,6 +35,8 @@ describe('<TeamListing />', () => {
       teamName: true,
       queriedListingId: undefined,
     }
+
+    cy.mountNextRouter('/')
   })
 
   it('Renders the component', () => {
@@ -67,6 +69,11 @@ describe('<TeamListing />', () => {
       const parsedPrice = parseFloat(price.text())
       expect(parsedPrice.toFixed(5)).to.equal((+listing.price * 1.1).toFixed(5))
     })
+
+    cy.get('#listing-savings').should(
+      'have.text',
+      `Save ${+listing.price * 0.1} ${listing.currency} with citizenship`
+    )
   })
 
   it('Shows regular price for citizens', () => {
@@ -81,6 +88,11 @@ describe('<TeamListing />', () => {
     cy.get('#listing-price').should((price) => {
       const parsedPrice = parseFloat(price.text())
       expect(parsedPrice.toFixed(5)).to.equal((+listing.price).toFixed(5))
+    })
+
+    cy.get('#listing-original-price').should((price) => {
+      const parsedPrice = parseFloat(price.text())
+      expect(parsedPrice.toFixed(5)).to.equal((+listing.price * 1.1).toFixed(5))
     })
   })
 
