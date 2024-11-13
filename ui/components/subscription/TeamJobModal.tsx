@@ -1,8 +1,9 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN } from 'const/config'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import cleanData from '@/lib/tableland/cleanData'
+import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { Job } from '../jobs/Job'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
@@ -12,6 +13,8 @@ type JobData = {
   title: string
   description: string
   contactInfo: string
+  metadata: string
+  tag: string
 }
 
 type TeamJobModalProps = {
@@ -32,24 +35,44 @@ export default function TeamJobModal({
   job,
 }: TeamJobModalProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [isExpired, setIsExpired] = useState(false)
   const [jobData, setJobData] = useState<JobData>(
     edit
       ? {
           title: job?.title || '',
           description: job?.description || '',
           contactInfo: job?.contactInfo || '',
+          metadata: job?.metadata || '',
+          tag: job?.tag || '',
         }
       : {
           title: '',
           description: '',
           contactInfo: '',
+          metadata: '',
+          tag: '',
         }
   )
+  const [endTimeInDays, setEndTimeInDays] = useState(30)
 
   const isValid =
     jobData.title.trim() !== '' &&
     jobData.description.trim() !== '' &&
     jobData.contactInfo.trim() !== ''
+
+  const currTime = useCurrUnixTime()
+
+  useEffect(() => {
+    if (
+      job?.endTime !== undefined &&
+      job.endTime !== 0 &&
+      job.endTime < currTime
+    ) {
+      setIsExpired(true)
+    } else {
+      setIsExpired(false)
+    }
+  }, [currTime, job?.endTime])
 
   return (
     <Modal id="team-job-modal-backdrop" setEnabled={setEnabled}>
@@ -68,6 +91,8 @@ export default function TeamJobModal({
 
           const cleanedData = cleanData(jobData)
 
+          const endTime = Math.floor(Date.now() / 1000) + endTimeInDays * 86400
+
           try {
             if (edit) {
               await jobTableContract.call('updateTable', [
@@ -75,6 +100,10 @@ export default function TeamJobModal({
                 cleanedData.title,
                 cleanedData.description,
                 teamId,
+                '',
+                '',
+                endTime,
+                currTime,
                 cleanedData.contactInfo,
               ])
             } else {
@@ -82,6 +111,10 @@ export default function TeamJobModal({
                 cleanedData.title,
                 cleanedData.description,
                 teamId,
+                '',
+                '',
+                endTime,
+                currTime,
                 cleanedData.contactInfo,
               ])
             }
@@ -138,6 +171,30 @@ export default function TeamJobModal({
             }}
             value={jobData.contactInfo}
           />
+          <div className="w-full flex gap-2">
+            <p>Expiration:</p>
+            <select
+              className="text-black"
+              onChange={({ target }: any) =>
+                setEndTimeInDays(parseInt(target.value))
+              }
+            >
+              <option value={30}>30 days</option>
+              <option value={60}>60 days</option>
+              <option value={90}>90 days</option>
+            </select>
+          </div>
+          {job?.endTime && (
+            <p className="mt-4 opacity-60">
+              {isExpired
+                ? `*This job post expired on ${new Date(
+                    job.endTime * 1000
+                  ).toLocaleDateString()}`
+                : `*This job post will end on ${new Date(
+                    job.endTime * 1000
+                  ).toLocaleDateString()}`}
+            </p>
+          )}
         </div>
 
         <PrivyWeb3Button

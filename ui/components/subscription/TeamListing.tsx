@@ -7,7 +7,9 @@ import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
+import { daysUntilTimestamp } from '@/lib/utils/timestamp'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
 import BuyTeamListingModal from './BuyTeamListingModal'
@@ -21,7 +23,12 @@ export type TeamListing = {
   image: string
   price: string
   currency: string
+  startTime: number
+  endTime: number
+  timestamp: number
+  metadata: string
   shipping: string
+  tag: string
 }
 
 type TeamListingProps = {
@@ -55,9 +62,16 @@ export default function TeamListing({
     queriedListingId === listing.id
   )
 
+  const currTime = useCurrUnixTime()
+
+  const [isActive, setIsActive] = useState(false)
+  const [isExpired, setIsExpired] = useState(false)
+  const [isUpcoming, setIsUpcoming] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const [teamData, setTeamData] = useState<any>()
+
+  const daysUntilExpiry = daysUntilTimestamp(listing.endTime)
 
   useEffect(() => {
     async function getTeamData() {
@@ -73,12 +87,41 @@ export default function TeamListing({
     if (listing) getTeamData()
   }, [listing, teamContract])
 
+  useEffect(() => {
+    console.log(listing)
+    if (currTime >= listing.startTime && currTime <= listing.endTime) {
+      setIsActive(true)
+    } else if (listing.startTime === 0 && listing.endTime === 0) {
+      setIsActive(true)
+    } else if (editable) {
+      setIsActive(true)
+    } else {
+      setIsActive(false)
+    }
+
+    if (currTime < listing.startTime) {
+      setIsUpcoming(true)
+    } else {
+      setIsUpcoming(false)
+    }
+
+    if (
+      currTime > listing.endTime &&
+      listing.endTime !== 0 &&
+      listing.endTime !== undefined
+    ) {
+      setIsExpired(true)
+    } else {
+      setIsExpired(false)
+    }
+  }, [currTime, listing.startTime, listing.endTime, editable])
+
   return (
     <span
       id="link-frame"
       className={`card-container h-full w-full flex lg:flex-col rounded-[20px] relative overflow-hidden ${
         !editable ? 'cursor-pointer' : ''
-      }`}
+      } ${!isActive && 'hidden'}`}
       onClick={() => {
         if (!editable) {
           setEnabledBuyListingModal(true)
@@ -137,7 +180,7 @@ export default function TeamListing({
               <MediaRenderer
                 className="w-full rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] max-w-[575px] md:max-w-[500px] pb-5 rounded-br-[5vmax] overflow-hidden"
                 width="100%"
-                height="100%"
+                height="200px"
                 src={listing.image}
               />
             </div>
@@ -160,31 +203,31 @@ export default function TeamListing({
                       {teamData.name}
                     </Link>
                   )}
-                  <div className="w-full flex items-center justify-end">
-                    <StandardButton
-                      className="gradient-2"
-                      onClick={(e: any) => {
-                        e.stopPropagation()
-                        const link = `${window.location.origin}/team/${listing.teamId}?listing=${listing.id}`
-                        navigator.clipboard.writeText(link)
-                        toast.success('Link copied to clipboard')
-                      }}
-                      hoverEffect={false}
-                    >
-                      <div className="flex items-center gap-2">
-                        <ArrowUpRightIcon className="h-4 w-4" />
-                        {'Share'}
-                      </div>
-                    </StandardButton>
-                  </div>
                 </div>
-                <h2
-                  id="main-header"
-                  className={`z-20 pt-[10px] pb-[10px] static-sub-header font-GoodTimes flex items-center 
-        text-left`}
-                >
-                  {listing.title}
-                </h2>
+                <div className="flex items-center justify-between w-full">
+                  <h2
+                    id="main-header"
+                    className={`z-20 pt-[10px] pb-[10px] static-sub-header font-GoodTimes flex items-center 
+                      text-left`}
+                  >
+                    {listing.title}
+                  </h2>
+                  <StandardButton
+                    className="gradient-2"
+                    onClick={(e: any) => {
+                      e.stopPropagation()
+                      const link = `${window.location.origin}/team/${listing.teamId}?listing=${listing.id}`
+                      navigator.clipboard.writeText(link)
+                      toast.success('Link copied to clipboard')
+                    }}
+                    hoverEffect={false}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ArrowUpRightIcon className="h-4 w-4" />
+                      {'Share'}
+                    </div>
+                  </StandardButton>
+                </div>
                 <p id="listing-description">{listing.description}</p>
               </div>
               {editable && (
@@ -243,6 +286,28 @@ export default function TeamListing({
                   } 
                   ${listing.currency}`}
                 </p>
+                {editable && (
+                  <p className="opacity-60">
+                    {isExpired
+                      ? `*This listing has expired and is no longer available for purchase.`
+                      : isUpcoming
+                      ? `*This listing is not available for purchase until ${
+                          new Date(
+                            listing.startTime * 1000
+                          ).toLocaleDateString() +
+                          ' ' +
+                          new Date(
+                            listing.startTime * 1000
+                          ).toLocaleTimeString()
+                        }`
+                      : ''}
+                  </p>
+                )}
+                {!isExpired && !isUpcoming && listing.endTime != 0 && (
+                  <p className="opacity-60 text-sm">{`Offer ends in ${daysUntilExpiry} ${
+                    +daysUntilExpiry === 1 ? `day` : `days`
+                  }`}</p>
+                )}
                 <div id="listing-description"></div>
                 <span
                   id="mobile-button-container"

@@ -101,6 +101,11 @@
       { "internalType": "uint256", "name": "teamId", "type": "uint256" },
       { "internalType": "string", "name": "price", "type": "string" },
       { "internalType": "string", "name": "currency", "type": "string" },
+      { "internalType": "uint256", "name": "startTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "endTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "timestamp", "type": "uint256" },
+      { "internalType": "string", "name": "tag", "type": "string" },
+      { "internalType": "string", "name": "metadata", "type": "string" },
       { "internalType": "string", "name": "shipping", "type": "string" }
     ],
     "name": "insertIntoTable",
@@ -170,6 +175,11 @@
       { "internalType": "uint256", "name": "teamId", "type": "uint256" },
       { "internalType": "string", "name": "price", "type": "string" },
       { "internalType": "string", "name": "currency", "type": "string" },
+      { "internalType": "uint256", "name": "startTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "endTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "timestamp", "type": "uint256" },
+      { "internalType": "string", "name": "tag", "type": "string" },
+      { "internalType": "string", "name": "metadata", "type": "string" },
       { "internalType": "string", "name": "shipping", "type": "string" }
     ],
     "name": "updateTable",

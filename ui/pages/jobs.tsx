@@ -18,6 +18,7 @@ import Frame from '@/components/layout/Frame'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import CitizenTier from '@/components/onboarding/CitizenTier'
+import JobsABI from '../const/abis/JobBoardTable.json'
 
 type JobsProps = {
   jobs: JobType[]
@@ -110,22 +111,22 @@ export default function Jobs({ jobs }: JobsProps) {
 export async function getStaticProps() {
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
+  const now = Math.floor(Date.now() / 1000)
 
   const jobTableContract = await sdk.getContract(
-    JOBS_TABLE_ADDRESSES[chain.slug]
+    JOBS_TABLE_ADDRESSES[chain.slug],
+    JobsABI
   )
   const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
 
   const jobBoardTableName = await jobTableContract.call('getTableName')
 
-  const statement = `SELECT * FROM ${jobBoardTableName}`
+  const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now})`
 
   const allJobsRes = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
   const allJobs = await allJobsRes.json()
 
-  const now = Math.floor(Date.now() / 1000)
-
-  const validJobs = allJobs.filter(async (job: JobType) => {
+  const validJobs = allJobs?.filter(async (job: JobType) => {
     const teamExpiration = await teamContract.call('expiresAt', [job.teamId])
     return teamExpiration.toNumber() > now
   })

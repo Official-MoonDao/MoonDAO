@@ -48,13 +48,9 @@
   },
   {
     "inputs": [],
-    "name": "_moonDaoEntity",
+    "name": "_moonDaoTeam",
     "outputs": [
-      {
-        "internalType": "contract MoonDAOEntity",
-        "name": "",
-        "type": "address"
-      }
+      { "internalType": "contract MoonDAOTeam", "name": "", "type": "address" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -69,7 +65,7 @@
   {
     "inputs": [
       { "internalType": "uint256", "name": "id", "type": "uint256" },
-      { "internalType": "uint256", "name": "entityId", "type": "uint256" }
+      { "internalType": "uint256", "name": "teamId", "type": "uint256" }
     ],
     "name": "deleteFromTable",
     "outputs": [],
@@ -92,7 +88,7 @@
   },
   {
     "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "name": "idToEntityId",
+    "name": "idToTeamId",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -101,7 +97,11 @@
     "inputs": [
       { "internalType": "string", "name": "title", "type": "string" },
       { "internalType": "string", "name": "description", "type": "string" },
-      { "internalType": "uint256", "name": "entityId", "type": "uint256" },
+      { "internalType": "uint256", "name": "teamId", "type": "uint256" },
+      { "internalType": "string", "name": "tag", "type": "string" },
+      { "internalType": "string", "name": "metadata", "type": "string" },
+      { "internalType": "uint256", "name": "endTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "timestamp", "type": "uint256" },
       { "internalType": "string", "name": "contactInfo", "type": "string" }
     ],
     "name": "insertIntoTable",
@@ -146,9 +146,9 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "moonDaoEntity", "type": "address" }
+      { "internalType": "address", "name": "moonDaoTeam", "type": "address" }
     ],
-    "name": "setMoonDaoEntity",
+    "name": "setMoonDaoTeam",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -167,7 +167,11 @@
       { "internalType": "uint256", "name": "id", "type": "uint256" },
       { "internalType": "string", "name": "title", "type": "string" },
       { "internalType": "string", "name": "description", "type": "string" },
-      { "internalType": "uint256", "name": "entityId", "type": "uint256" },
+      { "internalType": "uint256", "name": "teamId", "type": "uint256" },
+      { "internalType": "string", "name": "tag", "type": "string" },
+      { "internalType": "string", "name": "metadata", "type": "string" },
+      { "internalType": "uint256", "name": "endTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "timestamp", "type": "uint256" },
       { "internalType": "string", "name": "contactInfo", "type": "string" }
     ],
     "name": "updateTable",
@@ -178,7 +182,7 @@
   {
     "inputs": [
       { "internalType": "uint256", "name": "id", "type": "uint256" },
-      { "internalType": "uint256", "name": "entityId", "type": "uint256" },
+      { "internalType": "uint256", "name": "teamId", "type": "uint256" },
       { "internalType": "string", "name": "colName", "type": "string" },
       { "internalType": "string", "name": "val", "type": "string" }
     ],
