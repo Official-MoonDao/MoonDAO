@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import cleanData from '@/lib/tableland/cleanData'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
+import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import { Job } from '../jobs/Job'
 import Modal from '../layout/Modal'
-import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type JobData = {
@@ -53,7 +53,7 @@ export default function TeamJobModal({
           tag: '',
         }
   )
-  const [endTimeInDays, setEndTimeInDays] = useState(30)
+  const [endTime, setEndTime] = useState(job?.endTime || 0)
 
   const isValid =
     jobData.title.trim() !== '' &&
@@ -87,11 +87,13 @@ export default function TeamJobModal({
           )
             return toast.error('Please fill out all fields')
 
+          if (endTime === 0 || endTime >= daysFromNowTimestamp(1)) {
+            return toast.error('Please set an expiration date')
+          }
+
           setIsLoading(true)
 
           const cleanedData = cleanData(jobData)
-
-          const endTime = Math.floor(Date.now() / 1000) + endTimeInDays * 86400
 
           try {
             if (edit) {
@@ -174,19 +176,26 @@ export default function TeamJobModal({
             }}
             value={jobData.contactInfo}
           />
-          <div className="w-full flex gap-2">
+          <div className="w-full flex gap-2 items-center">
             <p>Expiration:</p>
-            <select
-              id="job-expiration-input"
-              className="text-black"
-              onChange={({ target }: any) =>
-                setEndTimeInDays(parseInt(target.value))
+            <input
+              id="job-end-time-input"
+              className="p-2 rounded-sm text-black"
+              type="date"
+              min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+              value={
+                endTime > 0
+                  ? new Date(endTime * 1000).toISOString().split('T')[0]
+                  : 0
               }
-            >
-              <option value={30}>30 days</option>
-              <option value={60}>60 days</option>
-              <option value={90}>90 days</option>
-            </select>
+              onChange={({ target }: any) => {
+                const date = new Date(target.value)
+                const timezoneOffset = date.getTimezoneOffset() * 60 * 1000
+                const adjustedDate = new Date(date.getTime() + timezoneOffset)
+                const unixTime = Math.floor(adjustedDate.getTime() / 1000)
+                setEndTime(unixTime)
+              }}
+            />
           </div>
           {job?.endTime && (
             <p id="job-expiration-status" className="mt-4 opacity-60">
