@@ -1,8 +1,4 @@
-import {
-  ArrowUpRightIcon,
-  PencilIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline'
+import { PencilIcon, ShareIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -121,7 +117,7 @@ export default function TeamListing({
       {isActive && (
         <span
           id="link-frame"
-          className={`card-container h-full w-full flex lg:flex-col rounded-[20px] relative overflow-hidden ${
+          className={`card-container h-full w-full min-w-[250px] flex lg:flex-col rounded-[20px] relative overflow-hidden ${
             !editable ? 'cursor-pointer' : ''
           }`}
           onClick={() => {
@@ -218,7 +214,7 @@ export default function TeamListing({
                         {listing.title}
                       </h2>
                       <StandardButton
-                        className="gradient-2 h-[30px] flex items-center justify-center"
+                        className="relative left-4 gradient-2 h-[30px] w-[30px] flex items-center justify-center"
                         onClick={(e: any) => {
                           e.stopPropagation()
                           const link = `${window.location.origin}/team/${listing.teamId}?listing=${listing.id}`
@@ -228,55 +224,14 @@ export default function TeamListing({
                         hoverEffect={false}
                       >
                         <div className="flex items-center gap-2">
-                          <ArrowUpRightIcon className="h-4 w-4" />
-                          {'Share'}
+                          <ShareIcon className="h-4 w-4" />
                         </div>
                       </StandardButton>
                     </div>
-                    <p id="listing-description">{listing.description}</p>
+                    <p id="listing-description" className="mt-2">
+                      {listing.description}
+                    </p>
                   </div>
-                  {editable && (
-                    <div className="flex flex-wrap items-end justify-end w-full gap-4 ml-4 ">
-                      <button
-                        id="edit-listing-button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setEnabledMarketplaceListingModal(true)
-                        }}
-                      >
-                        {!isDeleting && (
-                          <PencilIcon className="h-6 w-6 text-light-warm" />
-                        )}
-                      </button>
-                      {isDeleting ? (
-                        <LoadingSpinner className="scale-[75%]" />
-                      ) : (
-                        <button
-                          id="delete-listing-button"
-                          onClick={async (event) => {
-                            event.stopPropagation()
-                            setIsDeleting(true)
-                            try {
-                              await marketplaceTableContract.call(
-                                'deleteFromTable',
-                                [listing.id, listing.teamId]
-                              )
-                              setTimeout(() => {
-                                refreshListings()
-                                setIsDeleting(false)
-                              }, 25000)
-                            } catch (err) {
-                              console.log(err)
-                              toast.error('Error deleting listing')
-                              setIsDeleting(false)
-                            }
-                          }}
-                        >
-                          <TrashIcon className="h-6 w-6 text-light-warm" />
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </span>
                 <div id="listing-id-container" className="relative z-50">
                   <div id="listing-id" className="listing flex flex-col gap-2">
@@ -374,6 +329,48 @@ export default function TeamListing({
                 recipient={teamData?.multisigAddress}
                 setEnabled={setEnabledBuyListingModal}
               />
+            )}
+            {editable && (
+              <div className="mb-4 pr-6 flex flex-wrap items-end justify-end w-full gap-4">
+                <button
+                  id="edit-listing-button"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setEnabledMarketplaceListingModal(true)
+                  }}
+                >
+                  {!isDeleting && (
+                    <PencilIcon className="h-6 w-6 text-light-warm" />
+                  )}
+                </button>
+                {isDeleting ? (
+                  <LoadingSpinner className="scale-[75%]" />
+                ) : (
+                  <button
+                    id="delete-listing-button"
+                    onClick={async (event) => {
+                      event.stopPropagation()
+                      setIsDeleting(true)
+                      try {
+                        await marketplaceTableContract.call('deleteFromTable', [
+                          listing.id,
+                          listing.teamId,
+                        ])
+                        setTimeout(() => {
+                          refreshListings()
+                          setIsDeleting(false)
+                        }, 25000)
+                      } catch (err) {
+                        console.log(err)
+                        toast.error('Error deleting listing')
+                        setIsDeleting(false)
+                      }
+                    }}
+                  >
+                    <TrashIcon className="h-6 w-6 text-light-warm" />
+                  </button>
+                )}
+              </div>
             )}
           </span>
         </span>
