@@ -71,6 +71,10 @@ describe('<TeamJobModal />', () => {
     cy.get('#job-description-input').type('Test Job Description')
     cy.get('#job-application-link-input').type('contact@example.com')
 
+    const endTime = daysFromNowTimestamp(1)
+    const endTimeDate = new Date(endTime * 1000).toISOString().split('T')[0]
+    cy.get('#job-end-time-input').type(endTimeDate)
+
     cy.get('form').submit()
 
     cy.wrap(props.jobTableContract.call).should('have.been.called')
