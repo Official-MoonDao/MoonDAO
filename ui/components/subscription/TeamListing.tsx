@@ -88,7 +88,6 @@ export default function TeamListing({
   }, [listing, teamContract])
 
   useEffect(() => {
-    console.log(listing)
     if (currTime >= listing.startTime && currTime <= listing.endTime) {
       setIsActive(true)
     } else if (listing.startTime === 0 && listing.endTime === 0) {
