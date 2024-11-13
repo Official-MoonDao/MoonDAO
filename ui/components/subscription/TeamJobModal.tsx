@@ -144,6 +144,7 @@ export default function TeamJobModal({
         </div>
         <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
           <input
+            id="job-title-input"
             type="text"
             placeholder="Title"
             className="w-full mt-2 py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px] focus:outline-none focus:ring-2 focus:ring-light-warm"
@@ -153,6 +154,7 @@ export default function TeamJobModal({
             value={jobData.title}
           />
           <textarea
+            id="job-description-input"
             placeholder="Description"
             className="w-full h-[250px] py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm focus:outline-none focus:ring-2 focus:ring-light-warm"
             onChange={(e) => {
@@ -163,6 +165,7 @@ export default function TeamJobModal({
             maxLength={500}
           />
           <input
+            id="job-application-link-input"
             type="text"
             placeholder="Application Link"
             className="w-full py-2 px-5 border-2 rounded-b-[20px] dark:border-0 dark:bg-[#0f152f] focus:outline-none focus:ring-2 focus:ring-light-warm"
@@ -174,6 +177,7 @@ export default function TeamJobModal({
           <div className="w-full flex gap-2">
             <p>Expiration:</p>
             <select
+              id="job-expiration-input"
               className="text-black"
               onChange={({ target }: any) =>
                 setEndTimeInDays(parseInt(target.value))
@@ -185,7 +189,7 @@ export default function TeamJobModal({
             </select>
           </div>
           {job?.endTime && (
-            <p className="mt-4 opacity-60">
+            <p id="job-expiration-status" className="mt-4 opacity-60">
               {isExpired
                 ? `*This job post expired on ${new Date(
                     job.endTime * 1000

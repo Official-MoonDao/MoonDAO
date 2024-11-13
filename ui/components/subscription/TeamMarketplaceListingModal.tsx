@@ -247,6 +247,7 @@ export default function TeamMarketplaceListingModal({
         )}
         <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
           <input
+            id="listing-image-input"
             type="file"
             className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px]"
             onChange={(e: any) =>
@@ -255,6 +256,7 @@ export default function TeamMarketplaceListingModal({
           />
 
           <input
+            id="listing-title-input"
             type="text"
             placeholder="Title"
             className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
@@ -264,6 +266,7 @@ export default function TeamMarketplaceListingModal({
             value={listingData.title}
           />
           <textarea
+            id="listing-description-input"
             placeholder="Description"
             className="w-full h-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
             onChange={(e) => {
@@ -275,6 +278,7 @@ export default function TeamMarketplaceListingModal({
           />
           <div className="flex gap-2">
             <input
+              id="listing-price-input"
               type="text"
               placeholder="Price"
               className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
@@ -285,6 +289,7 @@ export default function TeamMarketplaceListingModal({
             />
 
             <select
+              id="listing-currency-input"
               className="p-2 bg-[#0f152f]"
               onChange={(e) =>
                 setListingData({ ...listingData, currency: e.target.value })
@@ -300,6 +305,7 @@ export default function TeamMarketplaceListingModal({
           <div className="w-full flex gap-2">
             <p className="">Require shipping address</p>
             <input
+              id="listing-shipping-input"
               className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
               type="checkbox"
               checked={listingData.shipping === 'true'}
@@ -315,6 +321,7 @@ export default function TeamMarketplaceListingModal({
             <div className="flex gap-2">
               <p className="">Timed</p>
               <input
+                id="listing-timed-input"
                 className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
                 type="checkbox"
                 checked={isTimed}
@@ -324,6 +331,7 @@ export default function TeamMarketplaceListingModal({
             {isTimed && (
               <div className="w-full flex gap-2 text-black">
                 <input
+                  id="listing-start-time-input"
                   className="p-2 rounded-sm "
                   type="date"
                   min={
@@ -349,6 +357,7 @@ export default function TeamMarketplaceListingModal({
                   }}
                 />
                 <input
+                  id="listing-end-time-input"
                   className="p-2 rounded-sm"
                   type="date"
                   min={
