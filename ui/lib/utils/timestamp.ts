@@ -14,3 +14,7 @@ export function daysSinceTimestamp(timestamp: number) {
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   return days
 }
+
+export function daysFromNowTimestamp(days: number) {
+  return Math.floor(Date.now() / 1000) + days * 86400
+}
