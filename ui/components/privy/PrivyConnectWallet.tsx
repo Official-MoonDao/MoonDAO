@@ -1,8 +1,14 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useFundWallet, usePrivy, useWallets } from '@privy-io/react-auth'
-import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import {
+  useFundWallet,
+  useLogin,
+  usePrivy,
+  useWallets,
+} from '@privy-io/react-auth'
+import { NFT, useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
@@ -10,10 +16,13 @@ import ChainContext from '../../lib/thirdweb/chain-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
+import CitizenContext from '@/lib/citizen/citizen-context'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
 import ERC20 from '../../const/abis/ERC20.json'
 import {
+  CITIZEN_ADDRESSES,
   DAI_ADDRESSES,
   MOONEY_ADDRESSES,
   USDC_ADDRESSES,
@@ -194,6 +203,9 @@ export function PrivyConnectWallet({
   citizenContract,
   type,
 }: PrivyConnectWalletProps) {
+  const sdk = useSDK()
+  const router = useRouter()
+
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
@@ -203,14 +215,38 @@ export function PrivyConnectWallet({
   const { data: _ensData } = useENS(address)
   const ens = _ensData?.name
   const [walletChainId, setWalletChainId] = useState(1)
-  const {
-    login,
-    logout,
-    user,
-    authenticated,
-    connectWallet,
-    exportWallet,
-  }: any = usePrivy()
+  const { logout, user, authenticated, connectWallet, exportWallet }: any =
+    usePrivy()
+
+  const { login } = useLogin({
+    onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
+      //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
+      if (!wasAlreadyAuthenticated) {
+        let citizen
+        try {
+          const citizenContract = await sdk?.getContract(
+            CITIZEN_ADDRESSES[selectedChain.slug]
+          )
+          const ownedTokenId = await citizenContract?.call('getOwnedToken', [
+            address,
+          ])
+          citizen = await citizenContract?.erc721.get(ownedTokenId)
+        } catch (err) {
+          citizen = undefined
+        }
+        if (citizen) {
+          router.push(
+            `/citizen/${generatePrettyLinkWithId(
+              citizen?.metadata?.name as string,
+              citizen?.metadata?.id
+            )}`
+          )
+        } else {
+          router.push('/citizen/guest')
+        }
+      }
+    },
+  })
   const { wallets } = useWallets()
 
   const { fundWallet } = useFundWallet()
