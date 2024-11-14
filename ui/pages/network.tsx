@@ -2,11 +2,7 @@ import { MapIcon } from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
-import {
-  blockedCitizens,
-  blockedTeams,
-  featuredEntities,
-} from 'const/whitelist'
+import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -326,6 +322,26 @@ export async function getStaticProps() {
     }
   )
 
+  const sortedValidTeams = filteredValidTeams
+    .reverse()
+    .sort((a: any, b: any) => {
+      const aIsFeatured = featuredTeams.includes(a.metadata.id)
+      const bIsFeatured = featuredTeams.includes(b.metadata.id)
+
+      if (aIsFeatured && bIsFeatured) {
+        return (
+          featuredTeams.indexOf(a.metadata.id) -
+          featuredTeams.indexOf(b.metadata.id)
+        )
+      } else if (aIsFeatured) {
+        return -1
+      } else if (bIsFeatured) {
+        return 1
+      } else {
+        return 0
+      }
+    })
+
   const citizenContract = await sdk.getContract(
     CITIZEN_ADDRESSES[chain.slug],
     CitizenABI
@@ -383,7 +399,7 @@ export async function getStaticProps() {
 
   return {
     props: {
-      filteredTeams: filteredValidTeams.reverse(),
+      filteredTeams: sortedValidTeams,
       filteredCitizens: filteredValidCitizens.reverse(),
       prettyLinks,
     },
