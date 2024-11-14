@@ -33,6 +33,7 @@ import { useTeamData } from '@/lib/team/useTeamData'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
@@ -52,6 +53,8 @@ import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
+import GuestActions from '@/components/subscription/GuestActions'
+import OpenVotes from '@/components/subscription/OpenVotes'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamAction from '@/components/subscription/TeamAction'
 import CitizenABI from '../../const/abis/Citizen.json'
@@ -68,6 +71,8 @@ export default function CitizenDetailPage({
   const [subModalEnabled, setSubModalEnabled] = useState(false)
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
     useState(false)
+
+  const isGuest = tokenId === 'guest'
 
   // Data
   const { contract: citizenContract } = useContract(
@@ -87,10 +92,12 @@ export default function CitizenDetailPage({
   } = useCitizenData(nft, citizenContract)
 
   // Balances
+  const nativeBalance = useNativeBalance()
+
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug]
   )
-  const MOONEYBalance = useTotalMooneyBalance(nft?.owner)
+  const MOONEYBalance = useTotalMooneyBalance(isGuest ? address : nft?.owner)
   const { contract: vMooneyContract } = useContract(
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
@@ -282,7 +289,7 @@ export default function CitizenDetailPage({
                   <></>
                 )} */}
                 <div className="mt-4 lg:ml-5">
-                  <Address address={nft.owner} />
+                  <Address address={isGuest ? address : nft.owner} />
                 </div>
               </div>
             </div>
@@ -296,7 +303,7 @@ export default function CitizenDetailPage({
     <Container>
       <ContentLayout
         description={ProfileHeader}
-        preFooter={<NoticeFooter />}
+        preFooter={<NoticeFooter citizenNotice />}
         mainPadding
         mode="compact"
         popOverEffect={false}
@@ -330,7 +337,7 @@ export default function CitizenDetailPage({
                       description="Submit a proposal to secure funding for your space project."
                       icon={
                         <Image
-                          src="../assets/icon-project.svg"
+                          src="/assets/icon-project.svg"
                           alt="Submit a proposal"
                           height={30}
                           width={30}
@@ -343,7 +350,7 @@ export default function CitizenDetailPage({
                       description="Browse job openings, contracting opportunities, and bounties."
                       icon={
                         <Image
-                          src="../assets/icon-job.svg"
+                          src="/assets/icon-job.svg"
                           alt="Browse open jobs"
                           height={30}
                           width={30}
@@ -356,7 +363,7 @@ export default function CitizenDetailPage({
                       description="Get rewarded for mission-aligned work towards a lunar settlement."
                       icon={
                         <Image
-                          src="../assets/icon-submit.svg"
+                          src="/assets/icon-submit.svg"
                           alt="Get rewards"
                           height={30}
                           width={30}
@@ -395,7 +402,7 @@ export default function CitizenDetailPage({
           />
         )}
 
-        {subIsValid && !isDeleted ? (
+        {subIsValid && !isDeleted && !isGuest ? (
           <div className="z-50 mb-10">
             {/* Mooney and Voting Power */}
             <Frame
@@ -484,6 +491,17 @@ export default function CitizenDetailPage({
                 {/* General Actions */}
               </div>
             </Frame>
+
+            <Frame
+              noPadding
+              bottomLeft="0px"
+              bottomRight="0px"
+              topRight="0px"
+              topLeft="0px"
+            >
+              <OpenVotes />
+            </Frame>
+
             {address === nft.owner && (
               <Frame
                 noPadding
@@ -496,6 +514,13 @@ export default function CitizenDetailPage({
               </Frame>
             )}
           </div>
+        ) : isGuest ? (
+          <>
+            <GuestActions
+              nativeBalance={nativeBalance}
+              citizenContract={citizenContract}
+            />
+          </>
         ) : (
           // Subscription expired
           <Card>
@@ -514,45 +539,63 @@ export default function CitizenDetailPage({
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const sdk = initSDK(chain)
-
-  const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chain.slug]}`
-  const allCitizensRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${statement}`
-  )
-  const allCitizens = await allCitizensRes.json()
-
-  const { prettyLinks } = generatePrettyLinks(allCitizens, {
-    allHaveTokenId: true,
-  })
-
-  let tokenId
-  if (!Number.isNaN(Number(tokenIdOrName))) {
-    tokenId = tokenIdOrName
-  } else {
-    tokenId = prettyLinks[tokenIdOrName]
-  }
-
-  const citizenContract = await sdk.getContract(
-    CITIZEN_ADDRESSES[chain.slug],
-    CitizenABI
-  )
-  const nft = await citizenContract.erc721.get(tokenId)
-
-  if (
-    !nft ||
-    !nft.metadata.uri ||
-    blockedCitizens.includes(Number(nft.metadata.id))
-  ) {
-    return {
-      notFound: true,
+  let nft, tokenId, imageIpfsLink
+  if (tokenIdOrName === 'guest') {
+    nft = {
+      metadata: {
+        name: 'Your Name Here',
+        description: '',
+        image: '/assets/citizen-default.png',
+        uri: '',
+        id: 'guest',
+      },
+      owner: '',
     }
-  }
 
-  const rawMetadataRes = await fetch(nft.metadata.uri)
-  const rawMetadata = await rawMetadataRes.json()
-  const imageIpfsLink = rawMetadata.image
+    tokenId = 'guest'
+
+    imageIpfsLink = ''
+  } else {
+    const chain =
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+    const sdk = initSDK(chain)
+
+    const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chain.slug]}`
+    const allCitizensRes = await fetch(
+      `${TABLELAND_ENDPOINT}?statement=${statement}`
+    )
+    const allCitizens = await allCitizensRes.json()
+
+    const { prettyLinks } = generatePrettyLinks(allCitizens, {
+      allHaveTokenId: true,
+    })
+
+    if (!Number.isNaN(Number(tokenIdOrName))) {
+      tokenId = tokenIdOrName
+    } else {
+      tokenId = prettyLinks[tokenIdOrName]
+    }
+
+    const citizenContract = await sdk.getContract(
+      CITIZEN_ADDRESSES[chain.slug],
+      CitizenABI
+    )
+    nft = await citizenContract.erc721.get(tokenId)
+
+    if (
+      !nft ||
+      !nft.metadata.uri ||
+      blockedCitizens.includes(Number(nft.metadata.id))
+    ) {
+      return {
+        notFound: true,
+      }
+    }
+
+    const rawMetadataRes = await fetch(nft.metadata.uri)
+    const rawMetadata = await rawMetadataRes.json()
+    imageIpfsLink = rawMetadata.image
+  }
 
   return {
     props: {
