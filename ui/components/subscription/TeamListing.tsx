@@ -117,7 +117,7 @@ export default function TeamListing({
       {isActive && (
         <span
           id="link-frame"
-          className={`card-container h-full w-full min-w-[250px] flex lg:flex-col rounded-[20px] relative overflow-hidden ${
+          className={`card-container h-full w-full min-w-[300px] flex lg:flex-col rounded-[20px] relative overflow-hidden ${
             !editable ? 'cursor-pointer' : ''
           }`}
           onClick={() => {
@@ -205,7 +205,7 @@ export default function TeamListing({
                         </button>
                       )}
                     </div>
-                    <div className="flex items-center justify-between w-full">
+                    <div className="flex justify-between w-full">
                       <h2
                         id="main-header"
                         className={`z-20 pt-[10px] pb-[10px] static-sub-header font-GoodTimes flex items-center 
@@ -269,9 +269,10 @@ export default function TeamListing({
                         className="flex items-center hover:underline"
                         id="listing-savings"
                       >
-                        <span className="bg-light-warm p-1 mr-1">{`Save ${
-                          +listing.price * 0.1
-                        } ${listing.currency}`}</span>
+                        <span className="bg-light-warm p-1 mr-1">{`Save ${truncateTokenValue(
+                          +listing.price * 0.1,
+                          listing.currency
+                        )} ${listing.currency}`}</span>
                         {' with citizenship'}
                       </button>
                     )}
