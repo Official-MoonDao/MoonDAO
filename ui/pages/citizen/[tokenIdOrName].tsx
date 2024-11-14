@@ -13,6 +13,7 @@ import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_TABLE_NAMES,
+  MARKETPLACE_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
@@ -54,10 +55,12 @@ import Card from '@/components/subscription/Card'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import GuestActions from '@/components/subscription/GuestActions'
+import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
 import OpenVotes from '@/components/subscription/OpenVotes'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamAction from '@/components/subscription/TeamAction'
 import CitizenABI from '../../const/abis/Citizen.json'
+import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
 export default function CitizenDetailPage({
   nft,
@@ -81,6 +84,11 @@ export default function CitizenDetailPage({
 
   const { contract: teamContract } = useContract(
     TEAM_ADDRESSES[selectedChain.slug]
+  )
+
+  const { contract: marketplaceTableContract } = useContract(
+    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug],
+    MarketplaceABI
   )
 
   const {
@@ -491,16 +499,33 @@ export default function CitizenDetailPage({
                 {/* General Actions */}
               </div>
             </Frame>
+            {address === nft.owner && (
+              <>
+                <Frame
+                  noPadding
+                  bottomLeft="0px"
+                  bottomRight="0px"
+                  topRight="0px"
+                  topLeft="0px"
+                >
+                  <OpenVotes />
+                </Frame>
 
-            <Frame
-              noPadding
-              bottomLeft="0px"
-              bottomRight="0px"
-              topRight="0px"
-              topLeft="0px"
-            >
-              <OpenVotes />
-            </Frame>
+                <Frame
+                  noPadding
+                  bottomLeft="0px"
+                  bottomRight="0px"
+                  topRight="0px"
+                  topLeft="0px"
+                >
+                  <NewMarketplaceListings
+                    selectedChain={selectedChain}
+                    teamContract={teamContract}
+                    marketplaceTableContract={marketplaceTableContract}
+                  />
+                </Frame>
+              </>
+            )}
 
             {address === nft.owner && (
               <Frame
