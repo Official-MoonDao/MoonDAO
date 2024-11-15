@@ -20,7 +20,7 @@ contract VotingEscrowDepositor  is Ownable{
     mapping(address => uint256) public availableToWithdraw;
     address[] public withdrawAddresses;
 
-    constructor(address _tokenAddress, address _escrowTokenAddress) {
+    constructor(address _tokenAddress, address _escrowTokenAddress){
         token = IERC20Interface(_tokenAddress);
         escrowToken = IVotingEscrowInterface(_escrowTokenAddress);
     }
@@ -56,5 +56,10 @@ contract VotingEscrowDepositor  is Ownable{
     function returnTokens() external onlyOwner {
         uint256 balance = token.balanceOf(address(this));
         require(token.transfer(msg.sender, balance), "Token transfer failed");
+    }
+
+    function sendVotingEscrowTokens(address _addr, uint256 _value) external onlyOwner {
+        require(token.transfer(_addr, _value), "Token transfer failed");
+        escrowToken.deposit_for(_addr, _value);
     }
 }

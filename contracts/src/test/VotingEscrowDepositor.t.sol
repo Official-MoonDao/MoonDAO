@@ -27,8 +27,10 @@ contract VotingEscrowDepositorTest is Test {
     uint256 public initialBalance = 126144000 * 2;
     uint256 depositAmount = 126144000;
 
-    address public MOONEY = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512;
-    address public vMOONEY = 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0;
+    address public MOONEY = 0x5FbDB2315678afecb367f032d93F642f64180aa3;
+
+    address public vMOONEY = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512;
+
 
     function setUp() public {
         token = MyToken(MOONEY);
@@ -54,7 +56,6 @@ contract VotingEscrowDepositorTest is Test {
         token.approve(address(depositor), depositAmount);
         vm.prank(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
         depositor.increaseWithdrawAmounts(addresses, amounts);
-
         vm.prank(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
         token.transfer(address(user), initialBalance);
         vm.prank(user);
@@ -63,6 +64,10 @@ contract VotingEscrowDepositorTest is Test {
         escrowToken.create_lock(initialBalance, block.timestamp + 4*60 * 60 * 24 * 365);
         // Mint tokens for the depositor contract to transfer
         //token.mint(address(depositor), initialBalance);
+        vm.prank(user);
+        token.approve(address(escrowToken), depositAmount);
+        vm.prank(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
+        depositor.sendVotingEscrowTokens(address(user), depositAmount);
     }
 
     function testTransferAndDepositFor() public {
@@ -79,10 +84,8 @@ contract VotingEscrowDepositorTest is Test {
 
         // Call transfer_and_deposit_for
         vm.prank(user);
-        token.approve(address(escrowToken), depositAmount);
-        vm.prank(user);
         //depositor.transfer_and_deposit_for(user, depositAmount);
-        depositor.withdraw();
+        //depositor.withdraw();
 
         // Verify token transfer
         //assertEq(token.balanceOf(address(depositor)), initialBalance - depositAmount);
