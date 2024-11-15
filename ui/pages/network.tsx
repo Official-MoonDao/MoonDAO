@@ -1,15 +1,13 @@
+import { MapIcon } from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
-import {
-  blockedCitizens,
-  blockedTeams,
-  featuredEntities,
-} from 'const/whitelist'
+import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback } from 'react'
+import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -22,16 +20,24 @@ import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
+import StandardButton from '@/components/layout/StandardButton'
 import Tab from '@/components/layout/Tab'
+import CitizenABI from '../const/abis/Citizen.json'
+import TeamABI from '../const/abis/Team.json'
 
 type NetworkProps = {
   filteredTeams: NFT[]
   filteredCitizens: NFT[]
+  prettyLinks: {
+    team: Record<number, string>
+    citizen: Record<number, string>
+  }
 }
 
 export default function Network({
   filteredTeams,
   filteredCitizens,
+  prettyLinks,
 }: NetworkProps) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -132,30 +138,39 @@ export default function Network({
       <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
         <Search input={input} setInput={setInput} />
       </Frame>
-      <div
-        id="filter-container"
-        className="max-w-[350px] border-b-5 border-black"
-      >
-        <Frame noPadding>
-          <div className="flex flex-wrap text-sm bg-filter">
-            <Tab
-              tab="teams"
-              currentTab={tab}
-              setTab={handleTabChange}
-              icon="/../.././assets/icon-org.svg"
-            >
-              Teams
-            </Tab>
-            <Tab
-              tab="citizens"
-              currentTab={tab}
-              setTab={handleTabChange}
-              icon="/../.././assets/icon-passport.svg"
-            >
-              Citizens
-            </Tab>
-          </div>
-        </Frame>
+      <div className="w-full flex gap-4">
+        <div
+          id="filter-container"
+          className="max-w-[350px] border-b-5 border-black"
+        >
+          <Frame noPadding>
+            <div className="flex flex-wrap text-sm bg-filter">
+              <Tab
+                tab="teams"
+                currentTab={tab}
+                setTab={handleTabChange}
+                icon="/../.././assets/icon-org.svg"
+              >
+                Teams
+              </Tab>
+              <Tab
+                tab="citizens"
+                currentTab={tab}
+                setTab={handleTabChange}
+                icon="/../.././assets/icon-passport.svg"
+              >
+                Citizens
+              </Tab>
+            </div>
+          </Frame>
+        </div>
+
+        <StandardButton
+          className="gradient-2 h-[40px]"
+          onClick={() => router.push('/map')}
+        >
+          <MapIcon width={20} height={20} />
+        </StandardButton>
       </div>
     </div>
   )
@@ -203,6 +218,7 @@ export default function Network({
                             owner={nft.owner}
                             type={type}
                             hovertext="Explore Profile"
+                            prettyLink={prettyLinks?.[type]?.[nft.metadata.id]}
                           />
                         </div>
                       )
@@ -276,7 +292,10 @@ export async function getStaticProps() {
   const sdk = initSDK(chain)
   const now = Math.floor(Date.now() / 1000)
 
-  const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
+  const teamContract = await sdk.getContract(
+    TEAM_ADDRESSES[chain.slug],
+    TeamABI
+  )
   const totalTeams = await teamContract.call('totalSupply')
 
   const teams = [] //replace with teamContract.erc721.getAll() if all teams load
@@ -303,7 +322,30 @@ export async function getStaticProps() {
     }
   )
 
-  const citizenContract = await sdk.getContract(CITIZEN_ADDRESSES[chain.slug])
+  const sortedValidTeams = filteredValidTeams
+    .reverse()
+    .sort((a: any, b: any) => {
+      const aIsFeatured = featuredTeams.includes(a.metadata.id)
+      const bIsFeatured = featuredTeams.includes(b.metadata.id)
+
+      if (aIsFeatured && bIsFeatured) {
+        return (
+          featuredTeams.indexOf(a.metadata.id) -
+          featuredTeams.indexOf(b.metadata.id)
+        )
+      } else if (aIsFeatured) {
+        return -1
+      } else if (bIsFeatured) {
+        return 1
+      } else {
+        return 0
+      }
+    })
+
+  const citizenContract = await sdk.getContract(
+    CITIZEN_ADDRESSES[chain.slug],
+    CitizenABI
+  )
   const totalCitizens = await citizenContract.call('totalSupply')
 
   const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
@@ -330,10 +372,36 @@ export async function getStaticProps() {
     }
   )
 
+  //Generate pretty links
+  const prettyLinks = {
+    team: {},
+    citizen: {},
+  }
+  const teamPrettyLinkData = teams.map((nft: any) => ({
+    name: nft?.metadata?.name,
+    id: nft?.metadata?.id,
+  }))
+  const { idToPrettyLink: teamIdToPrettyLink } =
+    generatePrettyLinks(teamPrettyLinkData)
+
+  prettyLinks.team = teamIdToPrettyLink
+
+  const citizenPrettyLinkData = citizens.map((nft: any) => ({
+    name: nft?.metadata?.name,
+    id: nft?.metadata?.id,
+  }))
+  const { idToPrettyLink: citizenIdToPrettyLink } = generatePrettyLinks(
+    citizenPrettyLinkData,
+    { allHaveTokenId: true }
+  )
+
+  prettyLinks.citizen = citizenIdToPrettyLink
+
   return {
     props: {
-      filteredTeams: filteredValidTeams.reverse(),
+      filteredTeams: sortedValidTeams,
       filteredCitizens: filteredValidCitizens.reverse(),
+      prettyLinks,
     },
     revalidate: 60,
   }

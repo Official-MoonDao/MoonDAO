@@ -2,6 +2,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 import { createSession, destroySession } from '../iron-session/iron-session'
+import fetchEmail from '../typeform/fetchEmail'
 import { getAttribute } from '../utils/nft'
 
 export default function useCitizenEmail(nft: any) {
@@ -20,23 +21,34 @@ export default function useCitizenEmail(nft: any) {
         'formId'
       ).value
 
-      const res = await fetch(
-        `/api/typeform/response?formId=${process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID}&responseId=${formResponseId}`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      )
+      try {
+        const citizenFormV1Email = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+          formResponseId,
+          'LzGGOX3e8Sfv',
+          accessToken
+        )
 
-      const data = await res.json()
+        const citizenShortFormEmail = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string,
+          formResponseId,
+          'JEiG9XCW6M73',
+          accessToken
+        )
 
-      const citizenEmail = data?.answers?.find(
-        (a: any) => a.field.id === 'LzGGOX3e8Sfv'
-      )?.email
+        const citizenEmailFormEmail = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string,
+          formResponseId,
+          'Z3IMkpvJUfdl',
+          accessToken
+        )
 
-      setEmail(citizenEmail)
+        setEmail(
+          citizenEmailFormEmail || citizenShortFormEmail || citizenFormV1Email
+        )
+      } catch (err: any) {
+        console.log(err)
+      }
       await destroySession(accessToken)
     }
 

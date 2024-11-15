@@ -15,8 +15,9 @@ import {
   USDC_ADDRESSES,
   DEFAULT_CHAIN,
 } from 'const/config'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import useTeamEmail from '@/lib/team/useTeamEmail'
@@ -38,6 +39,7 @@ export default function BuyTeamListingModal({
   recipient,
   setEnabled,
 }: BuyListingModalProps) {
+  const { citizen } = useContext(CitizenContext)
   const sdk = useSDK()
   const address = useAddress()
   const { getAccessToken } = usePrivy()
@@ -78,6 +80,7 @@ export default function BuyTeamListingModal({
   }
 
   const currencyDecimals: any = {
+    ETH: 18,
     MOONEY: 18,
     DAI: 18,
     USDC: 6,
@@ -94,7 +97,14 @@ export default function BuyTeamListingModal({
   }, [citizenEmail])
 
   async function buyListing() {
-    const price = Number(listing.price)
+    let price
+
+    if (citizen) {
+      price = +listing.price
+    } else {
+      price = +listing.price + +listing.price * 0.1 // 10% upcharge for non-citizens
+    }
+
     setIsLoading(true)
     const accessToken = await getAccessToken()
     await createSession(accessToken)
@@ -140,20 +150,35 @@ export default function BuyTeamListingModal({
             address,
             email,
             item: listing.title,
-            value: listing.price + ' ' + listing.currency,
+            value: price,
+            originalValue: +listing.price,
+            currency: listing.currency,
+            decimals: currencyDecimals[listing.currency],
             quantity: 1,
-            tx: transactionLink,
+            txLink: transactionLink,
+            txHash: receipt.transactionHash,
+            recipient,
+            isCitizen: citizen ? true : false,
             shipping,
             teamEmail,
           }),
         })
 
-        toast.success(
-          "Successfull purchase! You'll receive an email shortly.",
-          {
+        const { success, message } = await res.json()
+
+        if (success) {
+          toast.success(
+            "Successfull purchase! You'll receive an email shortly.",
+            {
+              duration: 10000,
+            }
+          )
+        } else {
+          console.log(message)
+          toast.error('Something went wrong, please contact support.', {
             duration: 10000,
-          }
-        )
+          })
+        }
       }
 
       setEnabled(false)
@@ -215,7 +240,9 @@ export default function BuyTeamListingModal({
               <p>{`# ${listing.id}`}</p>
               <p className="font-GoodTimes">{listing.title}</p>
               <p className="text-[75%]">{listing.description}</p>
-              <p className="font-bold">{`${listing.price} ${listing.currency}`}</p>
+              <p id="listing-price" className="font-bold">{`${
+                citizen ? listing.price : +listing.price * 1.1
+              } ${listing.currency}`}</p>
             </div>
           </div>
           <p className="opacity-60">

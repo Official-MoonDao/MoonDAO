@@ -1,42 +1,49 @@
 import { useWallets } from '@privy-io/react-auth'
+import { useAddress, useSDK } from '@thirdweb-dev/react'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
 
 export function useNativeBalance() {
+  const sdk = useSDK()
+  const address = useAddress()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
   const [nativeBalance, setNativeBalance] = useState<any>()
 
   useEffect(() => {
-    const fetchBalanceAndListen = async () => {
-      if (wallets[selectedWallet]) {
-        const provider = await wallets[selectedWallet].getEthersProvider()
-        const address = wallets[selectedWallet].address
+    let provider: any
+    let isMounted = true
 
-        const getNativeBalance = async () => {
-          const balance = await provider.getBalance(address)
-          setNativeBalance((+balance / 10 ** 18).toFixed(5))
-        }
+    const wallet = wallets[selectedWallet]
 
-        await getNativeBalance()
+    async function handleBalanceChange() {
+      if (!isMounted) return
+      try {
+        const balance = await provider.getBalance(wallet.address)
+        setNativeBalance((+balance / 10 ** 18).toFixed(5))
+      } catch (err) {}
+    }
 
-        // Listen for balance changes
-        const handleBalanceChange = async () => {
-          await getNativeBalance()
-        }
+    async function getBalanceAndListen() {
+      if (wallet) {
+        provider = sdk?.getProvider()
+        await handleBalanceChange()
 
         provider.on('block', handleBalanceChange)
-
-        // Cleanup listener on unmount
-        return () => {
-          provider.off('block', handleBalanceChange)
-        }
       }
     }
 
-    fetchBalanceAndListen()
-  }, [wallets, selectedWallet])
+    getBalanceAndListen()
+
+    // Cleanup listener on unmount or when selectedWallet changes
+    return () => {
+      isMounted = false
+      if (provider) {
+        provider.off('block', handleBalanceChange)
+      }
+    }
+  }, [sdk, address, wallets, selectedWallet])
 
   return nativeBalance
 }

@@ -1,5 +1,4 @@
 import {
-  ArrowTurnUpRightIcon,
   ArrowUpRightIcon,
   PencilIcon,
   TrashIcon,
@@ -8,6 +7,7 @@ import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
 import BuyTeamListingModal from './BuyTeamListingModal'
@@ -33,6 +33,7 @@ type TeamListingProps = {
   editable?: boolean
   teamName?: boolean
   queriedListingId?: number
+  isCitizen?: boolean
 }
 
 export default function TeamListing({
@@ -44,6 +45,7 @@ export default function TeamListing({
   editable,
   teamName,
   queriedListingId,
+  isCitizen,
 }: TeamListingProps) {
   const address = useAddress()
 
@@ -147,32 +149,34 @@ export default function TeamListing({
                     pb-5 flex flex-col items-start pr-5 justify-between
                 `}
             >
-              <div className="flex min-h-[100px] pb-5 flex-col">
-                {teamName && teamData?.name && (
-                  <Link
-                    href={`/team/${listing.teamId}`}
-                    className="font-bold text-light-cool"
-                  >
-                    {teamData.name}
-                  </Link>
-                )}
-                <div className="flex justify-between items-center">
-                  <p>{`# ${listing.id}`}</p>
-                  <StandardButton
-                    className="gradient-2"
-                    onClick={(e: any) => {
-                      e.stopPropagation()
-                      const link = `${window.location.origin}/team/${listing.teamId}?listing=${listing.id}`
-                      navigator.clipboard.writeText(link)
-                      toast.success('Link copied to clipboard')
-                    }}
-                    hoverEffect={false}
-                  >
-                    <div className="flex items-center gap-2">
-                      <ArrowUpRightIcon className="h-4 w-4" />
-                      {'Share'}
-                    </div>
-                  </StandardButton>
+              <div className="w-full flex min-h-[100px] pb-5 flex-col">
+                <div className="flex items-center justify-between w-full">
+                  {teamName && teamData?.name && (
+                    <Link
+                      id="listing-team-name"
+                      href={`/team/${listing.teamId}`}
+                      className="font-bold text-light-cool"
+                    >
+                      {teamData.name}
+                    </Link>
+                  )}
+                  <div className="w-full flex items-center justify-end">
+                    <StandardButton
+                      className="gradient-2"
+                      onClick={(e: any) => {
+                        e.stopPropagation()
+                        const link = `${window.location.origin}/team/${listing.teamId}?listing=${listing.id}`
+                        navigator.clipboard.writeText(link)
+                        toast.success('Link copied to clipboard')
+                      }}
+                      hoverEffect={false}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ArrowUpRightIcon className="h-4 w-4" />
+                        {'Share'}
+                      </div>
+                    </StandardButton>
+                  </div>
                 </div>
                 <h2
                   id="main-header"
@@ -181,11 +185,12 @@ export default function TeamListing({
                 >
                   {listing.title}
                 </h2>
-                <p>{listing.description}</p>
+                <p id="listing-description">{listing.description}</p>
               </div>
               {editable && (
                 <div className="flex flex-wrap items-end justify-end w-full gap-4 ml-4 ">
                   <button
+                    id="edit-listing-button"
                     onClick={(event) => {
                       event.stopPropagation()
                       setEnabledMarketplaceListingModal(true)
@@ -199,6 +204,7 @@ export default function TeamListing({
                     <LoadingSpinner className="scale-[75%]" />
                   ) : (
                     <button
+                      id="delete-listing-button"
                       onClick={async (event) => {
                         event.stopPropagation()
                         setIsDeleting(true)
@@ -226,10 +232,17 @@ export default function TeamListing({
             </span>
             <div id="listing-id-container" className="relative z-50">
               <div id="listing-id" className="listing">
-                <div>
-                  {`${listing.price} 
+                <p id="listing-price" className="font-bold">
+                  {`${
+                    isCitizen
+                      ? truncateTokenValue(listing.price, listing.currency)
+                      : truncateTokenValue(
+                          +listing.price * 1.1,
+                          listing.currency
+                        )
+                  } 
                   ${listing.currency}`}
-                </div>
+                </p>
                 <div id="listing-description"></div>
                 <span
                   id="mobile-button-container"

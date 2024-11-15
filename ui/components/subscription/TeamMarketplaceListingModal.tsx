@@ -249,6 +249,7 @@ export default function TeamMarketplaceListingModal({
               }
             />
           </div>
+          <p className="px-2 opacity-60">{`Listings are marked up 10% for non-citizens`}</p>
         </div>
         <PrivyWeb3Button
           requiredChain={DEFAULT_CHAIN}

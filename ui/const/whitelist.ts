@@ -2,4 +2,4 @@
 export const blockedTeams: any = []
 export const blockedCitizens: any = []
 
-export const featuredEntities: any = [1]
+export const featuredTeams: any = ['6', '7', '8', '1', '9', '5', '4', '3', '2']
