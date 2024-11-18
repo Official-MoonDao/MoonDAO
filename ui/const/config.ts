@@ -154,8 +154,8 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x77092Bff93F16E20795D936AFD90737adf3f3596',
-  sepolia: '0x1c588261069604490e73188343B2C930F35ae2EF',
+  arbitrum: '0x93bCf6B82fcE153F24085b1C6A16328dc580427d',
+  sepolia: '0xa9d0d083AfFd77a2Ce58B8163A54C22b2C57E151',
 }
 
 export const MARKETPLACE_ADDRESS =
@@ -164,8 +164,8 @@ export const MARKETPLACE_ADDRESS =
     : sepoliaConfig.Marketplace
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x763A7c8E7F168bd5b4A12aDcFbB4d4bC8a110361',
-  sepolia: '0xC066269774c8f216054F8C4db14F4C321Dc75710',
+  arbitrum: '0xcAEa289f612386bc2F990de4AA7267951129D213',
+  sepolia: '0x238Ff1163C1f4E31A08240d853f510A4223faAA1',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG

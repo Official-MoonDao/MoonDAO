@@ -3,12 +3,13 @@ import { usePrivy } from '@privy-io/react-auth'
 import { MediaRenderer } from '@thirdweb-dev/react'
 import { DEFAULT_CHAIN } from 'const/config'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import { renameFile } from '@/lib/utils/files'
+import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { TeamListing } from './TeamListing'
@@ -19,6 +20,8 @@ type ListingData = {
   image: any
   price: any
   currency: string
+  tag: string
+  metadata: string
   shipping: string
 }
 
@@ -41,6 +44,12 @@ export default function TeamMarketplaceListingModal({
 }: TeamMarketplaceListingModalProps) {
   const { getAccessToken } = usePrivy()
   const [isLoading, setIsLoading] = useState(false)
+  const [isExpired, setIsExpired] = useState(false)
+  const [isUpcoming, setIsUpcoming] = useState(false)
+
+  const [isTimed, setIsTimed] = useState(listing && listing?.startTime > 0)
+  const [startTime, setStartTime] = useState(listing?.startTime || 0)
+  const [endTime, setEndTime] = useState(listing?.endTime || 0)
   const [listingData, setListingData] = useState<ListingData>(
     edit
       ? {
@@ -49,6 +58,8 @@ export default function TeamMarketplaceListingModal({
           image: listing?.image || '',
           price: listing?.price || '',
           currency: listing?.currency || 'ETH',
+          tag: listing?.tag || '',
+          metadata: listing?.metadata || '',
           shipping: listing?.shipping || 'false',
         }
       : {
@@ -57,6 +68,8 @@ export default function TeamMarketplaceListingModal({
           image: '',
           price: '',
           currency: 'ETH',
+          tag: '',
+          metadata: '',
           shipping: 'false',
         }
   )
@@ -65,6 +78,35 @@ export default function TeamMarketplaceListingModal({
     listingData.title.trim() !== '' &&
     listingData.description.trim() !== '' &&
     listingData.price.trim() !== ''
+
+  const currTime = useCurrUnixTime()
+
+  useEffect(() => {
+    if (listing) {
+      if (currTime < listing.startTime) {
+        setIsUpcoming(true)
+      } else {
+        setIsUpcoming(false)
+      }
+
+      if (
+        currTime > listing.endTime &&
+        listing.endTime !== 0 &&
+        listing.endTime !== undefined
+      ) {
+        setIsExpired(true)
+      } else {
+        setIsExpired(false)
+      }
+    }
+  }, [currTime, listing])
+
+  useEffect(() => {
+    if (!isTimed) {
+      setStartTime(0)
+      setEndTime(0)
+    }
+  }, [isTimed])
 
   return (
     <Modal id="team-marketplace-listing-modal-backdrop" setEnabled={setEnabled}>
@@ -83,6 +125,16 @@ export default function TeamMarketplaceListingModal({
 
           if (!listingData.image) {
             return toast.error('Please upload an image')
+          }
+
+          if (isTimed) {
+            if (startTime >= endTime) {
+              return toast.error('Start time must be before end time')
+            } else if (endTime <= startTime) {
+              return toast.error('End time must be after start time')
+            } else if (startTime === 0 || endTime === 0) {
+              return toast.error('Please set start and end times')
+            }
           }
 
           setIsLoading(true)
@@ -120,6 +172,11 @@ export default function TeamMarketplaceListingModal({
                 teamId,
                 cleanedData.price,
                 cleanedData.currency,
+                startTime,
+                endTime,
+                currTime,
+                '',
+                '',
                 cleanedData.shipping,
               ])
             } else {
@@ -130,6 +187,11 @@ export default function TeamMarketplaceListingModal({
                 teamId,
                 cleanedData.price,
                 cleanedData.currency,
+                startTime,
+                endTime,
+                currTime,
+                '',
+                '',
                 cleanedData.shipping,
               ])
             }
@@ -185,6 +247,7 @@ export default function TeamMarketplaceListingModal({
         )}
         <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
           <input
+            id="listing-image-input"
             type="file"
             className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px]"
             onChange={(e: any) =>
@@ -193,6 +256,7 @@ export default function TeamMarketplaceListingModal({
           />
 
           <input
+            id="listing-title-input"
             type="text"
             placeholder="Title"
             className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
@@ -202,6 +266,7 @@ export default function TeamMarketplaceListingModal({
             value={listingData.title}
           />
           <textarea
+            id="listing-description-input"
             placeholder="Description"
             className="w-full h-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
             onChange={(e) => {
@@ -213,6 +278,7 @@ export default function TeamMarketplaceListingModal({
           />
           <div className="flex gap-2">
             <input
+              id="listing-price-input"
               type="text"
               placeholder="Price"
               className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
@@ -223,6 +289,7 @@ export default function TeamMarketplaceListingModal({
             />
 
             <select
+              id="listing-currency-input"
               className="p-2 bg-[#0f152f]"
               onChange={(e) =>
                 setListingData({ ...listingData, currency: e.target.value })
@@ -236,8 +303,9 @@ export default function TeamMarketplaceListingModal({
             </select>
           </div>
           <div className="w-full flex gap-2">
-            <p className="p-2">Require shipping address</p>
+            <p className="">Require shipping address</p>
             <input
+              id="listing-shipping-input"
               className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
               type="checkbox"
               checked={listingData.shipping === 'true'}
@@ -249,7 +317,75 @@ export default function TeamMarketplaceListingModal({
               }
             />
           </div>
-          <p className="px-2 opacity-60">{`Listings are marked up 10% for non-citizens`}</p>
+          <div className="w-full flex flex-col gap-2">
+            <div className="flex gap-2">
+              <p className="">Timed</p>
+              <input
+                id="listing-timed-input"
+                className="w-[20px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                type="checkbox"
+                checked={isTimed}
+                onChange={({ target }) => setIsTimed(target.checked)}
+              />
+            </div>
+            {isTimed && (
+              <div className="w-full flex gap-2 text-black">
+                <input
+                  id="listing-start-time-input"
+                  className="p-2 rounded-sm "
+                  type="date"
+                  min={
+                    listing && listing?.startTime > 0
+                      ? new Date(listing?.startTime * 1000)
+                          .toISOString()
+                          .split('T')[0]
+                      : new Date().toISOString().split('T')[0]
+                  }
+                  value={
+                    startTime > 0
+                      ? new Date(startTime * 1000).toISOString().split('T')[0]
+                      : 0
+                  }
+                  onChange={({ target }: any) => {
+                    const date = new Date(target.value)
+                    const timezoneOffset = date.getTimezoneOffset() * 60 * 1000
+                    const adjustedDate = new Date(
+                      date.getTime() + timezoneOffset
+                    )
+                    const unixTime = Math.floor(adjustedDate.getTime() / 1000)
+                    setStartTime(unixTime)
+                  }}
+                />
+                <input
+                  id="listing-end-time-input"
+                  className="p-2 rounded-sm"
+                  type="date"
+                  min={
+                    listing && listing?.endTime > 0
+                      ? new Date(listing?.endTime * 1000)
+                          .toISOString()
+                          .split('T')[0]
+                      : ''
+                  }
+                  value={
+                    endTime > 0
+                      ? new Date(endTime * 1000).toISOString().split('T')[0]
+                      : 0
+                  }
+                  onChange={({ target }: any) => {
+                    const date = new Date(target.value)
+                    const timezoneOffset = date.getTimezoneOffset() * 60 * 1000
+                    const adjustedDate = new Date(
+                      date.getTime() + timezoneOffset
+                    )
+                    const unixTime = Math.floor(adjustedDate.getTime() / 1000)
+                    setEndTime(unixTime)
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          <p className="opacity-60">{`Listings are marked up 10% for non-citizens`}</p>
         </div>
         <PrivyWeb3Button
           requiredChain={DEFAULT_CHAIN}

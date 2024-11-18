@@ -160,7 +160,7 @@ export default function TeamMetadataModal({
         <div className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-GoodTimes ">Update Info</h1>
           <button
-          id="close-modal"
+            id="close-modal"
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
             onClick={() => setEnabled(false)}
@@ -261,7 +261,11 @@ export default function TeamMetadataModal({
                     imageIpfsLink = `ipfs://${newImageIpfsHash}`
                   }
 
-                  const oldFormResponseId = getAttribute(nft, 'formId')
+                  const oldFormResponseId = getAttribute(
+                    nft.metadata.attributes,
+                    'formId'
+                  ).value
+
                   if (oldFormResponseId !== formResponseId) {
                     //delete old typeform response
                     await deleteResponse(

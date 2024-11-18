@@ -7,7 +7,6 @@ import {
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
-import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import ChainContext from '@/lib/thirdweb/chain-context'
@@ -105,6 +104,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 export async function getStaticProps() {
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
+  const now = Math.floor(Date.now() / 1000)
 
   const marketplaceTableContract = await sdk.getContract(
     MARKETPLACE_TABLE_ADDRESSES[chain.slug],
@@ -119,14 +119,12 @@ export async function getStaticProps() {
     'getTableName'
   )
 
-  const statement = `SELECT * FROM ${marketplaceTableName}`
+  const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now})`
 
   const allListingsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${statement}`
   )
   const allListings = await allListingsRes.json()
-
-  const now = Math.floor(Date.now() / 1000)
 
   const validListings = allListings.filter(async (listing: TeamListingType) => {
     const teamExpiration = await teamContract.call('expiresAt', [
