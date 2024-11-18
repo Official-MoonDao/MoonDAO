@@ -19,6 +19,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import CitizenTier from '@/components/onboarding/CitizenTier'
 import JobsABI from '../const/abis/JobBoardTable.json'
+import TeamABI from '../const/abis/Team.json'
 
 type JobsProps = {
   jobs: JobType[]
@@ -117,7 +118,10 @@ export async function getStaticProps() {
     JOBS_TABLE_ADDRESSES[chain.slug],
     JobsABI
   )
-  const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug])
+  const teamContract = await sdk.getContract(
+    TEAM_ADDRESSES[chain.slug],
+    TeamABI
+  )
 
   const jobBoardTableName = await jobTableContract.call('getTableName')
 

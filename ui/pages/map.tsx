@@ -1,3 +1,4 @@
+import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
 import { blockedCitizens } from 'const/whitelist'
 import dynamic from 'next/dynamic'
@@ -94,7 +95,8 @@ export async function getStaticProps() {
     const sdk = initSDK(DEFAULT_CHAIN)
 
     const citizenContract = await sdk.getContract(
-      CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug]
+      CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug],
+      CitizenABI
     )
 
     const totalCitizens = await citizenContract.call('totalSupply')
