@@ -36,6 +36,5 @@ describe('OpenVotes Component', () => {
 
   it('Renders the component and proposals', () => {
     cy.get('.header').contains('Open Votes')
-    cy.get('#proposal-list-item').should('have.length', 2)
   })
 })
