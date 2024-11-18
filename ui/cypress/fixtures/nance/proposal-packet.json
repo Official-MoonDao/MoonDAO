@@ -1,0 +1,9 @@
+{
+  "proposalInfo": {
+    "snapshotSpace": "jigglyjams.eth",
+    "proposalIdPrefix": "JBP-",
+    "minTokenPassingAmount": 80000000,
+    "nextProposalId": 272
+  },
+  "hasMore": false
+}

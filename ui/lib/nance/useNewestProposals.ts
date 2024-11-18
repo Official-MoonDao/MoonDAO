@@ -9,13 +9,17 @@ import {
 } from 'next-query-params'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
+import {
+  SnapshotGraphqlProposalVotingInfo,
+  useVotingInfoOfProposals,
+} from '../snapshot'
 import { NANCE_SPACE_NAME } from './constants'
 
-export default function useOpenVoteProposals() {
+export default function useNewestProposals(proposalLimit: number) {
   const router = useRouter()
   const [query] = useQueryParams({
     keyword: StringParam,
-    limit: withDefault(NumberParam, 100),
+    limit: withDefault(NumberParam, proposalLimit),
     cycle: withDefault(StringParam, 'All'),
     sortBy: withDefault(StringParam, ''),
     sortDesc: withDefault(BooleanParam, false),
@@ -28,10 +32,7 @@ export default function useOpenVoteProposals() {
     router.isReady
   )
 
-  const proposals = useMemo(() => {
-    const proposals = proposalData?.data.proposals
-    return proposals?.filter((p) => p.status === 'Voting')
-  }, [proposalData])
+  const proposals = proposalData?.data.proposals
 
   const packet = useMemo(() => {
     return {
@@ -41,5 +42,15 @@ export default function useOpenVoteProposals() {
     }
   }, [proposalData, proposals]) as ProposalsPacket
 
-  return { proposals, packet }
+  const snapshotIds = proposals
+    ?.map((p) => p.voteURL)
+    .filter((v) => v !== undefined) as string[]
+  const { data: votingInfos } = useVotingInfoOfProposals(snapshotIds)
+  const votingInfoMap = useMemo(() => {
+    const map: { [key: string]: SnapshotGraphqlProposalVotingInfo } = {}
+    votingInfos?.forEach((info) => (map[info.id] = info))
+    return map
+  }, [votingInfos])
+
+  return { proposals, packet, votingInfoMap, isLoading: proposalsLoading }
 }

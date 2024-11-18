@@ -1,15 +1,17 @@
 import { useFundWallet } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import viemChains from '@/lib/viem/viemChains'
 import Frame from '@/components/layout/Frame'
-import TeamAction from './TeamAction'
+import Action from './Action'
 
-export default function GuestActions({ nativeBalance, citizenContract }: any) {
-  const address = useAddress()
+export default function GuestActions({
+  address,
+  nativeBalance,
+  citizenContract,
+}: any) {
   const router = useRouter()
 
   const [canBuyCitizen, setCanBuyCitizen] = useState(false)
@@ -49,7 +51,7 @@ export default function GuestActions({ nativeBalance, citizenContract }: any) {
       >
         <div className="mt-2 mb-5 grid grid-cols-1 gap-4 h-full">
           {canBuyCitizen ? (
-            <TeamAction
+            <Action
               title="Become a Citizen"
               description="Create your profile and join the network."
               icon={
@@ -63,7 +65,7 @@ export default function GuestActions({ nativeBalance, citizenContract }: any) {
               onClick={() => router.push('/citizen')}
             />
           ) : (
-            <TeamAction
+            <Action
               title="Fund Wallet"
               description="Fund your wallet with Arbitrum ETH directly from the app."
               icon={

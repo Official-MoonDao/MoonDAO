@@ -48,3 +48,9 @@ Cypress.on('log:changed', (log, interactive) => {
     last.remove()
   }
 })
+
+Cypress.on('uncaught:exception', (err, runnable) => {
+  if (err.message.includes('noNetwork')) {
+    return false
+  }
+})

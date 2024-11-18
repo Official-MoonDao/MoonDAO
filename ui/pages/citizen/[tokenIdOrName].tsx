@@ -1,18 +1,11 @@
 //Citizen Profile
-import {
-  ArrowUpRightIcon,
-  BanknotesIcon,
-  BuildingStorefrontIcon,
-  ChatBubbleLeftIcon,
-  ClipboardDocumentListIcon,
-  GlobeAltIcon,
-  PencilIcon,
-} from '@heroicons/react/24/outline'
+import { GlobeAltIcon, PencilIcon } from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_TABLE_NAMES,
+  JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
   TABLELAND_ENDPOINT,
@@ -29,6 +22,7 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useTeamData } from '@/lib/team/useTeamData'
 import ChainContext from '@/lib/thirdweb/chain-context'
@@ -38,8 +32,6 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
-import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
-import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
 import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
 import Address from '@/components/layout/Address'
@@ -50,16 +42,17 @@ import Head from '@/components/layout/Head'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
-import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
+import CitizenActions from '@/components/subscription/CitizenActions'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import GuestActions from '@/components/subscription/GuestActions'
+import LatestJobs from '@/components/subscription/LatestJobs'
 import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
 import OpenVotes from '@/components/subscription/OpenVotes'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
-import TeamAction from '@/components/subscription/TeamAction'
 import CitizenABI from '../../const/abis/Citizen.json'
+import JobsABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
 export default function CitizenDetailPage({
@@ -91,11 +84,17 @@ export default function CitizenDetailPage({
     MarketplaceABI
   )
 
+  const { contract: jobTableContract } = useContract(
+    JOBS_TABLE_ADDRESSES[selectedChain.slug],
+    JobsABI
+  )
+
   const {
     socials,
     discordLink,
     isDeleted,
     subIsValid,
+    incompleteProfile,
     isLoading: isLoadingCitizenData,
   } = useCitizenData(nft, citizenContract)
 
@@ -121,6 +120,9 @@ export default function CitizenDetailPage({
   const hats = useTeamWearer(teamContract, selectedChain, nft?.owner)
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
   const { isManager } = useTeamData(hatsContract, address, nft)
+
+  //Nance
+  const { proposals, packet, votingInfoMap } = useNewestProposals(100)
 
   useChainDefault()
 
@@ -325,71 +327,11 @@ export default function CitizenDetailPage({
           image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
         />
         {!isDeleted && subIsValid && (
-          <div id="entity-actions-container" className=" z-30">
-            {isManager || address === nft.owner ? (
-              <div
-                id="team-actions-container"
-                className="px-5 pt-5 md:px-0 md:pt-0"
-              >
-                <Frame
-                  noPadding
-                  marginBottom="0px"
-                  bottomRight="2vmax"
-                  topRight="2vmax"
-                  topLeft="10px"
-                  bottomLeft="2vmax"
-                >
-                  <div className="mt-2 mb-5 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
-                    <TeamAction
-                      title="Create Project"
-                      description="Submit a proposal to secure funding for your space project."
-                      icon={
-                        <Image
-                          src="/assets/icon-project.svg"
-                          alt="Submit a proposal"
-                          height={30}
-                          width={30}
-                        />
-                      }
-                      onClick={() => router.push('/propose')}
-                    />
-                    <TeamAction
-                      title="Browse Jobs"
-                      description="Browse job openings, contracting opportunities, and bounties."
-                      icon={
-                        <Image
-                          src="/assets/icon-job.svg"
-                          alt="Browse open jobs"
-                          height={30}
-                          width={30}
-                        />
-                      }
-                      onClick={() => router.push('/jobs')}
-                    />
-                    <TeamAction
-                      title="Get Rewards"
-                      description="Get rewarded for mission-aligned work towards a lunar settlement."
-                      icon={
-                        <Image
-                          src="/assets/icon-submit.svg"
-                          alt="Get rewards"
-                          height={30}
-                          width={30}
-                        />
-                      }
-                      onClick={() =>
-                        window.open(
-                          'https://discord.com/channels/914720248140279868/1179874302447853659'
-                        )
-                      }
-                    />
-                  </div>
-                </Frame>
-              </div>
-            ) : (
-              ''
-            )}
-          </div>
+          <CitizenActions
+            address={address}
+            nft={nft}
+            incompleteProfile={incompleteProfile}
+          />
         )}
 
         {citizenMetadataModalEnabled && (
@@ -453,21 +395,30 @@ export default function CitizenDetailPage({
                       {'Get $MOONEY'}
                     </StandardButton>
                     <StandardButton
-                      className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:hover:pl-5"
+                      className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:hover:pl-5"
                       onClick={() => router.push('/lock')}
                     >
                       {'Get Voting Power'}
-                    </StandardButton>
-                    <StandardButton
-                      className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:hover:pl-5"
-                      onClick={() => window.open('/vote')}
-                    >
-                      {'Vote'}
                     </StandardButton>
                   </div>
                 )}
               </div>
             </Frame>
+            <div className="mt-4">
+              <Frame
+                noPadding
+                bottomLeft="0px"
+                bottomRight="0px"
+                topRight="0px"
+                topLeft="0px"
+              >
+                <OpenVotes
+                  proposals={proposals}
+                  packet={packet}
+                  votingInfoMap={votingInfoMap}
+                />
+              </Frame>
+            </div>
 
             <Frame
               noPadding
@@ -508,9 +459,12 @@ export default function CitizenDetailPage({
                   topRight="0px"
                   topLeft="0px"
                 >
-                  <OpenVotes />
+                  <NewMarketplaceListings
+                    selectedChain={selectedChain}
+                    teamContract={teamContract}
+                    marketplaceTableContract={marketplaceTableContract}
+                  />
                 </Frame>
-
                 <Frame
                   noPadding
                   bottomLeft="0px"
@@ -518,10 +472,9 @@ export default function CitizenDetailPage({
                   topRight="0px"
                   topLeft="0px"
                 >
-                  <NewMarketplaceListings
-                    selectedChain={selectedChain}
+                  <LatestJobs
                     teamContract={teamContract}
-                    marketplaceTableContract={marketplaceTableContract}
+                    jobTableContract={jobTableContract}
                   />
                 </Frame>
               </>
@@ -542,6 +495,7 @@ export default function CitizenDetailPage({
         ) : isGuest ? (
           <>
             <GuestActions
+              address={address}
               nativeBalance={nativeBalance}
               citizenContract={citizenContract}
             />
