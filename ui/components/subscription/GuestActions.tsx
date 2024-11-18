@@ -40,7 +40,12 @@ export default function GuestActions({
   }, [address, nativeBalance, citizenContract])
 
   return (
-    <div id="team-actions-container" className="px-5 pt-5 md:px-0 md:pt-0">
+    <div id="guest-actions-container" className="py-5 px-5 md:py-0 z-30">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
+        <div className="flex gap-5 opacity-[50%]">
+          <h2 className="header font-GoodTimes">Next Steps</h2>
+        </div>
+      </div>
       <Frame
         noPadding
         marginBottom="0px"
@@ -53,7 +58,7 @@ export default function GuestActions({
           {canBuyCitizen ? (
             <Action
               title="Become a Citizen"
-              description="Create your profile and join the network."
+              description="Create your profile and join the Space Acceleration Network to take the next step in your journey and join a global movement dedicated to humanity expanding beyond Earth."
               icon={
                 <Image
                   src="/assets/icon-job.svg"
@@ -67,7 +72,7 @@ export default function GuestActions({
           ) : (
             <Action
               title="Fund Wallet"
-              description="Fund your wallet with Arbitrum ETH directly from the app."
+              description="Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. You will need 0.012 Arbitrum ETH."
               icon={
                 <Image
                   src="/assets/icon-project.svg"

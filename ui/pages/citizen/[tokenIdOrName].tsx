@@ -326,11 +326,14 @@ export default function CitizenDetailPage({
           description={nft.metadata.description}
           image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
         />
-        {!isDeleted && subIsValid && (
+        {!isDeleted && subIsValid && nft.owner === address && (
           <CitizenActions
             address={address}
             nft={nft}
             incompleteProfile={incompleteProfile}
+            mooneyBalance={MOONEYBalance}
+            vmooneyBalance={VMOONEYBalance}
+            setCitizenMetadataModalEnabled={setCitizenMetadataModalEnabled}
           />
         )}
 
@@ -404,21 +407,23 @@ export default function CitizenDetailPage({
                 )}
               </div>
             </Frame>
-            <div className="mt-4">
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
-              >
-                <OpenVotes
-                  proposals={proposals}
-                  packet={packet}
-                  votingInfoMap={votingInfoMap}
-                />
-              </Frame>
-            </div>
+            {address === nft.owner && (
+              <div className="mt-4">
+                <Frame
+                  noPadding
+                  bottomLeft="0px"
+                  bottomRight="0px"
+                  topRight="0px"
+                  topLeft="0px"
+                >
+                  <OpenVotes
+                    proposals={proposals}
+                    packet={packet}
+                    votingInfoMap={votingInfoMap}
+                  />
+                </Frame>
+              </div>
+            )}
 
             <Frame
               noPadding
@@ -477,19 +482,16 @@ export default function CitizenDetailPage({
                     jobTableContract={jobTableContract}
                   />
                 </Frame>
+                <Frame
+                  noPadding
+                  bottomLeft="0px"
+                  bottomRight="0px"
+                  topRight="0px"
+                  topLeft="0px"
+                >
+                  <GeneralActions />
+                </Frame>
               </>
-            )}
-
-            {address === nft.owner && (
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
-              >
-                <GeneralActions />
-              </Frame>
             )}
           </div>
         ) : isGuest ? (
@@ -523,10 +525,21 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     nft = {
       metadata: {
         name: 'Your Name Here',
-        description: '',
+        description:
+          'Start your journey with the Space Acceleration Network by funding your wallet and becoming a Citizen to unlock a myriad of benefits.',
         image: '/assets/citizen-default.png',
         uri: '',
         id: 'guest',
+        attributes: [
+          {
+            trait_type: 'location',
+            value: '',
+          },
+          {
+            trait_type: 'view',
+            value: 'public',
+          },
+        ],
       },
       owner: '',
     }

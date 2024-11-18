@@ -48,7 +48,7 @@ export default function GeneralActions() {
           width={30}
           height={30}
         />
-        <p className="header font-GoodTimes">General Actions</p>
+        <p className="header font-GoodTimes">On-Chain Tools</p>
       </div>
 
       <SlidingCardMenu>
