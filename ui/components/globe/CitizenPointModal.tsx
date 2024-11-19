@@ -1,5 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import Modal from '../layout/Modal'
 
 type CitizenPointModalProps = {
@@ -34,7 +35,7 @@ export default function CitizenPointModal({
           {selectedPoint?.citizens.map((c: any) => (
             <Link
               className="hover:underline hover:scale-105 transition-all duration-300"
-              href={`/citizen/${c.prettyLink}`}
+              href={`/citizen/${generatePrettyLinkWithId(c.name, c.id)}`}
               key={c.id}
               passHref
             >
