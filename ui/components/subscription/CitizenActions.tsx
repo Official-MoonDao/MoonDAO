@@ -58,11 +58,6 @@ export default function CitizenActions({
               bottomLeft="2vmax"
             >
               <SlidingCardMenu>
-                {/* <div
-                  className={`mt-2 mb-5 grid grid-cols-1 lg:grid-cols-3 ${
-                    incompleteProfile && '2xl:grid-cols-4'
-                  } gap-4 h-full`}
-                > */}
                 <div className="flex gap-5">
                   {incompleteProfile && (
                     <Action
@@ -73,21 +68,19 @@ export default function CitizenActions({
                     />
                   )}
                   {!hasMooney && !hasVmooney && (
-                    <>
-                      <Action
-                        title="Get Mooney"
-                        description="$MOONEY is our governance token, swap directly from within the website."
-                        icon={
-                          <Image
-                            src="/assets/icon-job.svg"
-                            alt="Browse open jobs"
-                            height={30}
-                            width={30}
-                          />
-                        }
-                        onClick={() => router.push('/get-mooney')}
-                      />
-                    </>
+                    <Action
+                      title="Get Mooney"
+                      description="$MOONEY is our governance token, swap directly from within the website."
+                      icon={
+                        <Image
+                          src="/assets/icon-job.svg"
+                          alt="Browse open jobs"
+                          height={30}
+                          width={30}
+                        />
+                      }
+                      onClick={() => router.push('/get-mooney')}
+                    />
                   )}
                   {hasMooney && !hasVmooney && (
                     <Action
@@ -139,14 +132,13 @@ export default function CitizenActions({
                     icon={<ArrowUpRightIcon height={30} width={30} />}
                     onClick={() => window.open('https://guild.xyz/moondao')}
                   />
-                  {hasVmooney && (
-                    <Action
-                      title="Create a Team"
-                      description="Join a team or create your own to work together on accelerating space."
-                      icon={<PlusIcon height={30} width={30} />}
-                      onClick={() => router.push('/team')}
-                    />
-                  )}
+
+                  <Action
+                    title="Create a Team"
+                    description="Join a team or create your own to work together on accelerating space."
+                    icon={<PlusIcon height={30} width={30} />}
+                    onClick={() => router.push('/team')}
+                  />
                 </div>
               </SlidingCardMenu>
             </Frame>
