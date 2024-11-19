@@ -1,18 +1,12 @@
 //Citizen Profile
-import {
-  ArrowUpRightIcon,
-  BanknotesIcon,
-  BuildingStorefrontIcon,
-  ChatBubbleLeftIcon,
-  ClipboardDocumentListIcon,
-  GlobeAltIcon,
-  PencilIcon,
-} from '@heroicons/react/24/outline'
+import { GlobeAltIcon, PencilIcon } from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_TABLE_NAMES,
+  JOBS_TABLE_ADDRESSES,
+  MARKETPLACE_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
@@ -28,16 +22,16 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useTeamData } from '@/lib/team/useTeamData'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
-import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
-import { useVMOONEYBalance } from '@/lib/tokens/ve-token'
 import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
 import Address from '@/components/layout/Address'
@@ -48,13 +42,18 @@ import Head from '@/components/layout/Head'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
-import Button from '@/components/subscription/Button'
 import Card from '@/components/subscription/Card'
+import CitizenActions from '@/components/subscription/CitizenActions'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
+import GuestActions from '@/components/subscription/GuestActions'
+import LatestJobs from '@/components/subscription/LatestJobs'
+import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
+import OpenVotes from '@/components/subscription/OpenVotes'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
-import TeamAction from '@/components/subscription/TeamAction'
 import CitizenABI from '../../const/abis/Citizen.json'
+import JobsABI from '../../const/abis/JobBoardTable.json'
+import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
 export default function CitizenDetailPage({
   nft,
@@ -69,6 +68,8 @@ export default function CitizenDetailPage({
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
     useState(false)
 
+  const isGuest = tokenId === 'guest'
+
   // Data
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
@@ -78,19 +79,32 @@ export default function CitizenDetailPage({
     TEAM_ADDRESSES[selectedChain.slug]
   )
 
+  const { contract: marketplaceTableContract } = useContract(
+    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug],
+    MarketplaceABI
+  )
+
+  const { contract: jobTableContract } = useContract(
+    JOBS_TABLE_ADDRESSES[selectedChain.slug],
+    JobsABI
+  )
+
   const {
     socials,
     discordLink,
     isDeleted,
     subIsValid,
+    incompleteProfile,
     isLoading: isLoadingCitizenData,
   } = useCitizenData(nft, citizenContract)
 
   // Balances
+  const nativeBalance = useNativeBalance()
+
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug]
   )
-  const MOONEYBalance = useTotalMooneyBalance(nft?.owner)
+  const MOONEYBalance = useTotalMooneyBalance(isGuest ? address : nft?.owner)
   const { contract: vMooneyContract } = useContract(
     VMOONEY_ADDRESSES[selectedChain.slug]
   )
@@ -106,6 +120,9 @@ export default function CitizenDetailPage({
   const hats = useTeamWearer(teamContract, selectedChain, nft?.owner)
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
   const { isManager } = useTeamData(hatsContract, address, nft)
+
+  //Nance
+  const { proposals, packet, votingInfoMap } = useNewestProposals(100)
 
   useChainDefault()
 
@@ -282,7 +299,7 @@ export default function CitizenDetailPage({
                   <></>
                 )} */}
                 <div className="mt-4 lg:ml-5">
-                  <Address address={nft.owner} />
+                  <Address address={isGuest ? address : nft.owner} />
                 </div>
               </div>
             </div>
@@ -296,7 +313,7 @@ export default function CitizenDetailPage({
     <Container>
       <ContentLayout
         description={ProfileHeader}
-        preFooter={<NoticeFooter />}
+        preFooter={<NoticeFooter citizenNotice />}
         mainPadding
         mode="compact"
         popOverEffect={false}
@@ -309,72 +326,15 @@ export default function CitizenDetailPage({
           description={nft.metadata.description}
           image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
         />
-        {!isDeleted && subIsValid && (
-          <div id="entity-actions-container" className=" z-30">
-            {isManager || address === nft.owner ? (
-              <div
-                id="team-actions-container"
-                className="px-5 pt-5 md:px-0 md:pt-0"
-              >
-                <Frame
-                  noPadding
-                  marginBottom="0px"
-                  bottomRight="2vmax"
-                  topRight="2vmax"
-                  topLeft="10px"
-                  bottomLeft="2vmax"
-                >
-                  <div className="mt-2 mb-5 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
-                    <TeamAction
-                      title="Create Project"
-                      description="Submit a proposal to secure funding for your space project."
-                      icon={
-                        <Image
-                          src="../assets/icon-project.svg"
-                          alt="Submit a proposal"
-                          height={30}
-                          width={30}
-                        />
-                      }
-                      onClick={() => router.push('/propose')}
-                    />
-                    <TeamAction
-                      title="Browse Jobs"
-                      description="Browse job openings, contracting opportunities, and bounties."
-                      icon={
-                        <Image
-                          src="../assets/icon-job.svg"
-                          alt="Browse open jobs"
-                          height={30}
-                          width={30}
-                        />
-                      }
-                      onClick={() => router.push('/jobs')}
-                    />
-                    <TeamAction
-                      title="Get Rewards"
-                      description="Get rewarded for mission-aligned work towards a lunar settlement."
-                      icon={
-                        <Image
-                          src="../assets/icon-submit.svg"
-                          alt="Get rewards"
-                          height={30}
-                          width={30}
-                        />
-                      }
-                      onClick={() =>
-                        window.open(
-                          'https://discord.com/channels/914720248140279868/1179874302447853659'
-                        )
-                      }
-                    />
-                  </div>
-                </Frame>
-              </div>
-            ) : (
-              ''
-            )}
-          </div>
+        {!isDeleted && subIsValid && nft.owner === address && (
+          <CitizenActions
+            address={address}
+            nft={nft}
+            incompleteProfile={incompleteProfile}
+            mooneyBalance={MOONEYBalance}
+            vmooneyBalance={VMOONEYBalance}
+            setCitizenMetadataModalEnabled={setCitizenMetadataModalEnabled}
+          />
         )}
 
         {citizenMetadataModalEnabled && (
@@ -395,7 +355,7 @@ export default function CitizenDetailPage({
           />
         )}
 
-        {subIsValid && !isDeleted ? (
+        {subIsValid && !isDeleted && !isGuest ? (
           <div className="z-50 mb-10">
             {/* Mooney and Voting Power */}
             <Frame
@@ -438,21 +398,32 @@ export default function CitizenDetailPage({
                       {'Get $MOONEY'}
                     </StandardButton>
                     <StandardButton
-                      className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:hover:pl-5"
+                      className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:hover:pl-5"
                       onClick={() => router.push('/lock')}
                     >
                       {'Get Voting Power'}
-                    </StandardButton>
-                    <StandardButton
-                      className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:hover:pl-5"
-                      onClick={() => window.open('/vote')}
-                    >
-                      {'Vote'}
                     </StandardButton>
                   </div>
                 )}
               </div>
             </Frame>
+            {address === nft.owner && (
+              <div className="mt-4">
+                <Frame
+                  noPadding
+                  bottomLeft="0px"
+                  bottomRight="0px"
+                  topRight="0px"
+                  topLeft="0px"
+                >
+                  <OpenVotes
+                    proposals={proposals}
+                    packet={packet}
+                    votingInfoMap={votingInfoMap}
+                  />
+                </Frame>
+              </div>
+            )}
 
             <Frame
               noPadding
@@ -485,17 +456,52 @@ export default function CitizenDetailPage({
               </div>
             </Frame>
             {address === nft.owner && (
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
-              >
-                <GeneralActions />
-              </Frame>
+              <>
+                <Frame
+                  noPadding
+                  bottomLeft="0px"
+                  bottomRight="0px"
+                  topRight="0px"
+                  topLeft="0px"
+                >
+                  <NewMarketplaceListings
+                    selectedChain={selectedChain}
+                    teamContract={teamContract}
+                    marketplaceTableContract={marketplaceTableContract}
+                  />
+                </Frame>
+                <Frame
+                  noPadding
+                  bottomLeft="0px"
+                  bottomRight="0px"
+                  topRight="0px"
+                  topLeft="0px"
+                >
+                  <LatestJobs
+                    teamContract={teamContract}
+                    jobTableContract={jobTableContract}
+                  />
+                </Frame>
+                <Frame
+                  noPadding
+                  bottomLeft="0px"
+                  bottomRight="0px"
+                  topRight="0px"
+                  topLeft="0px"
+                >
+                  <GeneralActions />
+                </Frame>
+              </>
             )}
           </div>
+        ) : isGuest ? (
+          <>
+            <GuestActions
+              address={address}
+              nativeBalance={nativeBalance}
+              citizenContract={citizenContract}
+            />
+          </>
         ) : (
           // Subscription expired
           <Card>
@@ -514,45 +520,74 @@ export default function CitizenDetailPage({
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const sdk = initSDK(chain)
-
-  const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chain.slug]}`
-  const allCitizensRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${statement}`
-  )
-  const allCitizens = await allCitizensRes.json()
-
-  const { prettyLinks } = generatePrettyLinks(allCitizens, {
-    allHaveTokenId: true,
-  })
-
-  let tokenId
-  if (!Number.isNaN(Number(tokenIdOrName))) {
-    tokenId = tokenIdOrName
-  } else {
-    tokenId = prettyLinks[tokenIdOrName]
-  }
-
-  const citizenContract = await sdk.getContract(
-    CITIZEN_ADDRESSES[chain.slug],
-    CitizenABI
-  )
-  const nft = await citizenContract.erc721.get(tokenId)
-
-  if (
-    !nft ||
-    !nft.metadata.uri ||
-    blockedCitizens.includes(Number(nft.metadata.id))
-  ) {
-    return {
-      notFound: true,
+  let nft, tokenId, imageIpfsLink
+  if (tokenIdOrName === 'guest') {
+    nft = {
+      metadata: {
+        name: 'Your Name Here',
+        description:
+          'Start your journey with the Space Acceleration Network by funding your wallet and becoming a Citizen to unlock a myriad of benefits.',
+        image: '/assets/citizen-default.png',
+        uri: '',
+        id: 'guest',
+        attributes: [
+          {
+            trait_type: 'location',
+            value: '',
+          },
+          {
+            trait_type: 'view',
+            value: 'public',
+          },
+        ],
+      },
+      owner: '',
     }
-  }
 
-  const rawMetadataRes = await fetch(nft.metadata.uri)
-  const rawMetadata = await rawMetadataRes.json()
-  const imageIpfsLink = rawMetadata.image
+    tokenId = 'guest'
+
+    imageIpfsLink = ''
+  } else {
+    const chain =
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+    const sdk = initSDK(chain)
+
+    const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chain.slug]}`
+    const allCitizensRes = await fetch(
+      `${TABLELAND_ENDPOINT}?statement=${statement}`
+    )
+    const allCitizens = await allCitizensRes.json()
+
+    const { prettyLinks } = generatePrettyLinks(allCitizens, {
+      allHaveTokenId: true,
+    })
+
+    if (!Number.isNaN(Number(tokenIdOrName))) {
+      tokenId = tokenIdOrName
+    } else {
+      tokenId = prettyLinks[tokenIdOrName]
+    }
+
+    const citizenContract = await sdk.getContract(
+      CITIZEN_ADDRESSES[chain.slug],
+      CitizenABI
+    )
+    nft = await citizenContract.erc721.get(tokenId)
+
+    if (
+      !nft ||
+      !nft.metadata.uri ||
+      blockedCitizens.includes(Number(nft.metadata.id))
+    ) {
+      return {
+        notFound: true,
+      }
+    }
+
+    const rawMetadataRes = await fetch(nft.metadata.uri)
+    const rawMetadata = await rawMetadataRes.json()
+    imageIpfsLink = rawMetadata.image
+  }
 
   return {
     props: {

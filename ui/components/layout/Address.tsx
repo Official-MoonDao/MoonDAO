@@ -16,7 +16,7 @@ export default function Address({ address, className }: AddressProps) {
         }
       }}
     >
-      {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+      {address && `${address?.slice(0, 6)}...${address?.slice(-4)}`}
     </button>
   )
 }

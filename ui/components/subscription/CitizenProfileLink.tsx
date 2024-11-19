@@ -3,6 +3,7 @@ import { ThirdwebNftMedia } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type CitizenProfileLinkProps = {
@@ -15,16 +16,21 @@ export default function CitizenProfileLink({
   citizenContract,
 }: CitizenProfileLinkProps) {
   const router = useRouter()
-  const citizenNft = useCitizen(selectedChain, citizenContract)
+  const citizen = useCitizen(selectedChain, citizenContract)
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  if (citizenNft?.metadata?.id) {
+  if (citizen?.metadata?.id) {
     return (
       <button
         onClick={async () => {
           setIsLoading(true)
-          await router.push(`/citizen/${citizenNft?.metadata?.id}`)
+          await router.push(
+            `/citizen/${generatePrettyLinkWithId(
+              citizen.metadata.name as string,
+              citizen.metadata.id
+            )}`
+          )
           setIsLoading(false)
         }}
       >
@@ -34,7 +40,7 @@ export default function CitizenProfileLink({
           ) : (
             <ThirdwebNftMedia
               className=""
-              metadata={citizenNft.metadata}
+              metadata={citizen.metadata}
               width="100%"
               height="100%"
             />

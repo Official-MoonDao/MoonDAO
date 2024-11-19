@@ -118,7 +118,10 @@ export async function getStaticProps() {
     JOBS_TABLE_ADDRESSES[chain.slug],
     JobsABI
   )
-  const teamContract = await sdk.getContract(TEAM_ADDRESSES[chain.slug], TeamABI)
+  const teamContract = await sdk.getContract(
+    TEAM_ADDRESSES[chain.slug],
+    TeamABI
+  )
 
   const jobBoardTableName = await jobTableContract.call('getTableName')
 

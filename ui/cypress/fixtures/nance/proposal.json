@@ -1,0 +1,13 @@
+{
+  "uuid": "f5db001241b14465873f06c4841d3b5c",
+  "title": "Proposal Title3",
+  "body": "## Synopsis\n*State what the proposal does in one sentence.*\n\n## Motivation\n*What problem does this solve? Why now?*\n\n## Specification\n*How exactly will this be executed? Be specific and leave no ambiguity.*\n\n## Rationale\n*Why is this specification appropriate?*\n\n## Risks\n*What might go wrong?*\n\n## Timeline\n*When exactly should this proposal take effect? When exactly should this proposal end?*\n\n",
+  "status": "Voting",
+  "proposalId": 183,
+  "discussionThreadURL": "https://discord.com/channels/1090064637858414633/1109230138182340648/1247628733389471816",
+  "createdTime": "2024-06-04T19:10:36.402Z",
+  "lastEditedTime": "2024-06-04T19:14:56.074Z",
+  "governanceCycle": 71,
+  "authorAddress": "0x25910143C255828F623786f46fe9A8941B7983bB",
+  "actions": []
+}

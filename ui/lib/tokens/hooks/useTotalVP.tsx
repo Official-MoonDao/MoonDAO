@@ -2,7 +2,7 @@ import { useAddress } from '@thirdweb-dev/react'
 import request, { gql } from 'graphql-request'
 import { useEffect, useState } from 'react'
 
-export default function useTotalVP(address: string = '') {
+export default function useTotalVP(address: string) {
   const [walletVP, setWalletVP] = useState<any>()
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export default function useTotalVP(address: string = '') {
       )) as any
       setWalletVP(vp.vp)
     }
-    getTotalVP()
+    if (address && address !== '') getTotalVP()
   }, [address])
 
   return walletVP
