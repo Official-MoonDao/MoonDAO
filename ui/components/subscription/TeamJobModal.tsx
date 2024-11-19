@@ -1,7 +1,9 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { usePrivy } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN } from 'const/config'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
@@ -34,6 +36,8 @@ export default function TeamJobModal({
   edit,
   job,
 }: TeamJobModalProps) {
+  const { getAccessToken } = usePrivy()
+
   const [isLoading, setIsLoading] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
   const [jobData, setJobData] = useState<JobData>(
@@ -80,6 +84,8 @@ export default function TeamJobModal({
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto"
         onSubmit={async (e) => {
           e.preventDefault()
+          const accessToken = await getAccessToken()
+          await createSession(accessToken)
           if (
             jobData.title.trim() === '' ||
             jobData.description.trim() === '' ||
@@ -87,7 +93,7 @@ export default function TeamJobModal({
           )
             return toast.error('Please fill out all fields')
 
-          if (endTime === 0 || endTime >= daysFromNowTimestamp(1)) {
+          if (endTime === 0 || endTime <= daysFromNowTimestamp(1)) {
             return toast.error('Please set an expiration date')
           }
 
@@ -95,9 +101,10 @@ export default function TeamJobModal({
 
           const cleanedData = cleanData(jobData)
 
+          let tx
           try {
             if (edit) {
-              await jobTableContract.call('updateTable', [
+              tx = await jobTableContract.call('updateTable', [
                 job?.id,
                 cleanedData.title,
                 cleanedData.description,
@@ -109,7 +116,7 @@ export default function TeamJobModal({
                 cleanedData.contactInfo,
               ])
             } else {
-              await jobTableContract?.call('insertIntoTable', [
+              tx = await jobTableContract?.call('insertIntoTable', [
                 cleanedData.title,
                 cleanedData.description,
                 teamId,
@@ -121,6 +128,10 @@ export default function TeamJobModal({
               ])
             }
 
+            const jobId = parseInt(tx.receipt.logs[0].topics[0], 16).toString()
+
+            console.log(jobId)
+
             setTimeout(() => {
               refreshJobs()
               setIsLoading(false)
@@ -130,6 +141,7 @@ export default function TeamJobModal({
             console.log(err)
             setIsLoading(false)
           }
+          await destroySession(accessToken)
         }}
       >
         <div className="w-full flex items-center justify-between">
