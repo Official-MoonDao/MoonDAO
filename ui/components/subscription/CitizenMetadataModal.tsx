@@ -156,8 +156,6 @@ export default function CitizenMetadataModal({
         'location'
       ).value
 
-      console.log(citizenLocation)
-
       let locationName
       if (citizenLocation.startsWith('{')) {
         locationName = JSON.parse(citizenLocation).name

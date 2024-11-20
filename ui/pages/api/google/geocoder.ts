@@ -5,7 +5,6 @@ import { NextApiRequest, NextApiResponse } from 'next'
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     const { location } = req.body
-    console.log('location', location)
     try {
       const locationRes = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${location}&key=${process.env.GOOGLE_MAPS_API_KEY}`
