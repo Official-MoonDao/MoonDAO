@@ -19,7 +19,7 @@ export function generatePrettyLinks(
     const id = prettyLinkData[i]?.id
 
     if (name && id !== null && id !== undefined) {
-      let prettyLink = name.replace(/\s+/g, '-')
+      let prettyLink = generatePrettyLink(name)
 
       if (options?.allHaveTokenId) {
         prettyLink = `${prettyLink}-${id}`
@@ -36,4 +36,16 @@ export function generatePrettyLinks(
 
   // Return the object
   return { prettyLinks, idToPrettyLink }
+}
+
+export function generatePrettyLinkWithId(name: string, id: string | number) {
+  if (name && id) {
+    let prettyLink = generatePrettyLink(name)
+    prettyLink = `${prettyLink}-${id}`
+    return prettyLink
+  }
+}
+
+export function generatePrettyLink(name: string) {
+  return name.toLowerCase().replace(/\s+/g, '-')
 }

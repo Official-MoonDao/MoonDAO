@@ -8,8 +8,9 @@
   "image": "https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeigj5k75odq5azftrivrnjlsdd7jqs7f72qmgzfi67znkbooeriy3e/",
   "metadata": "",
   "tag": "",
+  "tag": "",
   "startTime": 0,
   "endTime": 0,
-  "timestamp": 0,
+  "timestamp": 1234567890,
   "shipping": "false"
 }

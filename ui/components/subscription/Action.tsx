@@ -1,21 +1,21 @@
 import SubCard from './SubCard'
 
-type TeamActionProps = {
+type ActionProps = {
   title: string
   description: string
   icon: any
   onClick?: () => void
 }
 
-export default function TeamAction({
+export default function Action({
   title,
   description,
   icon,
   onClick,
-}: TeamActionProps) {
+}: ActionProps) {
   return (
     <button onClick={onClick}>
-      <SubCard className=" flex flex-col gap-2 ease-in-out duration-300">
+      <SubCard className=" flex flex-col gap-2 ease-in-out duration-300 min-w-[250px] h-[225px]">
         <div className="flex gap-2">
           {icon}
           <p className="pb-2 font-bold text-xl">{title}</p>

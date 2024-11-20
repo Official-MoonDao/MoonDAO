@@ -1,6 +1,6 @@
-import TeamAction from '@/components/subscription/TeamAction'
+import Action from '@/components/subscription/Action'
 
-describe('<TeamAction />', () => {
+describe('<Action />', () => {
   let props: any
 
   beforeEach(() => {
@@ -11,7 +11,7 @@ describe('<TeamAction />', () => {
       onClick: cy.stub(),
     }
 
-    cy.mount(<TeamAction {...props} />)
+    cy.mount(<Action {...props} />)
   })
 
   it('Renders with title, description, and icon', () => {

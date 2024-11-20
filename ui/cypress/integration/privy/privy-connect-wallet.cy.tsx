@@ -6,6 +6,7 @@ import { PrivyConnectWallet } from '../../../components/privy/PrivyConnectWallet
 
 describe('<PrivyConnectWallet />', () => {
   it('Renders Privy Web3 Connect Wallet Button', () => {
+    cy.mountNextRouter('/')
     cy.mount(
       <ChainContext.Provider
         value={{ selectedChain: Sepolia, setSelectedChain: () => {} }}
