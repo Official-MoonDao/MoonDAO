@@ -25,6 +25,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
   return (
     <div className="w-full flex flex-col gap-2">
       <FormInput
+        id="team-name-input"
         label="Name *"
         value={teamData.name}
         onChange={({ target }: any) =>
@@ -33,6 +34,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         placeholder="Enter your name"
       />
       <FormInput
+        id="team-bio-input"
         label="Bio"
         value={teamData.description}
         onChange={({ target }: any) =>
@@ -41,6 +43,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         placeholder="Enter your bio"
       />
       <FormInput
+        id="team-twitter-input"
         label="Twitter"
         value={teamData.twitter}
         onChange={({ target }: any) =>
@@ -49,6 +52,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         placeholder="Enter your twitter link"
       />
       <FormInput
+        id="team-communications-input"
         label="Communications"
         value={teamData.communications}
         onChange={({ target }: any) =>
@@ -60,6 +64,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         placeholder="Enter your communications link"
       />
       <FormInput
+        id="team-website-input"
         label="Website"
         value={teamData.website}
         onChange={({ target }: any) =>

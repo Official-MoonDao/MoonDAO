@@ -25,6 +25,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
   return (
     <div className="w-full flex flex-col gap-2">
       <FormInput
+        id="citizen-name-input"
         label="Name *"
         value={citizenData?.name}
         onChange={({ target }: any) =>
@@ -33,6 +34,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         placeholder="Enter your name"
       />
       <FormInput
+        id="citizen-bio-input"
         label="Bio"
         value={citizenData?.description}
         onChange={({ target }: any) =>
@@ -44,6 +46,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         placeholder="Enter your bio"
       />
       <FormInput
+        id="citizen-location-input"
         label="Location"
         value={citizenData?.location}
         onChange={({ target }: any) =>
@@ -52,6 +55,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         placeholder="Enter your city and/or country"
       />
       <FormInput
+        id="citizen-discord-input"
         label="Discord"
         value={citizenData?.discord}
         onChange={({ target }: any) =>
@@ -60,6 +64,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         placeholder="Enter your discord username"
       />
       <FormInput
+        id="citizen-twitter-input"
         label="Twitter"
         value={citizenData?.twitter}
         onChange={({ target }: any) =>
@@ -68,6 +73,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         placeholder="Enter your twitter link"
       />
       <FormInput
+        id="citizen-website-input"
         label="Website"
         value={citizenData?.website}
         onChange={({ target }: any) =>
