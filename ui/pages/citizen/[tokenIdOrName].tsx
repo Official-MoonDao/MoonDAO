@@ -1,10 +1,14 @@
 //Citizen Profile
+<<<<<<< HEAD
 import {
   GlobeAltIcon,
   GlobeAmericasIcon,
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
+=======
+import { GlobeAltIcon, PencilIcon } from '@heroicons/react/24/outline'
+>>>>>>> 8486ec3cc65a9ff55dfe83f9ba842b1b319a61ee
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
@@ -309,17 +313,12 @@ export default function CitizenDetailPage({
                 </div>
 
                 <div className="mt-2 flex justify-between items-start gap-2 lg:ml-5">
-                  <GlobeAmericasIcon
-                    width={30}
-                    height={30}
-                    className="flex-shrink-0"
-                  />
-                  <p className="font-GoodTimes">{location}</p>
-                  <MapPinIcon
+                <MapPinIcon
                     width={30}
                     height={30}
                     className="flex-shrink-0 mr-8"
                   />
+                  <p className="font-GoodTimes">{location}</p>
                 </div>
               </div>
             </div>
