@@ -71,7 +71,7 @@ describe('<TeamJobModal />', () => {
     cy.get('#job-description-input').type('Test Job Description')
     cy.get('#job-application-link-input').type('contact@example.com')
 
-    const endTime = daysFromNowTimestamp(1)
+    const endTime = daysFromNowTimestamp(2)
     const endTimeDate = new Date(endTime * 1000).toISOString().split('T')[0]
     cy.get('#job-end-time-input').type(endTimeDate)
 

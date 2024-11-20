@@ -11,12 +11,13 @@ export function useCitizenData(nft: any, citizenContract: any) {
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
 
   const isPublic = useMemo(() => {
-    const view = getAttribute(attributes, 'view').value
+    const view = getAttribute(attributes, 'view')?.value
     return view === 'public' ? true : false
   }, [attributes])
 
   const isDeleted = useMemo(() => {
-    const view = getAttribute(attributes, 'view').value
+    console.log(attributes)
+    const view = getAttribute(attributes, 'view')?.value
     return view === '' ? true : false
   }, [attributes])
 

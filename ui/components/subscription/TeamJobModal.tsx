@@ -87,7 +87,7 @@ export default function TeamJobModal({
           )
             return toast.error('Please fill out all fields')
 
-          if (endTime === 0 || endTime >= daysFromNowTimestamp(1)) {
+          if (endTime === 0 || endTime < daysFromNowTimestamp(1)) {
             return toast.error('Please set an expiration date')
           }
 
