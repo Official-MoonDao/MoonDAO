@@ -119,12 +119,14 @@ export async function getStaticProps() {
     'getTableName'
   )
 
-  const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now})`
+  const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
   const allListingsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${statement}`
   )
   const allListings = await allListingsRes.json()
+
+  console.log('allListings', allListings)
 
   const validListings = allListings.filter(async (listing: TeamListingType) => {
     const teamExpiration = await teamContract.call('expiresAt', [
