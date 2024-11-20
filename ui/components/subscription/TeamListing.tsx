@@ -1,5 +1,6 @@
 import { PencilIcon, ShareIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
+import { NFT } from '@thirdweb-dev/sdk'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -36,7 +37,7 @@ type TeamListingProps = {
   editable?: boolean
   teamName?: boolean
   queriedListingId?: number
-  isCitizen?: boolean
+  isCitizen?: NFT | undefined
 }
 
 export default function TeamListing({
