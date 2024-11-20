@@ -37,7 +37,7 @@ type TeamListingProps = {
   editable?: boolean
   teamName?: boolean
   queriedListingId?: number
-  isCitizen?: NFT | undefined
+  isCitizen?: NFT | boolean | undefined
 }
 
 export default function TeamListing({
