@@ -332,6 +332,7 @@ export default function CreateTeam({
                     </label>
                   </div>
                   <PrivyWeb3Button
+                    id="team-checkout-button"
                     label="Check Out"
                     isDisabled={!agreedToCondition || isLoadingMint}
                     action={async () => {

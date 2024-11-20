@@ -90,6 +90,11 @@ export const CITIZEN_TABLE_ADDRESSES: Index = {
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
 }
 
+export const CITIZEN_TABLE_NAMES: Index = {
+  arbitrum: 'CITIZENTABLE_42161_98',
+  sepolia: 'CITIZENTABLE_11155111_1671',
+}
+
 export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x4c2d6567D81A34117E894b6fDC97C9824f80D961',
   'arbitrum-sepolia': '0xF0A3DB6161D1Ee7B99197CDeD4EdFc462EAE80e0',
@@ -155,6 +160,11 @@ export const TEAM_TABLE_ADDRESSES: Index = {
   sepolia: '0x42d356e77f6d9Bad870865e0973Ed32F54fA4006',
 }
 
+export const TEAM_TABLE_NAMES: Index = {
+  arbitrum: 'TEAMTABLE_42161_92',
+  sepolia: 'ENTITYTABLE_11155111_1731',
+}
+
 export const TEAM_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0x203ca831edec28b7657A022b8aFe5d28b6BE6Eda',
   sepolia: '',
@@ -170,8 +180,8 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x77092Bff93F16E20795D936AFD90737adf3f3596',
-  sepolia: '0x1c588261069604490e73188343B2C930F35ae2EF',
+  arbitrum: '0x93bCf6B82fcE153F24085b1C6A16328dc580427d',
+  sepolia: '0xa9d0d083AfFd77a2Ce58B8163A54C22b2C57E151',
 }
 
 export const PRIZE_REVNET_ID = 50
@@ -186,8 +196,8 @@ export const MARKETPLACE_ADDRESS =
     : sepoliaConfig.Marketplace
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x763A7c8E7F168bd5b4A12aDcFbB4d4bC8a110361',
-  sepolia: '0xC066269774c8f216054F8C4db14F4C321Dc75710',
+  arbitrum: '0xcAEa289f612386bc2F990de4AA7267951129D213',
+  sepolia: '0x238Ff1163C1f4E31A08240d853f510A4223faAA1',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG

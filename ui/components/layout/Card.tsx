@@ -4,7 +4,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useState } from 'react'
-import { MeshStandardMaterial } from 'three'
+import {
+  generatePrettyLink,
+  generatePrettyLinkWithId,
+} from '@/lib/subscription/pretty-links'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
 
@@ -253,7 +256,11 @@ export default function Card({
           onClick={async () => {
             setIsLoadingRoute(true)
             const route = await router.push(
-              `/${type === 'team' ? 'team' : 'citizen'}/${metadata.id}`
+              `/${type === 'team' ? 'team' : 'citizen'}/${
+                type === 'team'
+                  ? generatePrettyLink(metadata.name)
+                  : generatePrettyLinkWithId(metadata.name, metadata.id)
+              }`
             )
             if (route) setIsLoadingRoute(false)
           }}

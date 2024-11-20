@@ -1,65 +1,84 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import useDiscordUserSearch from '../nance/DiscordUserSearch'
 import { getAttribute } from '../utils/nft'
 
 export function useCitizenData(nft: any, citizenContract: any) {
+  const {
+    metadata: { attributes },
+  } = nft
+
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [socials, setSocials] = useState<any>()
-  const [isPublic, setIsPublic] = useState<boolean>(false)
-  const [isDeleted, setIsDeleted] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
 
-  const discordUser = useDiscordUserSearch(socials?.discord, true)
+  const isPublic = useMemo(() => {
+    const view = getAttribute(attributes, 'view')?.value
+    return view === 'public' ? true : false
+  }, [attributes])
 
-  function getView() {
-    const citizenView: any = getAttribute(nft.metadata.attributes, 'view')
-    setIsPublic(citizenView?.value === 'public' ? true : false)
-    setIsDeleted(citizenView?.value === '' ? true : false)
-  }
+  const isDeleted = useMemo(() => {
+    console.log(attributes)
+    const view = getAttribute(attributes, 'view')?.value
+    return view === '' ? true : false
+  }, [attributes])
 
-  function getCitizenSocials() {
-    const citizenTwitter = getAttribute(nft.metadata.attributes, 'twitter')
-    const citizenDiscord = getAttribute(nft.metadata.attributes, 'discord')
-    const citizenWebsite = getAttribute(nft.metadata.attributes, 'website')
-    setSocials({
+  const socials = useMemo(() => {
+    const citizenTwitter = getAttribute(attributes, 'twitter')
+    const citizenDiscord = getAttribute(attributes, 'discord')
+    const citizenWebsite = getAttribute(attributes, 'website')
+    return {
       twitter: citizenTwitter?.value,
       discord: citizenDiscord?.value,
       website: citizenWebsite?.value,
-    })
-  }
-
-  //check if the subscription is valid
-  async function checkSubscription() {
-    //get unix timestamp for now
-    const now = Math.floor(Date.now() / 1000)
-
-    try {
-      const expiresAt = await citizenContract.call('expiresAt', [
-        nft?.metadata?.id,
-      ])
-      setSubIsValid(expiresAt.toNumber() > now)
-    } catch (err) {
-      console.log(err)
     }
-  }
+  }, [attributes])
+
+  const location = useMemo(() => {
+    const loc = getAttribute(attributes, 'location')
+    if (loc.value.startsWith('{')) {
+      return JSON.parse(loc.value).name
+    } else return loc?.value
+  }, [attributes])
+
+  const incompleteProfile = useMemo(() => {
+    if (
+      (nft.metadata.description !== '' || socials.twitter !== '',
+      socials.discord !== '' || socials.website !== '' || location !== '')
+    ) {
+      return false
+    } else {
+      return true
+    }
+  }, [socials, location, nft.metadata])
+
+  const discordUser = useDiscordUserSearch(socials?.discord, true)
 
   useEffect(() => {
-    if (!nft?.metadata?.attributes || !citizenContract) return
-    ;(async () => {
+    async function checkSubscription() {
+      //get unix timestamp for now
       setIsLoading(true)
-      await checkSubscription()
-      getCitizenSocials()
-      getView()
+      const now = Math.floor(Date.now() / 1000)
+
+      try {
+        const expiresAt = await citizenContract.call('expiresAt', [
+          nft?.metadata?.id,
+        ])
+        setSubIsValid(expiresAt.toNumber() > now)
+      } catch (err) {
+        console.log(err)
+      }
       setIsLoading(false)
-    })()
-  }, [nft, citizenContract])
+    }
+    if (nft.metadata.attributes && citizenContract) checkSubscription()
+  }, [nft.metadata, citizenContract])
 
   return {
     socials,
+    location,
     discordLink: `https://discord.com/users/${discordUser?.data?.[0]?.user?.id}`,
     isPublic,
     isDeleted,
     subIsValid,
+    incompleteProfile,
     isLoading,
   }
 }

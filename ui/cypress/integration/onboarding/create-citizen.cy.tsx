@@ -42,9 +42,11 @@ describe('<CreateCitizen />', () => {
     cy.contains('NEXT').click()
 
     //MINT
-    cy.contains('Connect').should('exist')
+    cy.get('#citizen-checkout-button').should('be.disabled')
 
     cy.get('input[type="checkbox"]').check()
     cy.get('input[type="checkbox"]').should('be.checked')
+
+    cy.get('#citizen-checkout-button').should('not.be.disabled')
   })
 })

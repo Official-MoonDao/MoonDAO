@@ -79,6 +79,7 @@
     "react-calendly": "^4.3.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",
+    "react-globe.gl": "^2.27.3",
     "react-google-recaptcha": "^3.1.0",
     "react-hook-form": "^7.46.2",
     "react-hot-toast": "^2.4.1",
@@ -103,6 +104,7 @@
   },
   "devDependencies": {
     "@bygdle/javascript-lp-solver": "^0.4.26",
+    "@cypress/webpack-preprocessor": "^6.0.2",
     "@tailwindcss/typography": "^0.5.13",
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
     "@types/formidable": "^3.4.5",

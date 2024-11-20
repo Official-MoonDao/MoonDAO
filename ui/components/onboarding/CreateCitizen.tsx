@@ -276,7 +276,9 @@ export default function CreateCitizen({
                   )}
                   {inputImage?.name === citizenImage?.name || generateError ? (
                     <p className="mt-2 w-full text-left opacity-[50%]">
-                      {'Unable to generate an image, please try again later.'}
+                      {
+                        'Unable to generate an image, please try again later, or proceed with checkout to use the image above.'
+                      }
                     </p>
                   ) : (
                     <></>
@@ -423,6 +425,7 @@ export default function CreateCitizen({
                   </label>
                 </div>
                 <PrivyWeb3Button
+                  id="citizen-checkout-button"
                   label="Check Out"
                   isDisabled={!agreedToCondition || isLoadingMint}
                   action={async () => {

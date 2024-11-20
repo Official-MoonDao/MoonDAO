@@ -1,21 +1,28 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useFundWallet, usePrivy, useWallets } from '@privy-io/react-auth'
-import { allChains, Chain } from '@thirdweb-dev/chains'
-import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import {
+  useFundWallet,
+  useLogin,
+  usePrivy,
+  useWallets,
+} from '@privy-io/react-auth'
+import { NFT, useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContext from '../../lib/thirdweb/chain-context'
-import { useHandleRead } from '../../lib/thirdweb/hooks'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
+import CitizenContext from '@/lib/citizen/citizen-context'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
 import ERC20 from '../../const/abis/ERC20.json'
 import {
+  CITIZEN_ADDRESSES,
   DAI_ADDRESSES,
   MOONEY_ADDRESSES,
   USDC_ADDRESSES,
@@ -64,30 +71,34 @@ function SendModal({
     let icon
     if (selectedToken === 'native') {
       icon = networkIcon
-    } else if (selectedToken === 'mooney') {
-      icon = <Image src="/coins/MOONEY.png" width={30} height={30} alt="" />
-    } else if (selectedToken === 'dai') {
-      icon = <Image src="/coins/DAI.svg" width={30} height={30} alt="" />
-    } else if (selectedToken === 'usdc') {
-      icon = <Image src="/coins/USDC.svg" width={30} height={30} alt="" />
-    } else if (selectedToken === 'usdt') {
-      icon = <Image src="/coins/USDT.svg" width={30} height={30} alt="" />
+    } else {
+      icon = (
+        <Image
+          src={`/coins/${selectedToken.toUpperCase()}.${
+            selectedToken === 'mooney' ? 'png' : 'svg'
+          }`}
+          width={30}
+          height={30}
+          alt=""
+        />
+      )
     }
 
     return icon
   }, [selectedToken, networkIcon])
 
+  const tokenContracts: { [key: string]: any } = {
+    mooney: mooneyContract,
+    dai: daiContract,
+    usdc: usdcContract,
+    usdt: usdtContract,
+  }
+
   useEffect(() => {
     if (selectedToken === 'native') {
       setBalance(nativeBalance)
-    } else if (selectedToken === 'mooney') {
-      setBalance(formattedBalances.mooney)
-    } else if (selectedToken === 'dai') {
-      setBalance(formattedBalances.dai)
-    } else if (selectedToken === 'usdc') {
-      setBalance(formattedBalances.usdc)
-    } else if (selectedToken === 'usdt') {
-      setBalance(formattedBalances.usdt)
+    } else {
+      setBalance(formattedBalances[selectedToken])
     }
   }, [selectedToken, nativeBalance, formattedBalances])
 
@@ -119,26 +130,14 @@ function SendModal({
                 to,
                 value: formattedAmount,
               })
-            } else if (selectedToken === 'mooney') {
-              if (+amount > formattedBalances.mooney)
+            } else {
+              if (+amount > formattedBalances[selectedToken])
                 return toast.error('Insufficient funds')
 
-              await mooneyContract.call('transfer', [to, formattedAmount])
-            } else if (selectedToken === 'dai') {
-              if (+amount > formattedBalances.dai)
-                return toast.error('Insufficient funds')
-
-              await daiContract.call('transfer', [to, formattedAmount])
-            } else if (selectedToken === 'usdc') {
-              if (+amount > formattedBalances.usdc)
-                return toast.error('Insufficient funds')
-
-              await usdcContract.call('transfer', [to, formattedAmount])
-            } else if (selectedToken === 'usdt') {
-              if (+amount > formattedBalances.usdt)
-                return toast.error('Insufficient funds')
-
-              await usdtContract.call('transfer', [to, formattedAmount])
+              await tokenContracts[selectedToken].call('transfer', [
+                to,
+                formattedAmount,
+              ])
             }
           } catch (err) {
             console.log(err)
@@ -204,6 +203,9 @@ export function PrivyConnectWallet({
   citizenContract,
   type,
 }: PrivyConnectWalletProps) {
+  const sdk = useSDK()
+  const router = useRouter()
+
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
 
@@ -213,14 +215,38 @@ export function PrivyConnectWallet({
   const { data: _ensData } = useENS(address)
   const ens = _ensData?.name
   const [walletChainId, setWalletChainId] = useState(1)
-  const {
-    login,
-    logout,
-    user,
-    authenticated,
-    connectWallet,
-    exportWallet,
-  }: any = usePrivy()
+  const { logout, user, authenticated, connectWallet, exportWallet }: any =
+    usePrivy()
+
+  const { login } = useLogin({
+    onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
+      //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
+      if (!wasAlreadyAuthenticated) {
+        let citizen
+        try {
+          const citizenContract = await sdk?.getContract(
+            CITIZEN_ADDRESSES[selectedChain.slug]
+          )
+          const ownedTokenId = await citizenContract?.call('getOwnedToken', [
+            address,
+          ])
+          citizen = await citizenContract?.erc721.get(ownedTokenId)
+        } catch (err) {
+          citizen = undefined
+        }
+        if (citizen) {
+          router.push(
+            `/citizen/${generatePrettyLinkWithId(
+              citizen?.metadata?.name as string,
+              citizen?.metadata?.id
+            )}`
+          )
+        } else {
+          router.push('/citizen/guest')
+        }
+      }
+    },
+  })
   const { wallets } = useWallets()
 
   const { fundWallet } = useFundWallet()

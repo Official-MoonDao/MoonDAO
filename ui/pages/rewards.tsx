@@ -1,4 +1,5 @@
 import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import DistributionABI from 'const/abis/DistributionTable.json'
 import ProjectABI from 'const/abis/Project.json'
 import {
   PROJECT_TABLE_ADDRESSES,
@@ -37,7 +38,8 @@ export async function getStaticProps() {
   )
 
   const distributionTableContract = await sdk.getContract(
-    DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
+    DISTRIBUTION_TABLE_ADDRESSES[chain.slug],
+    DistributionABI
   )
 
   const projectBoardTableName = await projectTableContract.call('getTableName')
