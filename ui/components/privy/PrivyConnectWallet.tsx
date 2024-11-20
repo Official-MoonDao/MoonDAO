@@ -1,11 +1,11 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import {
   useFundWallet,
   useLogin,
   usePrivy,
   useWallets,
 } from '@privy-io/react-auth'
-import { NFT, useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -16,7 +16,6 @@ import ChainContext from '../../lib/thirdweb/chain-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
-import CitizenContext from '@/lib/citizen/citizen-context'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
@@ -399,7 +398,7 @@ export function PrivyConnectWallet({
             }}
           >
             {/*Address and Toggle open/close button*/}
-            <div className="flex items-center w-full h-full justify-center">
+            <div className="flex items-center w-full h-full justify-between">
               <p className="text-xs">
                 {ens
                   ? ens
@@ -407,6 +406,11 @@ export function PrivyConnectWallet({
                   ? `${address?.slice(0, 6)}...${address?.slice(-4)}`
                   : ''}
               </p>
+              <ChevronDownIcon
+                className={`w-4 h-4 text-black dark:text-white cursor-pointer transition-all duration-150 ${
+                  enabled ? 'rotate-180' : ''
+                }`}
+              />
             </div>
             {/*Menu that opens up*/}
           </div>
@@ -536,7 +540,7 @@ export function PrivyConnectWallet({
               )}
 
               <button
-                className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
+                className="w-full gradient-2 p-1 pr-2 pl-2 rounded-[2vmax]"
                 onClick={async () => {
                   if (!address) return toast.error('Please connect your wallet')
                   fundWallet(address, {
@@ -549,7 +553,7 @@ export function PrivyConnectWallet({
               </button>
 
               <button
-                className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
+                className="w-full gradient-2 p-1 pr-2 pl-2 rounded-[2vmax]"
                 onClick={async () => {
                   setSendModalEnabled(true)
                 }}
@@ -596,7 +600,7 @@ export function PrivyConnectWallet({
                   ))}
                   {wallets[selectedWallet]?.walletClientType === 'privy' && (
                     <button
-                      className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
+                      className="w-full gradient-2 p-1 pr-2 pl-2 rounded-[2vmax]"
                       onClick={() => {
                         exportWallet().catch(() => {
                           toast.error('Please select a privy wallet to export.')
@@ -607,12 +611,12 @@ export function PrivyConnectWallet({
                     </button>
                   )}
                   <button
-                    className="w-full gradient-3 p-1 pr-2 pl-2 text-dark-cool"
+                    className="w-full gradient-2 p-1 pr-2 pl-2 rounded-[2vmax]"
                     onClick={async () => {
                       connectWallet()
                     }}
                   >
-                    <strong>Connect</strong>
+                    <strong>Add Wallet</strong>
                   </button>
                 </div>
               </div>
@@ -632,7 +636,7 @@ export function PrivyConnectWallet({
                       logout()
                     }}
                   >
-                    <strong>Log out</strong>
+                    <strong>Log Out</strong>
                   </button>
                 </div>
               </div>
