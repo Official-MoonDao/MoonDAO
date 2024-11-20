@@ -4,7 +4,6 @@ import { blockedCitizens } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { getAttribute } from '@/lib/utils/nft'
 import IconOrg from '@/components/assets/IconOrg'
@@ -120,15 +119,6 @@ export async function getStaticProps() {
       )
     })
 
-    const citizenPrettyLinkData = filteredValidCitizens.map((nft: any) => ({
-      name: nft?.metadata?.name,
-      id: nft?.metadata?.id,
-    }))
-
-    const { idToPrettyLink } = generatePrettyLinks(citizenPrettyLinkData, {
-      allHaveTokenId: true,
-    })
-
     //Get location data for each citizen
     for (const citizen of filteredValidCitizens) {
       const citizenLocation = getAttribute(
@@ -137,11 +127,26 @@ export async function getStaticProps() {
       ).value
 
       let locationData
-      if (citizenLocation !== '') {
+      if (citizenLocation !== '' && !citizenLocation.startsWith('{')) {
         const locationRes = await fetch(
           `https://maps.googleapis.com/maps/api/geocode/json?address=${citizenLocation}&key=${process.env.GOOGLE_MAPS_API_KEY}`
         )
         locationData = await locationRes.json()
+      } else if (citizenLocation.startsWith('{')) {
+        const parsedLocationData = JSON.parse(citizenLocation)
+        locationData = {
+          results: [
+            {
+              formatted_address: parsedLocationData.name,
+              geometry: {
+                location: {
+                  lat: parsedLocationData.lat,
+                  lng: parsedLocationData.lng,
+                },
+              },
+            },
+          ],
+        }
       } else {
         locationData = {
           results: [
@@ -157,7 +162,6 @@ export async function getStaticProps() {
         id: citizen.metadata.id,
         name: citizen.metadata.name,
         location: citizenLocation,
-        prettyLink: idToPrettyLink[citizen.metadata.id],
         formattedAddress:
           locationData.results?.[0]?.formatted_address || 'Antartica',
         image: citizen.metadata.image,

@@ -34,7 +34,9 @@ export function useCitizenData(nft: any, citizenContract: any) {
 
   const location = useMemo(() => {
     const loc = getAttribute(attributes, 'location')
-    return loc?.value
+    if (loc.value.startsWith('{')) {
+      return JSON.parse(loc.value).name
+    } else return loc?.value
   }, [attributes])
 
   const incompleteProfile = useMemo(() => {
@@ -71,6 +73,7 @@ export function useCitizenData(nft: any, citizenContract: any) {
 
   return {
     socials,
+    location,
     discordLink: `https://discord.com/users/${discordUser?.data?.[0]?.user?.id}`,
     isPublic,
     isDeleted,

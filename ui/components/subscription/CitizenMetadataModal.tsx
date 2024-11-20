@@ -150,14 +150,26 @@ export default function CitizenMetadataModal({
   }, [resolvedMetadata])
 
   useEffect(() => {
-    setCitizenData({
-      name: nft?.metadata?.name,
-      description: nft?.metadata?.description,
-      location: getAttribute(nft.metadata.attributes, 'location').value,
-      discord: getAttribute(nft.metadata.attributes, 'discord').value,
-      twitter: getAttribute(nft.metadata.attributes, 'twitter').value,
-      website: getAttribute(nft.metadata.attributes, 'website').value,
-      view: 'public',
+    setCitizenData(() => {
+      const citizenLocation = getAttribute(
+        nft.metadata.attributes,
+        'location'
+      ).value
+
+      let locationName
+      if (citizenLocation.startsWith('{')) {
+        locationName = JSON.parse(citizenLocation).name
+      } else locationName = citizenLocation
+
+      return {
+        name: nft?.metadata?.name,
+        description: nft?.metadata?.description,
+        location: locationName,
+        discord: getAttribute(nft.metadata.attributes, 'discord').value,
+        twitter: getAttribute(nft.metadata.attributes, 'twitter').value,
+        website: getAttribute(nft.metadata.attributes, 'website').value,
+        view: 'public',
+      }
     })
   }, [nft])
 
@@ -293,12 +305,37 @@ export default function CitizenMetadataModal({
 
                   const cleanedCitizenData = cleanData(citizenData)
 
+                  //get location data from google's geocoder
+                  const locationDataRes = await fetch('/api/google/geocoder', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({
+                      location: cleanedCitizenData.location,
+                    }),
+                  })
+                  const { data: locationData } = await locationDataRes.json()
+                  const locationLat =
+                    locationData?.results?.[0]?.geometry?.location?.lat || -90
+                  const locationLng =
+                    locationData?.results?.[0]?.geometry?.location?.lng || 0
+                  const locationName =
+                    locationData?.results?.[0]?.formatted_address || 'Antartica'
+                  const citizenLocationData = {
+                    lat: locationLat,
+                    lng: locationLng,
+                    name: locationName,
+                  }
+                  const cleanedLocationData = cleanData(citizenLocationData)
+
                   const tx = await citizenTableContract?.call('updateTable', [
                     nft.metadata.id,
                     cleanedCitizenData.name,
                     cleanedCitizenData.description,
                     imageIpfsLink,
-                    cleanedCitizenData.location,
+                    JSON.stringify(cleanedLocationData),
                     cleanedCitizenData.discord,
                     cleanedCitizenData.twitter,
                     cleanedCitizenData.website,

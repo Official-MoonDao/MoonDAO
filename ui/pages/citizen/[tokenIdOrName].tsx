@@ -1,5 +1,10 @@
 //Citizen Profile
-import { GlobeAltIcon, PencilIcon } from '@heroicons/react/24/outline'
+import {
+  GlobeAltIcon,
+  GlobeAmericasIcon,
+  MapPinIcon,
+  PencilIcon,
+} from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
@@ -91,6 +96,7 @@ export default function CitizenDetailPage({
 
   const {
     socials,
+    location,
     discordLink,
     isDeleted,
     subIsValid,
@@ -300,6 +306,15 @@ export default function CitizenDetailPage({
                 )} */}
                 <div className="mt-4 lg:ml-5">
                   <Address address={isGuest ? address : nft.owner} />
+                </div>
+
+                <div className="mt-2 flex justify-between items-start gap-2 lg:ml-5">
+                  <MapPinIcon
+                    width={30}
+                    height={30}
+                    className="flex-shrink-0 mr-8"
+                  />
+                  <p className="font-GoodTimes">{location}</p>
                 </div>
               </div>
             </div>
