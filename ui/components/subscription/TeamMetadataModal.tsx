@@ -15,6 +15,7 @@ import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import FormInput from '../forms/FormInput'
+import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/TeamImageGenerator'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -24,7 +25,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
   return (
     <div className="w-full flex flex-col gap-2">
       <FormInput
-        label="Name"
+        label="Name *"
         value={teamData.name}
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, name: target.value }))
@@ -85,6 +86,7 @@ export default function TeamMetadataModal({
   const [formResponseId, setFormResponseId] = useState<string>(
     getAttribute(nft?.metadata?.attributes, 'formId').value
   )
+  const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
 
   const { getAccessToken } = usePrivy()
 
@@ -215,18 +217,19 @@ export default function TeamMetadataModal({
         {stage === 3 && (
           <>
             <TeamMetadataForm teamData={teamData} setTeamData={setTeamData} />
+            <ConditionCheckbox
+              label="I acknowledge that this info will be stored permanently onchain."
+              agreedToCondition={agreedToOnChainData}
+              setAgreedToCondition={setAgreedToOnChainData}
+            />
             <PrivyWeb3Button
               className="mt-4 w-full gradient-2 rounded-[5vmax]"
               requiredChain={DEFAULT_CHAIN}
               label="Submit"
+              isDisabled={!agreedToOnChainData}
               action={async () => {
-                if (
-                  !teamData.name ||
-                  teamData.name.trim() === '' ||
-                  !teamData.description ||
-                  teamData.description.trim() === ''
-                ) {
-                  return toast.error('Please enter a name and bio.')
+                if (!teamData.name || teamData.name.trim() === '') {
+                  return toast.error('Please enter a name.')
                 }
 
                 const accessToken = await getAccessToken()
