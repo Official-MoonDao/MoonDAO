@@ -50,9 +50,9 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import Action from '@/components/subscription/Action'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
-import TeamAction from '@/components/subscription/TeamAction'
 import TeamDonation from '@/components/subscription/TeamDonation'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
 import TeamJobs from '@/components/subscription/TeamJobs'
@@ -415,13 +415,13 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                     bottomLeft="2vmax"
                   >
                     <div className="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
-                      <TeamAction
+                      <Action
                         title="Fund"
                         description="Submit a proposal to secure space project funding."
                         icon={<BanknotesIcon height={30} width={30} />}
                         onClick={() => router.push('/propose')}
                       />
-                      <TeamAction
+                      <Action
                         title="Hire"
                         description="List job openings or contracts to a global talent pool."
                         icon={
@@ -429,7 +429,7 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
                         }
                         onClick={() => setTeamJobModalEnabled(true)}
                       />
-                      <TeamAction
+                      <Action
                         title="Sell"
                         description="List products, services, or ticketed events for sale."
                         icon={<BuildingStorefrontIcon height={30} width={30} />}

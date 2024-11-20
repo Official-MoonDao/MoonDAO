@@ -63,7 +63,7 @@ export default function Tier({
                 src={
                   type === 'team'
                     ? '/assets/team_image.png'
-                    : '/assets/neil-armstrong-pfp.png'
+                    : '/assets/citizen-default.png'
                 }
                 width={506}
                 height={506}

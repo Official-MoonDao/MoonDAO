@@ -37,3 +37,9 @@ export function generatePrettyLinks(
   // Return the object
   return { prettyLinks, idToPrettyLink }
 }
+
+export function generatePrettyLinkWithId(name: string, id: string | number) {
+  let prettyLink = name.replace(/\s+/g, '-')
+  prettyLink = `${prettyLink}-${id}`
+  return prettyLink
+}

@@ -21,6 +21,7 @@ import {
   SnapshotGraphqlProposalVotingInfo,
   useVotingInfoOfProposals,
 } from '@/lib/snapshot'
+import Proposal from './Proposal'
 import ProposalInfo, { ProposalInfoSkeleton } from './ProposalInfo'
 
 function NoResults() {
@@ -141,84 +142,40 @@ export default function ProposalList() {
   } else {
     const packet = proposalsPacket
     return (
-    <div className="mx-5 rounded-bl-20px overflow-hidden md:mt-[-40px] md:pt-5">  
-      <div className="font-[roboto] lg:max-w-[800px] lg:ml-5 ">
-        <ul
-          className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
-          id="scrollableUl"
-        >
-          <InfiniteScroll
-            dataLength={proposals.length} //This is important field to render the next data
-            next={() => {
-              setSize(size + 1)
-            }}
-            hasMore={packet.hasMore}
-            loader={
-              <p className="text-center mt-5  animate-pulse">Loading...</p>
-            }
-            endMessage={
-              <p className="text-center my-5 font-GoodTimes">
-                <b>Yay! You have seen it all</b>
-              </p>
-            }
-            scrollableTarget="scrollableUl"
+      <div className="mx-5 rounded-bl-20px overflow-hidden md:mt-[-40px] md:pt-5">
+        <div className="font-[roboto] lg:max-w-[800px] lg:ml-5 ">
+          <ul
+            className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
+            id="scrollableUl"
           >
-            {proposals.map((proposal) => (
-              <li id="proposal-list-item"
-                key={proposal.uuid}
-                className="lg:mr-5 relative flex bg-dark-cool mt-5 rounded-[20px] justify-between gap-x-6 px-4 py-5 border-transparent border-[1px] hover:border-light-cool transition-all duration-150 sm:px-6"
-              >
-                <ProposalInfo
-                showTitle={true}
-                showStatus={false}
-                  proposalPacket={{
-                    ...proposal,
-                    proposalInfo: packet.proposalInfo,
-                  }}
+            <InfiniteScroll
+              dataLength={proposals.length} //This is important field to render the next data
+              next={() => {
+                setSize(size + 1)
+              }}
+              hasMore={packet.hasMore}
+              loader={
+                <p className="text-center mt-5  animate-pulse">Loading...</p>
+              }
+              endMessage={
+                <p className="text-center my-5 font-GoodTimes">
+                  <b>Yay! You have seen it all</b>
+                </p>
+              }
+              scrollableTarget="scrollableUl"
+            >
+              {proposals.map((proposal) => (
+                <Proposal
+                  key={proposal.uuid}
+                  proposal={proposal}
+                  packet={packet}
                   votingInfo={votingInfoMap[proposal.voteURL || '']}
                 />
-                <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
-                  <div className="flex sm:flex-col sm:items-end">
-                    <p className="text-sm leading-6 text-gray-900 dark:text-white">
-                      {proposal.status}
-                    </p>
-                    {['Voting', 'Temperature Check'].includes(
-                      proposal.status
-                    ) ? (
-                      <div className="mt-1 flex items-center gap-x-1.5">
-                        <div className="flex-none rounded-full bg-emerald-500/20 p-1">
-                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        </div>
-                        <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
-                          Voting
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
-                        <span className="sr-only">Last edited</span>
-                        <time dateTime={proposal.lastEditedTime}>
-                          {formatDistanceStrict(
-                            new Date(
-                              proposal.lastEditedTime || proposal.createdTime
-                            ),
-                            new Date(),
-                            { addSuffix: true }
-                          )}
-                        </time>
-                      </p>
-                    )}
-                  </div>
-                  <ChevronRightIcon
-                    className="h-5 w-5 flex-none text-gray-400"
-                    aria-hidden="true"
-                  />
-                </div>
-              </li>
-            ))}
-          </InfiniteScroll>
-        </ul>
+              ))}
+            </InfiniteScroll>
+          </ul>
+        </div>
       </div>
-    </div>  
     )
   }
 }
