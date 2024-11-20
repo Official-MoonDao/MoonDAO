@@ -583,6 +583,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     tokenId = prettyLinks[tokenIdOrName]
   }
 
+  if (tokenId === undefined) {
+    return {
+      notFound: true,
+    }
+  }
+
   const teamContract = await sdk.getContract(
     TEAM_ADDRESSES[chain.slug],
     TeamABI
