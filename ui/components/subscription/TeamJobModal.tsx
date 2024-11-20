@@ -95,6 +95,17 @@ export default function TeamJobModal({
 
           const cleanedData = cleanData(jobData)
 
+          //Check if the contact info is an email and append mailto: if needed
+          let formattedContactInfo
+          if (
+            cleanedData.contactInfo.includes('@') &&
+            !cleanedData.contactInfo.startsWith('mailto:')
+          ) {
+            formattedContactInfo = `mailto:${cleanedData.contactInfo}`
+          } else {
+            formattedContactInfo = cleanedData.contactInfo
+          }
+
           try {
             if (edit) {
               await jobTableContract.call('updateTable', [
@@ -106,7 +117,7 @@ export default function TeamJobModal({
                 '',
                 endTime,
                 currTime,
-                cleanedData.contactInfo,
+                formattedContactInfo,
               ])
             } else {
               await jobTableContract?.call('insertIntoTable', [
@@ -117,7 +128,7 @@ export default function TeamJobModal({
                 '',
                 endTime,
                 currTime,
-                cleanedData.contactInfo,
+                formattedContactInfo,
               ])
             }
 
