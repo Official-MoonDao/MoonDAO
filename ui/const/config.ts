@@ -95,7 +95,8 @@ export const PROJECT_TABLE_ADDRESSES: Index = {
   'arbitrum-sepolia': '0xF0A3DB6161D1Ee7B99197CDeD4EdFc462EAE80e0',
 }
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
-  sepolia: '0xb5D65d5867eBF99556a0F79fF6eB5A1F5680bFBc',
+  sepolia: '0x55d76e41B94fe40e8F25eC37574B1AeDE0a6E909',
+  'arbitrum-sepolia': '0xEc9Eb5D1474692c0860583e76D3611c5C8F41b7B',
 }
 export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
@@ -112,6 +113,7 @@ export const SMART_WALLET_CHECKER_ADDRESSES: Index = {
 
 export const DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES: Index = {
   sepolia: '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
+  'arbitrum-sepolia': '0x99263dB0c9BA4e1b48A5c824A6c094D851b62470',
 }
 // TODO don't hard code, pull from d-prize contract
 export const PRIZE_TOKEN_ADDRESSES: Index = {

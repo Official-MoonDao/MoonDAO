@@ -1,4 +1,4 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import {
   COMPETITOR_TABLE_ADDRESSES,
@@ -22,8 +22,9 @@ export default function Rewards({ competitors, distributions }: DePrizeProps) {
 
 export async function getStaticProps() {
   // TODO uncomment
-  //const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const chain = Sepolia
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  //const chain = ArbitrumSepolia
+  ////const chain = ArbitrumSepolia
   const sdk = initSDK(chain)
 
   const competitorTableContract = await sdk.getContract(
@@ -38,6 +39,8 @@ export async function getStaticProps() {
   const competitorBoardTableName = await competitorTableContract.call(
     'getTableName'
   )
+  //console.log('competitorBoardTableName')
+  //console.log(competitorBoardTableName)
   const distributionTableName = await distributionTableContract.call(
     'getTableName'
   )
@@ -51,6 +54,7 @@ export async function getStaticProps() {
     `${TABLELAND_ENDPOINT}?statement=${competitorStatement}`
   )
   const competitors = await competitorsRes.json()
+  console.log('competitors', competitors)
 
   const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE deprize = ${dePrizeId} AND year = ${currentYear} AND quarter = ${currentQuarter}`
   const distributionsRes = await fetch(

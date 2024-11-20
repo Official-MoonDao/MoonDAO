@@ -1,22 +1,27 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
+import CompetitorABI from 'const/abis/Competitor.json'
 import ERC20 from 'const/abis/ERC20.json'
 import REVDeployer from 'const/abis/REVDeployer.json'
 import {
   DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES,
   SNAPSHOT_RETROACTIVE_REWARDS_ID,
   PRIZE_TOKEN_ADDRESSES,
+  COMPETITOR_TABLE_ADDRESSES,
   PRIZE_DECIMALS,
   REVNET_ADDRESSES,
   PRIZE_REVNET_ID,
   BULK_TOKEN_SENDER_ADDRESSES,
 } from 'const/config'
+import { TEAM_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
 import _ from 'lodash'
+import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
+import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import useIsOperator from '@/lib/revnet/hooks/useIsOperator'
@@ -31,6 +36,7 @@ import Asset from '@/components/dashboard/treasury/balance/Asset'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
+import Modal from '@/components/layout/Modal'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '../layout/StandardButton'
 
@@ -114,6 +120,12 @@ export function DePrize({
     REVNET_ADDRESSES[chain.slug],
     REVDeployer.abi
   )
+  console.log('COMPETITOR_TABLE_ADDRESSES[chain.slug]')
+  console.log(COMPETITOR_TABLE_ADDRESSES[chain.slug])
+  const { contract: competitorContract } = useContract(
+    COMPETITOR_TABLE_ADDRESSES[chain.slug],
+    CompetitorABI
+  )
   const { contract: bulkTokenSenderContract } = useContract(
     BULK_TOKEN_SENDER_ADDRESSES[chain.slug]
   )
@@ -135,15 +147,18 @@ export function DePrize({
       userAddress in addressToQuadraticVotingPower) &&
     addressToQuadraticVotingPower[userAddress.toLowerCase()] > 0
 
+  const router = useRouter()
   // All competitors need at least one citizen distribution to do iterative normalization
   const isCitizens = useCitizens(chain, addresses)
   const citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
-  const allCompetitorsHaveCitizenDistribution = competitors.every(({ id }) =>
-    citizenDistributions.some(({ distribution }) => id in distribution)
-  )
+  console.log('competitors')
+  console.log(competitors)
+  //const allCompetitorsHaveCitizenDistribution = competitors.every(({ id }) =>
+  //citizenDistributions.some(({ distribution }) => id in distribution)
+  //)
   const readyToRunVoting = votingPowerSumIsNonZero
 
   const budgetPercent = 100
@@ -163,6 +178,10 @@ export function DePrize({
     year,
     quarter
   )
+  //const isCompetitor = competitors.some(
+  //(competitor) => competitor.treasury === userAddress
+  //)
+  const isCompetitor = false
   const prizeSupply = useTokenSupply(prizeContract, PRIZE_DECIMALS)
   const prizeBudget = prizeSupply * 0.1
   const winnerPool = prizeSupply * 0.3
@@ -277,6 +296,76 @@ export function DePrize({
       })
     }
   }
+  const DEPRIZE_ID = 1
+  const [joinModalOpen, setJoinModalOpen] = useState(false)
+
+  // Get user's teams
+  const { contract: teamContract } = useContract(TEAM_ADDRESSES[chain.slug])
+  const userTeams = useTeamWearer(teamContract, chain, userAddress)
+
+  const handleJoinWithTeam = async (teamId: string) => {
+    try {
+      await competitorContract?.call('insertIntoTable', [
+        teamId,
+        DEPRIZE_ID,
+        userAddress,
+        '{}',
+      ])
+      toast.success('Joined as a competitor!', {
+        style: toastStyle,
+      })
+      setJoinModalOpen(false)
+      setTimeout(() => {
+        refreshRewards()
+      }, 5000)
+    } catch (error) {
+      console.error('Error joining as a competitor:', error)
+      toast.error('Error joining as a competitor. Please try again.', {
+        style: toastStyle,
+      })
+    }
+  }
+
+  const JoinModal = () => (
+    <Modal
+      onClose={() => setJoinModalOpen(false)}
+      title="Join DePrize Competition"
+    >
+      <div className="p-6">
+        <h3 className="text-xl mb-4">Select a Team or Create New One</h3>
+
+        {/* Existing Teams */}
+        {userTeams && userTeams.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-lg mb-2">Your Teams</h4>
+            <div className="space-y-2">
+              {userTeams.map((team: any) => (
+                <button
+                  key={team.id}
+                  onClick={() => handleJoinWithTeam(team.id)}
+                  className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  {team.name || `Team ${team.id}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Create New Team */}
+        <div className="mt-4">
+          <StandardButton
+            className="gradient-2 rounded-full w-full"
+            hoverEffect={false}
+            //styleOnly={true}
+            link="/team"
+          >
+            Create New Team
+          </StandardButton>
+        </div>
+      </div>
+    </Modal>
+  )
 
   return (
     <section id="rewards-container" className="overflow-hidden">
@@ -295,6 +384,17 @@ export function DePrize({
           popOverEffect={false}
           isProfile
         >
+          {!isCompetitor && (
+            <>
+              <StandardButton
+                onClick={() => setJoinModalOpen(true)}
+                className="gradient-2 rounded-full"
+              >
+                Join
+              </StandardButton>
+              {joinModalOpen && <JoinModal />}
+            </>
+          )}
           <section
             className={`w-full flex ${
               isMobile ? 'flex-col items-center' : 'flex-row items-start'
