@@ -464,7 +464,7 @@ export function PrivyConnectWallet({
                 />
               </div>
               <div className="relative mt-2">
-                <div className="mt-2 flex items-center">
+                <div className="w-full mt-2 flex items-center">
                   <div className="ml-2 bg-dark-cool">
                     <p className="text-sm">{`${address?.slice(
                       0,
@@ -584,19 +584,18 @@ export function PrivyConnectWallet({
                     connectWallet()
                   }}
                 />
-                {wallets[selectedWallet]?.walletClientType === 'privy' ||
-                  (true && (
-                    <WalletAction
-                      id="wallet-export-action"
-                      label="Export"
-                      icon={<ArrowDownOnSquareIcon width={25} height={25} />}
-                      onClick={() => {
-                        exportWallet().catch(() => {
-                          toast.error('Please select a privy wallet to export.')
-                        })
-                      }}
-                    />
-                  ))}
+                {wallets[selectedWallet]?.walletClientType === 'privy' && (
+                  <WalletAction
+                    id="wallet-export-action"
+                    label="Export"
+                    icon={<ArrowDownOnSquareIcon width={25} height={25} />}
+                    onClick={() => {
+                      exportWallet().catch(() => {
+                        toast.error('Please select a privy wallet to export.')
+                      })
+                    }}
+                  />
+                )}
               </div>
 
               <div className="pt-1">
