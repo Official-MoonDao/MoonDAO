@@ -44,7 +44,9 @@ type PrivyConnectWalletProps = {
 const selectedNativeToken: any = {
   arbitrum: 'ETH',
   ethereum: 'ETH',
+  base: 'ETH',
   sepolia: 'ETH',
+  'base-sepolia-testnet': 'ETH',
   polygon: 'MATIC',
 }
 
