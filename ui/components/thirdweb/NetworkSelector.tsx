@@ -11,7 +11,11 @@ import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../../lib/thirdweb/chain-context'
 
-export default function NetworkSelector() {
+type NetworkSelectorProps = {
+  iconsOnly?: boolean
+}
+
+export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const [dropdown, setDropdown] = useState(false)
 
@@ -46,7 +50,7 @@ export default function NetworkSelector() {
           height={24}
           alt={selectedChain.name}
         />
-        <span>{selectedChain.name}</span>
+        {!iconsOnly && <span>{selectedChain.name}</span>}
         <button className={`${dropdown && 'rotate-180'}`}>
           <ChevronDownIcon height={14} width={14} />
         </button>
