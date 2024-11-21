@@ -1,10 +1,15 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
-import { DEFAULT_CHAIN } from 'const/config'
-import { useEffect, useState } from 'react'
+import { useContract } from '@thirdweb-dev/react'
+import TeamABI from 'const/abis/Team.json'
+import { DEFAULT_CHAIN, TEAM_ADDRESSES } from 'const/config'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import { Job } from '../jobs/Job'
@@ -37,6 +42,7 @@ export default function TeamJobModal({
   job,
 }: TeamJobModalProps) {
   const { getAccessToken } = usePrivy()
+  const { selectedChain } = useContext(ChainContext)
 
   const [isLoading, setIsLoading] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
@@ -65,6 +71,11 @@ export default function TeamJobModal({
     jobData.contactInfo.trim() !== ''
 
   const currTime = useCurrUnixTime()
+
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug],
+    TeamABI
+  )
 
   useEffect(() => {
     if (
@@ -128,9 +139,25 @@ export default function TeamJobModal({
               ])
             }
 
-            const jobId = parseInt(tx.receipt.logs[0].topics[0], 16).toString()
-
-            console.log(jobId)
+            //Get job id and team id from receipt and send discord notification
+            const jobId = parseInt(tx.receipt.logs[1].topics[1], 16).toString()
+            const jobTeamId = parseInt(
+              tx.receipt.logs[1].topics[2],
+              16
+            ).toString()
+            const team = await teamContract?.erc721.get(jobTeamId)
+            const teamName = team?.metadata.name as string
+            sendDiscordMessage(
+              accessToken,
+              'networkNotifications',
+              `[${
+                edit ? 'A job was updated' : 'A new job was posted'
+              } by **${teamName}**](https://moondao${
+                process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+                  ? '.com'
+                  : '-ce-demo.netlify.app'
+              }/team/${generatePrettyLink(teamName)}?listing=${jobId})`
+            )
 
             setTimeout(() => {
               refreshJobs()
@@ -226,7 +253,7 @@ export default function TeamJobModal({
           requiredChain={DEFAULT_CHAIN}
           label={edit ? 'Edit Job' : 'Add Job'}
           type="submit"
-          isDisabled={isLoading}
+          isDisabled={!teamContract || !jobTableContract || isLoading}
           action={() => {}}
           className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${
             !isValid ? 'opacity-50 cursor-not-allowed' : ''
