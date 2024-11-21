@@ -12,7 +12,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const type = req.query.type as keyof typeof channelIds
     const { message } = req.body
-    console.log(type, message)
+
     const response = await fetch(
       `https://discord.com/api/v10/channels/${channelIds?.[type]}/messages`,
       {
