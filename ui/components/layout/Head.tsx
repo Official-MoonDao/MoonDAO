@@ -9,12 +9,15 @@ const defaultImage =
 
 export default function WebsiteHead({
   title = defaultTitle,
+  secondaryTitle,
   description = defaultDescription,
   image = defaultImage,
 }: any) {
   return (
     <Head>
-      <title key="meta-title">{`${title} | MoonDAO`}</title>
+      <title key="meta-title">{`${title} | ${
+        secondaryTitle || 'MoonDAO'
+      }`}</title>
       <link rel="icon" href="/favicon.ico" key="link-favicon" />
       <meta
         name="viewport"
