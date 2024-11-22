@@ -117,8 +117,8 @@ export const SMART_WALLET_CHECKER_ADDRESSES: Index = {
 }
 
 export const DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES: Index = {
-  sepolia: '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
-  'arbitrum-sepolia': '0x99263dB0c9BA4e1b48A5c824A6c094D851b62470',
+  sepolia: '0xd785f72027be7c3dcaDB06E69d7f18bb195fB296',
+  'arbitrum-sepolia': '0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0',
 }
 // TODO don't hard code, pull from d-prize contract
 export const PRIZE_TOKEN_ADDRESSES: Index = {
@@ -176,7 +176,7 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '0x0000002a',
-  sepolia: '0x0000017c',
+  sepolia: '0x00000182',
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {

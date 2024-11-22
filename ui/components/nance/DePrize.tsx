@@ -3,6 +3,7 @@ import { useAddress, useContract } from '@thirdweb-dev/react'
 import CompetitorABI from 'const/abis/Competitor.json'
 import ERC20 from 'const/abis/ERC20.json'
 import REVDeployer from 'const/abis/REVDeployer.json'
+import TeamABI from 'const/abis/Team.json'
 import {
   DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES,
   SNAPSHOT_RETROACTIVE_REWARDS_ID,
@@ -14,6 +15,7 @@ import {
   BULK_TOKEN_SENDER_ADDRESSES,
 } from 'const/config'
 import { TEAM_ADDRESSES } from 'const/config'
+import { HATS_ADDRESS } from 'const/config'
 import { BigNumber } from 'ethers'
 import _ from 'lodash'
 import { useRouter } from 'next/router'
@@ -25,7 +27,6 @@ import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import useIsOperator from '@/lib/revnet/hooks/useIsOperator'
-import { useVotingPowers } from '@/lib/snapshot'
 import useWindowSize from '@/lib/team/use-window-size'
 import useTokenBalances from '@/lib/tokens/hooks/useTokenBalances'
 import useTokenSupply from '@/lib/tokens/hooks/useTokenSupply'
@@ -33,11 +34,13 @@ import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import { runQuadraticVoting } from '@/lib/utils/voting'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
+import { Hat } from '@/components/hats/Hat'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import Modal from '@/components/layout/Modal'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import { TeamPreview } from '@/components/subscription/TeamPreview'
 import StandardButton from '../layout/StandardButton'
 
 export type Metadata = {
@@ -107,21 +110,14 @@ export function DePrize({
 
   const addresses = distributions ? distributions.map((d) => d.address) : []
 
-  const { data: _vps } = useVotingPowers(
-    addresses,
-    SNAPSHOT_SPACE_NAME,
-    SNAPSHOT_RETROACTIVE_REWARDS_ID
-  )
   const { contract: prizeContract } = useContract(
     PRIZE_TOKEN_ADDRESSES[chain.slug],
     ERC20.abi
   )
   const { contract: revnetContract } = useContract(
     REVNET_ADDRESSES[chain.slug],
-    REVDeployer.abi
+    REVDeployer
   )
-  console.log('COMPETITOR_TABLE_ADDRESSES[chain.slug]')
-  console.log(COMPETITOR_TABLE_ADDRESSES[chain.slug])
   const { contract: competitorContract } = useContract(
     COMPETITOR_TABLE_ADDRESSES[chain.slug],
     CompetitorABI
@@ -131,11 +127,13 @@ export function DePrize({
   )
   const isOperator = useIsOperator(revnetContract, userAddress, PRIZE_REVNET_ID)
   const prizeBalance = useWatchTokenBalance(prizeContract, PRIZE_DECIMALS)
-  const tokenBalances = useTokenBalances(
-    prizeContract,
-    PRIZE_DECIMALS,
-    addresses
-  )
+  //const prizeBalance = 0
+  const tokenBalances = []
+  //const tokenBalances = useTokenBalances(
+  //prizeContract,
+  //PRIZE_DECIMALS,
+  //addresses
+  //)
   const addressToQuadraticVotingPower = Object.fromEntries(
     addresses.map((address, i) => [address, Math.sqrt(tokenBalances[i])])
   )
@@ -182,7 +180,8 @@ export function DePrize({
   //(competitor) => competitor.treasury === userAddress
   //)
   const isCompetitor = false
-  const prizeSupply = useTokenSupply(prizeContract, PRIZE_DECIMALS)
+  //const prizeSupply = useTokenSupply(prizeContract, PRIZE_DECIMALS)
+  const prizeSupply = 0
   const prizeBudget = prizeSupply * 0.1
   const winnerPool = prizeSupply * 0.3
   const prizePrice = 1
@@ -300,9 +299,11 @@ export function DePrize({
   const [joinModalOpen, setJoinModalOpen] = useState(false)
 
   // Get user's teams
+  const { contract: hatsContract } = useContract(HATS_ADDRESS)
   const { contract: teamContract } = useContract(TEAM_ADDRESSES[chain.slug])
   const userTeams = useTeamWearer(teamContract, chain, userAddress)
-
+  console.log('userTeams')
+  console.log(userTeams)
   const handleJoinWithTeam = async (teamId: string) => {
     try {
       await competitorContract?.call('insertIntoTable', [
@@ -340,13 +341,19 @@ export function DePrize({
             <h4 className="text-lg mb-2">Your Teams</h4>
             <div className="space-y-2">
               {userTeams.map((team: any) => (
-                <button
-                  key={team.id}
-                  onClick={() => handleJoinWithTeam(team.id)}
-                  className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  {team.name || `Team ${team.id}`}
-                </button>
+                <>
+                  <button
+                    key={team.id}
+                    onClick={() => handleJoinWithTeam(team.id)}
+                    className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    {team.name || `Team ${team.teamId}`}
+                  </button>
+                  <TeamPreview
+                    teamId={team.teamId}
+                    teamContract={teamContract}
+                  />
+                </>
               ))}
             </div>
           </div>
@@ -370,7 +377,7 @@ export function DePrize({
   return (
     <section id="rewards-container" className="overflow-hidden">
       <Head
-        title="Rewards"
+        title="DePrize"
         description="Distribute rewards to contributors based on their contributions."
       />
       <Container>

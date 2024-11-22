@@ -1,5 +1,6 @@
 import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
+import DePrizeDistributionTableABI from 'const/abis/DePrizeDistribution.json'
 import {
   COMPETITOR_TABLE_ADDRESSES,
   DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES,
@@ -9,7 +10,10 @@ import { useRouter } from 'next/router'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { DePrize, DePrizeProps } from '../components/nance/DePrize'
 
-export default function Rewards({ competitors, distributions }: DePrizeProps) {
+export default function DePrizePage({
+  competitors,
+  distributions,
+}: DePrizeProps) {
   const router = useRouter()
   return (
     <DePrize
@@ -33,7 +37,8 @@ export async function getStaticProps() {
   )
 
   const distributionTableContract = await sdk.getContract(
-    DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
+    DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES[chain.slug],
+    DePrizeDistributionTableABI
   )
 
   const competitorBoardTableName = await competitorTableContract.call(
