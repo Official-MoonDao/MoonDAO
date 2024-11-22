@@ -188,6 +188,11 @@ module.exports = nextTranslate({
         destination: '/join-us',
         permanent: true,
       },
+      {
+        source: '/eiman',
+        destination: 'https://forms.gle/uHsbCFxX36UScLW27',
+        permanent: true,
+      },
     ]
   },
   webpack: (config, { isServer }) => {
