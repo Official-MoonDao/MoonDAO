@@ -154,7 +154,7 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x93bCf6B82fcE153F24085b1C6A16328dc580427d',
+  arbitrum: '0x94e225DDe1b3E5f861222ca2055739BA12730bd4',
   sepolia: '0x5b26100ae7F244f6805D724A019927E137978659',
 }
 
@@ -164,7 +164,7 @@ export const MARKETPLACE_ADDRESS =
     : sepoliaConfig.Marketplace
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xcAEa289f612386bc2F990de4AA7267951129D213',
+  arbitrum: '0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E',
   sepolia: '0xf50aC858f78ff8d4e5E898C155046bd990dE2cED',
 }
 
