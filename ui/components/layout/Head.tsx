@@ -28,7 +28,9 @@ export default function WebsiteHead({
       <meta name="description" content={description} key="meta-desc" />
       <meta
         property="og:title"
-        content={`${title} | MoonDAO: The Internet's Space Program`}
+        content={`${title} | ${
+          secondaryTitle || "MoonDAO: The Internet's Space Program"
+        }`}
         key="meta-ogtitle"
       />
       <meta property="og:description" content={description} key="meta-ogdesc" />
@@ -38,7 +40,9 @@ export default function WebsiteHead({
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta
         name="twitter:title"
-        content={`${title} | MoonDAO: The Internet's Space Program`}
+        content={`${title} | ${
+          secondaryTitle || "MoonDAO: The Internet's Space Program"
+        }`}
         key="meta-twtitle"
       />
       <meta

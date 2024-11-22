@@ -71,6 +71,7 @@ export default function TeamDetailPage({
   nft,
   imageIpfsLink,
   queriedJob,
+  queriedListing,
 }: any) {
   const router = useRouter()
 
@@ -350,13 +351,19 @@ export default function TeamDetailPage({
   )
 
   const teamIcon = '/./assets/icon-team.svg'
-
+  console.log(queriedJob)
   return (
     <Container>
       <Head
         title={nft.metadata.name}
-        secondaryTitle={queriedJob?.title}
-        description={queriedJob?.description || nft.metadata.description}
+        secondaryTitle={
+          queriedListing?.title || queriedJob?.title || nft.metadata.name
+        }
+        description={
+          queriedListing?.description ||
+          queriedJob?.description ||
+          nft.metadata.description
+        }
         image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
       />
       {teamSubscriptionModalEnabled && (
@@ -635,8 +642,25 @@ export const getServerSideProps: GetServerSideProps = async ({
     )
     const jobData = await jobRes.json()
     queriedJob = jobData[0]
-  } else {
-    queriedJob = null
+  }
+
+  //Check for a listingId in the url and get the queried listing if it exists
+  const listingId = query?.listing
+  let queriedListing
+  if (listingId !== undefined) {
+    const marketplaceTableContract = await sdk.getContract(
+      MARKETPLACE_TABLE_ADDRESSES[chain.slug],
+      MarketplaceTableABI
+    )
+    const marketplaceTableName = await marketplaceTableContract.call(
+      'getTableName'
+    )
+    const marketplaceTableStatement = `SELECT * FROM ${marketplaceTableName} WHERE id = ${listingId}`
+    const marketplaceRes = await fetch(
+      `${TABLELAND_ENDPOINT}?statement=${marketplaceTableStatement}`
+    )
+    const marketplaceData = await marketplaceRes.json()
+    queriedListing = marketplaceData[0]
   }
 
   return {
@@ -645,6 +669,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       tokenId,
       imageIpfsLink,
       queriedJob,
+      queriedListing,
     },
   }
 }
