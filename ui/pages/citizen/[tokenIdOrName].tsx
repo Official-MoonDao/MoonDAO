@@ -308,11 +308,11 @@ export default function CitizenDetailPage({
                   <Address address={isGuest ? address : nft.owner} />
                 </div>
 
-                <div className="mt-2 flex justify-between items-start gap-2 lg:ml-5">
+                <div className="mt-2 flex items-center gap-2 lg:ml-5">
                   <MapPinIcon
                     width={30}
                     height={30}
-                    className="flex-shrink-0 mr-8"
+                    className="flex-shrink-0"
                   />
                   <p className="font-GoodTimes">{location}</p>
                 </div>
@@ -598,7 +598,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     if (
       !nft ||
       !nft.metadata.uri ||
-      blockedCitizens.includes(Number(nft.metadata.id))
+      blockedCitizens.includes(nft.metadata.id)
     ) {
       return {
         notFound: true,
