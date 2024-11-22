@@ -77,7 +77,6 @@ export default function TeamDetailPage({
 
   const sdk = useSDK()
   const address = useAddress()
-  console.log(queriedJob)
   //privy
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const { citizen } = useContext(CitizenContext)
@@ -351,20 +350,22 @@ export default function TeamDetailPage({
   )
 
   const teamIcon = '/./assets/icon-team.svg'
-  console.log(queriedJob)
+
   return (
     <Container>
       <Head
         title={nft.metadata.name}
-        secondaryTitle={
-          queriedListing?.title || queriedJob?.title || nft.metadata.name
-        }
+        secondaryTitle={queriedListing?.title || queriedJob?.title}
         description={
           queriedListing?.description ||
           queriedJob?.description ||
           nft.metadata.description
         }
-        image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
+        image={`https://ipfs.io/ipfs/${
+          queriedListing
+            ? queriedListing.image.split('ipfs://')[1]
+            : imageIpfsLink.split('ipfs://')[1]
+        }`}
       />
       {teamSubscriptionModalEnabled && (
         <SubscriptionModal
@@ -629,7 +630,7 @@ export const getServerSideProps: GetServerSideProps = async ({
 
   //Check for a jobId in the url and get the queried job if it exists
   const jobId = query?.job
-  let queriedJob
+  let queriedJob = null
   if (jobId !== undefined) {
     const jobTableContract = await sdk.getContract(
       JOBS_TABLE_ADDRESSES[chain.slug],
@@ -641,12 +642,12 @@ export const getServerSideProps: GetServerSideProps = async ({
       `${TABLELAND_ENDPOINT}?statement=${jobTableStatement}`
     )
     const jobData = await jobRes.json()
-    queriedJob = jobData[0]
+    queriedJob = jobData?.[0] || null
   }
 
   //Check for a listingId in the url and get the queried listing if it exists
   const listingId = query?.listing
-  let queriedListing
+  let queriedListing = null
   if (listingId !== undefined) {
     const marketplaceTableContract = await sdk.getContract(
       MARKETPLACE_TABLE_ADDRESSES[chain.slug],
@@ -660,7 +661,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       `${TABLELAND_ENDPOINT}?statement=${marketplaceTableStatement}`
     )
     const marketplaceData = await marketplaceRes.json()
-    queriedListing = marketplaceData[0]
+    queriedListing = marketplaceData?.[0] || null
   }
 
   return {
