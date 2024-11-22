@@ -156,7 +156,7 @@ export default function TeamJobModal({
                 process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
                   ? '.com'
                   : '-ce-demo.netlify.app'
-              }/team/${generatePrettyLink(teamName)}?listing=${jobId})`
+              }/team/${generatePrettyLink(teamName)}?job=${jobId})`
             )
 
             setTimeout(() => {
