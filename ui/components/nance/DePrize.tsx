@@ -1,4 +1,4 @@
-import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import CompetitorABI from 'const/abis/Competitor.json'
 import ERC20 from 'const/abis/ERC20.json'
@@ -28,7 +28,6 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import useIsOperator from '@/lib/revnet/hooks/useIsOperator'
 import useWindowSize from '@/lib/team/use-window-size'
-import useTokenBalances from '@/lib/tokens/hooks/useTokenBalances'
 import useTokenSupply from '@/lib/tokens/hooks/useTokenSupply'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
@@ -56,8 +55,6 @@ export type Competitor = {
 }
 export type Distribution = {
   deprize: number
-  year: number
-  quarter: number
   address: string
   distribution: { [key: string]: number }
 }
@@ -90,8 +87,6 @@ export function DePrize({
     if (distributions && userAddress) {
       for (const d of distributions) {
         if (
-          d.year === year &&
-          d.quarter === quarter &&
           d.address.toLowerCase() === userAddress.toLowerCase()
         ) {
           setDistribution(d.distribution)
@@ -146,12 +141,7 @@ export function DePrize({
     addressToQuadraticVotingPower[userAddress.toLowerCase()] > 0
 
   const router = useRouter()
-  // All competitors need at least one citizen distribution to do iterative normalization
-  const isCitizens = useCitizens(chain, addresses)
-  const citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  const nonCitizenDistributions = distributions?.filter(
-    (_, i) => !isCitizens[i]
-  )
+  
   console.log('competitors')
   console.log(competitors)
   //const allCompetitorsHaveCitizenDistribution = competitors.every(({ id }) =>
@@ -206,33 +196,16 @@ export function DePrize({
       return
     }
     try {
-      if (edit) {
-        await distributionTableContract?.call('updateTableCol', [
-          deprize,
-          quarter,
-          year,
-          JSON.stringify(distribution),
-        ])
-        toast.success('Distribution edited successfully!', {
-          style: toastStyle,
-        })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
-      } else {
-        await distributionTableContract?.call('insertIntoTable', [
-          deprize,
-          quarter,
-          year,
-          JSON.stringify(distribution),
-        ])
-        toast.success('Distribution submitted successfully!', {
-          style: toastStyle,
-        })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
-      }
+      await distributionTableContract?.call('insertIntoTable', [
+        deprize,
+        JSON.stringify(distribution),
+      ])
+      toast.success('Distribution submitted successfully!', {
+        style: toastStyle,
+      })
+      setTimeout(() => {
+        refreshRewards()
+      }, 5000)
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -240,26 +213,7 @@ export function DePrize({
       })
     }
   }
-  const handleDelete = async () => {
-    try {
-      await distributionTableContract?.call('deleteFromTable', [
-        deprize,
-        quarter,
-        year,
-      ])
-      toast.success('Distribution deleted successfully!', {
-        style: toastStyle,
-      })
-      setTimeout(() => {
-        refreshRewards()
-      }, 5000)
-    } catch (error) {
-      console.error('Error deleting distribution:', error)
-      toast.error('Error deleting distribution. Please try again.', {
-        style: toastStyle,
-      })
-    }
-  }
+  
   const handleSend = async () => {
     try {
       const addresses = competitors.map((c) => c.treasury)
@@ -471,6 +425,9 @@ export function DePrize({
                           )
                         }
                         className="border rounded px-2 py-1 w-20"
+                        style={{
+                          backgroundColor: 'var(--black)',
+                        }}
                         min="1"
                         max="100"
                         disabled={!userAddress || !userHasVotingPower}

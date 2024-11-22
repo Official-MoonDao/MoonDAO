@@ -61,7 +61,7 @@ export async function getStaticProps() {
   const competitors = await competitorsRes.json()
   console.log('competitors', competitors)
 
-  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE deprize = ${dePrizeId} AND year = ${currentYear} AND quarter = ${currentQuarter}`
+  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE deprize = ${dePrizeId}`
   const distributionsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
   )
