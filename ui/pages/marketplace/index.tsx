@@ -126,8 +126,6 @@ export async function getStaticProps() {
   )
   const allListings = await allListingsRes.json()
 
-  console.log('allListings', allListings)
-
   const validListings = allListings.filter(async (listing: TeamListingType) => {
     const teamExpiration = await teamContract.call('expiresAt', [
       listing.teamId,
