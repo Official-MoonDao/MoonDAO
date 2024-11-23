@@ -2,6 +2,11 @@ import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
+export const DEPLOYED_ORIGIN =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? 'https://moondao.com'
+    : 'https://moondao-ce-demo.netlify.app'
+
 interface DeploymentConfig {
   MOONEYToken: string
   vMOONEYToken: string
