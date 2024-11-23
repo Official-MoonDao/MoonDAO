@@ -15,6 +15,7 @@ import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import FormInput from '../forms/FormInput'
+import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/CitizenImageGenerator'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -24,7 +25,8 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
   return (
     <div className="w-full flex flex-col gap-2">
       <FormInput
-        label="Name"
+        id="citizen-name-input"
+        label="Name *"
         value={citizenData?.name}
         onChange={({ target }: any) =>
           setCitizenData((prev: any) => ({ ...prev, name: target.value }))
@@ -32,6 +34,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         placeholder="Enter your name"
       />
       <FormInput
+        id="citizen-bio-input"
         label="Bio"
         value={citizenData?.description}
         onChange={({ target }: any) =>
@@ -43,14 +46,16 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         placeholder="Enter your bio"
       />
       <FormInput
+        id="citizen-location-input"
         label="Location"
         value={citizenData?.location}
         onChange={({ target }: any) =>
           setCitizenData((prev: any) => ({ ...prev, location: target.value }))
         }
-        placeholder="Enter your location"
+        placeholder="Enter your city and/or country"
       />
       <FormInput
+        id="citizen-discord-input"
         label="Discord"
         value={citizenData?.discord}
         onChange={({ target }: any) =>
@@ -59,6 +64,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         placeholder="Enter your discord username"
       />
       <FormInput
+        id="citizen-twitter-input"
         label="Twitter"
         value={citizenData?.twitter}
         onChange={({ target }: any) =>
@@ -67,6 +73,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         placeholder="Enter your twitter link"
       />
       <FormInput
+        id="citizen-website-input"
         label="Website"
         value={citizenData?.website}
         onChange={({ target }: any) =>
@@ -93,6 +100,7 @@ export default function CitizenMetadataModal({
   const [formResponseId, setFormResponseId] = useState<string>(
     getAttribute(nft?.metadata?.attributes, 'formId').value
   )
+  const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
 
   const { getAccessToken } = usePrivy()
 
@@ -243,18 +251,19 @@ export default function CitizenMetadataModal({
               citizenData={citizenData}
               setCitizenData={setCitizenData}
             />
+            <ConditionCheckbox
+              label="I acknowledge that this info will be stored permanently onchain."
+              agreedToCondition={agreedToOnChainData}
+              setAgreedToCondition={setAgreedToOnChainData}
+            />
             <PrivyWeb3Button
               className="mt-4 w-full gradient-2 rounded-[5vmax]"
               requiredChain={DEFAULT_CHAIN}
               label="Submit"
+              isDisabled={!agreedToOnChainData}
               action={async () => {
-                if (
-                  !citizenData.name ||
-                  citizenData.name.trim() === '' ||
-                  !citizenData.description ||
-                  citizenData.description.trim() === ''
-                ) {
-                  return toast.error('Please enter a name and bio.')
+                if (!citizenData.name || citizenData.name.trim() === '') {
+                  return toast.error('Please enter a name.')
                 }
 
                 const accessToken = await getAccessToken()
