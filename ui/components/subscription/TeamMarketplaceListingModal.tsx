@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { MediaRenderer, useContract } from '@thirdweb-dev/react'
-import { DEFAULT_CHAIN, TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -220,13 +220,11 @@ export default function TeamMarketplaceListingModal({
             sendDiscordMessage(
               accessToken,
               'networkNotifications',
-              `[${
-                edit ? 'A listing was updated' : 'A new listing was posted'
-              } by **${teamName}**](https://moondao${
-                process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-                  ? '.com'
-                  : '-ce-demo.netlify.app'
-              }/team/${generatePrettyLink(teamName)}?listing=${listingId})`
+              `[**${teamName}** has ${
+                edit ? 'updated a' : 'posted a new'
+              } listing](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
+                teamName
+              )}?listing=${listingId}&_timestamp=123456789)`
             )
 
             setTimeout(() => {

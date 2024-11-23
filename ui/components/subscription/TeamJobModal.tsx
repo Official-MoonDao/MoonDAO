@@ -2,7 +2,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import TeamABI from 'const/abis/Team.json'
-import { DEFAULT_CHAIN, TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
@@ -150,13 +150,11 @@ export default function TeamJobModal({
             sendDiscordMessage(
               accessToken,
               'networkNotifications',
-              `[${
-                edit ? 'A job was updated' : 'A new job was posted'
-              } by **${teamName}**](https://moondao${
-                process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-                  ? '.com'
-                  : '-ce-demo.netlify.app'
-              }/team/${generatePrettyLink(teamName)}?job=${jobId})`
+              `[**${teamName}** has ${
+                edit ? 'updated a' : 'posted a new'
+              } job](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
+                teamName
+              )}?job=${jobId}&_timestamp=123456789)`
             )
 
             setTimeout(() => {
