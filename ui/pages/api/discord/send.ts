@@ -1,8 +1,12 @@
+import { GENERAL_CHANNEL_ID, TEST_CHANNEL_ID } from 'const/config'
 import { privyAuth } from 'middleware/privyAuth'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 
-const NETWORK_NOTIFICATION_CHANNEL_ID = '1308513773879033886'
+const NETWORK_NOTIFICATION_CHANNEL_ID =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? GENERAL_CHANNEL_ID
+    : TEST_CHANNEL_ID // general || test-channel
 
 const channelIds = {
   networkNotifications: NETWORK_NOTIFICATION_CHANNEL_ID,
