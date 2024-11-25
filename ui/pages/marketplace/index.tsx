@@ -119,7 +119,7 @@ export async function getStaticProps() {
     'getTableName'
   )
 
-  const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now})`
+  const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
   const allListingsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${statement}`

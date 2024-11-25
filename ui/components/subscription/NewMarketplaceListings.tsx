@@ -24,7 +24,7 @@ export default function NewMarketplaceListings({
     async function getNewMarketplaceListings() {
       const now = Math.floor(Date.now() / 1000)
       const tableName = await marketplaceTableContract.call('getTableName')
-      const statement = `SELECT * FROM ${tableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY timestamp ASC LIMIT 25`
+      const statement = `SELECT * FROM ${tableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
       const allListingsRes = await fetch(
         `${TABLELAND_ENDPOINT}?statement=${statement}`
       )
@@ -37,7 +37,7 @@ export default function NewMarketplaceListings({
           return teamExpiration.toNumber() > now
         }
       )
-      setNewListings(validListings.reverse())
+      setNewListings(validListings)
     }
     if (teamContract && marketplaceTableContract) {
       getNewMarketplaceListings()
