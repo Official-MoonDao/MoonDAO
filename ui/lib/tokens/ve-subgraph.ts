@@ -32,7 +32,10 @@ function calcVMOONEY(mooney: any, locktime: any) {
 }
 
 function mapHolders(data: any, totalHolders: number) {
+  if (data?.holders?.length < 1) return { holders: [], totalVMooney: 0 }
+
   let totalVMooney = 0
+
   const holders = data.holders.map((h: any) => {
     totalHolders++
 
