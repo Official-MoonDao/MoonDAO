@@ -1,7 +1,6 @@
 //Citizen Profile
 import {
   GlobeAltIcon,
-  GlobeAmericasIcon,
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
@@ -308,14 +307,18 @@ export default function CitizenDetailPage({
                   <Address address={isGuest ? address : nft.owner} />
                 </div>
 
-                <div className="mt-2 flex items-center gap-2 lg:ml-5">
-                  <MapPinIcon
-                    width={30}
-                    height={30}
-                    className="flex-shrink-0"
-                  />
-                  <p className="font-GoodTimes">{location}</p>
-                </div>
+                {location !== '' && (
+                  <div className="mt-2 flex items-center gap-2 lg:ml-5">
+                    <MapPinIcon
+                      width={30}
+                      height={30}
+                      className="flex-shrink-0"
+                    />
+                    <Link className="font-GoodTimes" href="/map">
+                      {location}
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>
