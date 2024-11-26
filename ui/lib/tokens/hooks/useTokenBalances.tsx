@@ -5,21 +5,35 @@ export default function useTokenBalances(
   decimals: number,
   addresses: string[]
 ) {
-  const [tokenBalances, setTokenBalances] = useState<any[]>([])
+  const [tokenBalances, setTokenBalances] = useState<number[]>([])
 
   useEffect(() => {
     async function getBalances() {
-      if (!tokenContract) return
-      const balances = await Promise.all(
-        addresses.map(async (address) => {
-          const balance = await tokenContract.call('balanceOf', [address])
-          return +balance.toString() / 10 ** decimals
-        })
-      )
-      setTokenBalances(balances)
+      if (!tokenContract || !addresses || addresses.length === 0) return
+
+      try {
+        const balances = await Promise.all(
+          addresses.map(async (address) => {
+            try {
+              const balance = await tokenContract.balanceOf(address) // Adjust this for your library
+              return +balance.toString() / 10 ** decimals
+            } catch (error) {
+              console.error(
+                `Failed to fetch balance for address ${address}:`,
+                error
+              )
+              return 0
+            }
+          })
+        )
+        setTokenBalances(balances)
+      } catch (error) {
+        console.error('Error fetching balances:', error)
+      }
     }
 
     getBalances()
-  }, [tokenContract, addresses])
+  }, [tokenContract, addresses, decimals])
+
   return tokenBalances
 }
