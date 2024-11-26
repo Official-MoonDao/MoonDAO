@@ -1,3 +1,4 @@
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import CompetitorABI from 'const/abis/Competitor.json'
@@ -40,6 +41,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import Modal from '@/components/layout/Modal'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
 import { TeamPreview } from '@/components/subscription/TeamPreview'
 import StandardButton from '../layout/StandardButton'
 
@@ -127,7 +129,6 @@ export function DePrize({
   )
   const isOperator = useIsOperator(revnetContract, userAddress, PRIZE_REVNET_ID)
   const prizeBalance = useWatchTokenBalance(prizeContract, PRIZE_DECIMALS)
-  //const prizeBalance = 0
   const tokenBalances = []
   //const tokenBalances = useTokenBalances(
   //prizeContract,
@@ -140,10 +141,11 @@ export function DePrize({
   const votingPowerSumIsNonZero =
     _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const userHasVotingPower =
-    userAddress &&
-    (userAddress.toLowerCase() in addressToQuadraticVotingPower ||
-      userAddress in addressToQuadraticVotingPower) &&
-    addressToQuadraticVotingPower[userAddress.toLowerCase()] > 0
+    prizeBalance > 0 ||
+    (userAddress &&
+      (userAddress.toLowerCase() in addressToQuadraticVotingPower ||
+        userAddress in addressToQuadraticVotingPower) &&
+      addressToQuadraticVotingPower[userAddress.toLowerCase()] > 0)
 
   const router = useRouter()
   // All competitors need at least one citizen distribution to do iterative normalization
@@ -152,8 +154,6 @@ export function DePrize({
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
-  console.log('competitors')
-  console.log(competitors)
   //const allCompetitorsHaveCitizenDistribution = competitors.every(({ id }) =>
   //citizenDistributions.some(({ distribution }) => id in distribution)
   //)
@@ -266,12 +266,6 @@ export function DePrize({
       const amounts = competitors.map(
         (c) => competitorIdToPrizePayout[c.id] * 10 ** PRIZE_DECIMALS
       )
-      console.log('amounts')
-      console.log(amounts)
-      console.log('addresses')
-      console.log(addresses)
-      console.log('PRIZE_TOKEN_ADDRESSES[chain.slug]')
-      console.log(PRIZE_TOKEN_ADDRESSES[chain.slug])
       // approve bulk token sender
       //await prizeContract?.call('approve', [
       //BULK_TOKEN_SENDER_ADDRESSES[chain.slug],
@@ -302,14 +296,11 @@ export function DePrize({
   const { contract: hatsContract } = useContract(HATS_ADDRESS)
   const { contract: teamContract } = useContract(TEAM_ADDRESSES[chain.slug])
   const userTeams = useTeamWearer(teamContract, chain, userAddress)
-  console.log('userTeams')
-  console.log(userTeams)
   const handleJoinWithTeam = async (teamId: string) => {
     try {
       await competitorContract?.call('insertIntoTable', [
-        teamId,
         DEPRIZE_ID,
-        userAddress,
+        teamId,
         '{}',
       ])
       toast.success('Joined as a competitor!', {
@@ -330,10 +321,22 @@ export function DePrize({
   const JoinModal = () => (
     <Modal
       onClose={() => setJoinModalOpen(false)}
+      // close if clicked outside of modal
+      onClick={(e) => {
+        if (e.target.id === 'modal-backdrop') setJoinModalOpen(false)
+      }}
       title="Join DePrize Competition"
     >
+      <button
+        id="close-modal"
+        type="button"
+        className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+        onClick={() => setJoinModalOpen(false)}
+      >
+        <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+      </button>
       <div className="p-6">
-        <h3 className="text-xl mb-4">Select a Team or Create New One</h3>
+        <h3 className="text-xl mb-4">Select a Team or Create a New One</h3>
 
         {/* Existing Teams */}
         {userTeams && userTeams.length > 0 && (
@@ -343,16 +346,15 @@ export function DePrize({
               {userTeams.map((team: any) => (
                 <>
                   <button
-                    key={team.id}
-                    onClick={() => handleJoinWithTeam(team.id)}
+                    key={team.teamId}
+                    onClick={() => handleJoinWithTeam(team.teamId)}
                     className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    {team.name || `Team ${team.teamId}`}
+                    <CompetitorPreview
+                      teamId={team.teamId}
+                      teamContract={teamContract}
+                    />
                   </button>
-                  <TeamPreview
-                    teamId={team.teamId}
-                    teamContract={teamContract}
-                  />
                 </>
               ))}
             </div>
@@ -479,15 +481,10 @@ export function DePrize({
                     </div>
                     &nbsp;&nbsp;&nbsp;&nbsp;
                     <div className="flex-1 px-8">
-                      <a
-                        href={competitor.metadata.social}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mr-2"
-                      >
-                        <u>Competitor {competitor.id}:</u>
-                      </a>
-                      {competitor.name}
+                      <CompetitorPreview
+                        teamId={competitor.teamId}
+                        teamContract={teamContract}
+                      />
                     </div>
                     {readyToRunVoting && tokens && tokens[0] && (
                       <>
@@ -538,7 +535,7 @@ export function DePrize({
             ) : (
               <span>
                 <StandardButton
-                  link="/lock"
+                  link={`https://revnet.app/${chain.slug}/${PRIZE_REVNET_ID}`}
                   className="gradient-2 rounded-full"
                 >
                   Get Voting Power

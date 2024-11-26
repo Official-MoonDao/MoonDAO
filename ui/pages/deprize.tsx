@@ -25,10 +25,7 @@ export default function DePrizePage({
 }
 
 export async function getStaticProps() {
-  // TODO uncomment
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  //const chain = ArbitrumSepolia
-  ////const chain = ArbitrumSepolia
   const sdk = initSDK(chain)
 
   const competitorTableContract = await sdk.getContract(
@@ -41,14 +38,10 @@ export async function getStaticProps() {
     DePrizeDistributionTableABI
   )
 
-  const competitorBoardTableName = await competitorTableContract.call(
-    'getTableName'
-  )
-  //console.log('competitorBoardTableName')
-  //console.log(competitorBoardTableName)
-  const distributionTableName = await distributionTableContract.call(
-    'getTableName'
-  )
+  const competitorBoardTableName =
+    await competitorTableContract.call('getTableName')
+  const distributionTableName =
+    await distributionTableContract.call('getTableName')
 
   // TODO don't hardcode
   const dePrizeId = 1
@@ -59,7 +52,6 @@ export async function getStaticProps() {
     `${TABLELAND_ENDPOINT}?statement=${competitorStatement}`
   )
   const competitors = await competitorsRes.json()
-  console.log('competitors', competitors)
 
   const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE deprize = ${dePrizeId} AND year = ${currentYear} AND quarter = ${currentQuarter}`
   const distributionsRes = await fetch(

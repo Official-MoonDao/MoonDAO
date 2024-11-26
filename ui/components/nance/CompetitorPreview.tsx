@@ -1,12 +1,15 @@
 import { NFT, ThirdwebNftMedia } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
 
-type TeamPreviewProps = {
+type CompetitorPreviewProps = {
   teamId: any
   teamContract?: any
 }
 
-export function TeamPreview({ teamId, teamContract }: TeamPreviewProps) {
+export function CompetitorPreview({
+  teamId,
+  teamContract,
+}: CompetitorPreviewProps) {
   const [teamNFT, setTeamNFT] = useState<NFT>()
 
   useEffect(() => {
@@ -19,16 +22,20 @@ export function TeamPreview({ teamId, teamContract }: TeamPreviewProps) {
       getTeamNFT()
     }
   }, [teamId, teamContract])
+  console.log('teamNFT')
+  console.log(teamNFT)
 
   return (
     <div className="flex items-center gap-5">
       {teamNFT && (
-        <div className="rounded-[2.5vmax] rounded-tl-[10px] overflow-hidden">
+        <div className="flex items-center">
           <ThirdwebNftMedia
             metadata={teamNFT.metadata}
-            width="100px"
-            height="100px"
+            width="66px"
+            height="66px"
+            style={{ borderRadius: '50%' }}
           />
+          <div>{teamNFT.metadata.name}</div>
         </div>
       )}
     </div>
