@@ -1,10 +1,10 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import CompetitorABI from 'const/abis/Competitor.json'
 import ERC20 from 'const/abis/ERC20.json'
 import REVDeployer from 'const/abis/REVDeployer.json'
 import TeamABI from 'const/abis/Team.json'
+import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
 import {
   DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES,
   SNAPSHOT_RETROACTIVE_REWARDS_ID,
@@ -19,7 +19,6 @@ import { TEAM_ADDRESSES } from 'const/config'
 import { HATS_ADDRESS } from 'const/config'
 import { BigNumber } from 'ethers'
 import _ from 'lodash'
-import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizens } from '@/lib/citizen/useCitizen'
@@ -38,9 +37,8 @@ import { Hat } from '@/components/hats/Hat'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
-import Modal from '@/components/layout/Modal'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
+import { JoinDePrizeModal } from '@/components/nance/JoinDePrizeModal'
 import { TeamPreview } from '@/components/subscription/TeamPreview'
 import StandardButton from '../layout/StandardButton'
 import { useVotingPowers } from '@/lib/snapshot'
@@ -51,10 +49,8 @@ export type Metadata = {
 }
 export type Competitor = {
   id: string
-  name: string
   deprize: number
-  title: string
-  treasury: string
+  teamId: number
   metadata: Metadata
 }
 export type Distribution = {
@@ -78,6 +74,8 @@ export function DePrize({
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const { isMobile } = useWindowSize()
 
+  console.log('distributions')
+  console.log(distributions)
   const userAddress = useAddress()
   const year = new Date().getFullYear()
   const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
@@ -94,9 +92,7 @@ export function DePrize({
       // const voterRewards = getVoterRewards(distributions)
 
       for (const d of distributions) {
-        if (
-          d.address.toLowerCase() === userAddress.toLowerCase()
-        ) {
+        if (d.address.toLowerCase() === userAddress.toLowerCase()) {
           setDistribution(d.distribution)
           setEdit(true)
           break
@@ -118,10 +114,12 @@ export function DePrize({
     }
 
     // Populate a map of the latest allocations: From user to distribution (NOTE: assumes *voting power* - not percentage).
-    let userToDistributions : { [ key: string]: { [key: string]: number }} = {}
+    let userToDistributions: { [key: string]: { [key: string]: number } } = {}
 
     // Voter rewards given a certain competitor ID, mapping from user to percentage of rewards.
-    let competitorToVoterRewardPercentages : { [ key: string]: { [key: string]: number }} = {}
+    let competitorToVoterRewardPercentages: {
+      [key: string]: { [key: string]: number }
+    } = {}
 
     let previousTimestamp = distributions[0].timestamp
     let elapsedTime = 0
@@ -142,13 +140,18 @@ export function DePrize({
         }
 
         // For every user, calculate the percentage they make up of the total voting power to the competitor.
-        for (const [userID, distribution] of Object.entries(userToDistributions)) {
-          const percentageInTimeWindow = distribution[competitor.id] / totalVotingPowerToCompetitor
-          const previousPercentage = competitorToVoterRewardPercentages[competitor.id][userID]
+        for (const [userID, distribution] of Object.entries(
+          userToDistributions
+        )) {
+          const percentageInTimeWindow =
+            distribution[competitor.id] / totalVotingPowerToCompetitor
+          const previousPercentage =
+            competitorToVoterRewardPercentages[competitor.id][userID]
 
           // Update the voter reward percentage, using a time-weighted average.
-          competitorToVoterRewardPercentages[competitor.id][userID] = 
-            (previousPercentage * elapsedTime + percentageInTimeWindow * delta) /
+          competitorToVoterRewardPercentages[competitor.id][userID] =
+            (previousPercentage * elapsedTime +
+              percentageInTimeWindow * delta) /
             (elapsedTime + delta)
         }
       }
@@ -181,14 +184,20 @@ export function DePrize({
   const { contract: bulkTokenSenderContract } = useContract(
     BULK_TOKEN_SENDER_ADDRESSES[chain.slug]
   )
+  const { contract: distributionTableContract } = useContract(
+    DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
+  )
+  const { contract: hatsContract } = useContract(HATS_ADDRESS)
+  const { contract: teamContract } = useContract(TEAM_ADDRESSES[chain.slug])
+
   const isOperator = useIsOperator(revnetContract, userAddress, PRIZE_REVNET_ID)
   const prizeBalance = useWatchTokenBalance(prizeContract, PRIZE_DECIMALS)
-  const tokenBalances = []
   //const tokenBalances = useTokenBalances(
   //prizeContract,
   //PRIZE_DECIMALS,
   //addresses
   //)
+  const tokenBalances = []
   const addressToQuadraticVotingPower = Object.fromEntries(
     addresses.map((address, i) => [address, Math.sqrt(tokenBalances[i])])
   )
@@ -201,16 +210,6 @@ export function DePrize({
         userAddress in addressToQuadraticVotingPower) &&
       addressToQuadraticVotingPower[userAddress.toLowerCase()] > 0)
 
-  const router = useRouter()
-  // All competitors need at least one citizen distribution to do iterative normalization
-  const isCitizens = useCitizens(chain, addresses)
-  const citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  const nonCitizenDistributions = distributions?.filter(
-    (_, i) => !isCitizens[i]
-  )
-  //const allCompetitorsHaveCitizenDistribution = competitors.every(({ id }) =>
-  //citizenDistributions.some(({ distribution }) => id in distribution)
-  //)
   const readyToRunVoting = votingPowerSumIsNonZero
 
   const budgetPercent = 100
@@ -221,21 +220,13 @@ export function DePrize({
       budgetPercent
     )
 
-  const { contract: distributionTableContract } = useContract(
-    DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
-  )
   const { tokens } = useAssets()
   const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
     year,
     quarter
   )
-  //const isCompetitor = competitors.some(
-  //(competitor) => competitor.treasury === userAddress
-  //)
-  const isCompetitor = false
-  //const prizeSupply = useTokenSupply(prizeContract, PRIZE_DECIMALS)
-  const prizeSupply = 0
+  const prizeSupply = useTokenSupply(prizeContract, PRIZE_DECIMALS)
   const prizeBudget = prizeSupply * 0.1
   const winnerPool = prizeSupply * 0.3
   const prizePrice = 1
@@ -277,7 +268,7 @@ export function DePrize({
       })
     }
   }
-  
+
   const handleSend = async () => {
     try {
       const addresses = competitors.map((c) => c.treasury)
@@ -311,9 +302,16 @@ export function DePrize({
   const [joinModalOpen, setJoinModalOpen] = useState(false)
 
   // Get user's teams
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
-  const { contract: teamContract } = useContract(TEAM_ADDRESSES[chain.slug])
   const userTeams = useTeamWearer(teamContract, chain, userAddress)
+
+  //const isCompetitor = userTeams.some((team) =>
+  //competitors.some(
+  //(competitor) => competitor.teamId.toString() === team.teamId
+  //)
+  //)
+  const isCompetitor = false
+  console.log('isCompetitor')
+  console.log(isCompetitor)
   const handleJoinWithTeam = async (teamId: string) => {
     try {
       await competitorContract?.call('insertIntoTable', [
@@ -335,64 +333,6 @@ export function DePrize({
       })
     }
   }
-
-  const JoinModal = () => (
-    <Modal
-      onClose={() => setJoinModalOpen(false)}
-      // close if clicked outside of modal
-      onClick={(e) => {
-        if (e.target.id === 'modal-backdrop') setJoinModalOpen(false)
-      }}
-      title="Join DePrize Competition"
-    >
-      <button
-        id="close-modal"
-        type="button"
-        className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-        onClick={() => setJoinModalOpen(false)}
-      >
-        <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-      </button>
-      <div className="p-6">
-        <h3 className="text-xl mb-4">Select a Team or Create a New One</h3>
-
-        {/* Existing Teams */}
-        {userTeams && userTeams.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-lg mb-2">Your Teams</h4>
-            <div className="space-y-2">
-              {userTeams.map((team: any) => (
-                <>
-                  <button
-                    key={team.teamId}
-                    onClick={() => handleJoinWithTeam(team.teamId)}
-                    className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <CompetitorPreview
-                      teamId={team.teamId}
-                      teamContract={teamContract}
-                    />
-                  </button>
-                </>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Create New Team */}
-        <div className="mt-4">
-          <StandardButton
-            className="gradient-2 rounded-full w-full"
-            hoverEffect={false}
-            //styleOnly={true}
-            link="/team"
-          >
-            Create New Team
-          </StandardButton>
-        </div>
-      </div>
-    </Modal>
-  )
 
   return (
     <section id="rewards-container" className="overflow-hidden">
@@ -419,7 +359,14 @@ export function DePrize({
               >
                 Join
               </StandardButton>
-              {joinModalOpen && <JoinModal />}
+              {joinModalOpen && (
+                <JoinDePrizeModal
+                  userTeams={userTeams}
+                  setJoinModalOpen={setJoinModalOpen}
+                  teamContract={teamContract}
+                  handleJoinWithTeam={handleJoinWithTeam}
+                />
+              )}
             </>
           )}
           <section
