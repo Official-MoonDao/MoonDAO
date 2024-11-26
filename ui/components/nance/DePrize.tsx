@@ -1,5 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import CompetitorABI from 'const/abis/Competitor.json'
 import ERC20 from 'const/abis/ERC20.json'
@@ -29,7 +29,6 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import useIsOperator from '@/lib/revnet/hooks/useIsOperator'
 import useWindowSize from '@/lib/team/use-window-size'
-import useTokenBalances from '@/lib/tokens/hooks/useTokenBalances'
 import useTokenSupply from '@/lib/tokens/hooks/useTokenSupply'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
@@ -44,6 +43,8 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
 import { TeamPreview } from '@/components/subscription/TeamPreview'
 import StandardButton from '../layout/StandardButton'
+import { useVotingPowers } from '@/lib/snapshot'
+import useTokenBalances from '@/lib/tokens/hooks/useTokenBalances'
 
 export type Metadata = {
   social: string
@@ -58,9 +59,8 @@ export type Competitor = {
 }
 export type Distribution = {
   deprize: number
-  year: number
-  quarter: number
   address: string
+  timestamp: number
   distribution: { [key: string]: number }
 }
 
@@ -90,10 +90,11 @@ export function DePrize({
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
     if (distributions && userAddress) {
+      // // Calculate the current voter rewards for that user on each competitor.
+      // const voterRewards = getVoterRewards(distributions)
+
       for (const d of distributions) {
         if (
-          d.year === year &&
-          d.quarter === quarter &&
           d.address.toLowerCase() === userAddress.toLowerCase()
         ) {
           setDistribution(d.distribution)
@@ -103,11 +104,64 @@ export function DePrize({
       }
     }
   }, [userAddress, distributions])
+
   const handleDistributionChange = (competitorId: string, value: number) => {
     setDistribution((prev) => ({
       ...prev,
       [competitorId]: Math.min(100, Math.max(1, value)),
     }))
+  }
+
+  const getVoterRewards = (distributions: Distribution[]) => {
+    if (distributions.length === 0) {
+      return {}
+    }
+
+    // Populate a map of the latest allocations: From user to distribution (NOTE: assumes *voting power* - not percentage).
+    let userToDistributions : { [ key: string]: { [key: string]: number }} = {}
+
+    // Voter rewards given a certain competitor ID, mapping from user to percentage of rewards.
+    let competitorToVoterRewardPercentages : { [ key: string]: { [key: string]: number }} = {}
+
+    let previousTimestamp = distributions[0].timestamp
+    let elapsedTime = 0
+
+    for (let i = 0; i < distributions.length; i++) {
+      const d = distributions[i]
+      // Calculate the delta between the current timestamp and the distribution timestamp.
+      const delta = previousTimestamp - d.timestamp
+
+      // Iterate through all the competitors and calculate the voter reward percentages.
+      for (const competitor of competitors) {
+        // const newAllocationToCompetitor = d.distribution[competitor.id] * d.votingPower
+        let totalVotingPowerToCompetitor = 0
+
+        // Get the total voting power allocation to the competitor, from all users.
+        for (const [, distribution] of Object.entries(userToDistributions)) {
+          totalVotingPowerToCompetitor += distribution[competitor.id]
+        }
+
+        // For every user, calculate the percentage they make up of the total voting power to the competitor.
+        for (const [userID, distribution] of Object.entries(userToDistributions)) {
+          const percentageInTimeWindow = distribution[competitor.id] / totalVotingPowerToCompetitor
+          const previousPercentage = competitorToVoterRewardPercentages[competitor.id][userID]
+
+          // Update the voter reward percentage, using a time-weighted average.
+          competitorToVoterRewardPercentages[competitor.id][userID] = 
+            (previousPercentage * elapsedTime + percentageInTimeWindow * delta) /
+            (elapsedTime + delta)
+        }
+      }
+
+      // Update the allUserDistributions map with the new distribution.
+      userToDistributions[d.address] = d.distribution
+
+      // Update the elapsed time and previous timestamp.
+      elapsedTime += delta
+      previousTimestamp = d.timestamp
+    }
+
+    return competitorToVoterRewardPercentages
   }
 
   const addresses = distributions ? distributions.map((d) => d.address) : []
@@ -206,33 +260,16 @@ export function DePrize({
       return
     }
     try {
-      if (edit) {
-        await distributionTableContract?.call('updateTableCol', [
-          deprize,
-          quarter,
-          year,
-          JSON.stringify(distribution),
-        ])
-        toast.success('Distribution edited successfully!', {
-          style: toastStyle,
-        })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
-      } else {
-        await distributionTableContract?.call('insertIntoTable', [
-          deprize,
-          quarter,
-          year,
-          JSON.stringify(distribution),
-        ])
-        toast.success('Distribution submitted successfully!', {
-          style: toastStyle,
-        })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
-      }
+      await distributionTableContract?.call('insertIntoTable', [
+        deprize,
+        JSON.stringify(distribution),
+      ])
+      toast.success('Distribution submitted successfully!', {
+        style: toastStyle,
+      })
+      setTimeout(() => {
+        refreshRewards()
+      }, 5000)
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -240,26 +277,7 @@ export function DePrize({
       })
     }
   }
-  const handleDelete = async () => {
-    try {
-      await distributionTableContract?.call('deleteFromTable', [
-        deprize,
-        quarter,
-        year,
-      ])
-      toast.success('Distribution deleted successfully!', {
-        style: toastStyle,
-      })
-      setTimeout(() => {
-        refreshRewards()
-      }, 5000)
-    } catch (error) {
-      console.error('Error deleting distribution:', error)
-      toast.error('Error deleting distribution. Please try again.', {
-        style: toastStyle,
-      })
-    }
-  }
+  
   const handleSend = async () => {
     try {
       const addresses = competitors.map((c) => c.treasury)
@@ -473,6 +491,9 @@ export function DePrize({
                           )
                         }
                         className="border rounded px-2 py-1 w-20"
+                        style={{
+                          backgroundColor: 'var(--black)',
+                        }}
                         min="1"
                         max="100"
                         disabled={!userAddress || !userHasVotingPower}
