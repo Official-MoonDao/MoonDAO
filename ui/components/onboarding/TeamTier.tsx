@@ -18,13 +18,12 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   const handleTeamClick = async () => {
-    //const teamWhitelistContract = await sdk?.getContract(
-    //TEAM_WHITELIST_ADDRESSES[selectedChain.slug]
-    //)
-    //const isWhitelisted = await teamWhitelistContract?.call('isWhitelisted', [
-    //address,
-    //])
-    const isWhitelisted = true
+    const teamWhitelistContract = await sdk?.getContract(
+      TEAM_WHITELIST_ADDRESSES[selectedChain.slug]
+    )
+    const isWhitelisted = await teamWhitelistContract?.call('isWhitelisted', [
+      address,
+    ])
     if (isWhitelisted || process.env.NEXT_PUBLIC_ENV === 'dev') {
       setSelectedTier('team')
     } else {
@@ -48,8 +47,8 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
           'Capital Raising Tools: Leverage new tools to raise capital or solicit donations from a global network of space enthusiasts.',
           'Onchain Tools: Utilize advanced and secure onchain tools to manage your organization and interface with smart contracts.',
         ]}
-        buttoncta={compact ? 'Learn More' : 'Create a Team'}
-        onClick={compact ? () => {} : handleTeamClick}
+        buttoncta={compact ? "Learn More" : "Create a Team"}
+        onClick={compact ? ()=>{} :handleTeamClick}
         type="team"
         compact={compact}
       />
