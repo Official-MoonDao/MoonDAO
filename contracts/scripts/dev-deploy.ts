@@ -1,33 +1,22 @@
 import { wallet, dec, save } from "./helpers";
 import { ethers, BigNumber, Contract } from "ethers";
-import { formatUnits } from "@ethersproject/units";
+import { formatUnits } from "@ethersproject/units"
 
-import MyToken from "../out/MyToken.sol/MyToken.json";
-import VotingEscrow from "../out/VotingEscrow.vy/VotingEscrow.json";
+import MyToken from '../out/MyToken.sol/MyToken.json';
+import VotingEscrow from '../out/VotingEscrow.vy/VotingEscrow.json';
+import MerkleDistributorV2 from '../out/MerkleDistributorV2.sol/MerkleDistributorV2.json';
 
 const getContractFactory = (artifact: any) => {
     return new ethers.ContractFactory(artifact.abi, artifact.bytecode.object, wallet);
-};
+}
 
-const deployContract = async ({
-    name,
-    deployer,
-    factory,
-    args,
-}: {
-    name: string;
-    deployer: ethers.Wallet;
-    factory: ethers.ContractFactory;
-    args: Array<any>;
-}) => {
-    console.log(`Deploying ${name}..`);
-    const contract = await factory.connect(deployer).deploy(...args, {
-        gasLimit: BigNumber.from(8000000),
-    });
+const deployContract = async ({ name, deployer, factory, args }: { name: string, deployer: ethers.Wallet, factory: ethers.ContractFactory, args: Array<any>}) => {
+    console.log(`Deploying ${name}..`)
+    const contract = await factory.connect(deployer).deploy(...args);
     await contract.deployed();
-    console.log(`Deployed ${name} to: ${contract.address}`);
+    console.log(`Deployed ${name} to: ${contract.address}`)
     return contract;
-};
+}
 
 const deployMOONEY = async () => {
     const supply: BigNumber = BigNumber.from(process.env.MOONEY_SUPPLY ?? dec(42069, 18));
@@ -37,14 +26,14 @@ const deployMOONEY = async () => {
         name: "MOONEY",
         deployer: wallet,
         factory: Factory,
-        args: ["Mooney", "MOONEY"],
+        args: []
     });
 
-    //await MOONEYToken.connect(wallet).mint(wallet.address, supply);
-    console.log(`Minted ${formatUnits(supply, 18)} tokens to deployer address`);
+    await MOONEYToken.connect(wallet).mint(wallet.address, supply);
+    console.log(`Minted ${formatUnits(supply, 18)} tokens to deployer address`)
 
     return MOONEYToken;
-};
+}
 
 const deployVMOONEY = async (MOONEYToken: Contract) => {
     const Factory = getContractFactory(VotingEscrow);
@@ -53,11 +42,11 @@ const deployVMOONEY = async (MOONEYToken: Contract) => {
         name: "vMOONEY",
         deployer: wallet,
         factory: Factory,
-        args: [MOONEYToken.address, "Vote-escrowed MOONEY", "vMOONEY", "vMOONEY_1.0.0"],
-    });
+        args: [MOONEYToken.address, "Vote-escrowed MOONEY", "vMOONEY", "vMOONEY_1.0.0"]
+    })
 
     return vMOONEY;
-};
+}
 
 // const deployAirdropDistributor = async (MOONEYToken: Contract, root: string) => {
 //     const Factory = getContractFactory(MerkleDistributorV2);
@@ -130,7 +119,7 @@ const deployVMOONEY = async (MOONEYToken: Contract) => {
 //         factory: passportIssuerFactory,
 //         args: []
 //     })
-
+ 
 //     await passportToken.connect(wallet).transferControl(passportIssuer.address);
 //     // TODO: Set renderer
 
@@ -150,15 +139,16 @@ const main = async () => {
     const vMOONEY = await deployVMOONEY(MOONEY);
 
     const deployment = {
-        MOONEYToken: MOONEY.address,
-        vMOONEYToken: vMOONEY.address,
-    };
+        "MOONEYToken": MOONEY.address,
+        "vMOONEYToken": vMOONEY.address,
+    }
 
     const manifestFile = "./deployments/local.json";
     save(deployment, manifestFile);
 
-    console.log(`Deployment manifest saved to ${manifestFile}`);
-};
+    console.log(`Deployment manifest saved to ${manifestFile}`)
+}
+
 
 main().catch((error) => {
     console.error(error);
