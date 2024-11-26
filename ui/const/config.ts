@@ -117,7 +117,7 @@ export const SMART_WALLET_CHECKER_ADDRESSES: Index = {
 }
 
 export const DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES: Index = {
-  sepolia: '0x3d83B3DF12Fb5e11D447E8Dca4376C6ebc0352e6',
+  sepolia: '0xdd8144346390194EBa35F9551a13283a9143f21F',
 }
 // TODO don't hard code, pull from d-prize contract
 export const PRIZE_TOKEN_ADDRESSES: Index = {
