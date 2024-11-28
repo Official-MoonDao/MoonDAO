@@ -1,35 +1,40 @@
-import MailingList from '../layout/MailingList'; 
+import dynamic from 'next/dynamic'
+const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
+import MailingList from '../layout/MailingList'
+import { dummyData } from 'const/dummyMapData'
 
 export default function Hero() {
-  return ( 
-    <section id="hero-section" 
+  return (
+    <section id="hero-section"
       className="overflow-visible relative w-full"
       >
       <div id="hero-container" 
         className="compact-xxl flex flex-col h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start md:pl-10 md:pr-10 min-h-[675px] mt-[-1px] p-5 pb-[80px] lg:pb-40 relative z-10"
         >
-        <div id="background" 
-          className="gradient-1 w-full h-full absolute top-0 right-0 rounded-bl-[2vmax] overflow-hidden z-0"
-        ></div>
-        <div id="tl-divider" 
-          className="divider-1 absolute h-[90%] left-[-2px] top-0 w-[45%]"
-        ></div>
         <div id="featured-image-container" 
           className="absolute h-[100%] left-0 overflow-hidden top-0 w-[100%]"
           >
-          <div id="feature-below-1400" 
-            className="hide-xl absolute feature-1 h-full mt-5 right-0 top-0 w-[80vmin] lg:w-[50vmax] md:w-[70%]"
-          ></div>
-          <div id="feature-above-1200" 
-            className="show-xl absolute feature-1 h-full mt-5 right-0 top-0 w-[850px]"
-          ></div>
+          <div id="map-container-below-1400" 
+            className="branded hide-xl absolute h-full mt-0 left-0 top-0 w-[80vmin] lg:w-[50vmax] md:w-[70%]"
+          >
+            <Earth 
+              pointsData={dummyData} 
+              enableControls={true}
+              fixedView={false}
+            />
+          </div>
+          <div id="map-container-above-1400" 
+            className="branded show-xl absolute h-full mt-[-10vh] right-0 top-0 w-[850px]"
+          >
+            <Earth 
+              pointsData={dummyData}
+              enableControls={true}
+              fixedView={false}
+            />
+          </div>
         </div>  
-        <div id="bottom-right-divider-below-1400" 
-          className="hide-xl absolute bottom-[-2px] divider-2 h-full hidden md:block md:right-0 md:w-[80%] right-[-20%] w-[60%] lg:w-[60%]"
-        ></div>
-        <div id="bottom-right-divider-above-1400" 
-          className="show-xl absolute bottom-[-2px] right-0 divider-2 h-full w-[900px]"
-        ></div>
+
+
         <div id="content" 
           className="relative w-[100%] pt-0 md:w-[95%] lg:w-[70%]"
           >

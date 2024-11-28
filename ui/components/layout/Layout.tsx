@@ -14,20 +14,18 @@ import { LogoSidebarLight, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import CookieBanner from './CookieBanner'
-import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
 import { navigation } from './Sidebar/Navigation'
 import NavigationLink from './Sidebar/NavigationLink'
+import Starfield from './starfield'
 
 interface Layout {
   children: JSX.Element
-  lightMode: boolean
-  setLightMode: Function
 }
 
-export default function Layout({ children, lightMode, setLightMode }: Layout) {
+export default function Layout({ children }: Layout) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -44,23 +42,16 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const { t } = useTranslation('common')
   //Background is defined in this root div.
   const layout = (
-    <div
-      id="app-layout"
-      className={`${
-        !lightMode ? 'dark background-dark' : 'background-light'
-      } min-h-screen`}
-    >
+    <div id="app-layout" className="min-h-screen relative">
+      <Starfield />
 
       {/*Mobile menu top bar*/}
       <MobileMenuTop
         setSidebarOpen={setSidebarOpen}
-        lightMode={lightMode}
-        setLightMode={setLightMode}
         citizenContract={citizenContract}
       />
 
       <MobileSidebar
-        lightMode={lightMode}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />
@@ -71,7 +62,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col pt-5">
           <Link href="/" passHref>
             <div className="mt-2 ml-7 lg:ml-9 flex flex-shrink-0 items-center px-4 pl-6">
-              {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
+              <LogoSidebar />
             </div>
           </Link>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">
@@ -95,16 +86,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
                 <LanguageChange />
               </ul>
             </nav>
-          </div>
-
-          {/*Color mode and Social links*/}
-          <div
-            className={`fixed bottom-0 flex flex-col justify-center w-[230px] lg:w-[258px] p-4 pl-7 lg:pl-9 backdrop-blur-md`}
-          >
-            <ColorsAndSocials
-              lightMode={lightMode}
-              setLightMode={setLightMode}
-            />
           </div>
         </div>
       </div>

@@ -70,13 +70,13 @@ export default function NetworkMap({
           popOverEffect={false}
           isProfile
         >
-          <div className="w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+          <div className="w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] overflow-hidden">
             <div
               className={`flex items-center justify-center ${
                 tab !== 'earth' && 'hidden'
               }`}
             >
-              <Earth pointsData={citizensLocationData} />
+              <Earth pointsData={citizensLocationData} enableControls={false} fixedView={true} />
             </div>
             <div className={`${tab !== 'moon' && 'hidden'}`}>
               <Moon />
@@ -218,7 +218,7 @@ export async function getStaticProps() {
   }
 }
 
-const dummyData = [
+export const dummyData = [
   {
     citizens: [
       {
@@ -226,75 +226,39 @@ const dummyData = [
         name: 'Ryan',
         location: '',
         formattedAddress: 'Antartica',
-        image:
-          'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeifh2vwvfxfy6fevqkirldplgp47sfblcfvhn7nsxo4z4krsuulf2e/',
+        image: 'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeifh2vwvfxfy6fevqkirldplgp47sfblcfvhn7nsxo4z4krsuulf2e/',
         lat: -90,
         lng: 0,
         prettyLink: 'ryan-1',
-      },
-      {
-        id: '2',
-        name: 'name.get',
-        location: 'Earth',
-        formattedAddress: 'Antartica',
-        image:
-          'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeibo5na6nkatvor7bqisybzwtmh5n4l4wuws3uiyoqvjuuqwzwobna/',
-        lat: -90,
-        lng: 0,
-        prettyLink: 'name.get-2',
-      },
+      }
     ],
     formattedAddress: 'Antartica',
     lat: -90,
     lng: 0,
-    color: '#5e4dbf',
-    size: 0.25,
-    __threeObj: {
-      metadata: {
-        version: 4.6,
-        type: 'Object',
-        generator: 'Object3D.toJSON',
-      },
-      geometries: [
-        {
-          uuid: '7e55f1cb-1786-4ead-a9a3-3a92bff0065f',
-          type: 'CylinderGeometry',
-          radiusTop: 1,
-          radiusBottom: 1,
-          height: 1,
-          radialSegments: 12,
-          heightSegments: 1,
-          openEnded: false,
-          thetaStart: 0,
-          thetaLength: 6.283185307179586,
-        },
-      ],
-      materials: [
-        {
-          uuid: '32e00fa5-5a98-40bf-96cb-87f177a1e1f2',
-          type: 'MeshLambertMaterial',
-          color: 7159673,
-          emissive: 0,
-          envMapRotation: [0, 0, 0, 'XYZ'],
-          reflectivity: 1,
-          refractionRatio: 0.98,
-          blendColor: 0,
-        },
-      ],
-      object: {
-        uuid: 'fa1437ae-f457-4a04-8532-7cc914681cc7',
-        type: 'Mesh',
-        layers: 1,
-        matrix: [
-          -0.8726646259971648, 5.378210990769368e-33, 6.850820741191227e-17, 0,
-          6.850820741191227e-17, 1.9377047211159066e-16, 0.8726646259971648, 0,
-          -1.5407439555097887e-31, 25, -5.551115123125783e-15, 0,
-          7.4987989133092885e-31, -100, 1.2246467991473532e-14, 1,
-        ],
-        up: [0, 1, 0],
-        geometry: '7e55f1cb-1786-4ead-a9a3-3a92bff0065f',
-        material: '32e00fa5-5a98-40bf-96cb-87f177a1e1f2',
-      },
-    },
+    color: '#5556eb',
+    size: 0.01,
+    names: ['Ryan']
   },
+  // Add more points around the globe for visual interest
+  {
+    citizens: [
+      {
+        id: '2',
+        name: 'MoonDAO SF',
+        location: 'San Francisco',
+        formattedAddress: 'San Francisco, CA',
+        image: 'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeibo5na6nkatvor7bqisybzwtmh5n4l4wuws3uiyoqvjuuqwzwobna/',
+        lat: 37.7749,
+        lng: -122.4194,
+        prettyLink: 'moondao-sf'
+      }
+    ],
+    formattedAddress: 'San Francisco, CA',
+    lat: 37.7749,
+    lng: -122.4194,
+    color: '#5556eb',
+    size: 0.01,
+    names: ['MoonDAO SF']
+  },
+  // Add more locations as needed
 ]

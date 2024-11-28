@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import IndexCard from '../layout/IndexCard';
 import IndexCardGrid from "../layout/IndexCardGrid";
+import cytoscape from 'cytoscape';
 
 const indexCardData = [
   {
@@ -77,8 +78,61 @@ const indexCardData = [
   }
 ];
 
+const networkData = {
+  nodes: [
+    { data: { id: 'lisa', name: 'Lisa Patel', role: 'Team Lead' } },
+    // ... rest of the nodes ...
+  ],
+  edges: [
+    { data: { source: 'lisa', target: 'sarah', relationship: 'Manages' } },
+    // ... rest of the edges ...
+  ]
+};
+
 export default function Callout3() {
     const [singleCol, setSingleCol] = useState(false);
+    const cyRef = useRef(null);
+
+    useEffect(() => {
+        if (!cyRef.current) return;
+
+        const cy = cytoscape({
+            container: cyRef.current,
+            elements: networkData,
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'background-color': 'transparent',
+                        'border-width': 3,
+                        'border-color': '#00308F',
+                        // ... rest of node styles ...
+                    }
+                },
+                // ... rest of style definitions ...
+            ],
+            layout: {
+                name: 'concentric',
+                concentric: function(node) {
+                    return node.id() === 'lisa' ? 2 : 1;
+                },
+                levelWidth: function() { return 1; },
+                minNodeSpacing: 50,
+                animate: false
+            }
+        });
+
+        // Add the setTimeout and event handlers as in your original code
+        setTimeout(() => {
+            const lisaPos = cy.$('#lisa').position();
+            // ... rest of the setTimeout logic ...
+        }, 100);
+
+        // Clean up
+        return () => {
+            cy.destroy();
+        };
+    }, []);
 
     return ( 
         <section id="callout3-container" 
@@ -88,12 +142,22 @@ export default function Callout3() {
             className="overflow-visible"
           ></div>
           <h2 className="header text-center font-GoodTimes pb-5">What MoonDAO Does</h2>  
+          
+          <div 
+            ref={cyRef}
+            style={{
+                width: '600px',
+                height: '400px',
+                margin: '0 auto',
+                background: '#f5f5f5'
+            }}
+          />
+
           <div id="cards-container" 
             className="rounded-[5vmax] rounded-tr-[0px] p-5 md:p-10 overflow-hidden max-w-[1200px]"
             >
             <IndexCardGrid cards={indexCardData} />
           </div>
-
         </section>
     )
 }

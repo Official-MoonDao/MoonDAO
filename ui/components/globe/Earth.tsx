@@ -7,24 +7,34 @@ import CitizenPointModal from './CitizenPointModal'
 
 type EarthProps = {
   pointsData: any[]
+  enableControls?: boolean
+  fixedView?: boolean
 }
 
-export default function Earth({ pointsData }: EarthProps) {
+export default function Earth({ 
+  pointsData, 
+  enableControls = true, 
+  fixedView = false
+}: EarthProps) {
   const size = useGlobeSize()
   const globeRef = useRef<GlobeMethods | undefined>()
   const [selectedPoint, setSelectedPoint] = useState(null)
   const [pointModalEnabled, setPointModalEnabled] = useState(false)
 
   useEffect(() => {
-    //Change point of view to the center of the US
     if (globeRef.current) {
-      globeRef.current.pointOfView({
-        lat: 39.8283,
-        lng: -98.5795,
-        altitude: 2,
-      })
+      if (fixedView) {
+        globeRef.current.pointOfView({
+          lat: 39.8283,
+          lng: -98.5795,
+          altitude: 2,
+        })
+      }
+      globeRef.current.controls().enableZoom = false
+      globeRef.current.controls().enableRotate = enableControls
+      globeRef.current.controls().enablePan = enableControls
     }
-  }, [globeRef])
+  }, [globeRef, enableControls, fixedView])
 
   return (
     <>
