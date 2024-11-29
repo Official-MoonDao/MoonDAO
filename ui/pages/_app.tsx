@@ -45,7 +45,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
         >
           <PrivyThirdwebSDKProvider selectedChain={selectedChain}>
             <CitizenProvider selectedChain={selectedChain}>
-              <Layout lightMode={lightMode} setLightMode={setLightMode}>
+              <Layout>
                 <NextQueryParamProvider>
                   <Component {...pageProps} />
                 </NextQueryParamProvider>

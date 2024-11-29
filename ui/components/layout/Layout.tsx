@@ -19,7 +19,7 @@ import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
 import { navigation } from './Sidebar/Navigation'
 import NavigationLink from './Sidebar/NavigationLink'
-import Starfield from './starfield'
+import Starfield from './Starfield'
 
 interface Layout {
   children: JSX.Element
