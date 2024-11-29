@@ -5,17 +5,10 @@ import LanguageChange from './LanguageChange'
 
 interface MobileMenuTop {
   setSidebarOpen: Function
-  lightMode: boolean
-  setLightMode: Function
   citizenContract: any
 }
 
-const MobileMenuTop = ({
-  setSidebarOpen,
-  lightMode,
-  setLightMode,
-  citizenContract,
-}: MobileMenuTop) => {
+const MobileMenuTop = ({ setSidebarOpen, citizenContract }: MobileMenuTop) => {
   return (
     <div className="relative z-10 flex flex-1 flex-col md:hidden">
       <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 justify-between bg-white shadow dark:bg-slate-950">
@@ -36,7 +29,7 @@ const MobileMenuTop = ({
         <div className="flex items-center">
           <LanguageChange />
 
-          <ColorsAndSocials lightMode={lightMode} setLightMode={setLightMode} />
+          <ColorsAndSocials lightMode={false} setLightMode={() => {}} />
         </div>
       </div>
     </div>
