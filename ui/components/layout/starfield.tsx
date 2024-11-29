@@ -25,25 +25,30 @@ export default function Starfield() {
       const mouse = mouseRef.current
       let dx = mouse.targetX - mouse.currentX
       let dy = mouse.targetY - mouse.currentY
-      
+
       mouse.currentX += dx * easing
       mouse.currentY += dy * easing
-      
+
       animationFrameRef.current = requestAnimationFrame(updateMousePosition)
     }
 
     // Shader setup
     const vertexShader = gl.createShader(gl.VERTEX_SHADER)!
-    gl.shaderSource(vertexShader, `
+    gl.shaderSource(
+      vertexShader,
+      `
       attribute vec2 position;
       void main() {
           gl_Position = vec4(position, 0.0, 1.0);
       }
-    `)
+    `
+    )
     gl.compileShader(vertexShader)
 
     const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)!
-    gl.shaderSource(fragmentShader, `
+    gl.shaderSource(
+      fragmentShader,
+      `
       precision highp float;
       uniform vec2 iResolution;
       uniform float iTime;
@@ -117,7 +122,8 @@ export default function Starfield() {
           }   
           gl_FragColor = vec4(col,1.0);
       }
-    `)
+    `
+    )
     gl.compileShader(fragmentShader)
 
     const program = gl.createProgram()!
@@ -125,13 +131,8 @@ export default function Starfield() {
     gl.attachShader(program, fragmentShader)
     gl.linkProgram(program)
 
-    const vertices = new Float32Array([
-      -1, -1,
-       1, -1,
-      -1,  1,
-       1,  1
-    ])
-    
+    const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1])
+
     const buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
@@ -142,6 +143,7 @@ export default function Starfield() {
     const mouseLocation = gl.getUniformLocation(program, 'iMouse')
 
     function resize() {
+      if (!gl || !canvas) return
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
       gl.viewport(0, 0, canvas.width, canvas.height)
@@ -149,14 +151,20 @@ export default function Starfield() {
 
     function render(time: number) {
       time *= 0.001
-      
+
+      if (!gl || !canvas) return
+
       gl.useProgram(program)
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
       gl.enableVertexAttribArray(positionLocation)
       gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
       gl.uniform1f(timeLocation, time)
-      gl.uniform2f(mouseLocation, mouseRef.current.currentX, mouseRef.current.currentY)
+      gl.uniform2f(
+        mouseLocation,
+        mouseRef.current.currentX,
+        mouseRef.current.currentY
+      )
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
       animationFrameRef.current = requestAnimationFrame(render)
@@ -195,7 +203,7 @@ export default function Starfield() {
           isProfile
         >
           <div className="fixed inset-0 w-full h-full">
-            <canvas 
+            <canvas
               ref={canvasRef}
               className="absolute inset-0 w-full h-full mix-blend-multiply"
             />

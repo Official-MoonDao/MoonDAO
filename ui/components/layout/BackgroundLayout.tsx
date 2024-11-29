@@ -1,13 +1,15 @@
 import { type ReactNode } from 'react'
-import Starfield from '../layout/starfield'
+import Starfield from './Starfield'
 
-export default function BackgroundLayout({ children }: { children: ReactNode }) {
+export default function BackgroundLayout({
+  children,
+}: {
+  children: ReactNode
+}) {
   return (
     <div className="relative min-h-screen">
       <Starfield />
-      <div className="relative z-10">
-        {children}
-      </div>
+      <div className="relative z-10">{children}</div>
     </div>
   )
-} 
+}
