@@ -50,9 +50,6 @@ export async function getAllCitizenLocationData() {
 
       let locationData
       if (citizenLocation !== '' && !citizenLocation.startsWith('{')) {
-        console.log(
-          `Citizen ${citizen.metadata.id} is using old location format`
-        )
         const citizenLocationData = citizenCoords.find(
           (c: any) => c.id === citizen.metadata.id
         )
