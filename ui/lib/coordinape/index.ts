@@ -29,21 +29,41 @@ interface UserIdResponse {
   }[]
 }
 
-// mutation createContribution {
-//   insert_contributions_one(
-//     object: {user_id: 301267, profile_id: 4062325, description: "im sniffwww2222"}
-//   ) {
-//     id
-//     description
-//     created_at
-//     user_id
-//     circle_id
-//   }
-// }
+interface CreateContributionResponse {
+  insert_contributions_one: {
+      id: number
+      description: string
+      created_at: string
+      user_id: number
+      circle_id: number
+    }
+}
+
+const createContributionMutation = gql`
+  mutation createContribution($user_id: bigint!, $profile_id: bigint!, $description: String!) {
+    insert_contributions_one(
+      object: {
+        user_id: $user_id,
+        profile_id: $profile_id,
+        description: $description
+      }
+    ) {
+      id
+      description
+      created_at
+      user_id
+      circle_id
+    }
+  }
+`
 
 export type CoordinapeUser = {
   user_id: number;
   profile_id: number;
+}
+
+export type CoordinapeContribution = CoordinapeUser & {
+  description: string;
 }
 
 export async function getUserId(
@@ -66,6 +86,28 @@ export async function getUserId(
     if (!profile) throw Error("address not found in circle");
     return { profile_id: profile.id, user_id: profile.users[0].id }
   } catch (error) {
+    throw error
+  }
+}
+
+export async function createContribution(
+  input: { user_id: number, profile_id: number, description: string }
+): Promise<CreateContributionResponse | undefined> {
+  if (!apiKey) {
+    throw Error("process.env.COORDINAPE_API_KEY not set!")
+  }
+
+  if (!input.user_id || !input.profile_id || !input.description) {
+    throw Error("Missing required input fields: user_id, profile_id, and description must be provided");
+  }
+  try {
+    const res = await graphQLClient.request<CreateContributionResponse>(
+      createContributionMutation,
+      input
+    );
+    return res;
+  } catch (error) {
+    console.log(error)
     throw error
   }
 }
