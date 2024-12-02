@@ -68,7 +68,7 @@ export type CoordinapeContribution = CoordinapeUser & {
 
 export async function getUserId(
   address: string | undefined,
-): Promise<CoordinapeUser | undefined> {
+): Promise<CoordinapeUser | { error: string } | undefined> {
   if (!apiKey) {
     throw Error("process.env.COORDINAPE_API_KEY not set!")
   }
