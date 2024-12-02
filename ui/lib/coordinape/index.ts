@@ -1,11 +1,11 @@
-import { gql, GraphQLClient } from 'graphql-request'
+import { gql, GraphQLClient } from "graphql-request"
 
-const endpoint = 'https://coordinape-prod.hasura.app/v1/graphql'
+const endpoint = "https://coordinape-prod.hasura.app/v1/graphql"
 const apiKey = process.env.COORDINAPE_API_KEY
 
 const graphQLClient = new GraphQLClient(endpoint, {
   headers: {
-    'Authorization': `Bearer ${apiKey}`,
+    "Authorization": `Bearer ${apiKey}`,
   },
 })
 
@@ -41,7 +41,7 @@ interface UserIdResponse {
 //   }
 // }
 
-type CoordinapeUser = {
+export type CoordinapeUser = {
   user_id: number;
   profile_id: number;
 }
