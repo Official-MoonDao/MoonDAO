@@ -17,7 +17,7 @@ export function JoinDePrizeModal({
   handleJoinWithTeam,
 }: JoinDePrizeModalProps) {
   return (
-    <Modal title="Join DePrize Competition">
+    <Modal>
       <button
         id="close-modal"
         type="button"
