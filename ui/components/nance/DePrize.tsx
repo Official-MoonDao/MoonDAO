@@ -7,7 +7,6 @@ import TeamABI from 'const/abis/Team.json'
 import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
 import {
   DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES,
-  SNAPSHOT_RETROACTIVE_REWARDS_ID,
   PRIZE_TOKEN_ADDRESSES,
   COMPETITOR_TABLE_ADDRESSES,
   PRIZE_DECIMALS,

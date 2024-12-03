@@ -59,7 +59,6 @@ export function JoinDePrizeModal({
           <StandardButton
             className="gradient-2 rounded-full w-full"
             hoverEffect={false}
-            //styleOnly={true}
             link="/team"
           >
             Create New Team
