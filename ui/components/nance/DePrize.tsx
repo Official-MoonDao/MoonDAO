@@ -56,7 +56,7 @@ export function DePrize({
 }: DePrizeProps) {
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const { isMobile } = useWindowSize()
-
+  const [joinModalOpen, setJoinModalOpen] = useState(false)
   const userAddress = useAddress()
   const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
 
@@ -76,8 +76,6 @@ export function DePrize({
   const prizeBudget = prizeSupply * 0.1
   const winnerPool = prizeSupply * 0.3
   const prizePrice = 1
-
-  const [joinModalOpen, setJoinModalOpen] = useState(false)
 
   const userTeams = useTeamWearer(teamContract, chain, userAddress)
 
