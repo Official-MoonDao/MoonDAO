@@ -3,7 +3,6 @@ import { useAddress, useContract } from '@thirdweb-dev/react'
 import {
   DISTRIBUTION_TABLE_ADDRESSES,
   SNAPSHOT_RETROACTIVE_REWARDS_ID,
-  VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
 import _ from 'lodash'
 import { useState, useEffect } from 'react'
@@ -14,7 +13,6 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { useVotingPowers } from '@/lib/snapshot'
 import useWindowSize from '@/lib/team/use-window-size'
-import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import { computeRewardPercentages } from '@/lib/utils/voting'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
@@ -127,21 +125,6 @@ export function RetroactiveRewards({
   const { contract: distributionTableContract } = useContract(
     DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
   )
-  const { contract: votingEscrowDepositorContract } = useContract(
-    VOTING_ESCROW_DEPOSITOR_ADDRESSES[chain.slug]
-  )
-  //console.log('votingEscrowDepositorContract')
-  //console.log(votingEscrowDepositorContract)
-  const withdrawable = useWithdrawAmount(
-    votingEscrowDepositorContract,
-    userAddress
-  )
-  //console.log('withdrawable')
-  //console.log(withdrawable)
-  ;(async () => {
-    console.log(await withdrawable)
-  })()
-
   const { tokens } = useAssets()
   const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
@@ -218,22 +201,6 @@ export function RetroactiveRewards({
     } catch (error) {
       console.error('Error deleting distribution:', error)
       toast.error('Error deleting distribution. Please try again.', {
-        style: toastStyle,
-      })
-    }
-  }
-  const handleWithdraw = async () => {
-    try {
-      await votingEscrowDepositorContract?.call('withdraw', [userAddress])
-      toast.success('Withdrawal successful!', {
-        style: toastStyle,
-      })
-      setTimeout(() => {
-        refreshRewards()
-      }, 5000)
-    } catch (error) {
-      console.error('Error withdrawing:', error)
-      toast.error('Error withdrawing. Please try again.', {
         style: toastStyle,
       })
     }
@@ -426,15 +393,6 @@ export function RetroactiveRewards({
                   Get Voting Power
                 </StandardButton>
               </span>
-            )}
-            {userAddress && withdrawable > 0 && (
-              <StandardButton
-                link="/lock"
-                className="gradient-2 rounded-full"
-                onClick={handleWithdraw}
-              >
-                Withdraw Rewards
-              </StandardButton>
             )}
           </div>
         </ContentLayout>

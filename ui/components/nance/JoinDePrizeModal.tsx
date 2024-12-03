@@ -18,10 +18,6 @@ export function JoinDePrizeModal({
   return (
     <Modal
       onClose={() => setJoinModalOpen(false)}
-      // close if clicked outside of modal
-      onClick={(e) => {
-        if (e.target.id === 'modal-backdrop') setJoinModalOpen(false)
-      }}
       title="Join DePrize Competition"
     >
       <button
