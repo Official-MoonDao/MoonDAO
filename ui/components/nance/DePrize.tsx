@@ -79,12 +79,11 @@ export function DePrize({
 
   const userTeams = useTeamWearer(teamContract, chain, userAddress)
 
-  const isCompetitor = false
-  //userTeams.some((team) =>
-  //competitors.some(
-  //(competitor) => competitor.teamId.toString() === team.teamId
-  //)
-  //)
+  const isCompetitor = userTeams.some((team) =>
+    competitors.some(
+      (competitor) => competitor.teamId.toString() === team.teamId
+    )
+  )
   const handleJoinWithTeam = async (teamId: string) => {
     try {
       await competitorContract?.call('insertIntoTable', [
