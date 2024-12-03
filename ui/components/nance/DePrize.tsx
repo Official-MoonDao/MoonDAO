@@ -79,7 +79,7 @@ export function DePrize({
 
   const userTeams = useTeamWearer(teamContract, chain, userAddress)
 
-    const isCompetitor = userTeams.some((team: any) =>
+  const isCompetitor = userTeams.some((team: any) =>
     competitors.some(
       (competitor) => competitor.teamId.toString() === team.teamId
     )
@@ -185,6 +185,11 @@ export function DePrize({
             )}
           </section>
           <div className="pb-32 w-full flex flex-col gap-4 py-2">
+            <div className="flex justify-between items-center">
+              <h3 className="title-text-colors text-2xl font-GoodTimes">
+                Competitors
+              </h3>
+            </div>
             <div>
               {competitors &&
                 competitors.map((competitor, i: number) => (
