@@ -79,11 +79,12 @@ export function DePrize({
 
   const userTeams = useTeamWearer(teamContract, chain, userAddress)
 
-  const isCompetitor = userTeams.some((team) =>
-    competitors.some(
-      (competitor) => competitor.teamId.toString() === team.teamId
-    )
-  )
+  const isCompetitor = false
+  //userTeams.some((team) =>
+  //competitors.some(
+  //(competitor) => competitor.teamId.toString() === team.teamId
+  //)
+  //)
   const handleJoinWithTeam = async (teamId: string) => {
     try {
       await competitorContract?.call('insertIntoTable', [
@@ -166,7 +167,11 @@ export function DePrize({
                 <h3 className="title-text-colors text-2xl font-GoodTimes">
                   Winner Prize
                 </h3>
-                <Asset name="PRIZE" amount={String(winnerPool)} usd="" />
+                <Asset
+                  name="PRIZE"
+                  amount={Number(winnerPool.toPrecision(3)).toLocaleString()}
+                  usd=""
+                />
               </section>
             )}
             {userAddress && (
