@@ -106,14 +106,6 @@ export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
   'arbitrum-sepolia': '0xd1D57F18252D06a6b28DE96B6cbF7F4283A4F205',
 }
-export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
-  arbitrum: '0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0',
-  sepolia: '0xe77ede9B472E9AE450a1AcD4A90dcd3fb2e50cD0',
-}
-export const SMART_WALLET_CHECKER_ADDRESSES: Index = {
-  arbitrum: '0x609BaFab765135091DB407b53D77c4C471Df3e8F',
-  sepolia: '0x1cF442024fAeE8aAF2d5E26d79718231Bf59d740',
-}
 
 export const DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES: Index = {
   sepolia: '0xdd8144346390194EBa35F9551a13283a9143f21F',
@@ -122,10 +114,11 @@ export const DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES: Index = {
 export const PRIZE_TOKEN_ADDRESSES: Index = {
   sepolia: '0xf2a29F67fb5e6d7B9682591c0fD100d357dA85A7',
 }
-export const BULK_TOKEN_SENDER_ADDRESSES: Index = {
-  sepolia: '0xfEcb8E75658d768C9CdB418d81607eF4Dab5d001',
+export const REVNET_ADDRESSES: Index = {
+  sepolia: '0x25bc5d5a708c2e426ef3a5196cc18de6b2d5a3d1',
 }
 
+export const PRIZE_REVNET_ID = 50
 export const DEPRIZE_ID = 1
 export const PRIZE_DECIMALS = 18
 
@@ -181,12 +174,6 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 export const JOBS_TABLE_ADDRESSES: Index = {
   arbitrum: '0x93bCf6B82fcE153F24085b1C6A16328dc580427d',
   sepolia: '0xa9d0d083AfFd77a2Ce58B8163A54C22b2C57E151',
-}
-
-export const PRIZE_REVNET_ID = 50
-
-export const REVNET_ADDRESSES: Index = {
-  sepolia: '0x25bc5d5a708c2e426ef3a5196cc18de6b2d5a3d1',
 }
 
 export const MARKETPLACE_ADDRESS =

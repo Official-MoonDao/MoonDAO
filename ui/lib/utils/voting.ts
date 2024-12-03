@@ -237,15 +237,3 @@ export function computeRewardPercentages(
   ]
   return runQuadraticVoting(allDistributions, addressToQuadraticVotingPower)
 }
-
-
-
-export function getCurrentVoterRewards(
-
-  // fetchAllocationFromTableland()
-  // add bloctimestamp  
-
-
-
-
-)
