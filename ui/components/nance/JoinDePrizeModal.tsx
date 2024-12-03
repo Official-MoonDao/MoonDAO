@@ -1,7 +1,8 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import Modal from '@/components/layout/Modal'
 import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
 import StandardButton from '../layout/StandardButton'
-import Modal from '@/components/layout/Modal'
+
 type JoinDePrizeModalProps = {
   userTeams: any[]
   setJoinModalOpen: (open: boolean) => void
@@ -16,10 +17,7 @@ export function JoinDePrizeModal({
   handleJoinWithTeam,
 }: JoinDePrizeModalProps) {
   return (
-    <Modal
-      onClose={() => setJoinModalOpen(false)}
-      title="Join DePrize Competition"
-    >
+    <Modal title="Join DePrize Competition">
       <button
         id="close-modal"
         type="button"
