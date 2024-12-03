@@ -79,7 +79,7 @@ export function DePrize({
 
   const userTeams = useTeamWearer(teamContract, chain, userAddress)
 
-  const isCompetitor = userTeams.some((team) =>
+    const isCompetitor = userTeams.some((team: any) =>
     competitors.some(
       (competitor) => competitor.teamId.toString() === team.teamId
     )
