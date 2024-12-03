@@ -3,7 +3,6 @@ import { useAddress, useContract } from '@thirdweb-dev/react'
 import CompetitorABI from 'const/abis/Competitor.json'
 import ERC20 from 'const/abis/ERC20.json'
 import REVDeployer from 'const/abis/REVDeployer.json'
-import TeamABI from 'const/abis/Team.json'
 import {
   DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES,
   DEPRIZE_ID,
@@ -14,25 +13,14 @@ import {
   PRIZE_REVNET_ID,
 } from 'const/config'
 import { TEAM_ADDRESSES } from 'const/config'
-import { HATS_ADDRESS } from 'const/config'
-import { BigNumber } from 'ethers'
-import _ from 'lodash'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { useCitizens } from '@/lib/citizen/useCitizen'
-import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
-import useIsOperator from '@/lib/revnet/hooks/useIsOperator'
-import { useVotingPowers } from '@/lib/snapshot'
 import useWindowSize from '@/lib/team/use-window-size'
-import useTokenBalances from '@/lib/tokens/hooks/useTokenBalances'
 import useTokenSupply from '@/lib/tokens/hooks/useTokenSupply'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
-import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
-import { Hat } from '@/components/hats/Hat'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -41,9 +29,7 @@ import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
 import { JoinDePrizeModal } from '@/components/nance/JoinDePrizeModal'
 import StandardButton from '../layout/StandardButton'
 
-export type Metadata = {
-  social: string
-}
+export type Metadata = {}
 export type Competitor = {
   id: string
   deprize: number
@@ -78,23 +64,12 @@ export function DePrize({
     PRIZE_TOKEN_ADDRESSES[chain.slug],
     ERC20.abi
   )
-  const { contract: revnetContract } = useContract(
-    REVNET_ADDRESSES[chain.slug],
-    REVDeployer
-  )
   const { contract: competitorContract } = useContract(
     COMPETITOR_TABLE_ADDRESSES[chain.slug],
     CompetitorABI
   )
-  const { contract: distributionTableContract } = useContract(
-    DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
-  )
   const { contract: teamContract } = useContract(TEAM_ADDRESSES[chain.slug])
 
-  const [edit, setEdit] = useState(false)
-  const [distribution, setDistribution] = useState<{ [key: string]: number }>(
-    {}
-  )
   const prizeBalance = useWatchTokenBalance(prizeContract, PRIZE_DECIMALS)
   const userHasVotingPower = prizeBalance > 0
   const prizeSupply = useTokenSupply(prizeContract, PRIZE_DECIMALS)
