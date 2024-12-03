@@ -4,6 +4,7 @@ import DePrizeDistributionTableABI from 'const/abis/DePrizeDistribution.json'
 import {
   COMPETITOR_TABLE_ADDRESSES,
   DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES,
+  DEPRIZE_ID,
   TABLELAND_ENDPOINT,
 } from 'const/config'
 import { useRouter } from 'next/router'
@@ -44,16 +45,15 @@ export async function getStaticProps() {
     await distributionTableContract.call('getTableName')
 
   // TODO don't hardcode
-  const dePrizeId = 1
   const currentYear = new Date().getFullYear()
   const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
-  const competitorStatement = `SELECT * FROM ${competitorBoardTableName} WHERE deprize = ${dePrizeId}`
+  const competitorStatement = `SELECT * FROM ${competitorBoardTableName} WHERE deprize = ${DEPRIZE_ID}`
   const competitorsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${competitorStatement}`
   )
   const competitors = await competitorsRes.json()
 
-  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE deprize = ${dePrizeId}`
+  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE deprize = ${DEPRIZE_ID}`
   const distributionsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
   )

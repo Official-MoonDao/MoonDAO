@@ -126,6 +126,7 @@ export const BULK_TOKEN_SENDER_ADDRESSES: Index = {
   sepolia: '0xfEcb8E75658d768C9CdB418d81607eF4Dab5d001',
 }
 
+export const DEPRIZE_ID = 1
 export const PRIZE_DECIMALS = 18
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
