@@ -3,15 +3,16 @@ import ContentLayout from "@/components/layout/ContentLayout";
 import WebsiteHead from "@/components/layout/Head";
 import { LoadingSpinner } from "@/components/layout/LoadingSpinner";
 import { NoticeFooter } from "@/components/layout/NoticeFooter";
-import { CoordinapeContribution, CoordinapeUser } from "@/lib/coordinape";
-import { useGetCoordinapeUser } from "@/lib/coordinape/useGetCoordinapeUser";
 import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile";
+import { createSession, destroySession } from "@/lib/iron-session/iron-session";
 import { GetMarkdown } from "@nance/nance-editor";
 import "@nance/nance-editor/lib/css/dark.css"
 import "@nance/nance-editor/lib/css/editor.css"
+import { getAccessToken, usePrivy } from "@privy-io/react-auth";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
+import useAccount from "@/lib/nance/useAccountAddress";
 
 let getMarkdown: GetMarkdown
 
@@ -39,25 +40,12 @@ const SuccessState = ({ coordinapeLink }: { coordinapeLink: string }) => (
 );
 
 const UnauthenticatedState = () => (
-  <p className="py-24">Please sign in to check if you are eligible to submit a contribution.</p>
-);
-
-const CheckingEligibilityState = () => (
-  <>
-    <LoadingSpinner />
-    <p className="text-gray-600">Checking eligibility...</p>
-  </>
-);
-
-const NotEligible = () => (
-  <p className="py-24">You are not eligible to submit contributions.</p>
+  <p className="py-24">Please sign in to submit a contribution!</p>
 );
 
 const ContributionForm = ({
-  coordinapeId,
   onSubmit
 }: {
-  coordinapeId: CoordinapeUser,
   onSubmit: () => Promise<void>
 }) => {
   const [submitting, setSubmitting] = useState(false);
@@ -93,26 +81,29 @@ const ContributionForm = ({
 };
 
 export default function NewContribution() {
-  const { coordinapeId, loading, authenticated, error } = useGetCoordinapeUser();
+  const { authenticated } = usePrivy();
   const [coordinapeLink, setCoordinapeLink] = useState<string | null>(null);
+  const { address } = useAccount();
 
   const handleSubmitContribution = async () => {
+    const accessToken = await getAccessToken();
+    await createSession(accessToken);
     const loadingToast = toast.loading("Submitting contribution...");
     try {
       const body = JSON.stringify({
-        user_id: coordinapeId?.user_id,
-        profile_id: coordinapeId?.profile_id,
-        description: getMarkdown()
-      } as CoordinapeContribution);
+        description: getMarkdown(),
+        address,
+      });
 
       const res = await fetch("/api/coordinape/createContribution", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
         },
         body
       });
-
+      await destroySession(accessToken)
       const data = await res.json();
       if (!res.ok) {
         toast.dismiss(loadingToast);
@@ -130,21 +121,14 @@ export default function NewContribution() {
   };
 
   const renderContent = () => {
+    if (!authenticated) {
+      return <UnauthenticatedState />;
+    }
     if (coordinapeLink) {
       return <SuccessState coordinapeLink={coordinapeLink} />;
     }
-    if (!authenticated && !loading) {
-      return <UnauthenticatedState />;
-    }
-    if (loading) {
-      return <CheckingEligibilityState />;
-    }
-    if (!coordinapeId || error) {
-      return <NotEligible />
-    }
     return (
       <ContributionForm
-        coordinapeId={coordinapeId}
         onSubmit={handleSubmitContribution}
       />
     );

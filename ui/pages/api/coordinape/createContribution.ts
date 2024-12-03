@@ -1,5 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { CoordinapeContribution, createContribution } from "@/lib/coordinape";
+import { createContribution } from "@/lib/coordinape/createCoordinapeContribution";
+import { getUserId } from "@/lib/coordinape/getCoordinapeUser";
+import withMiddleware from "middleware/withMiddleware";
+import { privyAuth } from "middleware/privyAuth";
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -7,11 +10,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const { user_id, profile_id, description } = req.body as CoordinapeContribution;
-    if (!user_id || !profile_id || !description) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
+    const { description, address } = req.body;
+    const { user_id, profile_id } = await getUserId(address);
     const created = await createContribution({
       user_id, profile_id, description
     });
@@ -21,4 +21,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default handler;
+export default withMiddleware(handler, privyAuth);
