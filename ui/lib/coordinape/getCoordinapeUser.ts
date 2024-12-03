@@ -36,7 +36,10 @@ export async function getUserId(
     const profile = data.profiles[0];
     if (!profile || profile.users?.length === 0) {
       // create user with mutation
-      ({user_id, profile_id} = await createOrgMembers({ address, name: address.slice(0, 6) + '...' + address.slice(-4) }));
+      ({user_id, profile_id} = await createOrgMembers({
+        address,
+        name: address.slice(0, 6) + '...' + address.slice(-4)
+      }));
     } else {
       profile_id = profile.id
       user_id = profile.users[0].id;

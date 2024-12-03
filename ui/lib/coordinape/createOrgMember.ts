@@ -1,11 +1,13 @@
 import { gql } from "graphql-request";
 import { graphQLClient } from "./client";
 
+const circleId = process.env.NEXT_PUBLIC_ENV === 'prod' ? 29837 : 31596;
+
 const createOrgMembersMutation = gql`
-  mutation createUsers($address: String!, $name: String!) {
+  mutation createUsers($address: String!, $name: String!, $circle_id: Int!) {
     createUsers(
       payload: {
-        circle_id: 31596,
+        circle_id: $circle_id,
         users: {
           address: $address,
           name: $name,
@@ -33,7 +35,7 @@ export async function createOrgMembers(
   try {
     const res = await graphQLClient.request(
       createOrgMembersMutation,
-      input
+      {...input, circle_id: circleId}
     ) as any;
     if (!res.createUsers) throw new Error("Failed to add user to circle");
     const [user] = res.createUsers;
