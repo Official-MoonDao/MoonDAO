@@ -1,4 +1,4 @@
-import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Sepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import DePrizeDistributionTableABI from 'const/abis/DePrizeDistribution.json'
 import {
@@ -26,7 +26,8 @@ export default function DePrizePage({
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  // TODO enable mainnet
+  const chain = Sepolia
   const sdk = initSDK(chain)
 
   const competitorTableContract = await sdk.getContract(
@@ -39,10 +40,12 @@ export async function getStaticProps() {
     DePrizeDistributionTableABI
   )
 
-  const competitorBoardTableName =
-    await competitorTableContract.call('getTableName')
-  const distributionTableName =
-    await distributionTableContract.call('getTableName')
+  const competitorBoardTableName = await competitorTableContract.call(
+    'getTableName'
+  )
+  const distributionTableName = await distributionTableContract.call(
+    'getTableName'
+  )
 
   // TODO don't hardcode
   const currentYear = new Date().getFullYear()
