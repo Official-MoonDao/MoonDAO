@@ -36,7 +36,6 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
   )
 }
 
-export default function NetworkSelector() {
 type NetworkSelectorProps = {
   iconsOnly?: boolean
 }
