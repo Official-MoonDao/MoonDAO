@@ -2,19 +2,25 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useFundWallet, usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { TEAM_ADDRESSES, TEAM_CREATOR_ADDRESSES } from 'const/config'
-import { BigNumber, ethers } from 'ethers'
+import {
+  DEPLOYED_ORIGIN,
+  TEAM_ADDRESSES,
+  TEAM_CREATOR_ADDRESSES,
+} from 'const/config'
+import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
-import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
+import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { createSession, destroySession } from '@/lib/iron-session/iron-session'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
@@ -459,10 +465,22 @@ export default function CreateTeam({
                           16
                         ).toString()
 
-                        setTimeout(() => {
-                          setIsLoadingMint(false)
+                        if (mintedTokenId) {
+                          const teamNFT = await waitForERC721(
+                            teamContract,
+                            mintedTokenId
+                          )
+                          const teamName = teamNFT?.metadata.name as string
+                          const teamPrettyLink = generatePrettyLink(teamName)
+                          await sendDiscordMessage(
+                            accessToken,
+                            'networkNotifications',
+                            `[**${teamName}** has minted a team NFT!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
+                          )
+
                           router.push(`/team/${mintedTokenId}`)
-                        }, 30000)
+                          setIsLoadingMint(false)
+                        }
                       } catch (err) {
                         console.error(err)
                         setIsLoadingMint(false)
