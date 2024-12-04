@@ -2,6 +2,11 @@ import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
+export const DEPLOYED_ORIGIN =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? 'https://moondao.com'
+    : 'https://moondao-ce-demo.netlify.app'
+
 interface DeploymentConfig {
   MOONEYToken: string
   vMOONEYToken: string
@@ -171,8 +176,8 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x93bCf6B82fcE153F24085b1C6A16328dc580427d',
-  sepolia: '0xa9d0d083AfFd77a2Ce58B8163A54C22b2C57E151',
+  arbitrum: '0x94e225DDe1b3E5f861222ca2055739BA12730bd4',
+  sepolia: '0x5b26100ae7F244f6805D724A019927E137978659',
 }
 
 export const MARKETPLACE_ADDRESS =
@@ -181,8 +186,8 @@ export const MARKETPLACE_ADDRESS =
     : sepoliaConfig.Marketplace
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xcAEa289f612386bc2F990de4AA7267951129D213',
-  sepolia: '0x238Ff1163C1f4E31A08240d853f510A4223faAA1',
+  arbitrum: '0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E',
+  sepolia: '0xf50aC858f78ff8d4e5E898C155046bd990dE2cED',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
@@ -224,6 +229,8 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
 }
 
 export const DISCORD_GUILD_ID = '914720248140279868'
+export const GENERAL_CHANNEL_ID = '914720248140279871'
+export const TEST_CHANNEL_ID = '1308513773879033886'
 
 export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
 
