@@ -10,6 +10,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Frame from '@/components/layout/Frame'
 import Action from '@/components/subscription/Action'
+import { TwitterIcon } from '../assets'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 
 type CitizenActionsProps = {
@@ -90,6 +91,20 @@ export default function CitizenActions({
                       onClick={() => router.push('/lock')}
                     />
                   )}
+                  <Action
+                    title="Share on X"
+                    description="Share your citizen profile on X!"
+                    icon={
+                      <div className="scale-[1.15] flex flex-col mt-[7px]">
+                        <TwitterIcon />
+                      </div>
+                    }
+                    onClick={() => {
+                      window.open(
+                        `https://x.com/intent/tweet?url=${window.location.href}&text=I%20just%20became%20a%20Citizen%20of%20the%20Space%20Acceleration%20Network%20%40OfficialMoonDAO`
+                      )
+                    }}
+                  />
                   <Action
                     title="Create Project"
                     description="Submit a proposal to secure funding for your space project."
