@@ -41,27 +41,21 @@ describe('<CitizenMetadataModal /> ', () => {
   it('Renders form inputs with correct initial values', () => {
     cy.get('button').contains('Next').click()
     cy.get('button').contains('No').click()
-    cy.get('input[placeholder="Enter your name"]').should(
-      'have.value',
-      nft.metadata.name
-    )
-    cy.get('input[placeholder="Enter your bio"]').should(
-      'have.value',
-      nft.metadata.description
-    )
-    cy.get('input[placeholder="Enter your location"]').should(
+    cy.get('#citizen-name-input').should('have.value', nft.metadata.name)
+    cy.get('#citizen-bio-input').should('have.value', nft.metadata.description)
+    cy.get('#citizen-location-input').should(
       'have.value',
       getAttribute(nft.metadata.attributes, 'location').value
     )
-    cy.get('input[placeholder="Enter your discord username"]').should(
+    cy.get('#citizen-discord-input').should(
       'have.value',
       getAttribute(nft.metadata.attributes, 'discord').value
     )
-    cy.get('input[placeholder="Enter your twitter link"]').should(
+    cy.get('#citizen-twitter-input').should(
       'have.value',
       getAttribute(nft.metadata.attributes, 'twitter').value
     )
-    cy.get('input[placeholder="Enter your website link"]').should(
+    cy.get('#citizen-website-input').should(
       'have.value',
       getAttribute(nft.metadata.attributes, 'website').value
     )

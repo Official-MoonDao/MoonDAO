@@ -598,7 +598,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     if (
       !nft ||
       !nft.metadata.uri ||
-      blockedCitizens.includes(Number(nft.metadata.id))
+      blockedCitizens.includes(nft.metadata.id)
     ) {
       return {
         notFound: true,

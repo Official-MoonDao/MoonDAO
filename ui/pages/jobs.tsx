@@ -125,7 +125,7 @@ export async function getStaticProps() {
 
   const jobBoardTableName = await jobTableContract.call('getTableName')
 
-  const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now})`
+  const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
   const allJobsRes = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
   const allJobs = await allJobsRes.json()

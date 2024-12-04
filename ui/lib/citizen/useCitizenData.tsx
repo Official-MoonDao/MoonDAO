@@ -16,7 +16,6 @@ export function useCitizenData(nft: any, citizenContract: any) {
   }, [attributes])
 
   const isDeleted = useMemo(() => {
-    console.log(attributes)
     const view = getAttribute(attributes, 'view')?.value
     return view === '' ? true : false
   }, [attributes])
