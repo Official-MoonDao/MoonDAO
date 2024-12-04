@@ -17,7 +17,7 @@ export function JoinDePrizeModal({
   handleJoinWithTeam,
 }: JoinDePrizeModalProps) {
   return (
-    <Modal>
+    <Modal id="join-deprize-modal" setEnabled={setJoinModalOpen}>
       <button
         id="close-modal"
         type="button"
