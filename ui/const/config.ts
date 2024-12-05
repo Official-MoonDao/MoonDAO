@@ -191,6 +191,20 @@ export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 export const MARKETPLACE_FEE_SPLIT: string =
   polygonConfig.MarketplaceFeeSplit || ''
 
+export const LMSR_ADDRESSES: Index = {
+  sepolia: '0xa33E8FD002dd2876e9B6ED69413ED53b964894b8',
+}
+export const COLLATERAL_TOKEN_ADDRESSES: Index = {
+  sepolia: '0xF85601CA802be17118618b2f61EF84433c0eb5D7',
+}
+export const COLLATERAL_DECIMALS = 18
+export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
+  sepolia: '0x80696cA366B4E76df8e602b3ab57a1bB21c987D3',
+}
+export const ORACLE_ADDRESS = '0x47ee48E1766BaC43dEc10215Dd636102126eA8fa'
+
+export const OPERATOR_ADDRESS = '0x47ee48E1766BaC43dEc10215Dd636102126eA8fa'
+
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
 export const DEAD_ADDRESS: string =

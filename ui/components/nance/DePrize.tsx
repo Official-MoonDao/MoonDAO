@@ -20,6 +20,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useWindowSize from '@/lib/team/use-window-size'
 import useTokenSupply from '@/lib/tokens/hooks/useTokenSupply'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
+import Market from '@/components/betting/Market'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -216,6 +217,7 @@ export function DePrize({
                 </StandardButton>
               </span>
             )}
+            <Market account={userAddress} />
           </div>
         </ContentLayout>
       </Container>
