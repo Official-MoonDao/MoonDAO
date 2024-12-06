@@ -58,14 +58,15 @@ const ContributionForm = ({
 
   return (
     <div className="w-full md:w-auto px-4 sm:px-0">
-      <NanceEditor
-        fileUploadExternal={async (val) => {
-          const res = await pinBlobOrFile(val)
-          return res.url;
-        }}
-        darkMode={true}
-        height="200px"
-      />
+      <div className="h-[200px]">
+        <NanceEditor
+          fileUploadExternal={async (val) => {
+            const res = await pinBlobOrFile(val)
+            return res.url;
+          }}
+          darkMode={true}
+        />
+      </div>
       <div className="flex justify-end">
         <button
           type="submit"
