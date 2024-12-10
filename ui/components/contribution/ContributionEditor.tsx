@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import dynamic from "next/dynamic";
 import { usePrivy, getAccessToken } from "@privy-io/react-auth";
-import { GetMarkdown } from "@nance/nance-editor";
+import { GetMarkdown, SetMarkdown } from "@nance/nance-editor";
 import { LoadingSpinner } from "@/components/layout/LoadingSpinner";
 import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile";
 import { createSession, destroySession } from "@/lib/iron-session/iron-session";
@@ -11,11 +11,14 @@ import "@nance/nance-editor/lib/css/dark.css";
 import "@nance/nance-editor/lib/css/editor.css";
 
 let getMarkdown: GetMarkdown;
+let setMarkdown: SetMarkdown;
 
 const NanceEditor = dynamic(
   async () => {
-    getMarkdown = (await import("@nance/nance-editor")).getMarkdown;
-    return import("@nance/nance-editor").then((mod) => mod.NanceEditor);
+    const editorModule = await import("@nance/nance-editor");
+    getMarkdown = editorModule.getMarkdown;
+    setMarkdown = editorModule.setMarkdown;
+    return editorModule.NanceEditor;
   },
   {
     ssr: false,
@@ -23,11 +26,33 @@ const NanceEditor = dynamic(
   }
 );
 
+const CONTRIBUTION_TEMPLATE = `
+## Contribution Summary
+When documenting contributions, please ensure they meet the following criteria:
+	1.	Completed Work Only: Contributions should reflect completed efforts, not ongoing or planned work.
+	2.	Specific and Measurable Results: Describe the tangible outcomes of the contribution. Include metrics, timelines, or other objective measures wherever possible.
+Clear, detailed, and results-focused contributions help us understand and value the impact of your work.
+
+*Example:*
+*Good Contribution:*
+	•	*"Improved search performance by optimizing database queries, reducing response times by 30% within one month."*
+
+*Poor Contribution:*
+	•	*"Worked on improving search performance."*
+
+`;
+
 const ContributionEditor: React.FC = () => {
   const { authenticated } = usePrivy();
   const [submitting, setSubmitting] = useState(false);
   const [coordinapeLink, setCoordinapeLink] = useState<string | null>(null);
   const { address } = useAccount();
+
+  useEffect(() => {
+    if (setMarkdown) {
+      setMarkdown(CONTRIBUTION_TEMPLATE);
+    }
+  }, []);
 
   const handleSubmit = async () => {
     if (!authenticated) {
@@ -93,6 +118,7 @@ const ContributionEditor: React.FC = () => {
     <div className="w-full md:w-auto px-4 sm:px-0">
       <div className="h-[600px]">
         <NanceEditor
+          initialValue={CONTRIBUTION_TEMPLATE}
           fileUploadExternal={async (val) => {
             const res = await pinBlobOrFile(val);
             return res.url;
