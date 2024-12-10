@@ -10,6 +10,7 @@ import {
   COLLATERAL_TOKEN_ADDRESSES,
   ORACLE_ADDRESS,
   COLLATERAL_DECIMALS,
+  MAX_OUTCOMES,
 } from 'const/config'
 import { ethers } from 'ethers'
 import React, { useState, useEffect } from 'react'
@@ -80,6 +81,10 @@ const Market: React.FC<MarketProps> = ({ web3, account }) => {
   console.log('marketMakersRepo', marketMakersRepo)
 
   useEffect(() => {
+    console.log('hi')
+    console.log('hi')
+    console.log('useEffect')
+    console.log('using')
     const init = async () => {
       console.log('useEffect')
       try {
@@ -95,14 +100,21 @@ const Market: React.FC<MarketProps> = ({ web3, account }) => {
   }, [])
 
   const getMarketInfo = async () => {
+    console.log('get')
+    console.log('test')
     if (!ORACLE_ADDRESS) return
     console.log('test')
     const collateral = await marketMakersRepo.call('collateralToken')
     console.log('collateral', collateral)
+    const pmSystem = await marketMakersRepo.call('pmSystem')
+    console.log('pmSystem', pmSystem)
+
+    console.log('questionId', markets.markets[0].questionId)
     const conditionId = getConditionId(
       ORACLE_ADDRESS,
       markets.markets[0].questionId,
-      markets.markets[0].outcomes.length
+      //markets.markets[0].outcomes.length
+      MAX_OUTCOMES
     )
     console.log('conditionId', conditionId)
     const payoutDenominator = await conditionalTokensRepo.call(
@@ -112,31 +124,42 @@ const Market: React.FC<MarketProps> = ({ web3, account }) => {
     console.log('payoutDenominator', payoutDenominator)
 
     const outcomes = []
-    for (
-      let outcomeIndex = 0;
-      outcomeIndex < markets.markets[0].outcomes.length;
-      outcomeIndex++
-    ) {
+    for (let outcomeIndex = 0; outcomeIndex < MAX_OUTCOMES; outcomeIndex++) {
       const indexSet = (
         outcomeIndex === 0
           ? 1
           : parseInt(Math.pow(10, outcomeIndex).toString(), 2)
       ).toString()
+      console.log('indexSet', indexSet)
       const collectionId = await conditionalTokensRepo.call('getCollectionId', [
         `0x${'0'.repeat(64)}`,
         conditionId,
         indexSet,
       ])
-      const positionId = getPositionId(collateral, collectionId)
-      const probability = await marketMakersRepo.call('calcMarginalPrice', [
-        outcomeIndex,
-      ])
-      console.log('probability', probability)
+      console.log('collectionId', collectionId)
+      const positionId = getPositionId(
+        COLLATERAL_TOKEN_ADDRESSES[chain.slug],
+        collectionId
+      )
+      console.log('positionId', positionId)
+      console.log('outcomeIndex', outcomeIndex)
       const balance = await conditionalTokensRepo.call('balanceOf', [
         account,
         positionId,
       ])
+      console.log(
+        'atomicOutcomeSlotCount',
+        await marketMakersRepo.call('atomicOutcomeSlotCount')
+      )
+      console.log(
+        'conditionIds',
+        await marketMakersRepo.call('conditionIds', [0])
+      )
       console.log('balance', balance)
+      const probability = await marketMakersRepo.call('calcMarginalPrice', [
+        outcomeIndex,
+      ])
+      console.log('probability', probability)
       console.log('conditionId', conditionId)
       console.log('outcomeIndex', outcomeIndex)
       //const payoutNumerator = await conditionalTokensRepo.call(
@@ -157,7 +180,7 @@ const Market: React.FC<MarketProps> = ({ web3, account }) => {
     }
 
     const marketData = {
-      lmsrAddress: markets.lmsrAddress,
+      lmsrAddress: LMRS_ADDRESSES[chain.slug],
       title: markets.markets[0].title,
       outcomes,
       stage: MarketStage[await marketMakersRepo.call('stage')],
@@ -170,7 +193,6 @@ const Market: React.FC<MarketProps> = ({ web3, account }) => {
   }
 
   const buy = async () => {
-    const collateral = await marketMakersRepo.call('collateralToken')
     const formatedAmount = new BigNumber(selectedAmount).multipliedBy(
       new BigNumber(Math.pow(10, COLLATERAL_DECIMALS))
     )
@@ -211,7 +233,6 @@ const Market: React.FC<MarketProps> = ({ web3, account }) => {
   }
 
   const sell = async () => {
-    const collateral = await marketMakersRepo.call('collateralToken')
     const formatedAmount = new BigNumber(selectedAmount).multipliedBy(
       new BigNumber(Math.pow(10, COLLATERAL_DECIMALS))
     )
@@ -248,8 +269,6 @@ const Market: React.FC<MarketProps> = ({ web3, account }) => {
   }
 
   const redeem = async () => {
-    const collateral = await marketMakersRepo.call('collateralToken')
-
     const indexSets = Array.from(
       { length: marketInfo.outcomes.length },
       (v, i) => (i === 0 ? 1 : parseInt(Math.pow(10, i).toString(), 2))

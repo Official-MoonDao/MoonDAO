@@ -1,9 +1,8 @@
 {
-  "networkId": 11155111,
-  "lmsrAddress": "0xa33E8FD002dd2876e9B6ED69413ED53b964894b8",
   "markets": [
     {
-      "questionId": "0x4b22fe478b95fdaa835ddddf631ab29f12900b62061e0c5fd8564ddb7b684333",
+      "questionId": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      
       "title": "Who will land on the moon in the 21st century?",
       "outcomes": [
         {

@@ -13,20 +13,24 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -192,18 +196,20 @@ export const MARKETPLACE_FEE_SPLIT: string =
   polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_ADDRESSES: Index = {
-  sepolia: '0xa33E8FD002dd2876e9B6ED69413ED53b964894b8',
+  sepolia: '0x1e52aa48274eed3bf30c1830bee037123a58ec91',
 }
 export const COLLATERAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0xF85601CA802be17118618b2f61EF84433c0eb5D7',
 }
 export const COLLATERAL_DECIMALS = 18
+export const MAX_OUTCOMES = 256
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
-  sepolia: '0x80696cA366B4E76df8e602b3ab57a1bB21c987D3',
+  sepolia: '0x1936c175369A5fD4326bCd472e4E782Cc9B580Cf',
 }
-export const ORACLE_ADDRESS = '0x47ee48E1766BaC43dEc10215Dd636102126eA8fa'
 
-export const OPERATOR_ADDRESS = '0x47ee48E1766BaC43dEc10215Dd636102126eA8fa'
+export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
+
+export const OPERATOR_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
