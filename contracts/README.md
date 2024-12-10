@@ -33,7 +33,10 @@ yarn install
 cp .env.sample .env
 
 # Install Vyper
-pip install vyper==0.2.4
+pip install vyper==0.3.1
+
+# Add vyper to path
+export PATH="$PATH:$HOME/Library/Python/3.9/bin"
 
 # Install Git submodules
 forge install
