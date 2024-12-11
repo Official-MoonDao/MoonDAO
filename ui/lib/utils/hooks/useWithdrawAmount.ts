@@ -1,10 +1,11 @@
+import { BigNumber } from 'ethers'
 import { useState, useEffect } from 'react'
 
 export default function useWithdrawAmount(
   votingEscrowDepositorContract: any,
   userAddress: string
 ) {
-  const [withdrawAmount, setWithdrawAmount] = useState<number>(0)
+  const [withdrawAmount, setWithdrawAmount] = useState<BigNumber>(0)
 
   useEffect(() => {
     async function fetchWithdrawAmount() {
@@ -13,7 +14,7 @@ export default function useWithdrawAmount(
         'availableToWithdraw',
         [userAddress]
       )
-      setWithdrawAmount(Number(theWithdrawAmount))
+      setWithdrawAmount(theWithdrawAmount)
     }
 
     fetchWithdrawAmount()

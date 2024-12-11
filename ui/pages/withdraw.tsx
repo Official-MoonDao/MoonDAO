@@ -1,8 +1,17 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
-import { VOTING_ESCROW_DEPOSITOR_ADDRESSES } from 'const/config'
+import ERC20 from 'const/abis/ERC20.json'
+import {
+  MOONEY_ADDRESSES,
+  VMOONEY_ADDRESSES,
+  VOTING_ESCROW_DEPOSITOR_ADDRESSES,
+  MOONEY_DECIMALS,
+} from 'const/config'
+import { BigNumber } from 'ethers'
+import { useRouter } from 'next/router'
 import React, { useContext } from 'react'
 import toast from 'react-hot-toast'
+import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
 import useWindowSize from '@/lib/team/use-window-size'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
@@ -16,25 +25,33 @@ import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 
 export default function Withdraw() {
   const userAddress = useAddress()
+  const router = useRouter()
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const { contract: votingEscrowDepositorContract } = useContract(
     VOTING_ESCROW_DEPOSITOR_ADDRESSES[chain.slug]
+  )
+  const { contract: mooneyContract } = useContract(
+    MOONEY_ADDRESSES[chain.slug],
+    ERC20.abi
   )
   const withdrawable = useWithdrawAmount(
     votingEscrowDepositorContract,
     userAddress
   )
   const { isMobile } = useWindowSize()
-  console.log('withdrawable', Number(withdrawable))
 
   const handleWithdraw = async () => {
     try {
-      await votingEscrowDepositorContract?.call('withdraw', [userAddress])
+      await mooneyContract?.call('approve', [
+        VMOONEY_ADDRESSES[chain.slug],
+        withdrawable.toString(),
+      ])
+      await votingEscrowDepositorContract?.call('withdraw')
       toast.success('Withdrawal successful!', {
         style: toastStyle,
       })
       setTimeout(() => {
-        refreshRewards()
+        router.reload()
       }, 5000)
     } catch (error) {
       console.error('Error withdrawing:', error)
@@ -68,13 +85,12 @@ export default function Withdraw() {
               >
                 <Asset
                   name="vMOONEY"
-                  amount={String(withdrawable.toFixed(2))}
+                  amount={String((withdrawable / MOONEY_DECIMALS).toFixed(2))}
                   usd=""
                 />
               </section>
               {userAddress && (
                 <StandardButton
-                  link="/lock"
                   className="gradient-2 rounded-full"
                   onClick={handleWithdraw}
                   disabled={withdrawable === 0}
