@@ -78,14 +78,14 @@ contract VotingEscrowDepositorTest is Test {
         //assertEq(token.balanceOf(address(depositor)), initialBalance);
         //assertEq(token.balanceOf(user), 0);
         //assertEq(escrowToken.balanceOf(user), initialBalance);
-        escrowToken.checkpoint();
+        //escrowToken.checkpoint();
 
         //assertEq(escrowToken.admin(), address(0));
 
         // Call transfer_and_deposit_for
         vm.prank(user);
         //depositor.transfer_and_deposit_for(user, depositAmount);
-        //depositor.withdraw();
+        depositor.withdraw();
 
         // Verify token transfer
         //assertEq(token.balanceOf(address(depositor)), initialBalance - depositAmount);
