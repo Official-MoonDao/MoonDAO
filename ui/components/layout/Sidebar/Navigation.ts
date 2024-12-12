@@ -50,7 +50,7 @@ export const navigation = [
       },
       {
         name: 'Submit Proposal',
-        href: '/propose',
+        href: '/submission',
       },
       {
         name: 'Get $MOONEY',
