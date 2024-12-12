@@ -360,6 +360,7 @@ export default function CitizenDetailPage({
             address={address}
             nft={nft}
             incompleteProfile={incompleteProfile}
+            isTeamMember={hats.length > 0}
             mooneyBalance={MOONEYBalance}
             vmooneyBalance={VMOONEYBalance}
             setCitizenMetadataModalEnabled={setCitizenMetadataModalEnabled}
