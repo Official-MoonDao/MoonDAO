@@ -230,7 +230,9 @@ export function PrivyConnectWallet({
   const { login } = useLogin({
     onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
       //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
-      if (!wasAlreadyAuthenticated) {
+      console.log(router)
+
+      if (!wasAlreadyAuthenticated && router.pathname !== '/submission') {
         let citizen
         try {
           const citizenContract = await sdk?.getContract(
