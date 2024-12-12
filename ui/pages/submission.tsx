@@ -15,7 +15,7 @@ const SubmissionPage: React.FC = () => {
   const { tag } = router.query;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const title = 'Collaborate with MoonDAO';
-  
+
   useEffect(() => {
     if (tag === 'contribution') {
       setSelectedIndex(1);
@@ -47,7 +47,7 @@ const SubmissionPage: React.FC = () => {
                 <Tab.List className="flex rounded-xl">
                   <Tab className={({ selected }) =>
                     `rounded-lg py-2.5 px-5 font-GoodTimes leading-5 focus:outline-none
-                    ${selected 
+                    ${selected
                       ? 'bg-gradient-to-r from-[#5757ec] to-[#6b3d79] text-white shadow'
                       : 'text-white/70 hover:text-white'}`
                   }>
@@ -55,7 +55,7 @@ const SubmissionPage: React.FC = () => {
                   </Tab>
                   <Tab className={({ selected }) =>
                     `rounded-lg py-2.5 font-GoodTimes leading-5 px-5 focus:outline-none
-                    ${selected 
+                    ${selected
                       ? 'bg-gradient-to-r from-[#5757ec] to-[#6b3d79] text-white shadow'
                       : 'text-white/70 hover:text-white'}`
                   }>
