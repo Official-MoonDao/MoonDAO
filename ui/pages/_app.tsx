@@ -1,5 +1,5 @@
 import { PrivyProvider } from '@privy-io/react-auth'
-import { Chain, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { Chain, Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'

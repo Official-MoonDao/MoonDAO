@@ -3,10 +3,12 @@ import { ORACLE_ADDRESS, OPERATOR_ADDRESS } from 'const/config'
 import React from 'react'
 import FormInput from '@/components/forms/FormInput'
 import StandardButton from '@/components/layout/StandardButton'
+import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
 
 type TradingFormProps = {
   isMarketClosed: boolean
   marketInfo: any
+  teamContract: any
   setSelectedAmount: any
   setSelectedOutcomeToken: any
   selectedOutcomeToken: number
@@ -51,6 +53,7 @@ type LayoutProps = {
 const TradingForm: React.FC<TradingFormProps> = ({
   isMarketClosed,
   marketInfo,
+    teamContract,
   setSelectedAmount,
   setSelectedOutcomeToken,
   selectedOutcomeToken,
@@ -77,7 +80,10 @@ const TradingForm: React.FC<TradingFormProps> = ({
             key={outcome.short}
             label={outcome.title}
           >
-            {outcome.title}
+            <CompetitorPreview
+              teamId={outcome.teamId}
+              teamContract={teamContract}
+            />
           </RadioGroup.Option>
           <div>Probability: {outcome.probability.toString()}%</div>
           <div>My balance: {outcome.balance.toFixed(5).toString()}</div>
@@ -166,6 +172,7 @@ const Layout: React.FC<LayoutProps> = ({
   isConditionLoaded,
   isMarketClosed,
   marketInfo,
+  teamContract,
   setSelectedAmount,
   selectedAmount,
   setSelectedOutcomeToken,
@@ -185,6 +192,7 @@ const Layout: React.FC<LayoutProps> = ({
           <TradingForm
             isMarketClosed={isMarketClosed}
             marketInfo={marketInfo}
+            teamContract={teamContract}
             setSelectedAmount={setSelectedAmount}
             setSelectedOutcomeToken={setSelectedOutcomeToken}
             selectedOutcomeToken={selectedOutcomeToken}

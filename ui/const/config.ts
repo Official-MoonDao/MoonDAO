@@ -196,16 +196,19 @@ export const MARKETPLACE_FEE_SPLIT: string =
   polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_ADDRESSES: Index = {
-  sepolia: '0x1e52aa48274eed3bf30c1830bee037123a58ec91',
+  sepolia: '0xBB335Fe1BcE1a1d42b23c40D1735f9255B10819b',
+  'arbitrum-sepolia': '0x789fc04493F3c1E3D853E164e767915109814B27',
+}
+export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
+  sepolia: '0x57f1e9424150Ea78977d479815fD26B05D8EbB0e',
+  'arbitrum-sepolia': '0xF537d6d5438A7307a8aA5670Ec3fb27b5BD208f0',
 }
 export const COLLATERAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0xF85601CA802be17118618b2f61EF84433c0eb5D7',
+  'arbitrum-sepolia': '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
 }
 export const COLLATERAL_DECIMALS = 18
-export const MAX_OUTCOMES = 256
-export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
-  sepolia: '0x1936c175369A5fD4326bCd472e4E782Cc9B580Cf',
-}
+export const MAX_OUTCOMES = 128
 
 export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 

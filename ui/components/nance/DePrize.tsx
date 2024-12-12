@@ -1,4 +1,4 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import CompetitorABI from 'const/abis/Competitor.json'
 import ERC20 from 'const/abis/ERC20.json'
@@ -192,20 +192,13 @@ export function DePrize({
               </h3>
             </div>
             <div>
-              {competitors &&
-                competitors.map((competitor, i: number) => (
-                  <div
-                    key={i}
-                    className="flex items-center w-full py-1 text-[17px]"
-                  >
-                    <div className="flex-1 px-8">
-                      <CompetitorPreview
-                        teamId={competitor.teamId}
-                        teamContract={teamContract}
-                      />
-                    </div>
-                  </div>
-                ))}
+            {competitors &&
+                <Market
+              account={userAddress}
+              competitors={competitors}
+              teamContract={teamContract}
+            />
+            }
             </div>
             {!userHasVotingPower && (
               <span>
@@ -217,7 +210,6 @@ export function DePrize({
                 </StandardButton>
               </span>
             )}
-            <Market account={userAddress} />
           </div>
         </ContentLayout>
       </Container>
