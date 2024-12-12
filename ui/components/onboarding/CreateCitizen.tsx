@@ -517,14 +517,16 @@ export default function CreateCitizen({
                           citizenName,
                           mintedTokenId
                         )
-                        await sendDiscordMessage(
-                          accessToken,
-                          'networkNotifications',
-                          `[**${citizenName}** has minted a citizen NFT!](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789)`
-                        )
+                        setTimeout(async () => {
+                          await sendDiscordMessage(
+                            accessToken,
+                            'networkNotifications',
+                            `[**${citizenName}** has minted a citizen NFT!](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789)`
+                          )
 
-                        router.push(`/citizen/${citizenPrettyLink}`)
-                        setIsLoadingMint(false)
+                          router.push(`/citizen/${citizenPrettyLink}`)
+                          setIsLoadingMint(false)
+                        }, 5000)
                       }
                     } catch (err) {
                       console.error(err)
