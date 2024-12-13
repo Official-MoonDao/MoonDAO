@@ -50,7 +50,7 @@ export default function Tier({
             if (!compact) {
               if (!address && user) logout()
               if (!address) return login()
-              if (hasCitizen)
+              if (hasCitizen && process.env.NEXT_PUBLIC_CHAIN === 'mainnet')
                 return toast.error('You have already registered as a citizen')
 
               onClick()

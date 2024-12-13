@@ -2,6 +2,11 @@ import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
+export const DEPLOYED_ORIGIN =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? 'https://moondao.com'
+    : 'https://moondao-ce-demo.netlify.app'
+
 interface DeploymentConfig {
   MOONEYToken: string
   vMOONEYToken: string
@@ -22,6 +27,9 @@ const polygonConfig =
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
 
+const baseConfig =
+  require('../../contracts/deployments/base') as DeploymentConfig
+
 const goerliConfig =
   require(`../../contracts/deployments/goerli`) as DeploymentConfig
 
@@ -30,6 +38,9 @@ const sepoliaConfig =
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
+
+const baseSepoliaConfig =
+  require('../../contracts/deployments/base-sepolia') as DeploymentConfig
 
 export const DEFAULT_CHAIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
@@ -40,7 +51,9 @@ export const MOONEY_ADDRESSES: Index = {
   goerli: goerliConfig.MOONEYToken,
   sepolia: sepoliaConfig.MOONEYToken,
   arbitrum: arbitrumConfig.MOONEYToken,
+  base: baseConfig.MOONEYToken,
   'arbitrum-sepolia': arbitrumSepoliaConfig.MOONEYToken,
+  'base-sepolia-testnet': baseSepoliaConfig.MOONEYToken,
 }
 
 export const DAI_ADDRESSES: Index = {
@@ -48,7 +61,9 @@ export const DAI_ADDRESSES: Index = {
   polygon: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063',
   sepolia: '0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6',
   arbitrum: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
+  base: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
   'arbtirum-sepolia': '0x8B90f054565718097BD583C2dF4260c9E8fb6464',
+  'base-sepolia-testnet': '0x24E1Ccbd839605210BD6be9e32b64D0886AB24Cf',
 }
 
 export const USDC_ADDRESSES: Index = {
@@ -56,6 +71,8 @@ export const USDC_ADDRESSES: Index = {
   polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
   sepolia: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
   arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+  base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+  'base-sepolia-testnet': '0x5dEaC602762362FE5f135FA5904351916053cF70',
 }
 
 export const USDT_ADDRESSES: Index = {
@@ -63,6 +80,8 @@ export const USDT_ADDRESSES: Index = {
   polygon: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
   sepolia: '0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0',
   arbitrum: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+  base: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
+  'base-sepolia-testnet': '0x4DBD49a3aE90Aa5F13091ccD29A896cbb5B171EB',
 }
 
 export const MOONEY_DECIMALS = 10 ** 18
@@ -73,6 +92,9 @@ export const VMOONEY_ADDRESSES: Index = {
   goerli: goerliConfig.vMOONEYToken,
   sepolia: sepoliaConfig.vMOONEYToken,
   arbitrum: arbitrumConfig.vMOONEYToken,
+  base: baseConfig.vMOONEYToken,
+  'arbitrum-sepolia': arbitrumSepoliaConfig.vMOONEYToken,
+  'base-sepolia-testnet': baseSepoliaConfig.vMOONEYToken,
 }
 
 export const CITIZEN_NFT_ADDRESSES: Index = {
@@ -154,8 +176,8 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x93bCf6B82fcE153F24085b1C6A16328dc580427d',
-  sepolia: '0xa9d0d083AfFd77a2Ce58B8163A54C22b2C57E151',
+  arbitrum: '0x94e225DDe1b3E5f861222ca2055739BA12730bd4',
+  sepolia: '0x5b26100ae7F244f6805D724A019927E137978659',
 }
 
 export const MARKETPLACE_ADDRESS =
@@ -164,8 +186,8 @@ export const MARKETPLACE_ADDRESS =
     : sepoliaConfig.Marketplace
 
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xcAEa289f612386bc2F990de4AA7267951129D213',
-  sepolia: '0x238Ff1163C1f4E31A08240d853f510A4223faAA1',
+  arbitrum: '0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E',
+  sepolia: '0xf50aC858f78ff8d4e5E898C155046bd990dE2cED',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
@@ -201,10 +223,14 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
   polygon: '0xec7BE89e9d109e7e3Fec59c222CF297125FEFda2',
   sepolia: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
   arbitrum: '0x5E325eDA8064b456f4781070C0738d849c824258',
+  base: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
   'arbitrum-sepolia': '0x4A7b5Da61326A6379179b40d00F57E5bbDC962c2',
+  'base-sepolia-testnet': '0x050E797f3625EC8785265e1d9BDd4799b97528A1',
 }
 
 export const DISCORD_GUILD_ID = '914720248140279868'
+export const GENERAL_CHANNEL_ID = '914720248140279871'
+export const TEST_CHANNEL_ID = '1308513773879033886'
 
 export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
 

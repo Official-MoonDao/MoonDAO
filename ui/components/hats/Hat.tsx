@@ -1,6 +1,6 @@
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
 import { Chain } from '@thirdweb-dev/chains'
-import { NFT, ThirdwebNftMedia } from '@thirdweb-dev/react'
+import { MediaRenderer, NFT } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { useHatData } from '@/lib/hats/useHatData'
@@ -48,8 +48,8 @@ export function Hat({
       <div className="flex items-center gap-5">
         {teamNFT && (
           <div className="rounded-[2.5vmax] rounded-tl-[10px] overflow-hidden">
-            <ThirdwebNftMedia
-              metadata={teamNFT.metadata}
+            <MediaRenderer
+              src={teamNFT.metadata.image}
               width="150px"
               height="150px"
             />

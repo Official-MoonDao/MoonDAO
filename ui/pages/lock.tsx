@@ -25,7 +25,6 @@ import TimeRange from '../components/TimeRange'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import Head from '../components/layout/Head'
-import L2Toggle from '../components/lock/L2Toggle'
 import { LockData } from '../components/lock/LockData'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
@@ -202,7 +201,12 @@ export default function Lock() {
               {'fund your account'}
             </button>
             {',  '}
-            <button className="underline" onClick={()=> router.push('/get-mooney')}>{'swap for $MOONEY'}</button>
+            <button
+              className="underline"
+              onClick={() => router.push('/get-mooney')}
+            >
+              {'swap for $MOONEY'}
+            </button>
             {', our governance token, and '}
             <button
               className="underline"

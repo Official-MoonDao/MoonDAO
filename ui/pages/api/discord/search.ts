@@ -1,6 +1,9 @@
+import { NextApiRequest, NextApiResponse } from 'next'
+
 const GUILD_ID = '914720248140279868'
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: NextApiRequest,
+  res: NextApiResponse) {
   try {
     const username = req.query.username
     const response = await fetch(

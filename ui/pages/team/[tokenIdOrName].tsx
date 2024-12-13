@@ -16,6 +16,7 @@ import {
   useContractRead,
   useSDK,
 } from '@thirdweb-dev/react'
+import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
   TEAM_ADDRESSES,
@@ -64,14 +65,18 @@ import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceTableABI from '../../const/abis/MarketplaceTable.json'
-import TeamABI from '../../const/abis/Team.json'
 
-export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
+export default function TeamDetailPage({
+  tokenId,
+  nft,
+  imageIpfsLink,
+  queriedJob,
+  queriedListing,
+}: any) {
   const router = useRouter()
 
   const sdk = useSDK()
   const address = useAddress()
-
   //privy
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
   const { citizen } = useContext(CitizenContext)
@@ -350,8 +355,17 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
     <Container>
       <Head
         title={nft.metadata.name}
-        description={nft.metadata.description}
-        image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
+        secondaryTitle={queriedListing?.title || queriedJob?.title}
+        description={
+          queriedListing?.description ||
+          queriedJob?.description ||
+          nft.metadata.description
+        }
+        image={`https://ipfs.io/ipfs/${
+          queriedListing
+            ? queriedListing.image.split('ipfs://')[1]
+            : imageIpfsLink.split('ipfs://')[1]
+        }`}
       />
       {teamSubscriptionModalEnabled && (
         <SubscriptionModal
@@ -563,15 +577,20 @@ export default function TeamDetailPage({ tokenId, nft, imageIpfsLink }: any) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps = async ({
+  params,
+  query,
+}) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
 
-  const statement = `SELECT name, id FROM ${TEAM_TABLE_NAMES[chain.slug]}`
+  const teamTableStatement = `SELECT name, id FROM ${
+    TEAM_TABLE_NAMES[chain.slug]
+  }`
   const allTeamsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${statement}`
+    `${TABLELAND_ENDPOINT}?statement=${teamTableStatement}`
   )
   const allTeams = await allTeamsRes.json()
   const { prettyLinks } = generatePrettyLinks(allTeams)
@@ -609,11 +628,49 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const rawMetadata = await rawMetadataRes.json()
   const imageIpfsLink = rawMetadata.image
 
+  //Check for a jobId in the url and get the queried job if it exists
+  const jobId = query?.job
+  let queriedJob = null
+  if (jobId !== undefined) {
+    const jobTableContract = await sdk.getContract(
+      JOBS_TABLE_ADDRESSES[chain.slug],
+      JobBoardTableABI
+    )
+    const jobTableName = await jobTableContract.call('getTableName')
+    const jobTableStatement = `SELECT * FROM ${jobTableName} WHERE id = ${jobId}`
+    const jobRes = await fetch(
+      `${TABLELAND_ENDPOINT}?statement=${jobTableStatement}`
+    )
+    const jobData = await jobRes.json()
+    queriedJob = jobData?.[0] || null
+  }
+
+  //Check for a listingId in the url and get the queried listing if it exists
+  const listingId = query?.listing
+  let queriedListing = null
+  if (listingId !== undefined) {
+    const marketplaceTableContract = await sdk.getContract(
+      MARKETPLACE_TABLE_ADDRESSES[chain.slug],
+      MarketplaceTableABI
+    )
+    const marketplaceTableName = await marketplaceTableContract.call(
+      'getTableName'
+    )
+    const marketplaceTableStatement = `SELECT * FROM ${marketplaceTableName} WHERE id = ${listingId}`
+    const marketplaceRes = await fetch(
+      `${TABLELAND_ENDPOINT}?statement=${marketplaceTableStatement}`
+    )
+    const marketplaceData = await marketplaceRes.json()
+    queriedListing = marketplaceData?.[0] || null
+  }
+
   return {
     props: {
       nft,
       tokenId,
       imageIpfsLink,
+      queriedJob,
+      queriedListing,
     },
   }
 }

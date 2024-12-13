@@ -42,6 +42,40 @@ export default function TeamJobs({
     if (jobTableContract) getEntityJobs()
   }, [teamId, jobTableContract])
 
+  useEffect(() => {
+    if (router.query.job) {
+      function scrollToJobs() {
+        // First scroll the section into view
+        const jobBoard = document.getElementById('jobs section')
+        if (jobBoard) {
+          jobBoard.scrollIntoView({ behavior: 'smooth' })
+        }
+      }
+
+      function scrollToJob() {
+        const jobElement = document.getElementById(
+          `team-job-${router.query.job}`
+        )
+        if (jobElement) {
+          jobElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center',
+          })
+        }
+      }
+
+      // Wait for elements to be rendered
+      const scrollToJobsTimeout = setTimeout(scrollToJobs, 3000)
+      const scrollToJobTimeout = setTimeout(scrollToJob, 4000)
+
+      return () => {
+        clearTimeout(scrollToJobsTimeout)
+        clearTimeout(scrollToJobTimeout)
+      }
+    }
+  }, [router])
+
   return (
     <section
       id="jobs section"
@@ -68,12 +102,13 @@ export default function TeamJobs({
           )}
         </div>
         {isManager || isCitizen ? (
-          <SlidingCardMenu>
+          <SlidingCardMenu id="team-jobs-sliding-card-menu">
             <div className="flex gap-4">
               {jobs?.[0] ? (
                 jobs.map((job, i) => (
                   <Job
-                    key={`team-job-${i}`}
+                    id={`team-job-${job.id}`}
+                    key={`team-job-${job.id}`}
                     job={job}
                     jobTableContract={jobTableContract}
                     editable={isManager}

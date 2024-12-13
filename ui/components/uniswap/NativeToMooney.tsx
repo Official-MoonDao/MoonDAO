@@ -50,7 +50,7 @@ export default function NativeToMooney({ selectedChain }: any) {
         }
       })
     }
-  }, [amount, selectedChain, inputToken, outputToken, address, generateRoute])
+  }, [amount, selectedChain, inputToken, outputToken, address])
 
   useEffect(() => {
     async function getUSDCost() {
@@ -155,13 +155,15 @@ export default function NativeToMooney({ selectedChain }: any) {
           }%`}</p>
         </div>
 
-        {selectedChain.slug === 'arbitrum' && (
+        {selectedChain.slug === 'arbitrum' || selectedChain.slug === 'base' ? (
           <div className="mt-2 p-2 w-full flex justify-between border-[1px] border-moon-orange rounded-lg text-moon-orange text-[75%]">
             <div className="flex gap-2 items-center">
-              <p>{`Please note that due to low liquidity in the Arbitrum L2 pool, swapping ETH for $MOONEY may result in receiving fewer $MOONEY than expected. We recommend reviewing current liquidity conditions and potential slippage before proceeding with your swap.
+              <p>{`Please note that due to low liquidity in the ${selectedChain.name} L2 pool, swapping ETH for $MOONEY may result in receiving fewer $MOONEY than expected. We recommend reviewing current liquidity conditions and potential slippage before proceeding with your swap.
 `}</p>
             </div>
           </div>
+        ) : (
+          <></>
         )}
       </div>
 
