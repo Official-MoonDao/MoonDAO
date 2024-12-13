@@ -107,7 +107,6 @@ const Market: React.FC<MarketProps> = ({
     const conditionId = getConditionId(
       ORACLE_ADDRESS,
       markets.markets[0].questionId,
-      //markets.markets[0].outcomes.length
       MAX_OUTCOMES
     )
 
@@ -138,13 +137,11 @@ const Market: React.FC<MarketProps> = ({
       const probability = await marketMakersRepo.call('calcMarginalPrice', [
         outcomeIndex,
       ])
-        console.log('competitor.length', competitors.length)
-        console.log(competitors[outcomeIndex])
 
       const outcome = {
         index: outcomeIndex,
         title: 'Outcome ' + (outcomeIndex + 1),
-        probability: ((probability / 2 ** 64) * 100).toFixed(2),
+        probability: ((probability / 2 ** 64) * 100).toFixed(1),
         balance: balance / Math.pow(10, COLLATERAL_DECIMALS),
         teamId: competitors[outcomeIndex].teamId,
         //payoutNumerator: payoutNumerator,
@@ -165,20 +162,18 @@ const Market: React.FC<MarketProps> = ({
     setMarketInfo(marketData)
   }
 
-  const buy = async () => {
+  const buy = async (selectedIndex: number) => {
     const formatedAmount = new BigNumber(selectedAmount).multipliedBy(
       new BigNumber(Math.pow(10, COLLATERAL_DECIMALS))
     )
 
     const outcomeTokenAmounts = Array.from(
-      { length: marketInfo.outcomes.length },
+      { length: MAX_OUTCOMES },
       (value: any, index: number) =>
-        (index === selectedOutcomeToken
-          ? formatedAmount
-          : new BigNumber(0)
-        ).toString()
+        (index === selectedIndex ? formatedAmount : new BigNumber(0)).toString()
     )
 
+    console.log('outcomeTokenAmounts', outcomeTokenAmounts)
     const cost = await marketMakersRepo.call('calcNetCost', [
       outcomeTokenAmounts,
     ])
@@ -205,7 +200,7 @@ const Market: React.FC<MarketProps> = ({
     await getMarketInfo()
   }
 
-  const sell = async () => {
+  const sell = async (selectedIndex: number) => {
     const formatedAmount = new BigNumber(selectedAmount).multipliedBy(
       new BigNumber(Math.pow(10, COLLATERAL_DECIMALS))
     )
@@ -218,14 +213,11 @@ const Market: React.FC<MarketProps> = ({
       await conditionalTokensRepo.call('setApprovalForAll', [
         marketInfo.lmsrAddress,
         true,
-        account,
       ])
     }
 
-    const outcomeTokenAmounts = Array.from(
-      { length: marketInfo.outcomes.length },
-      (v, i) =>
-        i === selectedOutcomeToken ? formatedAmount.negated() : new BigNumber(0)
+    const outcomeTokenAmounts = Array.from({ length: MAX_OUTCOMES }, (v, i) =>
+      i === selectedIndex ? formatedAmount.negated() : new BigNumber(0)
     )
     const profit = (
       await marketMakersRepo.call('calcNetCost', [outcomeTokenAmounts])
@@ -242,9 +234,8 @@ const Market: React.FC<MarketProps> = ({
   }
 
   const redeem = async () => {
-    const indexSets = Array.from(
-      { length: marketInfo.outcomes.length },
-      (v, i) => (i === 0 ? 1 : parseInt(Math.pow(10, i).toString(), 2))
+    const indexSets = Array.from({ length: MAX_OUTCOMES }, (v, i) =>
+      i === 0 ? 1 : parseInt(Math.pow(10, i).toString(), 2)
     )
 
     const tx = await conditionalTokensRepo.call('redeemPositions', [
@@ -268,7 +259,7 @@ const Market: React.FC<MarketProps> = ({
 
   const resolve = async (resolutionOutcomeIndex: number) => {
     const payouts = Array.from(
-      { length: marketInfo.outcomes.length },
+      { length: MAX_OUTCOMES },
       (value: any, index: number) => (index === resolutionOutcomeIndex ? 1 : 0)
     )
     console.log(

@@ -12,15 +12,10 @@ type TradingFormProps = {
   setSelectedAmount: any
   setSelectedOutcomeToken: any
   selectedOutcomeToken: number
-}
-
-type TraderActionsProps = {
-  marketInfo: any
-  isMarketClosed: boolean
   selectedAmount: string
-  redeem: any
   buy: any
   sell: any
+  redeem: any
 }
 
 type OperatorActionsProps = {
@@ -53,82 +48,68 @@ type LayoutProps = {
 const TradingForm: React.FC<TradingFormProps> = ({
   isMarketClosed,
   marketInfo,
-    teamContract,
+  teamContract,
   setSelectedAmount,
   setSelectedOutcomeToken,
   selectedOutcomeToken,
+  selectedAmount,
+  buy,
+  sell,
+  redeem,
 }) => (
   <>
     <div>
       <FormInput
         variant="filled"
-        label="Collateral value"
+        label="Collateral value (WETH)"
         type="number"
         onChange={(e) => setSelectedAmount(e.target.value)}
         disabled={isMarketClosed}
       />
     </div>
-    <RadioGroup
-      defaultValue={0}
-      onChange={setSelectedOutcomeToken}
-      value={selectedOutcomeToken}
-    >
-      {marketInfo.outcomes.map((outcome: any, index: number) => (
-        <div key={outcome.title}>
-          <RadioGroup.Option
-            value={!isMarketClosed ? outcome.index : 'disabled'}
-            key={outcome.short}
-            label={outcome.title}
-          >
-            <CompetitorPreview
-              teamId={outcome.teamId}
-              teamContract={teamContract}
-            />
-          </RadioGroup.Option>
-          <div>Probability: {outcome.probability.toString()}%</div>
-          <div>My balance: {outcome.balance.toFixed(5).toString()}</div>
-        </div>
-      ))}
-    </RadioGroup>
-  </>
-)
-
-const TraderActions: React.FC<TraderActionsProps> = ({
-  marketInfo,
-  isMarketClosed,
-  selectedAmount,
-  redeem,
-  buy,
-  sell,
-}) => (
-  <>
-    <h3>Trader actions:</h3>
     <div>
-      <StandardButton
-        variant="contained"
-        onClick={redeem}
-        disabled={!isMarketClosed || !marketInfo.payoutDenominator}
-      >
-        Redeem
-      </StandardButton>
-      <StandardButton
-        variant="contained"
-        onClick={buy}
-        disabled={isMarketClosed || !selectedAmount}
-      >
-        Buy
-      </StandardButton>
-      <StandardButton
-        variant="contained"
-        onClick={sell}
-        disabled={isMarketClosed || !selectedAmount}
-      >
-        Sell
-      </StandardButton>
+      {marketInfo.outcomes.map((outcome: any, index: number) => (
+        <span key={index} className="flex flex-row items-center justify-left">
+          <CompetitorPreview
+            teamId={outcome.teamId}
+            teamContract={teamContract}
+          />
+          <StandardButton
+            variant="contained"
+            onClick={() => buy(outcome.index)}
+            disabled={isMarketClosed || !selectedAmount}
+            className="rounded-full mx-2"
+            backgroundColor="bg-moon-green"
+          >
+            Buy {outcome.probability.toString()}%
+          </StandardButton>
+          <StandardButton
+            variant="contained"
+            className="rounded-full mx-2"
+            backgroundColor="bg-moon-orange"
+            onClick={sell}
+            disabled={isMarketClosed || !selectedAmount}
+            className="rounded-full"
+          >
+            Sell
+          </StandardButton>
+          {isMarketClosed && (
+            <StandardButton
+              variant="contained"
+              onClick={redeem}
+              disabled={!marketInfo.payoutDenominator}
+            >
+              Redeem
+            </StandardButton>
+          )}
+          <div className="mx-2">
+            Balance: {outcome.balance.toPrecision(2).toString()}
+          </div>
+        </span>
+      ))}
     </div>
   </>
 )
-
 const OperatorActions: React.FC<OperatorActionsProps> = ({
   isMarketClosed,
   close,
@@ -187,8 +168,7 @@ const Layout: React.FC<LayoutProps> = ({
     <div>
       {isConditionLoaded ? (
         <>
-          <h2>{marketInfo.title}</h2>
-          <p>State: {marketInfo.stage}</p>
+          <p>Who will be the first team to land on the moon?</p>
           <TradingForm
             isMarketClosed={isMarketClosed}
             marketInfo={marketInfo}
@@ -196,15 +176,21 @@ const Layout: React.FC<LayoutProps> = ({
             setSelectedAmount={setSelectedAmount}
             setSelectedOutcomeToken={setSelectedOutcomeToken}
             selectedOutcomeToken={selectedOutcomeToken}
-          />
-          <TraderActions
-            marketInfo={marketInfo}
-            isMarketClosed={isMarketClosed}
             selectedAmount={selectedAmount}
-            redeem={redeem}
             buy={buy}
             sell={sell}
+            redeem={redeem}
           />
+          {false && (
+            <TraderActions
+              marketInfo={marketInfo}
+              isMarketClosed={isMarketClosed}
+              selectedAmount={selectedAmount}
+              redeem={redeem}
+              buy={buy}
+              sell={sell}
+            />
+          )}
           {account === OPERATOR_ADDRESS && (
             <OperatorActions isMarketClosed={isMarketClosed} close={close} />
           )}
