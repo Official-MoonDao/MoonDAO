@@ -35,7 +35,8 @@ import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
 import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile"
 import { useLocalStorage } from 'react-use'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import { usePrivy } from '@privy-io/react-auth'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })
@@ -93,6 +94,7 @@ export type ProposalCache = {
 
 export default function ProposalEditor() {
   const router = useRouter()
+  const { getAccessToken } = usePrivy()
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
@@ -140,7 +142,7 @@ export default function ProposalEditor() {
 
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
-    setMarkdown?.(trimActionsFromBody(b)) 
+    setMarkdown?.(trimActionsFromBody(b))
     const actions = getActionsFromBody(b);
     if (!actions) return;
     console.debug('loaded action:', actions)
@@ -189,8 +191,8 @@ export default function ProposalEditor() {
       body: getMarkdown(),
       status,
       voteSetup: {
-        type: 'quadratic',  
-        choices: ['Yes', 'No', 'Abstain'], 
+        type: 'quadratic',
+        choices: ['Yes', 'No', 'Abstain'],
       },
     } as Proposal
   }
@@ -282,19 +284,19 @@ export default function ProposalEditor() {
 
 
   return (
-    <div className="flex flex-col justify-center items-start animate-fadeIn w-[90vw] md:w-full">
+    <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
       <Head title='Proposal Editor' />
 
-      <div className="px-5 pt-2 w-full md:max-w-[1200px]">
+      <div className="px-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="p-5 pb-0 bg-dark-cool">
+          <div className="">
           <ProposalLocalCache
             proposalCache={proposalCache}
             clearProposalCache={clearProposalCache}
             restoreProposalCache={restoreFromTitleAndBody}
           />
           </div>
-          <div className="p-5 py-0 rounded-[20px] bg-dark-cool">
+          <div className="py-0 rounded-[20px]">
           <ProposalTitleInput value={proposalTitle} onChange={(s) => {
             setProposalTitle(s)
             console.debug("setProposalTitle", s)
@@ -302,11 +304,14 @@ export default function ProposalEditor() {
             setProposalCache({ ...cache, title: s, timestamp: getUnixTime(new Date()) })
           }} />
           </div>
-          <div className="p-5 pt-0 p-5 pt-0 rounded-t-[20px] rounded-b-[0px] bg-dark-cool">
+          <div className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50%">
           <NanceEditor
             initialValue={loadedProposal?.body || TEMPLATE}
             fileUploadExternal={ async (val) => {
+              const accessToken = await getAccessToken()
+              await createSession(accessToken)
               const res = await pinBlobOrFile(val)
+              await destroySession(accessToken)
               return res.url;
             }}
             darkMode={true}
@@ -314,7 +319,7 @@ export default function ProposalEditor() {
           />
           </div>
 
-          <div className="p-5 rounded-b-[20px] rounded-t-[0px] bg-dark-cool">
+          <div className="p-5 rounded-b-[20px] rounded-t-[0px] ">
           <Field as="div" className="\ flex items-center mt-5">
             <Switch
               checked={attachBudget}
@@ -374,7 +379,7 @@ export default function ProposalEditor() {
                 }
               >
                 {signingStatus === 'loading' ? 'Signing...' : (proposalId ? 'Save Draft' : '* Post In Ideation Forum')}
-                
+
               </button>
               {/* SUBMIT */}
               <button
