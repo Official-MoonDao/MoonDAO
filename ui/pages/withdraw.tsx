@@ -105,7 +105,7 @@ export default function Withdraw() {
               >
                 <Asset
                   name="vMOONEY"
-                  amount={String((withdrawable / MOONEY_DECIMALS).toFixed(2))}
+                  amount={String((Number(withdrawable) / MOONEY_DECIMALS).toFixed(2))}
                   usd=""
                 />
               </section>
