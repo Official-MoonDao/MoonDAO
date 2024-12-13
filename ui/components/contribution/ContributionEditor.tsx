@@ -142,7 +142,7 @@ const ContributionEditor: React.FC = () => {
           darkMode={true}
         />
       </div>
-      <div className="flex justify-end">
+      <div className="mt-4 flex justify-end">
         <button
           type="submit"
           className="gradient-2 hover:pl-7 disabled:pl-5 disabled:opacity-30 transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-5 px-5 py-3 inline-block disabled:transform-none disabled:cursor-not-allowed"
