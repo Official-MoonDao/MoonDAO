@@ -90,7 +90,9 @@ export default function Withdraw() {
           <ContentLayout
             header={'Withdraw Rewards'}
             headerSize="max(20px, 3vw)"
-            description={'Withdraw VMOONEY rewards.'}
+            description={
+              "Withdraw vMOONEY rewards. To complete your withdrawal, ensure you have an existing vMOONEY lock. You'll need to sign two transactions: one for approval and one to execute the withdrawal."
+            }
             preFooter={<NoticeFooter />}
             mainPadding
             isProfile
