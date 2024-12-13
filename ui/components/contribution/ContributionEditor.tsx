@@ -81,7 +81,7 @@ const ContributionEditor: React.FC = () => {
       });
       await destroySession(accessToken);
       const data = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(data.error);
       }
@@ -119,8 +119,11 @@ const ContributionEditor: React.FC = () => {
       <div className="h-[600px]">
         <NanceEditor
           initialValue={CONTRIBUTION_TEMPLATE}
-          fileUploadExternal={async (val) => {
-            const res = await pinBlobOrFile(val);
+          fileUploadExternal={ async (val) => {
+            const accessToken = await getAccessToken()
+            await createSession(accessToken)
+            const res = await pinBlobOrFile(val)
+            await destroySession(accessToken)
             return res.url;
           }}
           darkMode={true}
