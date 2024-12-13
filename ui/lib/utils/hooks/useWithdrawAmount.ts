@@ -5,7 +5,9 @@ export default function useWithdrawAmount(
   votingEscrowDepositorContract: any,
   userAddress: string
 ) {
-  const [withdrawAmount, setWithdrawAmount] = useState<BigNumber>(0)
+  const [withdrawAmount, setWithdrawAmount] = useState<BigNumber>(
+    BigNumber.from(0)
+  )
 
   useEffect(() => {
     async function fetchWithdrawAmount() {
