@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 
 export default function useWithdrawAmount(
   votingEscrowDepositorContract: any,
-  userAddress: string
+  userAddress: string | undefined
 ) {
   const [withdrawAmount, setWithdrawAmount] = useState<BigNumber>(
     BigNumber.from(0)
