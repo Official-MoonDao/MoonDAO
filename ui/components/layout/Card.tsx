@@ -252,21 +252,6 @@ export default function Card({
           {cardContent}
         </Link>
       ) : metadata?.name ? (
-        // <button
-        //   onClick={async () => {
-        //     setIsLoadingRoute(true)
-        //     const route = await router.push(
-        //       `/${type === 'team' ? 'team' : 'citizen'}/${
-        //         type === 'team'
-        //           ? generatePrettyLink(metadata.name)
-        //           : generatePrettyLinkWithId(metadata.name, metadata.id)
-        //       }`
-        //     )
-        //     if (route) setIsLoadingRoute(false)
-        //   }}
-        // >
-        //   {cardContent}
-        // </button>
         <Link
           prefetch={true}
           href={`/${type === 'team' ? 'team' : 'citizen'}/${
