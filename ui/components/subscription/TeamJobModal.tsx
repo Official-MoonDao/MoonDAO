@@ -1,8 +1,15 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { DEFAULT_CHAIN } from 'const/config'
-import { useEffect, useState } from 'react'
+import { usePrivy } from '@privy-io/react-auth'
+import { useContract } from '@thirdweb-dev/react'
+import TeamABI from 'const/abis/Team.json'
+import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import { Job } from '../jobs/Job'
@@ -34,6 +41,9 @@ export default function TeamJobModal({
   edit,
   job,
 }: TeamJobModalProps) {
+  const { getAccessToken } = usePrivy()
+  const { selectedChain } = useContext(ChainContext)
+
   const [isLoading, setIsLoading] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
   const [jobData, setJobData] = useState<JobData>(
@@ -62,6 +72,11 @@ export default function TeamJobModal({
 
   const currTime = useCurrUnixTime()
 
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug],
+    TeamABI
+  )
+
   useEffect(() => {
     if (
       job?.endTime !== undefined &&
@@ -80,6 +95,8 @@ export default function TeamJobModal({
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto"
         onSubmit={async (e) => {
           e.preventDefault()
+          const accessToken = await getAccessToken()
+          await createSession(accessToken)
           if (
             jobData.title.trim() === '' ||
             jobData.description.trim() === '' ||
@@ -106,9 +123,10 @@ export default function TeamJobModal({
             formattedContactInfo = cleanedData.contactInfo
           }
 
+          let tx
           try {
             if (edit) {
-              await jobTableContract.call('updateTable', [
+              tx = await jobTableContract.call('updateTable', [
                 job?.id,
                 cleanedData.title,
                 cleanedData.description,
@@ -120,7 +138,7 @@ export default function TeamJobModal({
                 formattedContactInfo,
               ])
             } else {
-              await jobTableContract?.call('insertIntoTable', [
+              tx = await jobTableContract?.call('insertIntoTable', [
                 cleanedData.title,
                 cleanedData.description,
                 teamId,
@@ -132,6 +150,24 @@ export default function TeamJobModal({
               ])
             }
 
+            //Get job id and team id from receipt and send discord notification
+            const jobId = parseInt(tx.receipt.logs[1].topics[1], 16).toString()
+            const jobTeamId = parseInt(
+              tx.receipt.logs[1].topics[2],
+              16
+            ).toString()
+            const team = await teamContract?.erc721.get(jobTeamId)
+            const teamName = team?.metadata.name as string
+            sendDiscordMessage(
+              accessToken,
+              'networkNotifications',
+              `[**${teamName}** has ${
+                edit ? 'updated a' : 'posted a new'
+              } job](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
+                teamName
+              )}?job=${jobId}&_timestamp=123456789)`
+            )
+
             setTimeout(() => {
               refreshJobs()
               setIsLoading(false)
@@ -141,6 +177,7 @@ export default function TeamJobModal({
             console.log(err)
             setIsLoading(false)
           }
+          await destroySession(accessToken)
         }}
       >
         <div className="w-full flex items-center justify-between">
@@ -225,7 +262,7 @@ export default function TeamJobModal({
           requiredChain={DEFAULT_CHAIN}
           label={edit ? 'Edit Job' : 'Add Job'}
           type="submit"
-          isDisabled={isLoading}
+          isDisabled={!teamContract || !jobTableContract || isLoading}
           action={() => {}}
           className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${
             !isValid ? 'opacity-50 cursor-not-allowed' : ''

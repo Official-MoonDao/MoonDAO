@@ -6,10 +6,35 @@ import {
   Ethereum,
   Polygon,
   Sepolia,
+  Base,
+  BaseSepoliaTestnet,
 } from '@thirdweb-dev/chains'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../../lib/thirdweb/chain-context'
+
+type NetworkOptionProps = {
+  chain: Chain
+  selectChain: (chain: Chain) => void
+}
+
+function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
+  const name = chain.name.replace('Testnet', '').replace('Mainnet', '')
+  return (
+    <button
+      className="w-full flex items-center gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
+      onClick={() => selectChain(chain)}
+    >
+      <Image
+        src={`/icons/networks/${chain.slug}.svg`}
+        width={13}
+        height={13}
+        alt={chain.name}
+      />
+      {name}
+    </button>
+  )
+}
 
 type NetworkSelectorProps = {
   iconsOnly?: boolean
@@ -60,56 +85,18 @@ export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
           id="network-selector-dropdown"
           className="w-[250px] absolute flex flex-col items-start gap-2 text-black z-10"
         >
-          <button
-            type="button"
-            className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-            onClick={() => selectChain(Ethereum)}
-          >
-            <Image
-              src="/icons/networks/ethereum.svg"
-              width={13}
-              height={13}
-              alt="Ethereum"
-            />
-            {'Ethereum'}
-          </button>
-          <button
-            className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-            onClick={() => selectChain(Polygon)}
-          >
-            <Image
-              src="/icons/networks/polygon.svg"
-              width={24}
-              height={24}
-              alt="Polygon"
-            />
-            {'Polygon'}
-          </button>
-          <button
-            className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-            onClick={() => selectChain(Arbitrum)}
-          >
-            <Image
-              src="/icons/networks/arbitrum.svg"
-              width={24}
-              height={24}
-              alt="Arbitrumm"
-            />
-            {'Arbitrum'}
-          </button>
+          <NetworkOption chain={Ethereum} selectChain={selectChain} />
+          <NetworkOption chain={Arbitrum} selectChain={selectChain} />
+          <NetworkOption chain={Base} selectChain={selectChain} />
+          <NetworkOption chain={Polygon} selectChain={selectChain} />
           {process.env.NEXT_PUBLIC_ENV === 'dev' && (
-            <button
-              className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-              onClick={() => selectChain(Sepolia)}
-            >
-              <Image
-                src="/icons/networks/ethereum.svg"
-                width={13}
-                height={13}
-                alt="Sepolia"
+            <>
+              <NetworkOption chain={Sepolia} selectChain={selectChain} />
+              <NetworkOption
+                chain={BaseSepoliaTestnet}
+                selectChain={selectChain}
               />
-              {'Sepolia'}
-            </button>
+            </>
           )}
         </div>
       )}
