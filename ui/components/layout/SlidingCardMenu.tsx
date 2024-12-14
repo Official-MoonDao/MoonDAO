@@ -2,10 +2,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 interface SlidingCardMenuProps {
+  id?: string
   children: React.ReactNode
 }
 
-const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
+const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ id, children }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const parentRef = useRef<HTMLDivElement>(null)
   const [isHovered, setIsHovered] = useState(false)
@@ -100,6 +101,7 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ children }) => {
 
   return (
     <div
+      id={id}
       ref={parentRef}
       className="flex justify-center md:justify-start relative rounded-tl-[20px] rounded-bl-[5vmax] p-4"
     >

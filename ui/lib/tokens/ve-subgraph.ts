@@ -10,6 +10,9 @@ const POLYGON_SUBGRAPH_URL =
 const ARB_SUBGRAPH_URL =
   'https://api.studio.thegraph.com/query/38443/vmooney-arb/v0.0.1'
 
+const BASE_SUBGRAPH_URL =
+  'https://api.studio.thegraph.com/query/38443/vmooney-base/v0.0.1'
+
 const now = new Date().getTime() / 1000
 
 const EthClient: any = createClient({
@@ -24,6 +27,11 @@ const PolygonClient: any = createClient({
 
 const ArbClient: any = createClient({
   url: ARB_SUBGRAPH_URL,
+  exchanges: [fetchExchange, cacheExchange],
+})
+
+const BaseClient: any = createClient({
+  url: BASE_SUBGRAPH_URL,
   exchanges: [fetchExchange, cacheExchange],
 })
 
@@ -106,7 +114,7 @@ export async function getVMOONEYData() {
   const ethRes = await EthClient.query(query).toPromise()
   const polygonRes = await PolygonClient.query(query).toPromise()
   const arbRes = await ArbClient.query(query).toPromise()
-
+  const baseRes = await BaseClient.query(query).toPromise()
   const ethData = mapHolders(ethRes.data, totalHolders)
   const ethVMooney = ethData.totalVMooney
   const ethMooney = (ethRes.data.supplies[0]?.supply || 0) / 10 ** 18
@@ -128,7 +136,19 @@ export async function getVMOONEYData() {
   totalMooney += arbMooney
   const arbHolders = arbData.holders
 
-  const allHolders = [...ethHolders, ...polygonHolders, ...arbHolders]
+  const baseData = mapHolders(baseRes.data, totalHolders)
+  const baseVMooney = baseData.totalVMooney
+  const baseMooney = (baseRes.data.supplies[0]?.supply || 0) / 10 ** 18
+  totalVMooney += baseVMooney
+  totalMooney += baseMooney
+  const baseHolders = baseData.holders
+
+  const allHolders = [
+    ...ethHolders,
+    ...polygonHolders,
+    ...arbHolders,
+    ...baseHolders,
+  ]
   const combinedHolders = combineHolders(allHolders)
 
   const holdersByVMooney = [...combinedHolders].sort(
@@ -154,6 +174,10 @@ export async function getVMOONEYData() {
       arbitrum: {
         vMooney: arbVMooney,
         Mooney: arbMooney,
+      },
+      base: {
+        vMooney: baseVMooney,
+        Mooney: baseMooney,
       },
     },
   }

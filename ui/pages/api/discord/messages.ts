@@ -1,10 +1,15 @@
+import { NextApiRequest, NextApiResponse } from 'next'
+
 const channelIDs: any = {
   announcements: '914976122855374958',
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
-    const type = req.query.type
+    const type = req.query.type as keyof typeof channelIDs
     const beforeMessageId = req.query.before
     const response = await fetch(
       `https://discord.com/api/v10/channels/${channelIDs[type]}/messages${
