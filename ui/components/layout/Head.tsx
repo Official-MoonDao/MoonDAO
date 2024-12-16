@@ -9,12 +9,20 @@ const defaultImage =
 
 export default function WebsiteHead({
   title = defaultTitle,
+  secondaryTitle,
   description = defaultDescription,
   image = defaultImage,
 }: any) {
+  const truncatedDescription =
+    description.length > 160
+      ? description.substring(0, 160) + '...'
+      : description
+
   return (
     <Head>
-      <title key="meta-title">{`${title} | MoonDAO`}</title>
+      <title key="meta-title">{`${title} | ${
+        secondaryTitle || 'MoonDAO'
+      }`}</title>
       <link rel="icon" href="/favicon.ico" key="link-favicon" />
       <meta
         name="viewport"
@@ -22,25 +30,33 @@ export default function WebsiteHead({
         key="meta-viewport"
       />
       <meta charSet="utf-8" key="charSet" />
-      <meta name="description" content={description} key="meta-desc" />
+      <meta name="description" content={truncatedDescription} key="meta-desc" />
       <meta
         property="og:title"
-        content={`${title} | MoonDAO: The Internet's Space Program`}
+        content={`${title} | ${
+          secondaryTitle || "MoonDAO: The Internet's Space Program"
+        }`}
         key="meta-ogtitle"
       />
-      <meta property="og:description" content={description} key="meta-ogdesc" />
+      <meta
+        property="og:description"
+        content={truncatedDescription}
+        key="meta-ogdesc"
+      />
       <meta property="og:image" content={image} key="meta-ogimage" />
       <meta property="og:type" content="website" key="meta-ogweb" />
       <meta property="og:url" content="https://moondao.com/" key="meta-ogurl" />
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta
         name="twitter:title"
-        content={`${title} | MoonDAO: The Internet's Space Program`}
+        content={`${title} | ${
+          secondaryTitle || "MoonDAO: The Internet's Space Program"
+        }`}
         key="meta-twtitle"
       />
       <meta
         name="twitter:description"
-        content={description}
+        content={truncatedDescription}
         key="meta-twdesc"
       />
       <meta name="twitter:image" content={image} key="meta-twimage" />

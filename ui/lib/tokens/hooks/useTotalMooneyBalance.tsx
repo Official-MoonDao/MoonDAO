@@ -1,5 +1,5 @@
 //Get total mooney balance for an address on L1 and L2
-import { Arbitrum, Ethereum, Polygon } from '@thirdweb-dev/chains'
+import { Arbitrum, Base, Ethereum, Polygon } from '@thirdweb-dev/chains'
 import { useEffect, useState } from 'react'
 import ERC20 from '../../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../../const/config'
@@ -13,6 +13,7 @@ export function useTotalMooneyBalance(address: string | undefined) {
       const ethSDK = initSDK(Ethereum)
       const polygonSDK = initSDK(Polygon)
       const arbSDK = initSDK(Arbitrum)
+      const baseSDK = initSDK(Base)
 
       const ethMooneyContract = await ethSDK.getContract(
         MOONEY_ADDRESSES['ethereum'],
@@ -26,15 +27,25 @@ export function useTotalMooneyBalance(address: string | undefined) {
         MOONEY_ADDRESSES['arbitrum'],
         ERC20.abi
       )
+      const baseMooneyContract = await baseSDK.getContract(
+        MOONEY_ADDRESSES['base'],
+        ERC20.abi
+      )
 
       const ethMooney = await ethMooneyContract.call('balanceOf', [address])
       const polygonMooney = await polygonMooneyContract.call('balanceOf', [
         address,
       ])
       const arbMooney = await arbMooneyContract.call('balanceOf', [address])
+      const baseMooney = await baseMooneyContract.call('balanceOf', [address])
 
       setTotalMooneyBalance(
-        ethMooney?.add(polygonMooney).add(arbMooney).toString() / 10 ** 18
+        ethMooney
+          ?.add(polygonMooney)
+          .add(arbMooney)
+          .add(baseMooney)
+          .toString() /
+          10 ** 18
       )
     }
 

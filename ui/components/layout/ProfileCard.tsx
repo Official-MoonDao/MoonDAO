@@ -232,11 +232,17 @@ export default function Card({
         ></span>
       )}
       {link ? (
-        <Link id="card-link" href={link} className="w-full h-full block">
+        <Link
+          id="card-link"
+          prefetch={true}
+          href={link}
+          className="w-full h-full block"
+        >
           {cardContent}
         </Link>
       ) : metadata?.name ? (
         <Link
+          prefetch={true}
           href={
             metadata.name
               ? `/${type === 'team' ? 'team' : 'citizen'}/${

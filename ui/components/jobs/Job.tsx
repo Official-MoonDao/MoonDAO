@@ -22,6 +22,7 @@ export type Job = {
 }
 
 type JobProps = {
+  id?: string
   job: Job
   jobTableContract?: any
   refreshJobs?: any
@@ -31,6 +32,7 @@ type JobProps = {
 }
 
 export default function Job({
+  id,
   job,
   jobTableContract,
   refreshJobs,
@@ -71,8 +73,8 @@ export default function Job({
     <>
       {isActive && (
         <div
-          id="job-container"
-          className={`flex flex-col justify-between bg-dark-cool rounded-md lg:w-[500px]`}
+          id={id}
+          className={`flex flex-col justify-between bg-dark-cool rounded-md mx-5 lg:mx-0`}
         >
           <Frame>
             <div className="flex justify-between items-end">
