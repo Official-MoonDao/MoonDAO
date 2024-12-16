@@ -193,6 +193,11 @@ module.exports = nextTranslate({
         destination: 'https://forms.gle/uHsbCFxX36UScLW27',
         permanent: true,
       },
+      {
+        source: '/submit-contribution',
+        destination: '/submission?tag=contribution',
+        permanent: true,
+      },
     ]
   },
   webpack: (config, { isServer }) => {
