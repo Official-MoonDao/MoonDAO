@@ -33,24 +33,13 @@ export type Competitor = {
   teamId: number
   metadata: Metadata
 }
-export type Distribution = {
-  deprize: number
-  address: string
-  timestamp: number
-  distribution: { [key: string]: number }
-}
 
 export type DePrizeProps = {
   competitors: Competitor[]
-  distributions: Distribution[]
   refreshRewards: () => void
 }
 
-export function DePrize({
-  competitors,
-  distributions,
-  refreshRewards,
-}: DePrizeProps) {
+export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   const { selectedChain } = useContext(ChainContext)
   const [joinModalOpen, setJoinModalOpen] = useState(false)
   const userAddress = useAddress()
