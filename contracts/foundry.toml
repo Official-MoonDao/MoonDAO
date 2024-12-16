@@ -2,3 +2,11 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+evm_version = "berlin"
+
+#[profile.default.compiler]
+#version = "0.8.10"
+
+# Vyper compiler settings
+[profile.default.vyper]
+vyper_version = "0.3.1"
