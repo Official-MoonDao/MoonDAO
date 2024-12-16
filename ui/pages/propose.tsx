@@ -7,7 +7,7 @@ import ContentLayout from '../components/layout/ContentLayout';
 import WebsiteHead from '../components/layout/Head';
 import { useRouter } from 'next/router'; // Add this import
 import { NoticeFooter } from '../components/layout/NoticeFooter';
-import Link from 'next/link'
+import Link from 'next/Link'
 
 export default function NewProposal() {
   const router = useRouter(); // Initialize the router
