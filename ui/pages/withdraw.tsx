@@ -58,6 +58,18 @@ export default function Withdraw() {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
   }, [VMOONEYLock, VMOONEYLockLoading, userAddress])
 
+  const [hasMoreThanSixMonths, setHasMoreThanSixMonths] =
+    useState<boolean>(false)
+  const sixMonths = 6 * 30 * 24 * 60 * 60 * 1000
+  useEffect(() => {
+    !VMOONEYLockLoading &&
+      setHasMoreThanSixMonths(
+        VMOONEYLock &&
+          VMOONEYLock[1] != 0 &&
+          BigNumber.from(+new Date() + sixMonths).lte(VMOONEYLock[1] * 1000)
+      )
+  }, [VMOONEYLock, VMOONEYLockLoading, userAddress])
+
   const handleWithdraw = async () => {
     try {
       await mooneyContract?.call('approve', [
@@ -105,11 +117,13 @@ export default function Withdraw() {
               >
                 <Asset
                   name="vMOONEY"
-                  amount={String((Number(withdrawable) / MOONEY_DECIMALS).toFixed(2))}
+                  amount={String(
+                    (Number(withdrawable) / MOONEY_DECIMALS).toFixed(2)
+                  )}
                   usd=""
                 />
               </section>
-              {userAddress && hasLock ? (
+              {userAddress && hasLock && hasMoreThanSixMonths ? (
                 <StandardButton
                   className="gradient-2 rounded-full"
                   onClick={handleWithdraw}
@@ -122,7 +136,7 @@ export default function Withdraw() {
                   className="gradient-2 rounded-full"
                   link={`/lock`}
                 >
-                  Lock MOONEY
+                  {hasLock ? 'Extend Lock' : 'Lock MOONEY'}
                 </StandardButton>
               )}
             </div>
