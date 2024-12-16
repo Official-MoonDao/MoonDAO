@@ -1,4 +1,4 @@
-import { Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import DePrizeDistributionTableABI from 'const/abis/DePrizeDistribution.json'
 import {
@@ -19,6 +19,7 @@ export default function DePrizePage({
   distributions,
 }: DePrizeProps) {
   const router = useRouter()
+  useChainDefault()
   return (
     <DePrize
       competitors={competitors}
@@ -30,17 +31,16 @@ export default function DePrizePage({
 
 export async function getStaticProps() {
   // TODO enable mainnet
-  useChainDefault()
-  const { selectedChain } = useContext(ChainContext)
-  const sdk = initSDK(selectedChain)
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
 
   const competitorTableContract = await sdk.getContract(
-    COMPETITOR_TABLE_ADDRESSES[selectedChain.slug],
+    COMPETITOR_TABLE_ADDRESSES[chain.slug],
     CompetitorABI
   )
 
   const distributionTableContract = await sdk.getContract(
-    DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES[selectedChain.slug],
+    DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES[chain.slug],
     DePrizeDistributionTableABI
   )
 
