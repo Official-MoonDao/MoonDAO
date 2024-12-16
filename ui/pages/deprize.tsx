@@ -8,6 +8,9 @@ import {
   TABLELAND_ENDPOINT,
 } from 'const/config'
 import { useRouter } from 'next/router'
+import { useContext } from 'react'
+import ChainContext from '@/lib/thirdweb/chain-context'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { DePrize, DePrizeProps } from '../components/nance/DePrize'
 
@@ -27,16 +30,17 @@ export default function DePrizePage({
 
 export async function getStaticProps() {
   // TODO enable mainnet
-  const chain = Sepolia
-  const sdk = initSDK(chain)
+  useChainDefault()
+  const { selectedChain } = useContext(ChainContext)
+  const sdk = initSDK(selectedChain)
 
   const competitorTableContract = await sdk.getContract(
-    COMPETITOR_TABLE_ADDRESSES[chain.slug],
+    COMPETITOR_TABLE_ADDRESSES[selectedChain.slug],
     CompetitorABI
   )
 
   const distributionTableContract = await sdk.getContract(
-    DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES[chain.slug],
+    DEPRIZE_DISTRIBUTION_TABLE_ADDRESSES[selectedChain.slug],
     DePrizeDistributionTableABI
   )
 
