@@ -14,6 +14,7 @@ import {
   getActionsFromBody,
   trimActionsFromBody,
 } from '@nance/nance-sdk'
+import { usePrivy } from '@privy-io/react-auth'
 import { add, differenceInDays, getUnixTime } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
@@ -21,9 +22,12 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
+import { useLocalStorage } from 'react-use'
+import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { TEMPLATE } from '@/lib/nance'
-import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
 import useAccount from '@/lib/nance/useAccountAddress'
 import { useSignProposal } from '@/lib/nance/useSignProposal'
 import { classNames } from '@/lib/utils/tailwind'
@@ -32,14 +36,15 @@ import '@nance/nance-editor/lib/css/editor.css'
 import Head from '@/components/layout/Head'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
+import EditorMarkdownUpload from './EditorMarkdownUpload'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
-import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile"
-import { useLocalStorage } from 'react-use'
-import { usePrivy } from '@privy-io/react-auth'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
+
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
-const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })
+const ProposalLocalCache = dynamic(
+  import('@/components/nance/ProposalLocalCache'),
+  { ssr: false }
+)
 
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
@@ -47,7 +52,7 @@ let setMarkdown: SetMarkdown
 const NanceEditor = dynamic(
   async () => {
     getMarkdown = (await import('@nance/nance-editor')).getMarkdown
-    setMarkdown = (await import("@nance/nance-editor")).setMarkdown
+    setMarkdown = (await import('@nance/nance-editor')).setMarkdown
     return import('@nance/nance-editor').then((mod) => mod.NanceEditor)
   },
   {
@@ -99,8 +104,8 @@ export default function ProposalEditor() {
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
   const [proposalTitle, setProposalTitle] = useState<string | undefined>()
-  const [proposalStatus, setProposalStatus] = useState<ProposalStatus>('Discussion')
-
+  const [proposalStatus, setProposalStatus] =
+    useState<ProposalStatus>('Discussion')
 
   const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
   const spaceInfo = spaceInfoData?.data
@@ -123,7 +128,6 @@ export default function ProposalEditor() {
     }
   }
 
-
   const [{ proposalId }] = useQueryParams({ proposalId: StringParam })
   const shouldFetch = !!proposalId
   const { data } = useProposal(
@@ -132,8 +136,10 @@ export default function ProposalEditor() {
   )
   const loadedProposal = data?.data
 
-  const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(`NanceProposalCacheV1-${loadedProposal?.uuid.substring(0, 5) || 'new'}`);
-
+  const [proposalCache, setProposalCache, clearProposalCache] =
+    useLocalStorage<ProposalCache>(
+      `NanceProposalCacheV1-${loadedProposal?.uuid.substring(0, 5) || 'new'}`
+    )
 
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
@@ -143,8 +149,8 @@ export default function ProposalEditor() {
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
     setMarkdown?.(trimActionsFromBody(b))
-    const actions = getActionsFromBody(b);
-    if (!actions) return;
+    const actions = getActionsFromBody(b)
+    if (!actions) return
     console.debug('loaded action:', actions)
     setAttachBudget(true)
     reset(actions[0].payload as RequestBudget)
@@ -179,7 +185,6 @@ export default function ProposalEditor() {
     signAndSendProposal(proposal)
   }
 
-
   const { wallet } = useAccount()
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
@@ -207,7 +212,7 @@ export default function ProposalEditor() {
     if (!nextSnapshotVote) return
     setSigningStatus('loading')
     const t = toast.loading('Sign proposal...', {
-      style: toastStyle
+      style: toastStyle,
     })
     const proposalId = loadedProposal?.proposalId || nextProposalId
     const preTitle = `${proposalIdPrefix}${proposalId}: `
@@ -226,7 +231,7 @@ export default function ProposalEditor() {
           .then((res) => {
             if (res.success) {
               setSigningStatus('success')
-              clearProposalCache();
+              clearProposalCache()
               toast.dismiss(t)
               toast.success('Proposal submitted successfully!', {
                 style: toastStyle,
@@ -255,7 +260,7 @@ export default function ProposalEditor() {
       })
   }
 
-  const saveProposalBodyCache = function() {
+  const saveProposalBodyCache = function () {
     let body = getMarkdown()
     if (attachBudget) {
       const action: Action = {
@@ -268,92 +273,105 @@ export default function ProposalEditor() {
     setProposalCache({
       timestamp: getUnixTime(new Date()),
       title: proposalCache?.title || proposalTitle,
-      body: body || undefined
+      body: body || undefined,
     })
   }
 
   useEffect(() => {
-      const subscription = watch((value, { name, type }) =>{
-        if(type === "change") {
-          saveProposalBodyCache()
-        }
-      })
+    const subscription = watch((value, { name, type }) => {
+      if (type === 'change') {
+        saveProposalBodyCache()
+      }
+    })
 
-      return () => subscription.unsubscribe()
-    }, [watch])
-
+    return () => subscription.unsubscribe()
+  }, [watch])
 
   return (
     <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
-      <Head title='Proposal Editor' />
+      <Head title="Proposal Editor" />
 
       <div className="px-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="">
-          <ProposalLocalCache
-            proposalCache={proposalCache}
-            clearProposalCache={clearProposalCache}
-            restoreProposalCache={restoreFromTitleAndBody}
-          />
+            <ProposalLocalCache
+              proposalCache={proposalCache}
+              clearProposalCache={clearProposalCache}
+              restoreProposalCache={restoreFromTitleAndBody}
+            />
           </div>
-          <div className="py-0 rounded-[20px]">
-          <ProposalTitleInput value={proposalTitle} onChange={(s) => {
-            setProposalTitle(s)
-            console.debug("setProposalTitle", s)
-            const cache = proposalCache || { body: loadedProposal?.body || TEMPLATE }
-            setProposalCache({ ...cache, title: s, timestamp: getUnixTime(new Date()) })
-          }} />
+          <div className="py-0 rounded-[20px] flex flex-col md:flex-row justify-between gap-4">
+            <ProposalTitleInput
+              value={proposalTitle}
+              onChange={(s) => {
+                setProposalTitle(s)
+                console.debug('setProposalTitle', s)
+                const cache = proposalCache || {
+                  body: loadedProposal?.body || TEMPLATE,
+                }
+                setProposalCache({
+                  ...cache,
+                  title: s,
+                  timestamp: getUnixTime(new Date()),
+                })
+              }}
+            />
+            <EditorMarkdownUpload setMarkdown={setMarkdown} />
           </div>
           <div className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50%">
-          <NanceEditor
-            initialValue={loadedProposal?.body || TEMPLATE}
-            fileUploadExternal={ async (val) => {
-              const accessToken = await getAccessToken()
-              await createSession(accessToken)
-              const res = await pinBlobOrFile(val)
-              await destroySession(accessToken)
-              return res.url;
-            }}
-            darkMode={true}
-            onEditorChange={(m) => {saveProposalBodyCache()}}
-          />
+            <NanceEditor
+              initialValue={loadedProposal?.body || TEMPLATE}
+              fileUploadExternal={async (val) => {
+                const accessToken = await getAccessToken()
+                await createSession(accessToken)
+                const res = await pinBlobOrFile(val)
+                await destroySession(accessToken)
+                return res.url
+              }}
+              darkMode={true}
+              onEditorChange={(m) => {
+                saveProposalBodyCache()
+              }}
+            />
           </div>
 
           <div className="p-5 rounded-b-[20px] rounded-t-[0px] ">
-          <Field as="div" className="\ flex items-center mt-5">
-            <Switch
-              checked={attachBudget}
-              onChange={(checked) => {
-                setAttachBudget(checked)
-                if (checked) {
-                  reset(DEFAULT_REQUEST_BUDGET_VALUES)
-                }
-              }}
-              className={classNames(
-                attachBudget ? 'bg-indigo-600' : 'bg-gray-200',
-                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
-              )}
-            >
-              <span
-                aria-hidden="true"
+            <Field as="div" className="\ flex items-center mt-5">
+              <Switch
+                checked={attachBudget}
+                onChange={(checked) => {
+                  setAttachBudget(checked)
+                  if (checked) {
+                    reset(DEFAULT_REQUEST_BUDGET_VALUES)
+                  }
+                }}
                 className={classNames(
-                  attachBudget ? 'translate-x-5' : 'translate-x-0',
-                  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
+                  attachBudget ? 'bg-indigo-600' : 'bg-gray-200',
+                  'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
                 )}
-              />
-            </Switch>
-            <Label as="span" className="ml-3 text-sm">
-              <span className="font-medium text-gray-900 dark:text-white">
-                Attach Budget
-              </span>{' '}
-            </Label>
-          </Field>
+              >
+                <span
+                  aria-hidden="true"
+                  className={classNames(
+                    attachBudget ? 'translate-x-5' : 'translate-x-0',
+                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
+                  )}
+                />
+              </Switch>
+              <Label as="span" className="ml-3 text-sm">
+                <span className="font-medium text-gray-900 dark:text-white">
+                  Attach Budget
+                </span>{' '}
+              </Label>
+            </Field>
           </div>
 
           {attachBudget && (
             <FormProvider {...methods}>
               <div className="my-10 p-5 rounded-[20px] bg-dark-cool">
-                <RequestBudgetActionForm disableRequiredFields={proposalStatus === "Draft"} />
+                <RequestBudgetActionForm
+                  disableRequiredFields={proposalStatus === 'Draft'}
+                />
               </div>
             </FormProvider>
           )}
@@ -378,8 +396,11 @@ export default function ProposalEditor() {
                     : 'You need to connect wallet first.'
                 }
               >
-                {signingStatus === 'loading' ? 'Signing...' : (proposalId ? 'Save Draft' : '* Post In Ideation Forum')}
-
+                {signingStatus === 'loading'
+                  ? 'Signing...'
+                  : proposalId
+                  ? 'Save Draft'
+                  : '* Post In Ideation Forum'}
               </button>
               {/* SUBMIT */}
               <button
@@ -407,7 +428,18 @@ export default function ProposalEditor() {
             </div>
           </div>
           {!proposalId && (
-            <p className="mt-2 text-sm text-gray-500 text-right pb-5">*Your submission will be <a href="https://discord.com/channels/914720248140279868/1027658256706961509" target="_blank" rel="noreferrer" className="text-white">posted here</a> for community discussion</p>
+            <p className="mt-2 text-sm text-gray-500 text-right pb-5">
+              *Your submission will be{' '}
+              <a
+                href="https://discord.com/channels/914720248140279868/1027658256706961509"
+                target="_blank"
+                rel="noreferrer"
+                className="text-white"
+              >
+                posted here
+              </a>{' '}
+              for community discussion
+            </p>
           )}
         </form>
       </div>
