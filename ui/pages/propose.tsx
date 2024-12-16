@@ -7,7 +7,7 @@ import ContentLayout from '../components/layout/ContentLayout';
 import WebsiteHead from '../components/layout/Head';
 import { useRouter } from 'next/router'; // Add this import
 import { NoticeFooter } from '../components/layout/NoticeFooter';
-import Link from 'next/Link'
+import Link from 'next/link'
 
 export default function NewProposal() {
   const router = useRouter(); // Initialize the router
@@ -20,7 +20,7 @@ export default function NewProposal() {
   const description = (
     <span>
         <p>
-        Submit a proposal to receive financing or support from the MoonDAO community. Please refer to <u><link href="https://docs.moondao.com/Projects/Project-System">our documentation</link></u> for more details on the project system and governance processes before getting started. We recommend starting your draft with the <u><a href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing">Google doc template</a></u>.
+        Submit a proposal to receive financing or support from the MoonDAO community. Please refer to <u><Link href="https://docs.moondao.com/Projects/Project-System">our documentation</Link></u> for more details on the project system and governance processes before getting started. We recommend starting your draft with the <u><Link href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing">Google doc template</Link></u>.
       </p>
     </span>
   );
