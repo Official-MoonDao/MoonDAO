@@ -17,6 +17,7 @@ type CitizenActionsProps = {
   address?: string
   nft?: any
   incompleteProfile?: boolean
+  isTeamMember?: boolean
   mooneyBalance?: number
   vmooneyBalance?: number
   setCitizenMetadataModalEnabled: Function
@@ -26,6 +27,7 @@ export default function CitizenActions({
   address,
   nft,
   incompleteProfile,
+  isTeamMember,
   mooneyBalance,
   vmooneyBalance,
   setCitizenMetadataModalEnabled,
@@ -148,12 +150,14 @@ export default function CitizenActions({
                     onClick={() => window.open('https://guild.xyz/moondao')}
                   />
 
-                  <Action
-                    title="Create a Team"
-                    description="Join a team or create your own to work together on accelerating space."
-                    icon={<PlusIcon height={30} width={30} />}
-                    onClick={() => router.push('/team')}
-                  />
+                  {!isTeamMember && (
+                    <Action
+                      title="Create a Team"
+                      description="Join a team or create your own to work together on accelerating space."
+                      icon={<PlusIcon height={30} width={30} />}
+                      onClick={() => router.push('/team')}
+                    />
+                  )}
                 </div>
               </SlidingCardMenu>
             </Frame>
