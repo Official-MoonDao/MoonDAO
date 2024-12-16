@@ -75,6 +75,8 @@ export default function Job({
         <div
           id={id}
           className={`flex flex-col justify-between bg-dark-cool rounded-md lg:w-[500px]`}
+          id="job-container"
+          className={`flex flex-col justify-between bg-dark-cool rounded-md mx-5 lg:mx-0`}
         >
           <Frame>
             <div className="flex justify-between items-end">
