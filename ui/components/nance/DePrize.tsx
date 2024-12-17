@@ -123,6 +123,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
             </div>
             <div>
               {competitors &&
+                competitors.length > 0 &&
                 competitors.map((competitor, i: number) => (
                   <div
                     key={i}
