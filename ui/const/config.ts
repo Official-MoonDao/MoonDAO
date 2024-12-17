@@ -121,6 +121,9 @@ export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x4c2d6567D81A34117E894b6fDC97C9824f80D961',
   'arbitrum-sepolia': '0xF0A3DB6161D1Ee7B99197CDeD4EdFc462EAE80e0',
 }
+export const COMPETITOR_TABLE_ADDRESSES: Index = {
+  sepolia: '0x9057Fff69e8b016a214C4f894430F71dad50b42c',
+}
 export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
   'arbitrum-sepolia': '0xd1D57F18252D06a6b28DE96B6cbF7F4283A4F205',
@@ -129,6 +132,12 @@ export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: '0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0',
   sepolia: '0xe77ede9B472E9AE450a1AcD4A90dcd3fb2e50cD0',
 }
+
+export const REVNET_ADDRESSES: Index = {
+  sepolia: '0x25bc5d5a708c2e426ef3a5196cc18de6b2d5a3d1',
+}
+
+export const DEPRIZE_ID = 1
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0xd594DBF360D666c94615Fb186AF3cB1018Be1616',
@@ -176,7 +185,7 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '0x0000002a',
-  sepolia: '0x0000017c',
+  sepolia: '0x00000182',
 }
 
 export const JOBS_TABLE_ADDRESSES: Index = {
