@@ -21,7 +21,8 @@ export default function DePrizePage({ competitors }: DePrizeProps) {
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  // TODO enable mainnet
+  const chain = Sepolia
   const sdk = initSDK(chain)
   const competitorTableContract = await sdk.getContract(
     COMPETITOR_TABLE_ADDRESSES[chain.slug],
