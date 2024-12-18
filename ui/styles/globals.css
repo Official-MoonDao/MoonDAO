@@ -726,3 +726,90 @@ html {
 body {
   background-color: var(--darkest-cool-color);
 }
+
+.toastui-editor-toolbar {
+  background: linear-gradient(to right, #000, #040617) !important;
+}
+
+/* WYSIWYG mode content background */
+.toastui-editor-ww-mode .toastui-editor-contents {
+  background: linear-gradient(to right, #000, #040617) !important;
+  border-radius: 0 20px 20px 20px !important;
+  border-style: none !important;
+  padding: 10px;
+}
+
+.toastui-editor-dark.toastui-editor-defaultUI {
+  border: none !important;
+}
+
+.toastui-editor-dark .toastui-editor-md-container {
+  border: none !important;
+}
+
+.toastui-editor-dark .toastui-editor-defaultUI {
+  border: none !important;
+  background-color: transparent !important;
+}
+/*Title input bar*/
+.wysiwyg-bg {
+  background: linear-gradient(to right, #000, #040617) !important;
+}
+
+/* Tab styles */
+.toastui-editor-mode-switch .tab-item {
+  background-color: transparent !important;
+  border-width: 0px !important;
+}
+
+.toastui-editor-mode-switch .tab-item.active {
+  color: black !important;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-width: 0px !important;
+}
+
+.toastui-editor-tabs * {
+  background-color: transparent !important;
+  border-style: none !important;
+}
+
+.toastui-editor-tabs .tab-item.active {
+  color: black !important;
+  background-color: #fff !important;
+  border-style: none !important;
+}
+
+/* Toolbar styles*/
+.toastui-editor-defaultUI-toolbar {
+  background-color: #0b0c22 !important;
+  border-style: none !important;
+}
+
+.toastui-editor-md-tab-container {
+  background-color: transparent !important;
+  border-style: none !important;
+}
+
+.toastui-editor-tabs {
+  background: linear-gradient(to right, #000, #040617) !important;
+  border-style: none !important;
+}
+
+.toastui-editor-defaultUI-toolbar {
+  background: linear-gradient(to right, #000, #040617) !important;
+  border-style: none !important;
+}
+
+/* Editor styles */
+.toastui-editor-dark .toastui-editor-md-container .toastui-editor,
+.toastui-editor-dark .toastui-editor-md-preview,
+.toastui-editor-dark.toastui-editor-defaultUI .toastui-editor-main,
+.toastui-editor-dark .toastui-editor-ww-container .toastui-editor {
+  background: linear-gradient(to right, #000, #040617) !important;
+}
+
+/* Remove the base editor color*/
+.toastui-editor-mode-switch {
+  background-color: transparent !important;
+  border-style: none !important;
+}

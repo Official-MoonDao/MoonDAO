@@ -318,7 +318,7 @@ export default function CitizenDetailPage({
                   <></>
                 )}
 
-                {location !== '' && (
+                {location !== '' && citizen && (
                   <div className="mt-2 flex items-center gap-2 lg:ml-5">
                     <MapPinIcon
                       width={30}
@@ -360,6 +360,7 @@ export default function CitizenDetailPage({
             address={address}
             nft={nft}
             incompleteProfile={incompleteProfile}
+            isTeamMember={hats.length > 0}
             mooneyBalance={MOONEYBalance}
             vmooneyBalance={VMOONEYBalance}
             setCitizenMetadataModalEnabled={setCitizenMetadataModalEnabled}
@@ -389,6 +390,7 @@ export default function CitizenDetailPage({
             title="Unlock Full Profile"
             description="Become a Citizen of the Space Acceleration Network to view the full profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
             icon={<LockOpenIcon width={30} height={30} />}
+            onClick={() => router.push('/citizen')}
           />
         )}
         {subIsValid && !isDeleted && !isGuest ? (
@@ -624,7 +626,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     if (
       !nft ||
       !nft.metadata.uri ||
-      blockedCitizens.includes(nft.metadata.id)
+      blockedCitizens.includes(Number(nft.metadata.id))
     ) {
       return {
         notFound: true,

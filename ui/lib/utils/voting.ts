@@ -174,9 +174,10 @@ export function runIterativeNormalization(distributions: any, projects: any) {
   return return_tuple
 }
 
-function runQuadraticVoting(
+export function runQuadraticVoting(
   distributions: Distribution[],
-  addressToQuadraticVotingPower: any
+  addressToQuadraticVotingPower: any,
+  budgetPercentMinusCommunityFund = 90
 ) {
   const projectIdToEstimatedPercentage: { [key: string]: number } = {}
   const projectIdToListOfPercentage: { [key: string]: number[] } = {}
@@ -202,7 +203,6 @@ function runQuadraticVoting(
           )
         ) / votingPowerSum
     }
-    const budgetPercentMinusCommunityFund = 90
     // normalize projectIdToEstimatedPercentage
     const sum = _.sum(Object.values(projectIdToEstimatedPercentage))
     for (const [projectId, percentage] of Object.entries(

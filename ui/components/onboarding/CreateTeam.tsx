@@ -472,14 +472,16 @@ export default function CreateTeam({
                           )
                           const teamName = teamNFT?.metadata.name as string
                           const teamPrettyLink = generatePrettyLink(teamName)
-                          await sendDiscordMessage(
-                            accessToken,
-                            'networkNotifications',
-                            `[**${teamName}** has minted a team NFT!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
-                          )
+                          setTimeout(async () => {
+                            await sendDiscordMessage(
+                              accessToken,
+                              'networkNotifications',
+                              `[**${teamName}** has minted a team NFT!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
+                            )
 
-                          router.push(`/team/${mintedTokenId}`)
-                          setIsLoadingMint(false)
+                            router.push(`/team/${teamPrettyLink}`)
+                            setIsLoadingMint(false)
+                          }, 5000)
                         }
                       } catch (err) {
                         console.error(err)
