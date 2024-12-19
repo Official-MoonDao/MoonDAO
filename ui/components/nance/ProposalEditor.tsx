@@ -15,6 +15,7 @@ import {
   trimActionsFromBody,
 } from '@nance/nance-sdk'
 import { usePrivy } from '@privy-io/react-auth'
+import { useAddress } from '@thirdweb-dev/react'
 import { add, differenceInDays, getUnixTime } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
@@ -100,6 +101,7 @@ export type ProposalCache = {
 export default function ProposalEditor() {
   const router = useRouter()
   const { getAccessToken } = usePrivy()
+  const address = useAddress()
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
@@ -188,7 +190,7 @@ export default function ProposalEditor() {
   const { wallet } = useAccount()
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
-  const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
+  const buttonsDisabled = !address || signingStatus === 'loading'
 
   const buildProposal = (status: ProposalStatus) => {
     return {

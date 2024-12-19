@@ -58,6 +58,10 @@ export default function useNavigation(citizen: any) {
             href: '/submission?tag=contribution',
           },
           {
+            name: 'Submit Final Report',
+            href: '/submission?tag=report',
+          },
+          {
             name: 'Get $MOONEY',
             href: '/get-mooney',
           },

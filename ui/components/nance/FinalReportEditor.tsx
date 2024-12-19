@@ -1,16 +1,18 @@
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { useProposal, useProposalUpload } from '@nance/nance-hooks'
 import { RequestBudget } from '@nance/nance-sdk'
-import { getUnixTime } from 'date-fns'
+import { getAccessToken } from '@privy-io/react-auth'
+import { useAddress, useContract } from '@thirdweb-dev/react'
+import ProjectsABI from 'const/abis/Project.json'
+import { PROJECT_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { useLocalStorage } from 'react-use'
 import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { TEMPLATE } from '@/lib/nance'
 import useAccount from '@/lib/nance/useAccountAddress'
@@ -23,13 +25,9 @@ import Head from '@/components/layout/Head'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import ActiveProjectsDropdown from './ActiveProjectsDropdown'
+import EditorMarkdownUpload from './EditorMarkdownUpload'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
-
-const ProposalLocalCache = dynamic(
-  import('@/components/nance/ProposalLocalCache'),
-  { ssr: false }
-)
 
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
@@ -45,17 +43,17 @@ const NanceEditor = dynamic(
     loading: () => <LoadingSpinner />,
   }
 )
-export type FinalReportCache = {
-  title?: string
-  body?: string
-  timestamp: number
-}
 
 export default function FinalReportEditor() {
-  const router = useRouter()
   const { selectedChain } = useContext(ChainContext)
+  const address = useAddress()
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
+
+  const { contract: projectsTableContact } = useContract(
+    PROJECT_TABLE_ADDRESSES[selectedChain.slug],
+    ProjectsABI
+  )
 
   const [{ proposalId }, setQuery] = useQueryParams({ proposalId: StringParam })
   const shouldFetch = !!proposalId
@@ -64,120 +62,95 @@ export default function FinalReportEditor() {
     shouldFetch
   )
   const loadedProposal = data?.data
+  const reportTitle = loadedProposal
+    ? loadedProposal?.title + ' Final Report'
+    : ''
 
-  const [reportCache, setReportCache, clearReportCache] =
-    useLocalStorage<FinalReportCache>(
-      `NanceFinalReportCacheV1-${loadedProposal?.uuid.substring(0, 5)}`
-    )
-  const [reportTitle, setReportTitle] = useState(loadedProposal?.title)
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
   })
   const { handleSubmit, reset, getValues, watch } = methods
 
-  function restoreFromTitleAndBody(t: string, b: string) {
-    setReportTitle(t)
-    setMarkdown?.(b)
-  }
-
-  useEffect(() => {
-    if (loadedProposal) {
-      console.log(reportCache)
-      restoreFromTitleAndBody(
-        loadedProposal.title,
-        reportCache?.body || TEMPLATE
-      )
-    }
-  }, [loadedProposal, proposalId])
-
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
     console.debug('formData', formData)
+    //check if connected wallet is a rocketeer of the proposal
+    const teamMembers = loadedProposal?.actions?.[0]?.payload?.projectTeam
+    if (
+      !teamMembers.some(
+        (m: any) =>
+          (m.payoutAddress === address || m.votingAddress === address) &&
+          m.isRocketeer === true
+      )
+    ) {
+      return toast.error('You are not a rocketeer of this proposal.', {
+        style: toastStyle,
+      })
+    }
+
+    const accessToken = await getAccessToken()
+    await createSession(accessToken)
+    try {
+      const markdown = getMarkdown()
+      if (!markdown) {
+        throw new Error('No markdown found')
+      }
+      const blob = new Blob([markdown], { type: 'text/markdown' })
+      // const { cid: markdownIpfsHash } = await pinBlobOrFile(blob)
+      const projectsTableName = await projectsTableContact?.call('getTableName')
+      const statement = `SELECT * FROM ${projectsTableName} WHERE MDP = ${loadedProposal?.proposalId}`
+      const projectRes = await fetch(
+        `${TABLELAND_ENDPOINT}?statement=${statement}`
+      )
+      const projectData = await projectRes.json()
+      console.log(projectData)
+      // await projectsTableContact?.call('updateTable', [])
+    } catch (err) {
+      toast.error('Unable to upload final report, please contact support.', {
+        style: toastStyle,
+      })
+    }
+    await destroySession(accessToken)
   }
 
   const { wallet } = useAccount()
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
-  const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
-
-  const saveProposalBodyCache = function () {
-    let body = getMarkdown()
-
-    setReportCache({
-      timestamp: getUnixTime(new Date()),
-      title: reportTitle || reportCache?.title || loadedProposal?.title,
-      body: body || undefined,
-    })
-  }
+  const buttonsDisabled = !address || signingStatus === 'loading'
 
   const setProposalId = function (id: string) {
     setQuery({ proposalId: id })
   }
 
-  useEffect(() => {
-    const subscription = watch((value, { name, type }) => {
-      if (type === 'change') {
-        saveProposalBodyCache()
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [watch])
-
-  const [reportBody, setReportBody] = useState(reportCache?.body)
-
-  useEffect(() => {
-    setReportBody(reportCache?.body)
-  }, [reportBody, reportCache])
-
-  useEffect(() => {
-    console.log(reportBody)
-  }, [reportBody])
-
   return (
     <div className="flex flex-col justify-center items-start animate-fadeIn w-[90vw] md:w-full">
       <Head title="Final Report Editor" />
 
-      <div className="px-5 pt-2 w-full md:max-w-[1200px]">
+      <div className="pt-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="p-5 pb-0 bg-dark-cool">
-            <ProposalLocalCache
-              proposalCache={reportCache}
-              clearProposalCache={clearReportCache}
-              restoreProposalCache={restoreFromTitleAndBody}
-            />
-          </div>
-          <div className="w-full p-5 py-0 rounded-[20px] bg-dark-cool flex justify-end">
+          <div className="w-full py-0 rounded-[20px] flex justify-end">
             <ProposalTitleInput
-              value={reportTitle || reportCache?.title || loadedProposal?.title}
+              value={reportTitle}
               onChange={(s) => {
                 console.debug('setReportTitle', s)
-                const cache = reportCache || {
-                  body: TEMPLATE,
-                }
-                setReportCache({
-                  ...cache,
-                  title: s,
-                  timestamp: getUnixTime(new Date()),
-                })
               }}
             />
-            <ActiveProjectsDropdown
-              selectedChain={selectedChain}
-              setProposalId={setProposalId}
-            />
+            <div className="flex flex-col gap-2">
+              <ActiveProjectsDropdown
+                selectedChain={selectedChain}
+                setProposalId={setProposalId}
+              />
+              <EditorMarkdownUpload setMarkdown={setMarkdown} />
+            </div>
           </div>
-          <div className="p-5 pt-0 p-5 pt-0 rounded-t-[20px] rounded-b-[0px] bg-dark-cool">
+          <div className="pt-0 rounded-t-[20px] rounded-b-[0px] bg-dark-cool">
             <NanceEditor
-              key={reportCache?.body}
-              initialValue={reportCache?.body}
+              initialValue={TEMPLATE}
               fileUploadExternal={async (val) => {
                 const res = await pinBlobOrFile(val)
                 return res.url
               }}
               darkMode={true}
-              onEditorChange={(m) => {
-                saveProposalBodyCache()
-              }}
+              onEditorChange={(m) => {}}
             />
           </div>
 
@@ -194,7 +167,7 @@ export default function FinalReportEditor() {
                   'px-5 py-3 gradient-2 border border-transparent font-RobotoMono rounded-[20px] rounded-tl-[10px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
                 )}
                 onClick={() => {}}
-                disabled={buttonsDisabled}
+                disabled={buttonsDisabled || !projectsTableContact}
                 data-tip={
                   signingStatus === 'loading'
                     ? 'Signing...'
