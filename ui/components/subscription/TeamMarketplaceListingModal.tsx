@@ -7,7 +7,6 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import ChainContext from '@/lib/thirdweb/chain-context'
@@ -124,8 +123,6 @@ export default function TeamMarketplaceListingModal({
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto" // Updated styles
         onSubmit={async (e) => {
           e.preventDefault()
-          const accessToken = await getAccessToken()
-          await createSession(accessToken)
           if (
             listingData.title.trim() === '' ||
             listingData.description.trim() === '' ||
@@ -218,7 +215,6 @@ export default function TeamMarketplaceListingModal({
             const team = await teamContract?.erc721.get(listingTeamId)
             const teamName = team?.metadata.name as string
             sendDiscordMessage(
-              accessToken,
               'networkNotifications',
               `[**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
@@ -240,7 +236,6 @@ export default function TeamMarketplaceListingModal({
             )
             setIsLoading(false)
           }
-          await destroySession(accessToken)
         }}
       >
         <div className="w-full flex items-center justify-between">

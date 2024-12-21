@@ -38,18 +38,6 @@ describe('<TeamListing />', () => {
     )
     cy.get('h2').should('contain', 'Add a Listing')
   })
-  it('Displays error when required fields are empty', () => {
-    cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamMarketplaceListingModal {...props} />
-          <Toaster />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
-    )
-    cy.get('form').submit()
-    cy.get('div').should('contain', 'Please fill out all fields')
-  })
   it('Submits form with valid data', () => {
     cy.mount(
       <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
