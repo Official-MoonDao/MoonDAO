@@ -6,7 +6,6 @@ import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import ChainContext from '@/lib/thirdweb/chain-context'
@@ -95,8 +94,6 @@ export default function TeamJobModal({
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto"
         onSubmit={async (e) => {
           e.preventDefault()
-          const accessToken = await getAccessToken()
-          await createSession(accessToken)
           if (
             jobData.title.trim() === '' ||
             jobData.description.trim() === '' ||
@@ -159,7 +156,6 @@ export default function TeamJobModal({
             const team = await teamContract?.erc721.get(jobTeamId)
             const teamName = team?.metadata.name as string
             sendDiscordMessage(
-              accessToken,
               'networkNotifications',
               `[**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
@@ -177,7 +173,6 @@ export default function TeamJobModal({
             console.log(err)
             setIsLoading(false)
           }
-          await destroySession(accessToken)
         }}
       >
         <div className="w-full flex items-center justify-between">

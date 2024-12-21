@@ -16,7 +16,6 @@ import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
@@ -90,21 +89,16 @@ export default function CreateTeam({
   const { fundWallet } = useFundWallet()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
-    const accessToken = await getAccessToken()
-    await createSession(accessToken)
 
     //get response from form
     const { formId, responseId } = formResponse
 
-    await waitForResponse(formId, responseId, accessToken)
+    await waitForResponse(formId, responseId)
 
     const responseRes = await fetch(
       `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
       }
     )
     const data = await responseRes.json()
@@ -117,7 +111,6 @@ export default function CreateTeam({
 
     setTeamData(cleanedTeamFormData)
     setStage(2)
-    await destroySession(accessToken)
   }, [])
 
   return (
@@ -342,8 +335,6 @@ export default function CreateTeam({
                     label="Check Out"
                     isDisabled={!agreedToCondition || isLoadingMint}
                     action={async () => {
-                      const accessToken = await getAccessToken()
-                      await createSession(accessToken)
                       try {
                         const cost = await teamContract?.call(
                           'getRenewalPrice',
@@ -474,7 +465,6 @@ export default function CreateTeam({
                           const teamPrettyLink = generatePrettyLink(teamName)
                           setTimeout(async () => {
                             await sendDiscordMessage(
-                              accessToken,
                               'networkNotifications',
                               `[**${teamName}** has minted a team NFT!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
                             )
@@ -487,7 +477,6 @@ export default function CreateTeam({
                         console.error(err)
                         setIsLoadingMint(false)
                       }
-                      await destroySession(accessToken)
                     }}
                   />
                   {isLoadingMint && (

@@ -25,7 +25,6 @@ import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
 import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { TEMPLATE } from '@/lib/nance'
 import useAccount from '@/lib/nance/useAccountAddress'
@@ -322,10 +321,7 @@ export default function ProposalEditor() {
             <NanceEditor
               initialValue={loadedProposal?.body || TEMPLATE}
               fileUploadExternal={async (val) => {
-                const accessToken = await getAccessToken()
-                await createSession(accessToken)
                 const res = await pinBlobOrFile(val)
-                await destroySession(accessToken)
                 return res.url
               }}
               darkMode={true}

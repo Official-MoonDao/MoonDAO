@@ -1,10 +1,9 @@
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
-import { usePrivy, getAccessToken } from '@privy-io/react-auth'
+import { usePrivy } from '@privy-io/react-auth'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import useAccount from '@/lib/nance/useAccountAddress'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
@@ -62,8 +61,6 @@ const ContributionEditor: React.FC = () => {
     }
 
     setSubmitting(true)
-    const accessToken = await getAccessToken()
-    await createSession(accessToken)
     const loadingToast = toast.loading('Submitting contribution...')
 
     try {
@@ -76,11 +73,9 @@ const ContributionEditor: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
         },
         body,
       })
-      await destroySession(accessToken)
       const data = await res.json()
 
       if (!res.ok) {
@@ -133,10 +128,7 @@ const ContributionEditor: React.FC = () => {
         <NanceEditor
           initialValue={CONTRIBUTION_TEMPLATE}
           fileUploadExternal={async (val) => {
-            const accessToken = await getAccessToken()
-            await createSession(accessToken)
             const res = await pinBlobOrFile(val)
-            await destroySession(accessToken)
             return res.url
           }}
           darkMode={true}

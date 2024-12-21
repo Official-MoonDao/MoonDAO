@@ -8,7 +8,6 @@ import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
@@ -103,23 +102,15 @@ export default function TeamMetadataModal({
 
   const submitTypeform = useCallback(
     async (formResponse: any) => {
-      const accessToken = await getAccessToken()
-      await createSession(accessToken)
-
-      //get response from form
-
       try {
         const { formId, responseId } = formResponse
 
-        await waitForResponse(formId, responseId, accessToken)
+        await waitForResponse(formId, responseId)
 
         const res = await fetch(
           `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
           {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
           }
         )
 
@@ -134,7 +125,6 @@ export default function TeamMetadataModal({
       } catch (err: any) {
         console.log(err)
       }
-      await destroySession(accessToken)
     },
     [teamTableContract, newTeamImage]
   )
@@ -237,8 +227,6 @@ export default function TeamMetadataModal({
                   return toast.error('Please enter a name.')
                 }
 
-                const accessToken = await getAccessToken()
-                await createSession(accessToken)
                 try {
                   const rawMetadataRes = await fetch(resolvedMetadata.url)
                   const rawMetadata = await rawMetadataRes.json()
@@ -305,7 +293,6 @@ export default function TeamMetadataModal({
                 } catch (err) {
                   console.log(err)
                 }
-                await destroySession(accessToken)
               }}
             />
           </>
