@@ -118,7 +118,7 @@ export default function CitizenActions({
                         width={30}
                       />
                     }
-                    onClick={() => router.push('/propose')}
+                    onClick={() => router.push('/submission')}
                   />
                   <Action
                     title="Get Rewards"
