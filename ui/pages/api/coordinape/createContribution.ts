@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { createContribution } from "@/lib/coordinape/createCoordinapeContribution";
 import { getUserId } from "@/lib/coordinape/getCoordinapeUser";
 import withMiddleware from "middleware/withMiddleware";
-import { privyAuth } from "middleware/privyAuth";
+import { authMiddleware } from "middleware/authMiddleware";
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -21,4 +21,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withMiddleware(handler, privyAuth);
+export default withMiddleware(handler, authMiddleware);

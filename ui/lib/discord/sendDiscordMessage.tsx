@@ -1,5 +1,4 @@
 export default async function sendDiscordMessage(
-  accessToken: any,
   type: 'networkNotifications',
   message: string
 ) {
@@ -8,7 +7,6 @@ export default async function sendDiscordMessage(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ message }),
     })

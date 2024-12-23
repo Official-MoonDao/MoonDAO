@@ -1,5 +1,5 @@
 import { GENERAL_CHANNEL_ID, TEST_CHANNEL_ID } from 'const/config'
-import { privyAuth } from 'middleware/privyAuth'
+import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 
@@ -40,4 +40,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withMiddleware(handler, privyAuth)
+export default withMiddleware(handler, authMiddleware)

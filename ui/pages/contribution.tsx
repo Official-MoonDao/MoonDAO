@@ -1,25 +1,24 @@
-import Container from "@/components/layout/Container";
-import ContentLayout from "@/components/layout/ContentLayout";
-import WebsiteHead from "@/components/layout/Head";
-import { LoadingSpinner } from "@/components/layout/LoadingSpinner";
-import { NoticeFooter } from "@/components/layout/NoticeFooter";
-import { pinBlobOrFile } from "@/lib/ipfs/pinBlobOrFile";
-import { createSession, destroySession } from "@/lib/iron-session/iron-session";
-import { GetMarkdown } from "@nance/nance-editor";
-import "@nance/nance-editor/lib/css/dark.css"
-import "@nance/nance-editor/lib/css/editor.css"
-import { getAccessToken, usePrivy } from "@privy-io/react-auth";
-import dynamic from "next/dynamic";
-import { useState } from "react";
-import { toast } from "react-hot-toast";
-import useAccount from "@/lib/nance/useAccountAddress";
+import { GetMarkdown } from '@nance/nance-editor'
+import { usePrivy } from '@privy-io/react-auth'
+import dynamic from 'next/dynamic'
+import { useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import useAccount from '@/lib/nance/useAccountAddress'
+import '@nance/nance-editor/lib/css/dark.css'
+import '@nance/nance-editor/lib/css/editor.css'
+import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import WebsiteHead from '@/components/layout/Head'
+import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 let getMarkdown: GetMarkdown
 
 const NanceEditor = dynamic(
   async () => {
-    getMarkdown = (await import("@nance/nance-editor")).getMarkdown
-    return import("@nance/nance-editor").then((mod) => mod.NanceEditor)
+    getMarkdown = (await import('@nance/nance-editor')).getMarkdown
+    return import('@nance/nance-editor').then((mod) => mod.NanceEditor)
   },
   {
     ssr: false,
@@ -31,30 +30,31 @@ const SuccessState = ({ coordinapeLink }: { coordinapeLink: string }) => (
   <div className="w-full flex flex-col justify-center items-center md:w-auto space-y-4 pb-12">
     <p className="text-2xl">Contribution submitted!</p>
     <p>
-      View and edit your contribution {" "}
-      <a href={coordinapeLink} target="_blank" rel="noopener noreferrer" className="underline">
+      View and edit your contribution{' '}
+      <a
+        href={coordinapeLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline"
+      >
         here
       </a>
     </p>
   </div>
-);
+)
 
 const UnauthenticatedState = () => (
   <p className="py-24">Please sign in to submit a contribution!</p>
-);
+)
 
-const ContributionForm = ({
-  onSubmit
-}: {
-  onSubmit: () => Promise<void>
-}) => {
-  const [submitting, setSubmitting] = useState(false);
+const ContributionForm = ({ onSubmit }: { onSubmit: () => Promise<void> }) => {
+  const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async () => {
-    setSubmitting(true);
-    await onSubmit();
-    setSubmitting(false);
-  };
+    setSubmitting(true)
+    await onSubmit()
+    setSubmitting(false)
+  }
 
   return (
     <div className="w-full md:w-auto px-4 sm:px-0">
@@ -62,7 +62,7 @@ const ContributionForm = ({
         <NanceEditor
           fileUploadExternal={async (val) => {
             const res = await pinBlobOrFile(val)
-            return res.url;
+            return res.url
           }}
           darkMode={true}
         />
@@ -78,69 +78,63 @@ const ContributionForm = ({
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
 export default function NewContribution() {
-  const { authenticated } = usePrivy();
-  const [coordinapeLink, setCoordinapeLink] = useState<string | null>(null);
-  const { address } = useAccount();
+  const { authenticated } = usePrivy()
+  const [coordinapeLink, setCoordinapeLink] = useState<string | null>(null)
+  const { address } = useAccount()
 
   const handleSubmitContribution = async () => {
-    const accessToken = await getAccessToken();
-    await createSession(accessToken);
-    const loadingToast = toast.loading("Submitting contribution...");
+    const loadingToast = toast.loading('Submitting contribution...')
     try {
       const body = JSON.stringify({
         description: getMarkdown(),
         address,
-      });
+      })
 
-      const res = await fetch("/api/coordinape/createContribution", {
-        method: "POST",
+      const res = await fetch('/api/coordinape/createContribution', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`
+          'Content-Type': 'application/json',
         },
-        body
-      });
-      await destroySession(accessToken)
-      const data = await res.json();
+        body,
+      })
+      const data = await res.json()
       if (!res.ok) {
-        toast.dismiss(loadingToast);
-        toast.error(data.error);
-        return;
+        toast.dismiss(loadingToast)
+        toast.error(data.error)
+        return
       }
 
-      toast.dismiss(loadingToast);
-      toast.success("Contribution submitted successfully!");
-      setCoordinapeLink(`https://app.coordinape.com/circles/${data.insert_contributions_one.circle_id}`);
+      toast.dismiss(loadingToast)
+      toast.success('Contribution submitted successfully!')
+      setCoordinapeLink(
+        `https://app.coordinape.com/circles/${data.insert_contributions_one.circle_id}`
+      )
     } catch (err) {
-      toast.dismiss(loadingToast);
-      toast.error("Failed to submit contribution");
+      toast.dismiss(loadingToast)
+      toast.error('Failed to submit contribution')
     }
-  };
+  }
 
   const renderContent = () => {
     if (!authenticated) {
-      return <UnauthenticatedState />;
+      return <UnauthenticatedState />
     }
     if (coordinapeLink) {
-      return <SuccessState coordinapeLink={coordinapeLink} />;
+      return <SuccessState coordinapeLink={coordinapeLink} />
     }
-    return (
-      <ContributionForm
-        onSubmit={handleSubmitContribution}
-      />
-    );
-  };
+    return <ContributionForm onSubmit={handleSubmitContribution} />
+  }
 
-  const title = "New Contribution";
+  const title = 'New Contribution'
   const description = (
     <span>
       <p>Submit a contribution to be included in the Coordinape circle.</p>
     </span>
-  );
+  )
 
   return (
     <div className="flex flex-col justify-center items-start animate-fadeIn w-[90vw] md:w-full">
@@ -161,5 +155,5 @@ export default function NewContribution() {
         <NoticeFooter />
       </Container>
     </div>
-  );
+  )
 }

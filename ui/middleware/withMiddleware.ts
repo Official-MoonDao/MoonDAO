@@ -1,4 +1,3 @@
-// middleware/withMiddleware.ts
 import { NextApiRequest, NextApiResponse } from 'next'
 
 type NextApiHandler = (

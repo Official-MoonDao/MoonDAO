@@ -1,15 +1,11 @@
 export default async function waitForResponse(
   formId: string,
-  repsonseId: string,
-  accessToken: string | null
+  repsonseId: string
 ) {
   const res = await fetch(
     `/api/typeform/response?formId=${formId}&responseId=${repsonseId}`,
     {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
     }
   )
 
@@ -19,6 +15,6 @@ export default async function waitForResponse(
     return true
   } else {
     await new Promise((resolve) => setTimeout(resolve, 2000))
-    await waitForResponse(formId, repsonseId, accessToken)
+    await waitForResponse(formId, repsonseId)
   }
 }
