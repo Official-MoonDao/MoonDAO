@@ -195,7 +195,12 @@ module.exports = nextTranslate({
       },
       {
         source: '/submit-contribution',
-        destination: '/submission?tag=contribution',
+        destination: '/submit?tag=contribution',
+        permanent: true,
+      },
+      {
+        source: '/contribute',
+        destination: '/submit?tag=contribution',
         permanent: true,
       },
     ]
