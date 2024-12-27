@@ -1,7 +1,6 @@
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
-import { useProposal, useProposalUpload } from '@nance/nance-hooks'
+import { useProposal } from '@nance/nance-hooks'
 import { RequestBudget } from '@nance/nance-sdk'
-import { getAccessToken } from '@privy-io/react-auth'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import ProjectsABI from 'const/abis/Project.json'
 import { PROJECT_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
@@ -12,11 +11,8 @@ import { SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { TEMPLATE } from '@/lib/nance'
-import useAccount from '@/lib/nance/useAccountAddress'
-import { useSignProposal } from '@/lib/nance/useSignProposal'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
@@ -69,12 +65,22 @@ export default function FinalReportEditor() {
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
   })
-  const { handleSubmit, reset, getValues, watch } = methods
+  const { handleSubmit } = methods
 
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
     console.debug('formData', formData)
+
+    if (!reportTitle || !loadedProposal) {
+      return toast.error(
+        'Please select an active project that you are a rocketeer of.',
+        {
+          style: toastStyle,
+        }
+      )
+    }
     //check if connected wallet is a rocketeer of the proposal
-    const teamMembers = loadedProposal?.actions?.[0]?.payload?.projectTeam
+    const payload: any = loadedProposal?.actions?.[0]?.payload
+    const teamMembers = payload?.projectTeam
     if (
       !teamMembers.some(
         (m: any) =>
@@ -87,34 +93,35 @@ export default function FinalReportEditor() {
       })
     }
 
-    const accessToken = await getAccessToken()
-    await createSession(accessToken)
     try {
       const markdown = getMarkdown()
       if (!markdown) {
         throw new Error('No markdown found')
       }
       const blob = new Blob([markdown], { type: 'text/markdown' })
-      // const { cid: markdownIpfsHash } = await pinBlobOrFile(blob)
+
+      const { cid: markdownIpfsHash } = await pinBlobOrFile(blob)
+
       const projectsTableName = await projectsTableContact?.call('getTableName')
       const statement = `SELECT * FROM ${projectsTableName} WHERE MDP = ${loadedProposal?.proposalId}`
       const projectRes = await fetch(
         `${TABLELAND_ENDPOINT}?statement=${statement}`
       )
       const projectData = await projectRes.json()
-      console.log(projectData)
-      // await projectsTableContact?.call('updateTable', [])
+      const project = projectData[0]
+
+      await projectsTableContact?.call('updateTableCol', [
+        project.id,
+        'finalReportIPFS',
+        'ipfs://' + markdownIpfsHash,
+      ])
     } catch (err) {
       toast.error('Unable to upload final report, please contact support.', {
         style: toastStyle,
       })
     }
-    await destroySession(accessToken)
   }
 
-  const { wallet } = useAccount()
-  const { signProposalAsync } = useSignProposal(wallet)
-  const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
   const buttonsDisabled = !address || signingStatus === 'loading'
 
   const setProposalId = function (id: string) {

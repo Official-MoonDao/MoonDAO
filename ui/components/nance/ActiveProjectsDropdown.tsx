@@ -86,6 +86,7 @@ export default function ActiveProjectsDropdown({
                       <button
                         key={aP.id}
                         className="text-sm text-black"
+                        type="button"
                         onClick={() => {
                           setSelectedProject(aP)
                           setProposalId(aP.MDP)
