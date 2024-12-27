@@ -1,0 +1,18 @@
+{
+    "name": "hello world",
+    "flow": {
+        "input": { 
+            "webhook_url": "https://discord.com/api/webhooks/1310050179784900669/XIBJZdRauQMs_y2F47qxqnV2gZ8gO1vCXf1RgcudqnRAZ8oxQAtvTe02oku1-8HpLceb",
+            "message": "GN!"
+        },
+        "version": "^1.0",
+        "api": "https://app.wordware.ai/api/released-app/f9cd2df6-f73d-4ab7-808f-33832629130e/run"
+    },
+    "schedule": {
+        "time": ["21:23"],
+        "weekday": [],
+        "day": [],
+        "month": [],
+        "year": []
+    }
+}
