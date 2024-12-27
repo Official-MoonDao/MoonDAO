@@ -3,9 +3,11 @@ import { useContract } from '@thirdweb-dev/react'
 import BigNumber from 'bignumber.js'
 import ConditionalTokens from 'const/abis/ConditionalTokens.json'
 import LMSR from 'const/abis/LMSR.json'
+import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import WETH from 'const/abis/WETH.json'
 import {
   LMSR_ADDRESSES,
+  LMSR_WITH_TWAP_ADDRESSES,
   CONDITIONAL_TOKEN_ADDRESSES,
   COLLATERAL_TOKEN_ADDRESSES,
   ORACLE_ADDRESS,
@@ -75,6 +77,10 @@ const Market: React.FC<MarketProps> = ({
     LMSR_ADDRESSES[chain.slug],
     LMSR.abi
   )
+  const { contract: lmsrWithTWAP } = useContract(
+    LMSR_WITH_TWAP_ADDRESSES[chain.slug],
+    LMSRWithTWAP.abi
+  )
   const { contract: conditionalTokensRepo } = useContract(
     CONDITIONAL_TOKEN_ADDRESSES[chain.slug],
     ConditionalTokens.abi
@@ -114,6 +120,7 @@ const Market: React.FC<MarketProps> = ({
     for (
       let outcomeIndex = 0;
       outcomeIndex < competitors.length;
+      //outcomeIndex < 5;
       outcomeIndex++
     ) {
       const indexSet = (
@@ -148,6 +155,7 @@ const Market: React.FC<MarketProps> = ({
       }
       outcomes.push(outcome)
     }
+    console.log('outcomes', outcomes)
 
     const marketData = {
       lmsrAddress: LMSR_ADDRESSES[chain.slug],
@@ -177,6 +185,7 @@ const Market: React.FC<MarketProps> = ({
     const cost = await marketMakersRepo.call('calcNetCost', [
       outcomeTokenAmounts,
     ])
+    console.log('cost', cost)
 
     const collateralBalance = await collateralContract.call('balanceOf', [
       account,
@@ -194,7 +203,8 @@ const Market: React.FC<MarketProps> = ({
       )
     }
 
-    const tx = await marketMakersRepo.call('trade', [outcomeTokenAmounts, cost])
+    const tx = await lmsrWithTWAP.call('trade', [outcomeTokenAmounts, cost])
+    //const tx = await marketMakersRepo.call('trade', [outcomeTokenAmounts, cost])
     console.log({ tx })
 
     await getMarketInfo()
@@ -217,16 +227,22 @@ const Market: React.FC<MarketProps> = ({
     }
 
     const outcomeTokenAmounts = Array.from({ length: MAX_OUTCOMES }, (v, i) =>
-      i === selectedIndex ? formatedAmount.negated() : new BigNumber(0)
+      (i === selectedIndex
+        ? formatedAmount.multipliedBy(new BigNumber(-1))
+        : new BigNumber(0)
+      ).toString()
     )
-    const profit = (
-      await marketMakersRepo.call('calcNetCost', [outcomeTokenAmounts])
-    ).neg()
-
-    const tx = await marketMakersRepo.call('trade', [
+    console.log('selectedAmount', selectedAmount)
+    console.log('selectedIndex', selectedIndex)
+    console.log('outcomeTokenAmounts', outcomeTokenAmounts)
+    const profit = await marketMakersRepo.call('calcNetCost', [
       outcomeTokenAmounts,
-      profit,
-      account,
+    ])
+    console.log('profit', profit)
+
+    const tx = await lmsrWithTWAP.call('trade', [
+      outcomeTokenAmounts,
+      (profit * -1).toString(),
     ])
     console.log({ tx })
 

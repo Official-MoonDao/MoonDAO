@@ -22,6 +22,7 @@ export function CompetitorPreview({
       getTeamNFT()
     }
   }, [teamId, teamContract])
+  console.log('teamNFT:', teamNFT)
 
   return (
     <div className="flex items-center gap-5">

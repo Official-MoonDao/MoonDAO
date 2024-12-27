@@ -79,6 +79,7 @@ export function DePrize({
   const prizePrice = 1
 
   const userTeams = useTeamWearer(teamContract, chain, userAddress)
+  console.log('userTeams:', userTeams)
 
   const isCompetitor = userTeams.some((team: any) =>
     competitors.some(
@@ -192,13 +193,13 @@ export function DePrize({
               </h3>
             </div>
             <div>
-            {competitors &&
+              {competitors && (
                 <Market
-              account={userAddress}
-              competitors={competitors}
-              teamContract={teamContract}
-            />
-            }
+                  account={userAddress}
+                  competitors={competitors}
+                  teamContract={teamContract}
+                />
+              )}
             </div>
             {!userHasVotingPower && (
               <span>

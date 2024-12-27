@@ -87,7 +87,7 @@ const TradingForm: React.FC<TradingFormProps> = ({
             variant="contained"
             className="rounded-full mx-2"
             backgroundColor="bg-moon-orange"
-            onClick={sell}
+            onClick={() => sell(outcome.index)}
             disabled={isMarketClosed || !selectedAmount}
             className="rounded-full"
           >
@@ -136,7 +136,7 @@ const OracleActions: React.FC<OracleActionsProps> = ({
     <div>
       {marketInfo.outcomes.map((outcome: any, index: number) => (
         <StandardButton
-          key={outcome.short}
+          key={index}
           variant="contained"
           onClick={() => resolve(index)}
           disabled={!isMarketClosed}

@@ -13,24 +13,20 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig = require(
-  `../../contracts/deployments/ethereum`
-) as DeploymentConfig
+const ethConfig =
+  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
 
-const polygonConfig = require(
-  `../../contracts/deployments/polygon`
-) as DeploymentConfig
+const polygonConfig =
+  require(`../../contracts/deployments/polygon`) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
 
-const goerliConfig = require(
-  `../../contracts/deployments/goerli`
-) as DeploymentConfig
+const goerliConfig =
+  require(`../../contracts/deployments/goerli`) as DeploymentConfig
 
-const sepoliaConfig = require(
-  `../../contracts/deployments/sepolia`
-) as DeploymentConfig
+const sepoliaConfig =
+  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -196,9 +192,14 @@ export const MARKETPLACE_FEE_SPLIT: string =
   polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_ADDRESSES: Index = {
-  sepolia: '0xBB335Fe1BcE1a1d42b23c40D1735f9255B10819b',
+  sepolia: '0xCDb2D4d1B02AA041a7dB61159f2080cbfBB37671',
+  //sepolia: '0xBB335Fe1BcE1a1d42b23c40D1735f9255B10819b',
   'arbitrum-sepolia': '0x789fc04493F3c1E3D853E164e767915109814B27',
 }
+export const LMSR_WITH_TWAP_ADDRESSES: Index = {
+  sepolia: '0xB5B364c62Fb77BBf001F6d0cD70d0D72bDFa4Ff2',
+}
+
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0x57f1e9424150Ea78977d479815fD26B05D8EbB0e',
   'arbitrum-sepolia': '0xF537d6d5438A7307a8aA5670Ec3fb27b5BD208f0',
@@ -208,7 +209,7 @@ export const COLLATERAL_TOKEN_ADDRESSES: Index = {
   'arbitrum-sepolia': '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
 }
 export const COLLATERAL_DECIMALS = 18
-export const MAX_OUTCOMES = 128
+export const MAX_OUTCOMES = 8
 
 export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
