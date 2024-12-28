@@ -12,10 +12,6 @@ export default function Callout1() {
           className="compact-lg flex flex-col-reverse justify-end lg:flex-row items-start lg:items-center min-h-[250px] md:min-h-[400px] p-5 pt-10 pb-0 md:p-10 md:pt-10 lg:max-w-[1200px]"
         >
           <div
-            id="featured-image"
-            className=" compact-lg hide-lg feature-2 lg:min-h-[450px] mt-5 md:mr-10 w-[100%] h-[250px] md:h-[70vmax] lg:h-[60vh]"
-          ></div>
-          <div
             id="content"
             className="overflow-visible relative pb-10 md:pb-10 w-[100%]"
           >

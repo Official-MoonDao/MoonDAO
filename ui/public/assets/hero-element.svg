@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 1817 1524.6">
+  <!-- Generator: Adobe Illustrator 29.1.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 142)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: none;
+      }
+
+      .st1 {
+        fill: url(#radial-gradient);
+      }
+
+      .st2 {
+        fill: url(#linear-gradient);
+      }
+
+      .st3 {
+        fill: #fff;
+      }
+
+      .st4 {
+        display: none;
+      }
+
+      .st5 {
+        clip-path: url(#clippath);
+      }
+    </style>
+    <clipPath id="clippath">
+      <path class="st0" d="M1817,0v1524.6L0,1518.6v-998.9c0-40.6,18.5-100.5,83.3-141.2C135.2,346.1,527.7,112.6,717.5,0h1099.5Z"/>
+    </clipPath>
+    <radialGradient id="radial-gradient" cx="226.2" cy="259.7" fx="226.2" fy="259.7" r="1342.7" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2a3faf"/>
+      <stop offset=".4" stop-color="#0b112c"/>
+      <stop offset=".7" stop-color="#090d21"/>
+      <stop offset="1" stop-color="#020617" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="linear-gradient" x1="249.8" y1="1237.7" x2="249.8" y2="857.1" gradientTransform="translate(0 1323.8) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3244a8"/>
+      <stop offset="1" stop-color="#723f75"/>
+    </linearGradient>
+  </defs>
+  <g class="st5">
+    <g class="st4">
+      <image width="889" height="906" transform="translate(-194.9 -170.9)" xlink:href="hero-element-1.png"/>
+    </g>
+    <rect class="st1" x="-25" y="-26.1" width="1842" height="1610.4"/>
+  </g>
+  <path class="st2" d="M440.1,277.8c-.8,106.3-87.6,190.8-193.9,188.8h-1.7c-19.8-.5-38.8-7.8-53.7-20.9-74-65,9.1-135.9,26-146.1-7,4.2-62.3,36.2-129.3,76.1-18-29-27.9-62.7-27.9-99.3,0-105.1,85.2-190.3,190.3-190.3,105.5,0,191,85.9,190.2,191.7Z"/>
+  <path class="st3" d="M103.5,200.5c41.3,0,74.9-33.4,74.9-74.6s-33.5-74.6-74.9-74.6S28.6,84.7,28.6,125.9s33.6,74.6,74.9,74.6Z"/>
+  <path class="st3" d="M241.7,279.6s29-16.5,49.8-14c22.8,2.7,43.4,38.9,43.4,38.9-9.3-18.4-19.5-45.3-6.9-59.1,29.9-32.4,97.6-73.2,97.6-73.2-56.8,31-114.2,61.9-138.5,36,0,0-16.8-16.3-42.2-56.2,0,0,35.6,64,33.7,84.7-1.7,18.8-36.9,42.9-36.9,42.9Z"/>
+</svg>

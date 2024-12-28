@@ -39,7 +39,7 @@ export default function MailingList() {
             <input
               id="email-field"
               className={`
-                flex-grow overflow-hidden text-clip single-input pt-4 pb-4 px-5 bg-dark-cool focus:outline-none 
+                flex-grow overflow-hidden text-clip single-input pt-4 pb-4 px-5 bg-black  focus:outline-none 
               `}
               type="email"
               placeholder="Enter your email"

@@ -24,10 +24,6 @@ export default function Callout2() {
             id="featured-image-large"
             className="hide-xl feature-3 absolute top-0 right-0 w-[80vmin] md:w-[70%] lg:w-[45vmax] mt-[-5vmax] h-full mt-5"
           ></div>
-          <div
-            id="featured-image-extra-large"
-            className="show-xl feature-3 absolute top-0 right-0 w-[900px] h-[50vw]"
-          ></div>
         </div>
         <div
           id="content"
@@ -66,27 +62,6 @@ export default function Callout2() {
         id="our-astronauts-section"
         className="sm:px-2 md:p-5 z-50 flex flex-col items-start overflow-hidden"
       >
-        <div
-          id="astronauts-container"
-          className="p-1 flex flex-wrap w-full justify-center sm:justify-around md:justify-start lg:ml-[5%] gap-5 scale-[90%] md:scale-[100%] lg:scale-[115%] my-[20px] z-50"
-        >
-          <Speaker
-            alt="Coby Cotton"
-            logo="/assets/astronaut-coby.png"
-            name="Coby Cotton"
-            subtitle="MoonDAO's 1st Astronaut"
-            link="https://www.youtube.com/watch?v=YXXlSG-du7c"
-            isWhiteText={true}
-          />
-          <Speaker
-            alt="Dr. Eiman Jahangir"
-            logo="/assets/astronaut-eiman.png"
-            name="Dr. Eiman Jahangir"
-            subtitle="MoonDAO's 2nd Astronaut"
-            link="https://www.youtube.com/watch?v=O8Z5HVXOwsk"
-            isWhiteText={true}
-          />
-        </div>
       </div>
     </section>
   )

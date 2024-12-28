@@ -1,7 +1,7 @@
 export default function Video() {
     return (
         <section id="video-section" 
-            className="relative gradient-6 pr-[40px] md:pr-[80px] lg:mt-[-110px] md:mt-[-50px] mt-[-60px]"
+            className="relative pr-[40px] md:pr-[80px] "
             >
             <div id="video-container" 
                 className="ml-[20px] md:ml-[40px] max-w-[1200px] w-full"

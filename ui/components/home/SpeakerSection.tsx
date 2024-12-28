@@ -16,6 +16,38 @@ export default function SpeakerSection() {
         >
           <h2
             id="section-header"
+            className="header font-GoodTimes text-center text-dark-cool mb-[120px]"
+            >
+            MoonDAO Astronauts
+          </h2>
+
+          <div className="w-full max-w-[1200px] mb-10">
+            <div className="p-5 pt-0 flex flex-row flex-wrap justify-around scale-[90%] md:scale-[100%] lg:scale-[115%]">
+              <div className="transform scale-125">
+                <Speaker
+                  alt="Coby Cotton"
+                  logo="/assets/astronaut-coby.png"
+                  name="Coby Cotton"
+                  subtitle="MoonDAO's 1st Astronaut"
+                  link="https://www.youtube.com/watch?v=YXXlSG-du7c"
+                  isWhiteText={false}
+                />
+              </div>
+              <div className="transform scale-125">
+                <Speaker
+                  alt="Dr. Eiman Jahangir"
+                  logo="/assets/astronaut-eiman.png"
+                  name="Dr. Eiman Jahangir"
+                  subtitle="MoonDAO's 2nd Astronaut"
+                  link="https://www.youtube.com/watch?v=O8Z5HVXOwsk"
+                  isWhiteText={false}
+                />
+              </div>
+            </div>
+          </div>
+
+          <h2
+            id="section-header"
             className="header font-GoodTimes text-center text-dark-cool"
           >
             MoonDAO Speakers

@@ -156,17 +156,6 @@ export default function Callout3() {
       <h2 className="header text-center font-GoodTimes pb-5">
         What MoonDAO Does
       </h2>
-
-      <div
-        ref={cytoRef}
-        style={{
-          width: '600px',
-          height: '400px',
-          margin: '0 auto',
-          background: '#f5f5f5',
-        }}
-      />
-
       <div
         id="cards-container"
         className="rounded-[5vmax] rounded-tr-[0px] p-5 md:p-10 overflow-hidden max-w-[1200px]"

@@ -1,36 +1,74 @@
 import dynamic from 'next/dynamic'
 import MailingList from '../layout/MailingList'
+import Image from 'next/image'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
 export default function Hero({ citizenLocationData }: any) {
   return (
-    <section id="hero-section" className="overflow-visible relative w-full">
+    <section id="hero-section" className="flex relative h-[100vh] w-full ">
+      <div className="absolute left-0 top-0 z-0 h-full w-auto bg-gradient-to-r from-transparent via-[#2A41B5]/20 to-[#2A41B5] w-full">
+        <Image
+          src="/assets/hero-element.svg"
+          alt="Hero background element"
+          width={767}
+          height={1517}
+          priority
+          className="h-full w-auto object-contain object-left-top"
+        />
+      </div>
+
       <div
         id="hero-container"
-        className="compact-xxl flex flex-col h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start md:pl-10 md:pr-10 min-h-[675px] mt-[-1px] p-5 pb-[80px] lg:pb-40 relative z-10"
+        className="compact-xxl w-full h-full flex flex-col justify-center items-end lg:items-start md:items-end md:pl-10 md:pr-10 pb-[20px] lg:pb-20 relative z-10"
       >
         <div
           id="featured-image-container"
-          className="absolute h-[100%] left-0 overflow-hidden top-0 w-[100%]"
+          className="absolute h-[100%] left-0 top-0 w-[100%]"
         >
-          <div
-            id="map-container-below-1400"
-            className="branded hide-xl absolute h-full mt-0 left-0 top-0 w-[80vmin] lg:w-[50vmax] md:w-[70%]"
-          >
-            <Earth pointsData={citizenLocationData} enableZoom={false} />
+          {/* Extra Large Screens (1800px+) */}
+          <div className="hidden 2xl:block absolute h-full right-0 top-0 w-[1200px] h-[1200px]">
+            <Earth 
+              pointsData={citizenLocationData} 
+              enableControls={true}
+              enableZoom={false}
+            />
           </div>
-          <div
-            id="map-container-above-1400"
-            className="branded show-xl absolute h-full mt-[-10vh] right-0 top-0 w-[850px]"
-          >
-            <Earth pointsData={citizenLocationData} enableControls={false} />
+
+          {/* Large Screens (1000px - 1800px) */}
+          <div className="hidden xl:block 2xl:hidden absolute h-full right-0 top-0 w-[70vw]">
+            <Earth 
+              pointsData={citizenLocationData} 
+              enableControls={true}
+              enableZoom={false}
+            />
+          </div>
+
+          {/* Mobile Landscape (576px - 1000px) */}
+          <div className="hidden sm:block xl:hidden absolute h-full left-0 top-0 w-[70vw]">
+            <Earth 
+              pointsData={citizenLocationData} 
+              enableControls={true}
+              enableZoom={false}
+              rotateOnMouseMove={true}
+            />
+          </div>
+
+          {/* Mobile Portrait (below 576px) */}
+          <div className="block sm:hidden absolute h-full left-0 top-0 w-[90vw]">
+            <Earth 
+              pointsData={citizenLocationData} 
+              enableControls={false}
+              enableZoom={false}
+              rotateOnMouseMove={true}
+            />
           </div>
         </div>
 
         <div
           id="content"
-          className="relative w-[100%] pt-0 md:w-[95%] lg:w-[70%]"
+          className="relative mt-[100px] w-[100%] md:w-[95%] lg:w-[70%]"
+          style={{ pointerEvents: 'none' }}
         >
           <h1
             id="header"
@@ -38,7 +76,7 @@ export default function Hero({ citizenLocationData }: any) {
           >
             <span
               style={{ fontSize: 'calc(min(4.5vmin, 30px))' }}
-              className="mt-[5vmax]"
+              className="mt-[5vmax] mt-[150px]"
             >
               The Internet's
             </span>
@@ -63,7 +101,9 @@ export default function Hero({ citizenLocationData }: any) {
             network and open platform to fund, collaborate, and compete on
             challenges that get us closer to a lunar settlement.
           </p>
-          <MailingList />
+          <div style={{ pointerEvents: 'auto' }}>
+            <MailingList />
+          </div>
         </div>
       </div>
     </section>

@@ -207,6 +207,8 @@ export default function Starfield() {
               ref={canvasRef}
               className="absolute inset-0 w-full h-full mix-blend-multiply"
             />
+            <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-transparent via-transparent to-[#40151C] " />
+            <div className="absolute inset-0 w-full h-full bg-gradient-to-l from-transparent via-transparent to-[#000] " />
           </div>
         </ContentLayout>
       </Container>

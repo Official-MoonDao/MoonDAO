@@ -23,10 +23,10 @@ export default function Earth({
   enableZoom = true,
   rotateOnMouseMove,
   rotationFactor,
-  globeBrightness = 5.5,
+  globeBrightness = 9,
   showPointLabels = true,
 }: EarthProps) {
-  const size = useGlobeSize()
+  const { width: size } = useGlobeSize()
   const globeRef = useRef<GlobeMethods | undefined>()
   const [selectedPoint, setSelectedPoint] = useState(null)
   const [pointModalEnabled, setPointModalEnabled] = useState(false)
@@ -40,7 +40,6 @@ export default function Earth({
     rotationFactor
   )
 
-  //Set iniial POV of Earth to USA
   useEffect(() => {
     if (globeRef.current) {
       globeRef.current.pointOfView({
@@ -49,47 +48,64 @@ export default function Earth({
         altitude: 2,
       })
 
-      console.log(globeRef.current.scene().children[2])
-
-      globeRef.current.lights().forEach((light) => {
+      // Get all lights
+      const lights = globeRef.current.lights()
+      
+      // Set intensity for both lights
+      lights.forEach((light) => {
         light.intensity = globeBrightness
+        
+        // Change only the DirectionalLight color
+        if (light.type === 'DirectionalLight') {
+          light.color = new THREE.Color('#3644A6')
+        }
       })
     }
   }, [])
 
   return (
     <>
-      <Globe
-        ref={globeRef}
-        width={size.width}
-        height={size.height}
-        backgroundColor="#00000000"
-        globeImageUrl={
-          'https://unpkg.com/three-globe@2.33.0/example/img/earth-night.jpg'
-        }
-        pointsData={pointsData}
-        pointAltitude="size"
-        pointColor="color"
-        pointRadius={0.5}
-        labelSize={1.7}
-        pointLabel={(d: any) =>
-          showPointLabels
-            ? ReactDOMServer.renderToString(
-                <CitizenPointLabel
-                  formattedAddress={d.formattedAddress}
-                  citizens={d.citizens}
-                />
-              )
-            : `<></>`
-        }
-        onPointClick={(d: any) => {
-          if (showPointLabels) {
-            setSelectedPoint(d)
-            setPointModalEnabled(true)
-          }
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          position: 'relative',
         }}
-        animateIn
-      />
+      >
+        <Globe
+          ref={globeRef}
+          width={size}
+          height={size}
+          backgroundColor="#00000000"
+          globeImageUrl={
+            'https://unpkg.com/three-globe@2.33.0/example/img/earth-night.jpg'
+          }
+          pointsData={pointsData}
+          pointAltitude="size"
+          pointColor="color"
+          pointRadius={0.5}
+          labelSize={1.7}
+          pointLabel={(d: any) =>
+            showPointLabels
+              ? ReactDOMServer.renderToString(
+                  <CitizenPointLabel
+                    formattedAddress={d.formattedAddress}
+                    citizens={d.citizens}
+                  />
+                )
+              : `<></>`
+          }
+          onPointClick={(d: any) => {
+            if (showPointLabels) {
+              setSelectedPoint(d)
+              setPointModalEnabled(true)
+            }
+          }}
+          animateIn
+        />
+      </div>
       {pointModalEnabled && (
         <CitizenPointModal
           selectedPoint={selectedPoint}
