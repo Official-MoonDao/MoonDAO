@@ -2,19 +2,24 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useFundWallet, usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { TEAM_ADDRESSES, TEAM_CREATOR_ADDRESSES } from 'const/config'
-import { BigNumber, ethers } from 'ethers'
+import {
+  DEPLOYED_ORIGIN,
+  TEAM_ADDRESSES,
+  TEAM_CREATOR_ADDRESSES,
+} from 'const/config'
+import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
-import { pinImageToIPFS, pinMetadataToIPFS } from '@/lib/ipfs/pin'
+import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
@@ -84,21 +89,16 @@ export default function CreateTeam({
   const { fundWallet } = useFundWallet()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
-    const accessToken = await getAccessToken()
-    await createSession(accessToken)
 
     //get response from form
     const { formId, responseId } = formResponse
 
-    await waitForResponse(formId, responseId, accessToken)
+    await waitForResponse(formId, responseId)
 
     const responseRes = await fetch(
       `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
       }
     )
     const data = await responseRes.json()
@@ -111,7 +111,6 @@ export default function CreateTeam({
 
     setTeamData(cleanedTeamFormData)
     setStage(2)
-    await destroySession(accessToken)
   }, [])
 
   return (
@@ -336,8 +335,6 @@ export default function CreateTeam({
                     label="Check Out"
                     isDisabled={!agreedToCondition || isLoadingMint}
                     action={async () => {
-                      const accessToken = await getAccessToken()
-                      await createSession(accessToken)
                       try {
                         const cost = await teamContract?.call(
                           'getRenewalPrice',
@@ -459,15 +456,27 @@ export default function CreateTeam({
                           16
                         ).toString()
 
-                        setTimeout(() => {
-                          setIsLoadingMint(false)
-                          router.push(`/team/${mintedTokenId}`)
-                        }, 30000)
+                        if (mintedTokenId) {
+                          const teamNFT = await waitForERC721(
+                            teamContract,
+                            mintedTokenId
+                          )
+                          const teamName = teamNFT?.metadata.name as string
+                          const teamPrettyLink = generatePrettyLink(teamName)
+                          setTimeout(async () => {
+                            await sendDiscordMessage(
+                              'networkNotifications',
+                              `[**${teamName}** has minted a team NFT!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
+                            )
+
+                            router.push(`/team/${teamPrettyLink}`)
+                            setIsLoadingMint(false)
+                          }, 5000)
+                        }
                       } catch (err) {
                         console.error(err)
                         setIsLoadingMint(false)
                       }
-                      await destroySession(accessToken)
                     }}
                   />
                   {isLoadingMint && (

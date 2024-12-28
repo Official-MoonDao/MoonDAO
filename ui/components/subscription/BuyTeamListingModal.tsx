@@ -19,7 +19,6 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import useTeamEmail from '@/lib/team/useTeamEmail'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { TeamListing } from '@/components/subscription/TeamListing'
@@ -106,8 +105,6 @@ export default function BuyTeamListingModal({
     }
 
     setIsLoading(true)
-    const accessToken = await getAccessToken()
-    await createSession(accessToken)
     let receipt
     try {
       if (+listing.price <= 0) {
@@ -143,9 +140,6 @@ export default function BuyTeamListingModal({
         //send email to entity w/ purchase details
         const res = await fetch('/api/marketplace/marketplace-purchase', {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
           body: JSON.stringify({
             address,
             email,
@@ -188,7 +182,6 @@ export default function BuyTeamListingModal({
         toast.error('Insufficient funds')
       }
     }
-    await destroySession(accessToken)
     setIsLoading(false)
   }
 

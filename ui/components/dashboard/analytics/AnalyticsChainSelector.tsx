@@ -1,10 +1,31 @@
 import {
   ChartBarSquareIcon,
   ChevronDownIcon,
-  SignalIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+
+function AnalyticsChain({ chain, selectChain }: any) {
+  return (
+    <button
+      type="button"
+      className="w-full flex items-center gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
+      onClick={() => selectChain(chain)}
+    >
+      {chain === 'all' ? (
+        <ChartBarSquareIcon height={24} width={24} />
+      ) : (
+        <Image
+          src={`/icons/networks/${chain}.svg`}
+          width={13}
+          height={13}
+          alt="Ethereum"
+        />
+      )}
+      {chain.charAt(0).toUpperCase() + chain.slice(1)}
+    </button>
+  )
+}
 
 export default function AnalyticsChainSelector({
   analyticsChain,
@@ -60,50 +81,11 @@ export default function AnalyticsChainSelector({
             id="network-selector-dropdown"
             className="w-[250px] absolute flex flex-col items-start gap-2 text-black z-10"
           >
-            <button
-              type="button"
-              className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-              onClick={() => selectChain('all')}
-            >
-              {'All'}
-            </button>
-            <button
-              type="button"
-              className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-              onClick={() => selectChain('ethereum')}
-            >
-              <Image
-                src="/icons/networks/ethereum.svg"
-                width={13}
-                height={13}
-                alt="Ethereum"
-              />
-              {'Ethereum'}
-            </button>
-            <button
-              className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-              onClick={() => selectChain('polygon')}
-            >
-              <Image
-                src="/icons/networks/polygon.svg"
-                width={24}
-                height={24}
-                alt="Polygon"
-              />
-              {'Polygon'}
-            </button>
-            <button
-              className="w-full flex gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
-              onClick={() => selectChain('arbitrum')}
-            >
-              <Image
-                src="/icons/networks/arbitrum.svg"
-                width={24}
-                height={24}
-                alt="Arbitrumm"
-              />
-              {'Arbitrum'}
-            </button>
+            <AnalyticsChain chain="all" selectChain={selectChain} />
+            <AnalyticsChain chain="ethereum" selectChain={selectChain} />
+            <AnalyticsChain chain="polygon" selectChain={selectChain} />
+            <AnalyticsChain chain="arbitrum" selectChain={selectChain} />
+            <AnalyticsChain chain="base" selectChain={selectChain} />
           </div>
         )}
       </div>

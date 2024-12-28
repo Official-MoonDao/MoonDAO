@@ -35,18 +35,16 @@ export function JoinDePrizeModal({
             <h4 className="text-lg mb-2">Your Teams</h4>
             <div className="space-y-2">
               {userTeams.map((team: any) => (
-                <>
-                  <button
-                    key={team.teamId}
-                    onClick={() => handleJoinWithTeam(team.teamId)}
-                    className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <CompetitorPreview
-                      teamId={team.teamId}
-                      teamContract={teamContract}
-                    />
-                  </button>
-                </>
+                <button
+                  key={team.teamId}
+                  onClick={() => handleJoinWithTeam(team.teamId)}
+                  className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <CompetitorPreview
+                    teamId={team.teamId}
+                    teamContract={teamContract}
+                  />
+                </button>
               ))}
             </div>
           </div>

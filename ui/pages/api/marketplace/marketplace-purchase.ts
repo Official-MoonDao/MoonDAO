@@ -1,5 +1,5 @@
 import { CITIZEN_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
-import { privyAuth } from 'middleware/privyAuth'
+import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { transporter, opEmail } from '@/lib/nodemailer/nodemailer'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
@@ -153,4 +153,4 @@ async function handler(req: any, res: any) {
     res.status(405).send({ message: 'Method not allowed' })
   }
 }
-export default withMiddleware(handler, privyAuth)
+export default withMiddleware(handler, authMiddleware)

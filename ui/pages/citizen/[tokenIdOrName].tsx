@@ -1,7 +1,7 @@
 //Citizen Profile
 import {
   GlobeAltIcon,
-  GlobeAmericasIcon,
+  LockOpenIcon,
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
@@ -25,6 +25,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
@@ -47,6 +48,7 @@ import Head from '@/components/layout/Head'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
+import Action from '@/components/subscription/Action'
 import Card from '@/components/subscription/Card'
 import CitizenActions from '@/components/subscription/CitizenActions'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
@@ -67,6 +69,8 @@ export default function CitizenDetailPage({
 }: any) {
   const router = useRouter()
   const address = useAddress()
+
+  const { citizen } = useContext(CitizenContext)
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
 
   const [subModalEnabled, setSubModalEnabled] = useState(false)
@@ -304,18 +308,28 @@ export default function CitizenDetailPage({
                 ) : (
                   <></>
                 )} */}
-                <div className="mt-4 lg:ml-5">
-                  <Address address={isGuest ? address : nft.owner} />
-                </div>
+                {citizen || isGuest ? (
+                  <>
+                    <div className="mt-4 lg:ml-5">
+                      <Address address={isGuest ? address : nft.owner} />
+                    </div>
+                  </>
+                ) : (
+                  <></>
+                )}
 
-                <div className="mt-2 flex justify-between items-start gap-2 lg:ml-5">
-                  <MapPinIcon
-                    width={30}
-                    height={30}
-                    className="flex-shrink-0 mr-8"
-                  />
-                  <p className="font-GoodTimes">{location}</p>
-                </div>
+                {location !== '' && citizen && (
+                  <div className="mt-2 flex items-center gap-2 lg:ml-5">
+                    <MapPinIcon
+                      width={30}
+                      height={30}
+                      className="flex-shrink-0"
+                    />
+                    <Link className="font-GoodTimes" href="/map">
+                      {location}
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -328,7 +342,7 @@ export default function CitizenDetailPage({
     <Container>
       <ContentLayout
         description={ProfileHeader}
-        preFooter={<NoticeFooter citizenNotice />}
+        preFooter={<NoticeFooter citizenNotice={isGuest} />}
         mainPadding
         mode="compact"
         popOverEffect={false}
@@ -346,6 +360,7 @@ export default function CitizenDetailPage({
             address={address}
             nft={nft}
             incompleteProfile={incompleteProfile}
+            isTeamMember={hats.length > 0}
             mooneyBalance={MOONEYBalance}
             vmooneyBalance={VMOONEYBalance}
             setCitizenMetadataModalEnabled={setCitizenMetadataModalEnabled}
@@ -370,58 +385,70 @@ export default function CitizenDetailPage({
           />
         )}
 
+        {!isGuest && !citizen && (
+          <Action
+            title="Unlock Full Profile"
+            description="Become a Citizen of the Space Acceleration Network to view the full profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
+            icon={<LockOpenIcon width={30} height={30} />}
+            onClick={() => router.push('/citizen')}
+          />
+        )}
         {subIsValid && !isDeleted && !isGuest ? (
           <div className="z-50 mb-10">
             {/* Mooney and Voting Power */}
-            <Frame
-              noPadding
-              bottomLeft="0px"
-              bottomRight="0px"
-              topRight="0px"
-              topLeft="0px"
-            >
-              <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                <div id="vote-title-section" className="flex justify-between">
-                  <h2 className="header font-GoodTimes opacity-[50%]">
-                    Governance
-                  </h2>
+            {citizen || address === nft.owner ? (
+              <Frame
+                noPadding
+                bottomLeft="0px"
+                bottomRight="0px"
+                topRight="0px"
+                topLeft="0px"
+              >
+                <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+                  <div id="vote-title-section" className="flex justify-between">
+                    <h2 className="header font-GoodTimes opacity-[50%]">
+                      Governance
+                    </h2>
+                  </div>
+                  <div className="mt-5 flex flex-col gap-5">
+                    <div>
+                      <p className="text-xl">{`$MOONEY`}</p>
+                      <p className="text-3xl">
+                        {MOONEYBalance
+                          ? Math.round(MOONEYBalance).toLocaleString()
+                          : 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xl">{`Voting Power`}</p>
+                      <p className="text-2xl">
+                        {VMOONEYBalance
+                          ? Math.round(VMOONEYBalance).toLocaleString()
+                          : 0}
+                      </p>
+                    </div>
+                  </div>
+                  {address === nft.owner && (
+                    <div className="flex flex-col md:flex-row mt-4 md:px-4 flex items-start xl:items-end gap-2">
+                      <StandardButton
+                        className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:rounded-bl-[20px] md:hover:pl-5"
+                        onClick={() => router.push('/get-mooney')}
+                      >
+                        {'Get $MOONEY'}
+                      </StandardButton>
+                      <StandardButton
+                        className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:hover:pl-5"
+                        onClick={() => router.push('/lock')}
+                      >
+                        {'Get Voting Power'}
+                      </StandardButton>
+                    </div>
+                  )}
                 </div>
-                <div className="mt-5 flex flex-col gap-5">
-                  <div>
-                    <p className="text-xl">{`$MOONEY`}</p>
-                    <p className="text-3xl">
-                      {MOONEYBalance
-                        ? Math.round(MOONEYBalance).toLocaleString()
-                        : 0}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xl">{`Voting Power`}</p>
-                    <p className="text-2xl">
-                      {VMOONEYBalance
-                        ? Math.round(VMOONEYBalance).toLocaleString()
-                        : 0}
-                    </p>
-                  </div>
-                </div>
-                {address === nft.owner && (
-                  <div className="flex flex-col md:flex-row mt-4 md:px-4 flex items-start xl:items-end gap-2">
-                    <StandardButton
-                      className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:rounded-bl-[20px] md:hover:pl-5"
-                      onClick={() => router.push('/get-mooney')}
-                    >
-                      {'Get $MOONEY'}
-                    </StandardButton>
-                    <StandardButton
-                      className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:hover:pl-5"
-                      onClick={() => router.push('/lock')}
-                    >
-                      {'Get Voting Power'}
-                    </StandardButton>
-                  </div>
-                )}
-              </div>
-            </Frame>
+              </Frame>
+            ) : (
+              <></>
+            )}
             {address === nft.owner && (
               <div className="mt-4">
                 <Frame
@@ -439,37 +466,38 @@ export default function CitizenDetailPage({
                 </Frame>
               </div>
             )}
-
-            <Frame
-              noPadding
-              bottomLeft="0px"
-              bottomRight="0px"
-              topRight="0px"
-              topLeft="0px"
-            >
-              <div className="flex flex-col 2xl:flex-row">
-                <div className=" w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <p className="header font-GoodTimes opacity-[50%]">Teams</p>
-                  <div className="mt-5 py-5 flex flex-col gap-2 overflow-y-scroll">
-                    {hats.map((hat: any) => (
-                      <div
-                        key={hat.id}
-                        className="py-3 gradient-16 rounded-[20px]"
-                      >
-                        <Hat
-                          selectedChain={selectedChain}
-                          hat={hat}
-                          hatsContract={hatsContract}
-                          teamImage
-                          teamContract={teamContract}
-                        />
-                      </div>
-                    ))}
+            {hats.length > 1 && (
+              <Frame
+                noPadding
+                bottomLeft="0px"
+                bottomRight="0px"
+                topRight="0px"
+                topLeft="0px"
+              >
+                <div className="flex flex-col 2xl:flex-row">
+                  <div className=" w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+                    <p className="header font-GoodTimes opacity-[50%]">Teams</p>
+                    <div className="mt-5 py-5 flex flex-col gap-2 overflow-y-scroll">
+                      {hats.map((hat: any) => (
+                        <div
+                          key={hat.id}
+                          className="py-3 gradient-16 rounded-[20px]"
+                        >
+                          <Hat
+                            selectedChain={selectedChain}
+                            hat={hat}
+                            hatsContract={hatsContract}
+                            teamImage
+                            teamContract={teamContract}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                  {/* General Actions */}
                 </div>
-                {/* General Actions */}
-              </div>
-            </Frame>
+              </Frame>
+            )}
             {address === nft.owner && (
               <>
                 <Frame

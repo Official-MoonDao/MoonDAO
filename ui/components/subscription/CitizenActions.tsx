@@ -10,12 +10,14 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Frame from '@/components/layout/Frame'
 import Action from '@/components/subscription/Action'
+import { TwitterIcon } from '../assets'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 
 type CitizenActionsProps = {
   address?: string
   nft?: any
   incompleteProfile?: boolean
+  isTeamMember?: boolean
   mooneyBalance?: number
   vmooneyBalance?: number
   setCitizenMetadataModalEnabled: Function
@@ -25,6 +27,7 @@ export default function CitizenActions({
   address,
   nft,
   incompleteProfile,
+  isTeamMember,
   mooneyBalance,
   vmooneyBalance,
   setCitizenMetadataModalEnabled,
@@ -91,6 +94,20 @@ export default function CitizenActions({
                     />
                   )}
                   <Action
+                    title="Share on X"
+                    description="Share your citizen profile on X!"
+                    icon={
+                      <div className="scale-[1.15] flex flex-col mt-[7px]">
+                        <TwitterIcon />
+                      </div>
+                    }
+                    onClick={() => {
+                      window.open(
+                        `https://x.com/intent/tweet?url=${window.location.href}&text=I%20just%20became%20a%20Citizen%20of%20the%20Space%20Acceleration%20Network%20%40OfficialMoonDAO`
+                      )
+                    }}
+                  />
+                  <Action
                     title="Create Project"
                     description="Submit a proposal to secure funding for your space project."
                     icon={
@@ -133,12 +150,14 @@ export default function CitizenActions({
                     onClick={() => window.open('https://guild.xyz/moondao')}
                   />
 
-                  <Action
-                    title="Create a Team"
-                    description="Join a team or create your own to work together on accelerating space."
-                    icon={<PlusIcon height={30} width={30} />}
-                    onClick={() => router.push('/team')}
-                  />
+                  {!isTeamMember && (
+                    <Action
+                      title="Create a Team"
+                      description="Join a team or create your own to work together on accelerating space."
+                      icon={<PlusIcon height={30} width={30} />}
+                      onClick={() => router.push('/team')}
+                    />
+                  )}
                 </div>
               </SlidingCardMenu>
             </Frame>

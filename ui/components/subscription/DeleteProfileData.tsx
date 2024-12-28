@@ -5,7 +5,6 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { unpin } from '@/lib/ipfs/unpin'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import { getAttribute } from '@/lib/utils/nft'
 import Modal from '../layout/Modal'
@@ -64,8 +63,6 @@ function DeleteProfileDataModal({
             label={isLoading ? 'Loading...' : 'Delete'}
             isDisabled={isLoading}
             action={async () => {
-              const accessToken = await getAccessToken()
-              await createSession(accessToken)
               setIsLoading(true)
 
               const rawMetadataRes = await fetch(resolvedMetadata.url)
@@ -131,7 +128,6 @@ function DeleteProfileDataModal({
                 console.log(err)
               }
               setIsLoading(false)
-              await destroySession(accessToken)
             }}
           />
         </div>

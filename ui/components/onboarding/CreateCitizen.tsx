@@ -6,6 +6,7 @@ import {
   CITIZEN_ADDRESSES,
   CK_NETWORK_SIGNUP_FORM_ID,
   CK_NETWORK_SIGNUP_TAG_ID,
+  DEPLOYED_ORIGIN,
 } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -16,11 +17,13 @@ import toast from 'react-hot-toast'
 import useWindowSize from '../../lib/team/use-window-size'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
+import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import {
   CitizenData,
   formatCitizenShortFormData,
@@ -104,19 +107,15 @@ export default function CreateCitizen({
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     const accessToken = await getAccessToken()
-    await createSession(accessToken)
 
     const { formId, responseId } = formResponse
 
-    await waitForResponse(formId, responseId, accessToken)
+    await waitForResponse(formId, responseId)
 
     const responseRes = await fetch(
       `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
       }
     )
 
@@ -140,7 +139,6 @@ export default function CreateCitizen({
     setCitizenData(cleanedCitizenShortFormData as any)
 
     setStage(2)
-    await destroySession(accessToken)
   }, [])
 
   return (
@@ -429,9 +427,6 @@ export default function CreateCitizen({
                   label="Check Out"
                   isDisabled={!agreedToCondition || isLoadingMint}
                   action={async () => {
-                    const accessToken = await getAccessToken()
-                    await createSession(accessToken)
-
                     if (!citizenImage)
                       return toast.error(
                         'Please wait for your image to finish generating.'
@@ -503,17 +498,30 @@ export default function CreateCitizen({
 
                       if (mintedTokenId) {
                         await tagToNetworkSignup(citizenData.email)
-                      }
 
-                      setTimeout(() => {
-                        setIsLoadingMint(false)
-                        router.push(`/citizen/${mintedTokenId}`)
-                      }, 30000)
+                        const citizenNFT = await waitForERC721(
+                          citizenContract,
+                          mintedTokenId
+                        )
+                        const citizenName = citizenNFT?.metadata.name as string
+                        const citizenPrettyLink = generatePrettyLinkWithId(
+                          citizenName,
+                          mintedTokenId
+                        )
+                        setTimeout(async () => {
+                          await sendDiscordMessage(
+                            'networkNotifications',
+                            `[**${citizenName}** has minted a citizen NFT!](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789)`
+                          )
+
+                          router.push(`/citizen/${citizenPrettyLink}`)
+                          setIsLoadingMint(false)
+                        }, 5000)
+                      }
                     } catch (err) {
                       console.error(err)
                       setIsLoadingMint(false)
                     }
-                    await destroySession(accessToken)
                   }}
                 />
                 {isLoadingMint && (

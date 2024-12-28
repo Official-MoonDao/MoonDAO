@@ -10,6 +10,8 @@ import { useState } from 'react'
 import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
 import ChainContext from '../../lib/thirdweb/chain-context'
+import CitizenContext from '@/lib/citizen/citizen-context'
+import useNavigation from '@/lib/navigation/useNavigation'
 import { LogoSidebarLight, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
@@ -18,7 +20,6 @@ import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
-import { navigation } from './Sidebar/Navigation'
 import NavigationLink from './Sidebar/NavigationLink'
 
 interface Layout {
@@ -36,9 +37,12 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const chain = useChain()
   const { selectedChain } = useContext(ChainContext)
 
+  const { citizen } = useContext(CitizenContext)
   const { contract: citizenContract } = useContract(
     CITIZEN_ADDRESSES[selectedChain.slug]
   )
+
+  const navigation = useNavigation(citizen)
 
   const [currentLang, setCurrentLang] = useState(router.locale)
   const { t } = useTranslation('common')
@@ -50,7 +54,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen`}
     >
-
       {/*Mobile menu top bar*/}
       <MobileMenuTop
         setSidebarOpen={setSidebarOpen}

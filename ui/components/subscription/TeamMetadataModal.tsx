@@ -8,13 +8,13 @@ import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
 import cleanData from '@/lib/tableland/cleanData'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import FormInput from '../forms/FormInput'
+import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/TeamImageGenerator'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -24,7 +24,8 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
   return (
     <div className="w-full flex flex-col gap-2">
       <FormInput
-        label="Name"
+        id="team-name-input"
+        label="Name *"
         value={teamData.name}
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, name: target.value }))
@@ -32,6 +33,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         placeholder="Enter your name"
       />
       <FormInput
+        id="team-bio-input"
         label="Bio"
         value={teamData.description}
         onChange={({ target }: any) =>
@@ -40,6 +42,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         placeholder="Enter your bio"
       />
       <FormInput
+        id="team-twitter-input"
         label="Twitter"
         value={teamData.twitter}
         onChange={({ target }: any) =>
@@ -48,6 +51,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         placeholder="Enter your twitter link"
       />
       <FormInput
+        id="team-communications-input"
         label="Communications"
         value={teamData.communications}
         onChange={({ target }: any) =>
@@ -59,6 +63,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         placeholder="Enter your communications link"
       />
       <FormInput
+        id="team-website-input"
         label="Website"
         value={teamData.website}
         onChange={({ target }: any) =>
@@ -85,6 +90,7 @@ export default function TeamMetadataModal({
   const [formResponseId, setFormResponseId] = useState<string>(
     getAttribute(nft?.metadata?.attributes, 'formId').value
   )
+  const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
 
   const { getAccessToken } = usePrivy()
 
@@ -96,23 +102,15 @@ export default function TeamMetadataModal({
 
   const submitTypeform = useCallback(
     async (formResponse: any) => {
-      const accessToken = await getAccessToken()
-      await createSession(accessToken)
-
-      //get response from form
-
       try {
         const { formId, responseId } = formResponse
 
-        await waitForResponse(formId, responseId, accessToken)
+        await waitForResponse(formId, responseId)
 
         const res = await fetch(
           `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
           {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
           }
         )
 
@@ -127,7 +125,6 @@ export default function TeamMetadataModal({
       } catch (err: any) {
         console.log(err)
       }
-      await destroySession(accessToken)
     },
     [teamTableContract, newTeamImage]
   )
@@ -215,22 +212,21 @@ export default function TeamMetadataModal({
         {stage === 3 && (
           <>
             <TeamMetadataForm teamData={teamData} setTeamData={setTeamData} />
+            <ConditionCheckbox
+              label="I acknowledge that this info will be stored permanently onchain."
+              agreedToCondition={agreedToOnChainData}
+              setAgreedToCondition={setAgreedToOnChainData}
+            />
             <PrivyWeb3Button
               className="mt-4 w-full gradient-2 rounded-[5vmax]"
               requiredChain={DEFAULT_CHAIN}
               label="Submit"
+              isDisabled={!agreedToOnChainData}
               action={async () => {
-                if (
-                  !teamData.name ||
-                  teamData.name.trim() === '' ||
-                  !teamData.description ||
-                  teamData.description.trim() === ''
-                ) {
-                  return toast.error('Please enter a name and bio.')
+                if (!teamData.name || teamData.name.trim() === '') {
+                  return toast.error('Please enter a name.')
                 }
 
-                const accessToken = await getAccessToken()
-                await createSession(accessToken)
                 try {
                   const rawMetadataRes = await fetch(resolvedMetadata.url)
                   const rawMetadata = await rawMetadataRes.json()
@@ -297,7 +293,6 @@ export default function TeamMetadataModal({
                 } catch (err) {
                   console.log(err)
                 }
-                await destroySession(accessToken)
               }}
             />
           </>
