@@ -58,7 +58,9 @@ const Asset = ({ name, amount, usd, address, loading }: AssetProps) => {
             loading && 'loading-line'
           }`}
         >
-          {name === 'MOONEY' ? 'Governance Token' : `$${usd}`}
+          {name === 'MOONEY' || name === 'vMOONEY'
+            ? 'Governance Token'
+            : `$${usd}`}
         </p>
       </div>
     </div>

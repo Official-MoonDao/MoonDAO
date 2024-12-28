@@ -41,23 +41,17 @@ describe('<TeamMetadataModal /> ', () => {
   it('Renders form inputs with correct initial values', () => {
     cy.get('button').contains('Next').click()
     cy.get('button').contains('No').click()
-    cy.get('input[placeholder="Enter your name"]').should(
-      'have.value',
-      nft.metadata.name
-    )
-    cy.get('input[placeholder="Enter your bio"]').should(
-      'have.value',
-      nft.metadata.description
-    )
-    cy.get('input[placeholder="Enter your twitter link"]').should(
+    cy.get('#team-name-input').should('have.value', nft.metadata.name)
+    cy.get('#team-bio-input').should('have.value', nft.metadata.description)
+    cy.get('#team-twitter-input').should(
       'have.value',
       getAttribute(nft.metadata.attributes, 'twitter').value
     )
-    cy.get('input[placeholder="Enter your communications link"]').should(
+    cy.get('#team-communications-input').should(
       'have.value',
       getAttribute(nft.metadata.attributes, 'communications').value
     )
-    cy.get('input[placeholder="Enter your website link"]').should(
+    cy.get('#team-website-input').should(
       'have.value',
       getAttribute(nft.metadata.attributes, 'website').value
     )

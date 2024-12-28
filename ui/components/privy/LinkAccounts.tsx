@@ -12,7 +12,7 @@ export function LinkAccounts({ user }: any) {
       <button onClick={onClick} className="pt-1 text-[13px]">
         <div className="flex w-full items-center justify-between px-2">
           {children}
-          <p>{linked ? '✔' : '⨉'}</p>
+          <p>{linked ? '✔' : 'Add'}</p>
         </div>
       </button>
     )
@@ -38,7 +38,7 @@ export function LinkAccounts({ user }: any) {
       >
         <strong>Link Accounts:</strong>
         <button
-          className={`duration-300 ease-in-out ${enabled && 'rotate-180'}`}
+          className={`duration-150 ease-in-out ${enabled && 'rotate-180'}`}
         >
           <ChevronDownIcon height={20} width={20} />
         </button>

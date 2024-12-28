@@ -1,11 +1,18 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowDownOnSquareIcon,
+  ArrowUpRightIcon,
+  ChevronDownIcon,
+  PlusIcon,
+  WalletIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 import {
   useFundWallet,
   useLogin,
   usePrivy,
   useWallets,
 } from '@privy-io/react-auth'
-import { NFT, useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -16,7 +23,6 @@ import ChainContext from '../../lib/thirdweb/chain-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
-import CitizenContext from '@/lib/citizen/citizen-context'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
@@ -35,6 +41,7 @@ import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import NetworkSelector from '../thirdweb/NetworkSelector'
 import { LinkAccounts } from './LinkAccounts'
 import { PrivyWeb3Button } from './PrivyWeb3Button'
+import WalletAction from './WalletAction'
 
 type PrivyConnectWalletProps = {
   citizenContract?: any
@@ -44,7 +51,9 @@ type PrivyConnectWalletProps = {
 const selectedNativeToken: any = {
   arbitrum: 'ETH',
   ethereum: 'ETH',
+  base: 'ETH',
   sepolia: 'ETH',
+  'base-sepolia-testnet': 'ETH',
   polygon: 'MATIC',
 }
 
@@ -157,7 +166,7 @@ function SendModal({
           </button>
         </div>
 
-        <NetworkSelector />
+        <NetworkSelector iconsOnly />
 
         <div className="flex gap-4 items-center">
           <select
@@ -221,7 +230,7 @@ export function PrivyConnectWallet({
   const { login } = useLogin({
     onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
       //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
-      if (!wasAlreadyAuthenticated) {
+      if (!wasAlreadyAuthenticated && router.pathname !== '/submission') {
         let citizen
         try {
           const citizenContract = await sdk?.getContract(
@@ -345,12 +354,16 @@ export function PrivyConnectWallet({
           selectedChain.slug === 'polygon' ? 'polygon' : 'ethereum'
         }.svg`}
         width={
-          selectedChain.slug === 'ethereum' || selectedChain.slug === 'arbitrum'
+          selectedChain.slug === 'ethereum' ||
+          selectedChain.slug === 'arbitrum' ||
+          selectedChain.slug === 'sepolia'
             ? 25
             : 30
         }
         height={
-          selectedChain.slug === 'ethereum' || selectedChain.slug === 'arbitrum'
+          selectedChain.slug === 'ethereum' ||
+          selectedChain.slug === 'arbitrum' ||
+          selectedChain.slug === 'sepolia'
             ? 25
             : 30
         }
@@ -399,7 +412,7 @@ export function PrivyConnectWallet({
             }}
           >
             {/*Address and Toggle open/close button*/}
-            <div className="flex items-center w-full h-full justify-center">
+            <div className="flex items-center w-full h-full justify-between">
               <p className="text-xs">
                 {ens
                   ? ens
@@ -407,6 +420,11 @@ export function PrivyConnectWallet({
                   ? `${address?.slice(0, 6)}...${address?.slice(-4)}`
                   : ''}
               </p>
+              <ChevronDownIcon
+                className={`w-4 h-4 text-black dark:text-white cursor-pointer transition-all duration-150 ${
+                  enabled ? 'rotate-180' : ''
+                }`}
+              />
             </div>
             {/*Menu that opens up*/}
           </div>
@@ -428,27 +446,27 @@ export function PrivyConnectWallet({
                   formattedBalances={formattedBalances}
                 />
               )}
-              <div
-                className={`w-full flex ${
-                  type === 'mobile' ? 'justify-between' : 'justify-end'
-                }`}
-              >
-                {type === 'mobile' && (
-                  <div className="h-[10px]">
-                    <CitizenProfileLink
-                      selectedChain={selectedChain}
-                      citizenContract={citizenContract}
-                    />
+              <div className={`w-full flex items-center justify-between`}>
+                <div className="flex items-center justify-center gap-4">
+                  <div className="w-[50px]">
+                    <NetworkSelector iconsOnly />
                   </div>
-                )}
+                  {type === 'mobile' && (
+                    <div className="pt-2">
+                      <CitizenProfileLink
+                        selectedChain={selectedChain}
+                        citizenContract={citizenContract}
+                      />
+                    </div>
+                  )}
+                </div>
                 <XMarkIcon
                   className="w-6 h-6 text-black dark:text-white cursor-pointer"
                   onClick={() => setEnabled(false)}
                 />
               </div>
               <div className="relative mt-2">
-                <NetworkSelector />
-                <div className="mt-2 flex items-center">
+                <div className="w-full mt-2 flex items-center">
                   <div className="ml-2 bg-dark-cool">
                     <p className="text-sm">{`${address?.slice(
                       0,
@@ -535,27 +553,52 @@ export function PrivyConnectWallet({
                 </div>
               )}
 
-              <button
-                className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
-                onClick={async () => {
-                  if (!address) return toast.error('Please connect your wallet')
-                  fundWallet(address, {
-                    chain: viemChains[selectedChain.slug],
-                    asset: 'native-currency',
-                  })
-                }}
+              <div
+                id="wallet-actions-container"
+                className="pt-4 pb-8 flex gap-5"
               >
-                <strong>Fund</strong>
-              </button>
-
-              <button
-                className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
-                onClick={async () => {
-                  setSendModalEnabled(true)
-                }}
-              >
-                <strong>Send</strong>
-              </button>
+                <WalletAction
+                  id="wallet-fund-action"
+                  label="Fund"
+                  icon={<PlusIcon width={25} height={25} />}
+                  onClick={async () => {
+                    if (!address)
+                      return toast.error('Please connect your wallet')
+                    fundWallet(address, {
+                      chain: viemChains[selectedChain.slug],
+                      asset: 'native-currency',
+                    })
+                  }}
+                />
+                <WalletAction
+                  id="wallet-send-action"
+                  label="Send"
+                  icon={<ArrowUpRightIcon width={25} height={25} />}
+                  onClick={() => {
+                    setSendModalEnabled(true)
+                  }}
+                />
+                <WalletAction
+                  id="wallet-add-wallet-action"
+                  label="Add Wallet"
+                  icon={<WalletIcon width={25} height={25} />}
+                  onClick={() => {
+                    connectWallet()
+                  }}
+                />
+                {wallets[selectedWallet]?.walletClientType === 'privy' && (
+                  <WalletAction
+                    id="wallet-export-action"
+                    label="Export"
+                    icon={<ArrowDownOnSquareIcon width={25} height={25} />}
+                    onClick={() => {
+                      exportWallet().catch(() => {
+                        toast.error('Please select a privy wallet to export.')
+                      })
+                    }}
+                  />
+                )}
+              </div>
 
               <div className="pt-1">
                 <p className="font-semibold">Wallets:</p>
@@ -594,26 +637,6 @@ export function PrivyConnectWallet({
                       )}
                     </div>
                   ))}
-                  {wallets[selectedWallet]?.walletClientType === 'privy' && (
-                    <button
-                      className="w-full p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
-                      onClick={() => {
-                        exportWallet().catch(() => {
-                          toast.error('Please select a privy wallet to export.')
-                        })
-                      }}
-                    >
-                      Export Wallet
-                    </button>
-                  )}
-                  <button
-                    className="w-full gradient-3 p-1 pr-2 pl-2 text-dark-cool"
-                    onClick={async () => {
-                      connectWallet()
-                    }}
-                  >
-                    <strong>Connect</strong>
-                  </button>
                 </div>
               </div>
               <div className="pt-1">
@@ -632,7 +655,7 @@ export function PrivyConnectWallet({
                       logout()
                     }}
                   >
-                    <strong>Log out</strong>
+                    <strong>Log Out</strong>
                   </button>
                 </div>
               </div>

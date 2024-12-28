@@ -22,7 +22,7 @@ export default function LatestJobs({
     async function getLatestJobs() {
       const now = Math.floor(Date.now() / 1000)
       const tableName = await jobTableContract.call('getTableName')
-      const statement = `SELECT * FROM ${tableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY timestamp ASC LIMIT 25`
+      const statement = `SELECT * FROM ${tableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
       const latestJobsRes = await fetch(
         `${TABLELAND_ENDPOINT}?statement=${statement}`
       )
@@ -33,7 +33,7 @@ export default function LatestJobs({
         ])
         return teamExpiration.toNumber() > now
       })
-      setLatestJobs(validJobs.reverse())
+      setLatestJobs(validJobs)
     }
     if (teamContract && jobTableContract) {
       getLatestJobs()

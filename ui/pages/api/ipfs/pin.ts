@@ -1,6 +1,6 @@
 import formidable from 'formidable'
 import fs from 'fs'
-import { privyAuth } from 'middleware/privyAuth'
+import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 
@@ -58,4 +58,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withMiddleware(handler, privyAuth)
+export default withMiddleware(handler, authMiddleware)

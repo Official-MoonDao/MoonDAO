@@ -1,15 +1,18 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
-import { MediaRenderer } from '@thirdweb-dev/react'
-import { DEFAULT_CHAIN } from 'const/config'
+import { MediaRenderer, useContract } from '@thirdweb-dev/react'
+import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { createSession, destroySession } from '@/lib/iron-session/iron-session'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import { renameFile } from '@/lib/utils/files'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
+import TeamABI from '../../const/abis/Team.json'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { TeamListing } from './TeamListing'
@@ -43,6 +46,7 @@ export default function TeamMarketplaceListingModal({
   listing,
 }: TeamMarketplaceListingModalProps) {
   const { getAccessToken } = usePrivy()
+  const { selectedChain } = useContext(ChainContext)
   const [isLoading, setIsLoading] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
   const [isUpcoming, setIsUpcoming] = useState(false)
@@ -81,6 +85,11 @@ export default function TeamMarketplaceListingModal({
 
   const currTime = useCurrUnixTime()
 
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug],
+    TeamABI
+  )
+
   useEffect(() => {
     if (listing) {
       if (currTime < listing.startTime) {
@@ -114,8 +123,6 @@ export default function TeamMarketplaceListingModal({
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto" // Updated styles
         onSubmit={async (e) => {
           e.preventDefault()
-          const accessToken = await getAccessToken()
-          await createSession(accessToken)
           if (
             listingData.title.trim() === '' ||
             listingData.description.trim() === '' ||
@@ -195,12 +202,32 @@ export default function TeamMarketplaceListingModal({
                 cleanedData.shipping,
               ])
             }
-            if (tx?.receipt)
-              setTimeout(() => {
-                refreshListings()
-                setIsLoading(false)
-                setEnabled(false)
-              }, 25000)
+
+            //Get listing id from receipt and send discord notification
+            const listingId = parseInt(
+              tx.receipt.logs[1].topics[1],
+              16
+            ).toString()
+            const listingTeamId = parseInt(
+              tx.receipt.logs[1].topics[2],
+              16
+            ).toString()
+            const team = await teamContract?.erc721.get(listingTeamId)
+            const teamName = team?.metadata.name as string
+            sendDiscordMessage(
+              'networkNotifications',
+              `[**${teamName}** has ${
+                edit ? 'updated a' : 'posted a new'
+              } listing](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
+                teamName
+              )}?listing=${listingId}&_timestamp=123456789)`
+            )
+
+            setTimeout(() => {
+              refreshListings()
+              setIsLoading(false)
+              setEnabled(false)
+            }, 25000)
           } catch (err: any) {
             console.log(err)
             toast.error(
@@ -209,7 +236,6 @@ export default function TeamMarketplaceListingModal({
             )
             setIsLoading(false)
           }
-          await destroySession(accessToken)
         }}
       >
         <div className="w-full flex items-center justify-between">
@@ -274,7 +300,7 @@ export default function TeamMarketplaceListingModal({
             }}
             value={listingData.description}
             style={{ resize: 'none' }}
-            maxLength={500}
+            maxLength={250}
           />
           <div className="flex gap-2">
             <input
@@ -391,11 +417,13 @@ export default function TeamMarketplaceListingModal({
           requiredChain={DEFAULT_CHAIN}
           label={edit ? 'Edit Listing' : 'Add Listing'}
           type="submit"
-          isDisabled={isLoading || !isValid} // Disable if loading or invalid
+          isDisabled={
+            !marketplaceTableContract || !teamContract || isLoading || !isValid
+          }
           action={() => {}}
           className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${
             !isValid ? 'opacity-50 cursor-not-allowed' : ''
-          }`} // Updated class for opacity and rounding
+          }`}
         />
 
         {isLoading && (
