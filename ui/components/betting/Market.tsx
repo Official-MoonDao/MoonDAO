@@ -75,7 +75,7 @@ const Market: React.FC<MarketProps> = ({
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const { contract: marketMakersRepo } = useContract(
     LMSR_ADDRESSES[chain.slug],
-    LMSR.abi
+    LMSR
   )
   const { contract: lmsrWithTWAP } = useContract(
     LMSR_WITH_TWAP_ADDRESSES[chain.slug],
@@ -83,11 +83,11 @@ const Market: React.FC<MarketProps> = ({
   )
   const { contract: conditionalTokensRepo } = useContract(
     CONDITIONAL_TOKEN_ADDRESSES[chain.slug],
-    ConditionalTokens.abi
+    ConditionalTokens
   )
   const { contract: collateralContract } = useContract(
     COLLATERAL_TOKEN_ADDRESSES[chain.slug],
-    WETH.abi
+    WETH
   )
 
   useEffect(() => {
