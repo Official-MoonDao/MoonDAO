@@ -392,11 +392,7 @@ export default function ProposalEditor() {
                     : 'You need to connect wallet first.'
                 }
               >
-                {signingStatus === 'loading'
-                  ? 'Signing...'
-                  : proposalId
-                  ? 'Save Draft'
-                  : '* Post In Ideation Forum'}
+                {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
               </button>
               {/* SUBMIT */}
               <button
@@ -423,20 +419,6 @@ export default function ProposalEditor() {
               </button>
             </div>
           </div>
-          {!proposalId && (
-            <p className="mt-2 text-sm text-gray-500 text-right pb-5">
-              *Your submission will be{' '}
-              <a
-                href="https://discord.com/channels/914720248140279868/1027658256706961509"
-                target="_blank"
-                rel="noreferrer"
-                className="text-white"
-              >
-                posted here
-              </a>{' '}
-              for community discussion
-            </p>
-          )}
         </form>
       </div>
     </div>
