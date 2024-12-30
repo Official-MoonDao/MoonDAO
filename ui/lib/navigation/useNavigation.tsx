@@ -51,11 +51,11 @@ export default function useNavigation(citizen: any) {
           },
           {
             name: 'Submit Proposal',
-            href: '/submission',
+            href: '/submit',
           },
           {
             name: 'Submit Contribution',
-            href: '/submission?tag=contribution',
+            href: '/submit?tag=contribution',
           },
           {
             name: 'Submit Final Report',

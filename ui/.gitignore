@@ -39,3 +39,6 @@ cypress/screenshots
 cypress/videos
 
 notes.txt
+
+# sitemap
+public/sitemap*.xml
