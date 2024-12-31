@@ -203,7 +203,7 @@ export default function CitizenDetailPage({
                       </button>
                     )}
                     {nft ? (
-                      <h1 className="text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
+                      <h1 className="max-w-[450px] text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
                         {nft.metadata.name}
                       </h1>
                     ) : (
