@@ -1,0 +1,17 @@
+{
+    "name": "load_project_data_into_tableland",
+    "pipeline": {
+        "input": { 
+            "space": "test-space",
+            "cycle": "test-cycle"
+        },
+        "path": "Pipelines/Integration/POST/Tableland/test_run.js"
+    },
+    "schedule": {
+        "time": ["11:40"],
+        "weekday": [],
+        "day": [],
+        "month": [],
+        "year": []
+    }
+}
