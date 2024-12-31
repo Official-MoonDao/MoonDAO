@@ -184,6 +184,8 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   sepolia: '',
 }
 
+//Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
+//Arbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/42
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '0x0000002a',
   sepolia: '0x00000182',
