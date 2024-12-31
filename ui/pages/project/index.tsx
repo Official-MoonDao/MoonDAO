@@ -1,0 +1,309 @@
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { NFT } from '@thirdweb-dev/react'
+import TeamABI from 'const/abis/Team.json'
+import { TEAM_ADDRESSES } from 'const/config'
+import { blockedProjects } from 'const/whitelist'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
+import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { getAttribute } from '@/lib/utils/nft'
+import Card from '@/components/layout/Card'
+import CardGridContainer from '@/components/layout/CardGridContainer'
+import CardSkeleton from '@/components/layout/CardSkeleton'
+import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import Frame from '@/components/layout/Frame'
+import Head from '@/components/layout/Head'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import Search from '@/components/layout/Search'
+import StandardButton from '@/components/layout/StandardButton'
+import Tab from '@/components/layout/Tab'
+
+type NetworkProps = {
+  activeProjects: NFT[]
+  inactiveProjects: NFT[]
+}
+
+export default function Projects({
+  activeProjects,
+  inactiveProjects,
+}: NetworkProps) {
+  const router = useRouter()
+  const shallowQueryRoute = useShallowQueryRoute()
+
+  const [input, setInput] = useState('')
+  function filterBySearch(nfts: NFT[]) {
+    return nfts.filter((nft) => {
+      return nft.metadata.name
+        ?.toString()
+        .toLowerCase()
+        .includes(input.toLowerCase())
+    })
+  }
+
+  const [tab, setTab] = useState<string>('active')
+  function loadByTab(tab: string) {
+    if (tab === 'active') {
+      setCachedNFTs(
+        input != '' ? filterBySearch(activeProjects) : activeProjects
+      )
+    } else if (tab === 'inactive') {
+      setCachedNFTs(
+        input != '' ? filterBySearch(inactiveProjects) : inactiveProjects
+      )
+    } else {
+      const nfts =
+        activeProjects?.[0] && inactiveProjects?.[0]
+          ? [...activeProjects, ...inactiveProjects]
+          : activeProjects?.[0]
+          ? activeProjects
+          : inactiveProjects?.[0]
+          ? inactiveProjects
+          : []
+      setCachedNFTs(input != '' ? filterBySearch(nfts) : nfts)
+    }
+  }
+
+  const handleTabChange = useCallback(
+    (newTab: string) => {
+      setTab(newTab)
+      setPageIdx(1)
+      shallowQueryRoute({ tab: newTab, page: '1' })
+    },
+    [shallowQueryRoute]
+  )
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setPageIdx(newPage)
+      shallowQueryRoute({ tab, page: newPage.toString() })
+    },
+    [shallowQueryRoute, tab]
+  )
+
+  const [maxPage, setMaxPage] = useState(1)
+
+  useEffect(() => {
+    const totalActiveProjects =
+      input != ''
+        ? filterBySearch(activeProjects).length
+        : activeProjects.length
+    const totalInactiveProjects =
+      input != ''
+        ? filterBySearch(inactiveProjects).length
+        : inactiveProjects.length
+
+    if (tab === 'active') setMaxPage(Math.ceil(totalActiveProjects / 9))
+    if (tab === 'inactive') setMaxPage(Math.ceil(totalInactiveProjects / 9))
+  }, [tab, input, activeProjects, inactiveProjects])
+
+  const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
+
+  const [pageIdx, setPageIdx] = useState(1)
+
+  useEffect(() => {
+    const { tab: urlTab, page: urlPage } = router.query
+    if (urlTab && (urlTab === 'active' || urlTab === 'inactive')) {
+      setTab(urlTab as string)
+    }
+    if (urlPage && !isNaN(Number(urlPage))) {
+      setPageIdx(Number(urlPage))
+    }
+  }, [router.query])
+
+  useEffect(() => {
+    loadByTab(tab)
+  }, [tab, input, activeProjects, inactiveProjects, router.query])
+
+  useChainDefault()
+
+  const descriptionSection = (
+    <div className="pt-2">
+      <div className="mb-4">MoonDAO Projects.</div>
+      <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
+        <Search input={input} setInput={setInput} />
+      </Frame>
+      <div className="w-full flex gap-4">
+        <div
+          id="filter-container"
+          className="max-w-[350px] border-b-5 border-black"
+        >
+          <Frame noPadding>
+            <div className="flex flex-wrap text-sm bg-filter">
+              <Tab
+                tab="active"
+                currentTab={tab}
+                setTab={handleTabChange}
+                icon="/../.././assets/icon-org.svg"
+              >
+                Active
+              </Tab>
+              <Tab
+                tab="inactive"
+                currentTab={tab}
+                setTab={handleTabChange}
+                icon="/../.././assets/icon-passport.svg"
+              >
+                Inactive
+              </Tab>
+            </div>
+          </Frame>
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <section id="network-container" className="overflow-hidden">
+      <Head
+        title={'Projects'}
+        description={'MoonDAO Projects.'}
+        image="https://ipfs.io/ipfs/QmbExwDgVoDYpThFaVRRxUkusHnXxMj3Go8DdWrXg1phxi"
+      />
+      <Container>
+        <ContentLayout
+          header="Projects"
+          headerSize="max(20px, 3vw)"
+          description={descriptionSection}
+          preFooter={<NoticeFooter />}
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+        >
+          <>
+            <CardGridContainer>
+              {cachedNFTs?.[0] ? (
+                cachedNFTs
+                  ?.slice((pageIdx - 1) * 9, pageIdx * 9)
+                  .map((nft: any, I: number) => {
+                    if (nft.metadata.name !== 'Failed to load NFT metadata') {
+                      const type = nft.metadata.attributes.find(
+                        (attr: any) => attr.trait_type === 'communications'
+                      )
+                        ? 'team'
+                        : 'citizen'
+                      return (
+                        <div
+                          className="justify-center mt-5 flex"
+                          key={'team-citizen-' + I}
+                        >
+                          <Card
+                            inline
+                            metadata={nft.metadata}
+                            owner={nft.owner}
+                            type={type}
+                            hovertext="Explore Profile"
+                          />
+                        </div>
+                      )
+                    }
+                  })
+              ) : (
+                <>
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <CardSkeleton key={`card-skeleton-${i}`} />
+                  ))}
+                </>
+              )}
+            </CardGridContainer>
+            <Frame noPadding marginBottom="0px">
+              <div
+                id="pagination-container"
+                className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
+              >
+                <button
+                  onClick={() => {
+                    if (pageIdx > 1) {
+                      handlePageChange(pageIdx - 1)
+                    }
+                  }}
+                  className={`pagination-button ${
+                    pageIdx === 1 ? 'opacity-10' : 'cursor-pointer opacity-100'
+                  }`}
+                  disabled={pageIdx === 1}
+                >
+                  <Image
+                    src="/../.././assets/icon-left.svg"
+                    alt="Left Arrow"
+                    width={35}
+                    height={35}
+                  />
+                </button>
+                <p id="page-number" className="px-5 font-bold">
+                  Page {pageIdx} of {maxPage}
+                </p>
+                <button
+                  onClick={() => {
+                    if (pageIdx < maxPage) {
+                      handlePageChange(pageIdx + 1)
+                    }
+                  }}
+                  className={`pagination-button ${
+                    pageIdx === maxPage
+                      ? 'opacity-10'
+                      : 'cursor-pointer opacity-100'
+                  }`}
+                  disabled={pageIdx === maxPage}
+                >
+                  <Image
+                    src="/../.././assets/icon-right.svg"
+                    alt="Right Arrow"
+                    width={35}
+                    height={35}
+                  />
+                </button>
+              </div>
+            </Frame>
+          </>
+        </ContentLayout>
+      </Container>
+    </section>
+  )
+}
+
+export async function getStaticProps() {
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
+  const now = Math.floor(Date.now() / 1000)
+
+  const projectContract = await sdk.getContract(
+    TEAM_ADDRESSES[chain.slug],
+    TeamABI
+  )
+  const totalProjects = await projectContract.call('totalSupply')
+
+  const activeProjects = []
+  const inactiveProjects = []
+  for (let i = 0; i < totalProjects; i++) {
+    if (!blockedProjects.includes(i)) {
+      const project = await projectContract.erc721.get(i)
+      const expiresAt = await projectContract.call('expiresAt', [
+        project?.metadata?.id,
+      ])
+      if (expiresAt.toNumber() > now) {
+        const active = getAttribute(
+          project.metadata.attributes as any[],
+          'active'
+        )?.value
+        if (active === '0') {
+          inactiveProjects.push(project)
+        } else if (active === '1' || !active) {
+          activeProjects.push(project)
+        }
+      }
+    }
+  }
+
+  return {
+    props: {
+      activeProjects: activeProjects.reverse(),
+      inactiveProjects: inactiveProjects.reverse(),
+    },
+    revalidate: 60,
+  }
+}
