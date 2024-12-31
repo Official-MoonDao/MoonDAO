@@ -118,7 +118,7 @@ export default function CitizenActions({
                         width={30}
                       />
                     }
-                    onClick={() => router.push('/submission')}
+                    onClick={() => router.push('/submit')}
                   />
                   <Action
                     title="Get Rewards"
@@ -131,7 +131,7 @@ export default function CitizenActions({
                         width={30}
                       />
                     }
-                    onClick={() => router.push('/submission?tag=contribution')
+                    onClick={() => router.push('/submit?tag=contribution')
                     }
                   />
                   <Action
