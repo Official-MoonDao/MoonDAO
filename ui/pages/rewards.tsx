@@ -46,16 +46,16 @@ export async function getStaticProps() {
   const distributionTableName = await distributionTableContract.call(
     'getTableName'
   )
+  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1 || 4
+  const year = new Date().getFullYear() - (currentQuarter === 1 ? 1 : 0)
 
-  const currentYear = new Date().getFullYear()
-  const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
-  const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
+  const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${year} AND quarter = ${quarter} AND active = 1`
   const projectsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
   )
   const projects = await projectsRes.json()
 
-  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
+  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
   const distributionsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
   )

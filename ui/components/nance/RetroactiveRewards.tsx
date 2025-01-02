@@ -25,8 +25,9 @@ import StandardButton from '../layout/StandardButton'
 export type Project = {
   id: string
   title: string
-  contributors: { [key: string]: number }
+  rewardDistribution: { [key: string]: number }
   finalReportLink: string
+  eligible: number
   MDP: number
 }
 export type Distribution = {
@@ -52,8 +53,8 @@ export function RetroactiveRewards({
   const { isMobile } = useWindowSize()
 
   const userAddress = useAddress()
-  const year = new Date().getFullYear()
-  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
+  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1 || 4
+  const year = new Date().getFullYear() - (currentQuarter === 1 ? 1 : 0)
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
@@ -323,8 +324,10 @@ export function RetroactiveRewards({
                         disabled={
                           !userAddress ||
                           !userHasVotingPower ||
-                          userAddress in project.contributors ||
-                          userAddress.toLowerCase() in project.contributors
+                          !project.eligible ||
+                          userAddress in project.rewardDistribution ||
+                          userAddress.toLowerCase() in
+                            project.rewardDistribution
                         }
                       />
                       <span>%</span>
