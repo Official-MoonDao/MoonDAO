@@ -118,8 +118,8 @@ export const CITIZEN_TABLE_NAMES: Index = {
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x4c2d6567D81A34117E894b6fDC97C9824f80D961',
-  'arbitrum-sepolia': '0xF0A3DB6161D1Ee7B99197CDeD4EdFc462EAE80e0',
+  // TODO update once mainnet is ready
+  arbitrum: '0x2E8e4B7DAf62868d3184E691f3Cd5Bd9c069cAe1',
   sepolia: '0xC391008458004e33bED39EF2c2539857006c0c74',
 }
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
@@ -127,7 +127,6 @@ export const COMPETITOR_TABLE_ADDRESSES: Index = {
 }
 export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
-  'arbitrum-sepolia': '0xd1D57F18252D06a6b28DE96B6cbF7F4283A4F205',
   sepolia: '0x5217A95F335cd026c877Eb5C1B0Ae6C82945178D',
 }
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {

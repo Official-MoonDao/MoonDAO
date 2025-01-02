@@ -114,7 +114,7 @@ export default function ProposalList() {
               return {
                 ...p,
                 actions:
-                  p.actions.length > 0
+                  p.actions && p.actions.length > 0
                     ? p.actions
                     : getActionsFromBody(p.body) || [],
               }

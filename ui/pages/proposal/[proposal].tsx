@@ -23,7 +23,7 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
     proposalPacket = {
       ...proposalPacket,
       actions:
-        proposalPacket.actions.length > 0
+        proposalPacket.actions && proposalPacket.actions.length > 0
           ? proposalPacket.actions
           : getActionsFromBody(proposalPacket.body) || [],
     }
