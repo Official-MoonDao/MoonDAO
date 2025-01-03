@@ -89,7 +89,6 @@ export default function CreateTeam({
   const { fundWallet } = useFundWallet()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
-
     //get response from form
     const { formId, responseId } = formResponse
 
@@ -352,7 +351,7 @@ export default function CreateTeam({
 
                         if (nativeBalance < totalCost) {
                           const roundedCost =
-                            Math.ceil(+totalCost * 100000) / 100000
+                            Math.ceil(+totalCost * 1000000) / 1000000
 
                           return await fundWallet(address, {
                             amount: String(roundedCost),

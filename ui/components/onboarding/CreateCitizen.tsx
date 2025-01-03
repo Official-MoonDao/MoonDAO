@@ -448,7 +448,7 @@ export default function CreateCitizen({
 
                       if (nativeBalance < totalCost) {
                         const roundedCost =
-                          Math.ceil(+totalCost * 10000) / 10000
+                          Math.ceil(+totalCost * 1000000) / 1000000
 
                         return await fundWallet(address, {
                           amount: String(roundedCost),
