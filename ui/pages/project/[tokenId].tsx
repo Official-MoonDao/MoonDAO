@@ -30,6 +30,7 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import Button from '@/components/subscription/Button'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import TeamDonation from '@/components/subscription/TeamDonation'
@@ -209,42 +210,42 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
                     )}
 
                     {/*Subscription Extension Container*/}
-                    {/* {isManager || address === nft.owner ? (
-                        <div id="manager-container" className="relative">
-                          {expiresAt && (
-                            <div id="expires-container" className="">
+                    {isManager || address === nft.owner ? (
+                      <div id="manager-container" className="relative">
+                        {expiresAt && (
+                          <div id="expires-container" className="">
+                            <div
+                              id="extend-sub-button-container"
+                              className="overflow-hidden text-sm"
+                            >
                               <div
-                                id="extend-sub-button-container"
-                                className="overflow-hidden text-sm"
+                                id="extend-sub-button"
+                                className="gradient-2 rounded-[2vmax] rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px]"
                               >
-                                <div
-                                  id="extend-sub-button"
-                                  className="gradient-2 rounded-[2vmax] rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px]"
+                                <Button
+                                  onClick={() => {
+                                    setTeamSubscriptionModalEnabled(true)
+                                  }}
                                 >
-                                  <Button
-                                    onClick={() => {
-                                      setTeamSubscriptionModalEnabled(true)
-                                    }}
-                                  >
-                                    {'Extend Plan'}
-                                  </Button>
-                                </div>
+                                  {'Extend Plan'}
+                                </Button>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      ) : (
-                        <></>
-                      )} */}
-                  </div>
-                  {/* {isManager || address === nft.owner ? (
-                      <p className="opacity-50 mt-2 text-sm">
-                        {'Exp: '}
-                        {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                      </p>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <></>
-                    )} */}
+                    )}
+                  </div>
+                  {isManager || address === nft.owner ? (
+                    <p className="opacity-50 mt-2 text-sm">
+                      {'Exp: '}
+                      {new Date(expiresAt?.toString() * 1000).toLocaleString()}
+                    </p>
+                  ) : (
+                    <></>
+                  )}
                   <div className="mt-4">
                     <Address address={nft.owner} />
                   </div>

@@ -1,10 +1,9 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT } from '@thirdweb-dev/react'
 import TeamABI from 'const/abis/Team.json'
-import { TEAM_ADDRESSES } from 'const/config'
+import { PROJECT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -20,7 +19,6 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
-import StandardButton from '@/components/layout/StandardButton'
 import Tab from '@/components/layout/Tab'
 
 type NetworkProps = {
@@ -269,32 +267,29 @@ export default function Projects({
 export async function getStaticProps() {
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
-  const now = Math.floor(Date.now() / 1000)
 
   const projectContract = await sdk.getContract(
-    TEAM_ADDRESSES[chain.slug],
+    PROJECT_ADDRESSES[chain.slug],
     TeamABI
   )
   const totalProjects = await projectContract.call('totalSupply')
+
+  console.log(totalProjects.toString())
 
   const activeProjects = []
   const inactiveProjects = []
   for (let i = 0; i < totalProjects; i++) {
     if (!blockedProjects.includes(i)) {
       const project = await projectContract.erc721.get(i)
-      const expiresAt = await projectContract.call('expiresAt', [
-        project?.metadata?.id,
-      ])
-      if (expiresAt.toNumber() > now) {
-        const active = getAttribute(
-          project.metadata.attributes as any[],
-          'active'
-        )?.value
-        if (active === '0') {
-          inactiveProjects.push(project)
-        } else if (active === '1' || !active) {
-          activeProjects.push(project)
-        }
+
+      const active = getAttribute(
+        project.metadata.attributes as any[],
+        'active'
+      )?.value
+      if (active === '0') {
+        inactiveProjects.push(project)
+      } else if (active === '1' || active) {
+        activeProjects.push(project)
       }
     }
   }

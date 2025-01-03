@@ -117,11 +117,21 @@ export const CITIZEN_TABLE_NAMES: Index = {
   sepolia: 'CITIZENTABLE_11155111_1671',
 }
 
-export const PROJECT_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x2E8e4B7DAf62868d3184E691f3Cd5Bd9c069cAe1',
-  'arbitrum-sepolia': '0x7876d5a6050fE861B8b0A96FF37B34116C9D0636',
-  sepolia: '0x4eC886128E970eEef0230a775cA1fD46f9383C27',
+export const PROJECT_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x9016Ac821055d1E32a5E18d43493faf601b9E756',
 }
+
+export const PROJECT_CREATOR_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xb1089317f7338860B29fC6d324E460E8FA2333da',
+}
+
+export const PROJECT_TABLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xC391008458004e33bED39EF2c2539857006c0c74',
+}
+
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
   sepolia: '0x9057Fff69e8b016a214C4f894430F71dad50b42c',
 }
