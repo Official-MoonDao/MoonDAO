@@ -1,3 +1,9 @@
+import { v4 } from "uuid";
+
+export function uuidGen(): string {
+  return v4().replaceAll('-', '');
+}
+
 export function formatNumberUSStyle(
   n: string | number | bigint,
   compact: boolean = false
