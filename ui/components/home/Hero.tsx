@@ -1,6 +1,6 @@
 import dynamic from 'next/dynamic'
-import MailingList from '../layout/MailingList'
 import Image from 'next/image'
+import MailingList from '../layout/MailingList'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
@@ -27,18 +27,18 @@ export default function Hero({ citizenLocationData }: any) {
           className="absolute h-[100%] left-0 top-0 w-[100%]"
         >
           {/* Extra Large Screens (1800px+) */}
-          <div className="hidden 2xl:block absolute h-full right-0 top-0 w-[1200px] h-[1200px]">
-            <Earth 
-              pointsData={citizenLocationData} 
+          <div className="hidden 2xl:block absolute h-full right-[-25%] xl:right-0 2xl:right-[0%] top-0 w-[1200px] h-[1200px]">
+            <Earth
+              pointsData={citizenLocationData}
               enableControls={true}
               enableZoom={false}
             />
           </div>
 
           {/* Large Screens (1000px - 1800px) */}
-          <div className="hidden xl:block 2xl:hidden absolute h-full right-0 top-0 w-[70vw]">
-            <Earth 
-              pointsData={citizenLocationData} 
+          <div className="hidden xl:block 2xl:hidden absolute h-full right-[-25%] top-0 w-[70vw]">
+            <Earth
+              pointsData={citizenLocationData}
               enableControls={true}
               enableZoom={false}
             />
@@ -46,8 +46,8 @@ export default function Hero({ citizenLocationData }: any) {
 
           {/* Mobile Landscape (576px - 1000px) */}
           <div className="hidden sm:block xl:hidden absolute h-full left-0 top-0 w-[70vw]">
-            <Earth 
-              pointsData={citizenLocationData} 
+            <Earth
+              pointsData={citizenLocationData}
               enableControls={true}
               enableZoom={false}
               rotateOnMouseMove={true}
@@ -56,8 +56,8 @@ export default function Hero({ citizenLocationData }: any) {
 
           {/* Mobile Portrait (below 576px) */}
           <div className="block sm:hidden absolute h-full left-0 top-0 w-[90vw]">
-            <Earth 
-              pointsData={citizenLocationData} 
+            <Earth
+              pointsData={citizenLocationData}
               enableControls={false}
               enableZoom={false}
               rotateOnMouseMove={true}
@@ -67,7 +67,7 @@ export default function Hero({ citizenLocationData }: any) {
 
         <div
           id="content"
-          className="relative mt-[100px] w-[100%] md:w-[95%] lg:w-[70%]"
+          className="p-5 md:p-0 relative mt-[300px] sm:mt-[500px] w-[100%] md:w-[95%] lg:w-[70%]"
           style={{ pointerEvents: 'none' }}
         >
           <h1

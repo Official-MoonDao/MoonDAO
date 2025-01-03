@@ -7,8 +7,10 @@ export default function useGlobeSize() {
     function getSize() {
       if (typeof window !== 'undefined') {
         let width
-        if (window.innerWidth > 1500) {
-          width = 1000
+        if (window.innerWidth > 2000) {
+          width = 1500
+        } else if (window.innerWidth > 1500) {
+          width = window.innerWidth * 0.7
         } else if (window.innerWidth > 500) {
           width = window.innerWidth * 0.6
         } else {

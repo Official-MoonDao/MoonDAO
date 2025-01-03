@@ -26,7 +26,7 @@ export default function Earth({
   globeBrightness = 9,
   showPointLabels = true,
 }: EarthProps) {
-  const { width: size } = useGlobeSize()
+  const size = useGlobeSize()
   const globeRef = useRef<GlobeMethods | undefined>()
   const [selectedPoint, setSelectedPoint] = useState(null)
   const [pointModalEnabled, setPointModalEnabled] = useState(false)
@@ -50,11 +50,11 @@ export default function Earth({
 
       // Get all lights
       const lights = globeRef.current.lights()
-      
+
       // Set intensity for both lights
       lights.forEach((light) => {
         light.intensity = globeBrightness
-        
+
         // Change only the DirectionalLight color
         if (light.type === 'DirectionalLight') {
           light.color = new THREE.Color('#3644A6')
@@ -67,8 +67,8 @@ export default function Earth({
     <>
       <div
         style={{
-          width: size,
-          height: size,
+          width: size.width,
+          height: size.height,
           borderRadius: '50%',
           overflow: 'hidden',
           position: 'relative',
@@ -76,8 +76,8 @@ export default function Earth({
       >
         <Globe
           ref={globeRef}
-          width={size}
-          height={size}
+          width={size.width}
+          height={size.height}
           backgroundColor="#00000000"
           globeImageUrl={
             'https://unpkg.com/three-globe@2.33.0/example/img/earth-night.jpg'
