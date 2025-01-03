@@ -1,18 +1,24 @@
-import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { PlusCircleIcon } from '@heroicons/react/24/outline'
+import { Arbitrum, ArbitrumSepolia, Ethereum } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
+import { nativeOnChain } from '@uniswap/smart-order-router'
 import {
   DISTRIBUTION_TABLE_ADDRESSES,
   SNAPSHOT_RETROACTIVE_REWARDS_ID,
 } from 'const/config'
 import _ from 'lodash'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizens } from '@/lib/citizen/useCitizen'
+import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { useVotingPowers } from '@/lib/snapshot'
 import useWindowSize from '@/lib/team/use-window-size'
+import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
+import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import { computeRewardPercentages } from '@/lib/utils/voting'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
@@ -20,7 +26,8 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import StandardButton from '../layout/StandardButton'
+import SectionCard from '@/components/layout/SectionCard'
+import StandardButton from '@/components/layout/StandardButton'
 
 export type Project = {
   id: string
@@ -36,10 +43,51 @@ export type Distribution = {
   distribution: { [key: string]: number }
 }
 
+type RewardAssetProps = {
+  name: string
+  value: string
+  usdValue: string
+  approximateUSD?: boolean
+}
+
 export type RetroactiveRewardsProps = {
   projects: Project[]
   distributions: Distribution[]
   refreshRewards: () => void
+}
+
+function RewardAsset({
+  name,
+  value,
+  usdValue,
+  approximateUSD,
+}: RewardAssetProps) {
+  const image = assetImageExtension[name]
+    ? `/coins/${name}.${assetImageExtension[name]}`
+    : '/coins/DEFAULT.png'
+
+  return (
+    <div className="flex gap-2 items-center">
+      <Image
+        className="scale-[0.65]"
+        src={image}
+        alt={name}
+        width={50}
+        height={50}
+      />
+      <div className="flex flex-col min-h-[60px]">
+        <div className="flex gap-2 font-GoodTimes text-xl">
+          <p>{name}</p>
+          <p>{value}</p>
+        </div>
+        {Number(usdValue) > 0 && (
+          <p className="opacity-60">{`(${
+            approximateUSD ? '~' : ''
+          }${usdValue})`}</p>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function RetroactiveRewards({
@@ -53,7 +101,7 @@ export function RetroactiveRewards({
 
   const userAddress = useAddress()
   const year = new Date().getFullYear()
-  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
+  const quarter = Math.ceil((new Date().getMonth() + 1) / 3)
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
@@ -131,6 +179,22 @@ export function RetroactiveRewards({
     year,
     quarter
   )
+  const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
+  const { MOONEY, DAI } = useUniswapTokens(Ethereum)
+
+  useEffect(() => {
+    async function getMooneyBudgetUSD() {
+      const route = await pregenSwapRoute(Ethereum, mooneyBudget, MOONEY, DAI)
+
+      const usd = route?.route[0].rawQuote.toString() / 1e18
+      setMooneyBudgetUSD(usd)
+    }
+
+    if (mooneyBudget) {
+      getMooneyBudgetUSD()
+    }
+  }, [mooneyBudget])
+
   const {
     projectIdToETHPayout,
     projectIdToMooneyPayout,
@@ -214,7 +278,7 @@ export function RetroactiveRewards({
       />
       <Container>
         <ContentLayout
-          header={'Q' + quarter + ' ' + year + ' Retroactive Rewards'}
+          header={'Project Rewards'}
           description="Distribute rewards to contributors based on their contributions."
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
@@ -223,6 +287,56 @@ export function RetroactiveRewards({
           popOverEffect={false}
           isProfile
         >
+          <SectionCard>
+            <h1 className="font-GoodTimes opacity-60">{`Q${quarter}: ${year} Rewards`}</h1>
+            <div
+              id="rewards-asset-container"
+              className="mt-4 flex flex-col gap-2"
+            >
+              <RewardAsset
+                name="ETH"
+                value={ethBudget.toFixed(1)}
+                usdValue={usdBudget.toFixed(2)}
+              />
+              <div className="flex items-center justify-between">
+                <RewardAsset
+                  name="MOONEY"
+                  value={Number(mooneyBudget.toPrecision(3)).toLocaleString()}
+                  usdValue={mooneyBudgetUSD.toFixed(2)}
+                  approximateUSD
+                />
+
+                <StandardButton className="gradient-2 rounded-full">
+                  <div className="flex items-center gap-2">
+                    <Image
+                      src={'/assets/plus-icon.png'}
+                      width={20}
+                      height={20}
+                      alt="Create Project"
+                    />
+                    {'Create Project'}
+                  </div>
+                </StandardButton>
+              </div>
+            </div>
+
+            <div id="projects-container" className="mt-8">
+              <h1 className="font-GoodTimes opacity-60 text-xl">
+                Active Projects
+              </h1>
+
+              <div className="flex flex-col gap-2">
+                {projects.map((project, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center w-full py-1 text-[17px]"
+                  >
+                    <div className="w-24">{project.title}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </SectionCard>
           <section
             className={`w-full flex ${
               isMobile ? 'flex-col items-center' : 'flex-row items-start'
@@ -255,7 +369,7 @@ export function RetroactiveRewards({
                 <Asset
                   name="ETH"
                   amount={String(
-                    addressToEthPayout[userAddress].toFixed(2) || 0
+                    addressToEthPayout[userAddress]?.toFixed(2) || 0
                   )}
                   usd={String(
                     userAddress in addressToEthPayout
@@ -266,7 +380,7 @@ export function RetroactiveRewards({
                 <Asset
                   name="MOONEY"
                   amount={String(
-                    addressToMooneyPayout[userAddress].toFixed() || 0
+                    addressToMooneyPayout[userAddress]?.toFixed() || 0
                   )}
                   usd=""
                 />
