@@ -22,7 +22,7 @@
     "@headlessui/react": "^2.0.4",
     "@heroicons/react": "^2.0.18",
     "@hookform/error-message": "^2.0.1",
-    "@nance/nance-editor": "^1.8.3",
+    "@nance/nance-editor": "^1.8.4",
     "@nance/nance-hooks": "^4.1.6",
     "@nance/nance-sdk": "^4.1.6",
     "@privy-io/react-auth": "^1.92.1",
