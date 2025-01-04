@@ -18,11 +18,13 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -30,11 +32,13 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -121,6 +125,9 @@ export const PROJECT_TABLE_ADDRESSES: Index = {
   // TODO update once mainnet is ready
   arbitrum: '0x2E8e4B7DAf62868d3184E691f3Cd5Bd9c069cAe1',
   sepolia: '0xC391008458004e33bED39EF2c2539857006c0c74',
+}
+export const PROJECT_TEAM_ADDRESSES: Index = {
+  sepolia: '0x24411289007584aafCBfcE6406eC460cA01c7d3f',
 }
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
   sepolia: '0x9057Fff69e8b016a214C4f894430F71dad50b42c',
