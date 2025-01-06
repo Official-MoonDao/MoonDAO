@@ -1,18 +1,22 @@
-import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Ethereum, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import {
   DISTRIBUTION_TABLE_ADDRESSES,
   SNAPSHOT_RETROACTIVE_REWARDS_ID,
 } from 'const/config'
 import _ from 'lodash'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizens } from '@/lib/citizen/useCitizen'
+import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { useVotingPowers } from '@/lib/snapshot'
 import useWindowSize from '@/lib/team/use-window-size'
+import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
+import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import { computeRewardPercentages } from '@/lib/utils/voting'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
@@ -20,20 +24,22 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import StandardButton from '../layout/StandardButton'
+import SectionCard from '@/components/layout/SectionCard'
+import StandardButton from '@/components/layout/StandardButton'
+import ProjectCard from '../projects/ProjectCard'
 
-export type Project = {
-  id: string
-  title: string
-  contributors: { [key: string]: number }
-  finalReportLink: string
-  MDP: number
-}
 export type Distribution = {
   year: number
   quarter: number
   address: string
   distribution: { [key: string]: number }
+}
+
+export type RewardAssetProps = {
+  name: string
+  value: string | number
+  usdValue: string | number
+  approximateUSD?: boolean
 }
 
 export type RetroactiveRewardsProps = {
@@ -42,18 +48,53 @@ export type RetroactiveRewardsProps = {
   refreshRewards: () => void
 }
 
+function RewardAsset({
+  name,
+  value,
+  usdValue,
+  approximateUSD,
+}: RewardAssetProps) {
+  const image = assetImageExtension[name]
+    ? `/coins/${name}.${assetImageExtension[name]}`
+    : '/coins/DEFAULT.png'
+  const usd = Number(usdValue)
+
+  return (
+    <div className="flex gap-2 items-center">
+      <Image
+        className="scale-[0.65]"
+        src={image}
+        alt={name}
+        width={name === 'ETH' ? 42 : 50}
+        height={name === 'ETH' ? 42 : 50}
+      />
+      <div className="flex flex-col min-h-[60px]">
+        <div className="flex gap-2 font-GoodTimes text-xl">
+          <p>{name}</p>
+          <p>{value}</p>
+        </div>
+        {usd > 0 && (
+          <p className="opacity-60">{`(${
+            approximateUSD ? '~' : ''
+          }$${usd.toLocaleString()})`}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function RetroactiveRewards({
   projects,
   distributions,
   refreshRewards,
 }: RetroactiveRewardsProps) {
-  const chain =
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const { isMobile } = useWindowSize()
 
   const userAddress = useAddress()
+
+  const quarter = Math.ceil((new Date().getMonth() + 1) / 3)
   const year = new Date().getFullYear()
-  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
@@ -74,7 +115,7 @@ export function RetroactiveRewards({
         }
       }
     }
-  }, [userAddress, distributions])
+  }, [userAddress, distributions, quarter, year])
   const handleDistributionChange = (projectId: string, value: number) => {
     setDistribution((prev) => ({
       ...prev,
@@ -131,6 +172,22 @@ export function RetroactiveRewards({
     year,
     quarter
   )
+  const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
+  const { MOONEY, DAI } = useUniswapTokens(Ethereum)
+
+  useEffect(() => {
+    async function getMooneyBudgetUSD() {
+      const route = await pregenSwapRoute(Ethereum, mooneyBudget, MOONEY, DAI)
+
+      const usd = route?.route[0].rawQuote.toString() / 1e18
+      setMooneyBudgetUSD(usd)
+    }
+
+    if (mooneyBudget) {
+      getMooneyBudgetUSD()
+    }
+  }, [mooneyBudget, DAI, MOONEY])
+
   const {
     projectIdToETHPayout,
     projectIdToMooneyPayout,
@@ -214,7 +271,7 @@ export function RetroactiveRewards({
       />
       <Container>
         <ContentLayout
-          header={'Q' + quarter + ' ' + year + ' Retroactive Rewards'}
+          header={'Project Rewards'}
           description="Distribute rewards to contributors based on their contributions."
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
@@ -223,178 +280,85 @@ export function RetroactiveRewards({
           popOverEffect={false}
           isProfile
         >
-          <section
-            className={`w-full flex ${
-              isMobile ? 'flex-col items-center' : 'flex-row items-start'
-            }`}
-          >
-            <section
-              className={`mt-8 flex flex-col ${isMobile ? '' : 'w-1/3'}`}
+          <SectionCard>
+            <h1 className="font-GoodTimes opacity-60">{`Q${quarter}: ${year} Rewards`}</h1>
+            <div
+              id="rewards-asset-container"
+              className="mt-4 flex flex-col justify-center gap-2"
             >
-              <h3 className="title-text-colors text-2xl font-GoodTimes">
-                Total Q{quarter} Rewards
-              </h3>
-              <Asset
+              <RewardAsset
                 name="ETH"
-                amount={String(ethBudget.toFixed(1))}
-                usd={String(usdBudget.toFixed(2))}
+                value={ethBudget.toFixed(1)}
+                usdValue={usdBudget.toFixed(2)}
               />
-              <Asset
-                name="MOONEY"
-                amount={Number(mooneyBudget.toPrecision(3)).toLocaleString()}
-                usd=""
-              />
-            </section>
-            {userAddress && (
-              <section
-                className={`mt-8 flex flex-col px-4 ${isMobile ? '' : 'w-1/3'}`}
-              >
-                <h3 className="title-text-colors text-2xl font-GoodTimes">
-                  Your Rewards
-                </h3>
-                <Asset
-                  name="ETH"
-                  amount={String(
-                    addressToEthPayout[userAddress].toFixed(2) || 0
-                  )}
-                  usd={String(
-                    userAddress in addressToEthPayout
-                      ? (ethPrice * addressToEthPayout[userAddress]).toFixed(2)
-                      : 0
-                  )}
-                />
-                <Asset
+              <div className="flex flex-col md:flex-row md:items-center justify-between">
+                <RewardAsset
                   name="MOONEY"
-                  amount={String(
-                    addressToMooneyPayout[userAddress].toFixed() || 0
-                  )}
-                  usd=""
+                  value={Number(mooneyBudget.toPrecision(3)).toLocaleString()}
+                  usdValue={mooneyBudgetUSD.toFixed(2)}
+                  approximateUSD
                 />
-              </section>
-            )}
-            {userAddress && (
-              <section
-                className={`mt-8 flex flex-col px-4 ${isMobile ? '' : 'w-1/3'}`}
-              >
-                <h3 className="title-text-colors text-2xl font-GoodTimes">
-                  Voting Power
-                </h3>
-                <Asset
-                  name="MOONEY"
-                  amount={String(
-                    addressToQuadraticVotingPower[userAddress] ** 2 || 0
-                  )}
-                  usd=""
-                />
-              </section>
-            )}
-          </section>
-          <div className="pb-32 w-full flex flex-col gap-4 py-2">
-            <div className="flex justify-between items-center">
-              <h3 className="title-text-colors text-2xl font-GoodTimes">
-                Distribute
-              </h3>
-              {readyToRunVoting && (
-                <h3 className="title-text-colors text-2xl font-GoodTimes">
-                  Estimated Rewards
-                </h3>
-              )}
-            </div>
-            <div>
-              {projects &&
-                projects.map((project, i: number) => (
-                  <div
-                    key={i}
-                    className="flex items-center w-full py-1 text-[17px]"
-                  >
-                    <div className="w-24">
-                      <input
-                        type="number"
-                        value={distribution[project.id] || ''}
-                        onChange={(e) =>
-                          handleDistributionChange(
-                            project.id,
-                            parseInt(e.target.value)
-                          )
-                        }
-                        className="border rounded px-2 py-1 w-20"
-                        min="1"
-                        max="100"
-                        disabled={
-                          !userAddress ||
-                          !userHasVotingPower ||
-                          userAddress in project.contributors ||
-                          userAddress.toLowerCase() in project.contributors
-                        }
-                      />
-                      <span>%</span>
-                    </div>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                    <div className="flex-1 px-8">
-                      <a
-                        href={project.finalReportLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mr-2"
-                      >
-                        {project.MDP ? (
-                          <u>MDP {project.MDP}:</u>
-                        ) : (
-                          <u>Project:</u>
-                        )}
-                      </a>
-                      {project.title}
-                    </div>
-                    {readyToRunVoting && tokens && tokens[0] && (
-                      <>
-                        <div className="w-16 text-right px-4">
-                          {projectIdToEstimatedPercentage[project.id].toFixed(
-                            2
-                          )}
-                          %
-                        </div>
-                        <div className="px-4">
-                          {projectIdToETHPayout[project.id].toFixed(1)} ETH
-                        </div>
-                        <div className="w-48 px-4">
-                          {Number(
-                            projectIdToMooneyPayout[project.id].toPrecision(3)
-                          ).toLocaleString()}{' '}
-                          MOONEY
-                        </div>
-                      </>
-                    )}
+
+                <StandardButton className="mt-4 md:mt-0 gradient-2 rounded-full">
+                  <div className="flex items-center gap-2">
+                    <Image
+                      src={'/assets/plus-icon.png'}
+                      width={20}
+                      height={20}
+                      alt="Create Project"
+                    />
+                    {'Create Project'}
                   </div>
-                ))}
+                </StandardButton>
+              </div>
             </div>
-            {projects && userHasVotingPower ? (
-              <span>
-                <StandardButton
-                  onClick={handleSubmit}
-                  className="gradient-2 rounded-full"
-                >
-                  {edit ? 'Edit Distribution' : 'Submit Distribution'}
-                </StandardButton>
-                {edit && (
-                  <StandardButton
-                    onClick={handleDelete}
-                    className="gradient-1 rounded-full"
-                  >
-                    Delete Distribution
-                  </StandardButton>
-                )}
-              </span>
-            ) : (
-              <span>
-                <StandardButton
-                  link="/lock"
-                  className="gradient-2 rounded-full"
-                >
-                  Get Voting Power
-                </StandardButton>
-              </span>
-            )}
-          </div>
+
+            <div id="projects-container" className="mt-8">
+              <h1 className="font-GoodTimes opacity-60 text-2xl">
+                Active Projects
+              </h1>
+
+              <div className="mt-12 flex flex-col gap-4">
+                {projects.map((project, i) => (
+                  <ProjectCard
+                    key={`project-card-${i}`}
+                    project={project}
+                    distribution={distribution}
+                    handleDistributionChange={handleDistributionChange}
+                  />
+                ))}
+                <div className="mt-4 w-full flex justify-end">
+                  {projects && userHasVotingPower ? (
+                    <span className="flex flex-col md:flex-row md:items-center gap-2">
+                      <StandardButton
+                        onClick={handleSubmit}
+                        className="gradient-2 rounded-full"
+                      >
+                        {edit ? 'Edit Distribution' : 'Submit Distribution'}
+                      </StandardButton>
+                      {true && (
+                        <StandardButton
+                          onClick={handleDelete}
+                          className="gradient-1 rounded-full"
+                        >
+                          Delete Distribution
+                        </StandardButton>
+                      )}
+                    </span>
+                  ) : (
+                    <span>
+                      <StandardButton
+                        link="/lock"
+                        className="gradient-2 rounded-full"
+                      >
+                        Get Voting Power
+                      </StandardButton>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </SectionCard>
         </ContentLayout>
       </Container>
     </section>

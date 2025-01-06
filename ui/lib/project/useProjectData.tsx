@@ -1,39 +1,31 @@
-import { useAddress } from '@thirdweb-dev/react'
-import { useState } from 'react'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
-import { getAttribute } from '@/lib//utils/nft'
+import { useEffect, useState } from 'react'
+import useProposalJSON from '../nance/useProposalJSON'
 
-export default function useProjectData(
-  projectContract: any,
-  hatsContract: any,
-  nft: any
-) {
-  const address = useAddress()
+export type Project = {
+  id: string
+  title: string
+  proposalIPFS: string
+  rewardDistribution: { [key: string]: number }
+  finalReportLink: string
+  eligible: number
+  MDP: number
+}
 
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [isActive, setIsActive] = useState<boolean>(false)
-  const [isManager, setIsManager] = useState<boolean>(false)
-  const [subIsValid, setSubIsValid] = useState<boolean>(true)
-  const [hatTreeId, setHatTreeId] = useState<string>()
+export default function useProjectData(project: Project) {
+  const [proposal, setProposal] = useState<any>()
+  const proposalJSON = useProposalJSON(proposal?.data?.message?.body as string)
+  const [lead, setLead] = useState<string | undefined>()
 
-  const { data: adminHatId } = useHandleRead(
-    projectContract,
-    'projectAdminHat',
-    [nft?.metadata?.id || '']
-  )
+  useEffect(() => {
+    async function getProposal() {
+      const res = await fetch(
+        `https://ipfs.io/ipfs/${project?.proposalIPFS.split('ipfs://')[1]}`
+      )
+      const data = await res.json()
+      setProposal(data)
+    }
+    if (project?.proposalIPFS) getProposal()
+  }, [project])
 
-  const { data: managerHatId } = useHandleRead(
-    projectContract,
-    'projectManagerHat',
-    [nft?.metadata?.id || '']
-  )
-
-  return {
-    isLoading,
-    isActive,
-    isManager,
-    subIsValid,
-    adminHatId,
-    managerHatId,
-  }
+  return { snapshotData: proposal, proposalJSON }
 }

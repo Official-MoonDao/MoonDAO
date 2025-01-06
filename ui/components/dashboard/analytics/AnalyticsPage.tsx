@@ -1,21 +1,11 @@
 import useTranslation from 'next-translate/useTranslation'
 import React, { useMemo, useState } from 'react'
 import { useAssets } from '../../../lib/dashboard/hooks'
+import SectionCard from '@/components/layout/SectionCard'
 import AnalyticsChainSelector from './AnalyticsChainSelector'
 import { AnalyticsProgress } from './AnalyticsProgress'
 import AnalyticsSkeleton from './AnalyticsSkeleton'
 import BarChart from './BarChart'
-
-function Frame(props: any) {
-  return (
-    <div
-      id="analytics-page"
-      className="mt-3 px-5 lg:px-10 xl:px-10 py-5 bg-[#020617] rounded-2xl w-full lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col"
-    >
-      {props.children}
-    </div>
-  )
-}
 
 function Data({ text, value }: any) {
   return (
@@ -51,15 +41,15 @@ export default function AnalyticsPage({ vMooneyData }: any) {
 
   return (
     <>
-      <Frame>
+      <SectionCard>
         <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
           {'Governance Power Over Time'}
         </h1>
         <div className="w-full">
           <BarChart holdersData={vMooneyData.holders} />
         </div>
-      </Frame>
-      <Frame>
+      </SectionCard>
+      <SectionCard>
         <div className="flex flex-col md:flex-row justify-between">
           <h1 className="font-GoodTimes text-4xl text-center sm:text-left">
             {'Voting Power Key Figures'}
@@ -97,7 +87,7 @@ export default function AnalyticsPage({ vMooneyData }: any) {
             </div>
           </div>
         </div>
-      </Frame>
+      </SectionCard>
     </>
   )
 }
