@@ -117,17 +117,27 @@ export const CITIZEN_TABLE_NAMES: Index = {
   sepolia: 'CITIZENTABLE_11155111_1671',
 }
 
-export const PROJECT_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x2E8e4B7DAf62868d3184E691f3Cd5Bd9c069cAe1',
-  'arbitrum-sepolia': '0x7876d5a6050fE861B8b0A96FF37B34116C9D0636',
-  sepolia: '0x4eC886128E970eEef0230a775cA1fD46f9383C27',
+export const PROJECT_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x50BdC39B3df940dbc1d62B135D0D0c9e5481cEDB',
 }
+
+export const PROJECT_CREATOR_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x24411289007584aafCBfcE6406eC460cA01c7d3f',
+}
+
+export const PROJECT_TABLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x60164384f6D9b0056dC6eAC76ED8315bf0B591d0',
+}
+
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
   sepolia: '0x9057Fff69e8b016a214C4f894430F71dad50b42c',
 }
 export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
-  'arbitrum-sepolia': '0xd1D57F18252D06a6b28DE96B6cbF7F4283A4F205',
+  sepolia: '0x5217A95F335cd026c877Eb5C1B0Ae6C82945178D',
 }
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: '0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0',

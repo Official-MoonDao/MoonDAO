@@ -1,4 +1,4 @@
-import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import DistributionABI from 'const/abis/DistributionTable.json'
 import ProjectABI from 'const/abis/Project.json'
 import {
@@ -28,8 +28,7 @@ export default function Rewards({
 }
 
 export async function getStaticProps() {
-  const chain =
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
 
   const projectTableContract = await sdk.getContract(
@@ -46,16 +45,18 @@ export async function getStaticProps() {
   const distributionTableName = await distributionTableContract.call(
     'getTableName'
   )
+  const quarter = Math.ceil((new Date().getMonth() + 1) / 3)
+  const year = new Date().getFullYear()
 
-  const currentYear = new Date().getFullYear()
-  const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
-  const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
+  console.log(quarter, year)
+
+  const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${2024} AND quarter = ${4}`
   const projectsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
   )
   const projects = await projectsRes.json()
 
-  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
+  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
   const distributionsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
   )
