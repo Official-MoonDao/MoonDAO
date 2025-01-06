@@ -15,14 +15,14 @@ export default function NumberStepper({
   max,
   min,
 }: NumberStepperProps) {
-  function handleIncrease() {
+  function increase() {
     if (max && number + step > max) {
       return
     }
     setNumber(number + step)
   }
 
-  function handleDecrease() {
+  function decrease() {
     if (min !== undefined && number - step < min) {
       return
     }
@@ -36,13 +36,12 @@ export default function NumberStepper({
         type="number"
         value={number}
         onChange={(e) => setNumber(Number(e.target.value))}
-        step={0}
       />
       <div className="w-[45%] flex flex-col justify-center items-center">
-        <button onClick={handleIncrease}>
+        <button onClick={increase}>
           <ChevronUpIcon className="w-4 h-4" strokeWidth={2.5} stroke="black" />
         </button>
-        <button onClick={handleDecrease}>
+        <button onClick={decrease}>
           <ChevronDownIcon
             className="w-4 h-4"
             strokeWidth={2.5}
