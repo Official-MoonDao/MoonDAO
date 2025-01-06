@@ -1,11 +1,14 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { NFT } from '@thirdweb-dev/react'
+import { NFT, useContract } from '@thirdweb-dev/react'
+import HatsABI from 'const/abis/Hats.json'
+import ProjectABI from 'const/abis/Project.json'
 import TeamABI from 'const/abis/Team.json'
-import { PROJECT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import { HATS_ADDRESS, PROJECT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useContext } from 'react'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -20,6 +23,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import Tab from '@/components/layout/Tab'
+import ProjectCard from '@/components/projects/ProjectCard'
 
 type NetworkProps = {
   activeProjects: NFT[]
@@ -30,8 +34,16 @@ export default function Projects({
   activeProjects,
   inactiveProjects,
 }: NetworkProps) {
+  const { selectedChain } = useContext(ChainContext)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
+
+  //Contracts
+  const { contract: projectContract } = useContract(
+    PROJECT_ADDRESSES[selectedChain.slug],
+    ProjectABI
+  )
+  const { contract: hatsContract } = useContract(HATS_ADDRESS, HatsABI)
 
   const [input, setInput] = useState('')
   function filterBySearch(nfts: NFT[]) {
@@ -179,27 +191,14 @@ export default function Projects({
                 cachedNFTs
                   ?.slice((pageIdx - 1) * 9, pageIdx * 9)
                   .map((nft: any, I: number) => {
-                    if (nft.metadata.name !== 'Failed to load NFT metadata') {
-                      const type = nft.metadata.attributes.find(
-                        (attr: any) => attr.trait_type === 'communications'
-                      )
-                        ? 'team'
-                        : 'citizen'
-                      return (
-                        <div
-                          className="justify-center mt-5 flex"
-                          key={'team-citizen-' + I}
-                        >
-                          <Card
-                            inline
-                            metadata={nft.metadata}
-                            owner={nft.owner}
-                            type={type}
-                            hovertext="Explore Profile"
-                          />
-                        </div>
-                      )
-                    }
+                    return (
+                      <ProjectCard
+                        key={`project-card-${I}`}
+                        nft={nft}
+                        projectContract={projectContract}
+                        hatsContract={hatsContract}
+                      />
+                    )
                   })
               ) : (
                 <>
@@ -274,8 +273,6 @@ export async function getStaticProps() {
   )
   const totalProjects = await projectContract.call('totalSupply')
 
-  console.log(totalProjects.toString())
-
   const activeProjects = []
   const inactiveProjects = []
   for (let i = 0; i < totalProjects; i++) {
@@ -293,6 +290,33 @@ export async function getStaticProps() {
       }
     }
   }
+
+  const nft = {
+    metadata: {
+      name: 'Deprize Development',
+      tokenId: 0,
+      description:
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+      attributes: [
+        {
+          trait_type: 'active',
+          value: 'true',
+        },
+        {
+          trait_type: 'proposalIPFS',
+          value:
+            'ipfs://bafkreifsaljrpcjycsd5fzmpwvo5k2ye7geaeqqcjym4ornafjqwahjmoe',
+        },
+        {
+          trait_type: 'MDP',
+          value: '159',
+        },
+      ],
+    },
+  }
+
+  activeProjects.push(nft)
+  inactiveProjects.push(nft)
 
   return {
     props: {
