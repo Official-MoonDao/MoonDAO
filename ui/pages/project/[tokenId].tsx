@@ -1,20 +1,22 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import ProjectABI from 'const/abis/Project.json'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   CITIZEN_ADDRESSES,
   HATS_ADDRESS,
   MOONEY_ADDRESSES,
   PROJECT_ADDRESSES,
+  PROJECT_TABLE_ADDRESSES,
+  TABLELAND_ENDPOINT,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import useProjectData from '@/lib/project/useProjectData'
+import useProjectData, { Project } from '@/lib/project/useProjectData'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
@@ -26,12 +28,19 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
-import Button from '@/components/subscription/Button'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 
-export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
+type ProjectProfileProps = {
+  tokenId: string
+  project: Project
+}
+
+export default function ProjectProfile({
+  tokenId,
+  project,
+}: ProjectProfileProps) {
   const sdk = useSDK()
   const address = useAddress()
 
@@ -50,7 +59,17 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
     MOONEY_ADDRESSES[selectedChain.slug]
   )
 
-  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner)
+  const [owner, setOwner] = useState('')
+
+  useEffect(() => {
+    async function getOwner() {
+      const owner = await projectContract?.call('ownerOf', [tokenId])
+      setOwner(owner)
+    }
+    if (projectContract) getOwner()
+  }, [tokenId, projectContract])
+
+  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, owner)
 
   const {
     adminHatId,
@@ -62,7 +81,7 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
     totalBudget,
     MDP,
     isLoading: isLoadingProjectData,
-  } = useProjectData(projectContract, hatsContract, nft)
+  } = useProjectData(projectContract, hatsContract, project)
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
 
@@ -72,14 +91,14 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
   useEffect(() => {
     async function getNativeBalance() {
       const provider = sdk?.getProvider()
-      const balance: any = await provider?.getBalance(nft?.owner as string)
+      const balance: any = await provider?.getBalance(owner as string)
       setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
     }
 
-    if (sdk && nft?.owner) {
+    if (sdk && owner) {
       getNativeBalance()
     }
-  }, [sdk, nft])
+  }, [sdk, project])
 
   useChainDefault()
 
@@ -106,12 +125,12 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
             >
               <div id="team-name-container">
                 <div id="profile-container">
-                  {nft?.metadata.description ? (
+                  {project?.description ? (
                     <p
                       id="profile-description-container"
                       className="mb-5 w-full lg:w-[80%]"
                     >
-                      {nft?.metadata.description || ''}
+                      {project.description || ''}
                     </p>
                   ) : (
                     <></>
@@ -134,9 +153,9 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
 
   return (
     <Container>
-      <Head title={nft.metadata.name} description={nft.metadata.description} />
+      <Head title={project.name} description={project.description} />
       <ContentLayout
-        header={nft.metadata.name}
+        header={project.name}
         headerSize="max(20px, 3vw)"
         description={ProfileHeader}
         mainPadding
@@ -159,10 +178,11 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
           >
             <div
               id="project-overview-container"
-              className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+              className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
             >
               <div className="p-5 pb-0 md:p-0 flex flex-col items-start gap-5 pr-12 ">
-                <Link href={'/submit?tab=report'} passHref>
+                {/* Enable when final report editor is ready */}
+                {/* <Link href={'/submit?tab=report'} passHref>
                   <StandardButton className="mt-4 md:mt-0 gradient-2 rounded-full">
                     <div className="flex items-center gap-2">
                       <Image
@@ -174,7 +194,7 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
                       {'Attach Final Report'}
                     </div>
                   </StandardButton>
-                </Link>
+                </Link> */}
 
                 <div className="flex gap-4 opacity-[50%]">
                   <Image
@@ -241,7 +261,7 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
                         teamContract={projectContract}
                         teamId={tokenId}
                         selectedChain={selectedChain}
-                        multisigAddress={nft.owner}
+                        multisigAddress={owner}
                         adminHatId={adminHatId}
                         managerHatId={managerHatId}
                       />
@@ -265,7 +285,7 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
             {/* Mooney and Voting Power */}
             {isManager && (
               <TeamTreasury
-                multisigAddress={nft.owner}
+                multisigAddress={owner}
                 mutlisigMooneyBalance={MOONEYBalance}
                 multisigNativeBalance={nativeBalance}
               />
@@ -280,7 +300,7 @@ export default function ProjectProfile({ tokenId, nft, imageIpfsLink }: any) {
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenId: any = params?.tokenId
 
-  const chain = Sepolia
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
 
   if (tokenId === undefined) {
@@ -289,37 +309,21 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
   }
 
-  const projectContract = await sdk.getContract(
-    PROJECT_ADDRESSES[chain.slug],
-    ProjectABI
+  const projectTableContract = await sdk.getContract(
+    PROJECT_TABLE_ADDRESSES[chain.slug],
+    ProjectTableABI
   )
+  const projectTableName = await projectTableContract?.call('getTableName')
 
-  // const nft = await projectContract.erc721.get(tokenId)
+  const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
 
-  const nft = {
-    metadata: {
-      name: 'Deprize Development',
-      description:
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-      attributes: [
-        {
-          trait_type: 'active',
-          value: 'true',
-        },
-        {
-          trait_type: 'proposalIPFS',
-          value:
-            'ipfs://bafkreifsaljrpcjycsd5fzmpwvo5k2ye7geaeqqcjym4ornafjqwahjmoe',
-        },
-        {
-          trait_type: 'MDP',
-          value: '159',
-        },
-      ],
-    },
-  }
+  const projectsRes = await fetch(
+    `${TABLELAND_ENDPOINT}?statement=${statement}`
+  )
+  const projects = await projectsRes.json()
+  const project = projects[0]
 
-  if (!nft || blockedProjects.includes(Number(tokenId))) {
+  if (!project || blockedProjects.includes(Number(tokenId))) {
     return {
       notFound: true,
     }
@@ -327,7 +331,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
   return {
     props: {
-      nft,
+      project,
       tokenId,
     },
   }

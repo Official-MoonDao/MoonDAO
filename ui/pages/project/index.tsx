@@ -1,19 +1,23 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { NFT, useContract } from '@thirdweb-dev/react'
+import { useContract } from '@thirdweb-dev/react'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
-import TeamABI from 'const/abis/Team.json'
-import { HATS_ADDRESS, PROJECT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
+import {
+  HATS_ADDRESS,
+  PROJECT_ADDRESSES,
+  PROJECT_TABLE_ADDRESSES,
+  TABLELAND_ENDPOINT,
+} from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
+import { Project } from '@/lib/project/useProjectData'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
-import { getAttribute } from '@/lib/utils/nft'
-import Card from '@/components/layout/Card'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import Container from '@/components/layout/Container'
@@ -23,11 +27,11 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import Tab from '@/components/layout/Tab'
-import ProjectCard from '@/components/projects/ProjectCard'
+import ProjectCard from '@/components/project/ProjectCard'
 
 type NetworkProps = {
-  activeProjects: NFT[]
-  inactiveProjects: NFT[]
+  activeProjects: Project[]
+  inactiveProjects: Project[]
 }
 
 export default function Projects({
@@ -46,9 +50,9 @@ export default function Projects({
   const { contract: hatsContract } = useContract(HATS_ADDRESS, HatsABI)
 
   const [input, setInput] = useState('')
-  function filterBySearch(nfts: NFT[]) {
-    return nfts.filter((nft) => {
-      return nft.metadata.name
+  function filterBySearch(projects: Project[]) {
+    return projects.filter((project) => {
+      return project.name
         ?.toString()
         .toLowerCase()
         .includes(input.toLowerCase())
@@ -111,7 +115,7 @@ export default function Projects({
     if (tab === 'inactive') setMaxPage(Math.ceil(totalInactiveProjects / 9))
   }, [tab, input, activeProjects, inactiveProjects])
 
-  const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
+  const [cachedNFTs, setCachedNFTs] = useState<Project[]>([])
 
   const [pageIdx, setPageIdx] = useState(1)
 
@@ -131,9 +135,12 @@ export default function Projects({
 
   useChainDefault()
 
+  const description =
+    'Discover active and archived projects advancing our multiplanetary mission. Have an idea? Submit your proposal and help shape the future of space exploration!'
+
   const descriptionSection = (
     <div className="pt-2">
-      <div className="mb-4">MoonDAO Projects.</div>
+      <div className="mb-4">{description}</div>
       <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
         <Search input={input} setInput={setInput} />
       </Frame>
@@ -171,7 +178,7 @@ export default function Projects({
     <section id="network-container" className="overflow-hidden">
       <Head
         title={'Projects'}
-        description={'MoonDAO Projects.'}
+        description={description}
         image="https://ipfs.io/ipfs/QmbExwDgVoDYpThFaVRRxUkusHnXxMj3Go8DdWrXg1phxi"
       />
       <Container>
@@ -190,11 +197,11 @@ export default function Projects({
               {cachedNFTs?.[0] ? (
                 cachedNFTs
                   ?.slice((pageIdx - 1) * 9, pageIdx * 9)
-                  .map((nft: any, I: number) => {
+                  .map((project: any, I: number) => {
                     return (
                       <ProjectCard
                         key={`project-card-${I}`}
-                        nft={nft}
+                        project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
                       />
@@ -267,56 +274,30 @@ export async function getStaticProps() {
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const sdk = initSDK(chain)
 
-  const projectContract = await sdk.getContract(
-    PROJECT_ADDRESSES[chain.slug],
-    TeamABI
+  const projectTableContract = await sdk.getContract(
+    PROJECT_TABLE_ADDRESSES[chain.slug],
+    ProjectTableABI
   )
-  const totalProjects = await projectContract.call('totalSupply')
+
+  const projectTableName = await projectTableContract.call('getTableName')
+  const projectStatement = `SELECT * FROM ${projectTableName}`
+  const projectsRes = await fetch(
+    `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
+  )
+  const projects = await projectsRes.json()
 
   const activeProjects = []
   const inactiveProjects = []
-  for (let i = 0; i < totalProjects; i++) {
+  for (let i = 0; i < projects.length; i++) {
     if (!blockedProjects.includes(i)) {
-      const project = await projectContract.erc721.get(i)
-
-      const active = getAttribute(
-        project.metadata.attributes as any[],
-        'active'
-      )?.value
-      if (active === '0') {
-        inactiveProjects.push(project)
-      } else if (active === '1' || active) {
-        activeProjects.push(project)
+      const active = projects[i].active
+      if (!active || active === 0) {
+        inactiveProjects.push(projects[i])
+      } else if (active === 1) {
+        activeProjects.push(projects[i])
       }
     }
   }
-
-  const nft = {
-    metadata: {
-      name: 'Deprize Development',
-      tokenId: 0,
-      description:
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-      attributes: [
-        {
-          trait_type: 'active',
-          value: 'true',
-        },
-        {
-          trait_type: 'proposalIPFS',
-          value:
-            'ipfs://bafkreifsaljrpcjycsd5fzmpwvo5k2ye7geaeqqcjym4ornafjqwahjmoe',
-        },
-        {
-          trait_type: 'MDP',
-          value: '159',
-        },
-      ],
-    },
-  }
-
-  activeProjects.push(nft)
-  inactiveProjects.push(nft)
 
   return {
     props: {
