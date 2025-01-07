@@ -58,7 +58,6 @@ export default function useProjectData(
   const nanceProposal = nanceProposalResponse?.data
 
   const totalBudget = useMemo(() => {
-    console.log(nanceProposal)
     let budget = 0
     if (nanceProposal?.actions && nanceProposal.actions.length > 0) {
       nanceProposal.actions.forEach((action: any) => {
@@ -71,6 +70,10 @@ export default function useProjectData(
     }
     return budget
   }, [nanceProposal])
+
+  const isActive = useMemo(() => {
+    return project?.active === 1
+  }, [project?.active])
 
   useEffect(() => {
     async function getProposal() {
@@ -106,7 +109,6 @@ export default function useProjectData(
   useEffect(() => {
     async function getHatTreeId() {
       const hatTreeId = await hatsContract.call('getTopHatDomain', [adminHatId])
-
       setHatTreeId(hatTreeId)
     }
     if (hatsContract && adminHatId) getHatTreeId()
@@ -114,6 +116,7 @@ export default function useProjectData(
 
   return {
     ...project,
+    isActive,
     isManager,
     hatTreeId,
     adminHatId,
