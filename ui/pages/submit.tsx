@@ -64,13 +64,22 @@ const SubmissionPage: React.FC = () => {
                 </Tab.List>
                 <Tab.Panels className="mt-4">
                   <Tab.Panel>
-                    <div className="mb-8">
+                  <div className="mb-8">
                       <p className="text-gray-300">
                         Submit a proposal to receive financing or special permissions from the MoonDAO community. Please refer to {' '}
-                        <a href="https://docs.moondao.com/Projects/Project-System" className="text-blue-400 hover:text-blue-300 underline">
+                        <a 
+                          href="https://docs.moondao.com/Projects/Project-System" 
+                          className="text-blue-400 hover:text-blue-300 underline" target="_blank"
+                        >
                           our documentation
-                        </a>
-                        {' '}for more details before getting started.
+                        </a>{' '}
+                        for more details before getting started. We recommend starting your draft with the {' '}
+                        <a 
+                          href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing" 
+                          className="text-blue-400 hover:text-blue-300 underline" target="_blank"
+                        >
+                          Google doc template
+                        </a>.
                       </p>
                     </div>
                     <NanceProvider apiUrl={NANCE_API_URL}>
@@ -80,11 +89,11 @@ const SubmissionPage: React.FC = () => {
                   <Tab.Panel>
                     <div className="mb-8">
                       <p className="text-gray-300">
-                        What have you done to accelerate the impact of MoonDAO's mission? Submit your results for senate review and potential rewards. Please refer to {' '}
-                        <a href="https://docs.moondao.com/Projects/Project-System" className="text-blue-400 hover:text-blue-300 underline">
+                        What have you done to accelerate the impact of MoonDAO's mission? Submit your non-project work and accomplishments, even if not tied directly to MoonDAO, to earn ETH financial rewards and vMOONEY voting power. If it helps advance our mission and build a multiplanetary future, it counts! Please refer to {' '}
+                        <a href="https://docs.moondao.com/Reference/Nested-Docs/Community-Rewards" className="text-blue-400 hover:text-blue-300 underline" target="_blank">
                           our documentation
                         </a>
-                        {' '}for more details.
+                        {' '}for more details. 
                       </p>
                     </div>
                     <ContributionEditor />
