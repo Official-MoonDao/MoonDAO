@@ -1,3 +1,4 @@
+//This hook fetches all project data based on a project tableland entry (not an NFT)
 import { useProposal } from '@nance/nance-hooks'
 import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useMemo, useState } from 'react'
@@ -7,19 +8,27 @@ import { useHandleRead } from '../thirdweb/hooks'
 import { getAttribute } from '../utils/nft'
 
 export type Project = {
-  id: string
-  title: string
-  proposalIPFS: string
-  rewardDistribution: { [key: string]: number }
-  finalReportLink: string
-  eligible: number
   MDP: number
+  active: number
+  description: string
+  eligible: number
+  finalReportIPFS: string
+  finalReportLink: string
+  id: number
+  image: string
+  name: string
+  proposalIPFS: string
+  proposalLink: string
+  quarter: number
+  rewardDistribution: string
+  upfrontPayments: string
+  year: number
 }
 
 export default function useProjectData(
   projectContract: any,
   hatsContract: any,
-  nft: any
+  project: Project | undefined
 ) {
   const address = useAddress()
 
@@ -30,54 +39,27 @@ export default function useProjectData(
     snapshotProposal?.data?.message?.body as string
   )
 
-  const [lead, setLead] = useState<string | undefined>()
   const [isManager, setIsManager] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState<string>()
 
   const { data: adminHatId } = useHandleRead(projectContract, 'teamAdminHat', [
-    nft?.metadata?.id || '',
+    project?.id || '',
   ])
 
   const { data: managerHatId } = useHandleRead(
     projectContract,
     'teamManagerHat',
-    [nft?.metadata?.id || '']
+    [project?.id || '']
   )
-
-  const isActive = useMemo(() => {
-    const active = getAttribute(nft?.metadata?.attributes, 'active')?.value
-    return active === 'true'
-  }, [nft?.metadata?.attributes])
-
-  const proposalIPFS = useMemo(() => {
-    const proposalIPFS = getAttribute(
-      nft?.metadata?.attributes,
-      'proposalIPFS'
-    )?.value
-    return proposalIPFS
-  }, [nft?.metadata?.attributes])
-
-  const finalReportIPFS = useMemo(() => {
-    const finalReportIPFS = getAttribute(
-      nft?.metadata?.attributes,
-      'finalReportIPFS'
-    )?.value
-    return finalReportIPFS
-  }, [nft?.metadata?.attributes])
-  const [finalReport, setFinalReport] = useState<string | undefined>()
-
-  const MDP = useMemo(() => {
-    const MDP = getAttribute(nft?.metadata?.attributes, 'MDP')?.value
-    return MDP
-  }, [nft?.metadata?.attributes])
 
   const { data: nanceProposalResponse } = useProposal({
     space: NANCE_SPACE_NAME,
-    uuid: MDP,
+    uuid: String(project?.MDP) || '',
   })
   const nanceProposal = nanceProposalResponse?.data
 
   const totalBudget = useMemo(() => {
+    console.log(nanceProposal)
     let budget = 0
     if (nanceProposal?.actions && nanceProposal.actions.length > 0) {
       nanceProposal.actions.forEach((action: any) => {
@@ -94,23 +76,24 @@ export default function useProjectData(
   useEffect(() => {
     async function getProposal() {
       const res = await fetch(
-        `https://ipfs.io/ipfs/${proposalIPFS.split('ipfs://')[1]}`
+        `https://ipfs.io/ipfs/${project?.proposalIPFS.split('ipfs://')[1]}`
       )
       const data = await res.json()
       setSnapshotProposal(data)
     }
-    if (proposalIPFS) getProposal()
-  }, [proposalIPFS])
+    if (project?.proposalIPFS) getProposal()
+  }, [project?.proposalIPFS])
 
   useEffect(() => {
     async function checkManager() {
       try {
         if (address) {
           const isAddressManager = await projectContract.call('isManager', [
-            nft?.metadata?.id,
+            project?.id,
             address,
           ])
-          setIsManager(isAddressManager || nft.owner === address)
+          const owner = await projectContract.call('ownerOf', [project?.id])
+          setIsManager(isAddressManager || owner === address)
         } else {
           setIsManager(false)
         }
@@ -118,8 +101,8 @@ export default function useProjectData(
         setIsManager(false)
       }
     }
-    if (projectContract && nft?.metadata?.id) checkManager()
-  }, [address, nft, projectContract])
+    if (projectContract && project?.id) checkManager()
+  }, [address, project, projectContract])
 
   useEffect(() => {
     async function getHatTreeId() {
@@ -131,9 +114,8 @@ export default function useProjectData(
   }, [adminHatId, hatsContract])
 
   return {
-    isActive,
+    ...project,
     isManager,
-    MDP,
     hatTreeId,
     adminHatId,
     managerHatId,
