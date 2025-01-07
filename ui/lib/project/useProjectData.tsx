@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { NANCE_SPACE_NAME } from '../nance/constants'
 import useProposalJSON from '../nance/useProposalJSON'
 import { useHandleRead } from '../thirdweb/hooks'
-import { getAttribute } from '../utils/nft'
 
 export type Project = {
   MDP: number
