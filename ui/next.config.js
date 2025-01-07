@@ -209,6 +209,11 @@ module.exports = nextTranslate({
         permanent: true,
       },
       {
+        source: '/propose',
+        destination: '/submit?tag=proposal',
+        permanent: true,
+      },      
+      {
         source: '/teams',
         destination: '/network?tab=teams',
         permanent: true,
