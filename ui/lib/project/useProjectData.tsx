@@ -39,7 +39,6 @@ export default function useProjectData(
   })
   const nanceProposal = nanceProposalResponse?.data
 
-  const [snapshotProposal, setSnapshotProposal] = useState<any>()
   const proposalJSON = useProposalJSON(nanceProposal?.body as string)
 
   const [isManager, setIsManager] = useState<boolean>(false)
@@ -68,17 +67,6 @@ export default function useProjectData(
     }
     return budget
   }, [nanceProposal])
-
-  useEffect(() => {
-    async function getProposal() {
-      const res = await fetch(
-        `/api/ipfs/fetch?cid=${project?.proposalIPFS.split('ipfs://')[1]}`
-      )
-      const data = await res.json()
-      setSnapshotProposal(data)
-    }
-    if (project?.proposalIPFS) getProposal()
-  }, [project?.proposalIPFS])
 
   useEffect(() => {
     async function checkManager() {
