@@ -1,32 +1,38 @@
 import { Ethereum, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
+import HatsABI from 'const/abis/Hats.json'
+import ProjectABI from 'const/abis/Project.json'
 import {
   DISTRIBUTION_TABLE_ADDRESSES,
+  HATS_ADDRESS,
+  PROJECT_ADDRESSES,
   SNAPSHOT_RETROACTIVE_REWARDS_ID,
 } from 'const/config'
 import _ from 'lodash'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
+import { Project } from '@/lib/project/useProjectData'
 import { useVotingPowers } from '@/lib/snapshot'
 import useWindowSize from '@/lib/team/use-window-size'
+import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import { computeRewardPercentages } from '@/lib/utils/voting'
-import Asset from '@/components/dashboard/treasury/balance/Asset'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButton from '@/components/layout/StandardButton'
-import ProjectCard from '../projects/ProjectCard'
+import ProjectCard from '@/components/project/ProjectCard'
 
 export type Distribution = {
   year: number
@@ -43,7 +49,7 @@ export type RewardAssetProps = {
 }
 
 export type RetroactiveRewardsProps = {
-  projects: Project[]
+  projects: Project[] | undefined
   distributions: Distribution[]
   refreshRewards: () => void
 }
@@ -88,6 +94,8 @@ export function RetroactiveRewards({
   distributions,
   refreshRewards,
 }: RetroactiveRewardsProps) {
+  const router = useRouter()
+
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const { isMobile } = useWindowSize()
 
@@ -100,10 +108,12 @@ export function RetroactiveRewards({
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
     {}
   )
+
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
     if (distributions && userAddress) {
       for (const d of distributions) {
+        console.log(d)
         if (
           d.year === year &&
           d.quarter === quarter &&
@@ -123,6 +133,13 @@ export function RetroactiveRewards({
     }))
   }
 
+  //Contracts
+  const { contract: projectContract } = useContract(
+    PROJECT_ADDRESSES[chain.slug],
+    ProjectABI
+  )
+  const { contract: hatsContract } = useContract(HATS_ADDRESS, HatsABI)
+
   const addresses = distributions ? distributions.map((d) => d.address) : []
 
   const { data: _vps } = useVotingPowers(
@@ -136,10 +153,10 @@ export function RetroactiveRewards({
   )
   const votingPowerSumIsNonZero =
     _.sum(Object.values(addressToQuadraticVotingPower)) > 0
-  const userHasVotingPower =
-    userAddress &&
-    userAddress in addressToQuadraticVotingPower &&
-    addressToQuadraticVotingPower[userAddress] > 0
+  const userVotingPower = useTotalVP(userAddress || '')
+  const userHasVotingPower = useMemo(() => {
+    return userAddress && userVotingPower > 0
+  }, [userVotingPower, userAddress])
 
   // All projects need at least one citizen distribution to do iterative normalization
   const isCitizens = useCitizens(chain, addresses)
@@ -147,11 +164,10 @@ export function RetroactiveRewards({
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
-  const allProjectsHaveCitizenDistribution = projects.every(({ id }) =>
+  const allProjectsHaveCitizenDistribution = projects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
-  const readyToRunVoting =
-    allProjectsHaveCitizenDistribution && votingPowerSumIsNonZero
+  const readyToRunVoting = true
 
   const projectIdToEstimatedPercentage: { [key: string]: number } =
     readyToRunVoting
@@ -299,7 +315,10 @@ export function RetroactiveRewards({
                   approximateUSD
                 />
 
-                <StandardButton className="mt-4 md:mt-0 gradient-2 rounded-full">
+                <StandardButton
+                  className="mt-4 md:mt-0 gradient-2 rounded-full"
+                  onClick={() => router.push('/submit')}
+                >
                   <div className="flex items-center gap-2">
                     <Image
                       src={'/assets/plus-icon.png'}
@@ -319,14 +338,49 @@ export function RetroactiveRewards({
               </h1>
 
               <div className="mt-12 flex flex-col gap-4">
-                {projects.map((project, i) => (
-                  <ProjectCard
-                    key={`project-card-${i}`}
-                    project={project}
-                    distribution={distribution}
-                    handleDistributionChange={handleDistributionChange}
-                  />
-                ))}
+                {projects && projects?.length > 0 ? (
+                  projects.map((project: any, i) => (
+                    <div key={`project-card-${i}`}>
+                      <ProjectCard
+                        key={`project-card-${i}`}
+                        project={project}
+                        projectContract={projectContract}
+                        hatsContract={hatsContract}
+                        distribution={
+                          userHasVotingPower ? distribution : undefined
+                        }
+                        handleDistributionChange={
+                          userHasVotingPower
+                            ? handleDistributionChange
+                            : undefined
+                        }
+                      />
+                      {/* TODO */}
+                      {/* {readyToRunVoting && tokens && tokens[0] && (
+                        <>
+                          <div className="w-16 text-right px-4">
+                            {projectIdToEstimatedPercentage?.[
+                              project.id
+                            ]?.toFixed(2)}
+                            %
+                          </div>
+                          <div className="px-4">
+                            {projectIdToETHPayout[project.id].toFixed(1)} ETH
+                          </div>
+                          <div className="w-48 px-4">
+                            {Number(
+                              projectIdToMooneyPayout[project.id].toPrecision(3)
+                            ).toLocaleString()}{' '}
+                            MOONEY
+                          </div>
+                        </>
+                      )} */}
+                    </div>
+                  ))
+                ) : (
+                  <div>There are no active projects.</div>
+                )}
+
                 <div className="mt-4 w-full flex justify-end">
                   {projects && userHasVotingPower ? (
                     <span className="flex flex-col md:flex-row md:items-center gap-2">
@@ -336,7 +390,7 @@ export function RetroactiveRewards({
                       >
                         {edit ? 'Edit Distribution' : 'Submit Distribution'}
                       </StandardButton>
-                      {true && (
+                      {edit && (
                         <StandardButton
                           onClick={handleDelete}
                           className="gradient-1 rounded-full"

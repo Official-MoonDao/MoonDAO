@@ -1,6 +1,6 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import DistributionABI from 'const/abis/DistributionTable.json'
-import ProjectABI from 'const/abis/Project.json'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
@@ -33,7 +33,7 @@ export async function getStaticProps() {
 
   const projectTableContract = await sdk.getContract(
     PROJECT_TABLE_ADDRESSES[chain.slug],
-    ProjectABI
+    ProjectTableABI
   )
 
   const distributionTableContract = await sdk.getContract(
@@ -41,16 +41,14 @@ export async function getStaticProps() {
     DistributionABI
   )
 
-  const projectBoardTableName = await projectTableContract.call('getTableName')
+  const projectTableName = await projectTableContract.call('getTableName')
   const distributionTableName = await distributionTableContract.call(
     'getTableName'
   )
   const quarter = Math.ceil((new Date().getMonth() + 1) / 3)
   const year = new Date().getFullYear()
 
-  console.log(quarter, year)
-
-  const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${2024} AND quarter = ${4}`
+  const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter}`
   const projectsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
   )
