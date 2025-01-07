@@ -137,7 +137,7 @@ const SubmissionPage: React.FC = () => {
                         mission? Submit your results for senate review and
                         potential rewards. Please refer to{' '}
                         <a
-                          href="https://docs.moondao.com/Projects/Project-System"
+                          href="https://docs.moondao.com/Projects/Project-System#retroactive-rewards"
                           className="text-blue-400 hover:text-blue-300 underline"
                         >
                           our documentation
