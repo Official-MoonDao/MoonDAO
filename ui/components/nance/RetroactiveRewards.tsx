@@ -1,4 +1,4 @@
-import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import {
   DISTRIBUTION_TABLE_ADDRESSES,
@@ -25,8 +25,9 @@ import StandardButton from '../layout/StandardButton'
 export type Project = {
   id: string
   title: string
-  contributors: { [key: string]: number }
+  rewardDistribution: { [key: string]: number }
   finalReportLink: string
+  eligible: number
   MDP: number
 }
 export type Distribution = {
@@ -47,13 +48,12 @@ export function RetroactiveRewards({
   distributions,
   refreshRewards,
 }: RetroactiveRewardsProps) {
-  const chain =
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   const { isMobile } = useWindowSize()
 
   const userAddress = useAddress()
-  const year = new Date().getFullYear()
-  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
+  const quarter = Math.floor((new Date().getMonth() + 3) / 3) - 1 || 4
+  const year = new Date().getFullYear() - (quarter === 1 ? 1 : 0)
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
@@ -255,7 +255,9 @@ export function RetroactiveRewards({
                 <Asset
                   name="ETH"
                   amount={String(
-                    addressToEthPayout[userAddress].toFixed(2) || 0
+                    userAddress in addressToEthPayout
+                      ? addressToEthPayout[userAddress].toFixed(2)
+                      : 0
                   )}
                   usd={String(
                     userAddress in addressToEthPayout
@@ -266,7 +268,9 @@ export function RetroactiveRewards({
                 <Asset
                   name="MOONEY"
                   amount={String(
-                    addressToMooneyPayout[userAddress].toFixed() || 0
+                    userAddress in addressToMooneyPayout
+                      ? addressToMooneyPayout[userAddress].toFixed()
+                      : 0
                   )}
                   usd=""
                 />
@@ -323,8 +327,10 @@ export function RetroactiveRewards({
                         disabled={
                           !userAddress ||
                           !userHasVotingPower ||
-                          userAddress in project.contributors ||
-                          userAddress.toLowerCase() in project.contributors
+                          !project.eligible ||
+                          userAddress in project.rewardDistribution ||
+                          userAddress.toLowerCase() in
+                            project.rewardDistribution
                         }
                       />
                       <span>%</span>
