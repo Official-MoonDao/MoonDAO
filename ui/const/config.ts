@@ -117,11 +117,21 @@ export const CITIZEN_TABLE_NAMES: Index = {
   sepolia: 'CITIZENTABLE_11155111_1671',
 }
 
-export const PROJECT_TABLE_ADDRESSES: Index = {
-  // TODO update once mainnet is ready
-  arbitrum: '0x2E8e4B7DAf62868d3184E691f3Cd5Bd9c069cAe1',
-  sepolia: '0xC391008458004e33bED39EF2c2539857006c0c74',
+export const PROJECT_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x19124F594c3BbCb82078b157e526B278C8E9EfFc',
 }
+
+export const PROJECT_CREATOR_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D',
+}
+
+export const PROJECT_TABLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x17729AFF287d9873F5610c029A5Db814e428e97a',
+}
+
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
   sepolia: '0x9057Fff69e8b016a214C4f894430F71dad50b42c',
 }
@@ -184,6 +194,8 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   sepolia: '',
 }
 
+//Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
+//Arbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/42
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '0x0000002a',
   sepolia: '0x00000182',
