@@ -33,10 +33,14 @@ export default function useProjectData(
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
+  const { data: nanceProposalResponse } = useProposal({
+    space: NANCE_SPACE_NAME,
+    uuid: String(project?.MDP) || '',
+  })
+  const nanceProposal = nanceProposalResponse?.data
+
   const [snapshotProposal, setSnapshotProposal] = useState<any>()
-  const proposalJSON = useProposalJSON(
-    snapshotProposal?.data?.message?.body as string
-  )
+  const proposalJSON = useProposalJSON(nanceProposal?.body as string)
 
   const [isManager, setIsManager] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState<string>()
@@ -51,14 +55,7 @@ export default function useProjectData(
     [project?.id || '']
   )
 
-  const { data: nanceProposalResponse } = useProposal({
-    space: NANCE_SPACE_NAME,
-    uuid: String(project?.MDP) || '',
-  })
-  const nanceProposal = nanceProposalResponse?.data
-
   const totalBudget = useMemo(() => {
-    console.log(nanceProposal)
     let budget = 0
     if (nanceProposal?.actions && nanceProposal.actions.length > 0) {
       nanceProposal.actions.forEach((action: any) => {
@@ -75,7 +72,7 @@ export default function useProjectData(
   useEffect(() => {
     async function getProposal() {
       const res = await fetch(
-        `https://ipfs.io/ipfs/${project?.proposalIPFS.split('ipfs://')[1]}`
+        `/api/ipfs/fetch?cid=${project?.proposalIPFS.split('ipfs://')[1]}`
       )
       const data = await res.json()
       setSnapshotProposal(data)
@@ -118,7 +115,6 @@ export default function useProjectData(
     hatTreeId,
     adminHatId,
     managerHatId,
-    snapshotData: snapshotProposal,
     nanceProposal,
     proposalJSON,
     totalBudget,
