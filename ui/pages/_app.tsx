@@ -2,10 +2,12 @@ import { PrivyProvider } from '@privy-io/react-auth'
 import { Chain, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
+import { ThirdwebProvider } from 'thirdweb/react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
 import CitizenProvider from '@/lib/citizen/CitizenProvider'
+import { PrivyThirdwebV5Provider } from '@/lib/privy/PrivyThirdwebV5Provider'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
@@ -44,13 +46,17 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
           }}
         >
           <PrivyThirdwebSDKProvider selectedChain={selectedChain}>
-            <CitizenProvider selectedChain={selectedChain}>
-              <Layout lightMode={lightMode} setLightMode={setLightMode}>
-                <NextQueryParamProvider>
-                  <Component {...pageProps} />
-                </NextQueryParamProvider>
-              </Layout>
-            </CitizenProvider>
+            <ThirdwebProvider>
+              <PrivyThirdwebV5Provider selectedChain={selectedChain}>
+                <CitizenProvider selectedChain={selectedChain}>
+                  <Layout lightMode={lightMode} setLightMode={setLightMode}>
+                    <NextQueryParamProvider>
+                      <Component {...pageProps} />
+                    </NextQueryParamProvider>
+                  </Layout>
+                </CitizenProvider>
+              </PrivyThirdwebV5Provider>
+            </ThirdwebProvider>
           </PrivyThirdwebSDKProvider>
         </PrivyProvider>
       </ChainContext.Provider>
