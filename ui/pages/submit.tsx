@@ -9,6 +9,8 @@ import ContributionEditor from '../components/contribution/ContributionEditor';
 import WebsiteHead from '../components/layout/Head';
 import { NoticeFooter } from '../components/layout/NoticeFooter';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
+import Link from 'next/link';
 
 const SubmissionPage: React.FC = () => {
   const router = useRouter();
@@ -64,9 +66,44 @@ const SubmissionPage: React.FC = () => {
                 </Tab.List>
                 <Tab.Panels className="mt-4">
                   <Tab.Panel>
-                    <div className="mb-8">
+                    <div className="mb-8 max-w-[600px]">
+                    <div id="instructions-container" className="flex flex-col md:flex-row items-center justify-center gap-8 pt-5">
+                      <div id="step-1" className="flex flex-col items-center max-w-[200px]">
+                        <Image 
+                          src="/assets/icon-number-1.svg"
+                          alt="Step 1"
+                          width={70}
+                          height={70}
+                        />
+                        <p className="text-center pt-2 pb-5">
+                          (optional) <br></br> Post to <Link href="https://discord.com/channels/914720248140279868/1027658256706961509" className="text-blue-400 hover:text-blue-300 underline">#ideation</Link>
+                        </p>
+                      </div>
+                      <div id="step-2" className="flex flex-col items-center max-w-[200px]">
+                        <Image 
+                          src="/assets/icon-number-2.svg"
+                          alt="Step 1"
+                          width={70}
+                          height={70}
+                        />
+                        <p className="text-center pt-2 pb-5">
+                          Submit your <br></br>proposal below
+                        </p>
+                      </div>
+                      <div id="step-3" className="flex flex-col items-center max-w-[200px]">
+                        <Image 
+                          src="/assets/icon-number-3.svg"
+                          alt="Step 1"
+                          width={70}
+                          height={70}
+                        />
+                        <p className="text-center pt-2 pb-5">
+                          Present Proposal <br></br>at Townhall 
+                        </p>
+                      </div>
+                    </div>
                       <p className="text-gray-300">
-                        Submit a proposal to receive financing or special permissions from the MoonDAO community. Please refer to {' '}
+                        Submit a proposal to receive financing or special permissions from voting MoonDAO members. Please refer to {' '}
                         <a href="https://docs.moondao.com/Projects/Project-System" className="text-blue-400 hover:text-blue-300 underline">
                           our documentation
                         </a>
