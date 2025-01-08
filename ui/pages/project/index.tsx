@@ -165,7 +165,7 @@ export default function Projects({
                 setTab={handleTabChange}
                 icon="/../.././assets/icon-passport.svg"
               >
-                Inactive
+                Past
               </Tab>
             </div>
           </Frame>
