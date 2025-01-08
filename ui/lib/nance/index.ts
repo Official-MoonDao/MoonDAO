@@ -93,310 +93,71 @@ export const TEMPLATE = `\n*Note: Please remove the italicized instructions befo
 `
 
 export const FINAL_REPORT_TEMPLATE = `
-*The title will be included at the top of the final report*
+*The title of the project will be included at the top of the file."
 
-# **Results**
+*\*Please read [Projects System v6: Completion](https://docs.moondao.com/Projects/Project-System#completion) before submitting to understand the process of submitting a project final report. When ready, download this doc as a markdown file (File \> Download \> Markdown (.md)) and then upload and submit it at [https://moondao.com/report](https://moondao.com/report)*
 
-1. **Objective:**   
-   1. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+## Original Proposal
 
-   2. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+*To be filled out by the Project Lead.*
 
-   3. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**  
-      5. **Team Contributions** 
+**Link to Original Proposal:** *Link to the original proposal*  
+**Original Abstract:** *Please include the original abstract from the project proposal.*
 
-   4. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+## Results
 
-   5. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+*To be filled out by the Project Lead.*
 
-2. **Objective:**   
-   1. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**  
-      5. **Team Contributions**
+*For each OKR please copy the exact objective and result as appeared on your original proposal. Make a new outline for each objective and key result and keep it in this format.*
 
-   2. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+1. **Objective:** *Original objective as it appears in your initial proposal.*
 
-   3. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+   **Summary:** *Overall discussion of the objective and how it went.*  
+   **Learnings**: *What went well? What went wrong? How could it be improved?*  
+   **Maintenance**: *Create documentation if there is long-term operation of the work that you created so that our operations team can continue supporting the work.*  
+   **Results:** *Please provide the actual results for each key objective.*  
+   1. **Key Result**: *Original key result as it appears in your initial proposal.*  
+      **Results**: *The actual quantitative result or a link to the work completed.*  
+   2. **Key Result**: *Original key result as it appears in your initial proposal.*  
+      **Results**: *The actual quantitative result or a link to the work completed.*
 
-   4. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+   **Grade (Do not fill out \- Exec Leads will review):** *Overall Grade For The Objective*  
+      *Superb \= This is reserved for if the project went incredibly well without any flaws and vastly surpassed all original metrics. Very few projects will meet this grade.*
 
-   5. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+   *Exceeds Expectations \= Did better than expected. The team surpassed expectations and went above and beyond the original scope of the project.*
 
-3. **Objective:**   
-   1. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+   *Meets Expectations \= The project met all its original goals and sufficiently hit all the criteria.*
 
-   2. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+   *Does Not Meet Expectations \= The project did not achieve its original goal.*
 
-   3. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+## Member Contributions
 
-   4. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+*To be filled out by each Project Contributor.*
 
-   5. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+**@TeamMemberName1:** *A paragraph or two about the work that the member did on the team and a link to the work they did or contributions.*
 
-4. **Objective:**   
-   1. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+**@TeamMemberName2:** *A paragraph or two about the work that the member did on the team and a link to the work they did or contributions.*
 
-   2. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+## Reward Distribution (Table A)
 
-   3. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+*To be filled out by the Project Lead*
 
-   4. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+[*Link to the Coordinape*](https://coordinape.com/)*: Make the Astronauts the admin of the coordinape circle.*
 
-   5. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+| Member Name | % of total rewards | Upfront Payment Received | Wallet to receive ETH |
+| :---- | :---- | :---- | :---- |
+| *@TeamMemberName* | *21%* | *3,000 DAI, 50,000 MOONEY* |  |
 
-5. **Objective:**   
-   1. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+## Treasury Transparency (Table B)
 
-   2. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+*To be filled out by the Project Lead*
 
-   3. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
+*Link to Treasury with **unused funds returned to the [MoonDAO Treasury](https://app.safe.global/home?safe=eth:0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9).***
 
-   4. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-   5. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-6. **Objective:**   
-   1. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-         **Team Contributions**
-
-   2. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-   3. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-   4. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-   5. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-7. **Objective:**   
-   1. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-   2. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-   3. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-   4. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-   5. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-8. **Objective:**   
-   1. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-9. **Objective:**   
-   1. **Key Result**:   
-      1. **Results**:   
-      2. **Learnings:**   
-      3. **Maintenance**:  
-      4. **Team’s Self-Reported Score:**   
-      5. **Team Contributions**
-
-10. **Objective:**   
-    1. **Key Result**:   
-       1. **Results**:   
-       2. **Learnings:**   
-       3. **Maintenance**:  
-       4. **Team’s Self-Reported Score:**   
-       5. **Team Contributions**
-
-# **Coordinape Results**
-
-[Link to the Coordinape](https://coordinape.com/): Make the Astronauts the admin.
-
-| Member Name | % of total rewards | Upfront Payment |
-| :---- | :---- | :---- |
-| @TeamMemberName | 21% | 3,000 DAI, 50,000 MOONEY |
-|  |  |  |
-
-#  **Treasury Transparency**
-
-Link to Treasury with unused funds returned to the main DAO Treasury.
+*Arbitrum Address: arb1:0xAF26a002d716508b7e375f1f620338442F5470c0*  
+*Ethereum Address: eth:0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9*
 
 | Txn Title | Reason | Amount | Recipient | Etherscan Link or Gnosis Link | Deliverable |
 | :---- | :---- | :---- | :---- | :---- | :---- |
-| Legal Retainer | Retainer for contract lawyer |  | Lawyers Inc. | **<link>** | **<link>** or if nothing to show please include a description of what was delivered. |
-|  |  |  |  |  |  |
-
-**Project Wrap Up Checklist**
-
-- [ ] Added Project Final Report onto the Website Dashboard  
-- [ ] Upload Final report to the Google Drive  
-- [ ] Returned excess funds to the Treasury  
-- [ ] Presented Final Report to Senate  
-- [ ] Update Discord Roles  
-- [ ] (if needed) Create documentation for users of the work, or people who will need to maintain the project once it is completed.
+| Legal Retainer | Retainer for contract lawyer | 3,000 DAI | Lawyers Inc. | **\<link\>** | **\<link\>** or if nothing to show please include a description of what was delivered. |
 `
