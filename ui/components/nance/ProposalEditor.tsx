@@ -268,7 +268,7 @@ export default function ProposalEditor() {
 
   return (
     <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
-      <Head title="Proposal Editor" />
+      <Head title="Submissions Portal" />
 
       <div className="px-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
