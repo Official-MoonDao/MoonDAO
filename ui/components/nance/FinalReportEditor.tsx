@@ -2,17 +2,25 @@ import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { useProposal } from '@nance/nance-hooks'
 import { RequestBudget } from '@nance/nance-sdk'
 import { useAddress, useContract } from '@thirdweb-dev/react'
+import HatsABI from 'const/abis/Hats.json'
 import ProjectsABI from 'const/abis/Project.json'
-import { PROJECT_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
+import {
+  HATS_ADDRESS,
+  PROJECT_ADDRESSES,
+  PROJECT_TABLE_ADDRESSES,
+  TABLELAND_ENDPOINT,
+} from 'const/config'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { TEMPLATE } from '@/lib/nance'
+import { FINAL_REPORT_TEMPLATE } from '@/lib/nance'
+import useProjectData, { Project } from '@/lib/project/useProjectData'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
@@ -20,10 +28,14 @@ import '@nance/nance-editor/lib/css/editor.css'
 import Head from '@/components/layout/Head'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
-import ActiveProjectsDropdown from './ActiveProjectsDropdown'
+import ProjectsDropdown from '@/components/project/ProjectsDropdown'
 import EditorMarkdownUpload from './EditorMarkdownUpload'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
+
+type FinalReportEditorProps = {
+  projectsWithoutReport: Project[] | undefined
+}
 
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
@@ -40,15 +52,24 @@ const NanceEditor = dynamic(
   }
 )
 
-export default function FinalReportEditor() {
+export default function FinalReportEditor({
+  projectsWithoutReport,
+}: FinalReportEditorProps) {
   const { selectedChain } = useContext(ChainContext)
   const address = useAddress()
+
+  //Contracts
+  const { contract: projectContract } = useContract(
+    PROJECT_ADDRESSES[selectedChain.slug],
+    ProjectsABI
+  )
+  const { contract: hatsContract } = useContract(HATS_ADDRESS, HatsABI)
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
 
   const { contract: projectsTableContact } = useContract(
     PROJECT_TABLE_ADDRESSES[selectedChain.slug],
-    ProjectsABI
+    ProjectTableABI
   )
 
   const [{ proposalId }, setQuery] = useQueryParams({ proposalId: StringParam })
@@ -57,10 +78,36 @@ export default function FinalReportEditor() {
     { space: NANCE_SPACE_NAME, uuid: proposalId! },
     shouldFetch
   )
-  const loadedProposal = data?.data
-  const reportTitle = loadedProposal
+  const [loadedProposal, setLoadedProposal] = useState<any>(undefined)
+
+  useEffect(() => {
+    if (projectsWithoutReport) {
+      setLoadedProposal(
+        projectsWithoutReport.find((p: any) => p.MDP === Number(proposalId))
+          ? data?.data
+          : undefined
+      )
+    }
+  }, [projectsWithoutReport, data, proposalId])
+
+  const reportTitle = loadedProposal?.title
     ? loadedProposal?.title + ' Final Report'
     : ''
+
+  const [selectedProject, setSelectedProject] = useState<Project | undefined>()
+  const { isManager } = useProjectData(
+    projectContract,
+    hatsContract,
+    selectedProject
+  )
+
+  useEffect(() => {
+    if (projectsWithoutReport) {
+      setSelectedProject(
+        projectsWithoutReport.find((p) => p.MDP === loadedProposal?.proposalId)
+      )
+    }
+  }, [projectsWithoutReport, loadedProposal])
 
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
@@ -71,24 +118,7 @@ export default function FinalReportEditor() {
     console.debug('formData', formData)
 
     if (!reportTitle || !loadedProposal) {
-      return toast.error(
-        'Please select an active project that you are a rocketeer of.',
-        {
-          style: toastStyle,
-        }
-      )
-    }
-    //check if connected wallet is a rocketeer of the proposal
-    const payload: any = loadedProposal?.actions?.[0]?.payload
-    const teamMembers = payload?.projectTeam
-    if (
-      !teamMembers.some(
-        (m: any) =>
-          (m.payoutAddress === address || m.votingAddress === address) &&
-          m.isRocketeer === true
-      )
-    ) {
-      return toast.error('You are not a rocketeer of this proposal.', {
+      return toast.error('Please select a project that you are a manager of.', {
         style: toastStyle,
       })
     }
@@ -98,9 +128,13 @@ export default function FinalReportEditor() {
       if (!markdown) {
         throw new Error('No markdown found')
       }
-      const blob = new Blob([markdown], { type: 'text/markdown' })
+      const header = `# ${reportTitle}\n\n`
+      const fileName = `${reportTitle.replace(/\s+/g, '-')}.md`
+      const file = new File([header + markdown], fileName, {
+        type: 'text/markdown',
+      })
 
-      const { cid: markdownIpfsHash } = await pinBlobOrFile(blob)
+      const { cid: markdownIpfsHash } = await pinBlobOrFile(file)
 
       const projectsTableName = await projectsTableContact?.call('getTableName')
       const statement = `SELECT * FROM ${projectsTableName} WHERE MDP = ${loadedProposal?.proposalId}`
@@ -110,19 +144,28 @@ export default function FinalReportEditor() {
       const projectData = await projectRes.json()
       const project = projectData[0]
 
-      await projectsTableContact?.call('updateTableCol', [
+      await projectsTableContact?.call('updateFinalReportIPFS', [
         project.id,
-        'finalReportIPFS',
         'ipfs://' + markdownIpfsHash,
       ])
+      setSelectedProject(undefined)
+      setMarkdown(FINAL_REPORT_TEMPLATE)
+      setLoadedProposal(undefined)
+      setQuery({ proposalId: undefined })
+
+      toast.success('Final report uploaded successfully.', {
+        style: toastStyle,
+      })
     } catch (err) {
+      console.log(err)
       toast.error('Unable to upload final report, please contact support.', {
         style: toastStyle,
       })
     }
   }
 
-  const buttonsDisabled = !address || signingStatus === 'loading'
+  const buttonsDisabled =
+    !address || signingStatus === 'loading' || !isManager || !selectedProject
 
   const setProposalId = function (id: string) {
     setQuery({ proposalId: id })
@@ -142,16 +185,18 @@ export default function FinalReportEditor() {
               }}
             />
             <div className="flex flex-col gap-2">
-              <ActiveProjectsDropdown
-                selectedChain={selectedChain}
+              <ProjectsDropdown
+                projects={projectsWithoutReport}
                 setProposalId={setProposalId}
+                selectedProject={selectedProject}
+                setSelectedProject={setSelectedProject}
               />
               <EditorMarkdownUpload setMarkdown={setMarkdown} />
             </div>
           </div>
           <div className="pt-0 rounded-t-[20px] rounded-b-[0px] bg-dark-cool">
             <NanceEditor
-              initialValue={TEMPLATE}
+              initialValue={FINAL_REPORT_TEMPLATE}
               fileUploadExternal={async (val) => {
                 const res = await pinBlobOrFile(val)
                 return res.url
@@ -176,7 +221,11 @@ export default function FinalReportEditor() {
                 onClick={() => {}}
                 disabled={buttonsDisabled || !projectsTableContact}
                 data-tip={
-                  signingStatus === 'loading'
+                  !selectedProject
+                    ? 'Please select a project.'
+                    : !isManager
+                    ? 'You are not a manager.'
+                    : signingStatus === 'loading'
                     ? 'Signing...'
                     : 'You need to connect wallet first.'
                 }
