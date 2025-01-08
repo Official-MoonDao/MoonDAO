@@ -1,6 +1,7 @@
 import {
   BuildingLibraryIcon,
   ClipboardDocumentListIcon,
+  DocumentIcon,
   FolderIcon,
   PlusIcon,
   RocketLaunchIcon,
@@ -30,6 +31,11 @@ export default function useNavigation(citizen: any) {
           { name: 'Citizens', href: '/citizens' },
           { name: 'Map', href: '/map' },
         ]
+      },
+      {
+        name: 'Projects',
+        href: '/project',
+        icon: DocumentIcon,
       },
       {
         name: 'Info',
