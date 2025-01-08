@@ -8,6 +8,7 @@ import {
 } from 'const/config'
 import { useRouter } from 'next/router'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
+import { getRelativeQuarter } from '@/lib/utils/dates'
 import {
   RetroactiveRewards,
   RetroactiveRewardsProps,
@@ -45,8 +46,8 @@ export async function getStaticProps() {
   const distributionTableName = await distributionTableContract.call(
     'getTableName'
   )
-  const quarter = Math.ceil((new Date().getMonth() + 1) / 3)
-  const year = new Date().getFullYear()
+
+  const { year, quarter } = getRelativeQuarter(-1)
 
   const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter}`
   const projectsRes = await fetch(
