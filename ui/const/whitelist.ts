@@ -13,5 +13,4 @@ export const featuredTeams: any = [
   '5',
   '4',
   '2',
-  '3',
 ]
