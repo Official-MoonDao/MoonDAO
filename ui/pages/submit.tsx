@@ -6,7 +6,6 @@ import { PROJECT_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
 import { StringParam, useQueryParams } from 'next-query-params'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 import { NANCE_API_URL } from '../lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
@@ -19,12 +18,6 @@ import { NoticeFooter } from '../components/layout/NoticeFooter'
 import ProposalEditor from '../components/nance/ProposalEditor'
 import FinalReportEditor from '@/components/nance/FinalReportEditor'
 
-const tagIndicies: Record<string, number> = {
-  report: 2,
-  contribution: 1,
-  proposal: 0,
-}
-
 export default function SubmissionPage({
   projectsWithoutReport,
 }: {
@@ -32,7 +25,6 @@ export default function SubmissionPage({
 }) {
   const [{ tag }, setQuery] = useQueryParams({ tag: StringParam })
 
-  // Default to 0 to avoid hydration mismatch
   const [selectedIndex, setSelectedIndex] = useState(0)
   const title = 'Collaborate with MoonDAO'
 
@@ -47,7 +39,6 @@ export default function SubmissionPage({
   }, [tag])
 
   useEffect(() => {
-    // Update the query parameter only if it differs from the current tag
     if (selectedIndex === 2 && tag !== 'report') {
       setQuery({ tag: 'report' }, 'replaceIn')
     } else if (selectedIndex === 1 && tag !== 'contribution') {
@@ -56,8 +47,6 @@ export default function SubmissionPage({
       setQuery({ tag: undefined }, 'replaceIn')
     }
   }, [selectedIndex])
-
-  const headerContent = <div></div>
 
   return (
     <>
