@@ -29,43 +29,55 @@ export default function Rewards({
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const sdk = initSDK(chain)
+  try {
+    const chain =
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+    const sdk = initSDK(chain)
 
-  const projectTableContract = await sdk.getContract(
-    PROJECT_TABLE_ADDRESSES[chain.slug],
-    ProjectTableABI
-  )
+    const projectTableContract = await sdk.getContract(
+      PROJECT_TABLE_ADDRESSES[chain.slug],
+      ProjectTableABI
+    )
 
-  const distributionTableContract = await sdk.getContract(
-    DISTRIBUTION_TABLE_ADDRESSES[chain.slug],
-    DistributionABI
-  )
+    const distributionTableContract = await sdk.getContract(
+      DISTRIBUTION_TABLE_ADDRESSES[chain.slug],
+      DistributionABI
+    )
 
-  const projectTableName = await projectTableContract.call('getTableName')
-  const distributionTableName = await distributionTableContract.call(
-    'getTableName'
-  )
+    const projectTableName = await projectTableContract.call('getTableName')
+    const distributionTableName = await distributionTableContract.call(
+      'getTableName'
+    )
 
-  const { quarter, year } = getRelativeQuarter(-1)
+    const { quarter, year } = getRelativeQuarter(-1)
 
-  const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter}`
-  const projectsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
-  )
-  const projects = await projectsRes.json()
+    const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter}`
+    const projectsRes = await fetch(
+      `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
+    )
+    const projects = await projectsRes.json()
 
-  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
-  const distributionsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
-  )
-  const distributions = await distributionsRes.json()
+    const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
+    const distributionsRes = await fetch(
+      `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
+    )
+    const distributions = await distributionsRes.json()
 
-  return {
-    props: {
-      projects,
-      distributions,
-    },
-    revalidate: 60,
+    return {
+      props: {
+        projects,
+        distributions,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error('Error fetching projects or distributions:', error)
+    return {
+      props: {
+        projects: [],
+        distributions: [],
+      },
+      revalidate: 60,
+    }
   }
 }
