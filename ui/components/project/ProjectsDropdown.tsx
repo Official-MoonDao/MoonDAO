@@ -5,58 +5,27 @@ import {
   MenuItems,
   Transition,
 } from '@headlessui/react'
-import {
-  ShareIcon,
-  EllipsisVerticalIcon,
-  PencilIcon,
-  ChevronDownIcon,
-  TrashIcon,
-  ArchiveBoxArrowDownIcon,
-} from '@heroicons/react/24/outline'
-import { Chain } from '@thirdweb-dev/chains'
-import { useContract } from '@thirdweb-dev/react'
-import ProjectABI from 'const/abis/Project.json'
-import { PROJECT_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
-import { Fragment, useEffect, useMemo, useState } from 'react'
-import toast from 'react-hot-toast'
-import useNewestProposals from '@/lib/nance/useNewestProposals'
+import { EllipsisVerticalIcon } from '@heroicons/react/24/outline'
+import { Fragment } from 'react'
+import { Project } from '@/lib/project/useProjectData'
 
-type ActiveProjectsDropdownProps = {
-  selectedChain: Chain
-  setProposalId: (id: string) => void
+type ProjectsDropdownProps = {
+  projects: Project[] | undefined
+  selectedProject: Project | undefined
+  setSelectedProject: (project: Project) => void
+  setProposalId?: (id: string) => void
 }
 
-export default function ActiveProjectsDropdown({
-  selectedChain,
+export default function ProjectsDropdown({
+  projects,
+  selectedProject,
+  setSelectedProject,
   setProposalId,
-}: ActiveProjectsDropdownProps) {
-  const [activeProjects, setActiveProjects] = useState([])
-  const [selectedProject, setSelectedProject] = useState<any>()
-  const { contract: projectsTableContract } = useContract(
-    PROJECT_TABLE_ADDRESSES[selectedChain.slug],
-    ProjectABI
-  )
-
-  useEffect(() => {
-    async function getActiveProjects() {
-      const projectsTableName = await projectsTableContract?.call(
-        'getTableName'
-      )
-      const statement = `SELECT * FROM ${projectsTableName}`
-      const projectsRes = await fetch(
-        `${TABLELAND_ENDPOINT}?statement=${statement}`
-      )
-      const projects = await projectsRes.json()
-      setActiveProjects(projects)
-    }
-    if (projectsTableContract) {
-      getActiveProjects()
-    }
-  }, [projectsTableContract])
+}: ProjectsDropdownProps) {
   return (
     <>
       <Menu as="div" className="relative inline-block">
-        <MenuButton>
+        <MenuButton className="w-full">
           <div className="inline-flex w-full justify-end rounded-md sm:hidden">
             <EllipsisVerticalIcon
               className="h-7 w-7 text-indigo-600"
@@ -65,7 +34,7 @@ export default function ActiveProjectsDropdown({
           </div>
 
           <div className="hidden w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:inline-flex">
-            {selectedProject?.title || 'Select Project'}
+            {selectedProject?.name || 'Select Project'}
           </div>
         </MenuButton>
         <Transition
@@ -82,17 +51,17 @@ export default function ActiveProjectsDropdown({
               <MenuItem>
                 {({ focus }) => (
                   <div className="flex flex-col gap-2 overflow-y-scroll">
-                    {activeProjects.map((aP: any) => (
+                    {projects?.map((aP: any) => (
                       <button
                         key={aP.id}
                         className="text-sm text-black"
                         type="button"
                         onClick={() => {
                           setSelectedProject(aP)
-                          setProposalId(aP.MDP)
+                          setProposalId && setProposalId(aP.MDP)
                         }}
                       >
-                        {aP.title}
+                        {aP.name}
                       </button>
                     ))}
                   </div>
