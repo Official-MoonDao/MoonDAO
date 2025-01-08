@@ -3084,26 +3084,26 @@
   resolved "https://registry.yarnpkg.com/@multiformats/base-x/-/base-x-4.0.1.tgz#95ff0fa58711789d53aefb2590a8b7a4e715d121"
   integrity sha512-eMk0b9ReBbV23xXU693TAIrLyeO5iTgBZGSJfpqriG8UkYvr/hC9u9pyMlAakDNHWmbhMZCDs6KQO0jzKD8OTw==
 
-"@nance/nance-editor@^1.8.3":
-  version "1.8.3"
-  resolved "https://registry.yarnpkg.com/@nance/nance-editor/-/nance-editor-1.8.3.tgz#7c2d8d076aa4c54b13356a73e9da12cd9917488c"
-  integrity sha512-NW/epLAl3auKlcFqKItDtCFkwJ7Z79d7F6N67NifP2sZ+zpaMHwAC0xzX2NIW9tmLkM7fJnM+jjuyQcoCfQYPQ==
+"@nance/nance-editor@^1.8.4":
+  version "1.8.4"
+  resolved "https://registry.yarnpkg.com/@nance/nance-editor/-/nance-editor-1.8.4.tgz#b4bbc67912f28b57b4923f0e431f8bc17d15947e"
+  integrity sha512-OIThUEn5ppQ9CQynIjnMDYuA5fBx2Lu8q54DdSQ3RcW7Vo9BHjReOIvMsAiPLkdPu/GtlfePI7CHrZezOipTew==
   dependencies:
     "@toast-ui/react-editor" "^3.2.3"
 
-"@nance/nance-hooks@^3.1.1":
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-3.1.1.tgz#0f413551bbef96a9782ff5380db03c0ae900e3fc"
-  integrity sha512-xR9DK9FtSzTyj20BKkJKLCsNnaJ383wuJeobUu6xzuRWPLS64jHJRhU7mXPuPdX0UEG5iMu1cHXLmmB47LNQvQ==
+"@nance/nance-hooks@^4.1.6":
+  version "4.1.6"
+  resolved "https://registry.yarnpkg.com/@nance/nance-hooks/-/nance-hooks-4.1.6.tgz#30f00f983d5e1b15b831893bfc015d6b5200d011"
+  integrity sha512-lB8rVk1BKRa4dS5WKWQVvq52+5LdxgHZuwT88ha/BpJKHrkw+J2b0rS6TngIRTBPLuaS/GrPyiLWDg46CYq+HQ==
   dependencies:
-    "@nance/nance-sdk" "^3.1.1"
+    "@nance/nance-sdk" "^4.1.6"
     swr "^2.2.4"
     tslib "^2.6.2"
 
-"@nance/nance-sdk@^3.1.1":
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-3.1.1.tgz#a311d33fe592d6587831eb95848b4fad5e23f19b"
-  integrity sha512-17cWnhNtPt3EqMA5OrLrP2xf3WxsReUMbiD2aLquSGphxhkByDzKvLhi9uIjf8IQWLcUihWiVmS0oUoS3JJlCw==
+"@nance/nance-sdk@^4.1.6":
+  version "4.1.6"
+  resolved "https://registry.yarnpkg.com/@nance/nance-sdk/-/nance-sdk-4.1.6.tgz#d52c542373ce1e85a071c875f72fee66041904d1"
+  integrity sha512-ohw3f4rLpTb8qKXXR0bPOmxXh8u3vHCrvZrYMuif+toGzFFsITsUZQoJXRX0g8xmCw3gp7SVuWZ+N15AC3jZDQ==
   dependencies:
     tslib "^2.6.2"
     yaml "^2.4.2"

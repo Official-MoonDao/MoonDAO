@@ -11,7 +11,10 @@ export default function EditorMarkdownUpload({
 
   const handleFileUpload = (event: any) => {
     const file = event.target.files[0]
-    if (file && file.type === 'text/markdown') {
+    if (
+      file &&
+      (file.type === 'text/markdown' || file.name.toLowerCase().endsWith('.md'))
+    ) {
       const reader = new FileReader()
       reader.onload = (e: any) => {
         const markdownContent = e.target.result

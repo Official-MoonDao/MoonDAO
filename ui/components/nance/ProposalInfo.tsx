@@ -74,7 +74,7 @@ export default function ProposalInfo({
   sponsorDisabled = true,
   coauthorsDisabled = true,
   showTitle = true,
-  showStatus = true, 
+  showStatus = true,
 }: {
   proposalPacket: ProposalPacket
   votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
@@ -82,7 +82,7 @@ export default function ProposalInfo({
   sponsorDisabled?: boolean
   coauthorsDisabled?: boolean
   showTitle?: boolean
-  showStatus?: boolean 
+  showStatus?: boolean
 }) {
   const { proposalIdPrefix } = proposalPacket?.proposalInfo
   const { proposalInfo, ...proposal } = proposalPacket
@@ -228,8 +228,10 @@ export default function ProposalInfo({
             </div>
           )}
           {/* Tokens */}
-          <div className="mt-2 md:mt-0"> 
-          <RequestingTokensOfProposal actions={proposalPacket.actions} />
+          <div className="mt-2 md:mt-0">
+            {proposalPacket.actions && (
+              <RequestingTokensOfProposal actions={proposalPacket.actions} />
+            )}
           </div>
           {/* Delegate this proposal if it doesn't have an author */}
           {!proposalPacket.authorAddress && isLinked && !sponsorDisabled && (
