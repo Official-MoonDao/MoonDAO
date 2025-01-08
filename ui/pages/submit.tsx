@@ -69,14 +69,14 @@ const SubmissionPage: React.FC = () => {
                         Submit a proposal to receive financing or special permissions from the MoonDAO community. Please refer to {' '}
                         <a 
                           href="https://docs.moondao.com/Projects/Project-System" 
-                          className="text-blue-400 hover:text-blue-300 underline" target="_blank"
+                          className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noreferrer"
                         >
                           our documentation
                         </a>{' '}
                         for more details before getting started. We recommend starting your draft with the {' '}
                         <a 
                           href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing" 
-                          className="text-blue-400 hover:text-blue-300 underline" target="_blank"
+                          className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noreferrer"
                         >
                           Google doc template
                         </a>.
@@ -90,7 +90,7 @@ const SubmissionPage: React.FC = () => {
                     <div className="mb-8">
                       <p className="text-gray-300">
                         What have you done to accelerate the impact of MoonDAO's mission? Submit your non-project work and accomplishments, even if not tied directly to MoonDAO, to earn ETH financial rewards and vMOONEY voting power. If it helps advance our mission and build a multiplanetary future, it counts! Please refer to {' '}
-                        <a href="https://docs.moondao.com/Reference/Nested-Docs/Community-Rewards" className="text-blue-400 hover:text-blue-300 underline" target="_blank">
+                        <a href="https://docs.moondao.com/Reference/Nested-Docs/Community-Rewards" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noreferrer">
                           our documentation
                         </a>
                         {' '}for more details. 
