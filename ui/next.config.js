@@ -223,6 +223,11 @@ module.exports = nextTranslate({
         destination: '/project',
         permanent: true,
       },
+      {
+        source: '/report',
+        destination: '/submit?tag=report',
+        permanent: true,
+      },
     ]
   },
   webpack: (config, { isServer }) => {
