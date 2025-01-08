@@ -240,7 +240,7 @@ export async function getStaticProps() {
     `${TABLELAND_ENDPOINT}?statement=${statement}`
   )
   const projects = await projectsRes.json()
-  console.log(projects)
+
   return {
     props: {
       projectsWithoutReport: projects,
