@@ -118,17 +118,17 @@ export const CITIZEN_TABLE_NAMES: Index = {
 }
 
 export const PROJECT_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xB42017d8Beb6758F99eCbEDcB83EC59F8Fa526EA',
   sepolia: '0x19124F594c3BbCb82078b157e526B278C8E9EfFc',
 }
 
 export const PROJECT_CREATOR_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x15F84Ee204a93FE2B80B2B2d30dAEfA154f4429d',
   sepolia: '0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xC6620Aa6010c0FFcDd74bf7D3e569Cc4b2e5B5Db',
   sepolia: '0x17729AFF287d9873F5610c029A5Db814e428e97a',
 }
 
@@ -204,7 +204,7 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 //Projects Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/729
 //ProjectsArbitrum Hat Tree :
 export const PROJECT_HAT_TREE_IDS: Index = {
-  arbitrum: '',
+  arbitrum: '0x00000045',
   sepolia: '0x000002d9',
 }
 

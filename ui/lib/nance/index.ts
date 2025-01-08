@@ -1,7 +1,7 @@
-import { v4 } from "uuid";
+import { v4 } from 'uuid'
 
 export function uuidGen(): string {
-  return v4().replaceAll('-', '');
+  return v4().replaceAll('-', '')
 }
 
 export function formatNumberUSStyle(
@@ -90,4 +90,74 @@ export const TEMPLATE = `\n*Note: Please remove the italicized instructions befo
 | Transaction Type | Amount | Token Type | Receiving Address |
 | :---- | :---- | :---- | :---- |
 | *Send* | *0* | *ETH* | *TBD* |
+`
+
+export const FINAL_REPORT_TEMPLATE = `
+*The title of the project will be included at the top of the file."
+
+*\*Please read [Projects System v6: Completion](https://docs.moondao.com/Projects/Project-System#completion) before submitting to understand the process of submitting a project final report. When ready, download this doc as a markdown file (File \> Download \> Markdown (.md)) and then upload and submit it at [https://moondao.com/report](https://moondao.com/report)*
+
+## Original Proposal
+
+*To be filled out by the Project Lead.*
+
+**Link to Original Proposal:** *Link to the original proposal*  
+**Original Abstract:** *Please include the original abstract from the project proposal.*
+
+## Results
+
+*To be filled out by the Project Lead.*
+
+*For each OKR please copy the exact objective and result as appeared on your original proposal. Make a new outline for each objective and key result and keep it in this format.*
+
+1. **Objective:** *Original objective as it appears in your initial proposal.*
+
+   **Summary:** *Overall discussion of the objective and how it went.*  
+   **Learnings**: *What went well? What went wrong? How could it be improved?*  
+   **Maintenance**: *Create documentation if there is long-term operation of the work that you created so that our operations team can continue supporting the work.*  
+   **Results:** *Please provide the actual results for each key objective.*  
+   1. **Key Result**: *Original key result as it appears in your initial proposal.*  
+      **Results**: *The actual quantitative result or a link to the work completed.*  
+   2. **Key Result**: *Original key result as it appears in your initial proposal.*  
+      **Results**: *The actual quantitative result or a link to the work completed.*
+
+   **Grade (Do not fill out \- Exec Leads will review):** *Overall Grade For The Objective*  
+      *Superb \= This is reserved for if the project went incredibly well without any flaws and vastly surpassed all original metrics. Very few projects will meet this grade.*
+
+   *Exceeds Expectations \= Did better than expected. The team surpassed expectations and went above and beyond the original scope of the project.*
+
+   *Meets Expectations \= The project met all its original goals and sufficiently hit all the criteria.*
+
+   *Does Not Meet Expectations \= The project did not achieve its original goal.*
+
+## Member Contributions
+
+*To be filled out by each Project Contributor.*
+
+**@TeamMemberName1:** *A paragraph or two about the work that the member did on the team and a link to the work they did or contributions.*
+
+**@TeamMemberName2:** *A paragraph or two about the work that the member did on the team and a link to the work they did or contributions.*
+
+## Reward Distribution (Table A)
+
+*To be filled out by the Project Lead*
+
+[*Link to the Coordinape*](https://coordinape.com/)*: Make the Astronauts the admin of the coordinape circle.*
+
+| Member Name | % of total rewards | Upfront Payment Received | Wallet to receive ETH |
+| :---- | :---- | :---- | :---- |
+| *@TeamMemberName* | *21%* | *3,000 DAI, 50,000 MOONEY* |  |
+
+## Treasury Transparency (Table B)
+
+*To be filled out by the Project Lead*
+
+*Link to Treasury with **unused funds returned to the [MoonDAO Treasury](https://app.safe.global/home?safe=eth:0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9).***
+
+*Arbitrum Address: arb1:0xAF26a002d716508b7e375f1f620338442F5470c0*  
+*Ethereum Address: eth:0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9*
+
+| Txn Title | Reason | Amount | Recipient | Etherscan Link or Gnosis Link | Deliverable |
+| :---- | :---- | :---- | :---- | :---- | :---- |
+| Legal Retainer | Retainer for contract lawyer | 3,000 DAI | Lawyers Inc. | **\<link\>** | **\<link\>** or if nothing to show please include a description of what was delivered. |
 `

@@ -5,7 +5,7 @@ import {
   FolderIcon,
   PlusIcon,
   RocketLaunchIcon,
-  WrenchScrewdriverIcon, 
+  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
 import IconOrg from '@/components/assets/IconOrg'
@@ -30,7 +30,7 @@ export default function useNavigation(citizen: any) {
           { name: 'Teams', href: '/teams' },
           { name: 'Citizens', href: '/citizens' },
           { name: 'Map', href: '/map' },
-        ]
+        ],
       },
       {
         name: 'Projects',
@@ -81,6 +81,16 @@ export default function useNavigation(citizen: any) {
             name: 'Submit Contribution',
             href: '/contribute',
           },
+          {
+            name: 'Submit Final Report',
+            href: '/submit?tag=report',
+          },
+          {
+            name: 'Get $MOONEY',
+            href: '/get-mooney',
+          },
+          { name: 'Get Voting Power', href: '/lock' },
+          { name: 'Bridge', href: '/bridge' },
         ],
       },
       {

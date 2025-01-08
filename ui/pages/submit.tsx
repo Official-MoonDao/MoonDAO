@@ -1,40 +1,52 @@
 import { Tab } from '@headlessui/react'
 import { NanceProvider } from '@nance/nance-hooks'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
+import { PROJECT_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
+import { StringParam, useQueryParams } from 'next-query-params'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 import { NANCE_API_URL } from '../lib/nance/constants'
-import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { Project } from '@/lib/project/useProjectData'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 import ContributionEditor from '../components/contribution/ContributionEditor'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
 import ProposalEditor from '../components/nance/ProposalEditor'
+import FinalReportEditor from '@/components/nance/FinalReportEditor'
 
-const SubmissionPage: React.FC = () => {
-  const router = useRouter()
-  const { tag } = router.query
-  const shallowQueryRoute = useShallowQueryRoute()
+export default function SubmissionPage({
+  projectsWithoutReport,
+}: {
+  projectsWithoutReport: Project[] | undefined
+}) {
+  const [{ tag }, setQuery] = useQueryParams({ tag: StringParam })
+
   const [selectedIndex, setSelectedIndex] = useState(0)
   const title = 'Collaborate with MoonDAO'
 
   useEffect(() => {
-    if (selectedIndex === 1) {
-      shallowQueryRoute({ tag: 'contribution' })
-    } else if (selectedIndex === 0) {
-      shallowQueryRoute({ tag: 'proposal' })
-    }
-  }, [selectedIndex])
-
-  useEffect(() => {
-    if (tag === 'contribution') {
+    if (tag === 'report') {
+      setSelectedIndex(2)
+    } else if (tag === 'contribution') {
       setSelectedIndex(1)
-    } else if (!tag || tag === 'proposal') {
+    } else {
       setSelectedIndex(0)
     }
   }, [tag])
+
+  useEffect(() => {
+    if (selectedIndex === 2 && tag !== 'report') {
+      setQuery({ tag: 'report' }, 'replaceIn')
+    } else if (selectedIndex === 1 && tag !== 'contribution') {
+      setQuery({ tag: 'contribution' }, 'replaceIn')
+    } else if (selectedIndex === 0 && tag !== undefined) {
+      setQuery({ tag: undefined }, 'replaceIn')
+    }
+  }, [selectedIndex])
 
   return (
     <>
@@ -78,6 +90,18 @@ const SubmissionPage: React.FC = () => {
                     }
                   >
                     Submit Contribution
+                  </Tab>
+                  <Tab
+                    className={({ selected }) =>
+                      `rounded-lg py-2.5 font-GoodTimes leading-5 px-5 focus:outline-none
+                    ${
+                      selected
+                        ? 'bg-gradient-to-r from-[#5757ec] to-[#6b3d79] text-white shadow'
+                        : 'text-white/70 hover:text-white'
+                    }`
+                    }
+                  >
+                    Submit Report
                   </Tab>
                 </Tab.List>
                 <Tab.Panels className="mt-4">
@@ -186,6 +210,16 @@ const SubmissionPage: React.FC = () => {
                     </div>
                     <ContributionEditor />
                   </Tab.Panel>
+                  <Tab.Panel>
+                    <div className="mb-8">
+                      <p className="text-gray-300">
+                        Submit a final report for your project.
+                      </p>
+                    </div>
+                    <FinalReportEditor
+                      projectsWithoutReport={projectsWithoutReport}
+                    />
+                  </Tab.Panel>
                 </Tab.Panels>
               </Tab.Group>
             </div>
@@ -197,4 +231,26 @@ const SubmissionPage: React.FC = () => {
   )
 }
 
-export default SubmissionPage
+export async function getStaticProps() {
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
+
+  const projectTableContract = await sdk.getContract(
+    PROJECT_TABLE_ADDRESSES[chain.slug],
+    ProjectTableABI
+  )
+  const projectTableName = await projectTableContract?.call('getTableName')
+
+  const statement = `SELECT * FROM ${projectTableName} WHERE finalReportIPFS IS ""`
+  const projectsRes = await fetch(
+    `${TABLELAND_ENDPOINT}?statement=${statement}`
+  )
+  const projects = await projectsRes.json()
+
+  return {
+    props: {
+      projectsWithoutReport: projects,
+    },
+    revalidate: 60,
+  }
+}
