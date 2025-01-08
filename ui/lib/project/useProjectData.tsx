@@ -54,6 +54,10 @@ export default function useProjectData(
     [project?.id || '']
   )
 
+  const isActive = useMemo(() => {
+    return project?.active === 1
+  }, [project])
+
   const totalBudget = useMemo(() => {
     let budget = 0
     if (nanceProposal?.actions && nanceProposal.actions.length > 0) {
@@ -99,6 +103,7 @@ export default function useProjectData(
   return {
     ...project,
     isManager,
+    isActive,
     hatTreeId,
     adminHatId,
     managerHatId,
