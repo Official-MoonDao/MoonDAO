@@ -85,6 +85,7 @@ export default function useNavigation(citizen: any) {
             name: 'Submit Final Report',
             href: '/submit?tag=report',
           },
+          { name: 'Project Rewards', href: '/rewards' },
           {
             name: 'Get $MOONEY',
             href: '/get-mooney',

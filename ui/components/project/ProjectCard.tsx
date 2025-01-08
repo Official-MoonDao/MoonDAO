@@ -9,6 +9,7 @@ type ProjectCardProps = {
   project: Project | undefined
   projectContract: any
   hatsContract: any
+  distribute?: boolean
   distribution?: Record<string, number>
   handleDistributionChange?: (projectId: string, value: number) => void
 }
@@ -20,20 +21,23 @@ const ProjectCardContent = memo(
     handleDistributionChange,
     proposalJSON,
     totalBudget,
+    distribute,
   }: any) => {
     return (
       <div
         id="card-container"
-        className="animate-fadeIn p-4 flex flex-col gap-2 relative bg-dark-cool w-full h-full rounded-2xl"
+        className="p-4 flex flex-col gap-2 relative bg-dark-cool w-full h-full rounded-2xl"
       >
         <div className="flex justify-between">
           <h1 className="font-GoodTimes">{project?.name || ''}</h1>
-          {distribution && (
+          {distribute && (
             <NumberStepper
               number={distribution?.[project?.id] || 0}
-              setNumber={(value: any) =>
-                handleDistributionChange?.(String(project?.id), value)
-              }
+              setNumber={(value: any) => {
+                if (distribution && handleDistributionChange) {
+                  handleDistributionChange?.(String(project?.id), value)
+                }
+              }}
               step={1}
               max={100}
             />
@@ -57,6 +61,7 @@ export default function ProjectCard({
   project,
   projectContract,
   hatsContract,
+  distribute,
   distribution,
   handleDistributionChange,
 }: ProjectCardProps) {
@@ -70,9 +75,10 @@ export default function ProjectCard({
 
   return (
     <>
-      {distribution ? (
+      {distribute ? (
         <ProjectCardContent
           project={project}
+          distribute={distribute}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
           proposalJSON={proposalJSON}

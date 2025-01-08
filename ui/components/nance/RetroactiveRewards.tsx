@@ -20,10 +20,10 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
 import { useVotingPowers } from '@/lib/snapshot'
-import useWindowSize from '@/lib/team/use-window-size'
 import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
+import { getRelativeQuarter } from '@/lib/utils/dates'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import { computeRewardPercentages } from '@/lib/utils/voting'
 import Container from '@/components/layout/Container'
@@ -97,12 +97,10 @@ export function RetroactiveRewards({
   const router = useRouter()
 
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const { isMobile } = useWindowSize()
 
   const userAddress = useAddress()
 
-  const quarter = Math.ceil((new Date().getMonth() + 1) / 3)
-  const year = new Date().getFullYear()
+  const { quarter, year } = getRelativeQuarter(-1)
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
@@ -113,7 +111,6 @@ export function RetroactiveRewards({
   useEffect(() => {
     if (distributions && userAddress) {
       for (const d of distributions) {
-        console.log(d)
         if (
           d.year === year &&
           d.quarter === quarter &&
@@ -346,6 +343,7 @@ export function RetroactiveRewards({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
+                        distribute
                         distribution={
                           userHasVotingPower ? distribution : undefined
                         }
