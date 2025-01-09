@@ -91,7 +91,7 @@ const MobileSidebar = ({
               </Link>
               <div className="mt-8 h-0 flex-1 overflow-y-auto">
                 <nav className="space-y-1 px-2">
-                  {navigation.map((item, i) => (
+                  {navigation?.map((item: any, i: any) => (
                     <NavigationLink
                       key={i}
                       item={item}
