@@ -5,10 +5,14 @@ import { Fragment } from 'react'
 import { useEffect } from 'react'
 import { useSwipeDirection } from '../../../lib/utils/hooks/useSwipeDirection'
 import { LogoSidebar, LogoSidebarLight } from '../../assets'
-import { navigation } from './Navigation'
 import NavigationLink from './NavigationLink'
 
-const MobileSidebar = ({ lightMode, sidebarOpen, setSidebarOpen }: any) => {
+const MobileSidebar = ({
+  navigation,
+  lightMode,
+  sidebarOpen,
+  setSidebarOpen,
+}: any) => {
   /*A useEffect used because the Dialog Headless UI component doesn't naturally recognize Dark Mode classes */
   useEffect(() => {
     if (!lightMode) {

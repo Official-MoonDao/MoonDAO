@@ -63,6 +63,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       />
 
       <MobileSidebar
+        navigation={navigation}
         lightMode={lightMode}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
