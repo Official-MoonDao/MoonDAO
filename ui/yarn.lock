@@ -3174,10 +3174,10 @@
   resolved "https://registry.yarnpkg.com/@multiformats/base-x/-/base-x-4.0.1.tgz#95ff0fa58711789d53aefb2590a8b7a4e715d121"
   integrity sha512-eMk0b9ReBbV23xXU693TAIrLyeO5iTgBZGSJfpqriG8UkYvr/hC9u9pyMlAakDNHWmbhMZCDs6KQO0jzKD8OTw==
 
-"@nance/nance-editor@^1.8.3":
-  version "1.8.3"
-  resolved "https://registry.yarnpkg.com/@nance/nance-editor/-/nance-editor-1.8.3.tgz#7c2d8d076aa4c54b13356a73e9da12cd9917488c"
-  integrity sha512-NW/epLAl3auKlcFqKItDtCFkwJ7Z79d7F6N67NifP2sZ+zpaMHwAC0xzX2NIW9tmLkM7fJnM+jjuyQcoCfQYPQ==
+"@nance/nance-editor@^1.8.4":
+  version "1.8.4"
+  resolved "https://registry.yarnpkg.com/@nance/nance-editor/-/nance-editor-1.8.4.tgz#b4bbc67912f28b57b4923f0e431f8bc17d15947e"
+  integrity sha512-OIThUEn5ppQ9CQynIjnMDYuA5fBx2Lu8q54DdSQ3RcW7Vo9BHjReOIvMsAiPLkdPu/GtlfePI7CHrZezOipTew==
   dependencies:
     "@toast-ui/react-editor" "^3.2.3"
 

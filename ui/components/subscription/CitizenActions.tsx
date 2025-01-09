@@ -43,7 +43,7 @@ export default function CitizenActions({
   }, [mooneyBalance, vmooneyBalance])
 
   return (
-    <div id="citizen-actions-container" className="py-5 px-5 md:py-0 z-30">
+    <div id="citizen-actions-container" className="py-5 md:px-5 md:py-0 z-30">
       {address === nft?.owner && (
         <>
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
