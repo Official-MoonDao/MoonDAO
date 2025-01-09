@@ -80,7 +80,7 @@ export default function useNavigation(citizen: any) {
           },
           {
             name: 'Submit Contribution',
-            href: '/contribute',
+            href: '/submit?tag=contribution',
           },
           {
             name: 'Submit Final Report',
