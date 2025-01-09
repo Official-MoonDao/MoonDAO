@@ -1,5 +1,6 @@
-//jSONify the proposal sections
+//JSONify the proposal sections
 import { useEffect, useState } from 'react'
+import { removeMarkdownFormatting } from '../utils/strings'
 
 export default function useProposalJSON(proposalMarkdown: string) {
   const [proposalJSON, setProposalJSON] = useState<any>()
@@ -14,8 +15,8 @@ export default function useProposalJSON(proposalMarkdown: string) {
     sections.forEach((section) => {
       const [title, ...content] = section.split('\n')
       // Clean up the title and content
-      const cleanTitle = title.trim()
-      const cleanContent = content.join('\n').trim()
+      const cleanTitle = removeMarkdownFormatting(title.trim())
+      const cleanContent = removeMarkdownFormatting(content.join('\n').trim())
 
       if (cleanTitle && cleanContent) {
         parsedSections[cleanTitle.toLowerCase()] = cleanContent
