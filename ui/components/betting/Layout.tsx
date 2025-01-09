@@ -61,7 +61,7 @@ const TradingForm: React.FC<TradingFormProps> = ({
     <div>
       <FormInput
         variant="filled"
-        label="Collateral value (WETH)"
+        label="Amount (ETH)"
         type="number"
         onChange={(e) => setSelectedAmount(e.target.value)}
         disabled={isMarketClosed}

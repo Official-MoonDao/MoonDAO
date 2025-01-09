@@ -6,7 +6,7 @@ const deployConfig = require("./utils/deployConfig")(artifacts);
 module.exports = function (deployer) {
   deployer.then(async () => {
     const markets = require("../markets.config");
-    const MAX_OUTCOMES = 8;
+    const MAX_OUTCOMES = 3;
     const conditionIds = markets.map(({ questionId }) =>
       web3.utils.soliditySha3(
         { t: "address", v: deployConfig.oracle },

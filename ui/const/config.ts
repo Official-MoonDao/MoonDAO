@@ -105,16 +105,19 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 export const CITIZEN_ADDRESSES: Index = {
   arbitrum: '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002',
   sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
+  'arbitrum-sepolia': '0x853d6B4BA61115810330c7837FDD24D61CBab855',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
   arbitrum: '0x8F14E436fa0fFcD4239733686d190F1e4F1b84E6',
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
+  'arbitrum-sepolia': '0xfF3F124D91D6eD6A47e1066473a78AaEde4c2fbe',
 }
 
 export const CITIZEN_TABLE_NAMES: Index = {
   arbitrum: 'CITIZENTABLE_42161_98',
   sepolia: 'CITIZENTABLE_11155111_1671',
+  'arbitrum-sepolia': 'CITIZENTABLE_421614_1058',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
@@ -137,21 +140,24 @@ export const REVNET_ADDRESSES: Index = {
   sepolia: '0x25bc5d5a708c2e426ef3a5196cc18de6b2d5a3d1',
 }
 
-export const DEPRIZE_ID = 1
+export const DEPRIZE_ID = 2
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0xd594DBF360D666c94615Fb186AF3cB1018Be1616',
   sepolia: '',
+  'arbitrum-sepolia': '0x0c7dfCC2B97fAAFD852cEaf62B0CD02BdEa4774A',
 }
 
 export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
   arbitrum: '0x755D48e6C3744B723bd0326C57F99A92a3Ca3287',
   sepolia: '',
+  'arbitrum-sepolia': '0xef813421ea5e6bc8d8Ad09E08912149C4b115EcB',
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
   arbitrum: '0xa7879adeFc81884c76342741FbDdE5BfDceAaB36',
   sepolia: '',
+  'arbitrum-sepolia': '0x18A0f907575b0387CcFEaa40e694FF1E83Fe5F18',
 }
 
 export const TEAM_ADDRESSES: Index = {

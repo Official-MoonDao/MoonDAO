@@ -73,10 +73,14 @@ export default function CreateTeam({
     }
   }, [stage, lastStage])
 
+  console.log('selectedChain')
+  console.log(selectedChain)
   const { contract: teamContract } = useContract(
     TEAM_ADDRESSES[selectedChain.slug],
     TeamABI
   )
+  console.log('process.env.NEXT_PUBLIC_TEST_ENV')
+  console.log(process.env.NEXT_PUBLIC_TEST_ENV)
 
   const { contract: teamCreatorContract } = useContract(
     TEAM_CREATOR_ADDRESSES[selectedChain.slug],
@@ -89,7 +93,6 @@ export default function CreateTeam({
   const { fundWallet } = useFundWallet()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
-
     //get response from form
     const { formId, responseId } = formResponse
 
@@ -350,14 +353,14 @@ export default function CreateTeam({
                         const totalCost =
                           Number(formattedCost) + estimatedMaxGas
 
-                        if (nativeBalance < totalCost) {
-                          const roundedCost =
-                            Math.ceil(+totalCost * 100000) / 100000
+                        //if (nativeBalance < totalCost) {
+                        //const roundedCost =
+                        //Math.ceil(+totalCost * 100000) / 100000
 
-                          return await fundWallet(address, {
-                            amount: String(roundedCost),
-                          })
-                        }
+                        //return await fundWallet(address, {
+                        //amount: String(roundedCost),
+                        //})
+                        //}
 
                         const adminHatMetadataBlob = new Blob(
                           [
@@ -431,6 +434,7 @@ export default function CreateTeam({
                         setIsLoadingMint(true)
                         //mint NFT to safe
 
+                        console.log('minting NFT')
                         const mintTx = await teamCreatorContract?.call(
                           'createMoonDAOTeam',
                           [
@@ -450,6 +454,7 @@ export default function CreateTeam({
                             value: cost,
                           }
                         )
+                        console.log('minted NFT')
 
                         const mintedTokenId = parseInt(
                           mintTx.receipt.logs[14].topics[3],
