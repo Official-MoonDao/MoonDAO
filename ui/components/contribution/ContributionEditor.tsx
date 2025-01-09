@@ -27,18 +27,24 @@ const NanceEditor = dynamic(
 )
 
 const CONTRIBUTION_TEMPLATE = `
-## Contribution Summary
-When documenting contributions, please ensure they meet the following criteria:
-	1.	Completed Work Only: Contributions should reflect completed efforts, not ongoing or planned work.
-	2.	Specific and Measurable Results: Describe the tangible outcomes of the contribution. Include metrics, timelines, or other objective measures wherever possible.
-Clear, detailed, and results-focused contributions help us understand and value the impact of your work.
+## What Did You Get Done?
 
-*Example:*
-*Good Contribution:*
-	•	*"Improved search performance by optimizing database queries, reducing response times by 30% within one month."*
+### Contribution Summary
+Document your contributions clearly and concisely, focusing on **what you accomplished and the tangible results**. Follow these guidelines to ensure your contributions are impactful:  
 
-*Poor Contribution:*
-	•	*"Worked on improving search performance."*
+1. **Completed Work Only:** Share work that is finished, not ongoing or planned.  
+2. **Specific and Measurable Results:** Highlight tangible outcomes, including metrics, timelines, or other objective measures.  
+
+Clear, detailed, and results-focused contributions help us understand the value and impact of your work.  
+
+---
+
+### Example Contributions  
+**Good Contribution:**  
+• *"Improved search performance by optimizing database queries, reducing response times by 30% within one month."*  
+
+**Poor Contribution:**  
+• *"Worked on improving search performance."* 
 
 `
 

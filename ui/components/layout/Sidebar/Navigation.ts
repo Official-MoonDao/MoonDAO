@@ -4,6 +4,7 @@ import {
   FolderIcon,
   PlusIcon,
   RocketLaunchIcon,
+  WrenchScrewdriverIcon, 
   Squares2X2Icon,
   UserGroupIcon,
 } from '@heroicons/react/24/outline'
@@ -23,6 +24,11 @@ export const navigation = [
     name: 'Network',
     href: '/network',
     icon: IconOrg,
+    children: [
+      { name: 'Teams', href: '/teams' },
+      { name: 'Citizens', href: '/citizens' },
+      { name: 'Map', href: '/map' },
+    ]
   },
   {
     name: 'Info',
@@ -49,19 +55,25 @@ export const navigation = [
         href: '/vote',
       },
       {
-        name: 'Submit Proposal',
-        href: '/submission',
-      },
-      {
-        name: 'Submit Contribution',
-        href: '/submission?tag=contribution',
-      },
-      {
         name: 'Get $MOONEY',
         href: '/get-mooney',
       },
       { name: 'Get Voting Power', href: '/lock' },
-      { name: 'Bridge', href: '/bridge' },
+    ],
+  },
+  {
+    name: 'Contribute',
+    icon: WrenchScrewdriverIcon,
+    href: '/submit',
+    children: [
+      {
+        name: 'Submit Proposal',
+        href: '/submit',
+      },
+      {
+        name: 'Submit Contribution',
+        href: '/contribute',
+      },
     ],
   },
   {

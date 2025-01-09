@@ -43,7 +43,7 @@ export default function CitizenActions({
   }, [mooneyBalance, vmooneyBalance])
 
   return (
-    <div id="citizen-actions-container" className="py-5 px-5 md:py-0 z-30">
+    <div id="citizen-actions-container" className="py-5 md:px-5 md:py-0 z-30">
       {address === nft?.owner && (
         <>
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
@@ -118,7 +118,7 @@ export default function CitizenActions({
                         width={30}
                       />
                     }
-                    onClick={() => router.push('/propose')}
+                    onClick={() => router.push('/submit')}
                   />
                   <Action
                     title="Get Rewards"
@@ -131,20 +131,17 @@ export default function CitizenActions({
                         width={30}
                       />
                     }
-                    onClick={() =>
-                      window.open(
-                        'https://discord.com/channels/914720248140279868/1179874302447853659'
-                      )
+                    onClick={() => router.push('/submit?tag=contribution')
                     }
                   />
                   <Action
-                    title="Explore the Network Map"
+                    title="Explore Map"
                     description="Connect with fellow members of the Network both locally and globally."
                     icon={<GlobeAmericasIcon height={40} width={40} />}
                     onClick={() => router.push('/map')}
                   />
                   <Action
-                    title="Connect to Guild.xyz"
+                    title="Unlock Roles"
                     description="Join Guild.xyz by connecting your wallet and Discord to unlock new roles."
                     icon={<ArrowUpRightIcon height={30} width={30} />}
                     onClick={() => window.open('https://guild.xyz/moondao')}

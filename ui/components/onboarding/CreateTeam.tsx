@@ -471,7 +471,7 @@ export default function CreateTeam({
                           setTimeout(async () => {
                             await sendDiscordMessage(
                               'networkNotifications',
-                              `[**${teamName}** has minted a team NFT!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
+                              `[**${teamName}** has created a team in the Space Acceleration Network!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
                             )
 
                             router.push(`/team/${teamPrettyLink}`)

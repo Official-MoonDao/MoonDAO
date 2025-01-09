@@ -149,11 +149,6 @@ module.exports = nextTranslate({
         permanent: true,
       },
       {
-        source: '/contribute',
-        destination: 'https://discord.gg/moondao',
-        permanent: true,
-      },
-      {
         source: '/es',
         destination: '/',
         permanent: true,
@@ -195,7 +190,42 @@ module.exports = nextTranslate({
       },
       {
         source: '/submit-contribution',
-        destination: '/submission?tag=contribution',
+        destination: '/submit?tag=contribution',
+        permanent: true,
+      },
+      {
+        source: '/contribute',
+        destination: '/submit?tag=contribution',
+        permanent: true,
+      },
+      {
+        source: '/contribution',
+        destination: '/submit?tag=contribution',
+        permanent: true,
+      },
+      {
+        source: '/citizens',
+        destination: '/network?tab=citizens',
+        permanent: true,
+      },
+      {
+        source: '/propose',
+        destination: '/submit?tag=proposal',
+        permanent: true,
+      },
+      {
+        source: '/teams',
+        destination: '/network?tab=teams',
+        permanent: true,
+      },
+      {
+        source: '/projects',
+        destination: '/project',
+        permanent: true,
+      },
+      {
+        source: '/report',
+        destination: '/submit?tag=report',
         permanent: true,
       },
     ]

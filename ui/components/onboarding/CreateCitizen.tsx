@@ -448,7 +448,7 @@ export default function CreateCitizen({
 
                       if (nativeBalance < totalCost) {
                         const roundedCost =
-                          Math.ceil(+totalCost * 10000) / 10000
+                          Math.ceil(+totalCost * 1000000) / 1000000
 
                         return await fundWallet(address, {
                           amount: String(roundedCost),
@@ -511,7 +511,7 @@ export default function CreateCitizen({
                         setTimeout(async () => {
                           await sendDiscordMessage(
                             'networkNotifications',
-                            `[**${citizenName}** has minted a citizen NFT!](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789)`
+                            `[**${citizenName}** has just become a Citizen of the Space Acceleration Network!](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789)`
                           )
 
                           router.push(`/citizen/${citizenPrettyLink}`)

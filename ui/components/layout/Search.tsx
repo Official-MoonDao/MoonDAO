@@ -15,7 +15,7 @@ export default function Search({ input, setInput }: any) {
       <div id="input-field-container" className="">
         <Frame noPadding marginBottom="0px">
           <input
-            className="w-full rounded-sm px-4 pt-2 pb-4 bg-dark-cool text-white placeholder:text-grey"
+            className="w-full rounded-sm px-4 pt-2 pb-4 bg-dark-cool text-white placeholder:text-grey outline-none"
             onChange={({ target }) => setInput(target.value)}
             value={input}
             type="text"
