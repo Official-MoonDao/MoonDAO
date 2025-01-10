@@ -45,13 +45,13 @@ export default function useProjectData(
   const [hatTreeId, setHatTreeId] = useState<string>()
 
   const { data: adminHatId } = useHandleRead(projectContract, 'teamAdminHat', [
-    project?.id || '',
+    project?.id ?? '',
   ])
 
   const { data: managerHatId } = useHandleRead(
     projectContract,
     'teamManagerHat',
-    [project?.id || '']
+    [project?.id ?? '']
   )
 
   const isActive = useMemo(() => {
