@@ -38,6 +38,10 @@ contract LMSRWithTWAPData {
     uint[] internal outcomeSlotCounts;
     bytes32[][] internal collectionIds;
     uint[] internal positionIds;
+    uint256 public startTime;
+    // Cumulative probabilities over time: sum(prob[i](t) * dt) from startTime to now.
+    uint256[] public cumulativeProbabilities;
+    uint256 public lastUpdateTime;
 
     enum Stage {
         Running,
@@ -74,13 +78,14 @@ contract LMSRWithTWAPFactory is ConstructedCloneFactory, LMSRWithTWAPData {
         ] = true;
 
         // Validate inputs
-        require(address(_pmSystem) != address(0) && _fee < FEE_RANGE);
+        require(address(_pmSystem) != address(0) && _fee < FEE_RANGE, "Invalid input");
         pmSystem = _pmSystem;
         collateralToken = _collateralToken;
         conditionIds = _conditionIds;
         fee = _fee;
         whitelist = _whitelist;
-
+        startTime = block.timestamp;
+        lastUpdateTime = block.timestamp;
         atomicOutcomeSlotCount = 1;
         outcomeSlotCounts = new uint[](conditionIds.length);
         for (uint i = 0; i < conditionIds.length; i++) {
@@ -89,6 +94,8 @@ contract LMSRWithTWAPFactory is ConstructedCloneFactory, LMSRWithTWAPData {
             outcomeSlotCounts[i] = outcomeSlotCount;
         }
         require(atomicOutcomeSlotCount > 1, "conditions must be valid");
+        cumulativeProbabilities = new uint256[](atomicOutcomeSlotCount);
+
 
         collectionIds = new bytes32[][](conditionIds.length);
         _recordCollectionIDsForAllConditions(conditionIds.length, bytes32(0));
@@ -130,6 +137,7 @@ contract LMSRWithTWAPFactory is ConstructedCloneFactory, LMSRWithTWAPData {
         lmsrWithTWAP.changeFunding(int(funding));
         lmsrWithTWAP.resume();
         lmsrWithTWAP.transferOwnership(msg.sender);
+
         emit LMSRWithTWAPCreation(msg.sender, lmsrWithTWAP, pmSystem, collateralToken, conditionIds, fee, funding);
     }
 }

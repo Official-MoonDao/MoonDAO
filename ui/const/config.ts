@@ -18,13 +18,11 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig = require(
-  `../../contracts/deployments/ethereum`
-) as DeploymentConfig
+const ethConfig =
+  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
 
-const polygonConfig = require(
-  `../../contracts/deployments/polygon`
-) as DeploymentConfig
+const polygonConfig =
+  require(`../../contracts/deployments/polygon`) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -32,13 +30,11 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig = require(
-  `../../contracts/deployments/goerli`
-) as DeploymentConfig
+const goerliConfig =
+  require(`../../contracts/deployments/goerli`) as DeploymentConfig
 
-const sepoliaConfig = require(
-  `../../contracts/deployments/sepolia`
-) as DeploymentConfig
+const sepoliaConfig =
+  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -232,6 +228,7 @@ export const PROJECT_HAT_TREE_IDS: Index = {
 export const JOBS_TABLE_ADDRESSES: Index = {
   arbitrum: '0x94e225DDe1b3E5f861222ca2055739BA12730bd4',
   sepolia: '0x5b26100ae7F244f6805D724A019927E137978659',
+  'arbitrum-sepolia': '0x97F9F6DC65b57af7E0B0CB32E5E3153af14E3332',
 }
 
 export const MARKETPLACE_ADDRESS =
@@ -242,6 +239,7 @@ export const MARKETPLACE_ADDRESS =
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
   arbitrum: '0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E',
   sepolia: '0xf50aC858f78ff8d4e5E898C155046bd990dE2cED',
+  'arbitrum-sepolia': '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
@@ -256,6 +254,7 @@ export const LMSR_ADDRESSES: Index = {
 }
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
   sepolia: '0xB5B364c62Fb77BBf001F6d0cD70d0D72bDFa4Ff2',
+  'arbitrum-sepolia': '0x719BEe108Be919c0207516934f0Dab69c7A146Ee',
 }
 
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {

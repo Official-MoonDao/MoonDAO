@@ -5,6 +5,8 @@ pragma solidity ^0.5.1;
 
 import '@gnosis.pm/conditional-tokens-market-makers/contracts/LMSRMarketMaker.sol';
 import '@gnosis.pm/conditional-tokens-market-makers/contracts/LMSRMarketMakerFactory.sol';
+import './LMSRWithTWAP.sol';
+import './LMSRWithTWAPFactory.sol';
 import 'canonical-weth/contracts/WETH9.sol';
 
 contract AppDependencies {

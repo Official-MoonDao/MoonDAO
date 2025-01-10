@@ -10,12 +10,6 @@ contract LMSRWithTWAP is LMSRMarketMaker {
     uint256[] public cumulativeProbabilities;
     uint256 public lastUpdateTime;
 
-    constructor() public {
-        uint256 outcomes = this.atomicOutcomeSlotCount();
-        cumulativeProbabilities = new uint256[](outcomes);
-        startTime = block.timestamp;
-        lastUpdateTime = block.timestamp;
-    }
 
     /**
      * @notice Updates the cumulativeProbabilities based on elapsed time and current probabilities.
