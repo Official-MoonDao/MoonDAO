@@ -634,7 +634,7 @@ html {
   }
 
   .popout-bg{
-    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+    background: linear-gradient(90deg, #020617 20%, #090D21 80%);
   }
 
   .innerprefooter-popout-bg {
