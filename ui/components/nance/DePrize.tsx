@@ -85,12 +85,12 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
     <section id="rewards-container" className="overflow-hidden">
       <Head
         title="DePrize"
-        description="Distribute rewards to contributors based on their contributions."
+        description="Compete for a prize or predict winners to be rewarded."
       />
       <Container>
         <ContentLayout
           header={'DePrize'}
-          description="Distribute rewards to contributors based on their contributions."
+          description="Compete for a prize or predict winners to be rewarded."
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding

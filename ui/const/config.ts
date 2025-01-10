@@ -18,11 +18,13 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -30,11 +32,13 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -123,24 +127,29 @@ export const CITIZEN_TABLE_NAMES: Index = {
 export const PROJECT_ADDRESSES: Index = {
   arbitrum: '0xCb31829B312923C7502766ef4f36948A7A64cD6A',
   sepolia: '0x19124F594c3BbCb82078b157e526B278C8E9EfFc',
+  'arbitrum-sepolia': '0xDC35Dc4F7610678B0389157522734b79ea464101',
 }
 
 export const PROJECT_CREATOR_ADDRESSES: Index = {
   arbitrum: '0xe5709Bc44427DCEF81fF2F718DFc6A032fD23bbF',
   sepolia: '0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D',
+  'arbitrum-sepolia': '0xde26EcE3C1Ec58057348e3a7B28359c8cDfae56A',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x83755AF34867a3513ddCE921E9cAd28f0828CDdB',
   sepolia: '0x17729AFF287d9873F5610c029A5Db814e428e97a',
+  'arbitrum-sepolia': '0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E',
 }
 
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
   sepolia: '0x9057Fff69e8b016a214C4f894430F71dad50b42c',
+  'arbitrum-sepolia': '0x18200Aec1FE277bbA7cA3cBfecF822F099807fFd',
 }
 export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
   sepolia: '0x5217A95F335cd026c877Eb5C1B0Ae6C82945178D',
+  'arbitrum-sepolia': '0x9f0496702Df4889C17b7c6Ef88c74ee0dF14998e',
 }
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: '0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0',
@@ -174,30 +183,36 @@ export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
 export const TEAM_ADDRESSES: Index = {
   arbitrum: '0xAB2C354eC32880C143e87418f80ACc06334Ff55F',
   sepolia: '0xEb9A6975381468E388C33ebeF4089Be86fe31d78',
+  'arbitrum-sepolia': '0xBd4f1cFE9241788390A08539b9b6569097fCaf13',
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
   arbitrum: '0x203f481336A212Eff43E84761792E307975Cf27b',
   sepolia: '0x55D07Ab23092edc7EdAEC7048B784aCcb2cc4469',
+  'arbitrum-sepolia': '0x6bB888f390354201B838e208bAc56BFbec03d8Ee',
 }
 
 export const TEAM_TABLE_ADDRESSES: Index = {
   arbitrum: '0x434ADaB0BEdFc9973c5cbF0224dfe0212a20d3D4',
   sepolia: '0x42d356e77f6d9Bad870865e0973Ed32F54fA4006',
+  'arbitrum-sepolia': '0xfa626631E296106F941a529eB410676BB0369272',
 }
 
 export const TEAM_TABLE_NAMES: Index = {
   arbitrum: 'TEAMTABLE_42161_92',
   sepolia: 'ENTITYTABLE_11155111_1731',
+  'arbitrum-sepolia': 'TEAMTABLE_421614_1064',
 }
 
 export const TEAM_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0x203ca831edec28b7657A022b8aFe5d28b6BE6Eda',
   sepolia: '',
+  'arbitrum-sepolia': '0x472d116d775cdc0C73805b3d73A6F9312CBD0B2d',
 }
 export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   arbitrum: '0x96E054924258E51d8e3b3aB8A6A27920f6cE53ee',
   sepolia: '',
+  'arbitrum-sepolia': '0x90897294c83212678d8E549e9f6b4F3bf033F6F4',
 }
 
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
