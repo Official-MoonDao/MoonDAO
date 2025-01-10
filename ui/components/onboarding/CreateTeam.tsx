@@ -89,7 +89,6 @@ export default function CreateTeam({
   const { fundWallet } = useFundWallet()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
-
     //get response from form
     const { formId, responseId } = formResponse
 
@@ -352,7 +351,7 @@ export default function CreateTeam({
 
                         if (nativeBalance < totalCost) {
                           const roundedCost =
-                            Math.ceil(+totalCost * 100000) / 100000
+                            Math.ceil(+totalCost * 1000000) / 1000000
 
                           return await fundWallet(address, {
                             amount: String(roundedCost),
@@ -466,7 +465,7 @@ export default function CreateTeam({
                           setTimeout(async () => {
                             await sendDiscordMessage(
                               'networkNotifications',
-                              `[**${teamName}** has minted a team NFT!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
+                              `[**${teamName}** has created a team in the Space Acceleration Network!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
                             )
 
                             router.push(`/team/${teamPrettyLink}`)

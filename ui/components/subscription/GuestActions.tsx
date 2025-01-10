@@ -40,7 +40,7 @@ export default function GuestActions({
   }, [address, nativeBalance, citizenContract])
 
   return (
-    <div id="guest-actions-container" className="py-5 px-5 md:py-0 z-30">
+    <div id="guest-actions-container" className="py-5 md:px-5 md:py-0 z-30">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
         <div className="flex gap-5 opacity-[50%]">
           <h2 className="header font-GoodTimes">Next Steps</h2>
