@@ -9,14 +9,10 @@ import client from '@/lib/thirdweb/client'
 import PrivyWalletContext from './privy-wallet-context'
 
 export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
-  const [selectedWallet, setSelectedWallet] = useState<number>(0)
-  const [signer, setSigner] = useState<any>(null)
-
-  const { wallets } = useWallets()
-
-  const setActiveWallet = useSetActiveWallet()
-
   const { user, ready, authenticated, getAccessToken } = usePrivy()
+  const [selectedWallet, setSelectedWallet] = useState<number>(0)
+  const { wallets } = useWallets()
+  const setActiveWallet = useSetActiveWallet()
 
   useEffect(() => {
     async function setActive() {
@@ -25,7 +21,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
         const provider = await wallet?.getEthersProvider()
         const signer = provider?.getSigner()
 
-        const walletClientType = wallet.walletClientType
+        const walletClientType = wallet?.walletClientType
         if (
           walletClientType === 'coinbase_wallet' ||
           walletClientType === 'privy'
@@ -52,6 +48,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     }
 
     setActive()
+    console.log('Connected wallet to Thirdweb V5')
   }, [wallets, selectedWallet, selectedChain])
 
   useEffect(() => {
