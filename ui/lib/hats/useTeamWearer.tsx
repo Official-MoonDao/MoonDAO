@@ -6,7 +6,7 @@ import hatsSubgraphClient from './hatsSubgraphClient'
 
 export function useTeamWearer(
   teamContract: any,
-  selectedChain: Chain,
+  selectedChain: any,
   address: any
 ) {
   const [wornMoondaoHats, setWornMoondaoHats] = useState<any>([])
