@@ -85,7 +85,7 @@ export default function ProjectCard({
   const address = useAddress()
   let userContributed = false
   if (wearers && address) {
-    wearers.forEach((wearer) => {
+    wearers.forEach((wearer: { address: string }) => {
       if (address.toLowerCase() === wearer['address'].toLowerCase()) {
         userContributed = true
       }
