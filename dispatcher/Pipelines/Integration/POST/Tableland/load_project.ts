@@ -9,9 +9,6 @@ const {
     PROJECT_TABLE_ADDRESSES,
     PROJECT_CREATOR_ADDRESSES,
 } = require("../../../../../ui/const/config.ts");
-interface PinResponse {
-    cid: string;
-}
 
 // Configuration constants
 const TEST = false;
@@ -25,6 +22,9 @@ const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
     secretKey: process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY,
 });
 
+interface PinResponse {
+    cid: string;
+}
 export async function pinBlobOrFile(blob: Blob): Promise<PinResponse> {
     try {
         const url = "https://api.pinata.cloud/pinning/pinFileToIPFS";
