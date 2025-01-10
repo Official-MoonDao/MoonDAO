@@ -1,3 +1,5 @@
+import { authMiddleware } from 'middleware/authMiddleware'
+import withMiddleware from 'middleware/withMiddleware'
 import {
   zeroGMailOptions,
   transporter,
@@ -60,4 +62,4 @@ const handler = async (req: any, res: any) => {
     }
   }
 }
-export default handler
+export default withMiddleware(handler, authMiddleware)
