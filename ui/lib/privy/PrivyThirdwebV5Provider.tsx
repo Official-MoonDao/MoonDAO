@@ -48,7 +48,6 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     }
 
     setActive()
-    console.log('Connected wallet to Thirdweb V5')
   }, [wallets, selectedWallet, selectedChain])
 
   useEffect(() => {
