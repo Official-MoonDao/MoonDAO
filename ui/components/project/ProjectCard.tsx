@@ -26,7 +26,7 @@ const ProjectCardContent = memo(
     return (
       <div
         id="card-container"
-        className="p-4 flex flex-col gap-2 relative bg-dark-cool w-full h-full rounded-2xl"
+        className="p-4 pb-10 flex flex-col gap-2 relative bg-dark-cool w-full h-full rounded-2xl flex-1 border-b-2 border-[#020617]"
       >
         <div className="flex justify-between">
           <h1 className="font-GoodTimes">{project?.name || ''}</h1>
