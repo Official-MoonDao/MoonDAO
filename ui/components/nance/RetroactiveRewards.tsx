@@ -343,7 +343,7 @@ export function RetroactiveRewards({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
-                        distribute
+                        distribute={userAddress && userHasVotingPower}
                         distribution={
                           userHasVotingPower ? distribution : undefined
                         }
