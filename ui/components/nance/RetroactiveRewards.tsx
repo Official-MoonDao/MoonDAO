@@ -285,7 +285,7 @@ export function RetroactiveRewards({
       <Container>
         <ContentLayout
           header={'Project Rewards'}
-          description="Distribute rewards to contributors based on their contributions."
+          description={"Allocate retroactive rewards to completed projects and their contributors based on impact and results."}
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding

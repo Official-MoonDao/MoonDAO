@@ -67,7 +67,8 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   return (
     <section id="jobs-container" className="overflow-hidden">
       <Head
-        title="Marketplace"
+        title={"Marketplace"}
+        description={'Explore the Space Acceleration Network Marketplace! Browse and buy innovative space products and services from pioneering teams driving the future of the space economy.'}
         image="https://ipfs.io/ipfs/QmTtEyhgwcE1xyqap4nvaXyPpMBnfskRPtnz7i1jpGnw5M"
       />
       <Container>

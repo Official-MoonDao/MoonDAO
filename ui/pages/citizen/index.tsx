@@ -39,7 +39,7 @@ export default function Join() {
       <Head
         title={'Become a Citizen'}
         description={
-          'Join the first interplanetary network state dedicated to expanding life beyond Earth.'
+          'The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond.'
         }
         image="https://ipfs.io/ipfs/QmUG1fcYnnzkhTFwSvMAy1gcFcq99VCk3Eps1L9g6qkt49"
       />
