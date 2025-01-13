@@ -5,7 +5,6 @@ import {
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
@@ -16,6 +15,7 @@ import {
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
   VMOONEY_ADDRESSES,
+  DEFAULT_CHAIN,
 } from 'const/config'
 import { HATS_ADDRESS } from 'const/config'
 import { blockedCitizens } from 'const/whitelist'
@@ -591,8 +591,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
     imageIpfsLink = ''
   } else {
-    const chain =
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+    const chain = DEFAULT_CHAIN
     const sdk = initSDK(chain)
 
     const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chain.slug]}`

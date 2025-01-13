@@ -1,7 +1,7 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import DistributionABI from 'const/abis/DistributionTable.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
+  DEFAULT_CHAIN,
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
@@ -30,8 +30,7 @@ export default function Rewards({
 
 export async function getStaticProps() {
   try {
-    const chain =
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+    const chain = DEFAULT_CHAIN
     const sdk = initSDK(chain)
 
     const projectTableContract = await sdk.getContract(

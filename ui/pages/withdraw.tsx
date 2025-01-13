@@ -1,4 +1,3 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import ERC20 from 'const/abis/ERC20.json'
 import VotingEscrow from 'const/abis/VotingEscrow.json'

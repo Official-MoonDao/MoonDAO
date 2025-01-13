@@ -1,4 +1,3 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
@@ -9,6 +8,7 @@ import {
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
+  DEFAULT_CHAIN,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -300,7 +300,7 @@ export default function ProjectProfile({
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenId: any = params?.tokenId
 
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = DEFAULT_CHAIN
   const sdk = initSDK(chain)
 
   if (tokenId === undefined) {

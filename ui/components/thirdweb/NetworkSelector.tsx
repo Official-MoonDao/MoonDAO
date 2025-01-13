@@ -93,6 +93,10 @@ export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
             <>
               <NetworkOption chain={Sepolia} selectChain={selectChain} />
               <NetworkOption
+                chain={ArbitrumSepolia}
+                selectChain={selectChain}
+              />
+              <NetworkOption
                 chain={BaseSepoliaTestnet}
                 selectChain={selectChain}
               />

@@ -1,7 +1,6 @@
 import { MapIcon } from '@heroicons/react/24/outline'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { NFT } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
 import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -281,7 +280,7 @@ export default function Network({
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = DEFAULT_CHAIN
   const sdk = initSDK(chain)
   const now = Math.floor(Date.now() / 1000)
 

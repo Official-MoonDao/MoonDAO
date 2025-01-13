@@ -1,8 +1,9 @@
-import { Ethereum, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { Ethereum } from '@thirdweb-dev/chains'
 import { useAddress, useContract } from '@thirdweb-dev/react'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import {
+  DEFAULT_CHAIN,
   DISTRIBUTION_TABLE_ADDRESSES,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
@@ -96,7 +97,7 @@ export function RetroactiveRewards({
 }: RetroactiveRewardsProps) {
   const router = useRouter()
 
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = DEFAULT_CHAIN
 
   const userAddress = useAddress()
 

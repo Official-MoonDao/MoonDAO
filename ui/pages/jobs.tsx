@@ -1,9 +1,9 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import {
   JOBS_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
+  DEFAULT_CHAIN,
 } from 'const/config'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
@@ -110,7 +110,7 @@ export default function Jobs({ jobs }: JobsProps) {
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = DEFAULT_CHAIN
   const sdk = initSDK(chain)
   const now = Math.floor(Date.now() / 1000)
 

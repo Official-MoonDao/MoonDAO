@@ -73,14 +73,10 @@ export default function CreateTeam({
     }
   }, [stage, lastStage])
 
-  console.log('selectedChain')
-  console.log(selectedChain)
   const { contract: teamContract } = useContract(
     TEAM_ADDRESSES[selectedChain.slug],
     TeamABI
   )
-  console.log('process.env.NEXT_PUBLIC_TEST_ENV')
-  console.log(process.env.NEXT_PUBLIC_TEST_ENV)
 
   const { contract: teamCreatorContract } = useContract(
     TEAM_CREATOR_ADDRESSES[selectedChain.slug],
@@ -343,6 +339,7 @@ export default function CreateTeam({
                           'getRenewalPrice',
                           [address, 365 * 24 * 60 * 60]
                         )
+                        console.log('cost', cost)
 
                         const formattedCost = ethers.utils
                           .formatEther(cost.toString())
@@ -451,7 +448,8 @@ export default function CreateTeam({
                             teamData.formResponseId,
                           ],
                           {
-                            value: cost,
+                            value: 5000000000000000000,
+                            //cost + estimatedMaxGas,
                           }
                         )
                         console.log('minted NFT')

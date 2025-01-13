@@ -8,7 +8,6 @@ import {
   GlobeAltIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import {
   ThirdwebNftMedia,
   useAddress,
@@ -583,7 +582,7 @@ export const getServerSideProps: GetServerSideProps = async ({
 }) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = DEFAULT_CHAIN
   const sdk = initSDK(chain)
 
   const teamTableStatement = `SELECT name, id FROM ${

@@ -1,8 +1,11 @@
 import { Tab } from '@headlessui/react'
 import { NanceProvider } from '@nance/nance-hooks'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
-import { PROJECT_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
+import {
+  PROJECT_TABLE_ADDRESSES,
+  TABLELAND_ENDPOINT,
+  DEFAULT_CHAIN,
+} from 'const/config'
 import { StringParam, useQueryParams } from 'next-query-params'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -232,7 +235,7 @@ export default function SubmissionPage({
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = DEFAULT_CHAIN
   const sdk = initSDK(chain)
 
   const projectTableContract = await sdk.getContract(

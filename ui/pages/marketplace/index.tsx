@@ -1,8 +1,8 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import MarketplaceABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
+  DEFAULT_CHAIN,
   MARKETPLACE_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
@@ -102,7 +102,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = DEFAULT_CHAIN
   const sdk = initSDK(chain)
   const now = Math.floor(Date.now() / 1000)
 

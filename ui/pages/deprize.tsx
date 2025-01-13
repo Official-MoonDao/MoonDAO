@@ -1,9 +1,9 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import {
   COMPETITOR_TABLE_ADDRESSES,
   DEPRIZE_ID,
   TABLELAND_ENDPOINT,
+  DEFAULT_CHAIN,
 } from 'const/config'
 import { useRouter } from 'next/router'
 import { useContext } from 'react'
@@ -22,7 +22,7 @@ export default function DePrizePage({ competitors }: DePrizeProps) {
 
 export async function getStaticProps() {
   // TODO enable mainnet
-  const chain = Sepolia
+  const chain = DEFAULT_CHAIN
   const sdk = initSDK(chain)
   const competitorTableContract = await sdk.getContract(
     COMPETITOR_TABLE_ADDRESSES[chain.slug],

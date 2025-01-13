@@ -1,4 +1,3 @@
-import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import BigNumber from 'bignumber.js'
 import ConditionalTokens from 'const/abis/ConditionalTokens.json'
@@ -13,6 +12,7 @@ import {
   ORACLE_ADDRESS,
   COLLATERAL_DECIMALS,
   MAX_OUTCOMES,
+  DEFAULT_CHAIN,
 } from 'const/config'
 import { ethers } from 'ethers'
 import React, { useState, useEffect } from 'react'
@@ -72,7 +72,7 @@ const Market: React.FC<MarketProps> = ({
   const [selectedAmount, setSelectedAmount] = useState<string>('')
   const [selectedOutcomeToken, setSelectedOutcomeToken] = useState<number>(0)
   const [marketInfo, setMarketInfo] = useState<any>(undefined)
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = DEFAULT_CHAIN
   const { contract: marketMakersRepo } = useContract(
     LMSR_ADDRESSES[chain.slug],
     LMSR

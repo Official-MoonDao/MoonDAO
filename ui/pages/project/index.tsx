@@ -1,9 +1,9 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
+  DEFAULT_CHAIN,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
@@ -271,7 +271,7 @@ export default function Projects({
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = DEFAULT_CHAIN
   const sdk = initSDK(chain)
 
   const projectTableContract = await sdk.getContract(
