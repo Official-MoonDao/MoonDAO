@@ -39,8 +39,10 @@ const ProjectCardContent = memo(
             <h1 className="font-GoodTimes">{project?.name || ''}</h1>
           </Link>
           {project?.finalReportLink && (
-            <Link href={project?.finalReportLink} passHref>
-              <h3 className="font-GoodTimes">Review Final Report</h3>
+            <Link href={project?.finalReportLink} target="_blank" passHref>
+              <h3 className="text-[14px] font-medium font-GoodTimes">
+                Review Final Report
+              </h3>
             </Link>
           )}
           {distribute &&
