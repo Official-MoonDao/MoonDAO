@@ -1,12 +1,12 @@
 //This component dipslays a project card using project data directly from tableland
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import Link from 'next/link'
-import ChainContext from '@/lib/thirdweb/chain-context'
-import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
-import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
-import { useSubHats } from '@/lib/hats/useSubHats'
 import React, { useContext, memo } from 'react'
+import { useSubHats } from '@/lib/hats/useSubHats'
+import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import NumberStepper from '../layout/NumberStepper'
 
 type ProjectCardProps = {
@@ -35,7 +35,14 @@ const ProjectCardContent = memo(
         className="p-4 pb-10 flex flex-col gap-2 relative bg-dark-cool w-full h-full rounded-2xl flex-1 border-b-2 border-[#020617]"
       >
         <div className="flex justify-between">
-          <h1 className="font-GoodTimes">{project?.name || ''}</h1>
+          <Link href={`/project/${project?.id}`} passHref>
+            <h1 className="font-GoodTimes">{project?.name || ''}</h1>
+          </Link>
+          {project?.finalReportLink && (
+            <Link href={project?.finalReportLink} passHref>
+              <h3 className="font-GoodTimes">Review Final Report</h3>
+            </Link>
+          )}
           {distribute &&
             (userContributed ? (
               <p>Contributed</p>
