@@ -223,7 +223,7 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '0x0000002a',
   sepolia: '0x00000182',
-    'arbitrum-sepolia': '0x00000182',
+  'arbitrum-sepolia': '0x00000182',
 }
 
 //Projects Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/729
@@ -265,7 +265,7 @@ export const LMSR_WITH_TWAP_ADDRESSES: Index = {
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
 }
 export const WETH_ADDRESSES: Index = {
-    'arbitrum-sepolia': '0xb4647420e175c8B75fAa672Ca25557645B24dD73',
+  'arbitrum-sepolia': '0xb4647420e175c8B75fAa672Ca25557645B24dD73',
 }
 
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
@@ -277,7 +277,7 @@ export const COLLATERAL_TOKEN_ADDRESSES: Index = {
   'arbitrum-sepolia': '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
 }
 export const COLLATERAL_DECIMALS = 18
-export const MAX_OUTCOMES = 8
+export const MAX_OUTCOMES = 3
 
 export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 

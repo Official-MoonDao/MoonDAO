@@ -74,8 +74,8 @@ const Market: React.FC<MarketProps> = ({
   const [marketInfo, setMarketInfo] = useState<any>(undefined)
   const chain = DEFAULT_CHAIN
   //const { contract: marketMakersRepo } = useContract(
-    //LMSR_ADDRESSES[chain.slug],
-    //LMSR
+  //LMSR_ADDRESSES[chain.slug],
+  //LMSR
   //)
   const { contract: marketMakersRepo } = useContract(
     LMSR_WITH_TWAP_ADDRESSES[chain.slug],
@@ -107,8 +107,8 @@ const Market: React.FC<MarketProps> = ({
   const getMarketInfo = async () => {
     if (!ORACLE_ADDRESS) return
 
-    const collateral = await marketMakersRepo.call('collateralToken')
-    const pmSystem = await marketMakersRepo.call('pmSystem')
+    //const collateral = await marketMakersRepo.call('collateralToken')
+    //const pmSystem = await marketMakersRepo.call('pmSystem')
 
     const conditionId = getConditionId(
       ORACLE_ADDRESS,
@@ -117,6 +117,7 @@ const Market: React.FC<MarketProps> = ({
     )
 
     const outcomes = []
+    console.log('competitors', competitors)
     for (
       let outcomeIndex = 0;
       outcomeIndex < competitors.length;
@@ -128,6 +129,8 @@ const Market: React.FC<MarketProps> = ({
           ? 1
           : parseInt(Math.pow(10, outcomeIndex).toString(), 2)
       ).toString()
+      //console.log('indexSet', indexSet)
+
       const collectionId = await conditionalTokensRepo.call('getCollectionId', [
         `0x${'0'.repeat(64)}`,
         conditionId,

@@ -33,6 +33,7 @@ import {
   MOONEY_ADDRESSES,
   USDC_ADDRESSES,
   USDT_ADDRESSES,
+  DEFAULT_CHAIN,
 } from '../../const/config'
 import { CopyIcon } from '../assets'
 import FormInput from '../forms/FormInput'
@@ -216,7 +217,10 @@ export function PrivyConnectWallet({
   const router = useRouter()
 
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
+  //const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
+  const selectedChain = DEFAULT_CHAIN
+  //console.log('selectedChain')
+  //console.log(selectedChain)
 
   const [networkMistmatch, setNetworkMismatch] = useState(false)
 

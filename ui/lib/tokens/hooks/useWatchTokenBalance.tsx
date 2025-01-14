@@ -19,6 +19,7 @@ export default function useWatchTokenBalance(
 
     async function handleBalanceChange() {
       if (!isMounted) return
+      console.log('wallet', wallet)
       const balance = await tokenContract.call('balanceOf', [wallet.address])
       setTokenBalance(+balance.toString() / 10 ** decimals)
     }

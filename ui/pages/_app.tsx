@@ -1,6 +1,6 @@
 import { PrivyProvider } from '@privy-io/react-auth'
 import { Chain } from '@thirdweb-dev/chains'
-import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { DEFAULT_CHAIN, DEFAULT_CHAIN_V5 } from 'const/config'
 import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
 import {
