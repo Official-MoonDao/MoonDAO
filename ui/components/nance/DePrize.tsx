@@ -1,3 +1,4 @@
+import { Sepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_ID, COMPETITOR_TABLE_ADDRESSES } from 'const/config'
@@ -39,8 +40,10 @@ export type DePrizeProps = {
 export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   const account = useActiveAccount()
 
-  const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  // TODO add mainnet
+  const selectedChain = Sepolia
+  const chainSlug = selectedChain.slug
+  //const chainSlug = getChainSlug(selectedChain)
 
   const [joinModalOpen, setJoinModalOpen] = useState(false)
 

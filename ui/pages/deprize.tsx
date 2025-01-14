@@ -1,3 +1,4 @@
+import { Sepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import {
   COMPETITOR_TABLE_ADDRESSES,
@@ -22,8 +23,8 @@ export default function DePrizePage({ competitors }: DePrizeProps) {
 
 export async function getStaticProps() {
   // TODO enable mainnet
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+  const chain = Sepolia
+  const chainSlug = chain.slug
 
   const competitorTableContract = getContract({
     client: serverClient,
@@ -42,7 +43,6 @@ export async function getStaticProps() {
     `${TABLELAND_ENDPOINT}?statement=${competitorStatement}`
   )
   const competitors = await competitorsRes.json()
-
 
   return {
     props: {
