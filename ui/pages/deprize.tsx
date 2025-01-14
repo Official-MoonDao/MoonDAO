@@ -1,4 +1,3 @@
-import { Sepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import {
   COMPETITOR_TABLE_ADDRESSES,
@@ -8,6 +7,7 @@ import {
 } from 'const/config'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
+import { sepolia } from 'thirdweb/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -23,8 +23,8 @@ export default function DePrizePage({ competitors }: DePrizeProps) {
 
 export async function getStaticProps() {
   // TODO enable mainnet
-  const chain = Sepolia
-  const chainSlug = chain.slug
+  const chain = sepolia
+  const chainSlug = getChainSlug(chain)
 
   const competitorTableContract = getContract({
     client: serverClient,

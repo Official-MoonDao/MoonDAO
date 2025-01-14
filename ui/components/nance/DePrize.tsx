@@ -1,4 +1,3 @@
-import { Sepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_ID, COMPETITOR_TABLE_ADDRESSES } from 'const/config'
@@ -10,6 +9,7 @@ import {
   prepareContractCall,
   sendAndConfirmTransaction,
 } from 'thirdweb'
+import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -41,8 +41,8 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   const account = useActiveAccount()
 
   // TODO enable mainnet
-  const selectedChain = Sepolia
-  const chainSlug = selectedChain.slug
+  const selectedChain = sepolia
+  const chainSlug = getChainSlug(selectedChain)
 
   const [joinModalOpen, setJoinModalOpen] = useState(false)
 
