@@ -40,10 +40,9 @@ export type DePrizeProps = {
 export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   const account = useActiveAccount()
 
-  // TODO add mainnet
+  // TODO enable mainnet
   const selectedChain = Sepolia
   const chainSlug = selectedChain.slug
-  //const chainSlug = getChainSlug(selectedChain)
 
   const [joinModalOpen, setJoinModalOpen] = useState(false)
 
