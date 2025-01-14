@@ -41,16 +41,6 @@ export default function SubmissionPage({
     }
   }, [tag])
 
-  useEffect(() => {
-    if (selectedIndex === 2 && tag !== 'report') {
-      setQuery({ tag: 'report' }, 'replaceIn')
-    } else if (selectedIndex === 1 && tag !== 'contribution') {
-      setQuery({ tag: 'contribution' }, 'replaceIn')
-    } else if (selectedIndex === 0 && tag !== undefined) {
-      setQuery({ tag: undefined }, 'replaceIn')
-    }
-  }, [selectedIndex])
-
   return (
     <>
       <WebsiteHead title={title} description="" />
@@ -79,6 +69,9 @@ export default function SubmissionPage({
                         : 'text-white/70 hover:text-white'
                     }`
                     }
+                    onClick={() => {
+                      setQuery({ tag: undefined }, 'replaceIn')
+                    }}
                   >
                     Submit Proposal
                   </Tab>
@@ -91,6 +84,9 @@ export default function SubmissionPage({
                         : 'text-white/70 hover:text-white'
                     }`
                     }
+                    onClick={() => {
+                      setQuery({ tag: 'contribution' }, 'replaceIn')
+                    }}
                   >
                     Submit Contribution
                   </Tab>
@@ -103,6 +99,9 @@ export default function SubmissionPage({
                         : 'text-white/70 hover:text-white'
                     }`
                     }
+                    onClick={() => {
+                      setQuery({ tag: 'report' }, 'replaceIn')
+                    }}
                   >
                     Submit Report
                   </Tab>

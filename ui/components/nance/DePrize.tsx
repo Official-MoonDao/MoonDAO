@@ -1,23 +1,21 @@
-import { useAddress, useContract } from '@thirdweb-dev/react'
 import CompetitorABI from 'const/abis/Competitor.json'
-import ERC20 from 'const/abis/ERC20.json'
-import REVDeployer from 'const/abis/REVDeployer.json'
-import {
-  DEPRIZE_ID,
-  COMPETITOR_TABLE_ADDRESSES,
-  REVNET_ADDRESSES,
-} from 'const/config'
+import TeamABI from 'const/abis/Team.json'
+import { DEPRIZE_ID, COMPETITOR_TABLE_ADDRESSES } from 'const/config'
 import { TEAM_ADDRESSES } from 'const/config'
 import { useState, useContext } from 'react'
 import toast from 'react-hot-toast'
+import {
+  getContract,
+  prepareContractCall,
+  sendAndConfirmTransaction,
+} from 'thirdweb'
+import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import useWindowSize from '@/lib/team/use-window-size'
-import ChainContext from '@/lib/thirdweb/chain-context'
-import useTokenSupply from '@/lib/tokens/hooks/useTokenSupply'
-import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import Market from '@/components/betting/Market'
-import Asset from '@/components/dashboard/treasury/balance/Asset'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client from '@/lib/thirdweb/client'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -40,17 +38,29 @@ export type DePrizeProps = {
 }
 
 export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
-  const { selectedChain } = useContext(ChainContext)
-  const [joinModalOpen, setJoinModalOpen] = useState(false)
-  const userAddress = useAddress()
+  const account = useActiveAccount()
 
-  const { contract: competitorContract } = useContract(
-    COMPETITOR_TABLE_ADDRESSES[selectedChain.slug],
-    CompetitorABI
-  )
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug]
-  )
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
+
+  const [joinModalOpen, setJoinModalOpen] = useState(false)
+
+  const wallet = useActiveWallet()
+  const userAddress = wallet?.getAccount()?.address
+
+  const competitorContract = getContract({
+    client,
+    chain: selectedChain,
+    address: COMPETITOR_TABLE_ADDRESSES[chainSlug],
+    abi: CompetitorABI as any,
+  })
+
+  const teamContract = getContract({
+    client,
+    chain: selectedChain,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+  })
 
   const userTeams = useTeamWearer(teamContract, selectedChain, userAddress)
     console.log('userTeams')
@@ -63,11 +73,19 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   )
   const handleJoinWithTeam = async (teamId: string) => {
     try {
-      await competitorContract?.call('insertIntoTable', [
-        DEPRIZE_ID,
-        teamId,
-        '{}',
-      ])
+      if (!account) throw new Error('No account found')
+
+      const transaction = prepareContractCall({
+        contract: competitorContract,
+        method: 'insertIntoTable',
+        params: [DEPRIZE_ID, teamId, '{}'],
+      })
+
+      const receipt = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+
       toast.success('Joined as a competitor!', {
         style: toastStyle,
       })

@@ -66,6 +66,7 @@ export default function useNavigation(citizen: any) {
             href: '/get-mooney',
           },
           { name: 'Get Voting Power', href: '/lock' },
+          { name: 'Bridge', href: '/bridge' },
         ],
       },
       {
@@ -79,19 +80,13 @@ export default function useNavigation(citizen: any) {
           },
           {
             name: 'Submit Contribution',
-            href: '/contribute',
+            href: '/submit?tag=contribution',
           },
           {
             name: 'Submit Final Report',
             href: '/submit?tag=report',
           },
           { name: 'Project Rewards', href: '/rewards' },
-          {
-            name: 'Get $MOONEY',
-            href: '/get-mooney',
-          },
-          { name: 'Get Voting Power', href: '/lock' },
-          { name: 'Bridge', href: '/bridge' },
         ],
       },
       {

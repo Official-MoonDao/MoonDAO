@@ -1,4 +1,5 @@
 import { Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
+import { arbitrum, sepolia } from 'thirdweb/chains'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -47,6 +48,9 @@ export const TEST_CHAIN =
 
 export const DEFAULT_CHAIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : TEST_CHAIN
+
+export const DEFAULT_CHAIN_V5 =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
 
 export const MOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.MOONEYToken,
