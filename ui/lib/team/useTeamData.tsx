@@ -22,22 +22,22 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   ])
 
   const socials = useMemo(() => {
-    const entityTwitter = getAttribute(nft.metadata.attributes, 'twitter')
+    const entityTwitter = getAttribute(nft?.metadata?.attributes, 'twitter')
     const entityCommunications = getAttribute(
-      nft.metadata.attributes,
+      nft?.metadata?.attributes,
       'communications'
     )
-    const entityWebsite = getAttribute(nft.metadata.attributes, 'website')
+    const entityWebsite = getAttribute(nft?.metadata?.attributes, 'website')
     return {
       twitter: entityTwitter?.value,
       communications: entityCommunications?.value,
       website: entityWebsite?.value,
     }
-  }, [nft.metadata.attributes])
+  }, [nft?.metadata?.attributes])
 
   useEffect(() => {
     function getView() {
-      const entityView: any = getAttribute(nft.metadata.attributes, 'view')
+      const entityView: any = getAttribute(nft?.metadata?.attributes, 'view')
       setIsPublic(entityView?.value === 'public' ? true : false)
       setIsDeleted(entityView?.value === '' ? true : false)
     }
