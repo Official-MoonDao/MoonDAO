@@ -91,11 +91,11 @@ export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
           <NetworkOption chain={Polygon} selectChain={selectChain} />
           {process.env.NEXT_PUBLIC_ENV === 'dev' && (
             <>
-              <NetworkOption chain={Sepolia} selectChain={selectChain} />
               <NetworkOption
                 chain={ArbitrumSepolia}
                 selectChain={selectChain}
               />
+              <NetworkOption chain={Sepolia} selectChain={selectChain} />
               <NetworkOption
                 chain={BaseSepoliaTestnet}
                 selectChain={selectChain}

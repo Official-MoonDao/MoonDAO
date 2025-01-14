@@ -219,6 +219,7 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '0x0000002a',
   sepolia: '0x00000182',
+    'arbitrum-sepolia': '0x00000182',
 }
 
 //Projects Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/729
@@ -257,12 +258,15 @@ export const MARKETPLACE_FEE_SPLIT: string =
 //}
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
   //sepolia: '0xB5B364c62Fb77BBf001F6d0cD70d0D72bDFa4Ff2',
-  'arbitrum-sepolia': '0xa0B1b14515C26acb193cb45Be5508A8A46109a27',
+  'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
+}
+export const WETH_ADDRESSES: Index = {
+    'arbitrum-sepolia': '0xb4647420e175c8B75fAa672Ca25557645B24dD73',
 }
 
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0x57f1e9424150Ea78977d479815fD26B05D8EbB0e',
-  'arbitrum-sepolia': '0xF537d6d5438A7307a8aA5670Ec3fb27b5BD208f0',
+  'arbitrum-sepolia': '0xa0B1b14515C26acb193cb45Be5508A8A46109a27',
 }
 export const COLLATERAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0xF85601CA802be17118618b2f61EF84433c0eb5D7',

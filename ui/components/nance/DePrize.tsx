@@ -53,6 +53,8 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   )
 
   const userTeams = useTeamWearer(teamContract, selectedChain, userAddress)
+    console.log('userTeams')
+    console.log(userTeams)
 
   const isCompetitor = userTeams.some((team: any) =>
     competitors.some(

@@ -1,7 +1,7 @@
 import { useAddress, useContract } from '@thirdweb-dev/react'
 //Network warning
 import { useChain } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES } from 'const/config'
+import { CITIZEN_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -35,7 +35,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const address = useAddress()
 
   const chain = useChain()
-  const { selectedChain } = useContext(ChainContext)
+  const selectedChain = DEFAULT_CHAIN
 
   const { citizen } = useContext(CitizenContext)
   const { contract: citizenContract } = useContract(
@@ -63,6 +63,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       />
 
       <MobileSidebar
+        navigation={navigation}
         lightMode={lightMode}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}

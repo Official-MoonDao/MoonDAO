@@ -1,4 +1,4 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { Arbitrum, TEST_CHAIN } from '@thirdweb-dev/chains'
 import {
   MARKETPLACE_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
@@ -7,7 +7,7 @@ import {
 import { initSDK } from '../thirdweb/thirdweb'
 
 export default async function getMarketplaceListings() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : TEST_CHAIN
   const sdk = initSDK(chain)
   const marketplaceTableContract = await sdk.getContract(
     MARKETPLACE_TABLE_ADDRESSES[chain.slug]

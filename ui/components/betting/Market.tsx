@@ -61,7 +61,7 @@ const getPositionId = (collateralToken: string, collectionId: string) => {
 }
 
 //let conditionalTokensRepo: any
-//let marketMakersRepo: any
+let marketMakersRepo: any
 
 const Market: React.FC<MarketProps> = ({
   account,
@@ -73,11 +73,11 @@ const Market: React.FC<MarketProps> = ({
   const [selectedOutcomeToken, setSelectedOutcomeToken] = useState<number>(0)
   const [marketInfo, setMarketInfo] = useState<any>(undefined)
   const chain = DEFAULT_CHAIN
+  //const { contract: marketMakersRepo } = useContract(
+    //LMSR_ADDRESSES[chain.slug],
+    //LMSR
+  //)
   const { contract: marketMakersRepo } = useContract(
-    LMSR_ADDRESSES[chain.slug],
-    LMSR
-  )
-  const { contract: lmsrWithTWAP } = useContract(
     LMSR_WITH_TWAP_ADDRESSES[chain.slug],
     LMSRWithTWAP.abi
   )
@@ -203,8 +203,8 @@ const Market: React.FC<MarketProps> = ({
       )
     }
 
-    const tx = await lmsrWithTWAP.call('trade', [outcomeTokenAmounts, cost])
-    //const tx = await marketMakersRepo.call('trade', [outcomeTokenAmounts, cost])
+    //const tx = await .call('trade', [outcomeTokenAmounts, cost])
+    const tx = await marketMakersRepo.call('trade', [outcomeTokenAmounts, cost])
     console.log({ tx })
 
     await getMarketInfo()
@@ -240,7 +240,7 @@ const Market: React.FC<MarketProps> = ({
     ])
     console.log('profit', profit)
 
-    const tx = await lmsrWithTWAP.call('trade', [
+    const tx = await marketMakersRepo.call('trade', [
       outcomeTokenAmounts,
       (profit * -1).toString(),
     ])

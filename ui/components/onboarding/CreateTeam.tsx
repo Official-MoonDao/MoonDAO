@@ -339,7 +339,6 @@ export default function CreateTeam({
                           'getRenewalPrice',
                           [address, 365 * 24 * 60 * 60]
                         )
-                        console.log('cost', cost)
 
                         const formattedCost = ethers.utils
                           .formatEther(cost.toString())
@@ -350,14 +349,14 @@ export default function CreateTeam({
                         const totalCost =
                           Number(formattedCost) + estimatedMaxGas
 
-                        //if (nativeBalance < totalCost) {
-                        //const roundedCost =
-                        //Math.ceil(+totalCost * 100000) / 100000
+                        if (nativeBalance < totalCost) {
+                          const roundedCost =
+                            Math.ceil(+totalCost * 100000) / 100000
 
-                        //return await fundWallet(address, {
-                        //amount: String(roundedCost),
-                        //})
-                        //}
+                          return await fundWallet(address, {
+                            amount: String(roundedCost),
+                          })
+                        }
 
                         const adminHatMetadataBlob = new Blob(
                           [
@@ -448,8 +447,7 @@ export default function CreateTeam({
                             teamData.formResponseId,
                           ],
                           {
-                            value: 5000000000000000000,
-                            //cost + estimatedMaxGas,
+                            value: cost,
                           }
                         )
                         console.log('minted NFT')
