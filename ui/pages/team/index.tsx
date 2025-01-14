@@ -36,7 +36,7 @@ export default function TeamJoin() {
     <div className="animate-fadeIn flex flex-col items-center">
       <Head
         title={'Create a Team'}
-        description={'Create a Team within the MoonDAO Network.'}
+        description={'Create a Team within the Space Acceleration Network to bring your organization onchain.'}
         image="https://ipfs.io/ipfs/QmX7FHDoRhsQ4Ube179qjCnvcVQqwJhVRRASUGLEeqwdh2"
       />
       <Container>

@@ -27,45 +27,34 @@ export default function useNavigation(citizen: any) {
         href: '/network',
         icon: IconOrg,
         children: [
-          { name: 'Teams', href: '/teams' },
           { name: 'Citizens', href: '/citizens' },
+          { name: 'Teams', href: '/teams' },
           { name: 'Map', href: '/map' },
+          { name: 'Create a Team', href: '/team' },
         ],
       },
       {
-        name: 'Projects',
-        href: '/project',
-        icon: DocumentIcon,
-      },
-      {
-        name: 'Info',
-        icon: FolderIcon,
-        href: '/info',
-        children: [
-          { name: 'News', href: '/news' },
-          { name: 'About', href: '/about' },
-          {
-            name: 'Constitution',
-            href: 'https://docs.moondao.com/Governance/Constitution',
-          },
-          { name: 'Events', href: '/events' },
-          { name: 'Analytics', href: '/analytics' },
-        ],
-      },
-      {
-        name: 'Governance',
+        name: 'Govern',
         icon: BuildingLibraryIcon,
         href: '/governance',
         children: [
           {
-            name: 'All Proposals',
+            name: 'Proposals',
             href: '/vote',
           },
+          { name: 'Allocate Rewards', href: '/rewards' },
           {
-            name: 'Get $MOONEY',
+            name: 'Constitution',
+            href: 'https://docs.moondao.com/Governance/Constitution',
+          },
+          {
+            name: '$MOONEY Token', 
+          },
+          {
+            name: 'Buy',
             href: '/get-mooney',
           },
-          { name: 'Get Voting Power', href: '/lock' },
+          { name: 'Lock', href: '/lock' },
           { name: 'Bridge', href: '/bridge' },
         ],
       },
@@ -75,29 +64,38 @@ export default function useNavigation(citizen: any) {
         href: '/submit',
         children: [
           {
-            name: 'Submit Proposal',
+            name: 'Projects',
+            href: '/project',
+          },
+          {
+            name: 'Create Project',
             href: '/submit',
           },
           {
-            name: 'Submit Contribution',
+            name: 'Get Rewards',
             href: '/submit?tag=contribution',
           },
           {
-            name: 'Submit Final Report',
-            href: '/submit?tag=report',
+            name: 'Jobs',
+            href: '/jobs',
           },
-          { name: 'Project Rewards', href: '/rewards' },
+        ],
+      },
+      {
+        name: 'Learn',
+        icon: FolderIcon,
+        href: '/info',
+        children: [
+          { name: 'News', href: '/news' },
+          { name: 'About', href: '/about' },
+          { name: 'Events', href: '/events' },
+          { name: 'Analytics', href: '/analytics' },
         ],
       },
       {
         name: 'Marketplace',
         icon: RocketLaunchIcon,
         href: '/marketplace',
-      },
-      {
-        name: 'Jobs',
-        href: '/jobs',
-        icon: ClipboardDocumentListIcon,
       },
     ]
   }, [citizen])

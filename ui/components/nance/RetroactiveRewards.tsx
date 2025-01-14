@@ -32,7 +32,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
-import StandardButton from '@/components/layout/StandardButton'
+import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import ProjectCard from '@/components/project/ProjectCard'
 
 export type Distribution = {
@@ -286,7 +286,7 @@ export function RetroactiveRewards({
       <Container>
         <ContentLayout
           header={'Project Rewards'}
-          description="Distribute rewards to contributors based on their contributions."
+          description={"Allocate retroactive rewards to completed projects and their contributors based on impact and results."}
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding
@@ -313,9 +313,10 @@ export function RetroactiveRewards({
                   approximateUSD
                 />
 
-                <StandardButton
+                <StandardButtonRight
                   className="mt-4 md:mt-0 gradient-2 rounded-full"
                   onClick={() => router.push('/submit')}
+                  styleOnly
                 >
                   <div className="flex items-center gap-2">
                     <Image
@@ -326,7 +327,7 @@ export function RetroactiveRewards({
                     />
                     {'Create Project'}
                   </div>
-                </StandardButton>
+                </StandardButtonRight>
               </div>
             </div>
 
@@ -383,29 +384,29 @@ export function RetroactiveRewards({
                 <div className="mt-4 w-full flex justify-end">
                   {projects && userHasVotingPower ? (
                     <span className="flex flex-col md:flex-row md:items-center gap-2">
-                      <StandardButton
+                      <StandardButtonRight
                         onClick={handleSubmit}
                         className="gradient-2 rounded-full"
                       >
                         {edit ? 'Edit Distribution' : 'Submit Distribution'}
-                      </StandardButton>
+                      </StandardButtonRight>
                       {edit && (
-                        <StandardButton
+                        <StandardButtonRight
                           onClick={handleDelete}
                           className="gradient-1 rounded-full"
                         >
                           Delete Distribution
-                        </StandardButton>
+                        </StandardButtonRight>
                       )}
                     </span>
                   ) : (
                     <span>
-                      <StandardButton
+                      <StandardButtonRight
                         link="/lock"
                         className="gradient-2 rounded-full"
                       >
                         Get Voting Power
-                      </StandardButton>
+                      </StandardButtonRight>
                     </span>
                   )}
                 </div>

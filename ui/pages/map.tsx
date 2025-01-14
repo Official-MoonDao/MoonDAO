@@ -56,7 +56,8 @@ export default function NetworkMap({
   return (
     <section id="map-container" className="overflow-hidden">
       <Head
-        title="Map"
+        title={'Map'}
+        description={"Discover the global reach of the Space Acceleration Network on our interactive 3D map! Explore the locations of our citizens worldwide and see how we're connecting space enthusiasts across the planet."}
         image="https://ipfs.io/ipfs/Qmc1FsD9pCw3FoYEQ1zviqXc3DQddyxte6cQ8hv6EvukFr"
       />
       <Container>

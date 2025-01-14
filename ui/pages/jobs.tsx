@@ -66,6 +66,9 @@ export default function Jobs({ jobs }: JobsProps) {
     <section id="jobs-container" className="overflow-hidden">
       <Head
         title="Jobs"
+        description={
+          'Explore exciting opportunities in the space industry! Discover jobs posted by innovative teams within the Space Acceleration Network and accelerate your career in building a multiplanetary future.'
+        }
         image="https://ipfs.io/ipfs/QmSuJQjNWDQn5Wht6d6PqUoten6DVm3cLocoHxi85G9N8T"
       />
       <Container>
