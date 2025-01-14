@@ -4,10 +4,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useState } from 'react'
+import { MediaRenderer } from 'thirdweb/react'
 import {
   generatePrettyLink,
   generatePrettyLinkWithId,
 } from '@/lib/subscription/pretty-links'
+import client from '@/lib/thirdweb/client'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
 
@@ -109,14 +111,14 @@ export default function Card({
                 </Frame>
               </div>
             )}
-            {ThirdwebNftMedia && metadata && (
+            {metadata && (
               <div id="team-citizen-image-container" className="z-40">
                 <Frame noPadding marginBottom="0px" className="">
-                  <ThirdwebNftMedia
-                    className=""
-                    metadata={metadata}
-                    height={'100%'}
-                    width={'100%'}
+                  <MediaRenderer
+                    client={client}
+                    src={metadata.image}
+                    width="100%"
+                    height="100%"
                   />
                 </Frame>
               </div>
