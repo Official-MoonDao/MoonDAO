@@ -390,19 +390,21 @@ export async function getStaticProps() {
     }
   )
 
-  const formattedTeams = sortedValidTeams?.map((team) => {
+  const formattedTeams = sortedValidTeams?.map((team: any) => {
     return {
       ...team,
       id: Number(team.metadata.id),
     }
   })
 
-  const formattedCitizens = filteredValidCitizens.reverse().map((citizen) => {
-    return {
-      ...citizen,
-      id: Number(citizen.metadata.id),
-    }
-  })
+  const formattedCitizens = filteredValidCitizens
+    .reverse()
+    .map((citizen: any) => {
+      return {
+        ...citizen,
+        id: Number(citizen.metadata.id),
+      }
+    })
 
   return {
     props: {
