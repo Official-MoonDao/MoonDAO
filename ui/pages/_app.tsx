@@ -1,5 +1,5 @@
 import { PrivyProvider } from '@privy-io/react-auth'
-import { Chain } from '@thirdweb-dev/chains'
+import { Chain, Arbitrum, Sepolia, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import { DEFAULT_CHAIN, DEFAULT_CHAIN_V5 } from 'const/config'
 import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
@@ -21,10 +21,15 @@ import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
-  const [selectedChain, setSelectedChain]: any = useState<Chain>(DEFAULT_CHAIN)
+  //const [selectedChain, setSelectedChain]: any = useState<Chain>(DEFAULT_CHAIN)
+  //console.log('DEFAULT_CHAIN', DEFAULT_CHAIN)
+  const [selectedChain, setSelectedChain]: any = useState<Chain>(
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
+  )
 
   const [selectedChainV5, setSelectedChainV5]: any =
     useState<ChainV5>(DEFAULT_CHAIN_V5)
+  console.log('DEFAULT_CHAIN_V5', DEFAULT_CHAIN_V5)
 
   const [lightMode, setLightMode] = useLightMode()
 

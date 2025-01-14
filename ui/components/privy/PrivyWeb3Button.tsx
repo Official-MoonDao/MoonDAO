@@ -103,6 +103,8 @@ export function PrivyWeb3Button({
           className={className}
           onClick={async () => {
             if (requiredChain && requiredChain !== selectedChain) {
+              console.log('setting selected chain')
+              console.log(requiredChain)
               setSelectedChain(requiredChain)
             }
 

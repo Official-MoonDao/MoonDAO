@@ -45,6 +45,7 @@ export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
   const [dropdown, setDropdown] = useState(false)
 
   function selectChain(chain: Chain) {
+    console.log('chain', chain)
     setSelectedChain(chain)
     setDropdown(false)
   }
