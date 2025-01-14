@@ -10,6 +10,7 @@ import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
@@ -25,13 +26,19 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { getContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { useReadContract } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useTeamData } from '@/lib/team/useTeamData'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContext from '@/lib/thirdweb/chain-context'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { serverClient } from '@/lib/thirdweb/client'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
@@ -62,16 +69,14 @@ import CitizenABI from '../../const/abis/Citizen.json'
 import JobsABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
-export default function CitizenDetailPage({
-  nft,
-  tokenId,
-  imageIpfsLink,
-}: any) {
+export default function CitizenDetailPage({ nft, tokenId }: any) {
   const router = useRouter()
   const address = useAddress()
 
   const { citizen } = useContext(CitizenContext)
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const { selectedChain: selectedChainV5 } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChainV5)
 
   const [subModalEnabled, setSubModalEnabled] = useState(false)
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
@@ -79,10 +84,13 @@ export default function CitizenDetailPage({
 
   const isGuest = tokenId === 'guest'
 
-  // Data
-  const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug]
-  )
+  // Contracts
+  const citizenContract = getContract({
+    client: serverClient,
+    chain: selectedChainV5,
+    address: CITIZEN_ADDRESSES[chainSlug],
+    abi: CitizenABI as any,
+  })
 
   const { contract: teamContract } = useContract(
     TEAM_ADDRESSES[selectedChain.slug]
@@ -122,9 +130,11 @@ export default function CitizenDetailPage({
   const VMOONEYBalance = useTotalVP(nft?.owner)
 
   // Subscription Data
-  const { data: expiresAt } = useHandleRead(citizenContract, 'expiresAt', [
-    nft?.metadata?.id || '',
-  ])
+  const expiresAt = useReadContract({
+    contract: citizenContract,
+    method: 'expiresAt',
+    params: [nft?.metadata?.id || ''],
+  })
 
   // Hats
   const hats = useTeamWearer(teamContract, selectedChain, nft?.owner)
@@ -152,7 +162,7 @@ export default function CitizenDetailPage({
               id="profile-description-section"
               className="flex w-full flex-col lg:flex-row items-start lg:items-center"
             >
-              {nft?.metadata.image ? (
+              {nft?.metadata?.image ? (
                 <div
                   id="citizen-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
@@ -204,13 +214,13 @@ export default function CitizenDetailPage({
                     )}
                     {nft ? (
                       <h1 className="max-w-[450px] text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
-                        {nft.metadata.name}
+                        {nft?.metadata?.name}
                       </h1>
                     ) : (
                       <></>
                     )}
                     <div id="profile-container">
-                      {nft?.metadata.description ? (
+                      {nft?.metadata?.description ? (
                         <p
                           id="profile-description-container"
                           className="w-full pr-12"
@@ -351,9 +361,11 @@ export default function CitizenDetailPage({
       >
         {/* Header and socials */}
         <Head
-          title={nft.metadata.name}
-          description={nft.metadata.description}
-          image={`https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`}
+          title={nft?.metadata?.name}
+          description={nft?.metadata?.description}
+          image={`https://ipfs.io/ipfs/${
+            nft?.metadata?.image.split('ipfs://')[1]
+          }`}
         />
         {!isDeleted && subIsValid && nft.owner === address && (
           <CitizenActions
@@ -563,7 +575,7 @@ export default function CitizenDetailPage({
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
-  let nft, tokenId, imageIpfsLink
+  let nft, tokenId
   if (tokenIdOrName === 'guest') {
     nft = {
       metadata: {
@@ -588,14 +600,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
 
     tokenId = 'guest'
-
-    imageIpfsLink = ''
   } else {
-    const chain =
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    const sdk = initSDK(chain)
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-    const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chain.slug]}`
+    const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
     const allCitizensRes = await fetch(
       `${TABLELAND_ENDPOINT}?statement=${statement}`
     )
@@ -617,32 +626,30 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const citizenContract = await sdk.getContract(
-      CITIZEN_ADDRESSES[chain.slug],
-      CitizenABI
-    )
-    nft = await citizenContract.erc721.get(tokenId)
+    const citizenContract = getContract({
+      client: serverClient,
+      chain: chain,
+      address: CITIZEN_ADDRESSES[chainSlug],
+      abi: CitizenABI as any,
+    })
 
-    if (
-      !nft ||
-      !nft.metadata.uri ||
-      blockedCitizens.includes(Number(nft.metadata.id))
-    ) {
+    nft = await getNFT({
+      contract: citizenContract,
+      tokenId: BigInt(tokenId),
+      includeOwner: true,
+    })
+
+    if (!nft || blockedCitizens.includes(Number(nft?.metadata?.id))) {
       return {
         notFound: true,
       }
     }
-
-    const rawMetadataRes = await fetch(nft.metadata.uri)
-    const rawMetadata = await rawMetadataRes.json()
-    imageIpfsLink = rawMetadata.image
   }
 
   return {
     props: {
-      nft,
+      nft: { ...nft, id: tokenId },
       tokenId,
-      imageIpfsLink,
     },
   }
 }
