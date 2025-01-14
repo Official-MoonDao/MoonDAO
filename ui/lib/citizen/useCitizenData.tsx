@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { readContract } from 'thirdweb'
 import useDiscordUserSearch from '../nance/DiscordUserSearch'
 import { getAttribute } from '../utils/nft'
 
 export function useCitizenData(nft: any, citizenContract: any) {
-  const {
-    metadata: { attributes },
-  } = nft
+  const attributes = nft?.metadata?.attributes
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
@@ -33,15 +32,18 @@ export function useCitizenData(nft: any, citizenContract: any) {
 
   const location = useMemo(() => {
     const loc = getAttribute(attributes, 'location')
-    if (loc.value.startsWith('{')) {
-      return JSON.parse(loc.value).name
+    if (loc?.value?.startsWith('{')) {
+      return JSON.parse(loc?.value)?.name
     } else return loc?.value
   }, [attributes])
 
   const incompleteProfile = useMemo(() => {
     if (
-      (nft.metadata.description !== '' || socials.twitter !== '',
-      socials.discord !== '' || socials.website !== '' || location !== '')
+      nft?.metadata?.description !== '' ||
+      socials?.twitter !== '' ||
+      socials?.discord !== '' ||
+      socials?.website !== '' ||
+      location !== ''
     ) {
       return false
     } else {
@@ -58,17 +60,19 @@ export function useCitizenData(nft: any, citizenContract: any) {
       const now = Math.floor(Date.now() / 1000)
 
       try {
-        const expiresAt = await citizenContract.call('expiresAt', [
-          nft?.metadata?.id,
-        ])
-        setSubIsValid(expiresAt.toNumber() > now)
+        const expiresAt = await readContract({
+          contract: citizenContract,
+          method: 'expiresAt',
+          params: [nft?.metadata?.id],
+        } as any)
+        setSubIsValid(+expiresAt.toString() > now)
       } catch (err) {
         console.log(err)
       }
       setIsLoading(false)
     }
-    if (nft.metadata.attributes && citizenContract) checkSubscription()
-  }, [nft.metadata, citizenContract])
+    if (nft?.metadata?.attributes && citizenContract) checkSubscription()
+  }, [nft?.metadata?.attributes, citizenContract])
 
   return {
     socials,
