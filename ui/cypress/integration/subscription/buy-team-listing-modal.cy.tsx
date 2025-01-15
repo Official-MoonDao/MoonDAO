@@ -1,8 +1,6 @@
-import { PrivyProvider } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
+import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import { ZERO_ADDRESS } from 'const/config'
-import CitizenProvider from '@/lib/citizen/CitizenProvider'
-import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import BuyTeamListingModal from '@/components/subscription/BuyTeamListingModal'
 import { TeamListing } from '@/components/subscription/TeamListing'
 
@@ -18,18 +16,16 @@ describe('<BuyTeamListingModal />', () => {
 
   beforeEach(() => {
     props = {
-      selectedChain: Sepolia,
+      selectedChain: CYPRESS_CHAIN_V5,
       listing,
       recipient: ZERO_ADDRESS,
       setEnabled: cy.stub(),
     }
 
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <BuyTeamListingModal {...props} />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <BuyTeamListingModal {...props} />
+      </TestnetProviders>
     )
   })
 
@@ -41,21 +37,15 @@ describe('<BuyTeamListingModal />', () => {
   })
 
   it('Shows markedup price for non-citizens', () => {
-    cy.get('#listing-price').should(
-      'have.text',
-      `${+listing.price * 1.1} ${listing.currency}`
-    )
+    const price = +listing.price * 1.1
+    cy.get('#listing-price').should('have.text', `${price} ${listing.currency}`)
   })
 
   it('Shows regular price for citizens', () => {
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <CitizenProvider selectedChain={Sepolia} mock={true}>
-            <BuyTeamListingModal {...props} />
-          </CitizenProvider>
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders citizen={true}>
+        <BuyTeamListingModal {...props} />
+      </TestnetProviders>
     )
 
     cy.get('#listing-price').should(

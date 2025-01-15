@@ -1,10 +1,11 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
 import { useContract } from '@thirdweb-dev/react'
 import TeamABI from 'const/abis/Team.json'
 import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
@@ -40,7 +41,7 @@ export default function TeamJobModal({
   edit,
   job,
 }: TeamJobModalProps) {
-  const { getAccessToken } = usePrivy()
+  const account = useActiveAccount()
   const { selectedChain } = useContext(ChainContext)
 
   const [isLoading, setIsLoading] = useState(false)
@@ -120,39 +121,51 @@ export default function TeamJobModal({
             formattedContactInfo = cleanedData.contactInfo
           }
 
-          let tx
+          if (!account) return
+
+          let transaction
           try {
             if (edit) {
-              tx = await jobTableContract.call('updateTable', [
-                job?.id,
-                cleanedData.title,
-                cleanedData.description,
-                teamId,
-                '',
-                '',
-                endTime,
-                currTime,
-                formattedContactInfo,
-              ])
+              transaction = prepareContractCall({
+                contract: jobTableContract,
+                method: 'updateTable' as string,
+                params: [
+                  job?.id,
+                  cleanedData.title,
+                  cleanedData.description,
+                  teamId,
+                  '',
+                  '',
+                  endTime,
+                  currTime,
+                  formattedContactInfo,
+                ],
+              })
             } else {
-              tx = await jobTableContract?.call('insertIntoTable', [
-                cleanedData.title,
-                cleanedData.description,
-                teamId,
-                '',
-                '',
-                endTime,
-                currTime,
-                formattedContactInfo,
-              ])
+              transaction = prepareContractCall({
+                contract: jobTableContract,
+                method: 'insertIntoTable' as string,
+                params: [
+                  cleanedData.title,
+                  cleanedData.description,
+                  teamId,
+                  '',
+                  '',
+                  endTime,
+                  currTime,
+                  formattedContactInfo,
+                ],
+              })
             }
 
+            const receipt: any = await sendAndConfirmTransaction({
+              transaction,
+              account,
+            })
+
             //Get job id and team id from receipt and send discord notification
-            const jobId = parseInt(tx.receipt.logs[1].topics[1], 16).toString()
-            const jobTeamId = parseInt(
-              tx.receipt.logs[1].topics[2],
-              16
-            ).toString()
+            const jobId = parseInt(receipt.logs[1].topics[1], 16).toString()
+            const jobTeamId = parseInt(receipt.logs[1].topics[2], 16).toString()
             const team = await teamContract?.erc721.get(jobTeamId)
             const teamName = team?.metadata.name as string
             sendDiscordMessage(

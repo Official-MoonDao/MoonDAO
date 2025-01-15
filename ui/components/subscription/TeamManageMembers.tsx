@@ -1,13 +1,12 @@
 import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { TrashIcon } from '@heroicons/react/24/outline'
-import { useAddress, useResolvedMediaType, useSDK } from '@thirdweb-dev/react'
 import { DEFAULT_CHAIN, HATS_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { readContract } from 'thirdweb'
 import { useCitizen } from '@/lib/citizen/useCitizen'
-import { useHatData } from '@/lib/hats/useHatData'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useSafe from '@/lib/safe/useSafe'
@@ -17,6 +16,7 @@ import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type TeamManageMembersModalProps = {
+  account: any
   hats: any
   hatsContract: any
   teamContract: any
@@ -29,6 +29,7 @@ type TeamManageMembersModalProps = {
 }
 
 type TeamManageMembersProps = {
+  account: any
   hats: any[]
   hatsContract: any
   teamContract: any
@@ -42,16 +43,16 @@ type TeamManageMembersProps = {
 function HatOption({ hat }: any) {
   const [hatMetadata, setHatMetadata] = useState<any>()
 
-  const resolvedMetadata = useResolvedMediaType(hat.details)
-
   useEffect(() => {
     async function getHatMetadata() {
-      const res = await fetch(resolvedMetadata.url)
+      const res = await fetch(
+        `https://ipfs.io/ipfs/${hat.details.split('ipfs://')[1]}`
+      )
       const data = await res.json()
       setHatMetadata(data.data)
     }
     getHatMetadata()
-  }, [])
+  }, [hat.details])
 
   return (
     <option key={hat.id} value={hat.id} className="bg-[#0f152f] text-white">
@@ -66,6 +67,7 @@ function TeamMemberName({ selectedChain, address }: any) {
 }
 
 function TeamMembers({
+  account,
   wearer,
   selectedChain,
   hatsContract,
@@ -75,8 +77,6 @@ function TeamMembers({
   setHasDeletedMember,
   managerHatId,
 }: any) {
-  const sdk = useSDK()
-
   const hatNames = useHatNames(hatsContract, wearer.hatIds)
 
   return (
@@ -99,10 +99,12 @@ function TeamMembers({
               <button
                 onClick={async () => {
                   try {
-                    const memberHatPassthroughModuleAddress =
-                      await teamContract?.call('memberPassthroughModule', [
-                        teamId,
-                      ])
+                    const memberHatPassthroughModuleAddress: any =
+                      await readContract({
+                        contract: teamContract,
+                        method: 'memberPassthroughModule' as string,
+                        params: [teamId],
+                      })
 
                     const iface = new ethers.utils.Interface(HatsABI)
                     const txData = iface.encodeFunctionData(
@@ -114,22 +116,27 @@ function TeamMembers({
                       hatName.hatId ===
                       hatIdDecimalToHex(managerHatId.toString())
                     ) {
-                      await queueSafeTx({
-                        to: HATS_ADDRESS,
-                        data: txData,
-                        value: '0',
-                        gasLimit: 1000000,
-                      })
+                      await queueSafeTx(
+                        account?.address,
+                        [
+                          {
+                            to: HATS_ADDRESS,
+                            data: txData,
+                            value: '0',
+                          },
+                        ],
+                        { safeTxGas: '1000000' }
+                      )
                       setHasDeletedMember(true)
                     } else {
-                      const signer = sdk?.getSigner()
-                      await signer?.sendTransaction({
+                      await account?.sendTransaction({
                         to: memberHatPassthroughModuleAddress,
                         data: txData,
                         value: '0',
                         gasLimit: 1000000,
                       })
                     }
+                    toast.success('Member removed successfully!')
                   } catch (err) {
                     console.log(err)
                   }
@@ -147,6 +154,7 @@ function TeamMembers({
 }
 
 function TeamManageMembersModal({
+  account,
   hats,
   hatsContract,
   teamContract,
@@ -157,9 +165,6 @@ function TeamManageMembersModal({
   managerHatId,
   setEnabled,
 }: TeamManageMembersModalProps) {
-  const sdk = useSDK()
-  const address = useAddress()
-
   const reversedHats = hats.slice().reverse()
 
   const uniqueWearers = useUniqueHatWearers(hats)
@@ -211,6 +216,7 @@ function TeamManageMembersModal({
               uniqueWearers.map((w: any, i: number) => (
                 <TeamMembers
                   key={`modal-team-member-${i}`}
+                  account={account}
                   wearer={w}
                   selectedChain={selectedChain}
                   hatsContract={hatsContract}
@@ -258,16 +264,20 @@ function TeamManageMembersModal({
               if (
                 selectedHatId === hatIdDecimalToHex(managerHatId.toString())
               ) {
-                await queueSafeTx({
-                  to: HATS_ADDRESS,
-                  data: txData,
-                  value: '0',
-                  safeTxGas: '1000000',
-                })
+                await queueSafeTx(
+                  account?.address,
+                  [
+                    {
+                      to: HATS_ADDRESS,
+                      data: txData,
+                      value: '0',
+                    },
+                  ],
+                  { safeTxGas: '1000000' }
+                )
                 setHasAddedMember(true)
               } else {
-                const signer = sdk?.getSigner()
-                await signer?.sendTransaction({
+                await account?.sendTransaction({
                   to: HATS_ADDRESS,
                   data: txData,
                   value: '0',
@@ -481,6 +491,7 @@ function TeamManageMembersModal({
 }
 
 export default function TeamManageMembers({
+  account,
   selectedChain,
   hatsContract,
   teamContract,
@@ -496,6 +507,7 @@ export default function TeamManageMembers({
     <div>
       {manageMembersModalEnabled && (
         <TeamManageMembersModal
+          account={account}
           selectedChain={selectedChain}
           hatsContract={hatsContract}
           teamContract={teamContract}

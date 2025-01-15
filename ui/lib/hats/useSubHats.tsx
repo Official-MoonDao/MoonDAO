@@ -12,7 +12,7 @@ export function useSubHats(selectedChain: any, hatId: any) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            chainId: selectedChain.chainId,
+            chainId: selectedChain.id,
             hatId: hatId.toString(),
           }),
         })

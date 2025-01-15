@@ -12,5 +12,3 @@ const hatsSubgraphClient = new HatsSubgraphClient({
 })
 
 export default hatsSubgraphClient
-
-//a881411e2217bd893e5373d8325999e7

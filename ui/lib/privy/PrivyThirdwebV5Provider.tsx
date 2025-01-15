@@ -1,16 +1,25 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { ethers } from 'ethers'
 import { signIn, signOut } from 'next-auth/react'
-import { useEffect, useState } from 'react'
-import { defineChain } from 'thirdweb'
+import { useContext, useEffect, useState } from 'react'
+import { Chain, defineChain } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { useSetActiveWallet } from 'thirdweb/react'
 import { createWalletAdapter } from 'thirdweb/wallets'
 import client from '@/lib/thirdweb/client'
 import PrivyWalletContext from './privy-wallet-context'
 
-export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
+interface PrivyThirdwebV5ProviderProps {
+  selectedChain: Chain
+  children: any
+}
+
+export function PrivyThirdwebV5Provider({
+  selectedChain,
+  children,
+}: PrivyThirdwebV5ProviderProps) {
+  const { selectedWallet } = useContext(PrivyWalletContext)
   const { user, ready, authenticated, getAccessToken } = usePrivy()
-  const [selectedWallet, setSelectedWallet] = useState<number>(0)
   const { wallets } = useWallets()
   const setActiveWallet = useSetActiveWallet()
 
@@ -18,7 +27,8 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     async function setActive() {
       try {
         const wallet = wallets[selectedWallet]
-        const provider = await wallet?.getEthersProvider()
+        const privyProvider = await wallet.getEthereumProvider()
+        const provider = new ethers.providers.Web3Provider(privyProvider)
         const signer = provider?.getSigner()
 
         const walletClientType = wallet?.walletClientType
@@ -26,7 +36,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
           walletClientType === 'coinbase_wallet' ||
           walletClientType === 'privy'
         )
-          await wallet?.switchChain(selectedChain.chainId)
+          await wallet?.switchChain(selectedChain.id)
 
         const adaptedAccount = await ethers5Adapter.signer.fromEthers({
           signer,
@@ -34,10 +44,12 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
 
         const thirdwebWallet = createWalletAdapter({
           adaptedAccount,
-          chain: defineChain(selectedChain.chainId),
+          chain: selectedChain,
           client,
-          onDisconnect: () => {},
-          switchChain: () => {},
+          onDisconnect: async () => {},
+          switchChain: async (chain: Chain) => {
+            await wallet?.switchChain(chain.id)
+          },
         })
 
         await thirdwebWallet.connect({ client })
@@ -79,9 +91,5 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     }
   }, [ready, authenticated, user])
 
-  return (
-    <PrivyWalletContext.Provider value={{ selectedWallet, setSelectedWallet }}>
-      {children}
-    </PrivyWalletContext.Provider>
-  )
+  return <>{children}</>
 }
