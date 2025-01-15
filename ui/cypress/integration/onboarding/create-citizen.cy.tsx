@@ -1,6 +1,6 @@
-import { PrivyProvider } from '@privy-io/react-auth'
+import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import { Sepolia } from '@thirdweb-dev/chains'
-import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
 
 describe('<CreateCitizen />', () => {
@@ -9,16 +9,14 @@ describe('<CreateCitizen />', () => {
   beforeEach(() => {
     props = {
       address: '0x1234567890abcdef',
-      selectedChain: Sepolia,
+      selectedChain: CYPRESS_CHAIN_V5,
       setSelectedTier: cy.stub(),
     }
     cy.mountNextRouter('/')
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <CreateCitizen {...props} />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <CreateCitizen {...props} />
+      </TestnetProviders>
     )
   })
 
