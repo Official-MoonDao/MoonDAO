@@ -15,7 +15,7 @@ export function useHatTree(selectedChain: Chain, treeId: any, topHatId: any) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            chainId: selectedChain.chainId,
+            chainId: selectedChain.id ?? selectedChain.chainId,
             treeId,
             props: {
               hats: {

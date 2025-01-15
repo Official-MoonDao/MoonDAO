@@ -44,7 +44,9 @@ const baseSepoliaConfig =
   require('../../contracts/deployments/base-sepolia') as DeploymentConfig
 
 export const TEST_CHAIN =
-  process.env.NEXT_PUBLIC_TEST_CHAIN === 'sepolia' ? Sepolia : ArbitrumSepolia
+  process.env.NEXT_PUBLIC_TEST_CHAIN === 'arbitrum-sepolia'
+    ? ArbitrumSepolia
+    : Sepolia
 
 export const DEFAULT_CHAIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : TEST_CHAIN
@@ -261,19 +263,15 @@ export const MARKETPLACE_FEE_SPLIT: string =
 //'arbitrum-sepolia': '0x789fc04493F3c1E3D853E164e767915109814B27',
 //}
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
-  //sepolia: '0xB5B364c62Fb77BBf001F6d0cD70d0D72bDFa4Ff2',
+  sepolia: '0x0087fCc0aF33B00a9AF2f98Eb6788Ffb72bC1C51',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
 }
-export const WETH_ADDRESSES: Index = {
-  'arbitrum-sepolia': '0xb4647420e175c8B75fAa672Ca25557645B24dD73',
-}
-
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
-  sepolia: '0x57f1e9424150Ea78977d479815fD26B05D8EbB0e',
+  sepolia: '0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8',
   'arbitrum-sepolia': '0xa0B1b14515C26acb193cb45Be5508A8A46109a27',
 }
 export const COLLATERAL_TOKEN_ADDRESSES: Index = {
-  sepolia: '0xF85601CA802be17118618b2f61EF84433c0eb5D7',
+  sepolia: '0x8cfF28F922AeEe80d3a0663e735681469F7374c6',
   'arbitrum-sepolia': '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
 }
 export const COLLATERAL_DECIMALS = 18

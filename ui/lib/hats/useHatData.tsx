@@ -32,7 +32,7 @@ export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          chainId: selectedChain.chainId,
+            chainId: selectedChain.id ?? selectedChain.chainId,
           hatId,
           props: {
             prettyId: true,

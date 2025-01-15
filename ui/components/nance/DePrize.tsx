@@ -1,3 +1,4 @@
+import { Sepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_ID, COMPETITOR_TABLE_ADDRESSES } from 'const/config'
@@ -12,10 +13,10 @@ import {
 import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import Market from '@/components/betting/Market'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
+import Market from '@/components/betting/Market'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -41,7 +42,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   const account = useActiveAccount()
 
   const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  const chainSlug = selectedChain.slug
 
   const [joinModalOpen, setJoinModalOpen] = useState(false)
 
@@ -63,8 +64,6 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   })
 
   const userTeams = useTeamWearer(teamContract, selectedChain, userAddress)
-    console.log('userTeams')
-    console.log(userTeams)
 
   const isCompetitor = userTeams.some((team: any) =>
     competitors.some(

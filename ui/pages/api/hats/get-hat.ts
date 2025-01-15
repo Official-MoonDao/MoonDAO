@@ -7,6 +7,8 @@ import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     const { chainId, hatId, props } = req.body
+    console.log('chainId')
+    console.log(chainId)
     try {
       const hat = await hatsSubgraphClient.getHat({
         chainId,
