@@ -1,25 +1,20 @@
-import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useMemo, useState } from 'react'
-import { useHandleRead } from '../thirdweb/hooks'
+import { readContract } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import { getAttribute } from '../utils/nft'
 
 export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [isPublic, setIsPublic] = useState<boolean>(false)
   const [isDeleted, setIsDeleted] = useState<boolean>(false)
   const [isManager, setIsManager] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
-  const [hatTreeId, setHatTreeId] = useState<string>()
-
-  const { data: adminHatId } = useHandleRead(teamContract, 'teamAdminHat', [
-    nft?.metadata?.id || '',
-  ])
-
-  const { data: managerHatId } = useHandleRead(teamContract, 'teamManagerHat', [
-    nft?.metadata?.id || '',
-  ])
+  const [hatTreeId, setHatTreeId] = useState<any>()
+  const [adminHatId, setAdminHatId] = useState<any>()
+  const [managerHatId, setManagerHatId] = useState<any>()
 
   const socials = useMemo(() => {
     const entityTwitter = getAttribute(nft?.metadata?.attributes, 'twitter')
@@ -46,19 +41,37 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
       const now = Math.floor(Date.now() / 1000)
 
       try {
-        const expiresAt = await teamContract.call('expiresAt', [
-          nft?.metadata?.id,
-        ])
-        setSubIsValid(expiresAt.toNumber() > now)
+        const expiresAt = await readContract({
+          contract: teamContract,
+          method: 'expiresAt' as string,
+          params: [nft?.metadata?.id],
+        })
+        setSubIsValid(+expiresAt.toString() > now)
       } catch (err) {
         console.log(err)
       }
+    }
+
+    async function getHats() {
+      const adminHID = await readContract({
+        contract: teamContract,
+        method: 'teamAdminHat' as string,
+        params: [nft?.metadata?.id || ''],
+      })
+      const managerHID = await readContract({
+        contract: teamContract,
+        method: 'teamManagerHat' as string,
+        params: [nft?.metadata?.id || ''],
+      })
+      setAdminHatId(adminHID)
+      setManagerHatId(managerHID)
     }
 
     if (nft?.metadata?.attributes && teamContract) {
       ;(async () => {
         setIsLoading(true)
         await checkSubscription()
+        await getHats()
         getView()
         setIsLoading(false)
       })()
@@ -69,26 +82,31 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
     async function checkManager() {
       try {
         if (address) {
-          const isAddressManager = await teamContract.call('isManager', [
-            nft?.metadata?.id,
-            address,
-          ])
+          const isAddressManager: any = await readContract({
+            contract: teamContract,
+            method: 'isManager' as string,
+            params: [nft?.metadata?.id, address],
+          })
           setIsManager(isAddressManager || nft.owner === address)
         } else {
           setIsManager(false)
         }
       } catch (err) {
+        console.log(err)
         setIsManager(false)
       }
     }
 
-    if (teamContract && nft?.metadata?.id) checkManager()
-  }, [address, nft, teamContract])
+    if (teamContract) checkManager()
+  }, [account, address, nft, teamContract])
 
   useEffect(() => {
     async function getHatTreeId() {
-      const hatTreeId = await hatsContract.call('getTopHatDomain', [adminHatId])
-
+      const hatTreeId = await readContract({
+        contract: hatsContract,
+        method: 'getTopHatDomain' as string,
+        params: [adminHatId],
+      })
       setHatTreeId(hatTreeId)
     }
     if (hatsContract && adminHatId) getHatTreeId()

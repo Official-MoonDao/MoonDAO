@@ -4,6 +4,8 @@ import { NFT } from '@thirdweb-dev/sdk'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { useReadContract } from 'thirdweb/react'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
@@ -67,23 +69,21 @@ export default function TeamListing({
   const [isUpcoming, setIsUpcoming] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const [teamData, setTeamData] = useState<any>()
-
   const daysUntilExpiry = daysUntilTimestamp(listing.endTime)
 
+  const [teamNFT, setTeamNFT] = useState<any>()
+
   useEffect(() => {
-    async function getTeamData() {
-      if (teamContract && listing) {
-        // Check if teamContract is defined
-        const teamNft = await teamContract.erc721.get(listing.teamId)
-        setTeamData({
-          name: teamNft.metadata.name,
-          multisigAddress: teamNft.owner,
-        })
-      }
+    async function getTeamNFT() {
+      const teamNFT = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(listing.teamId),
+        includeOwner: true,
+      })
+      setTeamNFT(teamNFT)
     }
-    if (listing) getTeamData()
-  }, [listing, teamContract])
+    if (teamContract) getTeamNFT()
+  }, [listing.teamId, teamContract])
 
   useEffect(() => {
     if (currTime >= listing.startTime && currTime <= listing.endTime) {
@@ -193,7 +193,7 @@ export default function TeamListing({
                 >
                   <div className="w-full flex min-h-[100px] pb-5 flex-col">
                     <div className="flex items-center justify-between w-full">
-                      {teamName && teamData?.name && (
+                      {teamName && teamNFT?.metadata?.name && (
                         <button
                           id="listing-team-name"
                           className="font-bold text-light-cool"
@@ -202,7 +202,7 @@ export default function TeamListing({
                             router.push(`/team/${listing.teamId}`)
                           }}
                         >
-                          {teamData.name}
+                          {teamNFT.metadata.name}
                         </button>
                       )}
                     </div>
@@ -328,7 +328,7 @@ export default function TeamListing({
               <BuyTeamListingModal
                 selectedChain={selectedChain}
                 listing={listing}
-                recipient={teamData?.multisigAddress}
+                recipient={teamNFT?.owner}
                 setEnabled={setEnabledBuyListingModal}
               />
             )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Chain } from 'thirdweb'
 
 export function useSubHats(selectedChain: any, hatId: any) {
   const [subHats, setSubHats] = useState<any>()
@@ -12,7 +13,7 @@ export function useSubHats(selectedChain: any, hatId: any) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            chainId: selectedChain.chainId,
+            chainId: selectedChain.id,
             hatId: hatId.toString(),
           }),
         })
