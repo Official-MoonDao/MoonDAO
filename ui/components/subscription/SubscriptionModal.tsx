@@ -1,5 +1,4 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useAddress } from '@thirdweb-dev/react'
 import { DEFAULT_CHAIN, TEAM_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
@@ -17,10 +16,11 @@ export function SubscriptionModal({
   subscriptionContract,
   validPass,
   expiresAt,
+  type = 'citizen',
 }: any) {
   const router = useRouter()
   const account = useActiveAccount()
-  const address = useAddress()
+  const address = account?.address
   const [isLoading, setIsLoading] = useState(false)
 
   const [years, setYears] = useState<number>(1)
@@ -60,7 +60,7 @@ export function SubscriptionModal({
               const contractAddress = subscriptionContract.getAddress()
 
               let receipt
-              if (contractAddress === TEAM_ADDRESSES[selectedChain.slug]) {
+              if (type === 'team') {
                 const transaction = prepareContractCall({
                   contract: subscriptionContract,
                   method: 'renewSubscription',
