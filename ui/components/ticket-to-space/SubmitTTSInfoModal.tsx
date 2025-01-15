@@ -1,7 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
 import { Polygon } from '@thirdweb-dev/chains'
 import { useAddress } from '@thirdweb-dev/react'
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
@@ -64,7 +64,8 @@ export function SubmitTTSInfoModal({
   }
 
   async function signMessage() {
-    const provider = await wallets[selectedWallet].getEthersProvider()
+    const privyProvider = await wallets[selectedWallet].getEthereumProvider()
+    const provider = new ethers.providers.Web3Provider(privyProvider)
     const signer = provider?.getSigner()
     const response = await fetch(
       `api/db/nonce?address=${address}&subscribed=${checkBoxEnabled}`
@@ -203,7 +204,9 @@ export function SubmitTTSInfoModal({
           </a>
           .
         </p>
-        <label className="text-white">Full Legal Name (as appears on your ID)</label>
+        <label className="text-white">
+          Full Legal Name (as appears on your ID)
+        </label>
         <input
           className="h-[50px] w-full text-lg rounded-sm px-2 bg-white bg-opacity-5 border-[1px] border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40 focus:outline-none"
           onChange={(e) => setFullName(e.target.value)}
