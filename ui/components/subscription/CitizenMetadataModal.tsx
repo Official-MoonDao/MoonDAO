@@ -1,11 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Widget } from '@typeform/embed-react'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
-import {
-  CITIZEN_TABLE_ADDRESSES,
-  DEFAULT_CHAIN,
-  DEFAULT_CHAIN_V5,
-} from 'const/config'
+import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
