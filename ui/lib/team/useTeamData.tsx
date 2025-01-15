@@ -55,6 +55,28 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
       }
     }
 
+<<<<<<< HEAD
+=======
+    async function getHats() {
+      try {
+        const adminHID = await readContract({
+          contract: teamContract,
+          method: 'teamAdminHat' as string,
+          params: [nft?.metadata?.id || ''],
+        })
+        const managerHID = await readContract({
+          contract: teamContract,
+          method: 'teamManagerHat' as string,
+          params: [nft?.metadata?.id || ''],
+        })
+        setAdminHatId(adminHID)
+        setManagerHatId(managerHID)
+      } catch (err) {
+        console.log(err)
+      }
+    }
+
+>>>>>>> c531e331 (Thirdweb V5 Migration : Lock (#312))
     if (nft?.metadata?.attributes && teamContract) {
       ;(async () => {
         setIsLoading(true)
