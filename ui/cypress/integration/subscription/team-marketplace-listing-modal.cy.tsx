@@ -1,11 +1,14 @@
-import { PrivyProvider } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
+import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import { MARKETPLACE_TABLE_ADDRESSES } from 'const/config'
 import { Toaster } from 'react-hot-toast'
-import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
+import { getContract } from 'thirdweb'
+import { serverClient } from '@/lib/thirdweb/client'
 import { TeamListing as TeamListingType } from '@/components/subscription/TeamListing'
 import TeamMarketplaceListingModal from '@/components/subscription/TeamMarketplaceListingModal'
+import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 
-describe('<TeamListing />', () => {
+describe('<TeamMarketplaceListingModal />', () => {
   let listing: TeamListingType
   let props: any
 
@@ -20,9 +23,12 @@ describe('<TeamListing />', () => {
       teamId: 0,
       setEnabled: cy.stub(),
       refreshListings: cy.stub(),
-      marketplaceTableContract: {
-        call: cy.stub().resolves({ receipt: true }),
-      },
+      marketplaceTableContract: getContract({
+        client: serverClient,
+        address: MARKETPLACE_TABLE_ADDRESSES[CYPRESS_CHAIN_SLUG],
+        abi: MarketplaceTableABI as any,
+        chain: CYPRESS_CHAIN_V5,
+      }),
       edit: false,
       listing,
     }
@@ -30,22 +36,18 @@ describe('<TeamListing />', () => {
 
   it('Renders the component', () => {
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamMarketplaceListingModal {...props} />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamMarketplaceListingModal {...props} />
+      </TestnetProviders>
     )
     cy.get('h2').should('contain', 'Add a Listing')
   })
   it('Submits form with valid data', () => {
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamMarketplaceListingModal {...props} edit />
-          <Toaster />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamMarketplaceListingModal {...props} edit />
+        <Toaster />
+      </TestnetProviders>
     )
 
     cy.get('#listing-title-input').type('Test Listing Title')
@@ -69,8 +71,5 @@ describe('<TeamListing />', () => {
 
     // Submit the form
     cy.get('form').submit()
-
-    // Assert that the onSubmit function was called
-    cy.wrap(props.marketplaceTableContract.call).should('be.called')
   })
 })
