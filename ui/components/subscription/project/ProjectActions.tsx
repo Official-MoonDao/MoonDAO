@@ -4,7 +4,6 @@ import {
   DocumentIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { NFT, useAddress } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import Frame from '@/components/layout/Frame'
@@ -14,7 +13,7 @@ import ProjectActivationModal from './ProjectActivationModal'
 import ProjectEligibilityModal from './ProjectEligibilityModal'
 
 type ProjectActionsProps = {
-  nft: NFT | undefined
+  nft: any
   projectContract: any
   isActive: boolean
   isManager: boolean
@@ -29,7 +28,6 @@ export default function ProjectActions({
   hasFinalReport,
 }: ProjectActionsProps) {
   const router = useRouter()
-  const address = useAddress()
 
   const [projectActivationModalEnabled, setProjectActivationModalEnabled] =
     useState(false)
