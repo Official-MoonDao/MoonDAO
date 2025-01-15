@@ -5,18 +5,15 @@ import {
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { ThirdwebNftMedia, useAddress, useContract } from '@thirdweb-dev/react'
+import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
-  MOONEY_ADDRESSES,
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
-  VMOONEY_ADDRESSES,
 } from 'const/config'
 import { HATS_ADDRESS } from 'const/config'
 import { blockedCitizens } from 'const/whitelist'
@@ -26,33 +23,30 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { getContract } from 'thirdweb'
+import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { useReadContract } from 'thirdweb/react'
+import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
-import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContext from '@/lib/thirdweb/chain-context'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/client'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
+import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
-import { CopyIcon, DiscordIcon, TwitterIcon } from '@/components/assets'
+import { DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
 import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
-import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
 import Action from '@/components/subscription/Action'
@@ -66,12 +60,14 @@ import NewMarketplaceListings from '@/components/subscription/NewMarketplaceList
 import OpenVotes from '@/components/subscription/OpenVotes'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
 import CitizenABI from '../../const/abis/Citizen.json'
+import HatsABI from '../../const/abis/Hats.json'
 import JobsABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
 export default function CitizenDetailPage({ nft, tokenId }: any) {
   const router = useRouter()
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const { citizen } = useContext(CitizenContext)
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
@@ -85,26 +81,29 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
   const isGuest = tokenId === 'guest'
 
   // Contracts
-  const citizenContract = getContract({
-    client: serverClient,
+  const citizenContract = useContract({
     chain: selectedChainV5,
     address: CITIZEN_ADDRESSES[chainSlug],
     abi: CitizenABI as any,
   })
 
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug]
-  )
+  const teamContract = useContract({
+    chain: selectedChainV5,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+  })
 
-  const { contract: marketplaceTableContract } = useContract(
-    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug],
-    MarketplaceABI
-  )
+  const marketplaceTableContract = useContract({
+    chain: selectedChainV5,
+    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+    abi: MarketplaceABI as any,
+  })
 
-  const { contract: jobTableContract } = useContract(
-    JOBS_TABLE_ADDRESSES[selectedChain.slug],
-    JobsABI
-  )
+  const jobTableContract = useContract({
+    chain: selectedChainV5,
+    address: JOBS_TABLE_ADDRESSES[chainSlug],
+    abi: JobsABI as any,
+  })
 
   const {
     socials,
@@ -119,27 +118,30 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
   // Balances
   const nativeBalance = useNativeBalance()
 
-  const { contract: mooneyContract } = useContract(
-    MOONEY_ADDRESSES[selectedChain.slug]
-  )
   const MOONEYBalance = useTotalMooneyBalance(isGuest ? address : nft?.owner)
-  const { contract: vMooneyContract } = useContract(
-    VMOONEY_ADDRESSES[selectedChain.slug]
-  )
 
   const VMOONEYBalance = useTotalVP(nft?.owner)
 
   // Subscription Data
-  const expiresAt = useReadContract({
-    contract: citizenContract,
-    method: 'expiresAt',
-    params: [nft?.metadata?.id || ''],
-  })
-
+  const [expiresAt, setExpiresAt] = useState<any>()
+  useEffect(() => {
+    async function checkExpiration() {
+      const expiresAt = await readContract({
+        contract: citizenContract,
+        method: 'expiresAt' as string,
+        params: [nft?.metadata?.id || ''],
+      })
+      setExpiresAt(expiresAt)
+    }
+    if (citizenContract && nft?.metadata?.id) checkExpiration()
+  }, [citizenContract, nft?.metadata?.id])
   // Hats
-  const hats = useTeamWearer(teamContract, selectedChain, nft?.owner)
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
-  const { isManager } = useTeamData(hatsContract, address, nft)
+  const hats = useTeamWearer(teamContract, selectedChainV5, nft?.owner)
+  const hatsContract = useContract({
+    chain: selectedChainV5,
+    address: HATS_ADDRESS,
+    abi: HatsABI as any,
+  })
 
   //Nance
   const { proposals, packet, votingInfoMap } = useNewestProposals(100)
@@ -167,9 +169,10 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                   id="citizen-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
-                  <ThirdwebNftMedia
+                  <MediaRenderer
+                    client={client}
+                    src={nft?.metadata?.image}
                     className="rounded-full"
-                    metadata={nft.metadata}
                     height={'300'}
                     width={'300'}
                   />
@@ -382,7 +385,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
         {citizenMetadataModalEnabled && (
           <CitizenMetadataModal
             nft={nft}
-            selectedChain={selectedChain}
+            selectedChain={selectedChainV5}
             setEnabled={setCitizenMetadataModalEnabled}
           />
         )}
