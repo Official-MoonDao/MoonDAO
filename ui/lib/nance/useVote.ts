@@ -1,7 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
 import snapshot from '@snapshot-labs/snapshot.js'
 import { ProposalType } from '@snapshot-labs/snapshot.js/dist/sign/types'
-import { Signer, Wallet } from 'ethers'
+import { ethers, Signer, Wallet } from 'ethers'
 import { useCallback, useContext } from 'react'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 import shutterEncryptChoice from './shutter'
@@ -28,7 +28,8 @@ export default function useVote(
   const { wallets } = useWallets()
 
   const trigger = useCallback(async () => {
-    const provider = await wallets[selectedWallet].getEthersProvider()
+    const privyProvider = await wallets[selectedWallet].getEthereumProvider()
+    const provider = new ethers.providers.Web3Provider(privyProvider)
     const signer = provider?.getSigner()
     const address = await signer.getAddress()
 
