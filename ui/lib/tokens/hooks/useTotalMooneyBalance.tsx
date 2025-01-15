@@ -17,19 +17,19 @@ export function useTotalMooneyBalance(address: string | undefined) {
 
       const ethMooneyContract = await ethSDK.getContract(
         MOONEY_ADDRESSES['ethereum'],
-        ERC20.abi
+        ERC20
       )
       const polygonMooneyContract = await polygonSDK.getContract(
         MOONEY_ADDRESSES['polygon'],
-        ERC20.abi
+        ERC20
       )
       const arbMooneyContract = await arbSDK.getContract(
         MOONEY_ADDRESSES['arbitrum'],
-        ERC20.abi
+        ERC20
       )
       const baseMooneyContract = await baseSDK.getContract(
         MOONEY_ADDRESSES['base'],
-        ERC20.abi
+        ERC20
       )
 
       const ethMooney = await ethMooneyContract.call('balanceOf', [address])
