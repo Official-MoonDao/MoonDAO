@@ -1,5 +1,6 @@
 //Watch a token balance of the selected wallet
 import { useWallets } from '@privy-io/react-auth'
+import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 
@@ -25,7 +26,8 @@ export default function useWatchTokenBalance(
 
     async function getBalanceAndListen() {
       if (tokenContract && wallet) {
-        provider = await wallet.getEthersProvider()
+        const privyProvider = await wallet.getEthereumProvider()
+        provider = new ethers.providers.Web3Provider(privyProvider)
         await handleBalanceChange()
 
         provider.on('block', handleBalanceChange)

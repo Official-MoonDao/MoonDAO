@@ -1,7 +1,8 @@
 import { PrivyProvider } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
 import React from 'react'
-import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
+import { sepolia } from 'thirdweb/chains'
+import { ThirdwebProvider } from 'thirdweb/react'
+import { PrivyThirdwebV5Provider } from '@/lib/privy/PrivyThirdwebV5Provider'
 import Card from '../../../components/layout/Card'
 
 describe('<Card />', () => {
@@ -43,9 +44,11 @@ describe('<Card />', () => {
 
     cy.mount(
       <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <Card type="citizen" metadata={metadata} />
-        </PrivyThirdwebSDKProvider>
+        <ThirdwebProvider>
+          <PrivyThirdwebV5Provider selectedChain={sepolia}>
+            <Card type="citizen" metadata={metadata} />
+          </PrivyThirdwebV5Provider>
+        </ThirdwebProvider>
       </PrivyProvider>
     )
 
@@ -69,13 +72,15 @@ describe('<Card />', () => {
     cy.viewport('iphone-x')
     cy.mount(
       <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <Card
-            header="Mobile Test"
-            hovertext="Test hovertext"
-            metadata={{ name: 'Test' }}
-          />
-        </PrivyThirdwebSDKProvider>
+        <ThirdwebProvider>
+          <PrivyThirdwebV5Provider selectedChain={sepolia}>
+            <Card
+              header="Mobile Test"
+              hovertext="Test hovertext"
+              metadata={{ name: 'Test' }}
+            />
+          </PrivyThirdwebV5Provider>
+        </ThirdwebProvider>
       </PrivyProvider>
     )
 

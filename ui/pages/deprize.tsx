@@ -8,6 +8,7 @@ import {
 } from 'const/config'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
+import { sepolia } from 'thirdweb/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -23,7 +24,7 @@ export default function DePrizePage({ competitors }: DePrizeProps) {
 
 export async function getStaticProps() {
   // TODO enable mainnet
-  const chain = DEFAULT_CHAIN_V5
+  const chain = sepolia
   const chainSlug = getChainSlug(chain)
 
   const competitorTableContract = getContract({
@@ -43,7 +44,6 @@ export async function getStaticProps() {
     `${TABLELAND_ENDPOINT}?statement=${competitorStatement}`
   )
   const competitors = await competitorsRes.json()
-
 
   return {
     props: {
