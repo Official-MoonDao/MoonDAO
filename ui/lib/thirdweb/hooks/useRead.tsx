@@ -32,7 +32,6 @@ export default function useRead({
       }
       setIsLoading(false)
     }
-    console.log(contract, params, method)
     if (contract?.address && method && params) read()
   }, [contract, JSON.stringify(params), method, ...(deps || [])])
 
