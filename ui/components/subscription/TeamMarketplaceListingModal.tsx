@@ -1,5 +1,4 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
 import { MediaRenderer, useContract } from '@thirdweb-dev/react'
 import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import Image from 'next/image'

@@ -387,6 +387,7 @@ export default function TeamDetailPage({
           validPass={subIsValid}
           expiresAt={expiresAt}
           subscriptionContract={teamContract}
+          type="team"
         />
       )}
       {teamMetadataModalEnabled && (

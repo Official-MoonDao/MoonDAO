@@ -1,5 +1,4 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import ERC20ABI from 'const/abis/ERC20.json'
 import TeamABI from 'const/abis/Team.json'
@@ -9,12 +8,15 @@ import {
   TEAM_ADDRESSES,
   MOONEY_ADDRESSES,
   USDC_ADDRESSES,
-  DEFAULT_CHAIN,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { readContract } from 'thirdweb'
+import {
+  prepareContractCall,
+  readContract,
+  sendAndConfirmTransaction,
+} from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -22,7 +24,6 @@ import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
 import useTeamEmail from '@/lib/team/useTeamEmail'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { TeamListing } from '@/components/subscription/TeamListing'
 import Modal from '../layout/Modal'
@@ -119,10 +120,11 @@ export default function BuyTeamListingModal({
   }, [account, teamContract, citizenContract])
 
   useEffect(() => {
-    console.log(recipient, teamEmail, isLoading)
-  }, [recipient, teamEmail, isLoading])
+    setEmail(citizenEmail)
+  }, [citizenEmail])
 
   async function buyListing() {
+    if (!account) return
     let price
 
     if (citizen) {
@@ -146,11 +148,19 @@ export default function BuyTeamListingModal({
         transactionHash = tx?.transactionHash
       } else {
         // buy with erc20
-        const tx = await currencyContract?.call('transfer', [
-          recipient,
-          String(price * 10 ** currencyDecimals[listing.currency]),
-        ])
-        transactionHash = tx.receipt?.transactionHash
+        const transaction = prepareContractCall({
+          contract: currencyContract,
+          method: 'transfer' as string,
+          params: [
+            recipient,
+            String(price * 10 ** currencyDecimals[listing.currency]),
+          ],
+        })
+        const receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+        transactionHash = receipt?.transactionHash
       }
 
       if (transactionHash) {
