@@ -62,9 +62,9 @@ export function useCitizenData(nft: any, citizenContract: any) {
       try {
         const expiresAt = await readContract({
           contract: citizenContract,
-          method: 'expiresAt',
+          method: 'expiresAt' as string,
           params: [nft?.metadata?.id],
-        } as any)
+        })
         setSubIsValid(+expiresAt.toString() > now)
       } catch (err) {
         console.log(err)
