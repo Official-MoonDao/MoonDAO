@@ -397,6 +397,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
             subscriptionContract={citizenContract}
             validPass={subIsValid}
             expiresAt={expiresAt}
+            type="citizen'"
           />
         )}
 
