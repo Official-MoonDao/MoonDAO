@@ -265,22 +265,22 @@ export function PrivyConnectWallet({
 
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug],
-    ERC20.abi
+    ERC20
   )
 
   const { contract: daiContract } = useContract(
     DAI_ADDRESSES[selectedChain.slug],
-    ERC20.abi
+    ERC20
   )
 
   const { contract: usdcContract } = useContract(
     USDC_ADDRESSES[selectedChain.slug],
-    ERC20.abi
+    ERC20
   )
 
   const { contract: usdtContract } = useContract(
     USDT_ADDRESSES[selectedChain.slug],
-    ERC20.abi
+    ERC20
   )
 
   const nativeBalance = useNativeBalance()

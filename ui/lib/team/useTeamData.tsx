@@ -53,18 +53,22 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
     }
 
     async function getHats() {
-      const adminHID = await readContract({
-        contract: teamContract,
-        method: 'teamAdminHat' as string,
-        params: [nft?.metadata?.id || ''],
-      })
-      const managerHID = await readContract({
-        contract: teamContract,
-        method: 'teamManagerHat' as string,
-        params: [nft?.metadata?.id || ''],
-      })
-      setAdminHatId(adminHID)
-      setManagerHatId(managerHID)
+      try {
+        const adminHID = await readContract({
+          contract: teamContract,
+          method: 'teamAdminHat' as string,
+          params: [nft?.metadata?.id || ''],
+        })
+        const managerHID = await readContract({
+          contract: teamContract,
+          method: 'teamManagerHat' as string,
+          params: [nft?.metadata?.id || ''],
+        })
+        setAdminHatId(adminHID)
+        setManagerHatId(managerHID)
+      } catch (err) {
+        console.log(err)
+      }
     }
 
     if (nft?.metadata?.attributes && teamContract) {
