@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Chain } from 'thirdweb'
 
 export function useSubHats(selectedChain: any, hatId: any) {
   const [subHats, setSubHats] = useState<any>()
