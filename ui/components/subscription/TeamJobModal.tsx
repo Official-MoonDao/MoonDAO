@@ -94,7 +94,6 @@ export default function TeamJobModal({
       <form
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto"
         onSubmit={async (e) => {
-          if (!account) return
           e.preventDefault()
           if (
             jobData.title.trim() === '' ||
@@ -121,6 +120,8 @@ export default function TeamJobModal({
           } else {
             formattedContactInfo = cleanedData.contactInfo
           }
+
+          if (!account) return
 
           let transaction
           try {
