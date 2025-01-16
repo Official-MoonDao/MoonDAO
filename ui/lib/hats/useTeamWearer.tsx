@@ -21,11 +21,7 @@ export function useTeamWearer(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-<<<<<<< HEAD
-            chainId: selectedChain.id ?? selectedChain.chainId,
-=======
             chainId: selectedChain.id,
->>>>>>> main
             wearerAddress: address,
             props: {
               currentHats: {

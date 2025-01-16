@@ -70,10 +70,14 @@ const TradingForm: React.FC<TradingFormProps> = ({
     <div>
       {marketInfo.outcomes.map((outcome: any, index: number) => (
         <span key={index} className="flex flex-row items-center justify-left">
-          <CompetitorPreview
-            teamId={outcome.teamId}
-            teamContract={teamContract}
-          />
+          {outcome.teamId >= 0 ? (
+            <CompetitorPreview
+              teamId={outcome.teamId}
+              teamContract={teamContract}
+            />
+          ) : (
+            <div>Neither</div>
+          )}
           <StandardButton
             variant="contained"
             onClick={() => buy(outcome.index)}

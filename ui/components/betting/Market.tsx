@@ -5,7 +5,6 @@ import LMSR from 'const/abis/LMSR.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import WETH from 'const/abis/WETH.json'
 import {
-  LMSR_ADDRESSES,
   LMSR_WITH_TWAP_ADDRESSES,
   CONDITIONAL_TOKEN_ADDRESSES,
   COLLATERAL_TOKEN_ADDRESSES,
@@ -81,6 +80,8 @@ const Market: React.FC<MarketProps> = ({
     LMSR_WITH_TWAP_ADDRESSES[chain.slug],
     LMSRWithTWAP.abi
   )
+  console.log('marketMakersRepo', marketMakersRepo)
+  console.log('LMRS_WITH_TWAP_ADDRESSES', LMSR_WITH_TWAP_ADDRESSES[chain.slug])
   const { contract: conditionalTokensRepo } = useContract(
     CONDITIONAL_TOKEN_ADDRESSES[chain.slug],
     ConditionalTokens
@@ -105,7 +106,9 @@ const Market: React.FC<MarketProps> = ({
   }, [conditionalTokensRepo, marketMakersRepo])
 
   const getMarketInfo = async () => {
+    console.log('getting')
     if (!ORACLE_ADDRESS) return
+    console.log('got')
 
     //const collateral = await marketMakersRepo.call('collateralToken')
     //const pmSystem = await marketMakersRepo.call('pmSystem')
@@ -120,7 +123,7 @@ const Market: React.FC<MarketProps> = ({
     console.log('competitors', competitors)
     for (
       let outcomeIndex = 0;
-      outcomeIndex < competitors.length;
+      outcomeIndex < MAX_OUTCOMES;
       //outcomeIndex < 5;
       outcomeIndex++
     ) {
@@ -153,7 +156,11 @@ const Market: React.FC<MarketProps> = ({
         title: 'Outcome ' + (outcomeIndex + 1),
         probability: ((probability / 2 ** 64) * 100).toFixed(1),
         balance: balance / Math.pow(10, COLLATERAL_DECIMALS),
-        teamId: competitors[outcomeIndex].teamId,
+        teamId:
+          outcomeIndex > competitors.length - 1
+            ? -1
+            : competitors[outcomeIndex].teamId,
+        //teamId: competitors[outcomeIndex].teamId,
         //payoutNumerator: payoutNumerator,
       }
       outcomes.push(outcome)
@@ -161,7 +168,7 @@ const Market: React.FC<MarketProps> = ({
     console.log('outcomes', outcomes)
 
     const marketData = {
-      lmsrAddress: LMSR_ADDRESSES[chain.slug],
+      lmsrAddress: LMSR_WITH_TWAP_ADDRESSES[chain.slug],
       title: markets.markets[0].title,
       outcomes,
       stage: MarketStage[await marketMakersRepo.call('stage')],

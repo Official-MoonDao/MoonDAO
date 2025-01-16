@@ -23,6 +23,11 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
+        name: 'DePrize',
+        href: '/deprize',
+        icon: RocketLaunchIcon,
+      },
+      {
         name: 'Network',
         href: '/network',
         icon: IconOrg,
@@ -48,7 +53,7 @@ export default function useNavigation(citizen: any) {
             href: 'https://docs.moondao.com/Governance/Constitution',
           },
           {
-            name: '$MOONEY Token', 
+            name: '$MOONEY Token',
           },
           {
             name: 'Buy',
