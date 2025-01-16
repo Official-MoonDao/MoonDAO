@@ -1,10 +1,13 @@
 import CitizenABI from 'const/abis/Citizen.json'
-import { CITIZEN_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
+import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { blockedCitizens } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
+import { getContract, readContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
 import { getAttribute } from '@/lib/utils/nft'
 import IconOrg from '@/components/assets/IconOrg'
 import Container from '@/components/layout/Container'
@@ -57,7 +60,9 @@ export default function NetworkMap({
     <section id="map-container" className="overflow-hidden">
       <Head
         title={'Map'}
-        description={"Discover the global reach of the Space Acceleration Network on our interactive 3D map! Explore the locations of our citizens worldwide and see how we're connecting space enthusiasts across the planet."}
+        description={
+          "Discover the global reach of the Space Acceleration Network on our interactive 3D map! Explore the locations of our citizens worldwide and see how we're connecting space enthusiasts across the planet."
+        }
         image="https://ipfs.io/ipfs/Qmc1FsD9pCw3FoYEQ1zviqXc3DQddyxte6cQ8hv6EvukFr"
       />
       <Container>
@@ -92,29 +97,42 @@ export default function NetworkMap({
 export async function getStaticProps() {
   let citizensLocationData = []
   if (process.env.NEXT_PUBLIC_ENV === 'prod') {
-    const sdk = initSDK(DEFAULT_CHAIN)
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-    const citizenContract = await sdk.getContract(
-      CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug],
-      CitizenABI
-    )
+    const citizenContract = getContract({
+      client: serverClient,
+      address: CITIZEN_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: CitizenABI as any,
+    })
 
-    const totalCitizens = await citizenContract.call('totalSupply')
+    const totalCitizens = await readContract({
+      contract: citizenContract,
+      method: 'totalSupply' as string,
+    })
 
     const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
-    for (let i = 0; i < totalCitizens.toNumber(); i++) {
+    for (let i = 0; i < +totalCitizens.toString(); i++) {
       if (!blockedCitizens.includes(i)) {
-        const citizen = await citizenContract.erc721.get(i)
+        const citizen = await getNFT({
+          contract: citizenContract,
+          tokenId: BigInt(i),
+        })
         citizens.push(citizen)
       }
     }
 
     const filteredValidCitizens = citizens.filter(async (c: any) => {
       const now = Math.floor(Date.now() / 1000)
-      const expiresAt = await citizenContract.call('expiresAt', [c.metadata.id])
+      const expiresAt = await readContract({
+        contract: citizenContract,
+        method: 'expiresAt',
+        params: [c?.metadata?.id],
+      })
       const view = getAttribute(c?.metadata?.attributes, 'view').value
       return (
-        expiresAt.toNumber() > now &&
+        +expiresAt.toString() > now &&
         view === 'public' &&
         !blockedCitizens.includes(c.metadata.id)
       )
@@ -123,7 +141,7 @@ export async function getStaticProps() {
     //Get location data for each citizen
     for (const citizen of filteredValidCitizens) {
       const citizenLocation = getAttribute(
-        citizen?.metadata?.attributes as any[],
+        citizen?.metadata?.attributes as unknown as any[],
         'location'
       ).value
 

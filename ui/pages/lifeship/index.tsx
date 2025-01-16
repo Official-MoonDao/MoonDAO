@@ -1,7 +1,7 @@
-import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
 import { getKits } from '../../lib/shopify/lifeship-shopify'
 import Head from '../../components/layout/Head'
 import Product from '../../components/shopify/Product'
@@ -20,7 +20,8 @@ function Button({ children, onClick, className = '' }: any) {
 
 export default function Lifeship({ products = [] }: any) {
   const router = useRouter()
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   //stages
   const [state, setState] = useState(0)
 
