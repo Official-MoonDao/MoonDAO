@@ -141,7 +141,6 @@ export function PrivyWeb3Button({
           type={type}
           className={className}
           onClick={async () => {
-            console.log(requiredChain, v5)
             setIsLoading(true)
             try {
               await action()
