@@ -1,8 +1,8 @@
-import { Ethereum, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { useAddress, useContract } from '@thirdweb-dev/react'
+import DistributionTableABI from 'const/abis/DistributionTable.json'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import {
+  DEFAULT_CHAIN_V5,
   DISTRIBUTION_TABLE_ADDRESSES,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
@@ -13,6 +13,9 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { ethereum } from 'thirdweb/chains'
+import { useActiveAccount } from 'thirdweb/react'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets } from '@/lib/dashboard/hooks'
@@ -20,6 +23,8 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
 import { useVotingPowers } from '@/lib/snapshot'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
@@ -33,6 +38,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import ProjectCard from '@/components/project/ProjectCard'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export type Distribution = {
   year: number
@@ -96,9 +102,10 @@ export function RetroactiveRewards({
 }: RetroactiveRewardsProps) {
   const router = useRouter()
 
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-
-  const userAddress = useAddress()
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+  const account = useActiveAccount()
+  const userAddress = account?.address
 
   const { quarter, year } = getRelativeQuarter(-1)
 
@@ -123,19 +130,31 @@ export function RetroactiveRewards({
       }
     }
   }, [userAddress, distributions, quarter, year])
+
   const handleDistributionChange = (projectId: string, value: number) => {
+    const newValue = Math.min(100, Math.max(1, +value))
     setDistribution((prev) => ({
       ...prev,
-      [projectId]: Math.min(100, Math.max(1, value)),
+      [projectId]: newValue,
     }))
   }
 
   //Contracts
-  const { contract: projectContract } = useContract(
-    PROJECT_ADDRESSES[chain.slug],
-    ProjectABI
-  )
-  const { contract: hatsContract } = useContract(HATS_ADDRESS, HatsABI)
+  const projectContract = useContract({
+    address: PROJECT_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: ProjectABI as any,
+  })
+  const distributionTableContract = useContract({
+    address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: DistributionTableABI as any,
+  })
+  const hatsContract = useContract({
+    address: HATS_ADDRESS,
+    chain: chain,
+    abi: HatsABI as any,
+  })
 
   const addresses = distributions ? distributions.map((d) => d.address) : []
 
@@ -176,21 +195,19 @@ export function RetroactiveRewards({
         )
       : {}
 
-  const { contract: distributionTableContract } = useContract(
-    DISTRIBUTION_TABLE_ADDRESSES[chain.slug]
-  )
   const { tokens } = useAssets()
+
   const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
     year,
     quarter
   )
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
-  const { MOONEY, DAI } = useUniswapTokens(Ethereum)
+  const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
   useEffect(() => {
     async function getMooneyBudgetUSD() {
-      const route = await pregenSwapRoute(Ethereum, mooneyBudget, MOONEY, DAI)
+      const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
 
       const usd = route?.route[0].rawQuote.toString() / 1e18
       setMooneyBudgetUSD(usd)
@@ -227,27 +244,38 @@ export function RetroactiveRewards({
       return
     }
     try {
+      if (!account) throw new Error('No account found')
       if (edit) {
-        await distributionTableContract?.call('updateTableCol', [
-          quarter,
-          year,
-          JSON.stringify(distribution),
-        ])
-        toast.success('Distribution edited successfully!', {
-          style: toastStyle,
+        const transaction = prepareContractCall({
+          contract: distributionTableContract,
+          method: 'updateTableCol' as string,
+          params: [quarter, year, JSON.stringify(distribution)],
         })
+        const receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+        if (receipt)
+          toast.success('Distribution edited successfully!', {
+            style: toastStyle,
+          })
         setTimeout(() => {
           refreshRewards()
         }, 5000)
       } else {
-        await distributionTableContract?.call('insertIntoTable', [
-          quarter,
-          year,
-          JSON.stringify(distribution),
-        ])
-        toast.success('Distribution submitted successfully!', {
-          style: toastStyle,
+        const transaction = prepareContractCall({
+          contract: distributionTableContract,
+          method: 'insertIntoTable' as string,
+          params: [quarter, year, JSON.stringify(distribution)],
         })
+        const receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+        if (receipt)
+          toast.success('Distribution submitted successfully!', {
+            style: toastStyle,
+          })
         setTimeout(() => {
           refreshRewards()
         }, 5000)
@@ -261,10 +289,20 @@ export function RetroactiveRewards({
   }
   const handleDelete = async () => {
     try {
-      await distributionTableContract?.call('deleteFromTable', [quarter, year])
-      toast.success('Distribution deleted successfully!', {
-        style: toastStyle,
+      if (!account) throw new Error('No account found')
+      const transaction = prepareContractCall({
+        contract: distributionTableContract,
+        method: 'deleteFromTable' as string,
+        params: [quarter, year],
       })
+      const receipt = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+      if (receipt)
+        toast.success('Distribution deleted successfully!', {
+          style: toastStyle,
+        })
       setTimeout(() => {
         refreshRewards()
       }, 5000)
@@ -285,7 +323,9 @@ export function RetroactiveRewards({
       <Container>
         <ContentLayout
           header={'Project Rewards'}
-          description={"Allocate retroactive rewards to completed projects and their contributors based on impact and results."}
+          description={
+            'Allocate retroactive rewards to completed projects and their contributors based on impact and results.'
+          }
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding
@@ -400,12 +440,13 @@ export function RetroactiveRewards({
                     </span>
                   ) : (
                     <span>
-                      <StandardButtonRight
-                        link="/lock"
+                      <PrivyWeb3Button
+                        v5
+                        requiredChain={DEFAULT_CHAIN_V5}
+                        label="Get Voting Power"
+                        action={() => router.push('/lock')}
                         className="gradient-2 rounded-full"
-                      >
-                        Get Voting Power
-                      </StandardButtonRight>
+                      />
                     </span>
                   )}
                 </div>

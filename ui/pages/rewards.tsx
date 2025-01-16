@@ -1,13 +1,15 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import DistributionABI from 'const/abis/DistributionTable.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
+  DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { useRouter } from 'next/router'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
+import { getContract, readContract } from 'thirdweb'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import {
   RetroactiveRewards,
@@ -30,24 +32,34 @@ export default function Rewards({
 
 export async function getStaticProps() {
   try {
-    const chain =
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-    const sdk = initSDK(chain)
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-    const projectTableContract = await sdk.getContract(
-      PROJECT_TABLE_ADDRESSES[chain.slug],
-      ProjectTableABI
-    )
+    const projectTableContract = getContract({
+      client: serverClient,
+      address: PROJECT_TABLE_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: ProjectTableABI as any,
+    })
 
-    const distributionTableContract = await sdk.getContract(
-      DISTRIBUTION_TABLE_ADDRESSES[chain.slug],
-      DistributionABI
-    )
+    const distributionTableContract = getContract({
+      client: serverClient,
+      address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: DistributionABI as any,
+    })
 
-    const projectTableName = await projectTableContract.call('getTableName')
-    const distributionTableName = await distributionTableContract.call(
-      'getTableName'
-    )
+    const projectTableName = await readContract({
+      contract: projectTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
+
+    const distributionTableName = await readContract({
+      contract: distributionTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
 
     const { quarter, year } = getRelativeQuarter(-1)
 

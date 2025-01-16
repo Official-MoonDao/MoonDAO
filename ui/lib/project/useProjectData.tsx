@@ -5,7 +5,6 @@ import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { NANCE_SPACE_NAME } from '../nance/constants'
 import useProposalJSON from '../nance/useProposalJSON'
-import { useHandleRead } from '../thirdweb/hooks'
 
 export type Project = {
   MDP: number
@@ -71,11 +70,18 @@ export default function useProjectData(
     async function checkManager() {
       try {
         if (address) {
-          const isAddressManager = await projectContract.call('isManager', [
-            project?.id,
-            address,
+          const [isAddressManager, owner]: any = await Promise.all([
+            readContract({
+              contract: projectContract,
+              method: 'isManager' as string,
+              params: [project?.id, address],
+            }),
+            readContract({
+              contract: projectContract,
+              method: 'ownerOf' as string,
+              params: [project?.id],
+            }),
           ])
-          const owner = await projectContract.call('ownerOf', [project?.id])
           setIsManager(isAddressManager || owner === address)
         } else {
           setIsManager(false)
@@ -85,20 +91,23 @@ export default function useProjectData(
       }
     }
     async function getHats() {
-      const adminHID = await readContract({
-        contract: projectContract,
-        method: 'teamAdminHat' as string,
-        params: [project?.id ?? ''],
-      })
-      const managerHID = await readContract({
-        contract: projectContract,
-        method: 'teamManagerHat' as string,
-        params: [project?.id ?? ''],
-      })
+      const [adminHID, managerHID] = await Promise.all([
+        readContract({
+          contract: projectContract,
+          method: 'teamAdminHat' as string,
+          params: [project?.id ?? ''],
+        }),
+        readContract({
+          contract: projectContract,
+          method: 'teamManagerHat' as string,
+          params: [project?.id ?? ''],
+        }),
+      ])
       setAdminHatId(adminHID)
       setManagerHatId(managerHID)
     }
-    if (projectContract && project?.id) {
+
+    if (projectContract) {
       checkManager()
       getHats()
     }
