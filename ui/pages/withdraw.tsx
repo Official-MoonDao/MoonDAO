@@ -1,5 +1,3 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { useAddress, useContract } from '@thirdweb-dev/react'
 import ERC20 from 'const/abis/ERC20.json'
 import VotingEscrow from 'const/abis/VotingEscrow.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
@@ -13,11 +11,16 @@ import { BigNumber } from 'ethers'
 import { useRouter } from 'next/router'
 import React, { useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
 import useWindowSize from '@/lib/team/use-window-size'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { useVMOONEYLock } from '@/lib/tokens/ve-token'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useRead from '@/lib/thirdweb/hooks/useRead'
+import { approveToken } from '@/lib/tokens/approve'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
@@ -25,38 +28,54 @@ import WebsiteHead from '../components/layout/Head'
 import StandardButton from '../components/layout/StandardButton'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 
 export default function Withdraw() {
   useChainDefault()
-  const userAddress = useAddress()
   const router = useRouter()
-  const { selectedChain } = useContext(ChainContext)
-  const { contract: votingEscrowDepositorContract } = useContract(
-    VOTING_ESCROW_DEPOSITOR_ADDRESSES[selectedChain.slug],
-    VotingEscrowDepositor.abi
-  )
-  const { contract: vMooneyContract }: any = useContract(
-    VMOONEY_ADDRESSES[selectedChain?.slug],
-    VotingEscrow
-  )
-  const { contract: mooneyContract } = useContract(
-    MOONEY_ADDRESSES[selectedChain.slug],
-    ERC20
-  )
-  const withdrawable = useWithdrawAmount(
-    votingEscrowDepositorContract,
-    userAddress
-  )
+
+  const account = useActiveAccount()
+  const address = account?.address
+
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
+
+  //Contracts
+  const votingEscrowDepositorContract = useContract({
+    address: VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug],
+    abi: VotingEscrowDepositor.abi,
+    chain: selectedChain,
+  })
+  const vMooneyContract = useContract({
+    address: VMOONEY_ADDRESSES[chainSlug],
+    abi: VotingEscrow,
+    chain: selectedChain,
+  })
+  const mooneyContract = useContract({
+    address: MOONEY_ADDRESSES[chainSlug],
+    abi: ERC20,
+    chain: selectedChain,
+  })
+
+  const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
   const { isMobile } = useWindowSize()
-  const { data: VMOONEYLock, isLoading: VMOONEYLockLoading } = useVMOONEYLock(
-    vMooneyContract,
-    userAddress
-  )
+
+  const { data: VMOONEYLock, isLoading: VMOONEYLockLoading } = useRead({
+    contract: vMooneyContract,
+    method: 'locked' as string,
+    params: [address],
+  })
+
+  const { data: mooneyAllowance, isLoading: mooneyAllowanceLoading } = useRead({
+    contract: mooneyContract,
+    method: 'allowance' as string,
+    params: [address, VMOONEY_ADDRESSES[chainSlug]],
+  })
   const [hasLock, setHasLock] = useState<boolean>()
   useEffect(() => {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
-  }, [VMOONEYLock, VMOONEYLockLoading, userAddress])
+  }, [VMOONEYLock, VMOONEYLockLoading, address])
 
   const [hasMoreThanSixMonths, setHasMoreThanSixMonths] =
     useState<boolean>(false)
@@ -66,23 +85,48 @@ export default function Withdraw() {
       setHasMoreThanSixMonths(
         VMOONEYLock &&
           VMOONEYLock[1] != 0 &&
-          BigNumber.from(+new Date() + sixMonths).lte(VMOONEYLock[1] * 1000)
+          BigNumber.from(+new Date() + sixMonths).lte(
+            VMOONEYLock?.[1].toString() * 1000
+          )
       )
-  }, [VMOONEYLock, VMOONEYLockLoading, userAddress])
+  }, [VMOONEYLock, VMOONEYLockLoading, address, sixMonths])
 
   const handleWithdraw = async () => {
     try {
-      await mooneyContract?.call('approve', [
-        VMOONEY_ADDRESSES[selectedChain.slug],
-        withdrawable.toString(),
-      ])
-      await votingEscrowDepositorContract?.call('withdraw')
-      toast.success('Withdrawal successful!', {
-        style: toastStyle,
+      const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance)
+      const withdrawableBigNum = BigNumber.from(withdrawable.toString())
+      if (!account) throw new Error('No account found')
+      if (mooneyAllowanceLoading) throw new Error('Loading...')
+      if (
+        mooneyAllowanceBigNum &&
+        withdrawableBigNum &&
+        mooneyAllowanceBigNum.lt(withdrawableBigNum)
+      ) {
+        const allowance = withdrawableBigNum.sub(mooneyAllowanceBigNum)
+        const approveReceipt = await approveToken({
+          account,
+          tokenContract: mooneyContract,
+          spender: VMOONEY_ADDRESSES[chainSlug],
+          allowance: allowance,
+        })
+      }
+      const withdrawTx = prepareContractCall({
+        contract: votingEscrowDepositorContract,
+        method: 'withdraw' as string,
+        params: [],
       })
-      setTimeout(() => {
-        router.reload()
-      }, 5000)
+      const withdrawReceipt = await sendAndConfirmTransaction({
+        transaction: withdrawTx,
+        account,
+      })
+      if (withdrawReceipt) {
+        toast.success('Withdrawal successful!', {
+          style: toastStyle,
+        })
+        setTimeout(() => {
+          router.reload()
+        }, 5000)
+      }
     } catch (error) {
       console.error('Error withdrawing:', error)
       toast.error('Error withdrawing. Please try again.', {
@@ -123,21 +167,22 @@ export default function Withdraw() {
                   usd=""
                 />
               </section>
-              {userAddress && hasLock && hasMoreThanSixMonths ? (
+              {address && hasLock && hasMoreThanSixMonths ? (
                 <StandardButton
                   className="gradient-2 rounded-full"
                   onClick={handleWithdraw}
                   disabled={Number(withdrawable) === 0}
+                  data-tip="You dont have any vMOONEY to withdraw"
                 >
                   Withdraw Rewards
                 </StandardButton>
               ) : (
-                <StandardButton
+                <PrivyWeb3Button
+                  v5
+                  label={hasLock ? 'Extend Lock' : 'Lock MOONEY'}
                   className="gradient-2 rounded-full"
-                  link={`/lock`}
-                >
-                  {hasLock ? 'Extend Lock' : 'Lock MOONEY'}
-                </StandardButton>
+                  action={() => router.push('/lock')}
+                />
               )}
             </div>
           </ContentLayout>
