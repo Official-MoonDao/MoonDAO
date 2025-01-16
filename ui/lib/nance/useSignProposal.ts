@@ -6,10 +6,11 @@ import {
   nanceSignatureMap,
 } from '@nance/nance-sdk'
 import { ConnectedWallet } from '@privy-io/react-auth'
-import { Ethereum } from '@thirdweb-dev/chains'
 import { ethers } from 'ethers'
 import { useCallback } from 'react'
-import { initSDK } from '../thirdweb/thirdweb'
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
+import { ethereum } from 'thirdweb/chains'
+import client from '@/lib/thirdweb/client'
 import { SNAPSHOT_SPACE_NAME } from './constants'
 
 const AVERAGE_BLOCK_SECONDS = 12.08
@@ -30,7 +31,10 @@ export const useSignProposal = (wallet: ConnectedWallet) => {
           new Date(event.end)
         )
         // estimate snapshot (blocknumber) here
-        const mainnet = initSDK(Ethereum).getProvider()
+        const mainnet = ethers5Adapter.provider.toEthers({
+          client,
+          chain: ethereum,
+        })
         const currentBlock = await mainnet.getBlockNumber()
         const snapshot =
           currentBlock +
