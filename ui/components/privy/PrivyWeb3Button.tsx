@@ -115,9 +115,10 @@ export function PrivyWeb3Button({
           type="button"
           className={className}
           onClick={async () => {
-            const chain = v5 ? selectedChainV5 : selectedChain
-            if (requiredChain && requiredChain !== chain) {
-              const chainId = v5 ? requiredChain.id : requiredChain.chainId
+            const chain: any = v5 ? selectedChainV5 : selectedChain
+            let chainId = v5 ? chain.id : chain.chainId
+            if (requiredChain) {
+              chainId = v5 ? requiredChain.id : requiredChain.chainId
               const v4Chain = await getChainByChainIdAsync(chainId)
               const v5Chain = defineChain(chainId)
               setSelectedChain(v4Chain)
@@ -125,7 +126,7 @@ export function PrivyWeb3Button({
             }
 
             try {
-              await wallets[selectedWallet]?.switchChain(selectedChain.chainId)
+              await wallets[selectedWallet]?.switchChain(chainId)
             } catch (err: any) {
               console.log(err.message)
             }
