@@ -11,7 +11,7 @@ import {
 import _ from 'lodash'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useContext } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
@@ -20,6 +20,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
 import { useVotingPowers } from '@/lib/snapshot'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
@@ -32,6 +33,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import ProjectCard from '@/components/project/ProjectCard'
 
 export type Distribution = {
@@ -99,6 +101,7 @@ export function RetroactiveRewards({
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
 
   const userAddress = useAddress()
+  const { selectedChain } = useContext(ChainContextV5)
 
   const { quarter, year } = getRelativeQuarter(-1)
 
@@ -135,6 +138,8 @@ export function RetroactiveRewards({
     PROJECT_ADDRESSES[chain.slug],
     ProjectABI
   )
+  console.log('projectContract')
+  console.log(projectContract)
   const { contract: hatsContract } = useContract(HATS_ADDRESS, HatsABI)
 
   const addresses = distributions ? distributions.map((d) => d.address) : []
@@ -285,7 +290,9 @@ export function RetroactiveRewards({
       <Container>
         <ContentLayout
           header={'Project Rewards'}
-          description={"Allocate retroactive rewards to completed projects and their contributors based on impact and results."}
+          description={
+            'Allocate retroactive rewards to completed projects and their contributors based on impact and results.'
+          }
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding
@@ -383,19 +390,21 @@ export function RetroactiveRewards({
                 <div className="mt-4 w-full flex justify-end">
                   {projects && userHasVotingPower ? (
                     <span className="flex flex-col md:flex-row md:items-center gap-2">
-                      <StandardButtonRight
-                        onClick={handleSubmit}
+                      <PrivyWeb3Button
+                        action={handleSubmit}
+                        requiredChain={chain}
                         className="gradient-2 rounded-full"
-                      >
-                        {edit ? 'Edit Distribution' : 'Submit Distribution'}
-                      </StandardButtonRight>
-                      {edit && (
-                        <StandardButtonRight
-                          onClick={handleDelete}
+                        label={
+                          edit ? 'Edit Distribution' : 'Submit Distribution'
+                        }
+                      />
+                      {edit && selectedChain.chainId === chain.chainId && (
+                        <PrivyWeb3Button
+                          action={handleDelete}
+                          requiredChain={chain}
                           className="gradient-1 rounded-full"
-                        >
-                          Delete Distribution
-                        </StandardButtonRight>
+                          label="Delete Distribution"
+                        />
                       )}
                     </span>
                   ) : (

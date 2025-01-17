@@ -6,7 +6,7 @@ import React, { useContext, memo } from 'react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import NumberStepper from '../layout/NumberStepper'
 
 type ProjectCardProps = {
@@ -93,9 +93,17 @@ export default function ProjectCard({
     hatsContract,
     project
   )
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContextV5)
+  console.log('selectedChain')
+  console.log(selectedChain)
+  console.log('adminHatId')
+  console.log(adminHatId)
   const hats = useSubHats(selectedChain, adminHatId)
+  console.log('hats')
+  console.log(hats)
   const wearers = useUniqueHatWearers(hats)
+  console.log('wearers')
+  console.log(wearers)
   const address = useAddress()
   let userContributed = false
   if (wearers && address) {
