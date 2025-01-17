@@ -1,6 +1,7 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
 import { ThirdwebSDKProvider } from '@thirdweb-dev/react'
+import { ethers } from 'ethers'
 import { signIn, signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import PrivyWalletContext from './privy-wallet-context'
@@ -17,7 +18,8 @@ export function PrivyThirdwebSDKProvider({ selectedChain, children }: any) {
     async function getPrivySigner() {
       try {
         const wallet = wallets[selectedWallet]
-        const provider = await wallet?.getEthersProvider()
+        const privyProvider = await wallet?.getEthereumProvider()
+        const provider = new ethers.providers.Web3Provider(privyProvider)
         const walletClientType = wallet.walletClientType
         if (
           walletClientType === 'coinbase_wallet' ||

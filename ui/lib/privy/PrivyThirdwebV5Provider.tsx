@@ -1,4 +1,5 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { ethers } from 'ethers'
 import { signIn, signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { defineChain } from 'thirdweb'
@@ -18,7 +19,8 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     async function setActive() {
       try {
         const wallet = wallets[selectedWallet]
-        const provider = await wallet?.getEthersProvider()
+        const privyProvider = await wallet?.getEthereumProvider()
+        const provider = new ethers.providers.Web3Provider(privyProvider)
         const signer = provider?.getSigner()
 
         const walletClientType = wallet?.walletClientType

@@ -75,6 +75,7 @@ function TeamMembers({
   setHasDeletedMember,
   managerHatId,
 }: any) {
+  const address = useAddress()
   const sdk = useSDK()
 
   const hatNames = useHatNames(hatsContract, wearer.hatIds)
@@ -114,12 +115,19 @@ function TeamMembers({
                       hatName.hatId ===
                       hatIdDecimalToHex(managerHatId.toString())
                     ) {
-                      await queueSafeTx({
-                        to: HATS_ADDRESS,
-                        data: txData,
-                        value: '0',
-                        gasLimit: 1000000,
-                      })
+                      await queueSafeTx(
+                        address,
+                        [
+                          {
+                            to: HATS_ADDRESS,
+                            data: txData,
+                            value: '0',
+                          },
+                        ],
+                        {
+                          safeTxGas: '1000000',
+                        }
+                      )
                       setHasDeletedMember(true)
                     } else {
                       const signer = sdk?.getSigner()
@@ -247,7 +255,7 @@ function TeamManageMembersModal({
             e.preventDefault()
             if (!validateEthereumAddress(newMemberAddress))
               return toast.error('Invalid address')
-
+            if (!address) return
             const iface = new ethers.utils.Interface(HatsABI)
             const txData = iface.encodeFunctionData('mintHat', [
               selectedHatId,
@@ -258,12 +266,19 @@ function TeamManageMembersModal({
               if (
                 selectedHatId === hatIdDecimalToHex(managerHatId.toString())
               ) {
-                await queueSafeTx({
-                  to: HATS_ADDRESS,
-                  data: txData,
-                  value: '0',
-                  safeTxGas: '1000000',
-                })
+                await queueSafeTx(
+                  address,
+                  [
+                    {
+                      to: HATS_ADDRESS,
+                      data: txData,
+                      value: '0',
+                    },
+                  ],
+                  {
+                    safeTxGas: '1000000',
+                  }
+                )
                 setHasAddedMember(true)
               } else {
                 const signer = sdk?.getSigner()
