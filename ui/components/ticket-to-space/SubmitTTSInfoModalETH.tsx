@@ -42,8 +42,7 @@ export function SubmitTTSInfoModalETH({
   }
 
   async function signMessage() {
-    const privyProvider = await wallets[selectedWallet].getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
     const response = await fetch(
       `api/db/nonce?address=${address}&subscribed=${checkBoxEnabled}`

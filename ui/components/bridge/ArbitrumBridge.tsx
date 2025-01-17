@@ -50,8 +50,7 @@ export default function ArbitrumBridge() {
   async function depositEth() {
     const l2Network = await getL2Network(Arbitrum.chainId)
     const ethBridger = new EthBridger(l2Network)
-    const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
     const depositTx = await ethBridger.deposit({
       amount: ethers.utils.parseEther(amount),
@@ -67,8 +66,7 @@ export default function ArbitrumBridge() {
   async function withdrawEth() {
     const l2Network = await getL2Network(Arbitrum.chainId)
     const ethBridger = new EthBridger(l2Network)
-    const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
     const withdrawTx = await ethBridger.withdraw({
       amount: ethers.utils.parseEther(amount),
@@ -86,8 +84,7 @@ export default function ArbitrumBridge() {
   async function depositMooney() {
     const l2Network = await getL2Network(Arbitrum.chainId)
     const erc20Bridger = new Erc20Bridger(l2Network)
-    const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
     const l2SDK = initSDK(Arbitrum)
     const l2Provider = l2SDK.getProvider()
@@ -110,8 +107,7 @@ export default function ArbitrumBridge() {
   async function withdrawMooney() {
     const l2Network = await getL2Network(Arbitrum.chainId)
     const erc20Bridger = new Erc20Bridger(l2Network)
-    const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
     const l2SDK = initSDK(Arbitrum)
     const l2Provider = l2SDK.getProvider()

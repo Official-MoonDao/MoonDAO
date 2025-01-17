@@ -150,8 +150,7 @@ export function OnboardingTransactions({
     } else {
       const wallet = wallets[selectedWallet]
       if (!wallet) return
-      const privyProvider = await wallet.getEthereumProvider()
-      const provider = new ethers.providers.Web3Provider(privyProvider)
+      const provider = await wallet.getEthersProvider()
       const nativeBalance = await provider.getBalance(wallet.address)
       const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
       if (

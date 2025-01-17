@@ -15,8 +15,7 @@ export const useSignDeleteProposal = (wallet: ConnectedWallet) => {
   const signDeleteProposalAsync = useCallback(
     async (snapshotId: string) => {
       try {
-        const privyProvider = await wallet.getEthereumProvider()
-        const provider = new ethers.providers.Web3Provider(privyProvider)
+        const provider = await wallet.getEthersProvider()
         const signer = provider?.getSigner()
         const address = await signer.getAddress()
 

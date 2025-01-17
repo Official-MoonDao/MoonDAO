@@ -8,8 +8,7 @@ export const useSignArchiveProposal = (wallet: ConnectedWallet) => {
   const signArchiveProposalAsync = useCallback(
     async (snapshotId: string) => {
       try {
-        const privyProvider = await wallet.getEthereumProvider()
-        const provider = new ethers.providers.Web3Provider(privyProvider)
+        const provider = await wallet.getEthersProvider()
         const signer = provider?.getSigner()
         const address = await signer.getAddress()
         const message: ArchiveProposal = {
