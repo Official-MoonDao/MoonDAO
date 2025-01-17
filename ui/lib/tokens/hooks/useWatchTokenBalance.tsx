@@ -2,6 +2,7 @@
 import { useWallets } from '@privy-io/react-auth'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
+import { readContract } from 'thirdweb'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 
 export default function useWatchTokenBalance(
@@ -20,7 +21,11 @@ export default function useWatchTokenBalance(
 
     async function handleBalanceChange() {
       if (!isMounted) return
-      const balance = await tokenContract.call('balanceOf', [wallet.address])
+      const balance: any = await readContract({
+        contract: tokenContract,
+        method: 'balanceOf' as string,
+        params: [wallet.address],
+      })
       setTokenBalance(+balance.toString() / 10 ** decimals)
     }
 

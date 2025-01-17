@@ -1,6 +1,4 @@
-import { useAddress, useContract } from '@thirdweb-dev/react'
-//Network warning
-import { useChain } from '@thirdweb-dev/react'
+import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -9,9 +7,11 @@ import React from 'react'
 import { useState } from 'react'
 import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
-import ChainContext from '../../lib/thirdweb/chain-context'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useNavigation from '@/lib/navigation/useNavigation'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { LogoSidebarLight, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
@@ -32,15 +32,16 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
-  const address = useAddress()
 
-  const chain = useChain()
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
 
   const { citizen } = useContext(CitizenContext)
-  const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug]
-  )
+  const citizenContract = useContract({
+    address: CITIZEN_ADDRESSES[chainSlug],
+    chain: selectedChain,
+    abi: CitizenABI as any,
+  })
 
   const navigation = useNavigation(citizen)
 
@@ -80,9 +81,12 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           </Link>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">
             <div className="h-[50px] pl-6 mb-4 flex justify-center items-center">
-              <PrivyConnectWallet />
+              <PrivyConnectWallet
+                type="desktop"
+                citizenContract={citizenContract}
+              />
 
-              <div className="relative lg:right-4">
+              <div className="relative mt-1 lg:right-4">
                 <CitizenProfileLink
                   selectedChain={selectedChain}
                   citizenContract={citizenContract}
