@@ -1,9 +1,6 @@
-import TestnetProviders from '@/cypress/mock/TestnetProviders'
-import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
-import JobTableABI from 'const/abis/JobBoardTable.json'
-import { JOBS_TABLE_ADDRESSES } from 'const/config'
-import { getContract } from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/client'
+import { PrivyProvider } from '@privy-io/react-auth'
+import { Sepolia } from '@thirdweb-dev/chains'
+import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import Job, { Job as JobType } from '@/components/jobs/Job'
 
@@ -20,12 +17,7 @@ describe('<Job />', () => {
   beforeEach(() => {
     props = {
       job,
-      jobTableContract: getContract({
-        client: serverClient,
-        address: JOBS_TABLE_ADDRESSES[CYPRESS_CHAIN_SLUG],
-        abi: JobTableABI as any,
-        chain: CYPRESS_CHAIN_V5,
-      }),
+      jobTableContract: { call: cy.stub().resolves() },
       refreshJobs: cy.stub(),
       editable: false,
       teamContract: null,
@@ -37,9 +29,11 @@ describe('<Job />', () => {
     const timestamp = daysFromNowTimestamp(0)
 
     cy.mount(
-      <TestnetProviders>
-        <Job {...props} job={{ ...job, timestamp }} />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <Job {...props} job={{ ...job, timestamp }} />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
 
     cy.contains(job.title).should('be.visible')
@@ -59,9 +53,11 @@ describe('<Job />', () => {
 
   it('Shows edit and delete buttons when editable', () => {
     cy.mount(
-      <TestnetProviders>
-        <Job {...props} editable />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <Job {...props} editable />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
 
     cy.get('#edit-job-button').should('exist')
@@ -70,20 +66,29 @@ describe('<Job />', () => {
 
   it('Deletes the job', () => {
     cy.mount(
-      <TestnetProviders>
-        <Job {...props} editable />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <Job {...props} editable />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
 
     cy.get('#delete-job-button').click()
+    cy.wrap(props.jobTableContract.call).should(
+      'be.calledWith',
+      'deleteFromTable',
+      [job.id, job.teamId]
+    )
   })
 
   it("Hides the job if it's expired", () => {
     const endTime = daysFromNowTimestamp(-1)
     cy.mount(
-      <TestnetProviders>
-        <Job {...props} job={{ ...job, endTime }} />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <Job {...props} job={{ ...job, endTime }} />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
 
     cy.get('#job-container').should('not.exist')
@@ -92,9 +97,11 @@ describe('<Job />', () => {
   it("Shows 'expired' message if the job is expired and editable", () => {
     const endTime = daysFromNowTimestamp(-1)
     cy.mount(
-      <TestnetProviders>
-        <Job {...props} job={{ ...job, endTime }} editable />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <Job {...props} job={{ ...job, endTime }} editable />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
 
     cy.get('#job-expired-status').should(

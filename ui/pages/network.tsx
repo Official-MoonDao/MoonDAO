@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { getNFT, getNFTs } from 'thirdweb/extensions/erc721'
+import { getNFT } from 'thirdweb/extensions/erc721'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -305,20 +305,12 @@ export async function getStaticProps() {
   })
 
   const teams: any = []
-  async function fetchTeam(tokenId: number) {
-    try {
-      const team = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(tokenId),
-      })
-      teams.push(team)
-    } catch (err) {
-      console.error(err)
-    }
-  }
   for (let i = 0; i < totalTeams; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 200)) //Tableland is rate limited to 10 requests per second
-    await fetchTeam(i)
+    const team = await getNFT({
+      contract: teamContract,
+      tokenId: BigInt(i),
+    })
+    teams.push(team)
   }
 
   const filteredPublicTeams: any = teams?.filter(
@@ -372,21 +364,12 @@ export async function getStaticProps() {
   })
 
   const citizens: any = []
-  async function fetchCitizen(tokenId: number) {
-    try {
-      const citizen = await getNFT({
-        contract: citizenContract,
-        tokenId: BigInt(tokenId),
-      })
-      citizens.push(citizen)
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
   for (let i = 0; i < totalCitizens; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 200)) //Tableland is rate limited to 10 requests per second
-    await fetchCitizen(i)
+    const citizen = await getNFT({
+      contract: citizenContract,
+      tokenId: BigInt(i),
+    })
+    citizens.push(citizen)
   }
 
   const filteredPublicCitizens: any = citizens?.filter(

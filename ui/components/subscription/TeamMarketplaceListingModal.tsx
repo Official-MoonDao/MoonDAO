@@ -1,11 +1,10 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { usePrivy } from '@privy-io/react-auth'
 import { MediaRenderer, useContract } from '@thirdweb-dev/react'
 import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
@@ -46,7 +45,7 @@ export default function TeamMarketplaceListingModal({
   edit,
   listing,
 }: TeamMarketplaceListingModalProps) {
-  const account = useActiveAccount()
+  const { getAccessToken } = usePrivy()
   const { selectedChain } = useContext(ChainContext)
   const [isLoading, setIsLoading] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
@@ -124,7 +123,6 @@ export default function TeamMarketplaceListingModal({
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto" // Updated styles
         onSubmit={async (e) => {
           e.preventDefault()
-          if (!account) return
           if (
             listingData.title.trim() === '' ||
             listingData.description.trim() === '' ||
@@ -169,59 +167,49 @@ export default function TeamMarketplaceListingModal({
             imageIpfsLink = `ipfs://${imageIpfsHash}`
           }
 
-          let transaction
+          let tx
 
           try {
             if (edit) {
-              transaction = prepareContractCall({
-                contract: marketplaceTableContract,
-                method: 'updateTable' as string,
-                params: [
-                  listing?.id,
-                  cleanedData.title,
-                  cleanedData.description,
-                  imageIpfsLink,
-                  teamId,
-                  cleanedData.price,
-                  cleanedData.currency,
-                  startTime,
-                  endTime,
-                  currTime,
-                  '',
-                  '',
-                  cleanedData.shipping,
-                ],
-              })
+              tx = await marketplaceTableContract.call('updateTable', [
+                listing?.id,
+                cleanedData.title,
+                cleanedData.description,
+                imageIpfsLink,
+                teamId,
+                cleanedData.price,
+                cleanedData.currency,
+                startTime,
+                endTime,
+                currTime,
+                '',
+                '',
+                cleanedData.shipping,
+              ])
             } else {
-              transaction = prepareContractCall({
-                contract: marketplaceTableContract,
-                method: 'insertIntoTable' as string,
-                params: [
-                  cleanedData.title,
-                  cleanedData.description,
-                  imageIpfsLink,
-                  teamId,
-                  cleanedData.price,
-                  cleanedData.currency,
-                  startTime,
-                  endTime,
-                  currTime,
-                  '',
-                  '',
-                  cleanedData.shipping,
-                ],
-              })
+              tx = await marketplaceTableContract?.call('insertIntoTable', [
+                cleanedData.title,
+                cleanedData.description,
+                imageIpfsLink,
+                teamId,
+                cleanedData.price,
+                cleanedData.currency,
+                startTime,
+                endTime,
+                currTime,
+                '',
+                '',
+                cleanedData.shipping,
+              ])
             }
 
-            const receipt: any = await sendAndConfirmTransaction({
-              transaction,
-              account,
-            })
-
             //Get listing id from receipt and send discord notification
-            const listingId = parseInt(receipt.logs[1].topics[1], 16).toString()
+            const listingId = parseInt(
+              tx.receipt.logs[1].topics[1],
+              16
+            ).toString()
             const listingTeamId = parseInt(
-              receipt.logs[1].topics[2],
+              tx.receipt.logs[1].topics[2],
               16
             ).toString()
             const team = await teamContract?.erc721.get(listingTeamId)

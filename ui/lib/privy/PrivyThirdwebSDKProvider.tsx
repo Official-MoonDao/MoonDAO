@@ -1,21 +1,12 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { Chain, Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
+import { Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
 import { ThirdwebSDKProvider } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
 import { signIn, signOut } from 'next-auth/react'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import PrivyWalletContext from './privy-wallet-context'
 
-interface PrivyThirdwebSDKProviderProps {
-  selectedChain: Chain
-  children: any
-}
-
-export function PrivyThirdwebSDKProvider({
-  selectedChain,
-  children,
-}: PrivyThirdwebSDKProviderProps) {
-  const { selectedWallet } = useContext(PrivyWalletContext)
+export function PrivyThirdwebSDKProvider({ selectedChain, children }: any) {
+  const [selectedWallet, setSelectedWallet] = useState<number>(0)
   const [signer, setSigner] = useState<any>(null)
 
   const { wallets } = useWallets()
@@ -26,8 +17,7 @@ export function PrivyThirdwebSDKProvider({
     async function getPrivySigner() {
       try {
         const wallet = wallets[selectedWallet]
-        const privyProvider = await wallet.getEthereumProvider()
-        const provider = new ethers.providers.Web3Provider(privyProvider)
+        const provider = await wallet?.getEthersProvider()
         const walletClientType = wallet.walletClientType
         if (
           walletClientType === 'coinbase_wallet' ||
@@ -39,6 +29,7 @@ export function PrivyThirdwebSDKProvider({
         console.log(err.message)
       }
     }
+
     if (user) getPrivySigner()
     else setSigner(null)
   }, [wallets, user, selectedWallet, selectedChain])
@@ -73,13 +64,15 @@ export function PrivyThirdwebSDKProvider({
   }, [ready, authenticated, user])
 
   return (
-    <ThirdwebSDKProvider
-      clientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}
-      activeChain={selectedChain}
-      supportedChains={[Ethereum, Polygon, Goerli, Mumbai]}
-      signer={signer}
-    >
-      {children}
-    </ThirdwebSDKProvider>
+    <PrivyWalletContext.Provider value={{ selectedWallet, setSelectedWallet }}>
+      <ThirdwebSDKProvider
+        clientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}
+        activeChain={selectedChain}
+        supportedChains={[Ethereum, Polygon, Goerli, Mumbai]}
+        signer={signer}
+      >
+        {children}
+      </ThirdwebSDKProvider>
+    </PrivyWalletContext.Provider>
   )
 }

@@ -1,5 +1,7 @@
+import { useAddress } from '@thirdweb-dev/react'
+import Link from 'next/link'
 import { useContext, useState } from 'react'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -10,7 +12,8 @@ import CreateTeam from '@/components/onboarding/CreateTeam'
 import TeamTier from '@/components/onboarding/TeamTier'
 
 export default function TeamJoin() {
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContext)
+  const address = useAddress()
 
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
@@ -22,6 +25,7 @@ export default function TeamJoin() {
   if (selectedTier === 'team') {
     return (
       <CreateTeam
+        address={address}
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />
@@ -32,9 +36,7 @@ export default function TeamJoin() {
     <div className="animate-fadeIn flex flex-col items-center">
       <Head
         title={'Create a Team'}
-        description={
-          'Create a Team within the Space Acceleration Network to bring your organization onchain.'
-        }
+        description={'Create a Team within the Space Acceleration Network to bring your organization onchain.'}
         image="https://ipfs.io/ipfs/QmX7FHDoRhsQ4Ube179qjCnvcVQqwJhVRRASUGLEeqwdh2"
       />
       <Container>

@@ -1,14 +1,7 @@
-import TestnetProviders from '@/cypress/mock/TestnetProviders'
-import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
-import JobTableABI from 'const/abis/JobBoardTable.json'
-import TeamABI from 'const/abis/Team.json'
-import {
-  JOBS_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
-  TEAM_ADDRESSES,
-} from 'const/config'
-import { getContract } from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/client'
+import { PrivyProvider } from '@privy-io/react-auth'
+import { Sepolia } from '@thirdweb-dev/chains'
+import { TABLELAND_ENDPOINT, ZERO_ADDRESS } from 'const/config'
+import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import { Job } from '@/components/jobs/Job'
 import LatestJobs from '@/components/subscription/LatestJobs'
 
@@ -17,25 +10,28 @@ describe('<LatestJobs />', () => {
   let job: Job
 
   before(() => {
-    cy.fixture('jobs/job.json').then((j) => {
+    cy.fixture('jobs/job').then((j) => {
       job = j
     })
   })
 
   beforeEach(() => {
     props = {
-      teamContract: getContract({
-        client: serverClient,
-        address: TEAM_ADDRESSES[CYPRESS_CHAIN_SLUG],
-        abi: TeamABI as any,
-        chain: CYPRESS_CHAIN_V5,
-      }),
-      jobTableContract: getContract({
-        client: serverClient,
-        address: JOBS_TABLE_ADDRESSES[CYPRESS_CHAIN_SLUG],
-        abi: JobTableABI as any,
-        chain: CYPRESS_CHAIN_V5,
-      }),
+      teamContract: {
+        call: cy.stub().callsFake((method, args) => {
+          if (method === 'expiresAt') {
+            return Promise.resolve({
+              toNumber: () => 1234567890,
+            })
+          }
+          return Promise.resolve('TestTeamTable')
+        }),
+        getAddress: cy.stub().resolves(ZERO_ADDRESS),
+      },
+      jobTableContract: {
+        call: cy.stub().resolves(1234567890),
+        getAddress: cy.stub().resolves(ZERO_ADDRESS),
+      },
     }
 
     cy.intercept('GET', `${TABLELAND_ENDPOINT}?statement=*`, {
@@ -45,9 +41,11 @@ describe('<LatestJobs />', () => {
 
     cy.mountNextRouter('/')
     cy.mount(
-      <TestnetProviders>
-        <LatestJobs {...props} />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <LatestJobs {...props} />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
   })
 
