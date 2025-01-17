@@ -6,13 +6,13 @@ import StandardButton from '../layout/StandardButton'
 
 type TeamTreasuryProps = {
   multisigAddress: string
-  multisigMooneyBalance: any
+  mutlisigMooneyBalance: any
   multisigNativeBalance: any
 }
 
 export default function TeamTreasury({
   multisigAddress,
-  multisigMooneyBalance,
+  mutlisigMooneyBalance,
   multisigNativeBalance,
 }: TeamTreasuryProps) {
   return (
@@ -47,11 +47,20 @@ export default function TeamTreasury({
         <div className="p-4">
           <div className="mt-4 flex gap-4 items-center text-lg">
             <p>{`MOONEY :`}</p>
-            <p>{multisigMooneyBalance}</p>
+            <p>
+              {mutlisigMooneyBalance
+                ? (
+                    mutlisigMooneyBalance?.toString() /
+                    10 ** 18
+                  ).toLocaleString()
+                : 0}
+            </p>
           </div>
           <div className="flex gap-4 items-center text-lg">
             <p>{`ETHER :`}</p>
-            <p className="pl-6">{multisigNativeBalance}</p>
+            <p className="pl-6">
+              {multisigNativeBalance ? multisigNativeBalance : 0}
+            </p>
           </div>
         </div>
       </div>

@@ -1,6 +1,8 @@
+import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
+import Link from 'next/link'
 import { useContext, useState } from 'react'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -12,7 +14,8 @@ import CreateCitizen from '@/components/onboarding/CreateCitizen'
 
 export default function Join() {
   const { t } = useTranslation('common')
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContext)
+  const address = useAddress()
 
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
@@ -24,6 +27,7 @@ export default function Join() {
   if (selectedTier === 'citizen') {
     return (
       <CreateCitizen
+        address={address}
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />

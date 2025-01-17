@@ -3,7 +3,6 @@ import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { readContract } from 'thirdweb'
 import Job, { Job as JobType } from '../jobs/Job'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
@@ -28,12 +27,8 @@ export default function TeamJobs({
   const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
 
   async function getEntityJobs() {
-    const jobTableName = await readContract({
-      contract: jobTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-    const statement = `SELECT * FROM ${jobTableName} WHERE teamId = ${teamId}`
+    const jobBoardTableName = await jobTableContract.call('getTableName')
+    const statement = `SELECT * FROM ${jobBoardTableName} WHERE teamId = ${teamId}`
 
     const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
     const data = await res.json()
