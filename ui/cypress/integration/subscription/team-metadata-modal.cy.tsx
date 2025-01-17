@@ -1,4 +1,6 @@
-import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { PrivyProvider } from '@privy-io/react-auth'
+import { Sepolia } from '@thirdweb-dev/chains'
+import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import { getAttribute } from '@/lib/utils/nft'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 
@@ -20,9 +22,11 @@ describe('<TeamMetadataModal /> ', () => {
     }
     cy.mountNextRouter('/')
     cy.mount(
-      <TestnetProviders>
-        <TeamMetadataModal {...props} />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <TeamMetadataModal {...props} />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
   })
 

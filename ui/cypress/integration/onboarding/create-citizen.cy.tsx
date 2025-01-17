@@ -9,7 +9,7 @@ describe('<CreateCitizen />', () => {
   beforeEach(() => {
     props = {
       address: '0x1234567890abcdef',
-      selectedChain: Sepolia,
+      selectedChain: { slug: 'ethereum' },
       setSelectedTier: cy.stub(),
     }
     cy.mountNextRouter('/')

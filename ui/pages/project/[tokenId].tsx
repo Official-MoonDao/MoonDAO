@@ -1,10 +1,9 @@
-import CitizenABI from 'const/abis/Citizen.json'
-import HatsABI from 'const/abis/Hats.json'
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
 import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   CITIZEN_ADDRESSES,
-  DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
   MOONEY_ADDRESSES,
   PROJECT_ADDRESSES,
@@ -16,21 +15,19 @@ import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
-import { getContract, readContract } from 'thirdweb'
-import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client, { serverClient } from '@/lib/thirdweb/client'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import useContract from '@/lib/thirdweb/hooks/useContract'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
+import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import StandardButton from '@/components/layout/StandardButton'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
@@ -44,47 +41,35 @@ export default function ProjectProfile({
   tokenId,
   project,
 }: ProjectProfileProps) {
-  const account = useActiveAccount()
+  const sdk = useSDK()
+  const address = useAddress()
 
-  const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  const { selectedChain } = useContext(ChainContext)
 
   //Contracts
-  const hatsContract = useContract({
-    address: HATS_ADDRESS,
-    abi: HatsABI as any,
-    chain: selectedChain,
-  })
-  const projectContract = useContract({
-    address: PROJECT_ADDRESSES[chainSlug],
-    abi: ProjectABI as any,
-    chain: selectedChain,
-  })
-  const citizenContract = useContract({
-    address: CITIZEN_ADDRESSES[chainSlug],
-    abi: CitizenABI as any,
-    chain: selectedChain,
-  })
+  const { contract: hatsContract } = useContract(HATS_ADDRESS)
+  const { contract: projectContract } = useContract(
+    PROJECT_ADDRESSES[selectedChain.slug],
+    ProjectABI
+  )
+  const { contract: citizenConract } = useContract(
+    CITIZEN_ADDRESSES[selectedChain.slug]
+  )
+  const { contract: mooneyContract } = useContract(
+    MOONEY_ADDRESSES[selectedChain.slug]
+  )
 
   const [owner, setOwner] = useState('')
 
   useEffect(() => {
     async function getOwner() {
-      const owner: any = await readContract({
-        contract: projectContract,
-        method: 'ownerOf' as string,
-        params: [tokenId],
-      })
+      const owner = await projectContract?.call('ownerOf', [tokenId])
       setOwner(owner)
     }
     if (projectContract) getOwner()
   }, [tokenId, projectContract])
 
-  const { data: MOONEYBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: MOONEY_ADDRESSES[chainSlug],
-  })
+  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, owner)
 
   const {
     adminHatId,
@@ -100,12 +85,20 @@ export default function ProjectProfile({
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
 
+  const [nativeBalance, setNativeBalance] = useState<number>(0)
+
   // get native balance for multisigj
-  const { data: nativeBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: owner,
-  })
+  useEffect(() => {
+    async function getNativeBalance() {
+      const provider = sdk?.getProvider()
+      const balance: any = await provider?.getBalance(owner as string)
+      setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
+    }
+
+    if (sdk && owner) {
+      getNativeBalance()
+    }
+  }, [sdk, project])
 
   useChainDefault()
 
@@ -263,7 +256,6 @@ export default function ProjectProfile({
                       className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
                     >
                       <TeamManageMembers
-                        account={account}
                         hats={hats}
                         hatsContract={hatsContract}
                         teamContract={projectContract}
@@ -283,7 +275,7 @@ export default function ProjectProfile({
                       <TeamMembers
                         hats={hats}
                         hatsContract={hatsContract}
-                        citizenContract={citizenContract}
+                        citizenConract={citizenConract}
                       />
                     )}
                   </div>
@@ -294,8 +286,8 @@ export default function ProjectProfile({
             {isManager && (
               <TeamTreasury
                 multisigAddress={owner}
-                multisigMooneyBalance={MOONEYBalance?.displayValue}
-                multisigNativeBalance={nativeBalance?.displayValue}
+                mutlisigMooneyBalance={MOONEYBalance}
+                multisigNativeBalance={nativeBalance}
               />
             )}
           </div>
@@ -308,8 +300,8 @@ export default function ProjectProfile({
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenId: any = params?.tokenId
 
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
 
   if (tokenId === undefined) {
     return {
@@ -317,18 +309,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
   }
 
-  const projectTableContract = getContract({
-    client: serverClient,
-    address: PROJECT_TABLE_ADDRESSES[chainSlug],
-    abi: ProjectTableABI as any,
-    chain: chain,
-  })
-
-  const projectTableName = await readContract({
-    contract: projectTableContract,
-    method: 'getTableName' as string,
-    params: [],
-  })
+  const projectTableContract = await sdk.getContract(
+    PROJECT_TABLE_ADDRESSES[chain.slug],
+    ProjectTableABI
+  )
+  const projectTableName = await projectTableContract?.call('getTableName')
 
   const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
 

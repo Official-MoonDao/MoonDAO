@@ -1,18 +1,14 @@
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { useContract } from '@thirdweb-dev/react'
 import {
-  DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
-import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContext from '@/lib/thirdweb/chain-context'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/client'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
@@ -30,18 +26,15 @@ type JobsProps = {
 }
 
 export default function Jobs({ jobs }: JobsProps) {
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContext)
   const { citizen } = useContext(CitizenContext)
 
   const [filteredJobs, setFilteredJobs] = useState<JobType[]>()
   const [input, setInput] = useState('')
 
-  const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
-  const teamContract = useContract({
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
-    chain: selectedChain,
-  })
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug]
+  )
 
   useEffect(() => {
     if (jobs && input != '') {
@@ -120,28 +113,20 @@ export default function Jobs({ jobs }: JobsProps) {
 }
 
 export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
   const now = Math.floor(Date.now() / 1000)
 
-  const jobTableContract = getContract({
-    client: serverClient,
-    address: JOBS_TABLE_ADDRESSES[chainSlug],
-    abi: JobsABI as any,
-    chain: chain,
-  })
-  const teamContract = getContract({
-    client: serverClient,
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
-    chain: chain,
-  })
+  const jobTableContract = await sdk.getContract(
+    JOBS_TABLE_ADDRESSES[chain.slug],
+    JobsABI
+  )
+  const teamContract = await sdk.getContract(
+    TEAM_ADDRESSES[chain.slug],
+    TeamABI
+  )
 
-  const jobBoardTableName = await readContract({
-    contract: jobTableContract,
-    method: 'getTableName' as string,
-    params: [],
-  })
+  const jobBoardTableName = await jobTableContract.call('getTableName')
 
   const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
@@ -149,12 +134,8 @@ export async function getStaticProps() {
   const allJobs = await allJobsRes.json()
 
   const validJobs = allJobs?.filter(async (job: JobType) => {
-    const teamExpiration = await readContract({
-      contract: teamContract,
-      method: 'expiresAt' as string,
-      params: [job.teamId],
-    })
-    return +teamExpiration.toString() > now
+    const teamExpiration = await teamContract.call('expiresAt', [job.teamId])
+    return teamExpiration.toNumber() > now
   })
 
   return {
