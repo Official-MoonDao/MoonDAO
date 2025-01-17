@@ -83,7 +83,8 @@ export default function ProjectProfile({
   const { data: MOONEYBalance } = useWalletBalance({
     client,
     chain: selectedChain,
-    address: MOONEY_ADDRESSES[chainSlug],
+    tokenAddress: MOONEY_ADDRESSES[chainSlug],
+    address: owner,
   })
 
   const {

@@ -5,9 +5,14 @@ type useReadProps = {
   contract: ThirdwebContract
   method: string
   params: any[]
-}
 
-export default function useRead({ contract, method, params }: useReadProps) {
+
+export default function useRead({
+  contract,
+  method,
+  params,
+  deps,
+}: useReadProps) {
   const [data, setData] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -26,8 +31,9 @@ export default function useRead({ contract, method, params }: useReadProps) {
       }
       setIsLoading(false)
     }
-    if (contract && method && params) read()
-  }, [contract, JSON.stringify(params), method])
+
+    if (contract?.address && method && params) read()
+  }, [contract, JSON.stringify(params), method, ...(deps || [])])
 
   return { data, isLoading }
 }

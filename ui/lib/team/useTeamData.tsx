@@ -53,6 +53,24 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
     }
 
     async function getHats() {
+      try {
+        const adminHID = await readContract({
+          contract: teamContract,
+          method: 'teamAdminHat' as string,
+          params: [nft?.metadata?.id || ''],
+        })
+        const managerHID = await readContract({
+          contract: teamContract,
+          method: 'teamManagerHat' as string,
+          params: [nft?.metadata?.id || ''],
+        })
+        setAdminHatId(adminHID)
+      } catch (err) {
+        console.log(err)
+      }
+    }
+
+    async function getHats() {
       const adminHID = await readContract({
         contract: teamContract,
         method: 'teamAdminHat' as string,
