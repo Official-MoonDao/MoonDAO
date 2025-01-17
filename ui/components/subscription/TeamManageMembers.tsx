@@ -115,19 +115,12 @@ function TeamMembers({
                       hatName.hatId ===
                       hatIdDecimalToHex(managerHatId.toString())
                     ) {
-                      await queueSafeTx(
-                        address,
-                        [
-                          {
-                            to: HATS_ADDRESS,
-                            data: txData,
-                            value: '0',
-                          },
-                        ],
-                        {
-                          safeTxGas: '1000000',
-                        }
-                      )
+                      await queueSafeTx({
+                        to: HATS_ADDRESS,
+                        data: txData,
+                        value: '0',
+                        safeTxGas: '1000000',
+                      })
                       setHasDeletedMember(true)
                     } else {
                       const signer = sdk?.getSigner()
@@ -266,19 +259,12 @@ function TeamManageMembersModal({
               if (
                 selectedHatId === hatIdDecimalToHex(managerHatId.toString())
               ) {
-                await queueSafeTx(
-                  address,
-                  [
-                    {
-                      to: HATS_ADDRESS,
-                      data: txData,
-                      value: '0',
-                    },
-                  ],
-                  {
-                    safeTxGas: '1000000',
-                  }
-                )
+                await queueSafeTx({
+                  to: HATS_ADDRESS,
+                  data: txData,
+                  value: '0',
+                  safeTxGas: '1000000',
+                })
                 setHasAddedMember(true)
               } else {
                 const signer = sdk?.getSigner()

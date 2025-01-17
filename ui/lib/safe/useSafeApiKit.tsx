@@ -1,40 +1,43 @@
 import { useWallets } from '@privy-io/react-auth'
 import SafeApiKit from '@safe-global/api-kit'
-import Safe from '@safe-global/protocol-kit'
+import { EthersAdapter } from '@safe-global/protocol-kit'
+import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../privy/privy-wallet-context'
-import ChainContextV5 from '../thirdweb/chain-context-v5'
 
-export default function useSafeApiKit(safeAddress: string) {
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain } = useContext(ChainContextV5)
-  const { wallets } = useWallets()
-
+export default function useSafeApiKit() {
   const [safeApiKit, setSafeApiKit] = useState<any>()
-  const [protocolKit, setProtocolKit] = useState<any>()
+  const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
 
   useEffect(() => {
     async function getSafeApiKit() {
-      const apiKit = new SafeApiKit({
-        chainId: BigInt(selectedChain.id),
+      const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
+      const provider = new ethers.providers.Web3Provider(privyProvider)
+      const signer = provider?.getSigner()
+
+      if (!signer) return
+
+      const ethAdapter = new EthersAdapter({
+        ethers,
+        signerOrProvider: signer,
       })
+
+      const safeNetwork =
+        process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
+
+      const txServiceUrl = `https://safe-transaction-${safeNetwork}.safe.global`
+
+      const apiKit = new SafeApiKit({
+        txServiceUrl,
+        ethAdapter,
+      })
+
       setSafeApiKit(apiKit)
     }
 
-    async function getProtocolKit() {
-      const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
-
-      if (!privyProvider) return
-
-      const protoKit = await Safe.init({
-        provider: privyProvider as any,
-        safeAddress,
-      })
-      setProtocolKit(protoKit)
-    }
     getSafeApiKit()
-    getProtocolKit()
-  }, [selectedWallet, wallets, selectedChain, safeAddress])
+  }, [wallets, selectedWallet])
 
-  return { safeApiKit, protocolKit }
+  return safeApiKit
 }
