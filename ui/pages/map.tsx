@@ -112,15 +112,22 @@ export async function getStaticProps() {
       method: 'totalSupply' as string,
     })
 
-    const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
-    for (let i = 0; i < +totalCitizens.toString(); i++) {
-      if (!blockedCitizens.includes(i)) {
+    const citizens: any[] = []
+    async function fetchCitizen(tokenId: number) {
+      try {
         const citizen = await getNFT({
           contract: citizenContract,
-          tokenId: BigInt(i),
+          tokenId: BigInt(tokenId),
         })
-        citizens.push(citizen)
+        if (citizen?.metadata?.attributes)
+          citizens.push({ ...citizen, id: tokenId })
+      } catch (err) {
+        console.error(err)
       }
+    }
+    for (let i = 0; i < +totalCitizens.toString(); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 200)) //Tableland is rate limited to 10 requests per second
+      await fetchCitizen(i)
     }
 
     const filteredValidCitizens = citizens.filter(async (c: any) => {
@@ -140,10 +147,11 @@ export async function getStaticProps() {
 
     //Get location data for each citizen
     for (const citizen of filteredValidCitizens) {
-      const citizenLocation = getAttribute(
-        citizen?.metadata?.attributes as unknown as any[],
-        'location'
-      ).value
+      const citizenLocation =
+        getAttribute(
+          citizen?.metadata?.attributes as unknown as any[],
+          'location'
+        )?.value || ''
 
       let locationData
       if (citizenLocation !== '' && !citizenLocation.startsWith('{')) {
