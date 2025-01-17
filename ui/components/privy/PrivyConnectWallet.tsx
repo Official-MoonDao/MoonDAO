@@ -228,20 +228,28 @@ export function PrivyConnectWallet({
     usePrivy()
 
   const { login } = useLogin({
-    onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
+    onComplete: async ({ user, isNewUser, wasAlreadyAuthenticated }: any) => {
       //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
-      if (!wasAlreadyAuthenticated && router.pathname !== '/submit') {
+      if (
+        !wasAlreadyAuthenticated &&
+        router.pathname !== '/submit' &&
+        router.pathname !== '/'
+      ) {
         let citizen
         try {
           const citizenContract = await sdk?.getContract(
             CITIZEN_ADDRESSES[selectedChain.slug]
           )
+          console.log('citizenContract', citizenContract)
           const ownedTokenId = await citizenContract?.call('getOwnedToken', [
             address,
           ])
+          console.log(ownedTokenId)
           citizen = await citizenContract?.erc721.get(ownedTokenId)
+          console.log(citizen)
         } catch (err) {
           citizen = undefined
+          console.log(err)
         }
         if (citizen) {
           router.push(

@@ -1,7 +1,13 @@
+import CitizenABI from 'const/abis/Citizen.json'
+import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { useRouter } from 'next/router'
-import { useContext, useEffect } from 'react'
-import CitizenContext from '@/lib/citizen/citizen-context'
+import { useEffect } from 'react'
+import { getContract, readContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { useActiveAccount } from 'thirdweb/react'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import client from '@/lib/thirdweb/client'
 import Callout1 from '../components/home/Callout1'
 import Callout2 from '../components/home/Callout2'
 import Callout3 from '../components/home/Callout3'
@@ -17,22 +23,42 @@ import PageEnder from '../components/layout/PreFooter'
 
 export default function Home({ linkSource }: any) {
   const router = useRouter()
-  const { citizen } = useContext(CitizenContext)
+  const account = useActiveAccount()
 
   //If the user is loading the page directly and has a citizen nft, redirect to their citizen page
   useEffect(() => {
-    if (
-      linkSource === 'direct' &&
-      citizen?.metadata?.name &&
-      citizen?.metadata?.id
-    )
-      router.push(
-        `/citizen/${generatePrettyLinkWithId(
-          citizen?.metadata?.name as string,
-          citizen?.metadata?.id
-        )}`
-      )
-  }, [linkSource, citizen, router])
+    async function routeToCitizen() {
+      try {
+        const citizenContract = getContract({
+          client,
+          chain: DEFAULT_CHAIN_V5,
+          address: CITIZEN_ADDRESSES[getChainSlug(DEFAULT_CHAIN_V5)],
+          abi: CitizenABI as any,
+        })
+        const ownedTokenId = await readContract({
+          contract: citizenContract,
+          method: 'getOwnedToken' as string,
+          params: [account?.address],
+        })
+        const citizen = await getNFT({
+          contract: citizenContract,
+          tokenId: ownedTokenId,
+        })
+
+        if (citizen?.metadata?.name && citizen?.metadata?.id != undefined) {
+          const prettyLink = generatePrettyLinkWithId(
+            citizen?.metadata?.name as string,
+            String(citizen?.metadata?.id) as string
+          )
+          if (prettyLink) router.push(`/citizen/${prettyLink}`)
+        }
+      } catch (err) {
+        console.log(err)
+      }
+    }
+
+    if (linkSource === 'direct' && account) routeToCitizen()
+  }, [linkSource, account, router])
 
   return (
     <Container>
