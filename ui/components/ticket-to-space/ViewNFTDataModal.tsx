@@ -1,6 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useAddress } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
 import { useState, useEffect } from 'react'
 import { useContext } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
@@ -32,8 +31,7 @@ export function ViewNFTDataModal({
   >([])
 
   async function signMessage() {
-    const privyProvider = await wallets[selectedWallet].getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
     const response = await fetch(`api/db/nonce?address=${address}`)
     const data = await response.json()

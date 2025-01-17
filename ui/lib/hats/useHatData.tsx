@@ -1,7 +1,10 @@
+import { useResolvedMediaType } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
-import { Chain, readContract } from 'thirdweb'
 
 export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
+  const [hat, setHat] = useState<any>({})
+  const [hatMetadataURI, setHatMetadataURI] = useState('')
+  const resolvedMetadata = useResolvedMediaType(hatMetadataURI)
   const [hatData, setHatData] = useState({
     name: '',
     description: '',
@@ -10,30 +13,26 @@ export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
     prettyId: '',
   })
 
-  useEffect(() => {
-    async function getHatAndMetadata() {
-      const hat: any = await readContract({
-        contract: hatsContract,
-        method: 'viewHat' as string,
-        params: [hatId],
-      })
+  async function getHatAndMetadata() {
+    const hat = await hatsContract.call('viewHat', [hatId])
+    setHat(hat)
+    setHatMetadataURI(hat.details)
+  }
 
-      const hatMetadataRes = await fetch(
-        `https://ipfs.io/ipfs/${
-          hat?.details
-            ? hat.details.split('ipfs://')[1]
-            : hat[0].split('ipfs://')[1]
-        }`
-      )
-      const { data: hatMetadataData } = await hatMetadataRes.json()
+  async function getHatData() {
+    const { supply, active } = hat
 
-      const hatRes = await fetch('/api/hats/get-hat', {
+    try {
+      const metadataRes = await fetch(resolvedMetadata.url)
+      const { data } = await metadataRes.json()
+
+      const res = await fetch('/api/hats/get-hat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          chainId: selectedChain.id,
+          chainId: selectedChain.chainId,
           hatId,
           props: {
             prettyId: true,
@@ -41,19 +40,28 @@ export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
         }),
       })
 
-      const hatSubgraphData = await hatRes.json()
+      const hatSubgraphData = await res.json()
 
       setHatData({
-        name: hatMetadataData.name,
-        description: hatMetadataData.description,
-        supply: hat.supply,
-        active: hat.active,
+        name: data.name,
+        description: data.description,
+        supply: supply,
+        active: active,
         prettyId: hatSubgraphData?.prettyId?.toString() as string,
       })
+    } catch (err: any) {
+      console.error(err)
     }
+  }
 
-    if (hatsContract && hatId) getHatAndMetadata()
-  }, [hatsContract, hatId])
+  useEffect(() => {
+    if (hatsContract) {
+      getHatAndMetadata()
+      if (resolvedMetadata?.url) {
+        getHatData()
+      }
+    }
+  }, [hatsContract, resolvedMetadata.url, hatId])
 
   return hatData
 }

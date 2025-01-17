@@ -1,12 +1,8 @@
-import CitizenABI from 'const/abis/Citizen.json'
+import { useAddress, useContract } from '@thirdweb-dev/react'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import { useContext } from 'react'
-import toast from 'react-hot-toast'
-import { getContract, readContract } from 'thirdweb'
-import { useActiveAccount } from 'thirdweb/react'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client from '@/lib/thirdweb/client'
+import ChainContext from '@/lib/thirdweb/chain-context'
+import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Tier from '@/components/onboarding/Tier'
 
 type CitizenTierProps = {
@@ -18,26 +14,17 @@ const CitizenTier = ({
   setSelectedTier,
   compact = false,
 }: CitizenTierProps) => {
-  const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
-  const account = useActiveAccount()
-  const address = account?.address
+  const { selectedChain } = useContext(ChainContext)
+  const address = useAddress()
 
-  const handleCitizenClick = async () => {
-    const citizenContract = getContract({
-      client,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      abi: CitizenABI as any,
-      chain: selectedChain,
-    })
-    const citizenBalance = await readContract({
-      contract: citizenContract,
-      method: 'balanceOf' as string,
-      params: [address],
-    })
-    if (citizenBalance > 0) {
-      return toast.error('You have already registered as a citizen')
-    }
+  const { contract: citizenContract } = useContract(
+    CITIZEN_ADDRESSES[selectedChain.slug]
+  )
+  const { data: citizenBalance } = useHandleRead(citizenContract, 'balanceOf', [
+    address,
+  ])
+
+  const handleCitizenClick = () => {
     setSelectedTier('citizen')
   }
 
@@ -55,6 +42,7 @@ const CitizenTier = ({
         ]}
         buttoncta={compact ? 'Learn More' : 'Become a Citizen'}
         onClick={compact ? () => {} : handleCitizenClick}
+        hasCitizen={+citizenBalance > 0}
         type="citizen"
         compact={compact}
       />

@@ -38,11 +38,11 @@ export default function Withdraw() {
   )
   const { contract: vMooneyContract }: any = useContract(
     VMOONEY_ADDRESSES[selectedChain?.slug],
-    VotingEscrow
+    VotingEscrow.abi
   )
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug],
-    ERC20
+    ERC20.abi
   )
   const withdrawable = useWithdrawAmount(
     votingEscrowDepositorContract,

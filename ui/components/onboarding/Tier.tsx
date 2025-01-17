@@ -1,6 +1,8 @@
 import { usePrivy } from '@privy-io/react-auth'
+import { useAddress } from '@thirdweb-dev/react'
 import Image from 'next/image'
-import { useActiveAccount } from 'thirdweb/react'
+import toast from 'react-hot-toast'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type TierProps = {
   label: string
@@ -23,11 +25,11 @@ export default function Tier({
   buttoncta,
   price,
   onClick,
+  hasCitizen = false,
   type,
   compact = false,
 }: TierProps) {
-  const account = useActiveAccount()
-  const address = account?.address
+  const address = useAddress()
   const { login, user, logout } = usePrivy()
 
   const iconStar = './assets/icon-star.svg'
@@ -48,6 +50,8 @@ export default function Tier({
             if (!compact) {
               if (!address && user) logout()
               if (!address) return login()
+              if (hasCitizen && process.env.NEXT_PUBLIC_CHAIN === 'mainnet')
+                return toast.error('You have already registered as a citizen')
 
               onClick()
             }

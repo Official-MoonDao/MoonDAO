@@ -1,6 +1,8 @@
+import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
+import Link from 'next/link'
 import { useContext, useState } from 'react'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import ChainContext from '@/lib/thirdweb/chain-context'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -11,7 +13,8 @@ import Pricing from '@/components/onboarding/Pricing'
 
 export default function Join() {
   const { t } = useTranslation('common')
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContext)
+  const address = useAddress()
 
   // State to manage selected tier for onboarding flow
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
@@ -20,6 +23,7 @@ export default function Join() {
   if (selectedTier === 'citizen') {
     return (
       <CreateCitizen
+        address={address}
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />
@@ -30,6 +34,7 @@ export default function Join() {
   if (selectedTier === 'team') {
     return (
       <CreateTeam
+        address={address}
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />

@@ -3,4 +3,14 @@ export const blockedTeams: any = []
 export const blockedCitizens: any = [48, 72]
 export const blockedProjects: any = []
 
-export const featuredTeams: any = [6, 7, 8, 13, 1, 9, 5, 4, 2]
+export const featuredTeams: any = [
+  '6',
+  '7',
+  '8',
+  '13',
+  '1',
+  '9',
+  '5',
+  '4',
+  '2',
+]
