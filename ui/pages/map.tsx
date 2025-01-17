@@ -57,7 +57,9 @@ export default function NetworkMap({
     <section id="map-container" className="overflow-hidden">
       <Head
         title={'Map'}
-        description={"Discover the global reach of the Space Acceleration Network on our interactive 3D map! Explore the locations of our citizens worldwide and see how we're connecting space enthusiasts across the planet."}
+        description={
+          "Discover the global reach of the Space Acceleration Network on our interactive 3D map! Explore the locations of our citizens worldwide and see how we're connecting space enthusiasts across the planet."
+        }
         image="https://ipfs.io/ipfs/Qmc1FsD9pCw3FoYEQ1zviqXc3DQddyxte6cQ8hv6EvukFr"
       />
       <Container>
@@ -112,7 +114,7 @@ export async function getStaticProps() {
     const filteredValidCitizens = citizens.filter(async (c: any) => {
       const now = Math.floor(Date.now() / 1000)
       const expiresAt = await citizenContract.call('expiresAt', [c.metadata.id])
-      const view = getAttribute(c.metadata.attributes, 'view').value
+      const view = getAttribute(c?.metadata?.attributes, 'view').value
       return (
         expiresAt.toNumber() > now &&
         view === 'public' &&
