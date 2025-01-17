@@ -306,49 +306,49 @@ export default function ProjectProfile({
   )
 }
 
-// export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-//   const tokenId: any = params?.tokenId
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+  const tokenId: any = params?.tokenId
 
-//   const chain = DEFAULT_CHAIN_V5
-//   const chainSlug = getChainSlug(chain)
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
 
-//   if (tokenId === undefined) {
-//     return {
-//       notFound: true,
-//     }
-//   }
+  if (tokenId === undefined) {
+    return {
+      notFound: true,
+    }
+  }
 
-//   const projectTableContract = getContract({
-//     client: serverClient,
-//     address: PROJECT_TABLE_ADDRESSES[chainSlug],
-//     abi: ProjectTableABI as any,
-//     chain: chain,
-//   })
+  const projectTableContract = getContract({
+    client: serverClient,
+    address: PROJECT_TABLE_ADDRESSES[chainSlug],
+    abi: ProjectTableABI as any,
+    chain: chain,
+  })
 
-//   const projectTableName = await readContract({
-//     contract: projectTableContract,
-//     method: 'getTableName' as string,
-//     params: [],
-//   })
+  const projectTableName = await readContract({
+    contract: projectTableContract,
+    method: 'getTableName' as string,
+    params: [],
+  })
 
-//   const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
+  const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
 
-//   const projectsRes = await fetch(
-//     `${TABLELAND_ENDPOINT}?statement=${statement}`
-//   )
-//   const projects = await projectsRes.json()
-//   const project = projects[0]
+  const projectsRes = await fetch(
+    `${TABLELAND_ENDPOINT}?statement=${statement}`
+  )
+  const projects = await projectsRes.json()
+  const project = projects[0]
 
-//   if (!project || blockedProjects.includes(Number(tokenId))) {
-//     return {
-//       notFound: true,
-//     }
-//   }
+  if (!project || blockedProjects.includes(Number(tokenId))) {
+    return {
+      notFound: true,
+    }
+  }
 
-//   return {
-//     props: {
-//       project,
-//       tokenId,
-//     },
-//   }
-// }
+  return {
+    props: {
+      project,
+      tokenId,
+    },
+  }
+}
