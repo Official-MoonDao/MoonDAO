@@ -42,3 +42,6 @@ notes.txt
 
 # sitemap
 public/sitemap*.xml
+
+# local netlify folder
+.netlify
