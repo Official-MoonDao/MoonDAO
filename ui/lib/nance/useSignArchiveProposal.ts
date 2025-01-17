@@ -1,16 +1,17 @@
-import { useCallback } from 'react';
-import { ConnectedWallet } from '@privy-io/react-auth';
-import { SNAPSHOT_SPACE_NAME } from "./constants";
-import { ArchiveProposal, nanceSignatureMap, domain } from "@nance/nance-sdk";
+import { ArchiveProposal, nanceSignatureMap, domain } from '@nance/nance-sdk'
+import { ConnectedWallet } from '@privy-io/react-auth'
+import { ethers } from 'ethers'
+import { useCallback } from 'react'
+import { SNAPSHOT_SPACE_NAME } from './constants'
 
 export const useSignArchiveProposal = (wallet: ConnectedWallet) => {
-
   const signArchiveProposalAsync = useCallback(
     async (snapshotId: string) => {
       try {
-        const provider = await wallet.getEthersProvider();
-        const signer = provider?.getSigner();
-        const address = await signer.getAddress();
+        const privyProvider = await wallet.getEthereumProvider()
+        const provider = new ethers.providers.Web3Provider(privyProvider)
+        const signer = provider?.getSigner()
+        const address = await signer.getAddress()
         const message: ArchiveProposal = {
           from: address,
           space: SNAPSHOT_SPACE_NAME,
@@ -18,19 +19,19 @@ export const useSignArchiveProposal = (wallet: ConnectedWallet) => {
           proposal: snapshotId,
         }
 
-        const { types } = nanceSignatureMap["NanceArchiveProposal"];
+        const { types } = nanceSignatureMap['NanceArchiveProposal']
         if (signer) {
-          const signature = await signer._signTypedData(domain, types, message);
-          return { signature, message, address, domain, types };
+          const signature = await signer._signTypedData(domain, types, message)
+          return { signature, message, address, domain, types }
         } else {
-          throw new Error('Signer not available');
+          throw new Error('Signer not available')
         }
       } catch (error) {
-        throw error;
+        throw error
       }
     },
     [wallet]
-  );
+  )
 
-  return { signArchiveProposalAsync };
-};
+  return { signArchiveProposalAsync }
+}

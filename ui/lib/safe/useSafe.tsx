@@ -1,35 +1,26 @@
-import Safe, { EthersAdapter } from '@safe-global/protocol-kit'
-import {
-  SafeTransaction,
-  SafeTransactionData,
-  SafeTransactionDataPartial,
-} from '@safe-global/safe-core-sdk-types'
-import { useAddress, useSDK } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
-import { useEffect, useState } from 'react'
+import { SafeTransactionOptionalProps } from '@safe-global/protocol-kit'
+import { MetaTransactionData } from '@safe-global/types-kit'
 import useSafeApiKit from './useSafeApiKit'
 
 export default function useSafe(safeAddress: string) {
-  const address = useAddress()
-  const sdk = useSDK()
-  const [safe, setSafe] = useState<Safe>()
-  const safeApiKit = useSafeApiKit()
+  const { safeApiKit, protocolKit } = useSafeApiKit(safeAddress)
 
   async function queueSafeTx(
-    safeTransactionData: SafeTransactionData | SafeTransactionDataPartial
+    senderAddress: string,
+    transactions: MetaTransactionData[],
+    options: SafeTransactionOptionalProps
   ) {
     try {
-      const safeTx = await safe?.createTransaction({
-        safeTransactionData,
+      const safeTx = await protocolKit?.createTransaction({
+        transactions,
+        options,
       })
-      const safeTxHash = await safe?.getTransactionHash(
-        safeTx as SafeTransaction
-      )
+      const safeTxHash = await protocolKit.getTransactionHash(safeTx)
 
       if (!safeTx || !safeTxHash)
         throw new Error('Failed to create transaction or get transaction hash')
 
-      const signature = await safe?.signTransactionHash(safeTxHash)
+      const signature = await protocolKit.signHash(safeTxHash)
 
       if (!signature) throw new Error('Failed to sign transaction hash')
 
@@ -37,7 +28,7 @@ export default function useSafe(safeAddress: string) {
         safeAddress,
         safeTransactionData: safeTx.data,
         safeTxHash,
-        senderAddress: address,
+        senderAddress,
         senderSignature: signature.data,
       })
     } catch (err) {
@@ -45,25 +36,5 @@ export default function useSafe(safeAddress: string) {
     }
   }
 
-  useEffect(() => {
-    async function getSafe() {
-      const signer = sdk?.getSigner()
-      if (signer) {
-        const ethAdapter = new EthersAdapter({
-          ethers,
-          signerOrProvider: signer,
-        })
-
-        const safe = await Safe.create({
-          ethAdapter,
-          safeAddress,
-        })
-
-        setSafe(safe)
-      }
-    }
-    getSafe()
-  }, [sdk, safeAddress])
-
-  return { safe, queueSafeTx }
+  return { queueSafeTx }
 }
