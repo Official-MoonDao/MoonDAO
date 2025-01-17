@@ -60,7 +60,7 @@ export function PrivyThirdwebV5Provider({
     }
 
     setActive()
-  }, [selectedWallet, selectedChain])
+  }, [user, wallets, selectedWallet, selectedChain])
 
   useEffect(() => {
     async function handleAuth() {
