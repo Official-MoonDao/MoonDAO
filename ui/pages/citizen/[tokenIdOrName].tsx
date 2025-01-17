@@ -324,7 +324,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                 {citizen || isGuest ? (
                   <>
                     <div className="mt-4 lg:ml-5">
-                      <Address address={isGuest ? address : nft.owner} />
+                      <Address address={isGuest ? address : nft?.owner} />
                     </div>
                   </>
                 ) : (
@@ -370,7 +370,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
             nft?.metadata?.image.split('ipfs://')[1]
           }`}
         />
-        {!isDeleted && subIsValid && nft.owner === address && (
+        {!isDeleted && subIsValid && nft?.owner === address && (
           <CitizenActions
             address={address}
             nft={nft}
@@ -412,7 +412,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
         {subIsValid && !isDeleted && !isGuest ? (
           <div className="z-50 mb-10">
             {/* Mooney and Voting Power */}
-            {citizen || address === nft.owner ? (
+            {citizen || address === nft?.owner ? (
               <Frame
                 noPadding
                 bottomLeft="0px"
@@ -444,7 +444,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                       </p>
                     </div>
                   </div>
-                  {address === nft.owner && (
+                  {address === nft?.owner && (
                     <div className="flex flex-col md:flex-row mt-4 md:px-4 flex items-start xl:items-end gap-2">
                       <StandardButton
                         className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:rounded-bl-[20px] md:hover:pl-5"
@@ -465,7 +465,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
             ) : (
               <></>
             )}
-            {address === nft.owner && (
+            {address === nft?.owner && (
               <div className="mt-4">
                 <Frame
                   noPadding
@@ -514,7 +514,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                 </div>
               </Frame>
             )}
-            {address === nft.owner && (
+            {address === nft?.owner && (
               <>
                 <Frame
                   noPadding
@@ -576,84 +576,84 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  const tokenIdOrName: any = params?.tokenIdOrName
+// export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+//   const tokenIdOrName: any = params?.tokenIdOrName
 
-  let nft, tokenId
-  if (tokenIdOrName === 'guest') {
-    nft = {
-      metadata: {
-        name: 'Your Name Here',
-        description:
-          'Start your journey with the Space Acceleration Network by funding your wallet and becoming a Citizen to unlock a myriad of benefits.',
-        image: '/assets/citizen-default.png',
-        uri: '',
-        id: 'guest',
-        attributes: [
-          {
-            trait_type: 'location',
-            value: '',
-          },
-          {
-            trait_type: 'view',
-            value: 'public',
-          },
-        ],
-      },
-      owner: '',
-    }
+//   let nft, tokenId
+//   if (tokenIdOrName === 'guest') {
+//     nft = {
+//       metadata: {
+//         name: 'Your Name Here',
+//         description:
+//           'Start your journey with the Space Acceleration Network by funding your wallet and becoming a Citizen to unlock a myriad of benefits.',
+//         image: '/assets/citizen-default.png',
+//         uri: '',
+//         id: 'guest',
+//         attributes: [
+//           {
+//             trait_type: 'location',
+//             value: '',
+//           },
+//           {
+//             trait_type: 'view',
+//             value: 'public',
+//           },
+//         ],
+//       },
+//       owner: '',
+//     }
 
-    tokenId = 'guest'
-  } else {
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
+//     tokenId = 'guest'
+//   } else {
+//     const chain = DEFAULT_CHAIN_V5
+//     const chainSlug = getChainSlug(chain)
 
-    const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
-    const allCitizensRes = await fetch(
-      `${TABLELAND_ENDPOINT}?statement=${statement}`
-    )
-    const allCitizens = await allCitizensRes.json()
+//     const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
+//     const allCitizensRes = await fetch(
+//       `${TABLELAND_ENDPOINT}?statement=${statement}`
+//     )
+//     const allCitizens = await allCitizensRes.json()
 
-    const { prettyLinks } = generatePrettyLinks(allCitizens, {
-      allHaveTokenId: true,
-    })
+//     const { prettyLinks } = generatePrettyLinks(allCitizens, {
+//       allHaveTokenId: true,
+//     })
 
-    if (!Number.isNaN(Number(tokenIdOrName))) {
-      tokenId = tokenIdOrName
-    } else {
-      tokenId = prettyLinks[tokenIdOrName]
-    }
+//     if (!Number.isNaN(Number(tokenIdOrName))) {
+//       tokenId = tokenIdOrName
+//     } else {
+//       tokenId = prettyLinks[tokenIdOrName]
+//     }
 
-    if (tokenId === undefined) {
-      return {
-        notFound: true,
-      }
-    }
+//     if (tokenId === undefined) {
+//       return {
+//         notFound: true,
+//       }
+//     }
 
-    const citizenContract = getContract({
-      client: serverClient,
-      chain: chain,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      abi: CitizenABI as any,
-    })
+//     const citizenContract = getContract({
+//       client: serverClient,
+//       chain: chain,
+//       address: CITIZEN_ADDRESSES[chainSlug],
+//       abi: CitizenABI as any,
+//     })
 
-    nft = await getNFT({
-      contract: citizenContract,
-      tokenId: BigInt(tokenId),
-      includeOwner: true,
-    })
+//     nft = await getNFT({
+//       contract: citizenContract,
+//       tokenId: BigInt(tokenId),
+//       includeOwner: true,
+//     })
 
-    if (!nft || blockedCitizens.includes(Number(nft?.metadata?.id))) {
-      return {
-        notFound: true,
-      }
-    }
-  }
+//     if (!nft || blockedCitizens.includes(Number(nft?.metadata?.id))) {
+//       return {
+//         notFound: true,
+//       }
+//     }
+//   }
 
-  return {
-    props: {
-      nft: { ...nft, id: tokenId },
-      tokenId,
-    },
-  }
-}
+//   return {
+//     props: {
+//       nft: { ...nft, id: tokenId },
+//       tokenId,
+//     },
+//   }
+// }

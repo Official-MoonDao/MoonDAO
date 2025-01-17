@@ -49,7 +49,7 @@ export function useCitizenData(nft: any, citizenContract: any) {
     } else {
       return true
     }
-  }, [socials, location, nft.metadata])
+  }, [socials, location, nft?.metadata])
 
   const discordUser = useDiscordUserSearch(socials?.discord, true)
 

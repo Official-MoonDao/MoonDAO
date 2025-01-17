@@ -299,7 +299,7 @@ export default function TeamDetailPage({
                       <></>
                     )}
 
-                    {isManager || address === nft.owner ? (
+                    {isManager || address === nft?.owner ? (
                       ''
                     ) : (
                       <div
@@ -350,7 +350,7 @@ export default function TeamDetailPage({
                     <></>
                   )} */}
                   <div className="mt-4">
-                    <Address address={nft.owner} />
+                    <Address address={nft?.owner} />
                   </div>
                 </div>
               </div>
@@ -366,17 +366,17 @@ export default function TeamDetailPage({
   return (
     <Container>
       <Head
-        title={nft.metadata.name}
+        title={nft?.metadata?.name}
         secondaryTitle={queriedListing?.title || queriedJob?.title}
         description={
           queriedListing?.description ||
           queriedJob?.description ||
-          nft.metadata.description
+          nft?.metadata?.description
         }
         image={`https://ipfs.io/ipfs/${
-          queriedListing
-            ? queriedListing.image.split('ipfs://')[1]
-            : imageIpfsLink.split('ipfs://')[1]
+          queriedListing?.image
+            ? queriedListing?.image.split('ipfs://')[1]
+            : imageIpfsLink?.split('ipfs://')[1]
         }`}
       />
       {teamSubscriptionModalEnabled && (
@@ -429,7 +429,7 @@ export default function TeamDetailPage({
         >
           {!isDeleted && (
             <div id="entity-actions-container" className=" z-30">
-              {isManager || address === nft.owner ? (
+              {isManager || address === nft?.owner ? (
                 <div
                   id="team-actions-container"
                   className="px-5 pt-5 md:px-0 md:pt-0"
@@ -561,7 +561,7 @@ export default function TeamDetailPage({
               {/* Mooney and Voting Power */}
               {isManager && (
                 <TeamTreasury
-                  multisigAddress={nft.owner}
+                  multisigAddress={nft?.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}
                 />
@@ -579,7 +579,7 @@ export default function TeamDetailPage({
               </p>
               {isManager && (
                 <TeamTreasury
-                  multisigAddress={nft.owner}
+                  multisigAddress={nft?.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}
                 />
@@ -592,112 +592,112 @@ export default function TeamDetailPage({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({
-  params,
-  query,
-}) => {
-  const tokenIdOrName: any = params?.tokenIdOrName
+// export const getServerSideProps: GetServerSideProps = async ({
+//   params,
+//   query,
+// }) => {
+//   const tokenIdOrName: any = params?.tokenIdOrName
 
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+//   const chain = DEFAULT_CHAIN_V5
+//   const chainSlug = getChainSlug(chain)
 
-  const teamTableStatement = `SELECT name, id FROM ${TEAM_TABLE_NAMES[chainSlug]}`
-  const allTeamsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${teamTableStatement}`
-  )
-  const allTeams = await allTeamsRes.json()
-  const { prettyLinks } = generatePrettyLinks(allTeams)
+//   const teamTableStatement = `SELECT name, id FROM ${TEAM_TABLE_NAMES[chainSlug]}`
+//   const allTeamsRes = await fetch(
+//     `${TABLELAND_ENDPOINT}?statement=${teamTableStatement}`
+//   )
+//   const allTeams = await allTeamsRes.json()
+//   const { prettyLinks } = generatePrettyLinks(allTeams)
 
-  let tokenId
-  if (!Number.isNaN(Number(tokenIdOrName))) {
-    tokenId = tokenIdOrName
-  } else {
-    tokenId = prettyLinks[tokenIdOrName]
-  }
+//   let tokenId
+//   if (!Number.isNaN(Number(tokenIdOrName))) {
+//     tokenId = tokenIdOrName
+//   } else {
+//     tokenId = prettyLinks[tokenIdOrName]
+//   }
 
-  if (tokenId === undefined) {
-    return {
-      notFound: true,
-    }
-  }
+//   if (tokenId === undefined) {
+//     return {
+//       notFound: true,
+//     }
+//   }
 
-  const teamContract = getContract({
-    client: serverClient,
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
-    chain: chain,
-  })
+//   const teamContract = getContract({
+//     client: serverClient,
+//     address: TEAM_ADDRESSES[chainSlug],
+//     abi: TeamABI as any,
+//     chain: chain,
+//   })
 
-  const nft = await getNFT({
-    contract: teamContract,
-    tokenId: BigInt(tokenId),
-    includeOwner: true,
-  })
+//   const nft = await getNFT({
+//     contract: teamContract,
+//     tokenId: BigInt(tokenId),
+//     includeOwner: true,
+//   })
 
-  if (!nft || blockedTeams.includes(Number(nft.metadata.id))) {
-    return {
-      notFound: true,
-    }
-  }
+//   if (!nft || blockedTeams.includes(Number(nft.metadata.id))) {
+//     return {
+//       notFound: true,
+//     }
+//   }
 
-  const imageIpfsLink = nft.metadata.image
+//   const imageIpfsLink = nft.metadata.image
 
-  //Check for a jobId in the url and get the queried job if it exists
-  const jobId = query?.job
-  let queriedJob = null
-  if (jobId !== undefined) {
-    const jobTableContract = getContract({
-      client: serverClient,
-      address: JOBS_TABLE_ADDRESSES[chainSlug],
-      abi: JobBoardTableABI as any,
-      chain: chain,
-    })
-    const jobTableName = await readContract({
-      contract: jobTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-    const jobTableStatement = `SELECT * FROM ${jobTableName} WHERE id = ${jobId}`
-    const jobRes = await fetch(
-      `${TABLELAND_ENDPOINT}?statement=${jobTableStatement}`
-    )
-    const jobData = await jobRes.json()
-    queriedJob = jobData?.[0] || null
-  }
+//   //Check for a jobId in the url and get the queried job if it exists
+//   const jobId = query?.job
+//   let queriedJob = null
+//   if (jobId !== undefined) {
+//     const jobTableContract = getContract({
+//       client: serverClient,
+//       address: JOBS_TABLE_ADDRESSES[chainSlug],
+//       abi: JobBoardTableABI as any,
+//       chain: chain,
+//     })
+//     const jobTableName = await readContract({
+//       contract: jobTableContract,
+//       method: 'getTableName' as string,
+//       params: [],
+//     })
+//     const jobTableStatement = `SELECT * FROM ${jobTableName} WHERE id = ${jobId}`
+//     const jobRes = await fetch(
+//       `${TABLELAND_ENDPOINT}?statement=${jobTableStatement}`
+//     )
+//     const jobData = await jobRes.json()
+//     queriedJob = jobData?.[0] || null
+//   }
 
-  //Check for a listingId in the url and get the queried listing if it exists
-  const listingId = query?.listing
-  let queriedListing = null
-  if (listingId !== undefined) {
-    const marketplaceTableContract = getContract({
-      client: serverClient,
-      address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-      abi: MarketplaceTableABI as any,
-      chain: chain,
-    })
-    const marketplaceTableName = await readContract({
-      contract: marketplaceTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-    const marketplaceTableStatement = `SELECT * FROM ${marketplaceTableName} WHERE id = ${listingId}`
-    const marketplaceRes = await fetch(
-      `${TABLELAND_ENDPOINT}?statement=${marketplaceTableStatement}`
-    )
-    const marketplaceData = await marketplaceRes.json()
-    queriedListing = marketplaceData?.[0] || null
-  }
+//   //Check for a listingId in the url and get the queried listing if it exists
+//   const listingId = query?.listing
+//   let queriedListing = null
+//   if (listingId !== undefined) {
+//     const marketplaceTableContract = getContract({
+//       client: serverClient,
+//       address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+//       abi: MarketplaceTableABI as any,
+//       chain: chain,
+//     })
+//     const marketplaceTableName = await readContract({
+//       contract: marketplaceTableContract,
+//       method: 'getTableName' as string,
+//       params: [],
+//     })
+//     const marketplaceTableStatement = `SELECT * FROM ${marketplaceTableName} WHERE id = ${listingId}`
+//     const marketplaceRes = await fetch(
+//       `${TABLELAND_ENDPOINT}?statement=${marketplaceTableStatement}`
+//     )
+//     const marketplaceData = await marketplaceRes.json()
+//     queriedListing = marketplaceData?.[0] || null
+//   }
 
-  return {
-    props: {
-      nft: {
-        ...nft,
-        id: tokenId,
-      },
-      tokenId,
-      imageIpfsLink,
-      queriedJob,
-      queriedListing,
-    },
-  }
-}
+//   return {
+//     props: {
+//       nft: {
+//         ...nft,
+//         id: tokenId,
+//       },
+//       tokenId,
+//       imageIpfsLink,
+//       queriedJob,
+//       queriedListing,
+//     },
+//   }
+// }

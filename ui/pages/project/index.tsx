@@ -115,11 +115,11 @@ export default function Projects({
     const totalActiveProjects =
       input != ''
         ? filterBySearch(activeProjects).length
-        : activeProjects.length
+        : activeProjects?.length
     const totalInactiveProjects =
       input != ''
         ? filterBySearch(inactiveProjects).length
-        : inactiveProjects.length
+        : inactiveProjects?.length
 
     if (tab === 'active') setMaxPage(Math.ceil(totalActiveProjects / 9))
     if (tab === 'inactive') setMaxPage(Math.ceil(totalInactiveProjects / 9))
@@ -280,47 +280,47 @@ export default function Projects({
   )
 }
 
-export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+// export async function getStaticProps() {
+//   const chain = DEFAULT_CHAIN_V5
+//   const chainSlug = getChainSlug(chain)
 
-  const projectTableContract = getContract({
-    client: serverClient,
-    address: PROJECT_TABLE_ADDRESSES[chainSlug],
-    abi: ProjectTableABI as any,
-    chain: chain,
-  })
+//   const projectTableContract = getContract({
+//     client: serverClient,
+//     address: PROJECT_TABLE_ADDRESSES[chainSlug],
+//     abi: ProjectTableABI as any,
+//     chain: chain,
+//   })
 
-  const projectTableName = await readContract({
-    contract: projectTableContract,
-    method: 'getTableName' as string,
-    params: [],
-  })
+//   const projectTableName = await readContract({
+//     contract: projectTableContract,
+//     method: 'getTableName' as string,
+//     params: [],
+//   })
 
-  const projectStatement = `SELECT * FROM ${projectTableName}`
-  const projectsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
-  )
-  const projects = await projectsRes.json()
+//   const projectStatement = `SELECT * FROM ${projectTableName}`
+//   const projectsRes = await fetch(
+//     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
+//   )
+//   const projects = await projectsRes.json()
 
-  const activeProjects = []
-  const inactiveProjects = []
-  for (let i = 0; i < projects.length; i++) {
-    if (!blockedProjects.includes(i)) {
-      const active = projects[i].active
-      if (!active || active === 0) {
-        inactiveProjects.push(projects[i])
-      } else if (active === 1) {
-        activeProjects.push(projects[i])
-      }
-    }
-  }
+//   const activeProjects = []
+//   const inactiveProjects = []
+//   for (let i = 0; i < projects.length; i++) {
+//     if (!blockedProjects.includes(i)) {
+//       const active = projects[i].active
+//       if (!active || active === 0) {
+//         inactiveProjects.push(projects[i])
+//       } else if (active === 1) {
+//         activeProjects.push(projects[i])
+//       }
+//     }
+//   }
 
-  return {
-    props: {
-      activeProjects: activeProjects.reverse(),
-      inactiveProjects: inactiveProjects.reverse(),
-    },
-    revalidate: 60,
-  }
-}
+//   return {
+//     props: {
+//       activeProjects: activeProjects.reverse(),
+//       inactiveProjects: inactiveProjects.reverse(),
+//     },
+//     revalidate: 60,
+//   }
+// }
