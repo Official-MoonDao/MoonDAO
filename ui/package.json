@@ -3,7 +3,7 @@
   "private": true,
   "license": "MIT",
   "engines": {
-    "node": ">=14.x"
+    "node": ">=16"
   },
   "scripts": {
     "dev": "next dev",
@@ -55,7 +55,7 @@
     "daisyui": "^2.13.5",
     "date-fns": "^2.30.0",
     "discord-oauth2": "^2.11.0",
-    "ethers": "5.7",
+    "ethers": "^5.7.2",
     "formidable": "^3.5.1",
     "google-spreadsheet": "^3.3.0",
     "graphql": "^16.8.1",
