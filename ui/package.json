@@ -25,7 +25,7 @@
     "@nance/nance-editor": "^1.8.4",
     "@nance/nance-hooks": "^4.1.6",
     "@nance/nance-sdk": "^4.1.6",
-    "@privy-io/react-auth": "^1.92.1",
+    "@privy-io/react-auth": "^2.0.4",
     "@privy-io/server-auth": "^1.18.1",
     "@privy-io/wagmi-connector": "^0.1.12",
     "@react-three/drei": "^9.86.0",
