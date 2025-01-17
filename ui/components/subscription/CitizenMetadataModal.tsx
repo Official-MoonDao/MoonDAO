@@ -1,17 +1,14 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { usePrivy } from '@privy-io/react-auth'
+import { useContract, useResolvedMediaType } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import CitizenTableABI from 'const/abis/CitizenTable.json'
-import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
@@ -92,14 +89,11 @@ export default function CitizenMetadataModal({
   selectedChain,
   setEnabled,
 }: any) {
-  const account = useActiveAccount()
   const router = useRouter()
 
   const [stage, setStage] = useState(0)
   const [inputImage, setInputImage] = useState<File>()
-  const [currCitizenImage, setCurrCitizenImage] = useState<string>(
-    nft?.metadata?.image
-  )
+  const [currCitizenImage, setCurrCitizenImage] = useState<string>()
   const [newCitizenImage, setNewCitizenImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
@@ -107,11 +101,13 @@ export default function CitizenMetadataModal({
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
 
-  const citizenTableContract = useContract({
-    chain: selectedChain,
-    address: CITIZEN_TABLE_ADDRESSES[getChainSlug(selectedChain)],
-    abi: CitizenTableABI,
-  })
+  const { getAccessToken } = usePrivy()
+
+  const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
+
+  const { contract: citizenTableContract } = useContract(
+    CITIZEN_TABLE_ADDRESSES[selectedChain.slug]
+  )
 
   const submitTypeform = useCallback(
     async (formResponse: any) => {
@@ -142,6 +138,17 @@ export default function CitizenMetadataModal({
     },
     [citizenTableContract]
   )
+
+  useEffect(() => {
+    async function getCurrCitizenImage() {
+      const rawMetadataRes = await fetch(resolvedMetadata.url)
+      const rawMetadata = await rawMetadataRes.json()
+      const imageIpfsLink = rawMetadata.image
+      setCurrCitizenImage(imageIpfsLink)
+    }
+
+    if (resolvedMetadata) getCurrCitizenImage()
+  }, [resolvedMetadata])
 
   useEffect(() => {
     setCitizenData(() => {
@@ -243,27 +250,27 @@ export default function CitizenMetadataModal({
               setAgreedToCondition={setAgreedToOnChainData}
             />
             <PrivyWeb3Button
-              v5
               className="mt-4 w-full gradient-2 rounded-[5vmax]"
-              requiredChain={DEFAULT_CHAIN_V5}
+              requiredChain={DEFAULT_CHAIN}
               label="Submit"
               isDisabled={!agreedToOnChainData}
               action={async () => {
-                if (!account) return
                 if (!citizenData.name || citizenData.name.trim() === '') {
                   return toast.error('Please enter a name.')
                 }
 
                 try {
+                  const rawMetadataRes = await fetch(resolvedMetadata.url)
+                  const rawMetadata = await rawMetadataRes.json()
+
                   let imageIpfsLink
-                  const currCitizenImage = nft.metadata.image || ''
 
                   if (
                     !newCitizenImage &&
-                    currCitizenImage &&
-                    currCitizenImage !== ''
+                    rawMetadata.image &&
+                    rawMetadata.image !== ''
                   ) {
-                    imageIpfsLink = currCitizenImage
+                    imageIpfsLink = rawMetadata.image
                   } else {
                     if (!newCitizenImage) return console.error('No new image')
 
@@ -278,7 +285,7 @@ export default function CitizenMetadataModal({
                     )
 
                     //unpin old image
-                    await unpin(currCitizenImage.split('ipfs://')[1])
+                    await unpin(rawMetadata.image.split('ipfs://')[1])
 
                     imageIpfsLink = `ipfs://${newImageIpfsHash}`
                   }
@@ -322,34 +329,25 @@ export default function CitizenMetadataModal({
                   }
                   const cleanedLocationData = cleanData(citizenLocationData)
 
-                  const transaction = prepareContractCall({
-                    contract: citizenTableContract,
-                    method: 'updateTable' as string,
-                    params: [
-                      nft.metadata.id,
-                      cleanedCitizenData.name,
-                      cleanedCitizenData.description,
-                      imageIpfsLink,
-                      JSON.stringify(cleanedLocationData),
-                      cleanedCitizenData.discord,
-                      cleanedCitizenData.twitter,
-                      cleanedCitizenData.website,
-                      cleanedCitizenData.view,
-                      formResponseId,
-                    ],
-                  })
-
-                  const receipt = await sendAndConfirmTransaction({
-                    transaction,
-                    account,
-                  })
+                  const tx = await citizenTableContract?.call('updateTable', [
+                    nft.metadata.id,
+                    cleanedCitizenData.name,
+                    cleanedCitizenData.description,
+                    imageIpfsLink,
+                    JSON.stringify(cleanedLocationData),
+                    cleanedCitizenData.discord,
+                    cleanedCitizenData.twitter,
+                    cleanedCitizenData.website,
+                    cleanedCitizenData.view,
+                    formResponseId,
+                  ])
 
                   setEnabled(false)
 
-                  if (receipt) {
+                  if (tx.receipt) {
                     setTimeout(() => {
                       router.reload()
-                    }, 30000)
+                    }, 15000)
                   }
                 } catch (err) {
                   console.log(err)

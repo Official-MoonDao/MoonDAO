@@ -1,9 +1,9 @@
+import { usePrivy } from '@privy-io/react-auth'
+import { useResolvedMediaType } from '@thirdweb-dev/react'
 import { DEFAULT_CHAIN } from 'const/config'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { useActiveAccount } from 'thirdweb/react'
 import { unpin } from '@/lib/ipfs/unpin'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import { getAttribute } from '@/lib/utils/nft'
@@ -36,9 +36,12 @@ function DeleteProfileDataModal({
   tokenId,
   type,
 }: DeleteProfileDataModalProps) {
-  const account = useActiveAccount()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+
+  const { getAccessToken } = usePrivy()
+
+  const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
 
   return (
     <Modal id="delete-profile-data-modal" setEnabled={setDeleteModalEnabled}>
@@ -62,45 +65,54 @@ function DeleteProfileDataModal({
             action={async () => {
               setIsLoading(true)
 
-              //unpin image
-              await unpin(nft.metadata.image.split('ipfs://')[1])
+              const rawMetadataRes = await fetch(resolvedMetadata.url)
+              const rawMetadata = await rawMetadataRes.json()
 
-              const formResponseId = getAttribute(nft, 'formResponseId')?.value
+              //unpin image
+              await unpin(rawMetadata.image.split('ipfs://')[1])
+
+              const formResponseId = getAttribute(nft, 'formResponseId')
 
               try {
-                let transaction
+                let tx
                 if (type === 'team') {
                   await deleteResponse(
                     process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
                     formResponseId
                   )
 
-                  transaction = prepareContractCall({
-                    contract: tableContract,
-                    method: 'updateTable' as string,
-                    params: [tokenId, '', '', '', '', '', '', '', ''],
-                  })
+                  tx = await tableContract.call('updateTable', [
+                    tokenId,
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                  ])
                 } else if (type === 'citizen') {
                   await deleteResponse(
                     process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
                     formResponseId
                   )
 
-                  transaction = prepareContractCall({
-                    contract: tableContract,
-                    method: 'updateTable' as string,
-                    params: [tokenId, '', '', '', '', '', '', '', '', ''],
-                  })
+                  tx = await tableContract.call('updateTable', [
+                    tokenId,
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                  ])
                 }
 
-                if (!transaction || !account) return
-
-                const receipt = await sendAndConfirmTransaction({
-                  transaction,
-                  account,
-                })
-
-                if (receipt) {
+                if (tx.receipt) {
                   toast.success(
                     'Data deleted successfully, please wait for the page to reload.',
                     { duration: 10000 }

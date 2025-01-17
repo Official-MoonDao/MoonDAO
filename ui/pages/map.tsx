@@ -112,7 +112,7 @@ export async function getStaticProps() {
     const filteredValidCitizens = citizens.filter(async (c: any) => {
       const now = Math.floor(Date.now() / 1000)
       const expiresAt = await citizenContract.call('expiresAt', [c.metadata.id])
-      const view = getAttribute(c?.metadata?.attributes, 'view').value
+      const view = getAttribute(c.metadata.attributes, 'view').value
       return (
         expiresAt.toNumber() > now &&
         view === 'public' &&
