@@ -5,7 +5,8 @@ type useReadProps = {
   contract: ThirdwebContract
   method: string
   params: any[]
-
+  deps?: any[]
+}
 
 export default function useRead({
   contract,
