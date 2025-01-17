@@ -11,7 +11,7 @@ import {
 import _ from 'lodash'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useState, useEffect, useMemo, useContext } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
@@ -20,7 +20,6 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
 import { useVotingPowers } from '@/lib/snapshot'
-import ChainContext from '@/lib/thirdweb/chain-context'
 import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
@@ -101,7 +100,6 @@ export function RetroactiveRewards({
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
 
   const userAddress = useAddress()
-  const { selectedChain } = useContext(ChainContext)
 
   const { quarter, year } = getRelativeQuarter(-1)
 
