@@ -101,7 +101,7 @@ export function RetroactiveRewards({
   const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
 
   const userAddress = useAddress()
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContext)
 
   const { quarter, year } = getRelativeQuarter(-1)
 
@@ -138,8 +138,6 @@ export function RetroactiveRewards({
     PROJECT_ADDRESSES[chain.slug],
     ProjectABI
   )
-  console.log('projectContract')
-  console.log(projectContract)
   const { contract: hatsContract } = useContract(HATS_ADDRESS, HatsABI)
 
   const addresses = distributions ? distributions.map((d) => d.address) : []
@@ -264,23 +262,6 @@ export function RetroactiveRewards({
       })
     }
   }
-  const handleDelete = async () => {
-    try {
-      await distributionTableContract?.call('deleteFromTable', [quarter, year])
-      toast.success('Distribution deleted successfully!', {
-        style: toastStyle,
-      })
-      setTimeout(() => {
-        refreshRewards()
-      }, 5000)
-    } catch (error) {
-      console.error('Error deleting distribution:', error)
-      toast.error('Error deleting distribution. Please try again.', {
-        style: toastStyle,
-      })
-    }
-  }
-
   return (
     <section id="rewards-container" className="overflow-hidden">
       <Head
@@ -398,14 +379,6 @@ export function RetroactiveRewards({
                           edit ? 'Edit Distribution' : 'Submit Distribution'
                         }
                       />
-                      {edit && selectedChain.chainId === chain.chainId && (
-                        <PrivyWeb3Button
-                          action={handleDelete}
-                          requiredChain={chain}
-                          className="gradient-1 rounded-full"
-                          label="Delete Distribution"
-                        />
-                      )}
                     </span>
                   ) : (
                     <span>
