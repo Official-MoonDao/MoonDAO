@@ -3,7 +3,7 @@
   "private": true,
   "license": "MIT",
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "scripts": {
     "dev": "next dev",
@@ -25,8 +25,8 @@
     "@nance/nance-editor": "^1.8.4",
     "@nance/nance-hooks": "^4.1.6",
     "@nance/nance-sdk": "^4.1.6",
-    "@privy-io/react-auth": "^2.0.1",
-    "@privy-io/server-auth": "^1.15.0",
+    "@privy-io/react-auth": "^2.0.4",
+    "@privy-io/server-auth": "^1.18.1",
     "@privy-io/wagmi-connector": "^0.1.12",
     "@react-three/drei": "^9.86.0",
     "@react-three/fiber": "^8.14.3",
