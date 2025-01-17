@@ -26,7 +26,8 @@ export function PrivyThirdwebV5Provider({
   useEffect(() => {
     async function setActive() {
       try {
-        const wallet = wallets[selectedWallet]
+        const wallet = wallets?.[selectedWallet]
+        if (!wallet) return
         const privyProvider = await wallet.getEthereumProvider()
         const provider = new ethers.providers.Web3Provider(privyProvider)
         const signer = provider?.getSigner()
