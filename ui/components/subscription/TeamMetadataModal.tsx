@@ -43,12 +43,12 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
       />
       <FormInput
         id="team-twitter-input"
-        label="Twitter"
+        label="X/Twitter"
         value={teamData.twitter}
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, twitter: target.value }))
         }
-        placeholder="Enter your twitter link"
+        placeholder="Enter your Twitter link including https://"
       />
       <FormInput
         id="team-communications-input"
@@ -60,7 +60,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
             communications: target.value,
           }))
         }
-        placeholder="Enter your communications link"
+        placeholder="Enter your communications link including https://"
       />
       <FormInput
         id="team-website-input"
@@ -69,7 +69,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, website: target.value }))
         }
-        placeholder="Enter your website link"
+        placeholder="Enter your website link including https://"
       />
     </div>
   )

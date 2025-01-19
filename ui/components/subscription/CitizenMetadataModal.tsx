@@ -64,12 +64,12 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
       />
       <FormInput
         id="citizen-twitter-input"
-        label="Twitter"
+        label="X/Twitter"
         value={citizenData?.twitter}
         onChange={({ target }: any) =>
           setCitizenData((prev: any) => ({ ...prev, twitter: target.value }))
         }
-        placeholder="Enter your twitter link"
+        placeholder="Enter your Twitter link including https://"
       />
       <FormInput
         id="citizen-website-input"
@@ -78,7 +78,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         onChange={({ target }: any) =>
           setCitizenData((prev: any) => ({ ...prev, website: target.value }))
         }
-        placeholder="Enter your website link"
+        placeholder="Enter your website link including https://"
       />
     </div>
   )
