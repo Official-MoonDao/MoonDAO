@@ -15,6 +15,7 @@ import { NANCE_API_URL } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import ContributionEditor from '@/components/contribution/ContributionEditor'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -42,6 +43,8 @@ export default function SubmissionPage({
       setSelectedIndex(0)
     }
   }, [tag])
+
+  useChainDefault()
 
   return (
     <>
