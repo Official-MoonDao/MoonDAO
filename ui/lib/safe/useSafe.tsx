@@ -1,17 +1,19 @@
+import { useWallets } from '@privy-io/react-auth'
 import Safe, { EthersAdapter } from '@safe-global/protocol-kit'
 import {
   SafeTransaction,
   SafeTransactionData,
   SafeTransactionDataPartial,
 } from '@safe-global/safe-core-sdk-types'
-import { useAddress, useSDK } from '@thirdweb-dev/react'
 import { ethers } from 'ethers'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import PrivyWalletContext from '../privy/privy-wallet-context'
 import useSafeApiKit from './useSafeApiKit'
 
 export default function useSafe(safeAddress: string) {
-  const address = useAddress()
-  const sdk = useSDK()
+  const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
+
   const [safe, setSafe] = useState<Safe>()
   const safeApiKit = useSafeApiKit()
 
@@ -37,7 +39,7 @@ export default function useSafe(safeAddress: string) {
         safeAddress,
         safeTransactionData: safeTx.data,
         safeTxHash,
-        senderAddress: address,
+        senderAddress: wallets?.[selectedWallet]?.address,
         senderSignature: signature.data,
       })
     } catch (err) {
@@ -47,7 +49,8 @@ export default function useSafe(safeAddress: string) {
 
   useEffect(() => {
     async function getSafe() {
-      const signer = sdk?.getSigner()
+      const provider = await wallets?.[selectedWallet]?.getEthersProvider()
+      const signer = provider?.getSigner()
       if (signer) {
         const ethAdapter = new EthersAdapter({
           ethers,
@@ -63,7 +66,7 @@ export default function useSafe(safeAddress: string) {
       }
     }
     getSafe()
-  }, [sdk, safeAddress])
+  }, [wallets, selectedWallet, safeAddress])
 
   return { safe, queueSafeTx }
 }

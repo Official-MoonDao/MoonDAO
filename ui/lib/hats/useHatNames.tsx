@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { readContract } from 'thirdweb'
 
 export default function useHatNames(hatsContract: any, hatIds: string[]) {
   const [hatNames, setHatNames] = useState<any>()
@@ -7,8 +8,14 @@ export default function useHatNames(hatsContract: any, hatIds: string[]) {
     async function getAllHatNames() {
       try {
         const hatNamesPromises = hatIds.map(async (hatId: string) => {
-          const hat = await hatsContract.call('viewHat', [hatId])
-          const detailsIpfsHash = hat.details.split('ipfs://')[1]
+          const hat: any = await readContract({
+            contract: hatsContract,
+            method: 'viewHat' as string,
+            params: [hatId],
+          })
+          const detailsIpfsHash = hat.details
+            ? hat.details.split('ipfs://')[1]
+            : hat[0].split('ipfs://')[1]
           const hatDetailsRes = await fetch(
             `https://ipfs.io/ipfs/${detailsIpfsHash}`
           )
