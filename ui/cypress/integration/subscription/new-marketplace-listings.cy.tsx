@@ -1,14 +1,7 @@
-import TestnetProviders from '@/cypress/mock/TestnetProviders'
-import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
-import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
-import TeamABI from 'const/abis/Team.json'
-import {
-  MARKETPLACE_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
-  TEAM_ADDRESSES,
-} from 'const/config'
-import { getContract } from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/client'
+import { PrivyProvider } from '@privy-io/react-auth'
+import { Sepolia } from '@thirdweb-dev/chains'
+import { TABLELAND_ENDPOINT, ZERO_ADDRESS } from 'const/config'
+import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
 import { TeamListing } from '@/components/subscription/TeamListing'
 
@@ -24,18 +17,29 @@ describe('<NewMarketplaceListings />', () => {
 
   beforeEach(() => {
     props = {
-      teamContract: getContract({
-        client: serverClient,
-        address: TEAM_ADDRESSES[CYPRESS_CHAIN_SLUG],
-        abi: TeamABI as any,
-        chain: CYPRESS_CHAIN_V5,
-      }),
-      marketplaceTableContract: getContract({
-        client: serverClient,
-        address: MARKETPLACE_TABLE_ADDRESSES[CYPRESS_CHAIN_SLUG],
-        abi: MarketplaceTableABI as any,
-        chain: CYPRESS_CHAIN_V5,
-      }),
+      teamContract: {
+        call: cy.stub().callsFake((method, args) => {
+          if (method === 'expiresAt') {
+            return Promise.resolve({
+              toNumber: () => 1234567890,
+            })
+          }
+          return Promise.resolve('TestTeamTable')
+        }),
+        getAddress: cy.stub().resolves(ZERO_ADDRESS),
+        erc721: {
+          get: cy.stub().resolves({
+            metadata: {
+              name: 'Test Listing',
+            },
+            owner: ZERO_ADDRESS,
+          }),
+        },
+      },
+      marketplaceTableContract: {
+        call: cy.stub().resolves('TestMarketplaceTable'),
+        getAddress: cy.stub().resolves(ZERO_ADDRESS),
+      },
     }
 
     cy.intercept('GET', `${TABLELAND_ENDPOINT}?statement=*`, {
@@ -45,9 +49,11 @@ describe('<NewMarketplaceListings />', () => {
 
     cy.mountNextRouter('/')
     cy.mount(
-      <TestnetProviders>
-        <NewMarketplaceListings {...props} />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <NewMarketplaceListings {...props} />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
   })
 

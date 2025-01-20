@@ -1,13 +1,9 @@
-import { BigNumber } from 'ethers'
-
 export function dateToReadable(date: any) {
   return date && date.toISOString().substring(0, 10)
 }
 
-export function bigNumberToDate(bigNumber: BigNumber) {
-  if (!bigNumber) return null
-  const bigIntValue = BigInt(bigNumber.toString())
-  return new Date(Number(bigIntValue) * 1000)
+export function bigNumberToDate(bigNumber: any) {
+  return bigNumber && new Date(bigNumber.mul(1000).toNumber())
 }
 
 export function dateOut(date: any, { days, years }: any) {

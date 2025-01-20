@@ -19,8 +19,7 @@ export const useSignProposal = (wallet: ConnectedWallet) => {
   const signProposalAsync = useCallback(
     async (proposal: Proposal, preTitle: string, event: DateEvent) => {
       try {
-        const privyProvider = await wallet.getEthereumProvider()
-        const provider = new ethers.providers.Web3Provider(privyProvider)
+        const provider = await wallet.getEthersProvider()
         const signer = provider?.getSigner()
         const address = await signer.getAddress()
         const message = formatSnapshotProposalMessage(
