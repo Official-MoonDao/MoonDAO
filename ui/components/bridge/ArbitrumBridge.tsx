@@ -176,12 +176,16 @@ export default function ArbitrumBridge() {
         abi: ERC20ABI as any,
         chain: ethereum,
       })
-      const balance = await readContract({
-        contract: mooneyContract,
-        method: 'balanceOf',
-        params: [wallets[selectedWallet]?.address],
-      })
-      setEthMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+      try {
+        const balance = await readContract({
+          contract: mooneyContract,
+          method: 'balanceOf',
+          params: [address],
+        })
+        setEthMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+      } catch (err) {
+        console.error(err)
+      }
     }
     async function getArbMooneyBalance() {
       const mooneyContract = getContract({
@@ -190,19 +194,23 @@ export default function ArbitrumBridge() {
         abi: ERC20ABI as any,
         chain: arbitrum,
       })
-      const balance = await readContract({
-        contract: mooneyContract,
-        method: 'balanceOf',
-        params: [wallets[selectedWallet]?.address],
-      })
-      setArbMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+      try {
+        const balance = await readContract({
+          contract: mooneyContract,
+          method: 'balanceOf',
+          params: [address],
+        })
+        setArbMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+      } catch (err) {
+        console.error(err)
+      }
     }
 
     if (address) {
       getEthMooneyBalance()
       getArbMooneyBalance()
     }
-  }, [address, selectedChain, selectedWallet, wallets])
+  }, [address, selectedChain])
 
   useEffect(() => {
     async function getEthBalance() {
@@ -212,13 +220,17 @@ export default function ArbitrumBridge() {
         chain: ethereum,
         client,
       })
-      const balanceHex = await provider.request({
-        method: 'eth_getBalance',
-        params: [address, 'latest'],
-      })
-      const balance = ethers.utils.formatEther(balanceHex)
-      if (bridgeType === 'deposit') {
-        setNativeBalance(balance)
+      try {
+        const balanceHex = await provider.request({
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+        })
+        const balance = ethers.utils.formatEther(balanceHex)
+        if (bridgeType === 'deposit') {
+          setNativeBalance(balance)
+        }
+      } catch (err) {
+        console.error(err)
       }
     }
 
@@ -229,13 +241,17 @@ export default function ArbitrumBridge() {
         chain: arbitrum,
         client,
       })
-      const balanceHex = await provider.request({
-        method: 'eth_getBalance',
-        params: [address, 'latest'],
-      })
-      const balance = ethers.utils.formatEther(balanceHex)
-      if (bridgeType === 'withdraw') {
-        setNativeBalance(balance)
+      try {
+        const balanceHex = await provider.request({
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+        })
+        const balance = ethers.utils.formatEther(balanceHex)
+        if (bridgeType === 'withdraw') {
+          setNativeBalance(balance)
+        }
+      } catch (err) {
+        console.error(err)
       }
     }
 
