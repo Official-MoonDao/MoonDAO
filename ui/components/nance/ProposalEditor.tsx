@@ -14,7 +14,6 @@ import {
   getActionsFromBody,
   trimActionsFromBody,
 } from '@nance/nance-sdk'
-import { useAddress } from '@thirdweb-dev/react'
 import { add, differenceInDays, getUnixTime } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
@@ -23,6 +22,7 @@ import { useEffect, useState } from 'react'
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
+import { useActiveAccount } from 'thirdweb/react'
 import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -75,7 +75,8 @@ export type ProposalCache = {
 
 export default function ProposalEditor() {
   const router = useRouter()
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)

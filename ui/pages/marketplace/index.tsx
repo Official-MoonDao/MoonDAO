@@ -1,18 +1,16 @@
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { useContract } from '@thirdweb-dev/react'
 import MarketplaceABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
-  DEFAULT_CHAIN_V5,
   MARKETPLACE_TABLE_ADDRESSES,
   TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
-import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/client'
-import useContract from '@/lib/thirdweb/hooks/useContract'
+import ChainContext from '@/lib/thirdweb/chain-context'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -29,23 +27,18 @@ type MarketplaceProps = {
 }
 
 export default function Marketplace({ listings }: MarketplaceProps) {
-  const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  const { selectedChain } = useContext(ChainContext)
   const { citizen } = useContext(CitizenContext)
 
   const [filteredListings, setFilteredListings] = useState<TeamListingType[]>()
   const [input, setInput] = useState('')
 
-  const teamContract = useContract({
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI,
-    chain: selectedChain,
-  })
-  const marketplaceTableContract = useContract({
-    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-    abi: MarketplaceABI,
-    chain: selectedChain,
-  })
+  const { contract: teamContract } = useContract(
+    TEAM_ADDRESSES[selectedChain.slug]
+  )
+  const { contract: marketplaceTableContract } = useContract(
+    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug]
+  )
 
   useEffect(() => {
     if (listings && input != '') {
@@ -74,10 +67,8 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   return (
     <section id="jobs-container" className="overflow-hidden">
       <Head
-        title={'Marketplace'}
-        description={
-          'Explore the Space Acceleration Network Marketplace! Browse and buy innovative space products and services from pioneering teams driving the future of the space economy.'
-        }
+        title={"Marketplace"}
+        description={'Explore the Space Acceleration Network Marketplace! Browse and buy innovative space products and services from pioneering teams driving the future of the space economy.'}
         image="https://ipfs.io/ipfs/QmTtEyhgwcE1xyqap4nvaXyPpMBnfskRPtnz7i1jpGnw5M"
       />
       <Container>
@@ -112,29 +103,22 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 }
 
 export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
   const now = Math.floor(Date.now() / 1000)
 
-  const marketplaceTableContract = getContract({
-    client: serverClient,
-    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-    abi: MarketplaceABI as any,
-    chain: chain,
-  })
+  const marketplaceTableContract = await sdk.getContract(
+    MARKETPLACE_TABLE_ADDRESSES[chain.slug],
+    MarketplaceABI
+  )
+  const teamContract = await sdk.getContract(
+    TEAM_ADDRESSES[chain.slug],
+    TeamABI
+  )
 
-  const teamContract = getContract({
-    client: serverClient,
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
-    chain: chain,
-  })
-
-  const marketplaceTableName = await readContract({
-    contract: marketplaceTableContract,
-    method: 'getTableName' as string,
-    params: [],
-  })
+  const marketplaceTableName = await marketplaceTableContract.call(
+    'getTableName'
+  )
 
   const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
@@ -144,12 +128,10 @@ export async function getStaticProps() {
   const allListings = await allListingsRes.json()
 
   const validListings = allListings.filter(async (listing: TeamListingType) => {
-    const teamExpiration = await readContract({
-      contract: teamContract,
-      method: 'expiresAt' as string,
-      params: [listing.teamId],
-    })
-    return +teamExpiration.toString() > now
+    const teamExpiration = await teamContract.call('expiresAt', [
+      listing.teamId,
+    ])
+    return teamExpiration.toNumber() > now
   })
 
   return {

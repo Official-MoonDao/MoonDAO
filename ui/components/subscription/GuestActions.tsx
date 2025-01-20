@@ -3,7 +3,6 @@ import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { readContract } from 'thirdweb'
 import viemChains from '@/lib/viem/viemChains'
 import Frame from '@/components/layout/Frame'
 import Action from './Action'
@@ -21,11 +20,10 @@ export default function GuestActions({
 
   useEffect(() => {
     async function checkIfCanBuyCitizen() {
-      const cost = await readContract({
-        contract: citizenContract,
-        method: 'getRenewalPrice',
-        params: [address, 365 * 24 * 60 * 60],
-      } as any)
+      const cost = await citizenContract?.call('getRenewalPrice', [
+        address,
+        365 * 24 * 60 * 60,
+      ])
 
       const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
       const estimatedMaxGas = 0.0001

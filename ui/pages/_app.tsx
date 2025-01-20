@@ -22,14 +22,12 @@ import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
+  const [selectedWallet, setSelectedWallet] = useState<number>(0)
   const [selectedChain, setSelectedChain]: any = useState<Chain>(
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   )
-
   const [selectedChainV5, setSelectedChainV5]: any =
     useState<ChainV5>(DEFAULT_CHAIN_V5)
-
-  const [selectedWallet, setSelectedWallet] = useState<number>(0)
 
   const [lightMode, setLightMode] = useLightMode()
 

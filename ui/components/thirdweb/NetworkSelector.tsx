@@ -1,6 +1,7 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import {
   Arbitrum,
+  ArbitrumSepolia,
   Chain,
   Ethereum,
   Polygon,
@@ -11,8 +12,6 @@ import {
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import ChainContext from '../../lib/thirdweb/chain-context'
-import { thirdwebV4SlugsToV5Chains } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
 type NetworkOptionProps = {
   chain: Chain
@@ -43,16 +42,10 @@ type NetworkSelectorProps = {
 
 export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
-  const {
-    selectedChain: selectedChainV5,
-    setSelectedChain: setSelectedChainV5,
-  } = useContext(ChainContextV5)
   const [dropdown, setDropdown] = useState(false)
 
   function selectChain(chain: Chain) {
     setSelectedChain(chain)
-    const v5Chain = thirdwebV4SlugsToV5Chains[chain.slug]
-    setSelectedChainV5(v5Chain)
     setDropdown(false)
   }
 

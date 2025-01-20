@@ -228,12 +228,13 @@ export function PrivyConnectWallet({
     usePrivy()
 
   const { login } = useLogin({
-    onComplete: async ({ user, isNewUser, wasAlreadyAuthenticated }) => {
+    onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
       //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
       if (
         !wasAlreadyAuthenticated &&
         router.pathname !== '/submit' &&
-        router.pathname !== '/withdraw'
+        router.pathname !== '/withdraw' &&
+        router.pathname !== '/bridge'
       ) {
         let citizen
         try {
@@ -269,22 +270,22 @@ export function PrivyConnectWallet({
 
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug],
-    ERC20
+    ERC20.abi
   )
 
   const { contract: daiContract } = useContract(
     DAI_ADDRESSES[selectedChain.slug],
-    ERC20
+    ERC20.abi
   )
 
   const { contract: usdcContract } = useContract(
     USDC_ADDRESSES[selectedChain.slug],
-    ERC20
+    ERC20.abi
   )
 
   const { contract: usdtContract } = useContract(
     USDT_ADDRESSES[selectedChain.slug],
-    ERC20
+    ERC20.abi
   )
 
   const nativeBalance = useNativeBalance()
