@@ -1,6 +1,6 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { signIn, signOut } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { defineChain } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { useSetActiveWallet } from 'thirdweb/react'
@@ -10,7 +10,7 @@ import PrivyWalletContext from './privy-wallet-context'
 
 export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
   const { user, ready, authenticated, getAccessToken } = usePrivy()
-  const [selectedWallet, setSelectedWallet] = useState<number>(0)
+  const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const setActiveWallet = useSetActiveWallet()
 
@@ -26,7 +26,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
           walletClientType === 'coinbase_wallet' ||
           walletClientType === 'privy'
         )
-          await wallet?.switchChain(selectedChain.chainId)
+          await wallet?.switchChain(selectedChain.id)
 
         const adaptedAccount = await ethers5Adapter.signer.fromEthers({
           signer,
@@ -34,7 +34,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
 
         const thirdwebWallet = createWalletAdapter({
           adaptedAccount,
-          chain: defineChain(selectedChain.chainId),
+          chain: defineChain(selectedChain.id),
           client,
           onDisconnect: () => {},
           switchChain: () => {},
@@ -42,6 +42,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
 
         await thirdwebWallet.connect({ client })
         setActiveWallet(thirdwebWallet)
+        console.log('Set Active Wallet')
       } catch (err: any) {
         console.log(err.message)
       }
@@ -79,9 +80,5 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     }
   }, [ready, authenticated, user])
 
-  return (
-    <PrivyWalletContext.Provider value={{ selectedWallet, setSelectedWallet }}>
-      {children}
-    </PrivyWalletContext.Provider>
-  )
+  return <>{children}</>
 }
