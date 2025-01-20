@@ -2,11 +2,11 @@ import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { Ethereum, Goerli, Mumbai, Polygon } from '@thirdweb-dev/chains'
 import { ThirdwebSDKProvider } from '@thirdweb-dev/react'
 import { signIn, signOut } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from './privy-wallet-context'
 
 export function PrivyThirdwebSDKProvider({ selectedChain, children }: any) {
-  const [selectedWallet, setSelectedWallet] = useState<number>(0)
+  const { selectedWallet } = useContext(PrivyWalletContext)
   const [signer, setSigner] = useState<any>(null)
 
   const { wallets } = useWallets()
@@ -64,15 +64,13 @@ export function PrivyThirdwebSDKProvider({ selectedChain, children }: any) {
   }, [ready, authenticated, user])
 
   return (
-    <PrivyWalletContext.Provider value={{ selectedWallet, setSelectedWallet }}>
-      <ThirdwebSDKProvider
-        clientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}
-        activeChain={selectedChain}
-        supportedChains={[Ethereum, Polygon, Goerli, Mumbai]}
-        signer={signer}
-      >
-        {children}
-      </ThirdwebSDKProvider>
-    </PrivyWalletContext.Provider>
+    <ThirdwebSDKProvider
+      clientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}
+      activeChain={selectedChain}
+      supportedChains={[Ethereum, Polygon, Goerli, Mumbai]}
+      signer={signer}
+    >
+      {children}
+    </ThirdwebSDKProvider>
   )
 }
