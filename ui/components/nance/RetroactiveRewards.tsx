@@ -32,6 +32,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import ProjectCard from '@/components/project/ProjectCard'
 
 export type Distribution = {
@@ -259,23 +260,6 @@ export function RetroactiveRewards({
       })
     }
   }
-  const handleDelete = async () => {
-    try {
-      await distributionTableContract?.call('deleteFromTable', [quarter, year])
-      toast.success('Distribution deleted successfully!', {
-        style: toastStyle,
-      })
-      setTimeout(() => {
-        refreshRewards()
-      }, 5000)
-    } catch (error) {
-      console.error('Error deleting distribution:', error)
-      toast.error('Error deleting distribution. Please try again.', {
-        style: toastStyle,
-      })
-    }
-  }
-
   return (
     <section id="rewards-container" className="overflow-hidden">
       <Head
@@ -285,7 +269,9 @@ export function RetroactiveRewards({
       <Container>
         <ContentLayout
           header={'Project Rewards'}
-          description={"Allocate retroactive rewards to completed projects and their contributors based on impact and results."}
+          description={
+            'Allocate retroactive rewards to completed projects and their contributors based on impact and results.'
+          }
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding
@@ -383,20 +369,14 @@ export function RetroactiveRewards({
                 <div className="mt-4 w-full flex justify-end">
                   {projects && userHasVotingPower ? (
                     <span className="flex flex-col md:flex-row md:items-center gap-2">
-                      <StandardButtonRight
-                        onClick={handleSubmit}
+                      <PrivyWeb3Button
+                        action={handleSubmit}
+                        requiredChain={chain}
                         className="gradient-2 rounded-full"
-                      >
-                        {edit ? 'Edit Distribution' : 'Submit Distribution'}
-                      </StandardButtonRight>
-                      {edit && (
-                        <StandardButtonRight
-                          onClick={handleDelete}
-                          className="gradient-1 rounded-full"
-                        >
-                          Delete Distribution
-                        </StandardButtonRight>
-                      )}
+                        label={
+                          edit ? 'Edit Distribution' : 'Submit Distribution'
+                        }
+                      />
                     </span>
                   ) : (
                     <span>
