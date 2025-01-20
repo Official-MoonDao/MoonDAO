@@ -76,8 +76,8 @@ export function PrivyWeb3Button({
   const [btnState, setBtnState] = useState(0)
 
   useEffect(() => {
-    const chainId = v5 ? selectedChainV5.id : selectedChain.chainId
-    const requiredChainId = v5 ? requiredChain.id : requiredChain.chainId
+    const chainId = v5 ? selectedChainV5?.id : selectedChain?.chainId
+    const requiredChainId = v5 ? requiredChain?.id : requiredChain?.chainId
 
     if (!user) {
       setBtnState(0)
