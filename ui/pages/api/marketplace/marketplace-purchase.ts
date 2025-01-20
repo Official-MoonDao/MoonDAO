@@ -1,8 +1,12 @@
-import { CITIZEN_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
+import CitizenABI from 'const/abis/Citizen.json'
+import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
+import { getContract, readContract, waitForReceipt } from 'thirdweb'
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { transporter, opEmail } from '@/lib/nodemailer/nodemailer'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
 
 const MARKETPLACE_PURHCASE_FIELDS: any = {
   address: 'Address',
@@ -82,20 +86,27 @@ async function handler(req: any, res: any) {
     let verifiedCitizen = false
     let fromIsNotCitizen = false
 
-    const sdk = initSDK(DEFAULT_CHAIN)
-    const provider = sdk?.getProvider()
-    const txReceipt = await provider?.getTransactionReceipt(txHash)
+    const txReceipt = await waitForReceipt({
+      client: serverClient,
+      chain: DEFAULT_CHAIN_V5,
+      transactionHash: txHash,
+    })
 
     try {
-      const citizenContract = await sdk?.getContract(
-        CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug]
-      )
+      const citizenContract = getContract({
+        client: serverClient,
+        address: CITIZEN_ADDRESSES[getChainSlug(DEFAULT_CHAIN_V5)],
+        chain: DEFAULT_CHAIN_V5,
+        abi: CitizenABI as any,
+      })
 
-      const ownedTokenId = await citizenContract?.call('getOwnedToken', [
-        txReceipt.from,
-      ])
+      const ownedTokenId = await readContract({
+        contract: citizenContract,
+        method: 'getOwnedToken' as string,
+        params: [txReceipt.from],
+      })
 
-      if (ownedTokenId) {
+      if (ownedTokenId !== undefined) {
         verifiedCitizen = true
       }
     } catch (err: any) {
@@ -112,12 +123,17 @@ async function handler(req: any, res: any) {
       return res.status(400).json({ message: 'Citizen cannot be verified' })
     }
 
+    const provider = ethers5Adapter.provider.toEthers({
+      client: serverClient,
+      chain: DEFAULT_CHAIN_V5,
+    })
     const currBlockNumber = await provider?.getBlockNumber()
-    if (currBlockNumber - txReceipt.blockNumber > 2) {
+
+    if (currBlockNumber - +txReceipt.blockNumber.toString() > 2) {
       return res.status(400).json({ message: 'Transaction is invalid' })
     }
 
-    if (recipient !== txReceipt.to) {
+    if (recipient.toLowerCase() !== txReceipt.to?.toLowerCase()) {
       return res.status(400).json({ message: 'Recipient is incorrect' })
     }
 
