@@ -1,7 +1,6 @@
 import { TABLELAND_ENDPOINT } from 'const/config'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { readContract } from 'thirdweb'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
@@ -24,11 +23,7 @@ export default function NewMarketplaceListings({
     //get latest 25 listings
     async function getNewMarketplaceListings() {
       const now = Math.floor(Date.now() / 1000)
-      const tableName = await readContract({
-        contract: marketplaceTableContract,
-        method: 'getTableName' as string,
-        params: [],
-      })
+      const tableName = await marketplaceTableContract.call('getTableName')
       const statement = `SELECT * FROM ${tableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
       const allListingsRes = await fetch(
         `${TABLELAND_ENDPOINT}?statement=${statement}`
@@ -36,12 +31,10 @@ export default function NewMarketplaceListings({
       const listings = await allListingsRes.json()
       const validListings = listings.filter(
         async (listing: TeamListingType) => {
-          const teamExpiration = await readContract({
-            contract: teamContract,
-            method: 'expiresAt' as string,
-            params: [listing.teamId],
-          })
-          return +teamExpiration.toString() > now
+          const teamExpiration = await teamContract.call('expiresAt', [
+            listing.teamId,
+          ])
+          return teamExpiration.toNumber() > now
         }
       )
       setNewListings(validListings)

@@ -56,8 +56,7 @@ export function useUniversalRouter(
   }
 
   async function executeRoute(swapRoute: SwapRoute) {
-    const privyProvider = await wallets[selectedWallet].getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
 
     const options: any = {

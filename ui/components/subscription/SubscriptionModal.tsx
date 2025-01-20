@@ -1,10 +1,9 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { useAddress } from '@thirdweb-dev/react'
 import { DEFAULT_CHAIN, TEAM_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { useActiveAccount } from 'thirdweb/react'
 import { useHandleRead } from '@/lib/thirdweb/hooks'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -16,11 +15,9 @@ export function SubscriptionModal({
   subscriptionContract,
   validPass,
   expiresAt,
-  type = 'citizen',
 }: any) {
   const router = useRouter()
-  const account = useActiveAccount()
-  const address = account?.address
+  const address = useAddress()
   const [isLoading, setIsLoading] = useState(false)
 
   const [years, setYears] = useState<number>(1)
@@ -54,38 +51,25 @@ export function SubscriptionModal({
             setIsLoading(true)
 
             try {
-              if (!account) throw new Error('No account found')
-
               const duration = years * 365 * 24 * 60 * 60
               const contractAddress = subscriptionContract.getAddress()
 
-              let receipt
-              if (type === 'team') {
-                const transaction = prepareContractCall({
-                  contract: subscriptionContract,
-                  method: 'renewSubscription',
-                  params: [address, nft.metadata.id, duration],
-                  options: {
+              if (contractAddress === TEAM_ADDRESSES[selectedChain.slug]) {
+                await subscriptionContract.call(
+                  'renewSubscription',
+                  [address, nft.metadata.id, duration],
+                  {
                     value: subscriptionCost.toString(),
-                  },
-                } as any)
-                receipt = await sendAndConfirmTransaction({
-                  transaction,
-                  account,
-                })
+                  }
+                )
               } else {
-                const transaction = prepareContractCall({
-                  contract: subscriptionContract,
-                  method: 'renewSubscription',
-                  params: [nft.metadata.id, duration],
-                  options: {
+                await subscriptionContract.call(
+                  'renewSubscription',
+                  [nft.metadata.id, duration],
+                  {
                     value: subscriptionCost.toString(),
-                  },
-                } as any)
-                receipt = await sendAndConfirmTransaction({
-                  transaction,
-                  account,
-                })
+                  }
+                )
               }
               setEnabled(false)
               router.reload()

@@ -1,21 +1,14 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { usePrivy } from '@privy-io/react-auth'
+import { useContract, useResolvedMediaType } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import TeamTableABI from 'const/abis/TeamTable.json'
-import {
-  DEFAULT_CHAIN,
-  DEFAULT_CHAIN_V5,
-  TEAM_TABLE_ADDRESSES,
-} from 'const/config'
+import { DEFAULT_CHAIN, TEAM_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
@@ -50,12 +43,12 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
       />
       <FormInput
         id="team-twitter-input"
-        label="Twitter"
+        label="X/Twitter"
         value={teamData.twitter}
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, twitter: target.value }))
         }
-        placeholder="Enter your twitter link"
+        placeholder="Enter your Twitter link including https://"
       />
       <FormInput
         id="team-communications-input"
@@ -67,7 +60,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
             communications: target.value,
           }))
         }
-        placeholder="Enter your communications link"
+        placeholder="Enter your communications link including https://"
       />
       <FormInput
         id="team-website-input"
@@ -76,14 +69,13 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, website: target.value }))
         }
-        placeholder="Enter your website link"
+        placeholder="Enter your website link including https://"
       />
     </div>
   )
 }
 
 export default function TeamMetadataModal({
-  account,
   nft,
   selectedChain,
   setEnabled,
@@ -92,9 +84,7 @@ export default function TeamMetadataModal({
 
   const [stage, setStage] = useState(0)
 
-  const [currTeamImage, setCurrTeamImage] = useState<string>(
-    nft?.metadata?.image
-  )
+  const [currTeamImage, setCurrTeamImage] = useState<string>()
   const [newTeamImage, setNewTeamImage] = useState<File>()
   const [teamData, setTeamData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
@@ -102,11 +92,13 @@ export default function TeamMetadataModal({
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
 
-  const teamTableContract = useContract({
-    address: TEAM_TABLE_ADDRESSES[getChainSlug(selectedChain)],
-    chain: selectedChain,
-    abi: TeamTableABI,
-  })
+  const { getAccessToken } = usePrivy()
+
+  const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
+
+  const { contract: teamTableContract } = useContract(
+    TEAM_TABLE_ADDRESSES[selectedChain.slug]
+  )
 
   const submitTypeform = useCallback(
     async (formResponse: any) => {
@@ -136,6 +128,16 @@ export default function TeamMetadataModal({
     },
     [teamTableContract, newTeamImage]
   )
+
+  useEffect(() => {
+    async function getCurrTeamImage() {
+      const rawMetadataRes = await fetch(resolvedMetadata.url)
+      const rawMetadata = await rawMetadataRes.json()
+      const imageIpfsLink = rawMetadata.image
+      setCurrTeamImage(imageIpfsLink)
+    }
+    getCurrTeamImage()
+  }, [resolvedMetadata])
 
   useEffect(() => {
     setTeamData({
@@ -216,9 +218,8 @@ export default function TeamMetadataModal({
               setAgreedToCondition={setAgreedToOnChainData}
             />
             <PrivyWeb3Button
-              v5
               className="mt-4 w-full gradient-2 rounded-[5vmax]"
-              requiredChain={DEFAULT_CHAIN_V5}
+              requiredChain={DEFAULT_CHAIN}
               label="Submit"
               isDisabled={!agreedToOnChainData}
               action={async () => {
@@ -227,10 +228,16 @@ export default function TeamMetadataModal({
                 }
 
                 try {
-                  let imageIpfsLink
+                  const rawMetadataRes = await fetch(resolvedMetadata.url)
+                  const rawMetadata = await rawMetadataRes.json()
 
-                  if (!newTeamImage && currTeamImage && currTeamImage !== '') {
-                    imageIpfsLink = currTeamImage
+                  let imageIpfsLink
+                  if (
+                    !newTeamImage &&
+                    rawMetadata.image &&
+                    rawMetadata.image !== ''
+                  ) {
+                    imageIpfsLink = rawMetadata.image
                   } else {
                     if (!newTeamImage) return console.error('No new image')
 
@@ -245,7 +252,7 @@ export default function TeamMetadataModal({
                     )
 
                     //unpin old iamge
-                    await unpin(currTeamImage.split('ipfs://')[1])
+                    await unpin(rawMetadata.image.split('ipfs://')[1])
 
                     imageIpfsLink = `ipfs://${newImageIpfsHash}`
                   }
@@ -265,36 +272,24 @@ export default function TeamMetadataModal({
 
                   const cleanedTeamData = cleanData(teamData)
 
-                  const transaction = prepareContractCall({
-                    contract: teamTableContract,
-                    method: 'updateTable' as string,
-                    params: [
-                      nft.metadata.id,
-                      cleanedTeamData.name,
-                      cleanedTeamData.description,
-                      imageIpfsLink,
-                      cleanedTeamData.twitter,
-                      cleanedTeamData.communications,
-                      cleanedTeamData.website,
-                      cleanedTeamData.view,
-                      formResponseId,
-                    ],
-                  })
-
-                  console.log(teamTableContract)
-
-                  const receipt = await sendAndConfirmTransaction({
-                    transaction,
-                    account,
-                  })
+                  //mint NFT to safe
+                  await teamTableContract?.call('updateTable', [
+                    nft.metadata.id,
+                    cleanedTeamData.name,
+                    cleanedTeamData.description,
+                    imageIpfsLink,
+                    cleanedTeamData.twitter,
+                    cleanedTeamData.communications,
+                    cleanedTeamData.website,
+                    cleanedTeamData.view,
+                    formResponseId,
+                  ])
 
                   setEnabled(false)
 
-                  if (receipt) {
-                    setTimeout(() => {
-                      router.reload()
-                    }, 30000)
-                  }
+                  setTimeout(() => {
+                    router.reload()
+                  }, 15000)
                 } catch (err) {
                   console.log(err)
                 }

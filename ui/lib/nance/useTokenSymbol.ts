@@ -1,10 +1,9 @@
-import { Ethereum } from '@thirdweb-dev/chains'
 import { useEffect, useState } from 'react'
+import { getContract, readContract } from 'thirdweb'
+import { ethereum } from 'thirdweb/chains'
+import client from '@/lib/thirdweb/client'
 import { isAddress } from 'ethers/lib/utils'
-import { initSDK } from '../thirdweb/thirdweb'
-import { ETH_MOCK_ADDRESS } from "../../components/nance/form/SafeTokenForm"
-
-const ETHEREUM_SDK = initSDK(Ethereum)
+import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 
 export function useTokenSymbol(address: string | undefined) {
   const [value, setValue] = useState<string>('Token')
@@ -27,11 +26,17 @@ export function useTokenSymbol(address: string | undefined) {
         setValue('Token')
         setError(undefined)
 
-        const contract = await ETHEREUM_SDK.getContract(
+        const contract = getContract({
+          client,
           address,
-          '[{"type":"function","name":"symbol","constant":true,"stateMutability":"view","payable":false,"inputs":[],"outputs":[{"type":"string"}]}]'
-        )
-        const tokenSymbol = await contract.call('symbol')
+          chain: ethereum,
+          abi: '[{"type":"function","name":"symbol","constant":true,"stateMutability":"view","payable":false,"inputs":[],"outputs":[{"type":"string"}]}]' as any,
+        })
+
+        const tokenSymbol = await readContract({
+          contract,
+          method: 'symbol',
+        })
 
         setValue(tokenSymbol)
       } catch (e: any) {

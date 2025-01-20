@@ -14,6 +14,6 @@ export function useMaticBridge(
 
   const { contract: parentTokenContract } = useContract(
     parentTokenAddress,
-    ERC20
+    ERC20.abi
   )
 }

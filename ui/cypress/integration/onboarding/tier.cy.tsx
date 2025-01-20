@@ -1,4 +1,6 @@
-import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { PrivyProvider } from '@privy-io/react-auth'
+import { Sepolia } from '@thirdweb-dev/chains'
+import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import Tier from '@/components/onboarding/Tier'
 
 describe('<Tier />', () => {
@@ -18,9 +20,11 @@ describe('<Tier />', () => {
     }
 
     cy.mount(
-      <TestnetProviders>
-        <Tier {...props} />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <Tier {...props} />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
   })
 
@@ -44,9 +48,11 @@ describe('<Tier />', () => {
 
   it('Renders compact view correctly', () => {
     cy.mount(
-      <TestnetProviders>
-        <Tier {...props} compact={true} />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <Tier {...props} compact={true} />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
     cy.get('button').should('exist')
   })

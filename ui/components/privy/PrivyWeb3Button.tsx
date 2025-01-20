@@ -67,7 +67,6 @@ export function PrivyWeb3Button({
     selectedChain: selectedChainV5,
     setSelectedChain: setSelectedChainV5,
   } = useContext(ChainContextV5)
-
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { user, login } = usePrivy()
   const { wallets } = useWallets()
@@ -78,7 +77,7 @@ export function PrivyWeb3Button({
 
   useEffect(() => {
     const chainId = v5 ? selectedChainV5.id : selectedChain.chainId
-    const requiredChainId = v5 ? requiredChain?.id : requiredChain?.chainId
+    const requiredChainId = v5 ? requiredChain.id : requiredChain.chainId
 
     if (!user) {
       setBtnState(0)
@@ -100,7 +99,15 @@ export function PrivyWeb3Button({
     if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
       setBtnState(2)
     }
-  }, [wallets, selectedChain, selectedWallet, user, skipNetworkCheck, v5])
+  }, [
+    wallets,
+    selectedChain,
+    selectedWallet,
+    user,
+    skipNetworkCheck,
+    requiredChain,
+    v5,
+  ])
 
   return (
     <>
@@ -147,7 +154,6 @@ export function PrivyWeb3Button({
               await action()
               onSuccess && onSuccess()
             } catch (err: any) {
-              console.log(err)
               console.log(err.message)
               onError && onError()
             }

@@ -7,6 +7,7 @@ import {
   TABLELAND_ENDPOINT,
 } from 'const/config'
 import { useRouter } from 'next/router'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import {
@@ -19,6 +20,7 @@ export default function Rewards({
   distributions,
 }: RetroactiveRewardsProps) {
   const router = useRouter()
+  useChainDefault()
   return (
     <RetroactiveRewards
       projects={projects}
