@@ -1,22 +1,28 @@
 import { Tab } from '@headlessui/react'
 import { NanceProvider } from '@nance/nance-hooks'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
-import { PROJECT_TABLE_ADDRESSES, TABLELAND_ENDPOINT } from 'const/config'
+import {
+  DEFAULT_CHAIN_V5,
+  PROJECT_TABLE_ADDRESSES,
+  TABLELAND_ENDPOINT,
+} from 'const/config'
 import { StringParam, useQueryParams } from 'next-query-params'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
-import { NANCE_API_URL } from '../lib/nance/constants'
+import { getContract, readContract } from 'thirdweb'
+import { NANCE_API_URL } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
-import ContributionEditor from '../components/contribution/ContributionEditor'
-import Container from '../components/layout/Container'
-import ContentLayout from '../components/layout/ContentLayout'
-import WebsiteHead from '../components/layout/Head'
-import { NoticeFooter } from '../components/layout/NoticeFooter'
-import ProposalEditor from '../components/nance/ProposalEditor'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import ContributionEditor from '@/components/contribution/ContributionEditor'
+import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import WebsiteHead from '@/components/layout/Head'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import FinalReportEditor from '@/components/nance/FinalReportEditor'
+import ProposalEditor from '@/components/nance/ProposalEditor'
 
 export default function SubmissionPage({
   projectsWithoutReport,
@@ -37,6 +43,8 @@ export default function SubmissionPage({
       setSelectedIndex(0)
     }
   }, [tag])
+
+  useChainDefault()
 
   return (
     <>
@@ -231,14 +239,20 @@ export default function SubmissionPage({
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const sdk = initSDK(chain)
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
 
-  const projectTableContract = await sdk.getContract(
-    PROJECT_TABLE_ADDRESSES[chain.slug],
-    ProjectTableABI
-  )
-  const projectTableName = await projectTableContract?.call('getTableName')
+  const projectTableContract = getContract({
+    client: serverClient,
+    address: PROJECT_TABLE_ADDRESSES[chainSlug],
+    abi: ProjectTableABI as any,
+    chain: chain,
+  })
+  const projectTableName = await readContract({
+    contract: projectTableContract,
+    method: 'getTableName',
+    params: [],
+  })
 
   const statement = `SELECT * FROM ${projectTableName} WHERE finalReportIPFS IS ""`
   const projectsRes = await fetch(
