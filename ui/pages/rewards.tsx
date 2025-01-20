@@ -10,6 +10,7 @@ import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import {
   RetroactiveRewards,
@@ -21,6 +22,7 @@ export default function Rewards({
   distributions,
 }: RetroactiveRewardsProps) {
   const router = useRouter()
+  useChainDefault()
   return (
     <RetroactiveRewards
       projects={projects}

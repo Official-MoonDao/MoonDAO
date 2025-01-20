@@ -67,7 +67,6 @@ export function PrivyWeb3Button({
     selectedChain: selectedChainV5,
     setSelectedChain: setSelectedChainV5,
   } = useContext(ChainContextV5)
-
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { user, login } = usePrivy()
   const { wallets } = useWallets()
@@ -77,7 +76,7 @@ export function PrivyWeb3Button({
   const [btnState, setBtnState] = useState(0)
 
   useEffect(() => {
-    const chainId = v5 ? selectedChainV5.id : selectedChain.chainId
+    const chainId = v5 ? selectedChainV5?.id : selectedChain?.chainId
     const requiredChainId = v5 ? requiredChain?.id : requiredChain?.chainId
 
     if (!user) {
@@ -100,7 +99,15 @@ export function PrivyWeb3Button({
     if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
       setBtnState(2)
     }
-  }, [wallets, selectedChain, selectedWallet, user, skipNetworkCheck, v5])
+  }, [
+    wallets,
+    selectedChain,
+    selectedWallet,
+    user,
+    skipNetworkCheck,
+    requiredChain,
+    v5,
+  ])
 
   return (
     <>
@@ -115,9 +122,10 @@ export function PrivyWeb3Button({
           type="button"
           className={className}
           onClick={async () => {
-            const chain = v5 ? selectedChainV5 : selectedChain
-            if (requiredChain && requiredChain !== chain) {
-              const chainId = v5 ? requiredChain.id : requiredChain.chainId
+            const chain: any = v5 ? selectedChainV5 : selectedChain
+            let chainId = v5 ? chain.id : chain.chainId
+            if (requiredChain) {
+              chainId = v5 ? requiredChain.id : requiredChain.chainId
               const v4Chain = await getChainByChainIdAsync(chainId)
               const v5Chain = defineChain(chainId)
               setSelectedChain(v4Chain)
@@ -125,7 +133,7 @@ export function PrivyWeb3Button({
             }
 
             try {
-              await wallets[selectedWallet]?.switchChain(selectedChain.chainId)
+              await wallets[selectedWallet]?.switchChain(chainId)
             } catch (err: any) {
               console.log(err.message)
             }
@@ -141,13 +149,11 @@ export function PrivyWeb3Button({
           type={type}
           className={className}
           onClick={async () => {
-            console.log(requiredChain, v5)
             setIsLoading(true)
             try {
               await action()
               onSuccess && onSuccess()
             } catch (err: any) {
-              console.log(err)
               console.log(err.message)
               onError && onError()
             }

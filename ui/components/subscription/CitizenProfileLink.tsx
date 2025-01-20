@@ -1,13 +1,13 @@
+import { Chain } from '@thirdweb-dev/chains'
+import { ThirdwebNftMedia } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import client from '@/lib/thirdweb/client'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 type CitizenProfileLinkProps = {
-  selectedChain: any
+  selectedChain: Chain
   citizenContract: any
 }
 
@@ -38,10 +38,9 @@ export default function CitizenProfileLink({
           {isLoading ? (
             <LoadingSpinner />
           ) : (
-            <MediaRenderer
-              client={client}
+            <ThirdwebNftMedia
               className=""
-              src={citizen.metadata.image}
+              metadata={citizen.metadata}
               width="100%"
               height="100%"
             />

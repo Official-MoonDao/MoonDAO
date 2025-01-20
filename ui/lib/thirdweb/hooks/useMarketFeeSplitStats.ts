@@ -15,7 +15,7 @@ export function useMarketFeeSplitStats() {
     const sdk = initSDK(Polygon)
     const mooneyContract = await sdk.getContract(
       MOONEY_ADDRESSES['polygon'],
-      ERC20
+      ERC20.abi
     )
 
     const splitBalance = await mooneyContract.call('balanceOf', [

@@ -3,13 +3,13 @@ import {
   LockClosedIcon,
   MoonIcon,
 } from '@heroicons/react/24/outline'
-import { BigNumber, ethers } from 'ethers'
+import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import { bigNumberToDate, dateToReadable } from '../../lib/utils/dates'
 import Balance from '../Balance'
 
 type LockDataProps = {
-  hasLock: boolean | undefined
+  hasLock: boolean
   VMOONEYBalance: any
   VMOONEYBalanceLoading: boolean
   VMOONEYLock: any
@@ -22,14 +22,10 @@ export function LockData({
   VMOONEYBalanceLoading,
   VMOONEYLock,
   VMOONEYLockLoading,
-}: LockDataProps) {
+}: any) {
   const { t } = useTranslation('common')
-
   return (
-    <section
-      id="lock-data"
-      className="mt-6 xl:mt-6 xl:w-3/4 bg-dark-cool rounded-[20px] overflow-hidden"
-    >
+    <section id="lock-data" className="mt-6 xl:mt-6 xl:w-3/4 bg-dark-cool rounded-[20px] overflow-hidden">
       {/*Lock Data*/}
       {hasLock && (
         <>
@@ -47,9 +43,7 @@ export function LockData({
                   loading={VMOONEYBalanceLoading}
                   decimals={
                     VMOONEYBalance &&
-                    BigNumber.from(VMOONEYBalance)?.gt(
-                      ethers.utils.parseEther('1')
-                    )
+                    VMOONEYBalance?.gt(ethers.utils.parseEther('1'))
                       ? 2
                       : 8
                   }
@@ -65,7 +59,7 @@ export function LockData({
               <div className="stat-value text-secondary">
                 <Balance
                   id="lock-data-locked-mooney"
-                  balance={VMOONEYLock && BigNumber.from(VMOONEYLock[0])}
+                  balance={VMOONEYLock && VMOONEYLock[0]}
                   loading={VMOONEYLockLoading}
                   decimals={2}
                 />

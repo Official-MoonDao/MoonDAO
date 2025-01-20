@@ -1,8 +1,9 @@
+import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
+import { useContract } from '@thirdweb-dev/react'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
-  DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
@@ -12,14 +13,10 @@ import { blockedProjects } from 'const/whitelist'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
-import { getContract, readContract } from 'thirdweb'
 import { Project } from '@/lib/project/useProjectData'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContext from '@/lib/thirdweb/chain-context'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import useContract from '@/lib/thirdweb/hooks/useContract'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
@@ -41,23 +38,16 @@ export default function Projects({
   activeProjects,
   inactiveProjects,
 }: NetworkProps) {
-  const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  const { selectedChain } = useContext(ChainContext)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
 
   //Contracts
-  const projectContract = useContract({
-    address: PROJECT_ADDRESSES[chainSlug],
-    abi: ProjectABI as any,
-    chain: selectedChain,
-  })
-
-  const hatsContract = useContract({
-    address: HATS_ADDRESS,
-    abi: HatsABI as any,
-    chain: selectedChain,
-  })
+  const { contract: projectContract } = useContract(
+    PROJECT_ADDRESSES[selectedChain.slug],
+    ProjectABI
+  )
+  const { contract: hatsContract } = useContract(HATS_ADDRESS, HatsABI)
 
   const [input, setInput] = useState('')
   function filterBySearch(projects: Project[]) {
@@ -281,22 +271,15 @@ export default function Projects({
 }
 
 export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
+  const sdk = initSDK(chain)
 
-  const projectTableContract = getContract({
-    client: serverClient,
-    address: PROJECT_TABLE_ADDRESSES[chainSlug],
-    abi: ProjectTableABI as any,
-    chain: chain,
-  })
+  const projectTableContract = await sdk.getContract(
+    PROJECT_TABLE_ADDRESSES[chain.slug],
+    ProjectTableABI
+  )
 
-  const projectTableName = await readContract({
-    contract: projectTableContract,
-    method: 'getTableName' as string,
-    params: [],
-  })
-
+  const projectTableName = await projectTableContract.call('getTableName')
   const projectStatement = `SELECT * FROM ${projectTableName}`
   const projectsRes = await fetch(
     `${TABLELAND_ENDPOINT}?statement=${projectStatement}`

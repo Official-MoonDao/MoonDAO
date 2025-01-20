@@ -47,11 +47,11 @@ export function OnboardingStageManager({ usdQuotes }: any) {
 
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug],
-    ERC20
+    ERC20.abi
   )
   const { contract: vMooneyContract } = useContract(
     VMOONEY_ADDRESSES[selectedChain.slug],
-    VotingEscrow
+    VotingEscrow.abi
   )
 
   const totalMooneyBalance = useTotalMooneyBalance(address)
