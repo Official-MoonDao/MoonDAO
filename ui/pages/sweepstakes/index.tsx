@@ -21,12 +21,12 @@ export default function Sweepstakes() {
 
   const { contract: mooneyContract } = useContract(
     '0x74Ac7664ABb1C8fa152D41bb60e311a663a41C7E',
-    ERC20
+    ERC20.abi
   ) //polygon mooney
 
   const { contract: mooneyETHContract } = useContract(
     MOONEY_ADDRESSES['ethereum'], // testnet
-    ERC20
+    ERC20.abi
   ) //eth mooney\
 
   useEffect(() => {

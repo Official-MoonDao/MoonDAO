@@ -1,24 +1,24 @@
 import { useFundWallet } from '@privy-io/react-auth'
-import { BigNumber, ethers } from 'ethers'
+import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import { ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import React from 'react'
 import { toast } from 'react-hot-toast'
-import { useActiveAccount } from 'thirdweb/react'
-import { approveToken } from '../lib/tokens/approve'
+import ChainContext from '../lib/thirdweb/chain-context'
+import { useTokenAllowance, useTokenApproval } from '../lib/tokens/approve'
+import { useMOONEYBalance } from '../lib/tokens/mooney-token'
 import {
+  useVMOONEYBalance,
+  useVMOONEYLock,
+  useVMOONEYCreateLock,
+  useVMOONEYIncreaseLock,
+  useVMOONEYWithdrawLock,
   calculateVMOONEY,
-  createLock,
-  increaseLock,
-  withdrawLock,
 } from '../lib/tokens/ve-token'
 import { bigNumberToDate, dateOut, dateToReadable } from '../lib/utils/dates'
 import { NumberType, transformNumber } from '../lib/utils/numbers'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import useContract from '@/lib/thirdweb/hooks/useContract'
-import useRead from '@/lib/thirdweb/hooks/useRead'
 import viemChains from '@/lib/viem/viemChains'
 import Balance from '../components/Balance'
 import TimeRange from '../components/TimeRange'
@@ -32,51 +32,43 @@ import LockPresets from '../components/thirdweb/LockPresets'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import ERC20ABI from '../const/abis/ERC20.json'
-import VotingEscrowABI from '../const/abis/VotingEscrow.json'
+import VotingEscrow from '../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
 
 export default function Lock() {
   const router = useRouter()
-  const { selectedChain }: any = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
-  const account = useActiveAccount()
-  const address = account?.address
-
-  const [refresh, setRefresh] = useState(false)
+  const { selectedChain }: any = useContext(ChainContext)
+  const address = useAddress()
+  const sdk = useSDK()
 
   const { fundWallet } = useFundWallet()
 
-  const mooneyContract = useContract({
-    address: MOONEY_ADDRESSES[chainSlug],
-    abi: ERC20ABI,
-    chain: selectedChain,
-  })
+  // get mooney contract (useContract assigns wrong abi for proxy)
+  const [mooneyContract, setMooneyContract] = useState()
+  useEffect(() => {
+    if (selectedChain?.slug && sdk) {
+      sdk
+        .getContract(MOONEY_ADDRESSES[selectedChain?.slug], ERC20ABI.abi)
+        .then((contract: any) => {
+          setMooneyContract(contract)
+        })
+    }
+  }, [selectedChain?.slug, sdk])
 
-  const vMooneyContract: any = useContract({
-    address: VMOONEY_ADDRESSES[chainSlug],
-    abi: VotingEscrowABI,
-    chain: selectedChain,
-  })
+  const { contract: vMooneyContract }: any = useContract(
+    VMOONEY_ADDRESSES[selectedChain?.slug],
+    VotingEscrow.abi
+  )
 
-  const { data: MOONEYBalance, isLoading: MOONEYBalanceLoading } = useRead({
-    contract: mooneyContract,
-    method: 'balanceOf',
-    params: [address],
-    deps: [refresh],
-  })
-  const { data: VMOONEYBalance, isLoading: VMOONEYBalanceLoading } = useRead({
-    contract: vMooneyContract,
-    method: 'balanceOf',
-    params: [address],
-    deps: [refresh],
-  })
+  const { data: MOONEYBalance, isLoading: MOONEYBalanceLoading } =
+    useMOONEYBalance(mooneyContract, address || '')
+  const { data: VMOONEYBalance, isLoading: VMOONEYBalanceLoading } =
+    useVMOONEYBalance(vMooneyContract, address)
 
-  const { data: VMOONEYLock, isLoading: VMOONEYLockLoading } = useRead({
-    contract: vMooneyContract,
-    method: 'locked',
-    params: [address],
-    deps: [refresh],
-  })
+  const { data: VMOONEYLock, isLoading: VMOONEYLockLoading } = useVMOONEYLock(
+    vMooneyContract,
+    address
+  )
 
   const [hasExpired, setHasExpired] = useState<boolean>()
   useEffect(() => {
@@ -84,9 +76,7 @@ export default function Lock() {
       setHasExpired(
         VMOONEYLock &&
           VMOONEYLock[1] != 0 &&
-          ethers.BigNumber.from(+new Date()).gte(
-            BigNumber.from(VMOONEYLock[1]).mul(1000)
-          )
+          ethers.BigNumber.from(+new Date()).gte(VMOONEYLock[1].mul(1000))
       )
   }, [VMOONEYLock, VMOONEYLockLoading, address])
 
@@ -108,29 +98,49 @@ export default function Lock() {
   const [canIncrease, setCanIncrease] = useState({ amount: true, time: true })
   const [wantsToIncrease, setWantsToIncrease] = useState(false)
 
-  const { data: tokenAllowance } = useRead({
-    contract: mooneyContract,
-    method: 'allowance',
-    params: [address, VMOONEY_ADDRESSES[chainSlug]],
-    deps: [refresh],
+  const { mutateAsync: approveToken } = useTokenApproval(
+    mooneyContract,
+    ethers.utils.parseEther(lockAmount || '0'),
+    VMOONEYLock?.[0],
+    VMOONEY_ADDRESSES[selectedChain.slug]
+  )
+
+  const { data: tokenAllowance } = useTokenAllowance(
+    mooneyContract,
+    address,
+    VMOONEY_ADDRESSES[selectedChain.slug]
+  )
+
+  const { mutateAsync: createLock } = useVMOONEYCreateLock(
+    vMooneyContract,
+    lockAmount && ethers.utils.parseEther(lockAmount),
+    lockTime?.value.div(1000)
+  )
+
+  const [hasLock, setHasLock] = useState<boolean>()
+  useEffect(() => {
+    !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
+  }, [VMOONEYLock, VMOONEYLockLoading, address, createLock])
+
+  const { mutateAsync: increaseLock } = useVMOONEYIncreaseLock({
+    votingEscrowContract: vMooneyContract,
+    currentAmount: VMOONEYLock && VMOONEYLock[0],
+    newAmount:
+      lockAmount &&
+      VMOONEYLock &&
+      ethers.utils.parseEther(lockAmount).sub(VMOONEYLock[0]),
+    currentTime: VMOONEYLock && VMOONEYLock[1],
+    newTime: lockTime?.value.div(1000),
   })
 
-  const hasLock = useMemo(() => {
-    return (
-      selectedChain &&
-      address &&
-      !VMOONEYLockLoading &&
-      VMOONEYLock &&
-      VMOONEYLock[0] != 0
-    )
-  }, [VMOONEYLock, VMOONEYLockLoading, address, selectedChain])
+  const { mutateAsync: withdraw } = useVMOONEYWithdrawLock(vMooneyContract)
 
   //Current lock
   useEffect(() => {
     if (hasLock && VMOONEYLock) {
       !lockAmount && setLockAmount(ethers.utils.formatEther(VMOONEYLock[0]))
       const origTime = {
-        value: BigNumber.from(VMOONEYLock[1]),
+        value: VMOONEYLock[1],
         formatted: dateToReadable(bigNumberToDate(VMOONEYLock[1])),
       }
       !lockTime && lockTime.orig
@@ -159,9 +169,7 @@ export default function Lock() {
         time:
           lockTime?.value &&
           lockTime.value.gt(
-            +dateOut(bigNumberToDate(BigNumber.from(VMOONEYLock[1])), {
-              days: 7,
-            })
+            +dateOut(bigNumberToDate(VMOONEYLock[1]), { days: 7 })
           ),
       })
     } else {
@@ -238,7 +246,7 @@ export default function Lock() {
                   {t('lockAvailableMoney')}{' '}
                 </p>
                 <Balance
-                  balance={MOONEYBalance?.toString() / 1e18}
+                  balance={MOONEYBalance?.toString() / 10 ** 18}
                   loading={MOONEYBalanceLoading}
                 />
               </div>
@@ -303,9 +311,7 @@ export default function Lock() {
                               ? ethers.utils.formatEther(
                                   VMOONEYLock[0].add(MOONEYBalance)
                                 )
-                              : ethers.utils.formatEther(
-                                  MOONEYBalance?.value.toString() || '0'
-                                )
+                              : ethers.utils.formatEther(MOONEYBalance)
                           )
                           setWantsToIncrease(true)
                         }}
@@ -371,12 +377,8 @@ export default function Lock() {
                       }
                       expirationTime={
                         VMOONEYLock
-                          ? Date.parse(
-                              bigNumberToDate(
-                                VMOONEYLock?.[1]
-                              )?.toISOString() || new Date().toISOString()
-                            )
-                          : Date.now()
+                          ? Date.parse(bigNumberToDate(VMOONEYLock?.[1]))
+                          : Date.now
                       }
                       displaySteps={!hasLock}
                       onChange={(newDate: any) => {
@@ -392,8 +394,7 @@ export default function Lock() {
                     <TimeRange
                       disabled={
                         !address ||
-                        !MOONEYBalance ||
-                        +MOONEYBalance?.value?.toString() === 0 ||
+                        +MOONEYBalance?.toString() === 0 ||
                         (hasLock && canIncrease.amount)
                           ? true
                           : false
@@ -434,9 +435,7 @@ export default function Lock() {
                                 +lockAmount ||
                                 ethers.utils.formatEther(VMOONEYLock?.[0] || 0),
                               VMOONEYAmount: transformNumber(
-                                VMOONEYBalance
-                                  ? +VMOONEYBalance?.toString() / 10 ** 18
-                                  : 0,
+                                +VMOONEYBalance?.toString() / 10 ** 18 || 0,
                                 NumberType.number
                               ),
                               time: Date.parse(lockTime.formatted),
@@ -472,66 +471,32 @@ export default function Lock() {
                           }
                           action={async () => {
                             //check for token allowance
-                            try {
-                              if (!account)
-                                throw new Error('No account connected')
-                              const lockedMooney = VMOONEYLock?.[0]
-                              const lockAmountBigNum =
-                                ethers.utils.parseEther(lockAmount)
 
-                              const increaseAmount = lockedMooney
-                                ? lockAmountBigNum.sub(lockedMooney)
-                                : lockAmountBigNum
+                            const lockAmountBigNum =
+                              ethers.utils.parseEther(lockAmount)
 
-                              console.log(increaseAmount, tokenAllowance)
-                              if (increaseAmount.gt(tokenAllowance)) {
-                                const neededAllowance =
-                                  lockAmountBigNum.sub(lockedMooney)
-                                const approvalReceipt = await approveToken({
-                                  account,
-                                  tokenContract: mooneyContract,
-                                  spender: VMOONEY_ADDRESSES[chainSlug],
-                                  allowance: neededAllowance,
-                                })
-                                approvalReceipt &&
-                                  toast.success(
-                                    'Successfully approved MOONEY for lock'
-                                  )
-                              }
+                            const increaseAmount = VMOONEYLock?.[0]
+                              ? lockAmountBigNum.sub(VMOONEYLock?.[0])
+                              : lockAmountBigNum
 
-                              const lockReceipt: any = hasLock
-                                ? await increaseLock({
-                                    account,
-                                    votingEscrowContract: vMooneyContract,
-                                    newAmount:
-                                      lockAmount &&
-                                      VMOONEYLock &&
-                                      ethers.utils
-                                        .parseEther(lockAmount)
-                                        .sub(VMOONEYLock[0]),
-                                    currentTime: VMOONEYLock && VMOONEYLock[1],
-                                    newTime: lockTime?.value.div(1000),
-                                  })
-                                : await createLock({
-                                    account,
-                                    votingEscrowContract: vMooneyContract,
-                                    amount:
-                                      lockAmount &&
-                                      ethers.utils.parseEther(lockAmount),
-                                    time: lockTime?.value.div(1000),
-                                  })
-
-                              if (lockReceipt) {
+                            if (increaseAmount.gt(tokenAllowance)) {
+                              const approvalTx: any = await approveToken()
+                              approvalTx?.receipt &&
                                 toast.success(
-                                  hasLock
-                                    ? 'Successfully Increased lock'
-                                    : 'Successfully Created lock'
+                                  'Successfully approved MOONEY for lock'
                                 )
-                                setRefresh((prev) => !prev)
-                              }
-                            } catch (error) {
-                              throw error
                             }
+
+                            const lockTx: any = hasLock
+                              ? await increaseLock?.()
+                              : await createLock?.()
+
+                            lockTx?.receipt &&
+                              toast.success(
+                                hasLock
+                                  ? 'Successfully Increased lock'
+                                  : 'Successfully Created lock'
+                              )
                           }}
                           className={`hover:!text-title-light 
                           bg-slate-300
@@ -548,9 +513,7 @@ export default function Lock() {
                               Date.parse(lockTime?.formatted) <
                                 Date.parse(
                                   dateToReadable(
-                                    bigNumberToDate(
-                                      BigNumber.from(VMOONEYLock?.[1])
-                                    )
+                                    bigNumberToDate(VMOONEYLock?.[1])
                                   )
                                 ))
                           }
@@ -569,17 +532,7 @@ export default function Lock() {
                         className={`hover:!text-title-light 
                         bg-slate-300
                         dark:!text-dark-text dark:!bg-slate-600 dark:hover:!bg-slate-700 dark:hover:!text-title-dark`}
-                        action={async () => {
-                          if (!account) throw new Error('No account connected')
-                          const receipt = await withdrawLock({
-                            account,
-                            votingEscrowContract: vMooneyContract,
-                          })
-                          receipt &&
-                            toast.success(
-                              'Successfully Withdrew your locked MOONEY'
-                            )
-                        }}
+                        action={withdraw}
                       />
                     </div>
                   </div>
@@ -590,7 +543,6 @@ export default function Lock() {
               <AllowanceWarning
                 tokenContract={mooneyContract}
                 spender={VMOONEY_ADDRESSES[selectedChain.slug]}
-                tokenAllowance={tokenAllowance}
               />
             </div>
           </div>

@@ -1,40 +1,35 @@
-import { useWallets } from '@privy-io/react-auth'
 import SafeApiKit from '@safe-global/api-kit'
-import Safe from '@safe-global/protocol-kit'
-import { useContext, useEffect, useState } from 'react'
-import PrivyWalletContext from '../privy/privy-wallet-context'
-import ChainContextV5 from '../thirdweb/chain-context-v5'
+import { EthersAdapter } from '@safe-global/protocol-kit'
+import { useSDK } from '@thirdweb-dev/react'
+import { ethers } from 'ethers'
+import { useEffect, useState } from 'react'
 
-export default function useSafeApiKit(safeAddress: string) {
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain } = useContext(ChainContextV5)
-  const { wallets } = useWallets()
+export default function useSafeApiKit() {
+  const sdk = useSDK()
 
   const [safeApiKit, setSafeApiKit] = useState<any>()
-  const [protocolKit, setProtocolKit] = useState<any>()
 
   useEffect(() => {
-    async function getSafeApiKit() {
-      const apiKit = new SafeApiKit({
-        chainId: BigInt(selectedChain.id),
-      })
-      setSafeApiKit(apiKit)
-    }
+    const signer = sdk?.getSigner()
+    if (!sdk || !signer) return
 
-    async function getProtocolKit() {
-      const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
+    const ethAdapter = new EthersAdapter({
+      ethers,
+      signerOrProvider: signer,
+    })
 
-      if (!privyProvider) return
+    const safeNetwork =
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
 
-      const protoKit = await Safe.init({
-        provider: privyProvider as any,
-        safeAddress,
-      })
-      setProtocolKit(protoKit)
-    }
-    getSafeApiKit()
-    getProtocolKit()
-  }, [selectedWallet, wallets, selectedChain, safeAddress])
+    const txServiceUrl = `https://safe-transaction-${safeNetwork}.safe.global`
 
-  return { safeApiKit, protocolKit }
+    const apiKit = new SafeApiKit({
+      txServiceUrl,
+      ethAdapter,
+    })
+
+    setSafeApiKit(apiKit)
+  }, [sdk])
+
+  return safeApiKit
 }

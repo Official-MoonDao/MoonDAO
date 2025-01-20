@@ -1,13 +1,12 @@
 //ProfileCard
+import { ThirdwebNftMedia } from '@thirdweb-dev/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
 import {
   generatePrettyLink,
   generatePrettyLinkWithId,
 } from '@/lib/subscription/pretty-links'
-import client from '@/lib/thirdweb/client'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
 
@@ -98,13 +97,12 @@ export default function Card({
               </Frame>
             </div>
           )}
-          {metadata && (
+          {ThirdwebNftMedia && metadata && (
             <div id="entity-citizen-image-container" className="z-40">
               <Frame noPadding marginBottom="0px" className="">
-                <MediaRenderer
-                  client={client}
+                <ThirdwebNftMedia
                   className=""
-                  src={metadata.image}
+                  metadata={metadata}
                   height={'100%'}
                   width={'100%'}
                 />
