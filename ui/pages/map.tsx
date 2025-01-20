@@ -127,15 +127,15 @@ export async function getStaticProps() {
       const citizenLocation = getAttribute(
         citizen?.metadata?.attributes as any[],
         'location'
-      ).value
+      )?.value
 
       let locationData
-      if (citizenLocation !== '' && !citizenLocation.startsWith('{')) {
+      if (citizenLocation !== '' && !citizenLocation?.startsWith('{')) {
         const locationRes = await fetch(
           `https://maps.googleapis.com/maps/api/geocode/json?address=${citizenLocation}&key=${process.env.GOOGLE_MAPS_API_KEY}`
         )
         locationData = await locationRes.json()
-      } else if (citizenLocation.startsWith('{')) {
+      } else if (citizenLocation?.startsWith('{')) {
         const parsedLocationData = JSON.parse(citizenLocation)
         locationData = {
           results: [
