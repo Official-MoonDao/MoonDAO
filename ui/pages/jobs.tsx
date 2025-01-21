@@ -144,7 +144,7 @@ export async function getStaticProps() {
 
   const allJobs = await queryTable(chain, statement)
 
-  const validJobs = allJobs?.filter(async (job: JobType) => {
+  const validJobs = allJobs?.filter(async (job: any) => {
     const teamExpiration = await readContract({
       contract: teamContract,
       method: 'expiresAt',
