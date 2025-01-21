@@ -1,4 +1,3 @@
-import { TABLELAND_ENDPOINT } from 'const/config'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
@@ -32,7 +31,7 @@ export default function NewMarketplaceListings({
       })
       const statement = `SELECT * FROM ${tableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
       const allListingsRes = await fetch(
-        `${TABLELAND_ENDPOINT}?statement=${statement}`
+        `/api/tableland/query?statement=${statement}`
       )
       const listings = await allListingsRes.json()
       const validListings = listings.filter(

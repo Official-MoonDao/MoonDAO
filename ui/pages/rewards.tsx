@@ -3,11 +3,11 @@ import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -39,43 +39,34 @@ export async function getStaticProps() {
 
     const projectTableContract = getContract({
       client: serverClient,
+      chain,
       address: PROJECT_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
       abi: ProjectTableABI as any,
     })
 
     const distributionTableContract = getContract({
       client: serverClient,
+      chain,
       address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
       abi: DistributionABI as any,
     })
 
     const projectTableName = await readContract({
       contract: projectTableContract,
-      method: 'getTableName' as string,
-      params: [],
+      method: 'getTableName',
     })
-
     const distributionTableName = await readContract({
       contract: distributionTableContract,
-      method: 'getTableName' as string,
-      params: [],
+      method: 'getTableName',
     })
 
     const { quarter, year } = getRelativeQuarter(-1)
 
     const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter}`
-    const projectsRes = await fetch(
-      `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
-    )
-    const projects = await projectsRes.json()
+    const projects = await queryTable(chain, projectStatement)
 
     const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
-    const distributionsRes = await fetch(
-      `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
-    )
-    const distributions = await distributionsRes.json()
+    const distributions = await queryTable(chain, distributionStatement)
 
     return {
       props: {

@@ -12,7 +12,6 @@ import {
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
 import { HATS_ADDRESS } from 'const/config'
@@ -31,6 +30,7 @@ import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
@@ -607,10 +607,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     const chainSlug = getChainSlug(chain)
 
     const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
-    const allCitizensRes = await fetch(
-      `${TABLELAND_ENDPOINT}?statement=${statement}`
-    )
-    const allCitizens = await allCitizensRes.json()
+    const allCitizens = (await queryTable(chain, statement)) as any
 
     const { prettyLinks } = generatePrettyLinks(allCitizens, {
       allHaveTokenId: true,
