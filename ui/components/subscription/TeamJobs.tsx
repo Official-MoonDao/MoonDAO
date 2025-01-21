@@ -2,7 +2,9 @@
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import Job, { Job as JobType } from '../jobs/Job'
+import { readContract } from 'thirdweb'
+import { Job as JobType } from '../jobs/Job'
+import JobV5 from '../jobs/JobV5'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import Card from './Card'
@@ -26,8 +28,12 @@ export default function TeamJobs({
   const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
 
   async function getEntityJobs() {
-    const jobBoardTableName = await jobTableContract.call('getTableName')
-    const statement = `SELECT * FROM ${jobBoardTableName} WHERE teamId = ${teamId}`
+    const jobTableName = await readContract({
+      contract: jobTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
+    const statement = `SELECT * FROM ${jobTableName} WHERE teamId = ${teamId}`
 
     const res = await fetch(`/api/tableland/query?statement=${statement}`)
     const data = await res.json()
@@ -105,7 +111,7 @@ export default function TeamJobs({
             <div className="flex gap-4">
               {jobs?.[0] ? (
                 jobs.map((job, i) => (
-                  <Job
+                  <JobV5
                     id={`team-job-${job.id}`}
                     key={`team-job-${job.id}`}
                     job={job}

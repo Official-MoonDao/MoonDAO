@@ -1,6 +1,5 @@
 import { Tab } from '@headlessui/react'
 import { NanceProvider } from '@nance/nance-hooks'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import { DEFAULT_CHAIN_V5, PROJECT_TABLE_ADDRESSES } from 'const/config'
 import { StringParam, useQueryParams } from 'next-query-params'
@@ -41,6 +40,8 @@ export default function SubmissionPage({
       setSelectedIndex(0)
     }
   }, [tag])
+
+  useChainDefault()
 
   return (
     <>

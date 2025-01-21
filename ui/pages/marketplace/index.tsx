@@ -2,10 +2,18 @@ import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import MarketplaceABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
-import { MARKETPLACE_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import {
+  DEFAULT_CHAIN_V5,
+  MARKETPLACE_TABLE_ADDRESSES,
+  TEAM_ADDRESSES,
+} from 'const/config'
 import { useContext, useEffect, useState } from 'react'
+import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContext from '@/lib/thirdweb/chain-context'
+import { serverClient } from '@/lib/thirdweb/client'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -101,35 +109,40 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const sdk = initSDK(chain)
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+
   const now = Math.floor(Date.now() / 1000)
 
-  const marketplaceTableContract = await sdk.getContract(
-    MARKETPLACE_TABLE_ADDRESSES[chain.slug],
-    MarketplaceABI
-  )
-  const teamContract = await sdk.getContract(
-    TEAM_ADDRESSES[chain.slug],
-    TeamABI
-  )
+  const marketplaceTableContract = getContract({
+    client: serverClient,
+    chain,
+    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+    abi: MarketplaceABI as any,
+  })
+  const teamContract = getContract({
+    client: serverClient,
+    chain,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+  })
 
-  const marketplaceTableName = await marketplaceTableContract.call(
-    'getTableName'
-  )
+  const marketplaceTableName = await readContract({
+    contract: marketplaceTableContract,
+    method: 'getTableName',
+  })
 
   const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
-  const allListingsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${statement}`
-  )
-  const allListings = await allListingsRes.json()
+  const allListings = await queryTable(chain, statement)
 
   const validListings = allListings.filter(async (listing: TeamListingType) => {
-    const teamExpiration = await teamContract.call('expiresAt', [
-      listing.teamId,
-    ])
-    return teamExpiration.toNumber() > now
+    const teamExpiration = await readContract({
+      contract: teamContract,
+      method: 'expiresAt',
+      params: [listing.teamId],
+    })
+    return +teamExpiration.toString() > now
   })
 
   return {

@@ -15,7 +15,7 @@ const TreasuryBalance = ({ balance, loading }: any) => {
         </h2>
         {/*Disclaimer */}
         <p className="mt-10 inline-block w-[336px] dark:text-gray-50 text-gray-900 tracking-wider opacity-60  sm:w-[400px] lg:w-[336px] xl:w-full text-sm">
-          The total doesn't include the value of $MOONEY.{' '}
+          The total doesn't include Layer 2 holdings or the value of $MOONEY.{' '}
         </p>
       </div>
     </>

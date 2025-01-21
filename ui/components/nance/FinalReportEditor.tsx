@@ -1,12 +1,9 @@
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { useProposal } from '@nance/nance-hooks'
 import { RequestBudget } from '@nance/nance-sdk'
-import { useAddress, useContract } from '@thirdweb-dev/react'
-import HatsABI from 'const/abis/Hats.json'
 import ProjectsABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
-  HATS_ADDRESS,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
@@ -15,12 +12,20 @@ import dynamic from 'next/dynamic'
 import { useContext, useEffect, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
+import {
+  prepareContractCall,
+  readContract,
+  sendAndConfirmTransaction,
+} from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { FINAL_REPORT_TEMPLATE } from '@/lib/nance'
-import useProjectData, { Project } from '@/lib/project/useProjectData'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
+import { Project } from '@/lib/project/useProjectData'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
@@ -54,22 +59,25 @@ const NanceEditor = dynamic(
 export default function FinalReportEditor({
   projectsWithoutReport,
 }: FinalReportEditorProps) {
-  const { selectedChain } = useContext(ChainContext)
-  const address = useAddress()
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
+  const account = useActiveAccount()
+  const address = account?.address
 
   //Contracts
-  const { contract: projectContract } = useContract(
-    PROJECT_ADDRESSES[selectedChain.slug],
-    ProjectsABI
-  )
-  const { contract: hatsContract } = useContract(HATS_ADDRESS, HatsABI)
+  const projectContract = useContract({
+    address: PROJECT_ADDRESSES[chainSlug],
+    abi: ProjectsABI,
+    chain: selectedChain,
+  })
+
+  const projectTableContract = useContract({
+    address: PROJECT_TABLE_ADDRESSES[chainSlug],
+    abi: ProjectTableABI,
+    chain: selectedChain,
+  })
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
-
-  const { contract: projectsTableContact } = useContract(
-    PROJECT_TABLE_ADDRESSES[selectedChain.slug],
-    ProjectTableABI
-  )
 
   const [{ proposalId }, setQuery] = useQueryParams({ proposalId: StringParam })
   const shouldFetch = !!proposalId
@@ -94,11 +102,38 @@ export default function FinalReportEditor({
     : ''
 
   const [selectedProject, setSelectedProject] = useState<Project | undefined>()
-  const { isManager } = useProjectData(
-    projectContract,
-    hatsContract,
-    selectedProject
-  )
+  const [isManager, setIsManager] = useState<boolean>(false)
+
+  useEffect(() => {
+    async function checkIsManager() {
+      try {
+        const results = await Promise.allSettled([
+          readContract({
+            contract: projectContract,
+            method: 'isManager' as string,
+            params: [selectedProject?.id, address],
+          }),
+          readContract({
+            contract: projectContract,
+            method: 'ownerOf' as string,
+            params: [selectedProject?.id],
+          }),
+        ])
+
+        const manager: any =
+          results[0].status === 'fulfilled' ? results[0].value : false
+        const owner: any =
+          results[1].status === 'fulfilled' ? results[1].value : false
+
+        setIsManager(manager || owner === address)
+      } catch (err) {
+        setIsManager(false)
+      }
+    }
+    if (address && projectContract) {
+      checkIsManager()
+    }
+  }, [selectedProject, address, projectContract])
 
   useEffect(() => {
     if (projectsWithoutReport) {
@@ -122,10 +157,15 @@ export default function FinalReportEditor({
       })
     }
 
+    setSigningStatus('loading')
+
     try {
       const markdown = getMarkdown()
       if (!markdown) {
         throw new Error('No markdown found')
+      }
+      if (!account) {
+        throw new Error('No account found')
       }
       const header = `# ${reportTitle}\n\n`
       const fileName = `${reportTitle.replace(/\s+/g, '-')}.md`
@@ -135,7 +175,11 @@ export default function FinalReportEditor({
 
       const { cid: markdownIpfsHash } = await pinBlobOrFile(file)
 
-      const projectsTableName = await projectsTableContact?.call('getTableName')
+      const projectsTableName = await readContract({
+        contract: projectTableContract,
+        method: 'getTableName' as string,
+        params: [],
+      })
       const statement = `SELECT * FROM ${projectsTableName} WHERE MDP = ${loadedProposal?.proposalId}`
       const projectRes = await fetch(
         `/api/tableland/query?statement=${statement}`
@@ -143,24 +187,36 @@ export default function FinalReportEditor({
       const projectData = await projectRes.json()
       const project = projectData[0]
 
-      await projectsTableContact?.call('updateFinalReportIPFS', [
-        project.id,
-        'ipfs://' + markdownIpfsHash,
-      ])
-      setSelectedProject(undefined)
-      setMarkdown(FINAL_REPORT_TEMPLATE)
-      setLoadedProposal(undefined)
-      setQuery({ proposalId: undefined })
-
-      toast.success('Final report uploaded successfully.', {
-        style: toastStyle,
+      const transaction = prepareContractCall({
+        contract: projectTableContract,
+        method: 'updateFinalReportIPFS' as string,
+        params: [project.id, 'ipfs://' + markdownIpfsHash],
       })
+      const receipt = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+      if (receipt) {
+        setSelectedProject(undefined)
+        setMarkdown(FINAL_REPORT_TEMPLATE)
+        setLoadedProposal(undefined)
+        setQuery({ proposalId: undefined })
+
+        toast.success('Final report uploaded successfully.', {
+          style: toastStyle,
+        })
+        setSigningStatus('success')
+      }
     } catch (err) {
       console.log(err)
       toast.error('Unable to upload final report, please contact support.', {
         style: toastStyle,
       })
+      setSigningStatus('error')
     }
+    setTimeout(() => {
+      setSigningStatus('idle')
+    }, 5000)
   }
 
   const buttonsDisabled =
@@ -218,7 +274,7 @@ export default function FinalReportEditor({
                   'px-5 py-3 gradient-2 border border-transparent font-RobotoMono rounded-[20px] rounded-tl-[10px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
                 )}
                 onClick={() => {}}
-                disabled={buttonsDisabled || !projectsTableContact}
+                disabled={buttonsDisabled || !projectTableContract}
                 data-tip={
                   !selectedProject
                     ? 'Please select a project.'
