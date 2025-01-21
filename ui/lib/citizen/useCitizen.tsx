@@ -13,13 +13,18 @@ export function useCitizen(
   const sdk = useSDK()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
-  const { authenticated } = usePrivy()
+  const { user, authenticated } = usePrivy()
   const [citizenNFT, setCitizenNFT] = useState<NFT>()
 
   useEffect(() => {
     async function getCitizenNFTByAddress() {
-      if (!authenticated) return setCitizenNFT(undefined)
+      if (
+        citizenNFT &&
+        citizenNFT?.owner === wallets?.[selectedWallet]?.address
+      )
+        return
 
+      if (!authenticated || !user) return setCitizenNFT(undefined)
       try {
         let contract
         if (citizenContract) {
@@ -50,7 +55,7 @@ export function useCitizen(
     selectedChain,
     citizenContract,
     selectedWallet,
-    wallets,
+    user,
     authenticated,
     citizenAddress,
   ])
