@@ -51,7 +51,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   )
   const { contract: vMooneyContract } = useContract(
     VMOONEY_ADDRESSES[selectedChain.slug],
-    VotingEscrow.abi
+    VotingEscrow
   )
 
   const totalMooneyBalance = useTotalMooneyBalance(address)

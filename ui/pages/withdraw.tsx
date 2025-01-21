@@ -6,6 +6,7 @@ import {
   VMOONEY_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
   MOONEY_DECIMALS,
+  DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { BigNumber } from 'ethers'
 import { useRouter } from 'next/router'
@@ -81,6 +82,7 @@ export default function Withdraw() {
     useState<boolean>(false)
   const sixMonths = 6 * 30 * 24 * 60 * 60 * 1000
   useEffect(() => {
+    console.log()
     !VMOONEYLockLoading &&
       setHasMoreThanSixMonths(
         VMOONEYLock &&
@@ -179,6 +181,7 @@ export default function Withdraw() {
               ) : (
                 <PrivyWeb3Button
                   v5
+                  requiredChain={DEFAULT_CHAIN_V5}
                   label={hasLock ? 'Extend Lock' : 'Lock MOONEY'}
                   className="gradient-2 rounded-full"
                   action={() => router.push('/lock')}
