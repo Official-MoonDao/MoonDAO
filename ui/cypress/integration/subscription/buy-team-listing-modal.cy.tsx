@@ -1,8 +1,8 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import { ZERO_ADDRESS } from 'const/config'
-import BuyTeamListingModal from '@/components/subscription/BuyTeamListingModal'
-import { TeamListing } from '@/components/subscription/TeamListing'
+import BuyTeamListingModal from '@/components/subscription/BuyTeamListingModalV5'
+import { TeamListing } from '@/components/subscription/TeamListingV5'
 
 describe('<BuyTeamListingModal />', () => {
   let props: any
