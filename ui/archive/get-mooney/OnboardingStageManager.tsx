@@ -47,7 +47,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
 
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug],
-    ERC20.abi
+    ERC20
   )
   const { contract: vMooneyContract } = useContract(
     VMOONEY_ADDRESSES[selectedChain.slug],

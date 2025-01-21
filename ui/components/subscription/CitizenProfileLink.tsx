@@ -1,26 +1,17 @@
-import { Chain } from '@thirdweb-dev/chains'
 import { ThirdwebNftMedia } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
-import { useCitizen } from '@/lib/citizen/useCitizen'
+import { useContext, useState } from 'react'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
-type CitizenProfileLinkProps = {
-  selectedChain: Chain
-  citizenContract: any
-}
-
-export default function CitizenProfileLink({
-  selectedChain,
-  citizenContract,
-}: CitizenProfileLinkProps) {
+export default function CitizenProfileLink() {
   const router = useRouter()
-  const citizen = useCitizen(selectedChain, citizenContract)
+  const { citizen } = useContext(CitizenContext)
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  if (citizen?.metadata?.id) {
+  if (citizen?.metadata?.id !== null && citizen?.metadata?.id !== undefined) {
     return (
       <button
         onClick={async () => {

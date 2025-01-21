@@ -5,7 +5,7 @@ import { JOBS_TABLE_ADDRESSES } from 'const/config'
 import { getContract } from 'thirdweb'
 import { serverClient } from '@/lib/thirdweb/client'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
-import Job, { Job as JobType } from '@/components/jobs/Job'
+import Job, { Job as JobType } from '@/components/jobs/JobV5'
 
 describe('<Job />', () => {
   let job: JobType

@@ -3,12 +3,7 @@ import { Chain, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
-import {
-  arbitrum,
-  arbitrumSepolia,
-  sepolia,
-  Chain as ChainV5,
-} from 'thirdweb/chains'
+import { Chain as ChainV5 } from 'thirdweb/chains'
 import { ThirdwebProvider } from 'thirdweb/react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -69,7 +64,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
               <PrivyThirdwebSDKProvider selectedChain={selectedChain}>
                 <ThirdwebProvider>
                   <PrivyThirdwebV5Provider selectedChain={selectedChainV5}>
-                    <CitizenProvider selectedChain={selectedChain}>
+                    <CitizenProvider selectedChain={selectedChainV5}>
                       <Layout lightMode={lightMode} setLightMode={setLightMode}>
                         <NextQueryParamProvider>
                           <Component {...pageProps} />

@@ -3,7 +3,7 @@ import { useRef } from 'react'
 
 type NumberStepperProps = {
   number: number
-  setNumber: any
+  setNumber: (value: number) => void
   step?: number
   max?: number
   min?: number
@@ -22,7 +22,8 @@ export default function NumberStepper({
     if (max && number + step > max) {
       return
     }
-    setNumber(number + step)
+    const newValue = number + step
+    setNumber(newValue)
     inputRef.current?.focus()
   }
 
@@ -30,8 +31,14 @@ export default function NumberStepper({
     if (min !== undefined && number - step < min) {
       return
     }
-    setNumber(number - step)
+    const newValue = number - step
+    setNumber(newValue)
     inputRef.current?.focus()
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = Number(e.target.value)
+    setNumber(value)
   }
 
   return (
@@ -42,7 +49,7 @@ export default function NumberStepper({
         className="w-[55%] h-full bg-[#00000080] text-white text-center rounded-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         type="number"
         value={number}
-        onChange={(e) => setNumber(Number(e.target.value))}
+        onChange={handleChange}
         step={0}
       />
       <div className="w-[45%] flex flex-col justify-center items-center">

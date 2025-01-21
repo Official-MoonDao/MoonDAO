@@ -11,7 +11,10 @@ import {
 } from '@thirdweb-dev/chains'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
+import { defineChain } from 'thirdweb'
 import ChainContext from '../../lib/thirdweb/chain-context'
+import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
 type NetworkOptionProps = {
   chain: Chain
@@ -42,10 +45,17 @@ type NetworkSelectorProps = {
 
 export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const {
+    selectedChain: selectedChainV5,
+    setSelectedChain: setSelectedChainV5,
+  } = useContext(ChainContextV5)
+
   const [dropdown, setDropdown] = useState(false)
 
   function selectChain(chain: Chain) {
     setSelectedChain(chain)
+    const v5Chain = v4SlugToV5Chain(chain.slug)
+    setSelectedChainV5(v5Chain)
     setDropdown(false)
   }
 

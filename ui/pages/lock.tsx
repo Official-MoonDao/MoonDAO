@@ -48,7 +48,7 @@ export default function Lock() {
   useEffect(() => {
     if (selectedChain?.slug && sdk) {
       sdk
-        .getContract(MOONEY_ADDRESSES[selectedChain?.slug], ERC20ABI.abi)
+        .getContract(MOONEY_ADDRESSES[selectedChain?.slug], ERC20ABI)
         .then((contract: any) => {
           setMooneyContract(contract)
         })

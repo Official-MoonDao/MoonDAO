@@ -38,7 +38,7 @@ describe('<NewMarketplaceListings />', () => {
       }),
     }
 
-    cy.intercept('GET', `${TABLELAND_ENDPOINT}?statement=*`, {
+    cy.intercept('GET', `/api/tableland/query?statement=*`, {
       statusCode: 200,
       body: [listing, listing],
     }).as('getNewMarketplaceListings')
