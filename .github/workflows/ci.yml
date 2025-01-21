@@ -42,6 +42,7 @@ jobs:
       S3_UPLOAD_BUCKET: ${{secrets.S3_UPLOAD_BUCKET}}
       S3_UPLOAD_REGION: ${{secrets.S3_UPLOAD_REGION}}
       IRON_SESSION: ${{secrets.IRON_SESSION}}
+      TABLELAND_PRIVATE_KEY: ${{secrets.TABLELAND_PRIVATE_KEY}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
