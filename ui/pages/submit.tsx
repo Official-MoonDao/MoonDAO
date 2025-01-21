@@ -1,28 +1,26 @@
 import { Tab } from '@headlessui/react'
 import { NanceProvider } from '@nance/nance-hooks'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
-import {
-  DEFAULT_CHAIN_V5,
-  PROJECT_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, PROJECT_TABLE_ADDRESSES } from 'const/config'
 import { StringParam, useQueryParams } from 'next-query-params'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { NANCE_API_URL } from '@/lib/nance/constants'
+import { NANCE_API_URL } from '../lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import ContributionEditor from '@/components/contribution/ContributionEditor'
-import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
-import WebsiteHead from '@/components/layout/Head'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import { initSDK } from '@/lib/thirdweb/thirdweb'
+import ContributionEditor from '../components/contribution/ContributionEditor'
+import Container from '../components/layout/Container'
+import ContentLayout from '../components/layout/ContentLayout'
+import WebsiteHead from '../components/layout/Head'
+import { NoticeFooter } from '../components/layout/NoticeFooter'
+import ProposalEditor from '../components/nance/ProposalEditor'
 import FinalReportEditor from '@/components/nance/FinalReportEditor'
-import ProposalEditor from '@/components/nance/ProposalEditor'
 
 export default function SubmissionPage({
   projectsWithoutReport,
@@ -245,20 +243,16 @@ export async function getStaticProps() {
   const projectTableContract = getContract({
     client: serverClient,
     address: PROJECT_TABLE_ADDRESSES[chainSlug],
-    abi: ProjectTableABI as any,
     chain: chain,
+    abi: ProjectTableABI as any,
   })
   const projectTableName = await readContract({
     contract: projectTableContract,
     method: 'getTableName',
-    params: [],
   })
 
   const statement = `SELECT * FROM ${projectTableName} WHERE finalReportIPFS IS ""`
-  const projectsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${statement}`
-  )
-  const projects = await projectsRes.json()
+  const projects = await queryTable(chain, statement)
 
   return {
     props: {

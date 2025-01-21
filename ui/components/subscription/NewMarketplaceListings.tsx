@@ -1,9 +1,10 @@
-import { TABLELAND_ENDPOINT } from 'const/config'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { readContract } from 'thirdweb'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
-import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
+import { TeamListing as TeamListingType } from './TeamListing'
+import TeamListingV5 from './TeamListingV5'
 
 type NewMarketplaceListingsProps = {
   selectedChain: any
@@ -23,18 +24,24 @@ export default function NewMarketplaceListings({
     //get latest 25 listings
     async function getNewMarketplaceListings() {
       const now = Math.floor(Date.now() / 1000)
-      const tableName = await marketplaceTableContract.call('getTableName')
+      const tableName = await readContract({
+        contract: marketplaceTableContract,
+        method: 'getTableName' as string,
+        params: [],
+      })
       const statement = `SELECT * FROM ${tableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
       const allListingsRes = await fetch(
-        `${TABLELAND_ENDPOINT}?statement=${statement}`
+        `/api/tableland/query?statement=${statement}`
       )
       const listings = await allListingsRes.json()
       const validListings = listings.filter(
         async (listing: TeamListingType) => {
-          const teamExpiration = await teamContract.call('expiresAt', [
-            listing.teamId,
-          ])
-          return teamExpiration.toNumber() > now
+          const teamExpiration = await readContract({
+            contract: teamContract,
+            method: 'expiresAt' as string,
+            params: [listing.teamId],
+          })
+          return +teamExpiration.toString() > now
         }
       )
       setNewListings(validListings)
@@ -62,7 +69,7 @@ export default function NewMarketplaceListings({
       <SlidingCardMenu>
         <div id="new-marketplace-listings-container" className="flex gap-5">
           {newListings.map((listing, i) => (
-            <TeamListing
+            <TeamListingV5
               key={`team-listing-${i}`}
               listing={listing}
               selectedChain={selectedChain}

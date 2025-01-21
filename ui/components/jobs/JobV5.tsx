@@ -1,7 +1,9 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { useNFT } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
+import { useReadContract } from 'thirdweb/react'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysSinceTimestamp } from '@/lib/utils/timestamp'
 import Frame from '../layout/Frame'
@@ -31,7 +33,7 @@ type JobProps = {
   showTeam?: boolean
 }
 
-export default function Job({
+export default function JobV5({
   id,
   job,
   jobTableContract,

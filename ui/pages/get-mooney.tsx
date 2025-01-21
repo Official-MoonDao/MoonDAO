@@ -1,10 +1,11 @@
 import { useFundWallet } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
 import { useRouter } from 'next/router'
 import React, { useContext } from 'react'
 import toast from 'react-hot-toast'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import { useActiveAccount } from 'thirdweb/react'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import viemChains from '@/lib/viem/viemChains'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
@@ -15,9 +16,11 @@ import NativeToMooney from '@/components/uniswap/NativeToMooney'
 
 export default function GetMooney() {
   const { t } = useTranslation('common')
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   const router = useRouter()
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const { fundWallet } = useFundWallet()
 
   return (
@@ -37,7 +40,7 @@ export default function GetMooney() {
                     if (!address)
                       return toast.error('Please connect your wallet')
                     fundWallet(address, {
-                      chain: viemChains[selectedChain.slug],
+                      chain: viemChains[chainSlug],
                     })
                   }}
                 >

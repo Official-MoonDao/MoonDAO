@@ -1,13 +1,14 @@
 import { ArrowDownIcon } from '@heroicons/react/24/outline'
-import { Ethereum } from '@thirdweb-dev/chains'
-import { useAddress } from '@thirdweb-dev/react'
 import { Token, TradeType } from '@uniswap/sdk-core'
 import { nativeOnChain, SwapRoute } from '@uniswap/smart-order-router'
 import { CHAIN_TOKEN_NAMES, DAI_ADDRESSES } from 'const/config'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { ethereum } from 'thirdweb/chains'
+import { useActiveAccount } from 'thirdweb/react'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
@@ -15,15 +16,19 @@ import GasIcon from '../assets/GasIcon'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function NativeToMooney({ selectedChain }: any) {
+  const chainSlug = getChainSlug(selectedChain)
+
   const nativeBalance = useNativeBalance()
 
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [amount, setAmount] = useState(0)
   const [inputToken, setInputToken] = useState<any>()
   const [outputToken, setOutputToken] = useState<any>()
   const [output, setOutput] = useState<number>()
   const [swapRoute, setSwapRoute] = useState<SwapRoute>()
+  const [isGeneratingRoute, setIsGeneratingRoute] = useState(false)
   const [estimatedGasUsedUSD, setEstimatedGasUsedUSD] = useState<any>(0)
   const [usdCost, setUSDCost] = useState<string>()
 
@@ -37,6 +42,7 @@ export default function NativeToMooney({ selectedChain }: any) {
 
   useEffect(() => {
     if (amount > 0) {
+      setIsGeneratingRoute(true)
       generateRoute(TradeType.EXACT_INPUT).then((route) => {
         setSwapRoute(route)
         setOutput(route?.route[0].rawQuote.toString() / 10 ** 18 || 0)
@@ -48,6 +54,7 @@ export default function NativeToMooney({ selectedChain }: any) {
         } else {
           setEstimatedGasUsedUSD(estimatedGasUSD || 0)
         }
+        setIsGeneratingRoute(false)
       })
     }
   }, [amount, selectedChain, inputToken, outputToken, address])
@@ -56,19 +63,19 @@ export default function NativeToMooney({ selectedChain }: any) {
     async function getUSDCost() {
       try {
         let nativeToDAISwapRoute
-        if (selectedChain.slug === 'polygon') {
+        if (chainSlug === 'polygon') {
           nativeToDAISwapRoute = await pregenSwapRoute(
             selectedChain,
             amount,
-            nativeOnChain(selectedChain.chainId),
+            nativeOnChain(selectedChain.id),
             DAI
           )
         } else {
           nativeToDAISwapRoute = await pregenSwapRoute(
-            Ethereum,
+            ethereum,
             amount,
-            nativeOnChain(Ethereum.chainId),
-            new Token(Ethereum.chainId, DAI_ADDRESSES['ethereum'], 18)
+            nativeOnChain(ethereum.id),
+            new Token(ethereum.id, DAI_ADDRESSES['ethereum'], 18)
           )
         }
 
@@ -168,6 +175,7 @@ export default function NativeToMooney({ selectedChain }: any) {
       </div>
 
       <PrivyWeb3Button
+        v5
         className="mt-2 rounded-[5vmax] rounded-tl-[20px]"
         label={'Swap'}
         action={async () => {
@@ -181,6 +189,7 @@ export default function NativeToMooney({ selectedChain }: any) {
 
           await executeRoute(swapRoute)
         }}
+        isDisabled={isGeneratingRoute}
       />
     </div>
   )

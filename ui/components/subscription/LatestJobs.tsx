@@ -1,7 +1,8 @@
-import { TABLELAND_ENDPOINT } from 'const/config'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import Job, { Job as JobType } from '@/components/jobs/Job'
+import { readContract } from 'thirdweb'
+import { Job as JobType } from '@/components/jobs/Job'
+import JobV5 from '../jobs/JobV5'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 
@@ -21,17 +22,23 @@ export default function LatestJobs({
     //get latest 25 jobs
     async function getLatestJobs() {
       const now = Math.floor(Date.now() / 1000)
-      const tableName = await jobTableContract.call('getTableName')
+      const tableName = await readContract({
+        contract: jobTableContract,
+        method: 'getTableName' as string,
+        params: [],
+      })
       const statement = `SELECT * FROM ${tableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
       const latestJobsRes = await fetch(
-        `${TABLELAND_ENDPOINT}?statement=${statement}`
+        `/api/tableland/query?statement=${statement}`
       )
       const jobs = await latestJobsRes.json()
       const validJobs = jobs.filter(async (job: JobType) => {
-        const teamExpiration = await teamContract.call('expiresAt', [
-          job.teamId,
-        ])
-        return teamExpiration.toNumber() > now
+        const teamExpiration = await readContract({
+          contract: teamContract,
+          method: 'expiresAt' as string,
+          params: [job.teamId],
+        })
+        return +teamExpiration.toString() > now
       })
       setLatestJobs(validJobs)
     }
@@ -58,7 +65,7 @@ export default function LatestJobs({
       <SlidingCardMenu>
         <div id="latest-jobs-container" className="flex gap-5">
           {latestJobs.map((job, i) => (
-            <Job
+            <JobV5
               key={`job-${i}`}
               job={job}
               showTeam

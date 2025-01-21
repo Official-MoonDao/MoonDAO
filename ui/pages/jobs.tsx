@@ -1,14 +1,18 @@
 import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import {
+  DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
+import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContext from '@/lib/thirdweb/chain-context'
+import { serverClient } from '@/lib/thirdweb/client'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
@@ -113,29 +117,40 @@ export default function Jobs({ jobs }: JobsProps) {
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const sdk = initSDK(chain)
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+
   const now = Math.floor(Date.now() / 1000)
 
-  const jobTableContract = await sdk.getContract(
-    JOBS_TABLE_ADDRESSES[chain.slug],
-    JobsABI
-  )
-  const teamContract = await sdk.getContract(
-    TEAM_ADDRESSES[chain.slug],
-    TeamABI
-  )
+  const jobTableContract = getContract({
+    client: serverClient,
+    address: JOBS_TABLE_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: JobsABI as any,
+  })
+  const teamContract = getContract({
+    client: serverClient,
+    address: TEAM_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: TeamABI as any,
+  })
 
-  const jobBoardTableName = await jobTableContract.call('getTableName')
+  const jobBoardTableName = await readContract({
+    contract: jobTableContract,
+    method: 'getTableName',
+  })
 
   const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
-  const allJobsRes = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
-  const allJobs = await allJobsRes.json()
+  const allJobs = await queryTable(chain, statement)
 
-  const validJobs = allJobs?.filter(async (job: JobType) => {
-    const teamExpiration = await teamContract.call('expiresAt', [job.teamId])
-    return teamExpiration.toNumber() > now
+  const validJobs = allJobs?.filter(async (job: any) => {
+    const teamExpiration = await readContract({
+      contract: teamContract,
+      method: 'expiresAt',
+      params: [job.teamId],
+    })
+    return +teamExpiration.toString() > now
   })
 
   return {
