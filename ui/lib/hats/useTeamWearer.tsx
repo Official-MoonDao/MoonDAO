@@ -1,8 +1,8 @@
 import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
-import { Chain } from '@thirdweb-dev/chains'
 import { MOONDAO_HAT_TREE_IDS } from 'const/config'
 import { useEffect, useState } from 'react'
-import hatsSubgraphClient from './hatsSubgraphClient'
+import { readContract } from 'thirdweb'
+import { getChainSlug } from '../thirdweb/chain'
 
 export function useTeamWearer(
   teamContract: any,
@@ -21,7 +21,7 @@ export function useTeamWearer(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            chainId: selectedChain.chainId,
+            chainId: selectedChain.id,
             wearerAddress: address,
             props: {
               currentHats: {
@@ -45,26 +45,27 @@ export function useTeamWearer(
           //filter hats to only include hats that are in the MoonDAO hat tree
           const moondaoHats = hats.currentHats.filter(
             (hat: any) =>
-              hat.tree.id === MOONDAO_HAT_TREE_IDS[selectedChain.slug]
+              hat.tree.id === MOONDAO_HAT_TREE_IDS[getChainSlug(selectedChain)]
           )
 
           //add the teamId to each hat
           const moondaoHatsWithTeamId = await Promise.all(
             moondaoHats.map(async (hat: any) => {
-              const teamIdFromHat = await teamContract.call(
-                'adminHatToTokenId',
-                [hat.id]
-              )
-
-              const teamIdFromAdmin = await teamContract.call(
-                'adminHatToTokenId',
-                [hat.admin.id]
-              )
-
-              const teamIdFromAdminAdmin = await teamContract.call(
-                'adminHatToTokenId',
-                [hat.admin.admin.id]
-              )
+              const teamIdFromHat = await readContract({
+                contract: teamContract,
+                method: 'adminHatToTokenId' as string,
+                params: [hat.id],
+              })
+              const teamIdFromAdmin = await readContract({
+                contract: teamContract,
+                method: 'adminHatToTokenId' as string,
+                params: [hat.admin.id],
+              })
+              const teamIdFromAdminAdmin = await readContract({
+                contract: teamContract,
+                method: 'adminHatToTokenId' as string,
+                params: [hat.admin.admin.id],
+              })
 
               let teamId
               if (+teamIdFromHat.toString() !== 0) {
@@ -77,10 +78,14 @@ export function useTeamWearer(
                 teamId = 0
               }
 
-              const adminHatId = await teamContract.call('teamAdminHat', [
-                teamId,
-              ])
-              const prettyAdminHatId = hatIdDecimalToHex(adminHatId)
+              const adminHatId = await readContract({
+                contract: teamContract,
+                method: 'teamAdminHat' as string,
+                params: [teamId],
+              })
+              const prettyAdminHatId = hatIdDecimalToHex(
+                BigInt(adminHatId.toString())
+              )
 
               if (
                 hat.id === prettyAdminHatId ||
@@ -105,8 +110,8 @@ export function useTeamWearer(
       }
     }
 
-    if (teamContract) getWearerTeamHats()
-  }, [selectedChain, address, teamContract])
+    if (teamContract && selectedChain) getWearerTeamHats()
+  }, [teamContract, selectedChain, address])
 
   return wornMoondaoHats
 }

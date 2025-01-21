@@ -1,9 +1,9 @@
-import { PrivyProvider } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
-import { ZERO_ADDRESS } from 'const/config'
-import { ethers } from 'ethers'
-import { Toaster } from 'react-hot-toast'
-import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
+import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
+import CitizenABI from 'const/abis/Citizen.json'
+import { CITIZEN_ADDRESSES, ZERO_ADDRESS } from 'const/config'
+import * as thirdweb from 'thirdweb'
+import { serverClient } from '@/lib/thirdweb/client'
 import GuestActions from '@/components/subscription/GuestActions'
 
 describe('<GuestActions />', () => {
@@ -12,35 +12,32 @@ describe('<GuestActions />', () => {
   beforeEach(() => {
     props = {
       nativeBalance: 0,
-      citizenContract: {
-        call: cy.stub().resolves(ethers.utils.parseEther('0.1')),
-      },
+      citizenContract: thirdweb.getContract({
+        client: serverClient,
+        address: CITIZEN_ADDRESSES[CYPRESS_CHAIN_SLUG],
+        abi: CitizenABI as any,
+        chain: CYPRESS_CHAIN_V5,
+      }),
     }
 
     cy.mountNextRouter('/')
-    cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <GuestActions {...props} />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
-    )
   })
 
   it('Renders component with fund action if native balance < cost of citizen nft', () => {
+    cy.mount(
+      <TestnetProviders>
+        <GuestActions {...props} />
+      </TestnetProviders>
+    )
     cy.contains('Fund Wallet').should('exist')
   })
 
-  it('Renders component with become citizen action if native balance >= cost of citizen nft              ', () => {
+  it('Renders component with become citizen action if native balance >= cost of citizen nft', () => {
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <GuestActions {...props} address={ZERO_ADDRESS} nativeBalance={1} />
-          <Toaster />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <GuestActions {...props} address={ZERO_ADDRESS} nativeBalance={1} />
+      </TestnetProviders>
     )
-
     cy.contains('Become a Citizen').should('exist')
   })
 })

@@ -1,8 +1,8 @@
-import { useNFT } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
+import { readContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
 import ProfileCard from '../layout/ProfileCard'
 
 type TeamMemberProps = {
@@ -14,7 +14,7 @@ type TeamMemberProps = {
 
 type TeamMembersProps = {
   hatsContract: any
-  citizenConract: any
+  citizenContract: any
   hats: any[]
 }
 
@@ -33,13 +33,10 @@ function TeamMember({
   const hatNames = useHatNames(hatsContract, hatIds)
 
   //Citizen Data
-  const { data: ownedToken } = useHandleRead(citizenContract, 'getOwnedToken', [
-    address,
-  ])
-  const { data: nft, isLoading: isLoadingNft } = useNFT(
-    citizenContract,
-    ownedToken?.toString() || 100000000
-  )
+  const [ownedToken, setOwnedToken] = useState<any>()
+  const [nft, setNft] = useState<any>()
+  const [isLoadingNFT, setIsLoadingNFT] = useState<boolean>(false)
+
   const [metadata, setMetadata] = useState<any>({
     name: undefined,
     description: undefined,
@@ -53,7 +50,25 @@ function TeamMember({
   })
 
   useEffect(() => {
-    if (isLoadingNft) return
+    async function getOwnedNFT() {
+      const ownedToken = await readContract({
+        contract: citizenContract,
+        method: 'getOwnedToken' as string,
+        params: [address],
+      })
+      setOwnedToken(ownedToken)
+
+      const nft = await getNFT({
+        contract: citizenContract,
+        tokenId: BigInt(ownedToken.toString()),
+      })
+      setNft(nft)
+    }
+    if (address && citizenContract) getOwnedNFT()
+  }, [address, citizenContract])
+
+  useEffect(() => {
+    if (isLoadingNFT) return
     if (
       nft?.metadata &&
       nft?.metadata?.name !== 'Failed to load NFT metadata'
@@ -72,7 +87,7 @@ function TeamMember({
         ],
       })
     }
-  }, [nft, isLoadingNft])
+  }, [nft, isLoadingNFT])
 
   return (
     <div className="w-[350px]">
@@ -98,7 +113,7 @@ function TeamMember({
 
 export default function TeamMembers({
   hatsContract,
-  citizenConract,
+  citizenContract,
   hats,
 }: TeamMembersProps) {
   const wearers = useUniqueHatWearers(hats)
@@ -110,7 +125,7 @@ export default function TeamMembers({
             key={`${w.address}-wearer-${i}`}
             hatIds={w.hatIds}
             address={w.address}
-            citizenContract={citizenConract}
+            citizenContract={citizenContract}
             hatsContract={hatsContract}
           />
         ))}

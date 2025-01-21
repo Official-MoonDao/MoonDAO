@@ -1,7 +1,7 @@
 //This component dipslays a project card using project data directly from tableland
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useContext, memo, useMemo } from 'react'
+import React, { useContext, memo } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
@@ -103,7 +103,6 @@ export default function ProjectCard({
   const { selectedChain } = useContext(ChainContextV5)
   const hats = useSubHats(selectedChain, adminHatId)
   const wearers = useUniqueHatWearers(hats)
-
   let userContributed = false
   if (wearers && address) {
     wearers.forEach((wearer: { address: string }) => {

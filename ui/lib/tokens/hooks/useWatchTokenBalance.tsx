@@ -19,7 +19,7 @@ export default function useWatchTokenBalance(
     const wallet = wallets[selectedWallet]
 
     async function handleBalanceChange() {
-      if (!isMounted) return
+      if (!isMounted || !tokenContract || !wallet?.address) return
       const balance: any = await readContract({
         contract: tokenContract,
         method: 'balanceOf' as string,
