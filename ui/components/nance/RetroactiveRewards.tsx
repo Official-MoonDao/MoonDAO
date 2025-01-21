@@ -156,7 +156,9 @@ export function RetroactiveRewards({
     abi: HatsABI as any,
   })
 
-  const addresses = distributions ? distributions.map((d) => d.address) : []
+  const addresses = useMemo(() => {
+    return distributions ? distributions.map((d) => d.address) : []
+  }, [distributions])
 
   const { data: _vps } = useVotingPowers(
     addresses,

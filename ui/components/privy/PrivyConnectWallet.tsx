@@ -481,10 +481,7 @@ export function PrivyConnectWallet({
                   </div>
                   {type === 'mobile' && (
                     <div className="pt-2">
-                      <CitizenProfileLink
-                        selectedChain={selectedChain}
-                        citizenContract={citizenContract}
-                      />
+                      <CitizenProfileLink />
                     </div>
                   )}
                 </div>

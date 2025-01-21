@@ -87,15 +87,12 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
               />
 
               <div className="relative mt-1 lg:right-4">
-                <CitizenProfileLink
-                  selectedChain={selectedChain}
-                  citizenContract={citizenContract}
-                />
+                <CitizenProfileLink />
               </div>
             </div>
             <nav className="flex flex-col px-4 overflow-y-auto h-[calc(75vh-2rem)] pb-[4rem]">
               {navigation.map((item, i) => (
-                <NavigationLink item={item} key={i} />
+                <NavigationLink key={`nav-link-${i}`} item={item} />
               ))}
               {/*Language change, import button*/}
               <ul className="pt-4 px-3">

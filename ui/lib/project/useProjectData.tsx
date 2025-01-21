@@ -93,12 +93,12 @@ export default function useProjectData(
         readContract({
           contract: projectContract,
           method: 'teamAdminHat' as string,
-          params: [project?.id ?? ''],
+          params: [project?.id || ''],
         }),
         readContract({
           contract: projectContract,
           method: 'teamManagerHat' as string,
-          params: [project?.id ?? ''],
+          params: [project?.id || ''],
         }),
       ])
 
@@ -110,7 +110,7 @@ export default function useProjectData(
       setAdminHatId(adminHID)
       setManagerHatId(managerHID)
     }
-    if (projectContract && project?.id) {
+    if (projectContract) {
       checkManager()
       getHats()
     }

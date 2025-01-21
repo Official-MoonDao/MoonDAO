@@ -103,6 +103,7 @@ export default function ProjectCard({
   const { selectedChain } = useContext(ChainContextV5)
   const hats = useSubHats(selectedChain, adminHatId)
   const wearers = useUniqueHatWearers(hats)
+
   let userContributed = false
   if (wearers && address) {
     wearers.forEach((wearer: { address: string }) => {

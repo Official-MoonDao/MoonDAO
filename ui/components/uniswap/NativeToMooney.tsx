@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { ethereum } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
@@ -15,6 +16,8 @@ import GasIcon from '../assets/GasIcon'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function NativeToMooney({ selectedChain }: any) {
+  const chainSlug = getChainSlug(selectedChain)
+
   const nativeBalance = useNativeBalance()
 
   const account = useActiveAccount()
@@ -60,11 +63,11 @@ export default function NativeToMooney({ selectedChain }: any) {
     async function getUSDCost() {
       try {
         let nativeToDAISwapRoute
-        if (selectedChain.slug === 'polygon') {
+        if (chainSlug === 'polygon') {
           nativeToDAISwapRoute = await pregenSwapRoute(
             selectedChain,
             amount,
-            nativeOnChain(selectedChain.chainId),
+            nativeOnChain(selectedChain.id),
             DAI
           )
         } else {

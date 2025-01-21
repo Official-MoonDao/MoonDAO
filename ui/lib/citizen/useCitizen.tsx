@@ -17,7 +17,7 @@ export function useCitizen(
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const { user, authenticated } = usePrivy()
-  const [citizenNFT, setCitizenNFT] = useState<NFT>()
+  const [citizenNFT, setCitizenNFT] = useState<any>()
 
   useEffect(() => {
     async function getCitizenNFTByAddress() {

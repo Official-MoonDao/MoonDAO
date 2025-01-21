@@ -42,7 +42,7 @@ export default function Withdraw() {
   )
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug],
-    ERC20.abi
+    ERC20
   )
   const withdrawable = useWithdrawAmount(
     votingEscrowDepositorContract,
