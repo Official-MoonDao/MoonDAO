@@ -1,6 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useAddress } from '@thirdweb-dev/react'
-import { DEFAULT_CHAIN, TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -17,10 +16,11 @@ export function SubscriptionModal({
   subscriptionContract,
   validPass,
   expiresAt,
+  type = 'citizen',
 }: any) {
-  const account = useActiveAccount()
   const router = useRouter()
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   const [isLoading, setIsLoading] = useState(false)
 
   const [years, setYears] = useState<number>(1)
@@ -57,24 +57,31 @@ export function SubscriptionModal({
               if (!account) throw new Error('No account found')
 
               const duration = years * 365 * 24 * 60 * 60
-              const contractAddress = subscriptionContract.getAddress()
 
-              if (contractAddress === TEAM_ADDRESSES[selectedChain.slug]) {
-                await subscriptionContract.call(
-                  'renewSubscription',
-                  [address, nft.metadata.id, duration],
-                  {
+              let receipt
+              if (type === 'team') {
+                const transaction = prepareContractCall({
+                  contract: subscriptionContract,
+                  method: 'renewSubscription',
+                  params: [address, nft.metadata.id, duration],
+                  options: {
                     value: subscriptionCost.toString(),
-                  }
-                )
+                  },
+                } as any)
+                receipt = await sendAndConfirmTransaction({
+                  transaction,
+                  account,
+                })
               } else {
                 const transaction = prepareContractCall({
                   contract: subscriptionContract,
-                  method: 'renewSubscription' as string,
+                  method: 'renewSubscription',
                   params: [nft.metadata.id, duration],
-                  value: subscriptionCost.toString(),
-                })
-                const receipt = await sendAndConfirmTransaction({
+                  options: {
+                    value: subscriptionCost.toString(),
+                  },
+                } as any)
+                receipt = await sendAndConfirmTransaction({
                   transaction,
                   account,
                 })
