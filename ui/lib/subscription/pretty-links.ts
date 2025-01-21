@@ -39,7 +39,7 @@ export function generatePrettyLinks(
 }
 
 export function generatePrettyLinkWithId(name: string, id: string | number) {
-  if (name && id) {
+  if (name && id !== null && id !== undefined) {
     let prettyLink = generatePrettyLink(name)
     prettyLink = `${prettyLink}-${id}`
     return prettyLink

@@ -1,6 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useFundWallet, usePrivy } from '@privy-io/react-auth'
-import { useContract } from '@thirdweb-dev/react'
+import { useFundWallet } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
   CITIZEN_ADDRESSES,
@@ -12,8 +11,14 @@ import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import {
+  prepareContractCall,
+  readContract,
+  sendAndConfirmTransaction,
+} from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
@@ -22,6 +27,8 @@ import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import {
@@ -35,21 +42,19 @@ import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import FileInput from '../layout/FileInput'
 import Footer from '../layout/Footer'
-import StandardButton from '../layout/StandardButton'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ImageGenerator } from './CitizenImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 
-export default function CreateCitizen({
-  address,
-  selectedChain,
-  setSelectedTier,
-}: any) {
+export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const router = useRouter()
 
-  const { getAccessToken } = usePrivy()
+  const chainSlug = getChainSlug(selectedChain)
+
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
@@ -93,12 +98,11 @@ export default function CreateCitizen({
     }
   }, [stage, lastStage])
 
-  const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug],
-    CitizenABI
-  )
-
-  const pfpRef = useRef<HTMLDivElement | null>(null)
+  const citizenContract = useContract({
+    address: CITIZEN_ADDRESSES[chainSlug],
+    abi: CitizenABI,
+    chain: selectedChain,
+  })
 
   const subscribeToNetworkSignup = useSubscribe(CK_NETWORK_SIGNUP_FORM_ID)
   const tagToNetworkSignup = useTag(CK_NETWORK_SIGNUP_TAG_ID)
@@ -106,8 +110,6 @@ export default function CreateCitizen({
   const nativeBalance = useNativeBalance()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
-    const accessToken = await getAccessToken()
-
     const { formId, responseId } = formResponse
 
     await waitForResponse(formId, responseId)
@@ -432,11 +434,18 @@ export default function CreateCitizen({
                         'Please wait for your image to finish generating.'
                       )
 
-                    try {
-                      const cost = await citizenContract?.call(
-                        'getRenewalPrice',
-                        [address, 365 * 24 * 60 * 60]
+                    if (!account || !address) {
+                      return toast.error(
+                        'Please connect your wallet to continue.'
                       )
+                    }
+
+                    try {
+                      const cost: any = await readContract({
+                        contract: citizenContract,
+                        method: 'getRenewalPrice' as string,
+                        params: [address, 365 * 24 * 60 * 60],
+                      })
 
                       const formattedCost = ethers.utils
                         .formatEther(cost.toString())
@@ -471,9 +480,10 @@ export default function CreateCitizen({
                       //mint
                       setIsLoadingMint(true)
 
-                      const mintTx = await citizenContract?.call(
-                        'mintTo',
-                        [
+                      const transaction = await prepareContractCall({
+                        contract: citizenContract,
+                        method: 'mintTo' as string,
+                        params: [
                           address,
                           citizenData.name,
                           '',
@@ -485,14 +495,16 @@ export default function CreateCitizen({
                           'public',
                           citizenData.formResponseId,
                         ],
-                        {
-                          value: cost,
-                          gasLimit: 1000000,
-                        }
-                      )
+                        value: cost,
+                      })
+
+                      const receipt: any = await sendAndConfirmTransaction({
+                        transaction,
+                        account,
+                      })
 
                       const mintedTokenId = parseInt(
-                        mintTx.receipt.logs[0].topics[3],
+                        receipt.logs[0].topics[3],
                         16
                       ).toString()
 

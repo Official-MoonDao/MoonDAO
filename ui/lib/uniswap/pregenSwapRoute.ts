@@ -1,4 +1,3 @@
-import { Chain } from '@thirdweb-dev/chains'
 import { CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
 import {
   AlphaRouter,
@@ -6,18 +5,22 @@ import {
   SwapType,
 } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
-import { initSDK } from '../thirdweb/thirdweb'
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
+import client from '../thirdweb/client'
 
 export async function pregenSwapRoute(
-  selectedChain: Chain,
+  selectedChain: any,
   swapAmnt: number | string,
   tokenIn: any,
   tokenOut: any
 ) {
   try {
-    const provider: any = initSDK(selectedChain).getProvider()
+    const provider = ethers5Adapter.provider.toEthers({
+      client,
+      chain: selectedChain,
+    })
     const router: any = new AlphaRouter({
-      chainId: selectedChain.chainId,
+      chainId: selectedChain.id,
       provider,
     })
 

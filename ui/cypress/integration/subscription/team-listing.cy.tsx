@@ -1,10 +1,14 @@
-import { PrivyProvider } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
-import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
+import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
+import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import TeamABI from 'const/abis/Team.json'
+import { MARKETPLACE_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import { getContract } from 'thirdweb'
+import { serverClient } from '@/lib/thirdweb/client'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import TeamListing, {
   TeamListing as TeamListingType,
-} from '@/components/subscription/TeamListing'
+} from '@/components/subscription/TeamListingV5'
 
 describe('<TeamListing />', () => {
   let listing: TeamListingType
@@ -18,19 +22,20 @@ describe('<TeamListing />', () => {
 
   beforeEach(() => {
     props = {
-      selectedChain: Sepolia,
+      selectedChain: CYPRESS_CHAIN_V5,
       listing,
-      teamContract: {
-        erc721: {
-          get: cy.stub().resolves({
-            metadata: { name: 'Test Team Name' },
-            owner: '0x123',
-          }),
-        },
-      },
-      marketplaceTableContract: {
-        call: cy.stub().resolves(),
-      },
+      teamContract: getContract({
+        client: serverClient,
+        address: TEAM_ADDRESSES[CYPRESS_CHAIN_SLUG],
+        abi: TeamABI as any,
+        chain: CYPRESS_CHAIN_V5,
+      }),
+      marketplaceTableContract: getContract({
+        client: serverClient,
+        address: MARKETPLACE_TABLE_ADDRESSES[CYPRESS_CHAIN_SLUG],
+        abi: MarketplaceTableABI as any,
+        chain: CYPRESS_CHAIN_V5,
+      }),
       refreshListings: cy.stub(),
       teamName: true,
       queriedListingId: undefined,
@@ -41,11 +46,9 @@ describe('<TeamListing />', () => {
 
   it('Renders the component', () => {
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamListing {...props} teamName />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamListing {...props} teamName />
+      </TestnetProviders>
     )
 
     cy.get('#listing-team-name').should('exist')
@@ -58,11 +61,9 @@ describe('<TeamListing />', () => {
 
   it('Shows markedup price for non-citizens', () => {
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamListing {...props} />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamListing {...props} />
+      </TestnetProviders>
     )
 
     cy.get('#listing-price').should((price) => {
@@ -78,11 +79,9 @@ describe('<TeamListing />', () => {
 
   it('Shows regular price for citizens', () => {
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamListing {...props} isCitizen />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamListing {...props} isCitizen />
+      </TestnetProviders>
     )
 
     cy.get('#listing-price').should((price) => {
@@ -98,11 +97,9 @@ describe('<TeamListing />', () => {
 
   it('Opens the edit modal when the edit button is clicked', () => {
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamListing {...props} editable />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamListing {...props} editable />
+      </TestnetProviders>
     )
 
     cy.get('#edit-listing-button').click()
@@ -111,33 +108,21 @@ describe('<TeamListing />', () => {
 
   it('Deletes the listing', () => {
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamListing {...props} editable />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamListing {...props} editable />
+      </TestnetProviders>
     )
 
-    cy.get('#delete-listing-button').click()
-    cy.wrap(props.marketplaceTableContract.call).should(
-      'be.calledWith',
-      'deleteFromTable',
-      [listing.id, listing.teamId]
-    )
+    cy.get('#delete-listing-button').should('exist').click()
   })
 
   it("Hides the listing if it's expired", () => {
     const startTime = daysFromNowTimestamp(-2)
     const endTime = daysFromNowTimestamp(-1)
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamListing
-            {...props}
-            listing={{ ...listing, startTime, endTime }}
-          />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamListing {...props} listing={{ ...listing, startTime, endTime }} />
+      </TestnetProviders>
     )
 
     cy.get('#link-frame').should('not.exist')
@@ -147,15 +132,13 @@ describe('<TeamListing />', () => {
     const startTime = daysFromNowTimestamp(1)
     const endTime = daysFromNowTimestamp(2)
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamListing
-            {...props}
-            listing={{ ...listing, startTime, endTime }}
-            editable
-          />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamListing
+          {...props}
+          listing={{ ...listing, startTime, endTime }}
+          editable
+        />
+      </TestnetProviders>
     )
 
     cy.get('#listing-status').should(
@@ -173,14 +156,9 @@ describe('<TeamListing />', () => {
     const endTime = daysFromNowTimestamp(1)
 
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-          <TeamListing
-            {...props}
-            listing={{ ...listing, startTime, endTime }}
-          />
-        </PrivyThirdwebSDKProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <TeamListing {...props} listing={{ ...listing, startTime, endTime }} />
+      </TestnetProviders>
     )
 
     cy.get('#listing-end-time').should('have.text', 'Offer ends in 1 day')

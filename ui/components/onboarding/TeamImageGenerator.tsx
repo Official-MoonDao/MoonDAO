@@ -1,7 +1,8 @@
 // Team Image Generator
-import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
 import { useState } from 'react'
+import { MediaRenderer } from 'thirdweb/react'
+import client from '@/lib/thirdweb/client'
 import FileInput from '../layout/FileInput'
 import { StageButton } from './StageButton'
 
@@ -48,6 +49,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
             className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] justify-left relative flex"
           >
             <MediaRenderer
+              client={client}
               className="p-0 m-0"
               src={currImage}
               width="100%"

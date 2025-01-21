@@ -1,10 +1,10 @@
 //This hook fetches all project data based on a project tableland entry (not an NFT)
 import { useProposal } from '@nance/nance-hooks'
-import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useMemo, useState } from 'react'
+import { readContract } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import { NANCE_SPACE_NAME } from '../nance/constants'
 import useProposalJSON from '../nance/useProposalJSON'
-import { useHandleRead } from '../thirdweb/hooks'
 
 export type Project = {
   MDP: number
@@ -29,7 +29,8 @@ export default function useProjectData(
   hatsContract: any,
   project: Project | undefined
 ) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -42,17 +43,10 @@ export default function useProjectData(
   const proposalJSON = useProposalJSON(nanceProposal?.body as string)
 
   const [isManager, setIsManager] = useState<boolean>(false)
-  const [hatTreeId, setHatTreeId] = useState<string>()
+  const [hatTreeId, setHatTreeId] = useState<any>()
 
-  const { data: adminHatId } = useHandleRead(projectContract, 'teamAdminHat', [
-    project?.id ?? '',
-  ])
-
-  const { data: managerHatId } = useHandleRead(
-    projectContract,
-    'teamManagerHat',
-    [project?.id ?? '']
-  )
+  const [adminHatId, setAdminHatId] = useState<any>()
+  const [managerHatId, setManagerHatId] = useState<any>()
 
   const isActive = useMemo(() => {
     return project?.active === 1
@@ -76,11 +70,16 @@ export default function useProjectData(
     async function checkManager() {
       try {
         if (address) {
-          const isAddressManager = await projectContract.call('isManager', [
-            project?.id,
-            address,
-          ])
-          const owner = await projectContract.call('ownerOf', [project?.id])
+          const isAddressManager: any = await readContract({
+            contract: projectContract,
+            method: 'isManager' as string,
+            params: [project?.id, address],
+          })
+          const owner: any = await readContract({
+            contract: projectContract,
+            method: 'ownerOf' as string,
+            params: [project?.id],
+          })
           setIsManager(isAddressManager || owner === address)
         } else {
           setIsManager(false)
@@ -89,12 +88,41 @@ export default function useProjectData(
         setIsManager(false)
       }
     }
-    if (projectContract && project?.id) checkManager()
+    async function getHats() {
+      const results = await Promise.allSettled([
+        readContract({
+          contract: projectContract,
+          method: 'teamAdminHat' as string,
+          params: [project?.id || ''],
+        }),
+        readContract({
+          contract: projectContract,
+          method: 'teamManagerHat' as string,
+          params: [project?.id || ''],
+        }),
+      ])
+
+      const adminHID =
+        results[0].status === 'fulfilled' ? results[0].value : null
+      const managerHID =
+        results[1].status === 'fulfilled' ? results[1].value : null
+
+      setAdminHatId(adminHID)
+      setManagerHatId(managerHID)
+    }
+    if (projectContract) {
+      checkManager()
+      getHats()
+    }
   }, [address, project, projectContract])
 
   useEffect(() => {
     async function getHatTreeId() {
-      const hatTreeId = await hatsContract.call('getTopHatDomain', [adminHatId])
+      const hatTreeId = await readContract({
+        contract: hatsContract,
+        method: 'getTopHatDomain' as string,
+        params: [adminHatId],
+      })
       setHatTreeId(hatTreeId)
     }
     if (hatsContract && adminHatId) getHatTreeId()

@@ -1,7 +1,7 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
-import { useNFT } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { getNFT } from 'thirdweb/extensions/erc721'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysSinceTimestamp } from '@/lib/utils/timestamp'
 import Frame from '../layout/Frame'
@@ -45,11 +45,22 @@ export default function Job({
   const [isActive, setIsActive] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
 
-  const { data: teamNft } = useNFT(teamContract, job.teamId)
+  const [teamNFT, setTeamNFT] = useState<any>()
 
   const currTime = useCurrUnixTime()
 
   const daysSincePosting = daysSinceTimestamp(job?.timestamp)
+
+  useEffect(() => {
+    async function getTeamNFT() {
+      const teamNFT = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(job.teamId),
+      })
+      setTeamNFT(teamNFT)
+    }
+    if (teamContract) getTeamNFT()
+  }, [job, teamContract])
 
   useEffect(() => {
     if (currTime <= job.endTime || job.endTime === 0 || editable) {
@@ -79,12 +90,12 @@ export default function Job({
           <Frame>
             <div className="flex justify-between items-end">
               <div className="flex flex-col">
-                {showTeam && teamNft && (
+                {showTeam && teamNFT && (
                   <Link
                     href={`/team/${job.teamId}`}
                     className="font-bold text-light-warm"
                   >
-                    {teamNft.metadata.name}
+                    {teamNFT.metadata.name}
                   </Link>
                 )}
                 <p className="font-bold font-GoodTimes pb-2">{job.title}</p>

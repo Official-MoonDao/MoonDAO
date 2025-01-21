@@ -1,8 +1,9 @@
-import { MediaRenderer } from '@thirdweb-dev/react'
 import html2canvas from 'html2canvas'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
+import { MediaRenderer } from 'thirdweb/react'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
+import client from '@/lib/thirdweb/client'
 import FileInput from '../layout/FileInput'
 import { StageButton } from './StageButton'
 
@@ -59,6 +60,7 @@ export function ImageGenerator({
       >
         {currImage && !inputImage && (
           <MediaRenderer
+            client={client}
             src={currImage}
             className=""
             width="100%"

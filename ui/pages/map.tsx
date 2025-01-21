@@ -1,12 +1,15 @@
 import CitizenABI from 'const/abis/Citizen.json'
-import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import {
+  CITIZEN_ADDRESSES,
+  DEFAULT_CHAIN,
+  DEFAULT_CHAIN_V5,
+} from 'const/config'
 import { blockedCitizens } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { getAttribute } from '@/lib/utils/nft'
 import IconOrg from '@/components/assets/IconOrg'
@@ -98,46 +101,44 @@ export async function getStaticProps() {
   let citizensLocationData = []
   if (process.env.NEXT_PUBLIC_ENV === 'prod') {
     const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
 
     const citizenContract = getContract({
       client: serverClient,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      chain: chain,
+      address: CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug],
       abi: CitizenABI as any,
+      chain,
     })
 
     const totalCitizens = await readContract({
       contract: citizenContract,
-      method: 'totalSupply' as string,
+      method: 'totalSupply',
     })
 
-    const citizens: any[] = []
+    const citizens: any = []
     async function fetchCitizen(tokenId: number) {
       try {
         const citizen = await getNFT({
           contract: citizenContract,
           tokenId: BigInt(tokenId),
         })
-        if (citizen?.metadata?.attributes)
-          citizens.push({ ...citizen, id: tokenId })
+        if (citizen?.metadata?.name) citizens.push(citizen)
       } catch (err) {
         console.error(err)
       }
     }
-    for (let i = 0; i < +totalCitizens.toString(); i++) {
-      await new Promise((resolve) => setTimeout(resolve, 200)) //Tableland is rate limited to 10 requests per second
+    for (let i = 0; i < totalCitizens; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 200))
       await fetchCitizen(i)
-    }
+    } //replace with citizenContract.erc721.getAll() if all citizens load
 
     const filteredValidCitizens = citizens.filter(async (c: any) => {
       const now = Math.floor(Date.now() / 1000)
       const expiresAt = await readContract({
         contract: citizenContract,
         method: 'expiresAt',
-        params: [c?.metadata?.id],
+        params: [c.metadata.id],
       })
-      const view = getAttribute(c?.metadata?.attributes, 'view').value
+      const view = getAttribute(c?.metadata?.attributes, 'view')?.value
       return (
         +expiresAt.toString() > now &&
         view === 'public' &&
@@ -147,19 +148,18 @@ export async function getStaticProps() {
 
     //Get location data for each citizen
     for (const citizen of filteredValidCitizens) {
-      const citizenLocation =
-        getAttribute(
-          citizen?.metadata?.attributes as unknown as any[],
-          'location'
-        )?.value || ''
+      const citizenLocation = getAttribute(
+        citizen?.metadata?.attributes as any[],
+        'location'
+      )?.value
 
       let locationData
-      if (citizenLocation !== '' && !citizenLocation.startsWith('{')) {
+      if (citizenLocation !== '' && !citizenLocation?.startsWith('{')) {
         const locationRes = await fetch(
           `https://maps.googleapis.com/maps/api/geocode/json?address=${citizenLocation}&key=${process.env.GOOGLE_MAPS_API_KEY}`
         )
         locationData = await locationRes.json()
-      } else if (citizenLocation.startsWith('{')) {
+      } else if (citizenLocation?.startsWith('{')) {
         const parsedLocationData = JSON.parse(citizenLocation)
         locationData = {
           results: [
