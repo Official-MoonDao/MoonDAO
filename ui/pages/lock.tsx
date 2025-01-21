@@ -301,7 +301,9 @@ export default function Lock() {
                           setLockAmount(
                             VMOONEYLock
                               ? ethers.utils.formatEther(
-                                  VMOONEYLock[0].add(MOONEYBalance)
+                                  BigNumber.from(VMOONEYLock[0]).add(
+                                    MOONEYBalance
+                                  )
                                 )
                               : ethers.utils.formatEther(
                                   MOONEYBalance?.value.toString() || '0'
@@ -483,7 +485,6 @@ export default function Lock() {
                                 ? lockAmountBigNum.sub(lockedMooney)
                                 : lockAmountBigNum
 
-                              console.log(increaseAmount, tokenAllowance)
                               if (increaseAmount.gt(tokenAllowance)) {
                                 const neededAllowance =
                                   lockAmountBigNum.sub(lockedMooney)

@@ -3,12 +3,7 @@ import { Chain, Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
-import {
-  arbitrum,
-  arbitrumSepolia,
-  sepolia,
-  Chain as ChainV5,
-} from 'thirdweb/chains'
+import { Chain as ChainV5 } from 'thirdweb/chains'
 import { ThirdwebProvider } from 'thirdweb/react'
 import { PrivyThirdwebSDKProvider } from '../lib/privy/PrivyThirdwebSDKProvider'
 import ChainContext from '../lib/thirdweb/chain-context'
@@ -22,14 +17,12 @@ import Layout from '../components/layout/Layout'
 import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
+  const [selectedWallet, setSelectedWallet] = useState<number>(0)
   const [selectedChain, setSelectedChain]: any = useState<Chain>(
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
   )
-
   const [selectedChainV5, setSelectedChainV5]: any =
     useState<ChainV5>(DEFAULT_CHAIN_V5)
-
-  const [selectedWallet, setSelectedWallet] = useState<number>(0)
 
   const [lightMode, setLightMode] = useLightMode()
 
@@ -71,7 +64,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
               <PrivyThirdwebSDKProvider selectedChain={selectedChain}>
                 <ThirdwebProvider>
                   <PrivyThirdwebV5Provider selectedChain={selectedChainV5}>
-                    <CitizenProvider selectedChain={selectedChain}>
+                    <CitizenProvider selectedChain={selectedChainV5}>
                       <Layout lightMode={lightMode} setLightMode={setLightMode}>
                         <NextQueryParamProvider>
                           <Component {...pageProps} />

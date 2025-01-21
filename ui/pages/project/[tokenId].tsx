@@ -9,7 +9,6 @@ import {
   MOONEY_ADDRESSES,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -20,6 +19,7 @@ import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
@@ -333,10 +333,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
   const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
 
-  const projectsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${statement}`
-  )
-  const projects = await projectsRes.json()
+  const projects = await queryTable(chain, statement)
   const project = projects[0]
 
   if (!project || blockedProjects.includes(Number(tokenId))) {

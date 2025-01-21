@@ -1,50 +1,78 @@
 //Get total mooney balance for an address on L1 and L2
-import { Arbitrum, Base, Ethereum, Polygon } from '@thirdweb-dev/chains'
 import { useEffect, useState } from 'react'
+import { getContract, readContract } from 'thirdweb'
+import { arbitrum, base, ethereum, polygon } from 'thirdweb/chains'
+import client from '@/lib/thirdweb/client'
 import ERC20 from '../../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../../const/config'
-import { initSDK } from '../../thirdweb/thirdweb'
+
+const ethMooneyContract = getContract({
+  client: client,
+  address: MOONEY_ADDRESSES['ethereum'],
+  chain: ethereum,
+  abi: ERC20 as any,
+})
+
+const polygonMooneyContract = getContract({
+  client: client,
+  address: MOONEY_ADDRESSES['polygon'],
+  chain: polygon,
+  abi: ERC20 as any,
+})
+
+const arbMooneyContract = getContract({
+  client: client,
+  address: MOONEY_ADDRESSES['arbitrum'],
+  chain: arbitrum,
+  abi: ERC20 as any,
+})
+
+const baseMooneyContract = getContract({
+  client: client,
+  address: MOONEY_ADDRESSES['base'],
+  chain: base,
+  abi: ERC20 as any,
+})
 
 export function useTotalMooneyBalance(address: string | undefined) {
   const [totalMooneyBalance, setTotalMooneyBalance] = useState<number>(0)
 
   useEffect(() => {
     async function checkForBalance() {
-      const ethSDK = initSDK(Ethereum)
-      const polygonSDK = initSDK(Polygon)
-      const arbSDK = initSDK(Arbitrum)
-      const baseSDK = initSDK(Base)
-
-      const ethMooneyContract = await ethSDK.getContract(
-        MOONEY_ADDRESSES['ethereum'],
-        ERC20
-      )
-      const polygonMooneyContract = await polygonSDK.getContract(
-        MOONEY_ADDRESSES['polygon'],
-        ERC20
-      )
-      const arbMooneyContract = await arbSDK.getContract(
-        MOONEY_ADDRESSES['arbitrum'],
-        ERC20
-      )
-      const baseMooneyContract = await baseSDK.getContract(
-        MOONEY_ADDRESSES['base'],
-        ERC20
-      )
-
-      const ethMooney = await ethMooneyContract.call('balanceOf', [address])
-      const polygonMooney = await polygonMooneyContract.call('balanceOf', [
-        address,
+      const results = await Promise.allSettled([
+        readContract({
+          contract: ethMooneyContract,
+          method: 'balanceOf',
+          params: [address],
+        }),
+        readContract({
+          contract: polygonMooneyContract,
+          method: 'balanceOf',
+          params: [address],
+        }),
+        readContract({
+          contract: arbMooneyContract,
+          method: 'balanceOf',
+          params: [address],
+        }),
+        readContract({
+          contract: baseMooneyContract,
+          method: 'balanceOf',
+          params: [address],
+        }),
       ])
-      const arbMooney = await arbMooneyContract.call('balanceOf', [address])
-      const baseMooney = await baseMooneyContract.call('balanceOf', [address])
+
+      const [ethMooney, polygonMooney, arbMooney, baseMooney] = results.map(
+        (result) => (result.status === 'fulfilled' ? result.value : 0)
+      )
+
+      console.log(ethMooney + polygonMooney + arbMooney + baseMooney)
 
       setTotalMooneyBalance(
-        ethMooney
-          ?.add(polygonMooney)
-          .add(arbMooney)
-          .add(baseMooney)
-          .toString() /
+        (Number(ethMooney) +
+          Number(polygonMooney) +
+          Number(arbMooney) +
+          Number(baseMooney)) /
           10 ** 18
       )
     }

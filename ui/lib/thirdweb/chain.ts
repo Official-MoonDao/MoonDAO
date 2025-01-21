@@ -19,12 +19,16 @@ export function getChainSlug(chain: Chain) {
   return slug
 }
 
-export const thirdwebV4SlugsToV5Chains: { [key: string]: Chain } = {
-  arbitrum,
-  ethereum,
-  polygon,
-  base,
-  sepolia,
-  'arbitrum-sepolia': arbitrumSepolia,
-  'base-sepolia': baseSepolia,
+export function v4SlugToV5Chain(slug: string) {
+  const slugsToChains: Record<string, Chain> = {
+    arbitrum,
+    ethereum,
+    polygon,
+    base,
+    sepolia,
+    'arbitrum-sepolia': arbitrumSepolia,
+    'base-sepolia': baseSepolia,
+  }
+
+  return slugsToChains?.[slug]
 }

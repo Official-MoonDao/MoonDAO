@@ -1,13 +1,12 @@
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
-import { Chain } from '@thirdweb-dev/chains'
-import { MediaRenderer, NFT } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { useReadContract } from 'thirdweb/react'
+import { MediaRenderer, useReadContract } from 'thirdweb/react'
 import { useHatData } from '@/lib/hats/useHatData'
+import client from '@/lib/thirdweb/client'
 
 type HatProps = {
-  selectedChain: Chain
+  selectedChain: any
   hatsContract: any
   hat: any
   teamImage?: boolean
@@ -42,6 +41,7 @@ export function Hat({
         {teamNFT && (
           <div className="rounded-[2.5vmax] rounded-tl-[10px] overflow-hidden w-2/5">
             <MediaRenderer
+              client={client}
               src={teamNFT.metadata.image}
               className="object-cover"
               width="150px"

@@ -1,4 +1,3 @@
-import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -6,6 +5,7 @@ import { readContract } from 'thirdweb'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
+import TeamListingV5 from './TeamListingV5'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
 export default function TeamMarketplace({
@@ -30,7 +30,7 @@ export default function TeamMarketplace({
     })
     const statement = `SELECT * FROM ${marketplaceTableName} WHERE teamId = ${teamId}`
 
-    const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
+    const res = await fetch(`/api/tableland/query?statement=${statement}`)
     const data = await res.json()
 
     setListings(data)
@@ -84,7 +84,7 @@ export default function TeamMarketplace({
         <div className="flex gap-4">
           {listings?.[0] &&
             listings.map((listing, i) => (
-              <TeamListing
+              <TeamListingV5
                 key={`team-listing-${i}`}
                 selectedChain={selectedChain}
                 listing={listing}

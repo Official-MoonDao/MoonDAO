@@ -6,7 +6,6 @@ import {
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import Image from 'next/image'
@@ -14,8 +13,8 @@ import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { Project } from '@/lib/project/useProjectData'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContext from '@/lib/thirdweb/chain-context'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -298,10 +297,7 @@ export async function getStaticProps() {
   })
 
   const projectStatement = `SELECT * FROM ${projectTableName}`
-  const projectsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
-  )
-  const projects = await projectsRes.json()
+  const projects = await queryTable(chain, projectStatement)
 
   const activeProjects = []
   const inactiveProjects = []

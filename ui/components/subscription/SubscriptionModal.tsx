@@ -1,5 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { DEFAULT_CHAIN, TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -57,7 +57,6 @@ export function SubscriptionModal({
               if (!account) throw new Error('No account found')
 
               const duration = years * 365 * 24 * 60 * 60
-              const contractAddress = subscriptionContract.getAddress()
 
               let receipt
               if (type === 'team') {

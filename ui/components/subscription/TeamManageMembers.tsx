@@ -1,14 +1,16 @@
 import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { TrashIcon } from '@heroicons/react/24/outline'
+import { useWallets } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN, HATS_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import useSafe from '@/lib/safe/useSafe'
 import HatsABI from '../../const/abis/Hats.json'
 import Modal from '../layout/Modal'
@@ -105,7 +107,6 @@ function TeamMembers({
                         method: 'memberPassthroughModule' as string,
                         params: [teamId],
                       })
-
                     const iface = new ethers.utils.Interface(HatsABI)
                     const txData = iface.encodeFunctionData(
                       'setHatWearerStatus',
@@ -116,24 +117,19 @@ function TeamMembers({
                       hatName.hatId ===
                       hatIdDecimalToHex(managerHatId.toString())
                     ) {
-                      await queueSafeTx(
-                        account?.address,
-                        [
-                          {
-                            to: HATS_ADDRESS,
-                            data: txData,
-                            value: '0',
-                          },
-                        ],
-                        { safeTxGas: '1000000' }
-                      )
+                      await queueSafeTx({
+                        to: HATS_ADDRESS,
+                        data: txData,
+                        value: '0',
+                        safeTxGas: '1000000',
+                      })
                       setHasDeletedMember(true)
                     } else {
                       await account?.sendTransaction({
                         to: memberHatPassthroughModuleAddress,
                         data: txData,
                         value: '0',
-                        gasLimit: 1000000,
+                        gas: 1000000,
                       })
                     }
                     toast.success('Member removed successfully!')
@@ -264,24 +260,19 @@ function TeamManageMembersModal({
               if (
                 selectedHatId === hatIdDecimalToHex(managerHatId.toString())
               ) {
-                await queueSafeTx(
-                  account?.address,
-                  [
-                    {
-                      to: HATS_ADDRESS,
-                      data: txData,
-                      value: '0',
-                    },
-                  ],
-                  { safeTxGas: '1000000' }
-                )
+                await queueSafeTx({
+                  to: HATS_ADDRESS,
+                  data: txData,
+                  value: '0',
+                  safeTxGas: '1000000',
+                })
                 setHasAddedMember(true)
               } else {
                 await account?.sendTransaction({
                   to: HATS_ADDRESS,
                   data: txData,
                   value: '0',
-                  gasLimit: 1000000,
+                  gas: 1000000,
                 })
                 toast.success('Member added successfully')
               }

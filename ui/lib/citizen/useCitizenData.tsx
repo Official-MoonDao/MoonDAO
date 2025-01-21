@@ -4,7 +4,9 @@ import useDiscordUserSearch from '../nance/DiscordUserSearch'
 import { getAttribute } from '../utils/nft'
 
 export function useCitizenData(nft: any, citizenContract: any) {
-  const attributes = nft?.metadata?.attributes
+  const {
+    metadata: { attributes },
+  } = nft
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [subIsValid, setSubIsValid] = useState<boolean>(true)
@@ -32,18 +34,15 @@ export function useCitizenData(nft: any, citizenContract: any) {
 
   const location = useMemo(() => {
     const loc = getAttribute(attributes, 'location')
-    if (loc?.value?.startsWith('{')) {
-      return JSON.parse(loc?.value)?.name
+    if (loc.value.startsWith('{')) {
+      return JSON.parse(loc.value).name
     } else return loc?.value
   }, [attributes])
 
   const incompleteProfile = useMemo(() => {
     if (
-      nft?.metadata?.description !== '' ||
-      socials?.twitter !== '' ||
-      socials?.discord !== '' ||
-      socials?.website !== '' ||
-      location !== ''
+      (nft.metadata.description !== '' || socials.twitter !== '',
+      socials.discord !== '' || socials.website !== '' || location !== '')
     ) {
       return false
     } else {
@@ -71,8 +70,8 @@ export function useCitizenData(nft: any, citizenContract: any) {
       }
       setIsLoading(false)
     }
-    if (nft?.metadata?.attributes && citizenContract) checkSubscription()
-  }, [nft?.metadata?.attributes, citizenContract])
+    if (nft?.metadata && citizenContract) checkSubscription()
+  }, [nft?.metadata, citizenContract])
 
   return {
     socials,

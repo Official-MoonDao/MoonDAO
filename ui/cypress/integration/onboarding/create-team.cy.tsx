@@ -1,5 +1,6 @@
-import TestnetProviders from '@/cypress/mock/TestnetProviders'
-import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
+import { PrivyProvider } from '@privy-io/react-auth'
+import { Sepolia } from '@thirdweb-dev/chains'
+import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import CreateTeam from '@/components/onboarding/CreateTeam'
 
 describe('<CreateTeam />', () => {
@@ -8,14 +9,16 @@ describe('<CreateTeam />', () => {
   beforeEach(() => {
     props = {
       address: '0x1234567890abcdef',
-      selectedChain: CYPRESS_CHAIN_V5,
+      selectedChain: { slug: 'ethereum' },
       setSelectedTier: cy.stub(),
     }
     cy.mountNextRouter('/')
     cy.mount(
-      <TestnetProviders>
-        <CreateTeam {...props} />
-      </TestnetProviders>
+      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
+        <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
+          <CreateTeam {...props} />
+        </PrivyThirdwebSDKProvider>
+      </PrivyProvider>
     )
   })
 

@@ -12,7 +12,6 @@ import {
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
 import { HATS_ADDRESS } from 'const/config'
@@ -31,8 +30,8 @@ import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContext from '@/lib/thirdweb/chain-context'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -70,9 +69,8 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
   const address = account?.address
 
   const { citizen } = useContext(CitizenContext)
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
-  const { selectedChain: selectedChainV5 } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChainV5)
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
 
   const [subModalEnabled, setSubModalEnabled] = useState(false)
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
@@ -82,25 +80,25 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
 
   // Contracts
   const citizenContract = useContract({
-    chain: selectedChainV5,
+    chain: selectedChain,
     address: CITIZEN_ADDRESSES[chainSlug],
     abi: CitizenABI as any,
   })
 
   const teamContract = useContract({
-    chain: selectedChainV5,
+    chain: selectedChain,
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
   })
 
   const marketplaceTableContract = useContract({
-    chain: selectedChainV5,
+    chain: selectedChain,
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceABI as any,
   })
 
   const jobTableContract = useContract({
-    chain: selectedChainV5,
+    chain: selectedChain,
     address: JOBS_TABLE_ADDRESSES[chainSlug],
     abi: JobsABI as any,
   })
@@ -133,12 +131,12 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
       })
       setExpiresAt(expiresAt)
     }
-    if (citizenContract && !isGuest && nft?.metadata?.id) checkExpiration()
+    if (citizenContract && nft?.metadata?.id && !isGuest) checkExpiration()
   }, [citizenContract, nft?.metadata?.id, isGuest])
   // Hats
-  const hats = useTeamWearer(teamContract, selectedChainV5, nft?.owner)
+  const hats = useTeamWearer(teamContract, selectedChain, nft?.owner)
   const hatsContract = useContract({
-    chain: selectedChainV5,
+    chain: selectedChain,
     address: HATS_ADDRESS,
     abi: HatsABI as any,
   })
@@ -385,7 +383,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
         {citizenMetadataModalEnabled && (
           <CitizenMetadataModal
             nft={nft}
-            selectedChain={selectedChainV5}
+            selectedChain={selectedChain}
             setEnabled={setCitizenMetadataModalEnabled}
           />
         )}
@@ -609,10 +607,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     const chainSlug = getChainSlug(chain)
 
     const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
-    const allCitizensRes = await fetch(
-      `${TABLELAND_ENDPOINT}?statement=${statement}`
-    )
-    const allCitizens = await allCitizensRes.json()
+    const allCitizens = (await queryTable(chain, statement)) as any
 
     const { prettyLinks } = generatePrettyLinks(allCitizens, {
       allHaveTokenId: true,

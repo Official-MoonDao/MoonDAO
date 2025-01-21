@@ -7,7 +7,6 @@ type useReadProps = {
   params: any[]
   deps?: any[]
 }
-
 export default function useRead({
   contract,
   method,
@@ -16,7 +15,6 @@ export default function useRead({
 }: useReadProps) {
   const [data, setData] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
-
   useEffect(() => {
     async function read() {
       setIsLoading(true)
@@ -32,8 +30,7 @@ export default function useRead({
       }
       setIsLoading(false)
     }
-    if (contract?.address && method && params) read()
+    if (contract && method && params) read()
   }, [contract, JSON.stringify(params), method, ...(deps || [])])
-
   return { data, isLoading }
 }

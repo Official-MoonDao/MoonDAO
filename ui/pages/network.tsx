@@ -305,12 +305,20 @@ export async function getStaticProps() {
   })
 
   const teams: any = []
+  async function fetchTeam(tokenId: number) {
+    try {
+      const team = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(tokenId),
+      })
+      teams.push(team)
+    } catch (err) {
+      console.error(err)
+    }
+  }
   for (let i = 0; i < totalTeams; i++) {
-    const team = await getNFT({
-      contract: teamContract,
-      tokenId: BigInt(i),
-    })
-    teams.push(team)
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    await fetchTeam(i)
   }
 
   const filteredPublicTeams: any = teams?.filter(
@@ -364,12 +372,20 @@ export async function getStaticProps() {
   })
 
   const citizens: any = []
+  async function fetchCitizen(tokenId: number) {
+    try {
+      const citizen = await getNFT({
+        contract: citizenContract,
+        tokenId: BigInt(tokenId),
+      })
+      citizens.push(citizen)
+    } catch (err) {
+      console.error(err)
+    }
+  }
   for (let i = 0; i < totalCitizens; i++) {
-    const citizen = await getNFT({
-      contract: citizenContract,
-      tokenId: BigInt(i),
-    })
-    citizens.push(citizen)
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    await fetchCitizen(i)
   }
 
   const filteredPublicCitizens: any = citizens?.filter(

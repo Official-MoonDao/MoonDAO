@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import Footer from './Footer'
 
 type NoticeFooterProps = {
@@ -44,7 +44,7 @@ export function NoticeFooter({
   darkBackground = true,
   citizenNotice = false,
 }: NoticeFooterProps) {
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContextV5)
   const isCitizen = useCitizen(selectedChain)
 
   const [notice, setNotice] = useState({

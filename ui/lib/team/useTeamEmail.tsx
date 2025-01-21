@@ -13,18 +13,17 @@ export default function useTeamEmail(nft: any) {
           'formId'
         ).value
 
-        const [teamFormV1Email, teamEmailFormEmail] = await Promise.all([
-          fetchEmail(
-            process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
-            formResponseId,
-            'fQU0c6bZ8d0O'
-          ),
-          fetchEmail(
-            process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string,
-            formResponseId,
-            'DiJuj1zkZpBc'
-          ),
-        ])
+        const teamFormV1Email = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
+          formResponseId,
+          'fQU0c6bZ8d0O'
+        )
+
+        const teamEmailFormEmail = await fetchEmail(
+          process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string,
+          formResponseId,
+          'DiJuj1zkZpBc'
+        )
 
         setEmail(teamEmailFormEmail || teamFormV1Email)
       } catch (err) {

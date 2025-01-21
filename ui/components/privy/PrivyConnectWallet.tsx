@@ -12,18 +12,29 @@ import {
   usePrivy,
   useWallets,
 } from '@privy-io/react-auth'
-import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import CitizenABI from 'const/abis/Citizen.json'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
+import {
+  getContract,
+  prepareContractCall,
+  readContract,
+  sendAndConfirmTransaction,
+} from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import ChainContext from '../../lib/thirdweb/chain-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
 import { useImportToken } from '../../lib/utils/import-token'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client from '@/lib/thirdweb/client'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
 import ERC20 from '../../const/abis/ERC20.json'
@@ -58,6 +69,7 @@ const selectedNativeToken: any = {
 }
 
 function SendModal({
+  account,
   selectedChain,
   networkIcon,
   mooneyContract,
@@ -68,8 +80,7 @@ function SendModal({
   nativeBalance,
   formattedBalances,
 }: any) {
-  const sdk = useSDK()
-
+  const chainSlug = getChainSlug(selectedChain)
   const [to, setTo] = useState<string>()
   const [amount, setAmount] = useState<number>()
   const [selectedToken, setSelectedToken] = useState<string>('native')
@@ -129,13 +140,12 @@ function SendModal({
           const formattedAmount = ethers.utils.parseEther(amount.toString())
 
           try {
+            let receipt
             if (selectedToken === 'native') {
               if (+amount > nativeBalance)
                 return toast.error('Insufficient funds')
 
-              const signer = sdk?.getSigner()
-
-              await signer?.sendTransaction({
+              receipt = await account?.sendTransaction({
                 to,
                 value: formattedAmount,
               })
@@ -143,10 +153,19 @@ function SendModal({
               if (+amount > formattedBalances[selectedToken])
                 return toast.error('Insufficient funds')
 
-              await tokenContracts[selectedToken].call('transfer', [
-                to,
-                formattedAmount,
-              ])
+              const transaction = prepareContractCall({
+                contract: tokenContracts[selectedToken],
+                method: 'transfer' as string,
+                params: [to, formattedAmount],
+              })
+
+              receipt = await sendAndConfirmTransaction({
+                transaction,
+                account,
+              })
+            }
+            if (receipt) {
+              toast.success('Your funds have been transferred')
             }
           } catch (err) {
             console.log(err)
@@ -173,9 +192,7 @@ function SendModal({
             className="`w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
             onChange={({ target }) => setSelectedToken(target.value)}
           >
-            <option value={'native'}>
-              {selectedNativeToken[selectedChain.slug]}
-            </option>
+            <option value={'native'}>{selectedNativeToken[chainSlug]}</option>
             <option value={'mooney'}>{'MOONEY'}</option>
             <option value={'dai'}>{'DAI'}</option>
             <option value={'usdc'}>{'USDC'}</option>
@@ -212,15 +229,15 @@ export function PrivyConnectWallet({
   citizenContract,
   type,
 }: PrivyConnectWalletProps) {
-  const sdk = useSDK()
   const router = useRouter()
 
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
-
+  const { selectedChain, setSelectedChain }: any = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const [networkMistmatch, setNetworkMismatch] = useState(false)
 
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   const { data: _ensData } = useENS(address)
   const ens = _ensData?.name
   const [walletChainId, setWalletChainId] = useState(1)
@@ -230,16 +247,30 @@ export function PrivyConnectWallet({
   const { login } = useLogin({
     onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
       //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
-      if (!wasAlreadyAuthenticated && router.pathname !== '/submit') {
+      if (
+        !wasAlreadyAuthenticated &&
+        router.pathname !== '/submit' &&
+        router.pathname !== '/rewards' &&
+        router.pathname !== '/lock' &&
+        router.pathname !== '/bridge'
+      ) {
         let citizen
         try {
-          const citizenContract = await sdk?.getContract(
-            CITIZEN_ADDRESSES[selectedChain.slug]
-          )
-          const ownedTokenId = await citizenContract?.call('getOwnedToken', [
-            address,
-          ])
-          citizen = await citizenContract?.erc721.get(ownedTokenId)
+          const citizenContract = getContract({
+            client,
+            address: CITIZEN_ADDRESSES[chainSlug],
+            chain: selectedChain,
+            abi: CitizenABI as any,
+          })
+          const ownedTokenId = await readContract({
+            contract: citizenContract,
+            method: 'getOwnedToken' as string,
+            params: [address],
+          })
+          citizen = await getNFT({
+            contract: citizenContract,
+            tokenId: BigInt(ownedTokenId),
+          })
         } catch (err) {
           citizen = undefined
         }
@@ -247,7 +278,7 @@ export function PrivyConnectWallet({
           router.push(
             `/citizen/${generatePrettyLinkWithId(
               citizen?.metadata?.name as string,
-              citizen?.metadata?.id
+              citizen?.metadata?.id as string
             )}`
           )
         } else {
@@ -263,25 +294,29 @@ export function PrivyConnectWallet({
   const [enabled, setEnabled] = useState(false)
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
 
-  const { contract: mooneyContract } = useContract(
-    MOONEY_ADDRESSES[selectedChain.slug],
-    ERC20
-  )
+  const mooneyContract = useContract({
+    address: MOONEY_ADDRESSES[chainSlug],
+    chain: selectedChain,
+    abi: ERC20 as any,
+  })
 
-  const { contract: daiContract } = useContract(
-    DAI_ADDRESSES[selectedChain.slug],
-    ERC20
-  )
+  const daiContract = useContract({
+    address: DAI_ADDRESSES[chainSlug],
+    chain: selectedChain,
+    abi: ERC20 as any,
+  })
 
-  const { contract: usdcContract } = useContract(
-    USDC_ADDRESSES[selectedChain.slug],
-    ERC20
-  )
+  const usdcContract = useContract({
+    address: USDC_ADDRESSES[chainSlug],
+    chain: selectedChain,
+    abi: ERC20 as any,
+  })
 
-  const { contract: usdtContract } = useContract(
-    USDT_ADDRESSES[selectedChain.slug],
-    ERC20
-  )
+  const usdtContract = useContract({
+    address: USDT_ADDRESSES[chainSlug],
+    chain: selectedChain,
+    abi: ERC20 as any,
+  })
 
   const nativeBalance = useNativeBalance()
 
@@ -331,17 +366,9 @@ export function PrivyConnectWallet({
   function NetworkIcon() {
     return (
       <Image
-        src={`/icons/networks/${selectedChain.slug}.svg`}
-        width={
-          selectedChain.slug === 'ethereum' || selectedChain.slug === 'sepolia'
-            ? 25
-            : 30
-        }
-        height={
-          selectedChain.slug === 'ethereum' || selectedChain.slug === 'sepolia'
-            ? 25
-            : 30
-        }
+        src={`/icons/networks/${chainSlug}.svg`}
+        width={chainSlug === 'ethereum' || chainSlug === 'sepolia' ? 25 : 30}
+        height={chainSlug === 'ethereum' || chainSlug === 'sepolia' ? 25 : 30}
         alt="Network Icon"
       />
     )
@@ -351,19 +378,19 @@ export function PrivyConnectWallet({
     return (
       <Image
         src={`/icons/networks/${
-          selectedChain.slug === 'polygon' ? 'polygon' : 'ethereum'
+          chainSlug === 'polygon' ? 'polygon' : 'ethereum'
         }.svg`}
         width={
-          selectedChain.slug === 'ethereum' ||
-          selectedChain.slug === 'arbitrum' ||
-          selectedChain.slug === 'sepolia'
+          chainSlug === 'ethereum' ||
+          chainSlug === 'arbitrum' ||
+          chainSlug === 'sepolia'
             ? 25
             : 30
         }
         height={
-          selectedChain.slug === 'ethereum' ||
-          selectedChain.slug === 'arbitrum' ||
-          selectedChain.slug === 'sepolia'
+          chainSlug === 'ethereum' ||
+          chainSlug === 'arbitrum' ||
+          chainSlug === 'sepolia'
             ? 25
             : 30
         }
@@ -379,7 +406,7 @@ export function PrivyConnectWallet({
   }, [wallets, selectedWallet])
 
   useEffect(() => {
-    if (walletChainId !== selectedChain.chainId) setNetworkMismatch(true)
+    if (walletChainId !== selectedChain.id) setNetworkMismatch(true)
     else setNetworkMismatch(false)
   }, [walletChainId, selectedChain, selectedWallet])
 
@@ -435,6 +462,7 @@ export function PrivyConnectWallet({
             >
               {sendModalEnabled && (
                 <SendModal
+                  account={account}
                   selectedChain={selectedChain}
                   setEnabled={setSendModalEnabled}
                   networkIcon={<NetworkIcon />}
@@ -453,10 +481,7 @@ export function PrivyConnectWallet({
                   </div>
                   {type === 'mobile' && (
                     <div className="pt-2">
-                      <CitizenProfileLink
-                        selectedChain={selectedChain}
-                        citizenContract={citizenContract}
-                      />
+                      <CitizenProfileLink />
                     </div>
                   )}
                 </div>
@@ -489,7 +514,7 @@ export function PrivyConnectWallet({
                   <button
                     className="w-full mt-4 p-2 border hover:scale-105 transition-all duration-150 hover:border-light-warm hover:text-light-warm rounded-lg"
                     onClick={() => {
-                      wallets[selectedWallet].switchChain(selectedChain.chainId)
+                      wallets[selectedWallet].switchChain(selectedChain.id)
                     }}
                   >
                     {`Switch to ${selectedChain.name}`}
@@ -510,9 +535,7 @@ export function PrivyConnectWallet({
                   <div className=" w-full flex justify-left items-center gap-4">
                     <NativeTokenIcon />
                     <p>
-                      {nativeBalance +
-                        ' ' +
-                        selectedNativeToken[selectedChain.slug]}
+                      {nativeBalance + ' ' + selectedNativeToken[chainSlug]}
                     </p>
                   </div>
 
@@ -565,7 +588,7 @@ export function PrivyConnectWallet({
                     if (!address)
                       return toast.error('Please connect your wallet')
                     fundWallet(address, {
-                      chain: viemChains[selectedChain.slug],
+                      chain: viemChains[chainSlug],
                       asset: 'native-currency',
                     })
                   }}
