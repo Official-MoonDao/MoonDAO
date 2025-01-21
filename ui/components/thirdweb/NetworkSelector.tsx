@@ -1,7 +1,6 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import {
   Arbitrum,
-  ArbitrumSepolia,
   Chain,
   Ethereum,
   Polygon,
@@ -49,7 +48,6 @@ export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
     selectedChain: selectedChainV5,
     setSelectedChain: setSelectedChainV5,
   } = useContext(ChainContextV5)
-
   const [dropdown, setDropdown] = useState(false)
 
   function selectChain(chain: Chain) {

@@ -38,7 +38,7 @@ export default function Withdraw() {
   )
   const { contract: vMooneyContract }: any = useContract(
     VMOONEY_ADDRESSES[selectedChain?.slug],
-    VotingEscrow.abi
+    VotingEscrow
   )
   const { contract: mooneyContract } = useContract(
     MOONEY_ADDRESSES[selectedChain.slug],

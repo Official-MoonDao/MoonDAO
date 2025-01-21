@@ -131,7 +131,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
       })
       setExpiresAt(expiresAt)
     }
-    if (citizenContract && !isGuest && nft?.metadata?.id) checkExpiration()
+    if (citizenContract && nft?.metadata?.id && !isGuest) checkExpiration()
   }, [citizenContract, nft?.metadata?.id, isGuest])
   // Hats
   const hats = useTeamWearer(teamContract, selectedChain, nft?.owner)
