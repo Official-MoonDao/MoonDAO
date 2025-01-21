@@ -1,4 +1,3 @@
-import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -27,7 +26,7 @@ export default function TeamMarketplace({
     )
     const statement = `SELECT * FROM ${marketplaceTableName} WHERE teamId = ${teamId}`
 
-    const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
+    const res = await fetch(`/api/tableland/query?statement=${statement}`)
     const data = await res.json()
 
     setListings(data)

@@ -1,4 +1,3 @@
-import { TABLELAND_ENDPOINT } from 'const/config'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Job, { Job as JobType } from '@/components/jobs/Job'
@@ -24,7 +23,7 @@ export default function LatestJobs({
       const tableName = await jobTableContract.call('getTableName')
       const statement = `SELECT * FROM ${tableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
       const latestJobsRes = await fetch(
-        `${TABLELAND_ENDPOINT}?statement=${statement}`
+        `/api/tableland/query?statement=${statement}`
       )
       const jobs = await latestJobsRes.json()
       const validJobs = jobs.filter(async (job: JobType) => {

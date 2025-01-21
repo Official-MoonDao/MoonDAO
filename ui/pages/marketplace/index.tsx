@@ -2,11 +2,7 @@ import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { useContract } from '@thirdweb-dev/react'
 import MarketplaceABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
-import {
-  MARKETPLACE_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
-  TEAM_ADDRESSES,
-} from 'const/config'
+import { MARKETPLACE_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import ChainContext from '@/lib/thirdweb/chain-context'
@@ -67,8 +63,10 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   return (
     <section id="jobs-container" className="overflow-hidden">
       <Head
-        title={"Marketplace"}
-        description={'Explore the Space Acceleration Network Marketplace! Browse and buy innovative space products and services from pioneering teams driving the future of the space economy.'}
+        title={'Marketplace'}
+        description={
+          'Explore the Space Acceleration Network Marketplace! Browse and buy innovative space products and services from pioneering teams driving the future of the space economy.'
+        }
         image="https://ipfs.io/ipfs/QmTtEyhgwcE1xyqap4nvaXyPpMBnfskRPtnz7i1jpGnw5M"
       />
       <Container>

@@ -9,7 +9,6 @@ import {
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
 } from 'const/config'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
@@ -139,7 +138,7 @@ export default function FinalReportEditor({
       const projectsTableName = await projectsTableContact?.call('getTableName')
       const statement = `SELECT * FROM ${projectsTableName} WHERE MDP = ${loadedProposal?.proposalId}`
       const projectRes = await fetch(
-        `${TABLELAND_ENDPOINT}?statement=${statement}`
+        `/api/tableland/query?statement=${statement}`
       )
       const projectData = await projectRes.json()
       const project = projectData[0]
