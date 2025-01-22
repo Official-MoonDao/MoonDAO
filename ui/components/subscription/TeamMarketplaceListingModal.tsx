@@ -90,7 +90,7 @@ export default function TeamMarketplaceListingModal({
 
   const currTime = useCurrUnixTime()
 
-  const { contract: teamContract } = useContract({
+  const teamContract = useContract({
     chain: selectedChain,
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI,
