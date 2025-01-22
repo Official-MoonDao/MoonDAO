@@ -1,9 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MediaRenderer } from 'thirdweb/react'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import client from '@/lib/thirdweb/client'
 import Modal from '../layout/Modal'
 
 type CitizenPointModalProps = {
@@ -43,13 +41,12 @@ export default function CitizenPointModal({
               passHref
             >
               <div className="flex flex-col items-center">
-                <MediaRenderer
-                  client={client}
+                <Image
                   className="rounded-full"
-                  src={c.image}
+                  src={`https://ipfs.io/ipfs/${c.image.split('ipfs://')[1]}`}
                   alt={c.name}
-                  width={'75px'}
-                  height={'75px'}
+                  width={75}
+                  height={75}
                 />
                 <p className="w-[75px] text-center break-words">{c.name}</p>
               </div>
