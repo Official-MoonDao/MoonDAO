@@ -35,7 +35,7 @@ export default function Jobs({ jobs }: JobsProps) {
   const [filteredJobs, setFilteredJobs] = useState<JobType[]>()
   const [input, setInput] = useState('')
 
-  const { contract: teamContract } = useContract({
+  const teamContract = useContract({
     chain: selectedChain,
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,

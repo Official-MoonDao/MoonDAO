@@ -36,12 +36,12 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   const [filteredListings, setFilteredListings] = useState<TeamListingType[]>()
   const [input, setInput] = useState('')
 
-  const { contract: teamContract } = useContract({
+  const teamContract = useContract({
     chain: selectedChain,
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
   })
-  const { contract: marketplaceTableContract } = useContract({
+  const marketplaceTableContract = useContract({
     chain: selectedChain,
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceABI as any,
