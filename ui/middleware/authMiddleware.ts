@@ -8,12 +8,6 @@ export async function authMiddleware(
   res: NextApiResponse,
   next: () => void
 ) {
-  const origin = req.headers.origin
-
-  if (origin !== process.env.ALLOWED_ORIGIN) {
-    return res.status(403).json({ error: 'Access Denied' })
-  }
-
   secureHeaders(res)
 
   const session = await getServerSession(req, res, authOptions)
