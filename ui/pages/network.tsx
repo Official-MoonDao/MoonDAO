@@ -1,16 +1,21 @@
 import { MapIcon } from '@heroicons/react/24/outline'
+import CitizenTableABI from 'const/abis/CitizenTable.json'
+import TeamTableABI from 'const/abis/TeamTable.json'
 import {
   CITIZEN_ADDRESSES,
+  CITIZEN_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
   TEAM_ADDRESSES,
+  TEAM_TABLE_ADDRESSES,
 } from 'const/config'
 import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback } from 'react'
-import { getContract, readContract } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
+import { getContract, NFT, readContract } from 'thirdweb'
+import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -38,6 +43,7 @@ export default function Network({
   filteredTeams,
   filteredCitizens,
 }: NetworkProps) {
+  console.log(filteredTeams, filteredCitizens)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
 
@@ -298,26 +304,38 @@ export async function getStaticProps() {
     abi: TeamABI as any,
   })
 
-  const totalTeams = await readContract({
-    contract: teamContract,
-    method: 'totalSupply',
+  const teamTableContract = getContract({
+    client: serverClient,
+    address: TEAM_TABLE_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: TeamTableABI as any,
   })
 
-  const teams: any = []
-  async function fetchTeam(tokenId: number) {
-    try {
-      const team = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(tokenId),
-      })
-      teams.push(team)
-    } catch (err) {
-      console.error(err)
-    }
-  }
-  for (let i = 0; i < totalTeams; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 200))
-    await fetchTeam(i)
+  const teamTableName = await readContract({
+    contract: teamTableContract,
+    method: 'getTableName',
+  })
+
+  const teamRows = await queryTable(chain, `SELECT * FROM ${teamTableName}`)
+
+  const citizenTableContract = getContract({
+    client: serverClient,
+    address: CITIZEN_TABLE_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: CitizenTableABI as any,
+  })
+  const citizenTableName = await readContract({
+    contract: citizenTableContract,
+    method: 'getTableName',
+  })
+  const citizenRows: any = await queryTable(
+    chain,
+    `SELECT * FROM ${citizenTableName}`
+  )
+
+  const teams: NFT[] = []
+  for (const row of teamRows) {
+    teams.push(teamRowToNFT(row))
   }
 
   const filteredPublicTeams: any = teams?.filter(
@@ -341,13 +359,13 @@ export async function getStaticProps() {
   const sortedValidTeams = filteredValidTeams
     .reverse()
     .sort((a: any, b: any) => {
-      const aIsFeatured = featuredTeams.includes(a.metadata.id)
-      const bIsFeatured = featuredTeams.includes(b.metadata.id)
+      const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
+      const bIsFeatured = featuredTeams.includes(Number(b.metadata.id))
 
       if (aIsFeatured && bIsFeatured) {
         return (
-          featuredTeams.indexOf(a.metadata.id) -
-          featuredTeams.indexOf(b.metadata.id)
+          featuredTeams.indexOf(Number(a.metadata.id)) -
+          featuredTeams.indexOf(Number(b.metadata.id))
         )
       } else if (aIsFeatured) {
         return -1
@@ -365,26 +383,9 @@ export async function getStaticProps() {
     abi: CitizenABI as any,
   })
 
-  const totalCitizens = await readContract({
-    contract: citizenContract,
-    method: 'totalSupply',
-  })
-
-  const citizens: any = []
-  async function fetchCitizen(tokenId: number) {
-    try {
-      const citizen = await getNFT({
-        contract: citizenContract,
-        tokenId: BigInt(tokenId),
-      })
-      citizens.push(citizen)
-    } catch (err) {
-      console.error(err)
-    }
-  }
-  for (let i = 0; i < totalCitizens; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 200))
-    await fetchCitizen(i)
+  const citizens: NFT[] = []
+  for (const row of citizenRows) {
+    citizens.push(citizenRowToNFT(row))
   }
 
   const filteredPublicCitizens: any = citizens?.filter(
@@ -405,26 +406,10 @@ export async function getStaticProps() {
     }
   )
 
-  const formattedTeams = sortedValidTeams?.map((team: any) => {
-    return {
-      ...team,
-      id: Number(team.metadata.id),
-    }
-  })
-
-  const formattedCitizens = filteredValidCitizens
-    .reverse()
-    .map((citizen: any) => {
-      return {
-        ...citizen,
-        id: Number(citizen.metadata.id),
-      }
-    })
-
   return {
     props: {
-      filteredTeams: formattedTeams,
-      filteredCitizens: formattedCitizens,
+      filteredTeams: sortedValidTeams,
+      filteredCitizens: filteredValidCitizens.reverse(),
     },
     revalidate: 60,
   }
