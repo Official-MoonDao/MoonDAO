@@ -1,8 +1,7 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
-import { Job as JobType } from '@/components/jobs/Job'
-import JobV5 from '../jobs/JobV5'
+import Job, { Job as JobType } from '../jobs/Job'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 
@@ -65,7 +64,7 @@ export default function LatestJobs({
       <SlidingCardMenu>
         <div id="latest-jobs-container" className="flex gap-5">
           {latestJobs.map((job, i) => (
-            <JobV5
+            <Job
               key={`job-${i}`}
               job={job}
               showTeam

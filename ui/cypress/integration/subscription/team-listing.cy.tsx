@@ -8,7 +8,7 @@ import { serverClient } from '@/lib/thirdweb/client'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import TeamListing, {
   TeamListing as TeamListingType,
-} from '@/components/subscription/TeamListingV5'
+} from '@/components/subscription/TeamListing'
 
 describe('<TeamListing />', () => {
   let listing: TeamListingType

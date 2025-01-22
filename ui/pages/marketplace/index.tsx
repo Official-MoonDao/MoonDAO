@@ -1,5 +1,3 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { useContract } from '@thirdweb-dev/react'
 import MarketplaceABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -12,9 +10,9 @@ import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -31,18 +29,23 @@ type MarketplaceProps = {
 }
 
 export default function Marketplace({ listings }: MarketplaceProps) {
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
 
   const [filteredListings, setFilteredListings] = useState<TeamListingType[]>()
   const [input, setInput] = useState('')
 
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug]
-  )
-  const { contract: marketplaceTableContract } = useContract(
-    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug]
-  )
+  const { contract: teamContract } = useContract({
+    chain: selectedChain,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+  })
+  const { contract: marketplaceTableContract } = useContract({
+    chain: selectedChain,
+    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+    abi: MarketplaceABI as any,
+  })
 
   useEffect(() => {
     if (listings && input != '') {

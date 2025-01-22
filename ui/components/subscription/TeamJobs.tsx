@@ -3,8 +3,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
-import { Job as JobType } from '../jobs/Job'
-import JobV5 from '../jobs/JobV5'
+import Job, { Job as JobType } from '../jobs/Job'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import Card from './Card'
@@ -111,7 +110,7 @@ export default function TeamJobs({
             <div className="flex gap-4">
               {jobs?.[0] ? (
                 jobs.map((job, i) => (
-                  <JobV5
+                  <Job
                     id={`team-job-${job.id}`}
                     key={`team-job-${job.id}`}
                     job={job}

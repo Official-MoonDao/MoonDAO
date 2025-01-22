@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
-import { TeamListing as TeamListingType } from './TeamListing'
-import TeamListingV5 from './TeamListingV5'
+import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
 
 type NewMarketplaceListingsProps = {
   selectedChain: any
@@ -69,7 +68,7 @@ export default function NewMarketplaceListings({
       <SlidingCardMenu>
         <div id="new-marketplace-listings-container" className="flex gap-5">
           {newListings.map((listing, i) => (
-            <TeamListingV5
+            <TeamListing
               key={`team-listing-${i}`}
               listing={listing}
               selectedChain={selectedChain}
