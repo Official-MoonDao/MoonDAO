@@ -1,9 +1,11 @@
 import {
   BuildingLibraryIcon,
   ClipboardDocumentListIcon,
+  DocumentIcon,
   FolderIcon,
   PlusIcon,
   RocketLaunchIcon,
+  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
 import IconOrg from '@/components/assets/IconOrg'
@@ -24,56 +26,76 @@ export default function useNavigation(citizen: any) {
         name: 'Network',
         href: '/network',
         icon: IconOrg,
+        children: [
+          { name: 'Citizens', href: '/citizens' },
+          { name: 'Teams', href: '/teams' },
+          { name: 'Map', href: '/map' },
+          { name: 'Create a Team', href: '/team' },
+        ],
       },
       {
-        name: 'Info',
+        name: 'Govern',
+        icon: BuildingLibraryIcon,
+        href: '/governance',
+        children: [
+          {
+            name: 'Proposals',
+            href: '/vote',
+          },
+          { name: 'Allocate Rewards', href: '/rewards' },
+          {
+            name: 'Constitution',
+            href: 'https://docs.moondao.com/Governance/Constitution',
+          },
+          {
+            name: '$MOONEY Token', 
+          },
+          {
+            name: 'Buy',
+            href: '/get-mooney',
+          },
+          { name: 'Lock', href: '/lock' },
+          { name: 'Bridge', href: '/bridge' },
+        ],
+      },
+      {
+        name: 'Contribute',
+        icon: WrenchScrewdriverIcon,
+        href: '/submit',
+        children: [
+          {
+            name: 'Projects',
+            href: '/project',
+          },
+          {
+            name: 'Create Project',
+            href: '/submit',
+          },
+          {
+            name: 'Get Rewards',
+            href: '/submit?tag=contribution',
+          },
+          {
+            name: 'Jobs',
+            href: '/jobs',
+          },
+        ],
+      },
+      {
+        name: 'Learn',
         icon: FolderIcon,
         href: '/info',
         children: [
           { name: 'News', href: '/news' },
           { name: 'About', href: '/about' },
-          {
-            name: 'Constitution',
-            href: 'https://docs.moondao.com/Governance/Constitution',
-          },
           { name: 'Events', href: '/events' },
           { name: 'Analytics', href: '/analytics' },
-        ],
-      },
-      {
-        name: 'Governance',
-        icon: BuildingLibraryIcon,
-        href: '/governance',
-        children: [
-          {
-            name: 'All Proposals',
-            href: '/vote',
-          },
-          {
-            name: 'Submit Proposal',
-            href: '/submission',
-          },
-          {
-            name: 'Submit Contribution',
-            href: '/submission?tag=contribution',
-          },
-          {
-            name: 'Get $MOONEY',
-            href: '/get-mooney',
-          },
-          { name: 'Get Voting Power', href: '/lock' },
-          { name: 'Bridge', href: '/bridge' },
         ],
       },
       {
         name: 'Marketplace',
         icon: RocketLaunchIcon,
         href: '/marketplace',
-      },
-      {
-        name: 'Jobs',
-        href: '/jobs',
-        icon: ClipboardDocumentListIcon,
       },
     ]
   }, [citizen])

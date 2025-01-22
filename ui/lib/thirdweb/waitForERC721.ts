@@ -1,3 +1,5 @@
+import { getNFT } from 'thirdweb/extensions/erc721'
+
 //Wait for nft metadata to populate
 export default async function waitForERC721(
   contract: any,
@@ -12,7 +14,10 @@ export default async function waitForERC721(
   const timeout = 3000
 
   while (attemps < maxAttempts) {
-    const nft = await contract.erc721.get(tokenId)
+    const nft = await getNFT({
+      contract,
+      tokenId: BigInt(tokenId),
+    })
     if (
       nft?.metadata.name !== '' &&
       nft?.metadata.name !== 'Failed to load NFT metadata'

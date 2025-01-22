@@ -1,14 +1,19 @@
 import { MapIcon } from '@heroicons/react/24/outline'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { NFT } from '@thirdweb-dev/react'
-import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import {
+  CITIZEN_ADDRESSES,
+  DEFAULT_CHAIN_V5,
+  TEAM_ADDRESSES,
+} from 'const/config'
 import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback } from 'react'
+import { getContract, readContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
@@ -25,8 +30,8 @@ import CitizenABI from '../const/abis/Citizen.json'
 import TeamABI from '../const/abis/Team.json'
 
 type NetworkProps = {
-  filteredTeams: NFT[]
-  filteredCitizens: NFT[]
+  filteredTeams: any[]
+  filteredCitizens: any[]
 }
 
 export default function Network({
@@ -37,7 +42,7 @@ export default function Network({
   const shallowQueryRoute = useShallowQueryRoute()
 
   const [input, setInput] = useState('')
-  function filterBySearch(nfts: NFT[]) {
+  function filterBySearch(nfts: any[]) {
     return nfts.filter((nft) => {
       return nft.metadata.name
         ?.toString()
@@ -98,7 +103,7 @@ export default function Network({
     if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 9))
   }, [tab, input, filteredCitizens, filteredTeams])
 
-  const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
+  const [cachedNFTs, setCachedNFTs] = useState<any[]>([])
 
   const [pageIdx, setPageIdx] = useState(1)
 
@@ -281,22 +286,38 @@ export default function Network({
 }
 
 export async function getStaticProps() {
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const sdk = initSDK(chain)
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+
   const now = Math.floor(Date.now() / 1000)
 
-  const teamContract = await sdk.getContract(
-    TEAM_ADDRESSES[chain.slug],
-    TeamABI
-  )
-  const totalTeams = await teamContract.call('totalSupply')
+  const teamContract = getContract({
+    client: serverClient,
+    address: TEAM_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: TeamABI as any,
+  })
 
-  const teams = [] //replace with teamContract.erc721.getAll() if all teams load
-  for (let i = 0; i < totalTeams; i++) {
-    if (!blockedTeams.includes(i)) {
-      const team = await teamContract.erc721.get(i)
+  const totalTeams = await readContract({
+    contract: teamContract,
+    method: 'totalSupply',
+  })
+
+  const teams: any = []
+  async function fetchTeam(tokenId: number) {
+    try {
+      const team = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(tokenId),
+      })
       teams.push(team)
+    } catch (err) {
+      console.error(err)
     }
+  }
+  for (let i = 0; i < totalTeams; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    await fetchTeam(i)
   }
 
   const filteredPublicTeams: any = teams?.filter(
@@ -307,11 +328,13 @@ export async function getStaticProps() {
 
   const filteredValidTeams: any = filteredPublicTeams?.filter(
     async (nft: any) => {
-      const expiresAt = await teamContract.call('expiresAt', [
-        nft?.metadata?.id,
-      ])
+      const expiresAt = await readContract({
+        contract: teamContract,
+        method: 'expiresAt',
+        params: [nft?.metadata?.id],
+      })
 
-      return expiresAt.toNumber() > now
+      return +expiresAt.toString() > now
     }
   )
 
@@ -335,18 +358,33 @@ export async function getStaticProps() {
       }
     })
 
-  const citizenContract = await sdk.getContract(
-    CITIZEN_ADDRESSES[chain.slug],
-    CitizenABI
-  )
-  const totalCitizens = await citizenContract.call('totalSupply')
+  const citizenContract = getContract({
+    client: serverClient,
+    address: CITIZEN_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: CitizenABI as any,
+  })
 
-  const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
-  for (let i = 0; i < totalCitizens.toNumber(); i++) {
-    if (!blockedCitizens.includes(i)) {
-      const citizen = await citizenContract.erc721.get(i)
+  const totalCitizens = await readContract({
+    contract: citizenContract,
+    method: 'totalSupply',
+  })
+
+  const citizens: any = []
+  async function fetchCitizen(tokenId: number) {
+    try {
+      const citizen = await getNFT({
+        contract: citizenContract,
+        tokenId: BigInt(tokenId),
+      })
       citizens.push(citizen)
+    } catch (err) {
+      console.error(err)
     }
+  }
+  for (let i = 0; i < totalCitizens; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    await fetchCitizen(i)
   }
 
   const filteredPublicCitizens: any = citizens?.filter(
@@ -357,18 +395,36 @@ export async function getStaticProps() {
 
   const filteredValidCitizens: any = filteredPublicCitizens?.filter(
     async (nft: any) => {
-      const expiresAt = await citizenContract.call('expiresAt', [
-        nft?.metadata?.id,
-      ])
+      const expiresAt = await readContract({
+        contract: citizenContract,
+        method: 'expiresAt',
+        params: [nft?.metadata?.id],
+      })
 
-      return expiresAt.toNumber() > now
+      return +expiresAt.toString() > now
     }
   )
 
+  const formattedTeams = sortedValidTeams?.map((team: any) => {
+    return {
+      ...team,
+      id: Number(team.metadata.id),
+    }
+  })
+
+  const formattedCitizens = filteredValidCitizens
+    .reverse()
+    .map((citizen: any) => {
+      return {
+        ...citizen,
+        id: Number(citizen.metadata.id),
+      }
+    })
+
   return {
     props: {
-      filteredTeams: sortedValidTeams,
-      filteredCitizens: filteredValidCitizens.reverse(),
+      filteredTeams: formattedTeams,
+      filteredCitizens: formattedCitizens,
     },
     revalidate: 60,
   }

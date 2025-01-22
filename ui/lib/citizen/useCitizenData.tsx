@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { readContract } from 'thirdweb'
 import useDiscordUserSearch from '../nance/DiscordUserSearch'
 import { getAttribute } from '../utils/nft'
 
@@ -58,17 +59,19 @@ export function useCitizenData(nft: any, citizenContract: any) {
       const now = Math.floor(Date.now() / 1000)
 
       try {
-        const expiresAt = await citizenContract.call('expiresAt', [
-          nft?.metadata?.id,
-        ])
-        setSubIsValid(expiresAt.toNumber() > now)
+        const expiresAt = await readContract({
+          contract: citizenContract,
+          method: 'expiresAt' as string,
+          params: [nft?.metadata?.id],
+        })
+        setSubIsValid(+expiresAt.toString() > now)
       } catch (err) {
         console.log(err)
       }
       setIsLoading(false)
     }
-    if (nft.metadata.attributes && citizenContract) checkSubscription()
-  }, [nft.metadata, citizenContract])
+    if (nft?.metadata && citizenContract) checkSubscription()
+  }, [nft?.metadata, citizenContract])
 
   return {
     socials,

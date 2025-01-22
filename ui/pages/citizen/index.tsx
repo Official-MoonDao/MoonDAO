@@ -1,8 +1,6 @@
-import { useAddress } from '@thirdweb-dev/react'
 import useTranslation from 'next-translate/useTranslation'
-import Link from 'next/link'
 import { useContext, useState } from 'react'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -14,8 +12,7 @@ import CreateCitizen from '@/components/onboarding/CreateCitizen'
 
 export default function Join() {
   const { t } = useTranslation('common')
-  const { selectedChain } = useContext(ChainContext)
-  const address = useAddress()
+  const { selectedChain } = useContext(ChainContextV5)
 
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
@@ -27,7 +24,6 @@ export default function Join() {
   if (selectedTier === 'citizen') {
     return (
       <CreateCitizen
-        address={address}
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />
@@ -39,7 +35,7 @@ export default function Join() {
       <Head
         title={'Become a Citizen'}
         description={
-          'Join the first interplanetary network state dedicated to expanding life beyond Earth.'
+          'The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond.'
         }
         image="https://ipfs.io/ipfs/QmUG1fcYnnzkhTFwSvMAy1gcFcq99VCk3Eps1L9g6qkt49"
       />

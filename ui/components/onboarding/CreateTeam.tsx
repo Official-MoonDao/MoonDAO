@@ -1,6 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useFundWallet, usePrivy } from '@privy-io/react-auth'
-import { useContract } from '@thirdweb-dev/react'
+import { useFundWallet } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
   DEPLOYED_ORIGIN,
@@ -11,13 +10,21 @@ import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import {
+  prepareContractCall,
+  readContract,
+  sendAndConfirmTransaction,
+} from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
@@ -30,18 +37,16 @@ import ContentLayout from '../layout/ContentLayout'
 import Footer from '../layout/Footer'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 import { ImageGenerator } from './TeamImageGenerator'
 
-export default function CreateTeam({
-  address,
-  selectedChain,
-  setSelectedTier,
-}: any) {
+export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const router = useRouter()
 
-  const { getAccessToken } = usePrivy()
+  const chainSlug = getChainSlug(selectedChain)
+
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
@@ -51,8 +56,6 @@ export default function CreateTeam({
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
-
-  const checkboxRef = useRef(null)
 
   const { isMobile } = useWindowSize()
 
@@ -65,7 +68,6 @@ export default function CreateTeam({
     view: 'private',
     formResponseId: '',
   })
-  const { windowSize } = useWindowSize()
 
   useEffect(() => {
     if (stage > lastStage) {
@@ -73,23 +75,23 @@ export default function CreateTeam({
     }
   }, [stage, lastStage])
 
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug],
-    TeamABI
-  )
+  const teamContract = useContract({
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI,
+    chain: selectedChain,
+  })
 
-  const { contract: teamCreatorContract } = useContract(
-    TEAM_CREATOR_ADDRESSES[selectedChain.slug],
-    MoonDAOTeamCreatorABI
-  )
-  const pfpRef = useRef<HTMLDivElement | null>(null)
+  const teamCreatorContract = useContract({
+    address: TEAM_CREATOR_ADDRESSES[chainSlug],
+    abi: MoonDAOTeamCreatorABI,
+    chain: selectedChain,
+  })
 
   const nativeBalance = useNativeBalance()
 
   const { fundWallet } = useFundWallet()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
-
     //get response from form
     const { formId, responseId } = formResponse
 
@@ -335,11 +337,17 @@ export default function CreateTeam({
                     label="Check Out"
                     isDisabled={!agreedToCondition || isLoadingMint}
                     action={async () => {
-                      try {
-                        const cost = await teamContract?.call(
-                          'getRenewalPrice',
-                          [address, 365 * 24 * 60 * 60]
+                      if (!account || !address) {
+                        return toast.error(
+                          'Please connect your wallet to continue.'
                         )
+                      }
+                      try {
+                        const cost: any = await readContract({
+                          contract: teamContract,
+                          method: 'getRenewalPrice' as string,
+                          params: [address, 365 * 24 * 60 * 60],
+                        })
 
                         const formattedCost = ethers.utils
                           .formatEther(cost.toString())
@@ -352,7 +360,7 @@ export default function CreateTeam({
 
                         if (nativeBalance < totalCost) {
                           const roundedCost =
-                            Math.ceil(+totalCost * 100000) / 100000
+                            Math.ceil(+totalCost * 1000000) / 1000000
 
                           return await fundWallet(address, {
                             amount: String(roundedCost),
@@ -431,9 +439,10 @@ export default function CreateTeam({
                         setIsLoadingMint(true)
                         //mint NFT to safe
 
-                        const mintTx = await teamCreatorContract?.call(
-                          'createMoonDAOTeam',
-                          [
+                        const transaction = prepareContractCall({
+                          contract: teamCreatorContract,
+                          method: 'createMoonDAOTeam' as string,
+                          params: [
                             'ipfs://' + adminHatMetadataIpfsHash,
                             'ipfs://' + managerHatMetadataIpfsHash,
                             'ipfs://' + memberHatMetadataIpfsHash,
@@ -446,13 +455,16 @@ export default function CreateTeam({
                             teamData.view,
                             teamData.formResponseId,
                           ],
-                          {
-                            value: cost,
-                          }
-                        )
+                          value: cost,
+                        })
+
+                        const receipt: any = await sendAndConfirmTransaction({
+                          transaction,
+                          account,
+                        })
 
                         const mintedTokenId = parseInt(
-                          mintTx.receipt.logs[14].topics[3],
+                          receipt.logs[14].topics[3],
                           16
                         ).toString()
 
@@ -466,7 +478,7 @@ export default function CreateTeam({
                           setTimeout(async () => {
                             await sendDiscordMessage(
                               'networkNotifications',
-                              `[**${teamName}** has minted a team NFT!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
+                              `[**${teamName}** has created a team in the Space Acceleration Network!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
                             )
 
                             router.push(`/team/${teamPrettyLink}`)

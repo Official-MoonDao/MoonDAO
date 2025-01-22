@@ -1,26 +1,30 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
-import {
-  MediaRenderer,
-  useAddress,
-  useContract,
-  useNFT,
-  useSDK,
-} from '@thirdweb-dev/react'
+import CitizenABI from 'const/abis/Citizen.json'
+import ERC20ABI from 'const/abis/ERC20.json'
+import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
   DAI_ADDRESSES,
   TEAM_ADDRESSES,
   MOONEY_ADDRESSES,
   USDC_ADDRESSES,
-  DEFAULT_CHAIN,
+  DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import {
+  prepareContractCall,
+  readContract,
+  sendAndConfirmTransaction,
+} from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
 import useTeamEmail from '@/lib/team/useTeamEmail'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import client from '@/lib/thirdweb/client'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { TeamListing } from '@/components/subscription/TeamListing'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -28,7 +32,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 type BuyListingModalProps = {
   selectedChain: any
   listing: TeamListing
-  recipient: string | undefined
+  recipient: string | undefined | null
   setEnabled: Function
 }
 
@@ -38,22 +42,26 @@ export default function BuyTeamListingModal({
   recipient,
   setEnabled,
 }: BuyListingModalProps) {
+  const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
-  const sdk = useSDK()
-  const address = useAddress()
-  const { getAccessToken } = usePrivy()
+  const account = useActiveAccount()
 
-  const { contract: citizenContract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug]
-  )
+  const citizenContract = useContract({
+    address: CITIZEN_ADDRESSES[chainSlug],
+    abi: CitizenABI as any,
+    chain: selectedChain,
+  })
 
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug]
-  )
+  const teamContract = useContract({
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+    chain: selectedChain,
+  })
 
-  const { data: teamNft } = useNFT(teamContract, listing.teamId)
+  const [teamNFT, setTeamNFT] = useState<any>()
+  const [citizenNFT, setCitizenNFT] = useState<any>()
 
-  const teamEmail = useTeamEmail(teamNft)
+  const teamEmail = useTeamEmail(teamNFT)
 
   const [email, setEmail] = useState<string>()
   const [shippingInfo, setShippingInfo] = useState({
@@ -65,17 +73,12 @@ export default function BuyTeamListingModal({
   })
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  const { data: owns } = useHandleRead(citizenContract, 'getOwnedToken', [
-    address,
-  ])
-  const { data: citizenNft } = useNFT(citizenContract, owns)
-
-  const citizenEmail = useCitizenEmail(citizenNft)
+  const citizenEmail = useCitizenEmail(citizenNFT)
 
   const currencyAddresses: any = {
-    MOONEY: MOONEY_ADDRESSES[selectedChain.slug],
-    DAI: DAI_ADDRESSES[selectedChain.slug],
-    USDC: USDC_ADDRESSES[selectedChain.slug],
+    MOONEY: MOONEY_ADDRESSES[chainSlug],
+    DAI: DAI_ADDRESSES[chainSlug],
+    USDC: USDC_ADDRESSES[chainSlug],
   }
 
   const currencyDecimals: any = {
@@ -85,17 +88,43 @@ export default function BuyTeamListingModal({
     USDC: 6,
   }
 
-  const { contract: currencyContract }: any = useContract(
-    currencyAddresses[listing.currency]
-  )
+  const currencyContract = useContract({
+    address: currencyAddresses[listing.currency],
+    abi: ERC20ABI as any,
+    chain: selectedChain,
+  })
 
   useEffect(() => {
-    if (citizenEmail) {
-      setEmail(citizenEmail)
+    async function getTeamNFT() {
+      const nft = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(listing.teamId),
+      })
+      setTeamNFT(nft)
     }
+    async function getCitizenNFT() {
+      const owns: any = await readContract({
+        contract: citizenContract,
+        method: 'getOwnedToken' as string,
+        params: [account?.address],
+      })
+
+      const nft = await getNFT({
+        contract: citizenContract,
+        tokenId: BigInt(owns),
+      })
+      setCitizenNFT(nft)
+    }
+    if (teamContract) getTeamNFT()
+    if (account && citizenContract) getCitizenNFT()
+  }, [account, teamContract, citizenContract])
+
+  useEffect(() => {
+    setEmail(citizenEmail)
   }, [citizenEmail])
 
   async function buyListing() {
+    if (!account) return
     let price
 
     if (citizen) {
@@ -105,35 +134,43 @@ export default function BuyTeamListingModal({
     }
 
     setIsLoading(true)
-    let receipt
+    let transactionHash
     try {
       if (+listing.price <= 0) {
-        receipt = true
+        transactionHash = 'none'
       } else if (listing.currency === 'ETH') {
         // buy with eth
-        const signer = sdk?.getSigner()
-        const tx = await signer?.sendTransaction({
+        const tx = await account?.sendTransaction({
           to: recipient,
-          value: String(price * 10 ** 18),
+          value: BigInt(price * 10 ** 18),
+          chainId: selectedChain.id,
         })
-        receipt = await tx?.wait()
+        transactionHash = tx?.transactionHash
       } else {
         // buy with erc20
-        const tx = await currencyContract?.call('transfer', [
-          recipient,
-          String(price * 10 ** currencyDecimals[listing.currency]),
-        ])
-        receipt = tx.receipt
+        const transaction = prepareContractCall({
+          contract: currencyContract,
+          method: 'transfer' as string,
+          params: [
+            recipient,
+            String(price * 10 ** currencyDecimals[listing.currency]),
+          ],
+        })
+        const receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+        transactionHash = receipt?.transactionHash
       }
 
-      if (receipt) {
+      if (transactionHash) {
         const etherscanUrl =
           process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
             ? 'https://arbiscan.io/tx/'
             : 'https://sepolia.etherscan.io/tx/'
 
         const transactionLink =
-          +listing.price <= 0 ? 'none' : etherscanUrl + receipt.transactionHash
+          +listing.price <= 0 ? 'none' : etherscanUrl + transactionHash
 
         const shipping = Object.values(shippingInfo).join(', ')
 
@@ -141,7 +178,7 @@ export default function BuyTeamListingModal({
         const res = await fetch('/api/marketplace/marketplace-purchase', {
           method: 'POST',
           body: JSON.stringify({
-            address,
+            address: account?.address,
             email,
             item: listing.title,
             value: price,
@@ -150,7 +187,7 @@ export default function BuyTeamListingModal({
             decimals: currencyDecimals[listing.currency],
             quantity: 1,
             txLink: transactionLink,
-            txHash: receipt.transactionHash,
+            txHash: transactionHash,
             recipient,
             isCitizen: citizen ? true : false,
             shipping,
@@ -225,7 +262,12 @@ export default function BuyTeamListingModal({
                 id="image-container"
                 className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
               >
-                <MediaRenderer src={listing.image} width="100%" height="100%" />
+                <MediaRenderer
+                  client={client}
+                  src={listing.image}
+                  width="100%"
+                  height="100%"
+                />
               </div>
             )}
 
@@ -303,7 +345,8 @@ export default function BuyTeamListingModal({
             </div>
           )}
           <PrivyWeb3Button
-            requiredChain={DEFAULT_CHAIN}
+            v5
+            requiredChain={DEFAULT_CHAIN_V5}
             label="Buy"
             action={async () => {
               if (!email || email.trim() === '' || !email.includes('@'))

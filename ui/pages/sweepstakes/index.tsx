@@ -1,7 +1,8 @@
-import { Polygon, Mumbai } from '@thirdweb-dev/chains'
-import { useContract } from '@thirdweb-dev/react'
-import { useContext, useEffect, useState } from 'react'
-import ChainContext from '../../lib/thirdweb/chain-context'
+import { useContext, useEffect } from 'react'
+import { ethereum, mumbai, polygon } from 'thirdweb/chains'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import Head from '../../components/layout/Head'
 import { SweepstakesMinting } from '../../components/ticket-to-space/SweepstakesMinting'
 import SweepstakesHighlights from '@/components/ticket-to-space/SweepstakesHighlights'
@@ -10,39 +11,38 @@ import ttsSweepstakesV2 from '../../const/abis/ttsSweepstakesV2.json'
 import { MOONEY_ADDRESSES, TICKET_TO_SPACE_ADDRESS } from '../../const/config'
 
 export default function Sweepstakes() {
-  const { selectedChain, setSelectedChain }: any = useContext(ChainContext)
+  const { selectedChain, setSelectedChain }: any = useContext(ChainContextV5)
 
-  const [supply, setSupply] = useState(0)
+  const ttsContract = useContract({
+    chain: selectedChain,
+    address: TICKET_TO_SPACE_ADDRESS,
+    abi: ttsSweepstakesV2.abi,
+  })
 
-  const { contract: ttsContract } = useContract(
-    TICKET_TO_SPACE_ADDRESS,
-    ttsSweepstakesV2.abi
-  )
+  const mooneyContract = useContract({
+    chain: polygon,
+    address: MOONEY_ADDRESSES['polygon'],
+    abi: ERC20,
+  })
 
-  const { contract: mooneyContract } = useContract(
-    '0x74Ac7664ABb1C8fa152D41bb60e311a663a41C7E',
-    ERC20.abi
-  ) //polygon mooney
+  const mooneyETHContract = useContract({
+    chain: ethereum,
+    address: MOONEY_ADDRESSES['ethereum'], // testnet
+    abi: ERC20,
+  })
 
-  const { contract: mooneyETHContract } = useContract(
-    MOONEY_ADDRESSES['ethereum'], // testnet
-    ERC20.abi
-  ) //eth mooney\
+  const { data: supply } = useRead({
+    contract: ttsContract,
+    method: 'getSupply',
+    params: [],
+  })
 
   useEffect(() => {
     setSelectedChain(
-      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Polygon : Mumbai
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? polygon : mumbai
     )
   }, [setSelectedChain])
 
-  useEffect(() => {
-    if (ttsContract) {
-      ttsContract
-        .call('getSupply')
-        .then((supply: any) => setSupply(supply.toString()))
-        .catch((err: any) => console.log(err))
-    }
-  }, [ttsContract])
   return (
     <main className="animate-fadeIn">
       <Head

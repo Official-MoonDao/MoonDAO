@@ -1,7 +1,5 @@
-//WIP
 import { useWallets } from '@privy-io/react-auth'
-import { useSDK } from '@thirdweb-dev/react'
-import { CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
+import { CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
 import {
   AlphaRouter,
   SwapOptionsUniversalRouter,
@@ -11,25 +9,32 @@ import {
 import { SwapRouter, UniswapTrade } from '@uniswap/universal-router-sdk'
 import { ethers } from 'ethers'
 import { useContext } from 'react'
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client from '@/lib/thirdweb/client'
 import { UNIVERSAL_ROUTER_ADDRESSES, ZERO_ADDRESS } from '../../../const/config'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
-import ChainContext from '../../thirdweb/chain-context'
 
 export function useUniversalRouter(
   swapAmnt: number,
   tokenIn: any,
   tokenOut: any
 ) {
-  const sdk = useSDK()
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const { wallets } = useWallets()
 
   async function generateRoute(tradeType: TradeType) {
     try {
-      const provider: any = sdk?.getProvider()
+      // const provider: any = sdk?.getProvider()
+      const provider = ethers5Adapter.provider.toEthers({
+        client,
+        chain: selectedChain,
+      })
       const router: any = new AlphaRouter({
-        chainId: selectedChain.chainId,
+        chainId: selectedChain.id,
         provider,
       })
 
@@ -71,14 +76,14 @@ export function useUniversalRouter(
 
     const gasLimit = await signer.estimateGas({
       data: params.calldata,
-      to: UNIVERSAL_ROUTER_ADDRESSES[selectedChain.slug],
+      to: UNIVERSAL_ROUTER_ADDRESSES[chainSlug],
       value: params.value,
       from: wallets[selectedWallet].address,
     })
 
     const tx = await signer.sendTransaction({
       data: params.calldata,
-      to: UNIVERSAL_ROUTER_ADDRESSES[selectedChain.slug],
+      to: UNIVERSAL_ROUTER_ADDRESSES[chainSlug],
       value: params.value,
       from: wallets[selectedWallet].address,
       gasLimit: gasLimit,

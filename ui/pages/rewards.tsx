@@ -1,13 +1,17 @@
-import { Arbitrum, ArbitrumSepolia } from '@thirdweb-dev/chains'
 import DistributionABI from 'const/abis/DistributionTable.json'
-import ProjectABI from 'const/abis/Project.json'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
+  DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { useRouter } from 'next/router'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
+import { getContract, readContract } from 'thirdweb'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { getRelativeQuarter } from '@/lib/utils/dates'
 import {
   RetroactiveRewards,
   RetroactiveRewardsProps,
@@ -18,6 +22,7 @@ export default function Rewards({
   distributions,
 }: RetroactiveRewardsProps) {
   const router = useRouter()
+  useChainDefault()
   return (
     <RetroactiveRewards
       projects={projects}
@@ -28,44 +33,56 @@ export default function Rewards({
 }
 
 export async function getStaticProps() {
-  const chain =
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : ArbitrumSepolia
-  const sdk = initSDK(chain)
+  try {
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-  const projectTableContract = await sdk.getContract(
-    PROJECT_TABLE_ADDRESSES[chain.slug],
-    ProjectABI
-  )
+    const projectTableContract = getContract({
+      client: serverClient,
+      chain,
+      address: PROJECT_TABLE_ADDRESSES[chainSlug],
+      abi: ProjectTableABI as any,
+    })
 
-  const distributionTableContract = await sdk.getContract(
-    DISTRIBUTION_TABLE_ADDRESSES[chain.slug],
-    DistributionABI
-  )
+    const distributionTableContract = getContract({
+      client: serverClient,
+      chain,
+      address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
+      abi: DistributionABI as any,
+    })
 
-  const projectBoardTableName = await projectTableContract.call('getTableName')
-  const distributionTableName = await distributionTableContract.call(
-    'getTableName'
-  )
+    const projectTableName = await readContract({
+      contract: projectTableContract,
+      method: 'getTableName',
+    })
+    const distributionTableName = await readContract({
+      contract: distributionTableContract,
+      method: 'getTableName',
+    })
 
-  const currentYear = new Date().getFullYear()
-  const currentQuarter = Math.floor((new Date().getMonth() + 3) / 3) - 1
-  const projectStatement = `SELECT * FROM ${projectBoardTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
-  const projectsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
-  )
-  const projects = await projectsRes.json()
+    const { quarter, year } = getRelativeQuarter(-1)
 
-  const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${currentYear} AND quarter = ${currentQuarter}`
-  const distributionsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${distributionStatement}`
-  )
-  const distributions = await distributionsRes.json()
+    const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter}`
+    const projects = await queryTable(chain, projectStatement)
 
-  return {
-    props: {
-      projects,
-      distributions,
-    },
-    revalidate: 60,
+    const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
+    const distributions = await queryTable(chain, distributionStatement)
+
+    return {
+      props: {
+        projects,
+        distributions,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error('Error fetching projects or distributions:', error)
+    return {
+      props: {
+        projects: [],
+        distributions: [],
+      },
+      revalidate: 60,
+    }
   }
 }

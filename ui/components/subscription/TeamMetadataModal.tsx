@@ -1,14 +1,16 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
-import { useContract, useResolvedMediaType } from '@thirdweb-dev/react'
 import { Widget } from '@typeform/embed-react'
-import { DEFAULT_CHAIN, TEAM_TABLE_ADDRESSES } from 'const/config'
+import TeamTableABI from 'const/abis/TeamTable.json'
+import { DEFAULT_CHAIN_V5, TEAM_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { unpin } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
@@ -76,6 +78,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
 }
 
 export default function TeamMetadataModal({
+  account,
   nft,
   selectedChain,
   setEnabled,
@@ -84,7 +87,9 @@ export default function TeamMetadataModal({
 
   const [stage, setStage] = useState(0)
 
-  const [currTeamImage, setCurrTeamImage] = useState<string>()
+  const [currTeamImage, setCurrTeamImage] = useState<string>(
+    nft?.metadata?.image
+  )
   const [newTeamImage, setNewTeamImage] = useState<File>()
   const [teamData, setTeamData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
@@ -92,13 +97,11 @@ export default function TeamMetadataModal({
   )
   const [agreedToOnChainData, setAgreedToOnChainData] = useState(false)
 
-  const { getAccessToken } = usePrivy()
-
-  const resolvedMetadata = useResolvedMediaType(nft?.metadata?.uri)
-
-  const { contract: teamTableContract } = useContract(
-    TEAM_TABLE_ADDRESSES[selectedChain.slug]
-  )
+  const teamTableContract = useContract({
+    address: TEAM_TABLE_ADDRESSES[getChainSlug(selectedChain)],
+    chain: selectedChain,
+    abi: TeamTableABI,
+  })
 
   const submitTypeform = useCallback(
     async (formResponse: any) => {
@@ -128,16 +131,6 @@ export default function TeamMetadataModal({
     },
     [teamTableContract, newTeamImage]
   )
-
-  useEffect(() => {
-    async function getCurrTeamImage() {
-      const rawMetadataRes = await fetch(resolvedMetadata.url)
-      const rawMetadata = await rawMetadataRes.json()
-      const imageIpfsLink = rawMetadata.image
-      setCurrTeamImage(imageIpfsLink)
-    }
-    getCurrTeamImage()
-  }, [resolvedMetadata])
 
   useEffect(() => {
     setTeamData({
@@ -218,8 +211,9 @@ export default function TeamMetadataModal({
               setAgreedToCondition={setAgreedToOnChainData}
             />
             <PrivyWeb3Button
+              v5
               className="mt-4 w-full gradient-2 rounded-[5vmax]"
-              requiredChain={DEFAULT_CHAIN}
+              requiredChain={DEFAULT_CHAIN_V5}
               label="Submit"
               isDisabled={!agreedToOnChainData}
               action={async () => {
@@ -228,16 +222,10 @@ export default function TeamMetadataModal({
                 }
 
                 try {
-                  const rawMetadataRes = await fetch(resolvedMetadata.url)
-                  const rawMetadata = await rawMetadataRes.json()
-
                   let imageIpfsLink
-                  if (
-                    !newTeamImage &&
-                    rawMetadata.image &&
-                    rawMetadata.image !== ''
-                  ) {
-                    imageIpfsLink = rawMetadata.image
+
+                  if (!newTeamImage && currTeamImage && currTeamImage !== '') {
+                    imageIpfsLink = currTeamImage
                   } else {
                     if (!newTeamImage) return console.error('No new image')
 
@@ -252,7 +240,7 @@ export default function TeamMetadataModal({
                     )
 
                     //unpin old iamge
-                    await unpin(rawMetadata.image.split('ipfs://')[1])
+                    await unpin(currTeamImage.split('ipfs://')[1])
 
                     imageIpfsLink = `ipfs://${newImageIpfsHash}`
                   }
@@ -272,24 +260,33 @@ export default function TeamMetadataModal({
 
                   const cleanedTeamData = cleanData(teamData)
 
-                  //mint NFT to safe
-                  await teamTableContract?.call('updateTable', [
-                    nft.metadata.id,
-                    cleanedTeamData.name,
-                    cleanedTeamData.description,
-                    imageIpfsLink,
-                    cleanedTeamData.twitter,
-                    cleanedTeamData.communications,
-                    cleanedTeamData.website,
-                    cleanedTeamData.view,
-                    formResponseId,
-                  ])
+                  const transaction = prepareContractCall({
+                    contract: teamTableContract,
+                    method: 'updateTable' as string,
+                    params: [
+                      nft.metadata.id,
+                      cleanedTeamData.name,
+                      cleanedTeamData.description,
+                      imageIpfsLink,
+                      cleanedTeamData.twitter,
+                      cleanedTeamData.communications,
+                      cleanedTeamData.website,
+                      cleanedTeamData.view,
+                      formResponseId,
+                    ],
+                  })
 
-                  setEnabled(false)
+                  const receipt = await sendAndConfirmTransaction({
+                    transaction,
+                    account,
+                  })
 
-                  setTimeout(() => {
-                    router.reload()
-                  }, 15000)
+                  if (receipt) {
+                    setTimeout(() => {
+                      setEnabled(false)
+                      router.reload()
+                    }, 30000)
+                  }
                 } catch (err) {
                   console.log(err)
                 }

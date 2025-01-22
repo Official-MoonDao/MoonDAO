@@ -1,6 +1,20 @@
 //StandardButtonRight.tsx
-import PropTypes from 'prop-types'
 import React from 'react'
+
+type StandardButtonRightProps = {
+  className?: string
+  children?: React.ReactNode
+  onClick?: () => void
+  disabled?: boolean
+  backgroundColor?: string
+  hoverColor?: string
+  borderRadius?: string
+  link?: string
+  paddingOnHover?: string
+  textColor?: string
+  styleOnly?: boolean
+  type?: 'button' | 'submit' | 'reset'
+}
 
 export default function StandardButtonRight({
   className = '',
@@ -15,7 +29,7 @@ export default function StandardButtonRight({
   textColor = 'text-white',
   styleOnly = false,
   type = 'button',
-}) {
+}: StandardButtonRightProps) {
   const buttonContent = (
     <button
       className={`
@@ -44,19 +58,4 @@ export default function StandardButtonRight({
   )
 
   return styleOnly ? buttonContent : <a href={link}>{buttonContent}</a>
-}
-
-StandardButtonRight.propTypes = {
-  className: PropTypes.string,
-  children: PropTypes.node.isRequired,
-  onClick: PropTypes.func,
-  disabled: PropTypes.bool,
-  backgroundColor: PropTypes.string,
-  hoverColor: PropTypes.string,
-  borderRadius: PropTypes.string,
-  link: PropTypes.string,
-  paddingOnHover: PropTypes.string,
-  textColor: PropTypes.string,
-  styleOnly: PropTypes.bool,
-  type: PropTypes.any,
 }

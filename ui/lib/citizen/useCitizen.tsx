@@ -1,42 +1,58 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { Chain } from '@thirdweb-dev/chains'
-import { NFT, useSDK } from '@thirdweb-dev/react'
+import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
+import { getContract, readContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
 import PrivyWalletContext from '../privy/privy-wallet-context'
+import { getChainSlug } from '../thirdweb/chain'
+import client from '../thirdweb/client'
 
 export function useCitizen(
-  selectedChain: Chain,
+  selectedChain: any,
   citizenContract?: any,
   citizenAddress?: string
 ) {
-  const sdk = useSDK()
+  const chainSlug = getChainSlug(selectedChain)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
-  const { authenticated } = usePrivy()
-  const [citizenNFT, setCitizenNFT] = useState<NFT>()
+  const { user, authenticated } = usePrivy()
+  const [citizenNFT, setCitizenNFT] = useState<any>()
 
   useEffect(() => {
     async function getCitizenNFTByAddress() {
-      if (!authenticated) return setCitizenNFT(undefined)
+      if (
+        citizenNFT &&
+        citizenNFT?.owner === wallets?.[selectedWallet]?.address
+      )
+        return
 
+      if (!authenticated || !user) return setCitizenNFT(undefined)
       try {
         let contract
         if (citizenContract) {
           contract = citizenContract
         } else {
-          contract = await sdk?.getContract(
-            CITIZEN_ADDRESSES[selectedChain.slug]
-          )
+          contract = getContract({
+            client,
+            address: CITIZEN_ADDRESSES[chainSlug],
+            chain: selectedChain,
+            abi: CitizenABI as any,
+          })
         }
 
         const selectedWalletAddress = wallets[selectedWallet].address
 
-        const ownedTokenId = await contract?.call('getOwnedToken', [
-          citizenAddress || selectedWalletAddress,
-        ])
+        const ownedTokenId: any = await readContract({
+          contract: contract,
+          method: 'getOwnedToken' as string,
+          params: [citizenAddress || selectedWalletAddress],
+        })
 
-        const nft = await contract?.erc721.get(ownedTokenId)
+        const nft = await getNFT({
+          contract: contract,
+          tokenId: BigInt(ownedTokenId),
+        })
 
         setCitizenNFT(nft)
       } catch (err: any) {
@@ -44,13 +60,13 @@ export function useCitizen(
       }
     }
 
-    if (sdk && selectedChain) getCitizenNFTByAddress()
+    if (selectedChain) getCitizenNFTByAddress()
   }, [
-    sdk,
     selectedChain,
+    chainSlug,
     citizenContract,
     selectedWallet,
-    wallets,
+    user,
     authenticated,
     citizenAddress,
   ])
@@ -59,11 +75,11 @@ export function useCitizen(
 }
 
 export function useCitizens(
-  selectedChain: Chain,
+  selectedChain: any,
   citizenAddresses: string[],
   citizenContract?: any
 ) {
-  const sdk = useSDK()
+  const chainSlug = getChainSlug(selectedChain)
   const [areCitizens, setAreCitizens] = useState<boolean[]>([])
 
   useEffect(() => {
@@ -73,16 +89,21 @@ export function useCitizens(
         if (citizenContract) {
           contract = citizenContract
         } else {
-          contract = await sdk?.getContract(
-            CITIZEN_ADDRESSES[selectedChain.slug]
-          )
+          contract = getContract({
+            client,
+            address: CITIZEN_ADDRESSES[chainSlug],
+            chain: selectedChain,
+            abi: CitizenABI as any,
+          })
         }
 
         const areCitizens = await Promise.all(
           citizenAddresses.map(async (address) => {
-            const ownedTokenId = await contract?.call('getOwnedToken', [
-              address,
-            ])
+            const ownedTokenId = await readContract({
+              contract: contract,
+              method: 'getOwnedToken' as string,
+              params: [address],
+            })
             return !!ownedTokenId
           })
         )
@@ -93,8 +114,8 @@ export function useCitizens(
       }
     }
 
-    if (sdk && selectedChain) getAreCitizens()
-  }, [])
+    if (selectedChain) getAreCitizens()
+  }, [selectedChain, chainSlug, citizenAddresses, citizenContract])
 
   return areCitizens
 }

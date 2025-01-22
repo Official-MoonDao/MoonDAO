@@ -1,7 +1,7 @@
-import { TABLELAND_ENDPOINT } from 'const/config'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { readContract } from 'thirdweb'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
@@ -22,12 +22,14 @@ export default function TeamMarketplace({
   const [queriedListingId, setQueriedListingId] = useState<number>()
 
   async function getEntityMarketplaceListings() {
-    const marketplaceTableName = await marketplaceTableContract.call(
-      'getTableName'
-    )
+    const marketplaceTableName = await readContract({
+      contract: marketplaceTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
     const statement = `SELECT * FROM ${marketplaceTableName} WHERE teamId = ${teamId}`
 
-    const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
+    const res = await fetch(`/api/tableland/query?statement=${statement}`)
     const data = await res.json()
 
     setListings(data)

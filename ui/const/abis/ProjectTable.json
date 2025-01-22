@@ -1,0 +1,246 @@
+[
+  {
+    "inputs": [
+      { "internalType": "string", "name": "_table_prefix", "type": "string" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "chainid", "type": "uint256" }
+    ],
+    "name": "ChainNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "account", "type": "address" }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "_projectTeam",
+    "outputs": [
+      { "internalType": "contract ProjectTeam", "name": "", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "getPolicy",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "bool", "name": "allowInsert", "type": "bool" },
+          { "internalType": "bool", "name": "allowUpdate", "type": "bool" },
+          { "internalType": "bool", "name": "allowDelete", "type": "bool" },
+          { "internalType": "string", "name": "whereClause", "type": "string" },
+          { "internalType": "string", "name": "withCheck", "type": "string" },
+          {
+            "internalType": "string[]",
+            "name": "updatableColumns",
+            "type": "string[]"
+          }
+        ],
+        "internalType": "struct TablelandPolicy",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "caller", "type": "address" },
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "name": "getPolicy",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "bool", "name": "allowInsert", "type": "bool" },
+          { "internalType": "bool", "name": "allowUpdate", "type": "bool" },
+          { "internalType": "bool", "name": "allowDelete", "type": "bool" },
+          { "internalType": "string", "name": "whereClause", "type": "string" },
+          { "internalType": "string", "name": "withCheck", "type": "string" },
+          {
+            "internalType": "string[]",
+            "name": "updatableColumns",
+            "type": "string[]"
+          }
+        ],
+        "internalType": "struct TablelandPolicy",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTableId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTableName",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      { "internalType": "string", "name": "title", "type": "string" },
+      { "internalType": "uint256", "name": "quarter", "type": "uint256" },
+      { "internalType": "uint256", "name": "year", "type": "uint256" },
+      { "internalType": "uint256", "name": "MDP", "type": "uint256" },
+      { "internalType": "string", "name": "proposalIPFS", "type": "string" },
+      { "internalType": "string", "name": "proposalLink", "type": "string" },
+      { "internalType": "string", "name": "finalReportIPFS", "type": "string" },
+      { "internalType": "string", "name": "finalReportLink", "type": "string" },
+      {
+        "internalType": "string",
+        "name": "rewardDistribution",
+        "type": "string"
+      },
+      { "internalType": "uint256", "name": "active", "type": "uint256" },
+      { "internalType": "uint256", "name": "eligible", "type": "uint256" }
+    ],
+    "name": "insertIntoTable",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "controller", "type": "address" }
+    ],
+    "name": "setAccessControl",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "projectTeam", "type": "address" }
+    ],
+    "name": "setProjectTeam",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "newOwner", "type": "address" }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      { "internalType": "string", "name": "finalReportIPFS", "type": "string" }
+    ],
+    "name": "updateFinalReportIPFS",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      { "internalType": "string", "name": "finalReportLink", "type": "string" }
+    ],
+    "name": "updateFinalReportLink",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      { "internalType": "uint256", "name": "quarter", "type": "uint256" },
+      { "internalType": "uint256", "name": "year", "type": "uint256" }
+    ],
+    "name": "updateQuarterAndYear",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      {
+        "internalType": "string",
+        "name": "rewardDistribution",
+        "type": "string"
+      }
+    ],
+    "name": "updateRewardDistribution",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "id", "type": "uint256" },
+      { "internalType": "string", "name": "col", "type": "string" },
+      { "internalType": "string", "name": "val", "type": "string" }
+    ],
+    "name": "updateTableCol",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

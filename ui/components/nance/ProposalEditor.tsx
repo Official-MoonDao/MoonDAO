@@ -14,7 +14,6 @@ import {
   getActionsFromBody,
   trimActionsFromBody,
 } from '@nance/nance-sdk'
-import { usePrivy } from '@privy-io/react-auth'
 import { add, differenceInDays, getUnixTime } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
@@ -23,10 +22,11 @@ import { useEffect, useState } from 'react'
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
+import { useActiveAccount } from 'thirdweb/react'
 import { NANCE_SPACE_NAME, proposalIdPrefix } from '../../lib/nance/constants'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { TEMPLATE } from '@/lib/nance'
+import { TEMPLATE, uuidGen } from '@/lib/nance'
 import useAccount from '@/lib/nance/useAccountAddress'
 import { useSignProposal } from '@/lib/nance/useSignProposal'
 import { classNames } from '@/lib/utils/tailwind'
@@ -60,30 +60,7 @@ const NanceEditor = dynamic(
   }
 )
 
-const DEFAULT_MULTISIG_TEAM: RequestBudget['multisigTeam'][number] = {
-  discordUserId: '',
-  discordUsername: '',
-  address: '',
-}
-
 const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
-  projectTeam: [
-    {
-      discordUserId: '',
-      discordUsername: '',
-      payoutAddress: '',
-      votingAddress: '',
-      isRocketeer: true,
-    },
-    {
-      discordUserId: '',
-      discordUsername: '',
-      payoutAddress: '',
-      votingAddress: '',
-      isRocketeer: false,
-    },
-  ],
-  multisigTeam: Array(5).fill(DEFAULT_MULTISIG_TEAM),
   budget: [
     { token: '', amount: '', justification: 'dev cost' },
     { token: '', amount: '', justification: 'flex' },
@@ -98,7 +75,8 @@ export type ProposalCache = {
 
 export default function ProposalEditor() {
   const router = useRouter()
-  const { getAccessToken } = usePrivy()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
@@ -165,9 +143,12 @@ export default function ProposalEditor() {
     let proposal = buildProposal(proposalStatus)
 
     if (attachBudget) {
+      const uuid = uuidGen()
       const action: Action = {
         type: 'Request Budget',
         payload: formData,
+        uuid,
+        chainId: 1,
       }
       const body = `${proposal.body}\n\n${actionsToYaml([action])}`
       proposal = {
@@ -187,7 +168,7 @@ export default function ProposalEditor() {
   const { wallet } = useAccount()
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
-  const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
+  const buttonsDisabled = !address || signingStatus === 'loading'
 
   const buildProposal = (status: ProposalStatus) => {
     return {
@@ -262,10 +243,10 @@ export default function ProposalEditor() {
   const saveProposalBodyCache = function () {
     let body = getMarkdown()
     if (attachBudget) {
-      const action: Action = {
+      const action = {
         type: 'Request Budget',
         payload: getValues(),
-      }
+      } as Action
       body = `${body}\n\n${actionsToYaml([action])}`
     }
 
@@ -288,7 +269,7 @@ export default function ProposalEditor() {
 
   return (
     <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
-      <Head title="Proposal Editor" />
+      <Head title="Submissions Portal" />
 
       <div className="px-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -392,11 +373,7 @@ export default function ProposalEditor() {
                     : 'You need to connect wallet first.'
                 }
               >
-                {signingStatus === 'loading'
-                  ? 'Signing...'
-                  : proposalId
-                  ? 'Save Draft'
-                  : '* Post In Ideation Forum'}
+                {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
               </button>
               {/* SUBMIT */}
               <button
@@ -423,20 +400,6 @@ export default function ProposalEditor() {
               </button>
             </div>
           </div>
-          {!proposalId && (
-            <p className="mt-2 text-sm text-gray-500 text-right pb-5">
-              *Your submission will be{' '}
-              <a
-                href="https://discord.com/channels/914720248140279868/1027658256706961509"
-                target="_blank"
-                rel="noreferrer"
-                className="text-white"
-              >
-                posted here
-              </a>{' '}
-              for community discussion
-            </p>
-          )}
         </form>
       </div>
     </div>
