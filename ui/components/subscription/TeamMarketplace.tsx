@@ -5,7 +5,6 @@ import { readContract } from 'thirdweb'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
-import TeamListingV5 from './TeamListingV5'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
 export default function TeamMarketplace({
@@ -84,7 +83,7 @@ export default function TeamMarketplace({
         <div className="flex gap-4">
           {listings?.[0] &&
             listings.map((listing, i) => (
-              <TeamListingV5
+              <TeamListing
                 key={`team-listing-${i}`}
                 selectedChain={selectedChain}
                 listing={listing}

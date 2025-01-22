@@ -1,5 +1,4 @@
 import { MapIcon } from '@heroicons/react/24/outline'
-import { NFT } from '@thirdweb-dev/react'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -31,8 +30,8 @@ import CitizenABI from '../const/abis/Citizen.json'
 import TeamABI from '../const/abis/Team.json'
 
 type NetworkProps = {
-  filteredTeams: NFT[]
-  filteredCitizens: NFT[]
+  filteredTeams: any[]
+  filteredCitizens: any[]
 }
 
 export default function Network({
@@ -43,7 +42,7 @@ export default function Network({
   const shallowQueryRoute = useShallowQueryRoute()
 
   const [input, setInput] = useState('')
-  function filterBySearch(nfts: NFT[]) {
+  function filterBySearch(nfts: any[]) {
     return nfts.filter((nft) => {
       return nft.metadata.name
         ?.toString()
@@ -104,7 +103,7 @@ export default function Network({
     if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 9))
   }, [tab, input, filteredCitizens, filteredTeams])
 
-  const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
+  const [cachedNFTs, setCachedNFTs] = useState<any[]>([])
 
   const [pageIdx, setPageIdx] = useState(1)
 

@@ -1,15 +1,13 @@
-import { Ethereum, Polygon } from '@thirdweb-dev/chains'
-import { MediaRenderer, useAddress, useOwnedNFTs } from '@thirdweb-dev/react'
 import { BigNumber, ethers } from 'ethers'
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
-import { useHandleRead, useHandleWrite } from '../../lib/thirdweb/hooks'
-import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
+import client from '@/lib/thirdweb/client'
+import useRead from '@/lib/thirdweb/hooks/useRead'
+import { approveToken as approve } from '@/lib/tokens/approve'
 import { TICKET_TO_SPACE_ADDRESS } from '../../const/config'
 import { devWhitelist } from '../../const/tts/whitelist'
-import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { SubmitTTSInfoModal } from './SubmitTTSInfoModal'
 import { SubmitTTSInfoModalETH } from './SubmitTTSInfoModalETH'
 import { SweepstakesWinners } from './SweepstakesWinners'
@@ -22,7 +20,8 @@ export function SweepstakesMinting({
   mooneyContract,
   mooneyETHContract,
 }: any) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
@@ -35,45 +34,52 @@ export function SweepstakesMinting({
   const whitelist = devWhitelist
   const merkleProof = useMerkleProof(whitelist)
 
-  const { mutateAsync: approveToken } = useTokenApproval(
-    mooneyContract,
-    ethers.utils.parseEther(String(20000 * quantity)),
-    BigNumber.from(0),
-    TICKET_TO_SPACE_ADDRESS
-  )
+  const { data: balance } = useRead({
+    contract: ttsContract,
+    method: 'balanceOf',
+    params: [address],
+  })
 
-  const { data: balance } = useHandleRead(ttsContract, 'balanceOf', [address])
+  async function approveToken() {
+    if (!account) return
+    const receipt = await approve({
+      account,
+      tokenContract: mooneyContract,
+      spender: TICKET_TO_SPACE_ADDRESS,
+      allowance: ethers.utils.parseEther(String(20000 * quantity)),
+    })
+    return receipt
+  }
 
-  const { mutateAsync: mint } = useHandleWrite(ttsContract, 'mint', [
-    BigNumber.from(quantity || 0),
-  ])
+  async function mint() {
+    if (!account) return
+    const transaction = prepareContractCall({
+      contract: ttsContract,
+      method: 'mint' as string,
+      params: [BigNumber.from(quantity || 0)],
+    })
+    const receipt = await sendAndConfirmTransaction({ transaction, account })
+    return receipt
+  }
 
-  const { mutateAsync: burn } = useHandleWrite(mooneyETHContract, 'transfer', [
-    '0x000000000000000000000000000000000000dead',
-    ethers.utils.parseEther(String(20000 * quantity)),
-  ])
-
-  const { mutateAsync: claimFree } = useHandleWrite(ttsContract, 'claimFree', [
-    merkleProof,
-  ])
-
-  const { data: canClaimFree } = useHandleRead(ttsContract, 'canClaimFree', [
-    merkleProof,
-    address,
-  ])
+  async function burn() {
+    if (!account) return
+    const transaction = prepareContractCall({
+      contract: mooneyETHContract,
+      method: 'transfer' as string,
+      params: [
+        '0x000000000000000000000000000000000000dead',
+        ethers.utils.parseEther(String(20000 * quantity)),
+      ],
+    })
+    const receipt = await sendAndConfirmTransaction({ transaction, account })
+    return receipt
+  }
 
   const openViewNFTs = (e: any) => {
     e.preventDefault()
     setViewNFTsModal(true)
   }
-
-  const { data: tokenAllowance } = useTokenAllowance(
-    mooneyContract,
-    address,
-    TICKET_TO_SPACE_ADDRESS
-  )
-
-  const { data: ownedNfts } = useOwnedNFTs(ttsContract, address)
 
   useEffect(() => {
     const ts = Math.floor(1705132740 - new Date().valueOf() / 1000)
@@ -101,6 +107,7 @@ export function SweepstakesMinting({
           <div className="md:flex">
             <div className="m-auto my-2 p-2 flex justify-center md:w-1/2">
               <MediaRenderer
+                client={client}
                 src={'ipfs://Qmba3umb3db7DqCA19iRSSbtzv9nYUmP8Cibo5QMkLpgpP'}
                 width="100%"
                 height="100%"
