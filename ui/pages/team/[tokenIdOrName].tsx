@@ -8,9 +8,7 @@ import {
   GlobeAltIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
-import { useWallets } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
-import ERC20ABI from 'const/abis/ERC20.json'
 import HatsABI from 'const/abis/Hats.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import JobBoardTableABI from 'const/abis/JobBoardTable.json'
@@ -27,12 +25,11 @@ import {
   DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
-import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -43,7 +40,6 @@ import {
 } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'

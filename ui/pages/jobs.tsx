@@ -1,5 +1,3 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import { useContract } from '@thirdweb-dev/react'
 import {
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
@@ -11,9 +9,9 @@ import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
@@ -30,15 +28,18 @@ type JobsProps = {
 }
 
 export default function Jobs({ jobs }: JobsProps) {
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
 
   const [filteredJobs, setFilteredJobs] = useState<JobType[]>()
   const [input, setInput] = useState('')
 
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug]
-  )
+  const teamContract = useContract({
+    chain: selectedChain,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+  })
 
   useEffect(() => {
     if (jobs && input != '') {

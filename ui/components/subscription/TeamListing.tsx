@@ -1,9 +1,11 @@
 import { PencilIcon, ShareIcon, TrashIcon } from '@heroicons/react/24/outline'
-import { MediaRenderer, useAddress } from '@thirdweb-dev/react'
-import { NFT } from '@thirdweb-dev/sdk'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import client from '@/lib/thirdweb/client'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
@@ -37,7 +39,7 @@ type TeamListingProps = {
   editable?: boolean
   teamName?: boolean
   queriedListingId?: number
-  isCitizen?: NFT | boolean | undefined
+  isCitizen?: any
 }
 
 export default function TeamListing({
@@ -51,8 +53,8 @@ export default function TeamListing({
   queriedListingId,
   isCitizen,
 }: TeamListingProps) {
+  const account = useActiveAccount()
   const router = useRouter()
-  const address = useAddress()
 
   const [enabledMarketplaceListingModal, setEnabledMarketplaceListingModal] =
     useState(false)
@@ -67,23 +69,21 @@ export default function TeamListing({
   const [isUpcoming, setIsUpcoming] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const [teamData, setTeamData] = useState<any>()
-
   const daysUntilExpiry = daysUntilTimestamp(listing.endTime)
 
+  const [teamNFT, setTeamNFT] = useState<any>()
+
   useEffect(() => {
-    async function getTeamData() {
-      if (teamContract && listing) {
-        // Check if teamContract is defined
-        const teamNft = await teamContract.erc721.get(listing.teamId)
-        setTeamData({
-          name: teamNft.metadata.name,
-          multisigAddress: teamNft.owner,
-        })
-      }
+    async function getTeamNFT() {
+      const teamNFT = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(listing.teamId),
+        includeOwner: true,
+      })
+      setTeamNFT(teamNFT)
     }
-    if (listing) getTeamData()
-  }, [listing, teamContract])
+    if (teamContract && listing.teamId) getTeamNFT()
+  }, [listing.teamId, teamContract])
 
   useEffect(() => {
     if (currTime >= listing.startTime && currTime <= listing.endTime) {
@@ -177,6 +177,7 @@ export default function TeamListing({
               >
                 <div className="">
                   <MediaRenderer
+                    client={client}
                     className="w-full rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] max-w-[575px] md:max-w-[500px] pb-5 rounded-br-[5vmax] overflow-hidden"
                     width="100%"
                     height="200px"
@@ -193,7 +194,7 @@ export default function TeamListing({
                 >
                   <div className="w-full flex min-h-[100px] pb-5 flex-col">
                     <div className="flex items-center justify-between w-full">
-                      {teamName && teamData?.name && (
+                      {teamName && teamNFT?.metadata?.name && (
                         <button
                           id="listing-team-name"
                           className="font-bold text-light-cool"
@@ -202,7 +203,7 @@ export default function TeamListing({
                             router.push(`/team/${listing.teamId}`)
                           }}
                         >
-                          {teamData.name}
+                          {teamNFT.metadata.name}
                         </button>
                       )}
                     </div>
@@ -328,7 +329,7 @@ export default function TeamListing({
               <BuyTeamListingModal
                 selectedChain={selectedChain}
                 listing={listing}
-                recipient={teamData?.multisigAddress}
+                recipient={teamNFT?.owner}
                 setEnabled={setEnabledBuyListingModal}
               />
             )}
@@ -351,6 +352,7 @@ export default function TeamListing({
                   <button
                     id="delete-listing-button"
                     onClick={async (event) => {
+                      if (!account) return
                       event.stopPropagation()
                       setIsDeleting(true)
                       try {
@@ -358,6 +360,15 @@ export default function TeamListing({
                           listing.id,
                           listing.teamId,
                         ])
+                        const transaction = prepareContractCall({
+                          contract: marketplaceTableContract,
+                          method: 'deleteFromTable' as string,
+                          params: [listing.id, listing.teamId],
+                        })
+                        const receipt = await sendAndConfirmTransaction({
+                          transaction,
+                          account: account,
+                        })
                         setTimeout(() => {
                           refreshListings()
                           setIsDeleting(false)

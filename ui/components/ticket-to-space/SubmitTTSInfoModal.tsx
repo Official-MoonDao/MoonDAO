@@ -2,6 +2,10 @@ import { useWallets } from '@privy-io/react-auth'
 import { BigNumber } from 'ethers'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
+import { readContract } from 'thirdweb'
+import { polygon } from 'thirdweb/chains'
+import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
+import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 
 type SubmitInfoModalProps = {
@@ -28,7 +32,8 @@ export function SubmitTTSInfoModal({
   approveToken,
   mint,
 }: SubmitInfoModalProps) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -103,7 +108,11 @@ export function SubmitTTSInfoModal({
     await claimFree()
     setStatus('')
 
-    const newBalance = await ttsContract.call('balanceOf', [address])
+    const newBalance = await readContract({
+      contract: ttsContract,
+      method: 'balanceOf' as string,
+      params: [address],
+    })
 
     if (newBalance.toString() > balance.toString()) {
       toast.success('You successfully claimed your free ticket!')
@@ -117,9 +126,13 @@ export function SubmitTTSInfoModal({
 
   async function mintTicket(approveToken: Function, mint: Function) {
     //check mooney balance
-    const mooneyBalance = await mooneyContract.call('balanceOf', [address])
+    const mooneyBalance = await readContract({
+      contract: mooneyContract,
+      method: 'balanceOf' as string,
+      params: [address],
+    })
 
-    if (mooneyBalance.toString() < 20000 * quantity * 10 ** 18) {
+    if (+mooneyBalance.toString() < 20000 * quantity * 10 ** 18) {
       toast.error(
         'You do not have enough Mooney to mint this ticket. Please purchase more Mooney and try again.'
       )
@@ -128,23 +141,25 @@ export function SubmitTTSInfoModal({
     }
 
     //check token allowance
-    const tokenAllowance = await mooneyContract.call('allowance', [
-      address,
-      TICKET_TO_SPACE_ADDRESS,
-    ])
+    const tokenAllowance = await readContract({
+      contract: mooneyContract,
+      method: 'allowance' as string,
+      params: [address, TICKET_TO_SPACE_ADDRESS],
+    })
 
-    if (tokenAllowance.toString() < 20000 * quantity * 10 ** 18) {
+    if (+tokenAllowance.toString() < 20000 * quantity * 10 ** 18) {
       setStatus('Approving token allowance')
       await approveToken()
       setStatus('')
 
       //check if approval was successful
-      const newTokenAllowance = await mooneyContract.call('allowance', [
-        address,
-        TICKET_TO_SPACE_ADDRESS,
-      ])
+      const newTokenAllowance = await readContract({
+        contract: mooneyContract,
+        method: 'allowance' as string,
+        params: [address, TICKET_TO_SPACE_ADDRESS],
+      })
 
-      if (newTokenAllowance.toString() >= 20000 * quantity * 10 ** 18) {
+      if (+newTokenAllowance.toString() >= 20000 * quantity * 10 ** 18) {
         setStatus('Minting ticket')
         await mint()
         setStatus('')
@@ -160,7 +175,12 @@ export function SubmitTTSInfoModal({
       setStatus('')
     }
 
-    const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
+    if (!address) return
+
+    const ownedNfts = await getOwnedNFTs({
+      contract: ttsContract,
+      owner: address,
+    })
 
     if (ownedNfts.length == parseInt(balance) + parseInt(quantity)) {
       toast.success(
@@ -244,7 +264,7 @@ export function SubmitTTSInfoModal({
             onClick={async () => {
               try {
                 if (wallets[selectedWallet].chainId.split(':')[1] !== '137') {
-                  wallets[selectedWallet].switchChain(Polygon.chainId)
+                  wallets[selectedWallet].switchChain(polygon.id)
                   return toast.error('Please switch to Polygon.')
                 }
                 if (!email || !fullName || !email.includes('@'))
@@ -255,8 +275,12 @@ export function SubmitTTSInfoModal({
                 await submitInfoToDB('xxx', signature)
 
                 // Get list of NFT the address currently holds
-                const prevNFTBalance =
-                  await ttsContract.erc721.getOwnedTokenIds(address)
+                if (!address) return
+
+                const prevNFTBalance = await getOwnedNFTs({
+                  contract: ttsContract,
+                  owner: address,
+                })
 
                 //CLaim Free Ticket
                 if (claimFree) {
@@ -270,13 +294,14 @@ export function SubmitTTSInfoModal({
 
                 await timeout(3000)
 
-                const newNFTBalance = await ttsContract.erc721.getOwnedTokenIds(
-                  address
-                )
+                const newNFTBalance = await getOwnedNFTs({
+                  contract: ttsContract,
+                  owner: address,
+                })
 
                 const nftsToSubmit = filterNewNFTS(
-                  prevNFTBalance,
-                  newNFTBalance
+                  prevNFTBalance.map((nftId) => BigNumber.from(nftId)),
+                  newNFTBalance.map((nftId) => BigNumber.from(nftId))
                 )
 
                 try {

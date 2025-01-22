@@ -1,16 +1,16 @@
 import { useWallets } from '@privy-io/react-auth'
-import { Chain, Ethereum, Polygon } from '@thirdweb-dev/chains'
-import { useAddress } from '@thirdweb-dev/react'
-import { BigNumber } from 'ethers'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
+import { readContract } from 'thirdweb'
+import { ethereum, polygon } from 'thirdweb/chains'
+import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 
 type SubmitInfoModalPropsETH = {
   quantity: any
   setEnabled: Function
   setChain: Function
-  selectedChain: Chain
+  selectedChain: any
   mooneyContract: any
   burn?: Function
 }
@@ -26,7 +26,8 @@ export function SubmitTTSInfoModalETH({
   mooneyContract,
   burn,
 }: SubmitInfoModalPropsETH) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -119,9 +120,13 @@ export function SubmitTTSInfoModalETH({
 
   async function burnMooney(burn: Function) {
     //check mooney balance
-    const mooneyBalance = await mooneyContract.call('balanceOf', [address])
+    const mooneyBalance = await readContract({
+      contract: mooneyContract,
+      method: 'balanceOf' as string,
+      params: [address],
+    })
 
-    if (mooneyBalance.toString() < 20000 * quantity * 10 ** 18) {
+    if (+mooneyBalance.toString() < 20000 * quantity * 10 ** 18) {
       toast.error(
         'You do not have enough Mooney to reserve this ticket. Please purchase more Mooney and try again.'
       )
@@ -137,7 +142,7 @@ export function SubmitTTSInfoModalETH({
     <div
       onClick={(e: any) => {
         if (e.target.id === 'submit-tts-info-modal-backdrop' && !submitting) {
-          setChain(Polygon)
+          setChain(polygon.id)
           setEnabled(false)
         }
       }}
@@ -166,7 +171,9 @@ export function SubmitTTSInfoModalETH({
           </a>
           .
         </p>
-        <label className="text-white">Full Legal Name (as appears on your ID)</label>
+        <label className="text-white">
+          Full Legal Name (as appears on your ID)
+        </label>
         <input
           className="h-[50px] w-full text-lg rounded-sm px-2 bg-white bg-opacity-5 border-[1px] border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40 focus:outline-none"
           onChange={(e) => setFullName(e.target.value)}
@@ -196,7 +203,7 @@ export function SubmitTTSInfoModalETH({
           <button
             className="inline-flex justify-center w-1/3 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-[#2A2A2A] text-base font-medium text-white enabled:hover:bg-white enabled:hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange disabled:opacity-50"
             onClick={() => {
-              setChain(Polygon)
+              setChain(polygon)
               setEnabled(false)
             }}
             disabled={submitting}
@@ -209,7 +216,7 @@ export function SubmitTTSInfoModalETH({
             disabled={submitting}
             onClick={async () => {
               if (wallets[selectedWallet].chainId.split(':')[1] !== '1') {
-                wallets[selectedWallet].switchChain(Ethereum.chainId)
+                wallets[selectedWallet].switchChain(ethereum.id)
                 return toast.error('Please switch to Ethereum.')
               }
 
@@ -235,7 +242,7 @@ export function SubmitTTSInfoModalETH({
                       userNFTs +
                       ' NFTs reserved under your address.'
                   )
-                  setChain(Polygon)
+                  setChain(polygon)
                   return setEnabled(false)
                 }
 
@@ -255,7 +262,7 @@ export function SubmitTTSInfoModalETH({
                   toast.error(
                     'Error verifying identity. Please contact MoonDAO support'
                   )
-                  setChain(Polygon)
+                  setChain(polygon)
                   return setEnabled(false)
                 }
 
@@ -263,7 +270,7 @@ export function SubmitTTSInfoModalETH({
                   'Your NFT(s) have been reserved! They will be sent to your polygon wallet within 24 hours.'
                 )
 
-                setChain(Polygon)
+                setChain(polygon)
                 setEnabled(false)
               } catch (err: any) {
                 console.log(err.message)
