@@ -1,7 +1,12 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useContract } from '@thirdweb-dev/react'
 import TeamABI from 'const/abis/Team.json'
-import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
+import {
+  DEFAULT_CHAIN,
+  DEPLOYED_ORIGIN,
+  DISCORD_CITIZEN_ROLE_ID,
+  TEAM_ADDRESSES,
+} from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
@@ -174,7 +179,7 @@ export default function TeamJobModal({
                 edit ? 'updated a' : 'posted a new'
               } job](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
                 teamName
-              )}?job=${jobId}&_timestamp=123456789)`
+              )}?job=${jobId}&_timestamp=123456789) <@${DISCORD_CITIZEN_ROLE_ID}>`
             )
 
             setTimeout(() => {
