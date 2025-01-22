@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { getAttribute } from '../utils/nft'
+import { addHttpsIfMissing } from '../utils/strings'
 
 export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   const account = useActiveAccount()
@@ -25,9 +26,9 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
     )
     const entityWebsite = getAttribute(nft?.metadata?.attributes, 'website')
     return {
-      twitter: entityTwitter?.value,
-      communications: entityCommunications?.value,
-      website: entityWebsite?.value,
+      twitter: addHttpsIfMissing(entityTwitter?.value),
+      communications: addHttpsIfMissing(entityCommunications?.value),
+      website: addHttpsIfMissing(entityWebsite?.value),
     }
   }, [nft?.metadata?.attributes])
 

@@ -322,6 +322,19 @@ export default function CitizenMetadataModal({
                   }
                   const cleanedLocationData = cleanData(citizenLocationData)
 
+                  const formattedCitizenTwitter =
+                    cleanedCitizenData.twitter.startsWith('https://')
+                      ? cleanedCitizenData.twitter
+                      : `https://${cleanedCitizenData.twitter}`
+                  const formattedCitizenWebsite =
+                    cleanedCitizenData.website.startsWith('https://')
+                      ? cleanedCitizenData.website
+                      : `https://${cleanedCitizenData.website}`
+                  const formattedCitizenDiscord =
+                    cleanedCitizenData.discord.startsWith('@')
+                      ? cleanedCitizenData.discord.replace('@', '')
+                      : cleanedCitizenData.discord
+
                   const transaction = prepareContractCall({
                     contract: citizenTableContract,
                     method: 'updateTable' as string,
@@ -331,9 +344,9 @@ export default function CitizenMetadataModal({
                       cleanedCitizenData.description,
                       imageIpfsLink,
                       JSON.stringify(cleanedLocationData),
-                      cleanedCitizenData.discord,
-                      cleanedCitizenData.twitter,
-                      cleanedCitizenData.website,
+                      formattedCitizenDiscord,
+                      formattedCitizenTwitter,
+                      formattedCitizenWebsite,
                       cleanedCitizenData.view,
                       formResponseId,
                     ],

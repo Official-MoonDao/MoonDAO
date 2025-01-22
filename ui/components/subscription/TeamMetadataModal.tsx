@@ -260,6 +260,20 @@ export default function TeamMetadataModal({
 
                   const cleanedTeamData = cleanData(teamData)
 
+                  const formattedTeamTwitter =
+                    cleanedTeamData.twitter.startsWith('https://')
+                      ? cleanedTeamData.twitter
+                      : `https://${cleanedTeamData.twitter}`
+                  const formattedTeamCommunications =
+                    cleanedTeamData.communications.startsWith('https://')
+                      ? cleanedTeamData.communications
+                      : `https://${cleanedTeamData.communications}`
+
+                  const formattedTeamWebsite =
+                    cleanedTeamData.website.startsWith('https://')
+                      ? cleanedTeamData.website
+                      : `https://${cleanedTeamData.website}`
+
                   const transaction = prepareContractCall({
                     contract: teamTableContract,
                     method: 'updateTable' as string,
@@ -268,9 +282,9 @@ export default function TeamMetadataModal({
                       cleanedTeamData.name,
                       cleanedTeamData.description,
                       imageIpfsLink,
-                      cleanedTeamData.twitter,
-                      cleanedTeamData.communications,
-                      cleanedTeamData.website,
+                      formattedTeamTwitter,
+                      formattedTeamCommunications,
+                      formattedTeamWebsite,
                       cleanedTeamData.view,
                       formResponseId,
                     ],
