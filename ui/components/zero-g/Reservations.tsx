@@ -1,6 +1,6 @@
-import { useAddress } from '@thirdweb-dev/react'
 import { BigNumber } from 'ethers'
 import { useEffect, useRef, useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
 import { useVMOONEYLock } from '../../lib/tokens/ve-token'
 import {
   checkUserDataReservation,
@@ -12,7 +12,8 @@ import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
 
 export default function Reservations({ sweepstakesContract }: any) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   const [state, setState] = useState(0)
   const [error, setError] = useState('')
 
