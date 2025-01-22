@@ -1,6 +1,9 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import Image from 'next/image'
 import Link from 'next/link'
+import { MediaRenderer } from 'thirdweb/react'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import client from '@/lib/thirdweb/client'
 import Modal from '../layout/Modal'
 
 type CitizenPointModalProps = {
@@ -40,12 +43,13 @@ export default function CitizenPointModal({
               passHref
             >
               <div className="flex flex-col items-center">
-                <img
+                <MediaRenderer
+                  client={client}
                   className="rounded-full"
                   src={c.image}
                   alt={c.name}
-                  width={75}
-                  height={75}
+                  width={'75px'}
+                  height={'75px'}
                 />
                 <p className="w-[75px] text-center break-words">{c.name}</p>
               </div>
