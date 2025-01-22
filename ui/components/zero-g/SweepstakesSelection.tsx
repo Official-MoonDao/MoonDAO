@@ -2,11 +2,8 @@ import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { BigNumber, Contract, ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import { useUserData } from '../../lib/zero-g/google-sheets'
-import {
-  ZERO_G_V1_TOTAL_TOKENS,
-  useCurrentWinner,
-  useRandomSelection,
-} from '../../lib/zero-g/zero-g-sweepstakes'
+import { ZERO_G_V1_TOTAL_TOKENS } from '../../lib/zero-g/zero-g-sweepstakes'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import vMooneySweepstakesZeroGABI from '../../const/abis/vMooneySweepstakes.json'
 import { VMOONEY_SWEEPSTAKES } from '../../const/config'
 
@@ -22,16 +19,17 @@ export default function SweepstakesSelection({
   const [loading, setLoading] = useState(false)
   const [event, setEvent]: any = useState()
 
-  const { data: currWinner }: any = useCurrentWinner(sweepstakesContract)
+  const { data: currWinner }: any = useRead({
+    contract: sweepstakesContract,
+    method: 'winner',
+    params: [],
+  })
 
   const {
     data: winnersData,
     isLoading: isLoadingWinners,
     getUserDataRaffle,
   } = useUserData()
-
-  const { mutateAsync: randomSelection } =
-    useRandomSelection(sweepstakesContract)
 
   useEffect(() => {
     const provider = new ethers.providers.JsonRpcProvider(

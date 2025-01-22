@@ -1,15 +1,12 @@
 import CitizenABI from 'const/abis/Citizen.json'
-import {
-  CITIZEN_ADDRESSES,
-  DEFAULT_CHAIN,
-  DEFAULT_CHAIN_V5,
-} from 'const/config'
+import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { blockedCitizens } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { getAttribute } from '@/lib/utils/nft'
 import IconOrg from '@/components/assets/IconOrg'
@@ -101,10 +98,11 @@ export async function getStaticProps() {
   let citizensLocationData = []
   if (process.env.NEXT_PUBLIC_ENV === 'prod') {
     const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
     const citizenContract = getContract({
       client: serverClient,
-      address: CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug],
+      address: CITIZEN_ADDRESSES[chainSlug],
       abi: CitizenABI as any,
       chain,
     })

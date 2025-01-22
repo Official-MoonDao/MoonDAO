@@ -1,12 +1,11 @@
-import { NFT } from '@thirdweb-dev/sdk'
 import { createContext } from 'react'
 
 const CitizenContext = createContext<{
-  citizen: NFT | undefined
-  setCitizen: (citizen: NFT | undefined) => void
+  citizen: any
+  setCitizen: (citizen: any) => void
 }>({
   citizen: undefined,
-  setCitizen: (citizen: NFT | undefined) => {},
+  setCitizen: (citizen: any) => {},
 })
 
 export default CitizenContext

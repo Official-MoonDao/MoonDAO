@@ -1,5 +1,4 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
-import { useNFT } from '@thirdweb-dev/react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'

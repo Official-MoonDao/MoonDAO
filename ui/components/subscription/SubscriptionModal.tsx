@@ -1,11 +1,11 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { DEFAULT_CHAIN } from 'const/config'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import { useHandleRead } from '@/lib/thirdweb/hooks'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -25,11 +25,11 @@ export function SubscriptionModal({
 
   const [years, setYears] = useState<number>(1)
 
-  const { data: subscriptionCost } = useHandleRead(
-    subscriptionContract,
-    'getRenewalPrice',
-    [address, years * 365 * 24 * 60 * 60]
-  )
+  const { data: subscriptionCost } = useRead({
+    contract: subscriptionContract,
+    method: 'getRenewalPrice',
+    params: [address, years * 365 * 24 * 60 * 60],
+  })
 
   return (
     <Modal id="subscription-modal" setEnabled={setEnabled}>
@@ -125,7 +125,7 @@ export function SubscriptionModal({
             } ETH`}
           </p>
           <PrivyWeb3Button
-            requiredChain={DEFAULT_CHAIN}
+            requiredChain={DEFAULT_CHAIN_V5}
             label="Extend Subscription"
             type="submit"
             action={() => {}}

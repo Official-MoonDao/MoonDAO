@@ -1,7 +1,4 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
-import { PrivyProvider } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
-import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
 import { ImageGenerator } from '@/components/onboarding/TeamImageGenerator'
 
 describe('<TeamImageGenerator />', () => {

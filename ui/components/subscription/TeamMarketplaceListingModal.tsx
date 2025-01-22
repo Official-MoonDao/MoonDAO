@@ -1,5 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN_V5, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -435,7 +435,7 @@ export default function TeamMarketplaceListingModal({
           <p className="opacity-60">{`Listings are marked up 10% for non-citizens`}</p>
         </div>
         <PrivyWeb3Button
-          requiredChain={DEFAULT_CHAIN}
+          requiredChain={DEFAULT_CHAIN_V5}
           label={edit ? 'Edit Listing' : 'Add Listing'}
           type="submit"
           isDisabled={

@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { useEffect, useState, useRef, useMemo, useContext } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
-import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useUniswapTokens } from '../../lib/uniswap/hooks/useUniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
 import NetworkSelector from '../../components/thirdweb/NetworkSelector'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
@@ -60,7 +60,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   })
 
   const totalMooneyBalance = useTotalMooneyBalance(address)
-  const { totalLocked } = useValidVP(address)
+  const totalLocked = useTotalVP(address || '')
 
   const { MOONEY } = useUniswapTokens(selectedChain)
 

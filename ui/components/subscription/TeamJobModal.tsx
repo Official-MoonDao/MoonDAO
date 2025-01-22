@@ -1,6 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import TeamABI from 'const/abis/Team.json'
-import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN_V5, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
@@ -273,7 +273,7 @@ export default function TeamJobModal({
         </div>
 
         <PrivyWeb3Button
-          requiredChain={DEFAULT_CHAIN}
+          requiredChain={DEFAULT_CHAIN_V5}
           label={edit ? 'Edit Job' : 'Add Job'}
           type="submit"
           isDisabled={!teamContract || !jobTableContract || isLoading}
