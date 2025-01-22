@@ -1,8 +1,9 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { useReadContract } from 'thirdweb/react'
+import { useActiveAccount, useReadContract } from 'thirdweb/react'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysSinceTimestamp } from '@/lib/utils/timestamp'
 import Frame from '../layout/Frame'
@@ -41,6 +42,8 @@ export default function Job({
   teamContract,
   showTeam,
 }: JobProps) {
+  const account = useActiveAccount()
+
   const [enabledEditJobModal, setEnabledEditJobModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isActive, setIsActive] = useState(false)
@@ -131,14 +134,22 @@ export default function Job({
                           onClick={async () => {
                             setIsDeleting(true)
                             try {
-                              await jobTableContract.call('deleteFromTable', [
-                                job.id,
-                                job.teamId,
-                              ])
-                              setTimeout(() => {
-                                refreshJobs()
-                                setIsDeleting(false)
-                              }, 25000)
+                              if (!account) throw new Error('No account found')
+                              const transaction = prepareContractCall({
+                                contract: jobTableContract,
+                                method: 'deleteFromTable' as string,
+                                params: [job.id, job.teamId],
+                              })
+                              const receipt = await sendAndConfirmTransaction({
+                                transaction,
+                                account,
+                              })
+                              if (receipt) {
+                                setTimeout(() => {
+                                  refreshJobs()
+                                  setIsDeleting(false)
+                                }, 25000)
+                              }
                             } catch (err) {
                               console.log(err)
                               setIsDeleting(false)
