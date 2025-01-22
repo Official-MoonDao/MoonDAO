@@ -103,7 +103,7 @@ export default function Network({
     if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 9))
   }, [tab, input, filteredCitizens, filteredTeams])
 
-  const [cachedNFTs, setCachedNFTs] = useState<NFT[]>([])
+  const [cachedNFTs, setCachedNFTs] = useState<any[]>([])
 
   const [pageIdx, setPageIdx] = useState(1)
 
