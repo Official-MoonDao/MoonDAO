@@ -110,7 +110,7 @@ export function SweepstakesWinners({ ttsContract, supply }: any) {
           console.log(err)
         }
       }
-      setWinners(winners.reverse())
+      setWinners(winners.reverse() as any)
     }
 
     let refresh: any
