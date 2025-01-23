@@ -139,7 +139,10 @@ export async function getStaticProps() {
     //Get location data for each citizen
     for (const citizen of filteredValidCitizens) {
       const citizenLocation = JSON.stringify(
-        getAttribute(citizen?.metadata?.attributes as any[], 'location')?.value
+        getAttribute(
+          citizen?.metadata?.attributes as unknown as any[],
+          'location'
+        )?.value
       )
 
       let locationData
