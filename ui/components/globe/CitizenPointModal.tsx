@@ -1,4 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import Image from 'next/image'
 import Link from 'next/link'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import Modal from '../layout/Modal'
@@ -40,9 +41,9 @@ export default function CitizenPointModal({
               passHref
             >
               <div className="flex flex-col items-center">
-                <img
+                <Image
                   className="rounded-full"
-                  src={c.image}
+                  src={`https://ipfs.io/ipfs/${c.image.split('ipfs://')[1]}`}
                   alt={c.name}
                   width={75}
                   height={75}
