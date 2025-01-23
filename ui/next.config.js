@@ -2,7 +2,7 @@ const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://*.ipfscdn.io https://r2.comfy.icu https://ipfs.io https://cdn.discordapp.com https://cdn.stamp.fyi https://cdn.shopify.com https://cryptologos.cc https://ipfs.cf-ipfs.com https://*.walletconnect.com https://unpkg.com;
+    img-src 'self' blob: data: https://*.ipfscdn.io https://r2.comfy.icu https://ipfs.io https://cdn.discordapp.com https://cdn.stamp.fyi https://cdn.shopify.com https://cryptologos.cc https://ipfs.cf-ipfs.com https://*.walletconnect.com https://unpkg.com ipfs://*;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
@@ -27,6 +27,7 @@ module.exports = nextTranslate({
       'r2.comfy.icu',
       'cdn.discordapp.com',
       'cdn.stamp.fyi',
+      'ipfs.io',
     ],
   },
   async headers() {

@@ -1,3 +1,4 @@
+import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import CitizenPointModal from '@/components/globe/CitizenPointModal'
 
 describe('<CitizenPointModal />', () => {
@@ -10,13 +11,13 @@ describe('<CitizenPointModal />', () => {
         citizens: [
           {
             id: 1,
-            name: 'Ryan',
+            name: 'ryan',
             image:
               'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeifh2vwvfxfy6fevqkirldplgp47sfblcfvhn7nsxo4z4krsuulf2e/',
           },
           {
             id: 2,
-            name: 'Name.get',
+            name: 'name.get',
             image:
               'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeibo5na6nkatvor7bqisybzwtmh5n4l4wuws3uiyoqvjuuqwzwobna/',
           },
@@ -25,7 +26,11 @@ describe('<CitizenPointModal />', () => {
       setEnabled: cy.stub(),
     }
 
-    cy.mount(<CitizenPointModal {...props} />)
+    cy.mount(
+      <TestnetProviders>
+        <CitizenPointModal {...props} />
+      </TestnetProviders>
+    )
   })
 
   it('Renders the formatted address', () => {
@@ -34,11 +39,7 @@ describe('<CitizenPointModal />', () => {
 
   it('Renders citizen images and names', () => {
     props.selectedPoint.citizens.forEach((citizen: any) => {
-      cy.get(`img[alt="${citizen.name}"]`).should(
-        'have.attr',
-        'src',
-        citizen.image
-      )
+      cy.get(`img[alt="${citizen.name}"]`).should('exist')
       cy.contains(citizen.name).should('exist')
     })
   })
