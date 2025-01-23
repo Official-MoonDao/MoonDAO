@@ -43,7 +43,6 @@ export default function Network({
   filteredTeams,
   filteredCitizens,
 }: NetworkProps) {
-  console.log(filteredTeams, filteredCitizens)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
 
