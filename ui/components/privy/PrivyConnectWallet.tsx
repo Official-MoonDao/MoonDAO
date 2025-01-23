@@ -515,7 +515,6 @@ export function PrivyConnectWallet({
                   <button
                     className="w-full mt-4 p-2 border hover:scale-105 transition-all duration-150 hover:border-light-warm hover:text-light-warm rounded-lg"
                     onClick={() => {
-                      console.log(selectedChain.id)
                       wallets[selectedWallet].switchChain(selectedChain.id)
                     }}
                   >
