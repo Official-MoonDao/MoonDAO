@@ -1,11 +1,12 @@
-import { useAddress } from '@thirdweb-dev/react'
 import { MerkleTree } from 'merkletreejs'
 import { useEffect, useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
 import { keccak256 } from 'ethers/lib/utils'
 import { bufferToHex } from '../strings'
 
 export function useMerkleProof(whitelist: string[] | undefined) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   const [merkleProof, setMerkleProof] = useState<any>()
 
   function generateMerkleProof() {

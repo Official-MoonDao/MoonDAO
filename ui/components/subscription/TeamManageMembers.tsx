@@ -2,7 +2,7 @@ import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { TrashIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
-import { DEFAULT_CHAIN, HATS_ADDRESS } from 'const/config'
+import { DEFAULT_CHAIN_V5, HATS_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -333,7 +333,7 @@ function TeamManageMembersModal({
             />
           </div>
           <PrivyWeb3Button
-            requiredChain={DEFAULT_CHAIN}
+            requiredChain={DEFAULT_CHAIN_V5}
             label="Add Member"
             type="submit"
             className={`w-full mt-[-1px] w-full gradient-2 rounded-[2vmax] rounded-tr-[5px] ${

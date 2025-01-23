@@ -1,23 +1,20 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
-import {
-  Arbitrum,
-  Chain,
-  Ethereum,
-  Polygon,
-  Sepolia,
-  Base,
-  BaseSepoliaTestnet,
-} from '@thirdweb-dev/chains'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
-import { defineChain } from 'thirdweb'
-import ChainContext from '../../lib/thirdweb/chain-context'
-import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
+import {
+  arbitrum,
+  base,
+  baseSepolia,
+  ethereum,
+  polygon,
+  sepolia,
+} from 'thirdweb/chains'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
 type NetworkOptionProps = {
-  chain: Chain
-  selectChain: (chain: Chain) => void
+  chain: any
+  selectChain: (chain: any) => void
 }
 
 function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
@@ -28,7 +25,7 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
       onClick={() => selectChain(chain)}
     >
       <Image
-        src={`/icons/networks/${chain.slug}.svg`}
+        src={`/icons/networks/${getChainSlug(chain)}.svg`}
         width={13}
         height={13}
         alt={chain.name}
@@ -43,17 +40,11 @@ type NetworkSelectorProps = {
 }
 
 export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
-  const {
-    selectedChain: selectedChainV5,
-    setSelectedChain: setSelectedChainV5,
-  } = useContext(ChainContextV5)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const [dropdown, setDropdown] = useState(false)
 
-  function selectChain(chain: Chain) {
+  function selectChain(chain: any) {
     setSelectedChain(chain)
-    const v5Chain = v4SlugToV5Chain(chain.slug)
-    setSelectedChainV5(v5Chain)
     setDropdown(false)
   }
 
@@ -78,12 +69,12 @@ export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
       >
         <Image
           className="h-6 w-6"
-          src={`/icons/networks/${selectedChain.slug}.svg`}
+          src={`/icons/networks/${getChainSlug(selectedChain)}.svg`}
           width={24}
           height={24}
-          alt={selectedChain.name}
+          alt={selectedChain.name || ''}
         />
-        {!iconsOnly && <span>{selectedChain.name}</span>}
+        {!iconsOnly && <span>{selectedChain.name || ''}</span>}
         <button className={`${dropdown && 'rotate-180'}`}>
           <ChevronDownIcon height={14} width={14} />
         </button>
@@ -93,17 +84,14 @@ export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
           id="network-selector-dropdown"
           className="w-[250px] absolute flex flex-col items-start gap-2 text-black z-10"
         >
-          <NetworkOption chain={Ethereum} selectChain={selectChain} />
-          <NetworkOption chain={Arbitrum} selectChain={selectChain} />
-          <NetworkOption chain={Base} selectChain={selectChain} />
-          <NetworkOption chain={Polygon} selectChain={selectChain} />
+          <NetworkOption chain={ethereum} selectChain={selectChain} />
+          <NetworkOption chain={arbitrum} selectChain={selectChain} />
+          <NetworkOption chain={base} selectChain={selectChain} />
+          <NetworkOption chain={polygon} selectChain={selectChain} />
           {process.env.NEXT_PUBLIC_ENV === 'dev' && (
             <>
-              <NetworkOption chain={Sepolia} selectChain={selectChain} />
-              <NetworkOption
-                chain={BaseSepoliaTestnet}
-                selectChain={selectChain}
-              />
+              <NetworkOption chain={sepolia} selectChain={selectChain} />
+              <NetworkOption chain={baseSepolia} selectChain={selectChain} />
             </>
           )}
         </div>

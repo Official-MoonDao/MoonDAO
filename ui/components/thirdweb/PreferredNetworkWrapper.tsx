@@ -1,16 +1,15 @@
-import { useChain } from '@thirdweb-dev/react'
 import React, { useContext } from 'react'
-import ChainContext from '../../lib/thirdweb/chain-context'
+import { useActiveWalletChain } from 'thirdweb/react'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import SwitchNetworkBanner from './SwitchNetworkBanner'
 
 export default function PreferredNetworkWrapper({ children, address }: any) {
-  const chain = useChain()
-
-  const { selectedChain } = useContext(ChainContext)
+  const activeWalletChain = useActiveWalletChain()
+  const { selectedChain } = useContext(ChainContextV5)
 
   return (
     <>
-      {address && chain?.name !== selectedChain?.name && (
+      {activeWalletChain !== selectedChain && (
         <SwitchNetworkBanner newNetwork={selectedChain} />
       )}
       {children}

@@ -1,4 +1,4 @@
-import { DEFAULT_CHAIN } from 'const/config'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
@@ -56,7 +56,7 @@ function DeleteProfileDataModal({
             Cancel
           </StandardButton>
           <PrivyWeb3Button
-            requiredChain={DEFAULT_CHAIN}
+            requiredChain={DEFAULT_CHAIN_V5}
             label={isLoading ? 'Loading...' : 'Delete'}
             isDisabled={isLoading}
             action={async () => {
