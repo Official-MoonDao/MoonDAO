@@ -1,7 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 
 type SubmitInfoModalProps = {
@@ -15,7 +15,8 @@ export function ReverifyModal({
   setViewEnabled,
   nftIds,
 }: SubmitInfoModalProps) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
@@ -102,7 +103,9 @@ export function ReverifyModal({
           </a>
           .
         </p>
-        <label className="text-white">Full Legal Name (as appears on your ID)</label>
+        <label className="text-white">
+          Full Legal Name (as appears on your ID)
+        </label>
         <input
           className="h-[50px] w-full text-lg rounded-sm px-2 bg-white bg-opacity-5 border-[1px] border-white group hover:border-orange-500 border-opacity-20 hover:border-opacity-40 focus:outline-none"
           onChange={(e) => setFullName(e.target.value)}

@@ -1,8 +1,9 @@
-import { ThirdwebNftMedia } from '@thirdweb-dev/react'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
+import { MediaRenderer } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import client from '@/lib/thirdweb/client'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 export default function CitizenProfileLink() {
@@ -29,9 +30,10 @@ export default function CitizenProfileLink() {
           {isLoading ? (
             <LoadingSpinner />
           ) : (
-            <ThirdwebNftMedia
+            <MediaRenderer
+              client={client}
               className=""
-              metadata={citizen.metadata}
+              src={citizen.metadata.image}
               width="100%"
               height="100%"
             />

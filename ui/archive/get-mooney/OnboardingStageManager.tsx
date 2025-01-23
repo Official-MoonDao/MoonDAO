@@ -1,15 +1,16 @@
 import { usePrivy } from '@privy-io/react-auth'
-import { useAddress, useContract } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import { nativeOnChain } from '@uniswap/smart-order-router'
 import Link from 'next/link'
 import { useEffect, useState, useRef, useMemo, useContext } from 'react'
-import ChainContext from '../../lib/thirdweb/chain-context'
+import { useActiveAccount } from 'thirdweb/react'
 import { useTotalMooneyBalance } from '../../lib/tokens/hooks/useTotalMooneyBalance'
-import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import { useUniswapTokens } from '../../lib/uniswap/hooks/useUniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
-import L2Toggle from '../../components/lock/L2Toggle'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
 import NetworkSelector from '../../components/thirdweb/NetworkSelector'
 import ERC20 from '../../const/abis/ERC20.json'
 import VotingEscrow from '../../const/abis/VotingEscrow.json'
@@ -34,9 +35,11 @@ function StageContainer({ children }: any) {
 }
 
 export function OnboardingStageManager({ usdQuotes }: any) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   const { user } = usePrivy()
-  const { selectedChain } = useContext(ChainContext)
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const [stage, setStage] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
   const [selectedLevel, setSelectedLevel] = useState<any>({
@@ -45,24 +48,26 @@ export function OnboardingStageManager({ usdQuotes }: any) {
     nativeSwapRoute: null,
   })
 
-  const { contract: mooneyContract } = useContract(
-    MOONEY_ADDRESSES[selectedChain.slug],
-    ERC20
-  )
-  const { contract: vMooneyContract } = useContract(
-    VMOONEY_ADDRESSES[selectedChain.slug],
-    VotingEscrow
-  )
+  const mooneyContract = useContract({
+    chain: selectedChain,
+    address: MOONEY_ADDRESSES[chainSlug],
+    abi: ERC20,
+  })
+  const vMooneyContract = useContract({
+    chain: selectedChain,
+    address: VMOONEY_ADDRESSES[chainSlug],
+    abi: VotingEscrow,
+  })
 
   const totalMooneyBalance = useTotalMooneyBalance(address)
-  const { totalLocked } = useValidVP(address)
+  const totalLocked = useTotalVP(address || '')
 
   const { MOONEY } = useUniswapTokens(selectedChain)
 
   const { generateRoute: generateNativeRoute } = useUniversalRouter(
     selectedLevel.price + 1,
     MOONEY,
-    nativeOnChain(selectedChain.chainId)
+    nativeOnChain(selectedChain.id)
   )
 
   useEffect(() => {
@@ -83,7 +88,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   //skip tx stage if user already has a mooney lock greate than the selected level
   useEffect(() => {
     if (
-      selectedChain.slug !== 'polygon' &&
+      chainSlug !== 'polygon' &&
       selectedLevel.price > 0 &&
       totalLocked >= 0 &&
       totalMooneyBalance >= 0

@@ -1,5 +1,5 @@
-import { useAddress } from '@thirdweb-dev/react'
 import { useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
 import { MOONEY_ADDRESSES } from '../../const/config'
 
 type SubmitInfoModalProps = {
@@ -7,7 +7,8 @@ type SubmitInfoModalProps = {
 }
 
 export function MooneyBridgeModal({ setEnabled }: SubmitInfoModalProps) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [bridgeAmount, setBridgeAmount] = useState(0)
   const [ethToMatic, setEthToMatic] = useState(true)

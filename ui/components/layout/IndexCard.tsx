@@ -1,9 +1,6 @@
-import { ThirdwebNftMedia } from '@thirdweb-dev/react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useState } from 'react'
-import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
 
 interface IndexCardProps {

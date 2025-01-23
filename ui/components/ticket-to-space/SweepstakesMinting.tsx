@@ -25,7 +25,7 @@ export function SweepstakesMinting({
 
   const [time, setTime] = useState<string>()
   const [quantity, setQuantity] = useState(1)
-  const [supply, setSupply] = useState(0)
+
   const [enableMintInfoModal, setEnableMintInfoModal] = useState(false)
   const [enableEthMintInfoModal, setEnableEthMintInfoModal] = useState(false)
   const [enableFreeMintInfoModal, setEnableFreeMintInfoModal] = useState(false)
@@ -33,6 +33,12 @@ export function SweepstakesMinting({
 
   const whitelist = devWhitelist
   const merkleProof = useMerkleProof(whitelist)
+
+  const { data: supply } = useRead({
+    contract: ttsContract,
+    method: 'getSupply',
+    params: [],
+  })
 
   const { data: balance } = useRead({
     contract: ttsContract,
@@ -89,15 +95,6 @@ export function SweepstakesMinting({
     else if (ts > 0) setTime('T-' + ts + ' Seconds')
     else setTime('Expired')
   }, [])
-
-  useEffect(() => {
-    if (ttsContract) {
-      ttsContract
-        .call('getSupply')
-        .then((supply: any) => setSupply(supply.toString()))
-        .catch((err: any) => console.log(err))
-    }
-  }, [ttsContract])
 
   return (
     <>

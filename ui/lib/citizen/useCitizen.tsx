@@ -67,6 +67,7 @@ export function useCitizen(
     citizenContract,
     selectedWallet,
     user,
+    wallets,
     authenticated,
     citizenAddress,
   ])
