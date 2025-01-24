@@ -32,6 +32,8 @@ export default function Hero({ citizenLocationData }: any) {
               pointsData={citizenLocationData}
               enableControls={true}
               enableZoom={false}
+              showPointLabels={false}
+              autoRotate={true}
             />
           </div>
 
@@ -41,6 +43,8 @@ export default function Hero({ citizenLocationData }: any) {
               pointsData={citizenLocationData}
               enableControls={true}
               enableZoom={false}
+              showPointLabels={false}
+              autoRotate={true}
             />
           </div>
 
@@ -50,7 +54,8 @@ export default function Hero({ citizenLocationData }: any) {
               pointsData={citizenLocationData}
               enableControls={true}
               enableZoom={false}
-              rotateOnMouseMove={true}
+              showPointLabels={false}
+              autoRotate={true}
             />
           </div>
 
@@ -60,7 +65,8 @@ export default function Hero({ citizenLocationData }: any) {
               pointsData={citizenLocationData}
               enableControls={false}
               enableZoom={false}
-              rotateOnMouseMove={true}
+              showPointLabels={false}
+              autoRotate={true}
             />
           </div>
         </div>
