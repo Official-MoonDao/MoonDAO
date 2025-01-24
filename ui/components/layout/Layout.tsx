@@ -20,7 +20,7 @@ import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
 import NavigationLink from './Sidebar/NavigationLink'
-import Starfield from './Starfield'
+import Starfield from './Starfield-temp'
 
 interface Layout {
   children: JSX.Element

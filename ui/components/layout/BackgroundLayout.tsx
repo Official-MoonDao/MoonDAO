@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import Starfield from './Starfield'
+import Starfield from './Starfield-temp'
 
 export default function BackgroundLayout({
   children,
