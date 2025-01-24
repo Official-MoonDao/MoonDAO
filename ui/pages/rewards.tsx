@@ -67,45 +67,6 @@ export async function getStaticProps() {
 
     const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
     let distributions = await queryTable(chain, distributionStatement)
-    distributions = distributions.concat([
-      {
-        year: 2024,
-        quarter: 4,
-        // mitchie
-        address: '0x9fDf876a50EA8f95017dCFC7709356887025B5BB',
-        distribution: { '1': 100 },
-      },
-      {
-        year: 2024,
-        quarter: 4,
-        // coffee-crusher.eth
-        address: '0x223da87421786DD8960bf2350e6c499BEbCA64d1',
-        distribution: { '0': 35, '1': 40, '2': 25 },
-      },
-      {
-        year: 2024,
-        quarter: 4,
-        // titan
-        address: '0x86c779b3741e83A36A2a236780d436E4EC673Af4',
-        distribution: { '0': 100 },
-      },
-      {
-        year: 2024,
-        quarter: 4,
-        // colin
-        address: '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6',
-        distribution: { '1': 65, '2': 35 },
-      },
-      {
-        year: 2024,
-        quarter: 4,
-        // ryan
-        address: '0x78176eaabcb3255e898079dc67428e15149cdc99',
-        distribution: {},
-      },
-    ])
-    distributions[3].distribution = { '1': 100 }
-    distributions[0].distribution = { '1': 100 }
 
     return {
       props: {

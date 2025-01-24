@@ -6,7 +6,6 @@ import {
   DISTRIBUTION_TABLE_ADDRESSES,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
-  SNAPSHOT_RETROACTIVE_REWARDS_ID,
 } from 'const/config'
 import _ from 'lodash'
 import Image from 'next/image'
@@ -22,10 +21,9 @@ import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
-import { useVotingPowers } from '@/lib/snapshot'
-import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter } from '@/lib/utils/dates'
@@ -39,7 +37,6 @@ import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import ProjectCard from '@/components/project/ProjectCard'
-import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export type Distribution = {
   year: number
@@ -172,28 +169,26 @@ export function RetroactiveRewards({
     return userAddress && userVotingPower > 0
   }, [userVotingPower, userAddress])
 
-  // All projects need at least one citizen distribution to do iterative normalization
-  const isCitizens = useCitizens(chain, addresses)
-  console.log('isCitizens')
-  console.log(isCitizens)
-  //let citizenDistributions = distributions
-  console.log('distributions')
-  console.log(distributions)
+  const isCitizenAddresses = useCitizens(chain, addresses)
+  const citizenVotingAddresses = [
+    '0x78176eaabcb3255e898079dc67428e15149cdc99', // payout for ryand2d.eth
+    '0x9fdf876a50ea8f95017dcfc7709356887025b5bb', // payout for mitchmcquinn.eth
+  ]
+  const isCitizenVotingAddresses = addresses.map((address) =>
+    citizenVotingAddresses.includes(address.toLowerCase())
+  )
+  const isCitizens = isCitizenAddresses.map(
+    (isCitizen, i) => isCitizen || isCitizenVotingAddresses[i]
+  )
 
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  console.log('citizenDistributions')
-  console.log(citizenDistributions)
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
-  console.log('nonCitizenDistributions')
-  console.log(nonCitizenDistributions)
-  const allProjectsHaveCitizenDistribution = projects?.every(({ id }) =>
+  // All projects need at least one citizen distribution to do iterative normalization
+  const readyToRunVoting = projects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
-  //console.log('citizenDistributions')
-  //console.log(citizenDistributions)
-  const readyToRunVoting = true
 
   const projectIdToEstimatedPercentage: { [key: string]: number } =
     readyToRunVoting
@@ -234,6 +229,8 @@ export function RetroactiveRewards({
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
+    vMooneyAddresses,
+    vMooneyAmounts,
   } = getPayouts(
     projectIdToEstimatedPercentage,
     projects,
