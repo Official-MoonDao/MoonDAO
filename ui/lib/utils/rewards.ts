@@ -33,7 +33,6 @@ export function getBudget(tokens: any, year: number, quarter: number) {
 export function getPayouts(
   projectIdToEstimatedPercentage: any,
   projects: any,
-  communityCircle: any,
   ethBudget: number,
   mooneyBudget: number
 ) {
@@ -50,7 +49,6 @@ export function getPayouts(
     const projectId = project.id
     const projectPercentage = projectIdToEstimatedPercentage[projectId]
     const rewardDistributionString = project.rewardDistribution || '{}'
-    // arbiscan tends to remove the quotes around the first key, so handle gracefully
     const fixedRewardDistribution = rewardDistributionString.replace(
       /(\b0x[a-fA-F0-9]{40}\b):/g,
       '"$1":'
@@ -87,6 +85,7 @@ export function getPayouts(
     }
   }
 
+  const communityCircle = {}
   const COMMUNITY_CIRCLE_PERCENTAGE = 10
   for (const [contributerAddress, contributorPercentage] of Object.entries(
     communityCircle
