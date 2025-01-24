@@ -1,72 +1,75 @@
+//server-side only
 import CitizenABI from 'const/abis/Citizen.json'
-import { CITIZEN_ADDRESSES, DEFAULT_CHAIN } from 'const/config'
+import {
+  CITIZEN_ADDRESSES,
+  CITIZEN_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
+} from 'const/config'
 import { blockedCitizens } from 'const/whitelist'
-import { initSDK } from '../thirdweb/thirdweb'
+import { getContract, readContract } from 'thirdweb'
+import { CitizenRow, citizenRowToNFT } from '../tableland/convertRow'
+import queryTable from '../tableland/queryTable'
+import { getChainSlug } from '../thirdweb/chain'
+import { serverClient } from '../thirdweb/client'
 import { getAttribute } from '../utils/nft'
 
 export async function getAllCitizenLocationData() {
   let citizensLocationData = []
   if (process.env.NEXT_PUBLIC_ENV === 'prod') {
-    const sdk = initSDK(DEFAULT_CHAIN)
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-    const citizenContract = await sdk.getContract(
-      CITIZEN_ADDRESSES[DEFAULT_CHAIN.slug],
-      CitizenABI
-    )
+    const citizenContract = getContract({
+      client: serverClient,
+      address: CITIZEN_ADDRESSES[chainSlug],
+      abi: CitizenABI as any,
+      chain,
+    })
 
-    const totalCitizens = await citizenContract.call('totalSupply')
+    const citizens = []
+    const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
+    const citizenRows = await queryTable(chain, citizenStatement)
 
-    const citizens = [] //replace with citizenContract.erc721.getAll() if all citizens load
-    for (let i = 0; i < totalCitizens.toNumber(); i++) {
-      if (!blockedCitizens.includes(i)) {
-        const citizen = await citizenContract.erc721.get(i)
-        citizens.push(citizen)
-      }
+    for (const citizen of citizenRows) {
+      citizens.push(citizenRowToNFT(citizen as CitizenRow))
     }
 
     const filteredValidCitizens = citizens.filter(async (c: any) => {
       const now = Math.floor(Date.now() / 1000)
-      const expiresAt = await citizenContract.call('expiresAt', [c.metadata.id])
-      const view = getAttribute(c.metadata.attributes, 'view').value
+      const expiresAt = await readContract({
+        contract: citizenContract,
+        method: 'expiresAt',
+        params: [c.metadata.id],
+      })
+      const view = getAttribute(c?.metadata?.attributes, 'view')?.value
       return (
-        expiresAt.toNumber() > now &&
+        +expiresAt.toString() > now &&
         view === 'public' &&
         !blockedCitizens.includes(c.metadata.id)
       )
     })
 
-    //Citizen location data for citizens w/ old location format
-    const citizenCoordsRes = await fetch(
-      `https://ipfs.io/ipfs/${process.env.CITIZEN_COORDS_IPFS_HASH}`
-    )
-    const citizenCoords = await citizenCoordsRes.json()
-
     //Get location data for each citizen
     for (const citizen of filteredValidCitizens) {
-      const citizenLocation = getAttribute(
-        citizen?.metadata?.attributes as any[],
-        'location'
-      ).value
+      const citizenLocation = JSON.stringify(
+        getAttribute(
+          citizen?.metadata?.attributes as unknown as any[],
+          'location'
+        )?.value
+      )
 
       let locationData
-      if (citizenLocation !== '' && !citizenLocation.startsWith('{')) {
-        const citizenLocationData = citizenCoords.find(
-          (c: any) => c.id === citizen.metadata.id
+
+      if (
+        citizenLocation &&
+        citizenLocation !== '' &&
+        !citizenLocation?.startsWith('{')
+      ) {
+        const locationRes = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${citizenLocation}&key=${process.env.GOOGLE_MAPS_API_KEY}`
         )
-        locationData = {
-          results: [
-            {
-              formatted_address: citizenLocationData.name,
-              geometry: {
-                location: {
-                  lat: citizenLocationData.lat,
-                  lng: citizenLocationData.lng,
-                },
-              },
-            },
-          ],
-        }
-      } else if (citizenLocation.startsWith('{')) {
+        locationData = await locationRes.json()
+      } else if (citizenLocation?.startsWith('{')) {
         const parsedLocationData = JSON.parse(citizenLocation)
         locationData = {
           results: [
@@ -97,10 +100,10 @@ export async function getAllCitizenLocationData() {
         name: citizen.metadata.name,
         location: citizenLocation,
         formattedAddress:
-          locationData?.results?.[0]?.formatted_address || 'Antartica',
+          locationData.results?.[0]?.formatted_address || 'Antartica',
         image: citizen.metadata.image,
-        lat: locationData?.results?.[0]?.geometry?.location?.lat || -90,
-        lng: locationData?.results?.[0]?.geometry?.location?.lng || 0,
+        lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
+        lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
       })
     }
 
