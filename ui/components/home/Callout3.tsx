@@ -1,5 +1,3 @@
-import React, { useState, useEffect, useRef } from 'react'
-import IndexCard from '../layout/IndexCard'
 import IndexCardGrid from '../layout/IndexCardGrid'
 
 const indexCardData = [
@@ -101,52 +99,6 @@ const networkData = {
 }
 
 export default function Callout3() {
-  const [singleCol, setSingleCol] = useState(false)
-  const cytoRef = useRef(null)
-
-  // useEffect(() => {
-  //   if (!cytoRef.current) return
-
-  //   const cyto = cytoscape({
-  //     container: cytoRef.current,
-  //     elements: networkData,
-  //     style: [
-  //       {
-  //         selector: 'node',
-  //         style: {
-  //           'background-color': 'transparent',
-  //           'border-width': 3,
-  //           'border-color': '#00308F',
-  //           // ... rest of node styles ...
-  //         },
-  //       },
-  //       // ... rest of style definitions ...
-  //     ],
-  //     layout: {
-  //       name: 'concentric',
-  //       concentric: function (node: any) {
-  //         return node.id() === 'lisa' ? 2 : 1
-  //       },
-  //       levelWidth: function () {
-  //         return 1
-  //       },
-  //       minNodeSpacing: 50,
-  //       animate: false,
-  //     },
-  //   })
-
-  //   // Add the setTimeout and event handlers as in your original code
-  //   setTimeout(() => {
-  //     const lisaPos = cyto.$('#lisa').position()
-  //     // ... rest of the setTimeout logic ...
-  //   }, 100)
-
-  //   // Clean up
-  //   return () => {
-  //     cyto.destroy()
-  //   }
-  // }, [])
-
   return (
     <section
       id="callout3-container"
