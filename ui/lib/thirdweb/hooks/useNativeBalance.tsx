@@ -1,11 +1,15 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress, useSDK } from '@thirdweb-dev/react'
 import { useContext, useEffect, useState } from 'react'
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
+import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
+import ChainContextV5 from '../chain-context-v5'
+import { serverClient } from '../client'
 
 export function useNativeBalance() {
-  const sdk = useSDK()
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
+  const { selectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
@@ -27,7 +31,10 @@ export function useNativeBalance() {
 
     async function getBalanceAndListen() {
       if (wallet) {
-        provider = sdk?.getProvider()
+        provider = ethers5Adapter.provider.toEthers({
+          client: serverClient,
+          chain: selectedChain,
+        })
         await handleBalanceChange()
 
         provider.on('block', handleBalanceChange)
@@ -43,7 +50,7 @@ export function useNativeBalance() {
         provider.off('block', handleBalanceChange)
       }
     }
-  }, [sdk, address, wallets, selectedWallet])
+  }, [address, wallets, selectedWallet])
 
   return nativeBalance
 }

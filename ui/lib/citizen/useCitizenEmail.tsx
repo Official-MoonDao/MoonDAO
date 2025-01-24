@@ -1,10 +1,11 @@
-import { useAddress } from '@thirdweb-dev/react'
 import { useEffect, useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
 import fetchEmail from '../typeform/fetchEmail'
 import { getAttribute } from '../utils/nft'
 
 export default function useCitizenEmail(nft: any) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [email, setEmail] = useState<string>()
 

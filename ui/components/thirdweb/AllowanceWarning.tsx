@@ -1,28 +1,21 @@
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
-import { useAddress } from '@thirdweb-dev/react'
-import { BigNumber } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
-import { useTokenAllowance, useTokenApproval } from '../../lib/tokens/approve'
+import toast from 'react-hot-toast'
+import { useActiveAccount } from 'thirdweb/react'
+import { revokeAllowance } from '../../lib/tokens/approve'
 
 interface AllowanceWarningProps {
   tokenContract: any
+  tokenAllowance: number | undefined
   spender: string
 }
 
 export const AllowanceWarning = ({
   tokenContract,
+  tokenAllowance,
   spender,
 }: AllowanceWarningProps) => {
-  const address = useAddress()
-  const { data: tokenAllowance, isLoading: tokenAllowanceLoading } =
-    useTokenAllowance(tokenContract, address, spender)
-
-  const { mutateAsync: revokeAllowance } = useTokenApproval(
-    tokenContract,
-    BigNumber.from('0'),
-    undefined,
-    spender
-  )
+  const account = useActiveAccount()
 
   const { t } = useTranslation('common')
 
@@ -35,11 +28,23 @@ export const AllowanceWarning = ({
       <p className="md:mt-1 text-xs text-center block xl:text-left xl:ml-5 dark:text-white text-slate-900">
         {t('safetyNote')}
       </p>
-      {!tokenAllowanceLoading && tokenAllowance > 0 && (
+      {tokenAllowance && tokenAllowance > 0 && (
         <div className="mt-3 xl:mt-0 xl:ml-3">
           <button
             className=" px-2 py-1 xl:w-[160px] border bg-moon-orange text-white transition-all duration-150 hover:scale-105 font-semibold rounded"
-            onClick={() => revokeAllowance()}
+            onClick={async () => {
+              try {
+                if (!account) throw new Error('No account found')
+                const receipt = await revokeAllowance({
+                  account,
+                  tokenContract,
+                  spender,
+                })
+                if (receipt) toast.success('Allowance revoked')
+              } catch (err) {
+                console.log(err)
+              }
+            }}
           >
             Revoke allowance
           </button>

@@ -1,13 +1,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
-import { discordOauthUrl } from '../../lib/utils/discord'
-import { checkUserDataRaffle } from '../../lib/zero-g/google-sheets'
-import {
-  useBalanceTicketZeroG,
-  useMintTicketZeroG,
-} from '../../lib/zero-g/zero-g-sweepstakes'
-import InputContainer from './InputContainer'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
 import SweepstakesSelection from './SweepstakesSelection'
@@ -34,17 +27,6 @@ export default function ZeroGRaffle({
 
   const [state, setState] = useState<number>(0)
   const [error, setError] = useState<string>('')
-
-  const {
-    mutateAsync: mint,
-    isLoading: mintIsLoading,
-    error: mintError,
-  } = useMintTicketZeroG(sweepstakesContract)
-
-  const { data: hasTicket } = useBalanceTicketZeroG(
-    sweepstakesContract,
-    address || ''
-  )
 
   const formRef: any = useRef()
 

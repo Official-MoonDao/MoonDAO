@@ -1,16 +1,7 @@
-import { useAddress } from '@thirdweb-dev/react'
-import Image from 'next/image'
 import Link from 'next/link'
-import { useValidVP } from '../../lib/tokens/hooks/useValidVP'
 import Head from '../../components/layout/Head'
-import { ZeroGContact } from '../../components/nodemailer/ZeroGContact'
-import PurchasePortal from '../../components/zero-g/PurchasePortal'
 
 export default function ZeroGravity() {
-  const address = useAddress()
-
-  const validVP = useValidVP(address)
-
   return (
     <main className="animate-fadeIn">
       <Head title="Zero Gravity" />

@@ -1,15 +1,19 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
-import { MediaRenderer, useContract } from '@thirdweb-dev/react'
-import { DEFAULT_CHAIN, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN_V5, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client from '@/lib/thirdweb/client'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { renameFile } from '@/lib/utils/files'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import TeamABI from '../../const/abis/Team.json'
@@ -45,8 +49,9 @@ export default function TeamMarketplaceListingModal({
   edit,
   listing,
 }: TeamMarketplaceListingModalProps) {
-  const { getAccessToken } = usePrivy()
-  const { selectedChain } = useContext(ChainContext)
+  const account = useActiveAccount()
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const [isLoading, setIsLoading] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
   const [isUpcoming, setIsUpcoming] = useState(false)
@@ -85,10 +90,11 @@ export default function TeamMarketplaceListingModal({
 
   const currTime = useCurrUnixTime()
 
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug],
-    TeamABI
-  )
+  const teamContract = useContract({
+    chain: selectedChain,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI,
+  })
 
   useEffect(() => {
     if (listing) {
@@ -123,6 +129,7 @@ export default function TeamMarketplaceListingModal({
         className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto" // Updated styles
         onSubmit={async (e) => {
           e.preventDefault()
+          if (!account) return
           if (
             listingData.title.trim() === '' ||
             listingData.description.trim() === '' ||
@@ -167,52 +174,65 @@ export default function TeamMarketplaceListingModal({
             imageIpfsLink = `ipfs://${imageIpfsHash}`
           }
 
-          let tx
+          let transaction
 
           try {
             if (edit) {
-              tx = await marketplaceTableContract.call('updateTable', [
-                listing?.id,
-                cleanedData.title,
-                cleanedData.description,
-                imageIpfsLink,
-                teamId,
-                cleanedData.price,
-                cleanedData.currency,
-                startTime,
-                endTime,
-                currTime,
-                '',
-                '',
-                cleanedData.shipping,
-              ])
+              transaction = prepareContractCall({
+                contract: marketplaceTableContract,
+                method: 'updateTable' as string,
+                params: [
+                  listing?.id,
+                  cleanedData.title,
+                  cleanedData.description,
+                  imageIpfsLink,
+                  teamId,
+                  cleanedData.price,
+                  cleanedData.currency,
+                  startTime,
+                  endTime,
+                  currTime,
+                  '',
+                  '',
+                  cleanedData.shipping,
+                ],
+              })
             } else {
-              tx = await marketplaceTableContract?.call('insertIntoTable', [
-                cleanedData.title,
-                cleanedData.description,
-                imageIpfsLink,
-                teamId,
-                cleanedData.price,
-                cleanedData.currency,
-                startTime,
-                endTime,
-                currTime,
-                '',
-                '',
-                cleanedData.shipping,
-              ])
+              transaction = prepareContractCall({
+                contract: marketplaceTableContract,
+                method: 'insertIntoTable' as string,
+                params: [
+                  cleanedData.title,
+                  cleanedData.description,
+                  imageIpfsLink,
+                  teamId,
+                  cleanedData.price,
+                  cleanedData.currency,
+                  startTime,
+                  endTime,
+                  currTime,
+                  '',
+                  '',
+                  cleanedData.shipping,
+                ],
+              })
             }
 
+            const receipt: any = await sendAndConfirmTransaction({
+              transaction,
+              account,
+            })
+
             //Get listing id from receipt and send discord notification
-            const listingId = parseInt(
-              tx.receipt.logs[1].topics[1],
-              16
-            ).toString()
+            const listingId = parseInt(receipt.logs[1].topics[1], 16).toString()
             const listingTeamId = parseInt(
-              tx.receipt.logs[1].topics[2],
+              receipt.logs[1].topics[2],
               16
             ).toString()
-            const team = await teamContract?.erc721.get(listingTeamId)
+            const team = await getNFT({
+              contract: teamContract,
+              tokenId: BigInt(listingTeamId),
+            })
             const teamName = team?.metadata.name as string
             sendDiscordMessage(
               'networkNotifications',
@@ -255,6 +275,7 @@ export default function TeamMarketplaceListingModal({
           <>
             {typeof listingData.image === 'string' ? (
               <MediaRenderer
+                client={client}
                 src={listingData.image}
                 height="200px"
                 width="200px"
@@ -414,7 +435,7 @@ export default function TeamMarketplaceListingModal({
           <p className="opacity-60">{`Listings are marked up 10% for non-citizens`}</p>
         </div>
         <PrivyWeb3Button
-          requiredChain={DEFAULT_CHAIN}
+          requiredChain={DEFAULT_CHAIN_V5}
           label={edit ? 'Edit Listing' : 'Add Listing'}
           type="submit"
           isDisabled={

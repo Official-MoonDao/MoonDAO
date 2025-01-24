@@ -1,9 +1,5 @@
-import { PrivyProvider } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
+import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import React from 'react'
-import { ThirdwebProvider } from 'thirdweb/react'
-import { PrivyThirdwebSDKProvider } from '@/lib/privy/PrivyThirdwebSDKProvider'
-import { PrivyThirdwebV5Provider } from '@/lib/privy/PrivyThirdwebV5Provider'
 import Card from '../../../components/layout/Card'
 
 describe('<Card />', () => {
@@ -44,13 +40,9 @@ describe('<Card />', () => {
     cy.mountNextRouter('/')
 
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <ThirdwebProvider>
-          <PrivyThirdwebV5Provider selectedChain={Sepolia}>
-            <Card type="citizen" metadata={metadata} />
-          </PrivyThirdwebV5Provider>
-        </ThirdwebProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <Card type="citizen" metadata={metadata} />
+      </TestnetProviders>
     )
 
     cy.get('#handle-container').should('contain', 'Discord: @testuser')
@@ -72,17 +64,13 @@ describe('<Card />', () => {
     cy.mountNextRouter('/')
     cy.viewport('iphone-x')
     cy.mount(
-      <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-        <ThirdwebProvider>
-          <PrivyThirdwebV5Provider selectedChain={Sepolia}>
-            <Card
-              header="Mobile Test"
-              hovertext="Test hovertext"
-              metadata={{ name: 'Test' }}
-            />
-          </PrivyThirdwebV5Provider>
-        </ThirdwebProvider>
-      </PrivyProvider>
+      <TestnetProviders>
+        <Card
+          header="Mobile Test"
+          hovertext="Test hovertext"
+          metadata={{ name: 'Test' }}
+        />
+      </TestnetProviders>
     )
 
     cy.get('#mobile-button-container').should('be.visible')

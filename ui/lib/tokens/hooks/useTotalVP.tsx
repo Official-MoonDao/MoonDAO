@@ -1,4 +1,3 @@
-import { useAddress } from '@thirdweb-dev/react'
 import request, { gql } from 'graphql-request'
 import { useEffect, useState } from 'react'
 import useSWR from 'swr'

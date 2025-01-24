@@ -1,26 +1,42 @@
-import { useAddress } from '@thirdweb-dev/react'
+import VotingEscrow from 'const/abis/VotingEscrow.json'
+import { MOONEY_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
-import { useEffect, useRef, useState } from 'react'
-import { useVMOONEYLock } from '../../lib/tokens/ve-token'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
 import {
   checkUserDataReservation,
   submitReservation,
 } from '../../lib/zero-g/google-sheets'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import EnterRaffleButton from './EnterRaffleButton'
 import InputContainer from './InputContainer'
 import ReservationRaffleLayout from './ReservationRaffleLayout'
 import StageContainer from './StageContainer'
 
 export default function Reservations({ sweepstakesContract }: any) {
-  const address = useAddress()
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
+  const account = useActiveAccount()
+  const address = account?.address
   const [state, setState] = useState(0)
   const [error, setError] = useState('')
 
   const [validLock, setValidLock] = useState(false)
-  const { data: vMooneyLock, isLoading: vMooneyLockLoading } = useVMOONEYLock(
-    sweepstakesContract,
-    address
-  )
+
+  const vMooneyContract = useContract({
+    chain: selectedChain,
+    address: MOONEY_ADDRESSES[chainSlug],
+    abi: VotingEscrow as any,
+  })
+
+  const { data: vMooneyLock } = useRead({
+    contract: vMooneyContract,
+    method: 'locked',
+    params: [address],
+  })
   const altEmailInput: any = useRef()
   const altNameInput: any = useRef()
   const holderEmailInput: any = useRef()
@@ -132,13 +148,13 @@ export default function Reservations({ sweepstakesContract }: any) {
   }
 
   useEffect(() => {
-    if (!vMooneyLockLoading)
+    if (vMooneyLock)
       setValidLock(
         vMooneyLock &&
           vMooneyLock[1] != 0 &&
           BigNumber.from(+new Date()).lte(vMooneyLock[1].mul(1000))
       )
-  }, [vMooneyLock, vMooneyLockLoading])
+  }, [vMooneyLock])
 
   return (
     <ReservationRaffleLayout title="Reservations">

@@ -1,10 +1,10 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress, useSDK } from '@thirdweb-dev/react'
-import { DEFAULT_CHAIN } from 'const/config'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import StandardButton from '../layout/StandardButton'
 import Card from './Card'
 
@@ -13,32 +13,30 @@ type TeamDonationProps = {
 }
 
 export default function TeamDonation({ recipient }: TeamDonationProps) {
-  const { selectedChain } = useContext(ChainContext)
+  const account = useActiveAccount()
+  const { selectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
-  const address = useAddress()
-  const sdk = useSDK()
   const [donationAmount, setDonationAmount] = useState(0)
 
   async function donate() {
     //check network
     if (
-      DEFAULT_CHAIN.chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
+      DEFAULT_CHAIN_V5.id !== +wallets[selectedWallet]?.chainId.split(':')[1]
     ) {
       toast.error(`Please switch to ${selectedChain.name}`)
-      return wallets[selectedWallet]?.switchChain(DEFAULT_CHAIN.chainId)
+      return wallets[selectedWallet]?.switchChain(DEFAULT_CHAIN_V5.id)
     }
 
     try {
-      const signer = sdk?.getSigner()
-
-      if (!address || !signer) return toast.error('Please connect your wallet')
+      if (!account) return toast.error('Please connect your wallet')
       if (donationAmount <= 0) return toast.error('Please enter a valid amount')
 
-      await signer.sendTransaction({
+      await account.sendTransaction({
         to: recipient,
-        value: String(+donationAmount * 10 ** 18),
+        value: BigInt(+donationAmount * 10 ** 18),
+        chainId: selectedChain.id,
       })
     } catch (err: any) {
       console.log(err.message)

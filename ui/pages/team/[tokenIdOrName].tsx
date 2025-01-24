@@ -8,14 +8,11 @@ import {
   GlobeAltIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
-import {
-  ThirdwebNftMedia,
-  useAddress,
-  useContract,
-  useContractRead,
-  useSDK,
-} from '@thirdweb-dev/react'
+import CitizenABI from 'const/abis/Citizen.json'
+import HatsABI from 'const/abis/Hats.json'
+import JobTableABI from 'const/abis/JobBoardTable.json'
+import JobBoardTableABI from 'const/abis/JobBoardTable.json'
+import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -24,25 +21,34 @@ import {
   JOBS_TABLE_ADDRESSES,
   MOONEY_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
-  DEFAULT_CHAIN,
   TEAM_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
+import { getContract, readContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import {
+  MediaRenderer,
+  useActiveAccount,
+  useWalletBalance,
+} from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
+import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
-import { useMOONEYBalance } from '@/lib/tokens/mooney-token'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import { TwitterIcon } from '@/components/assets'
 import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
@@ -63,8 +69,6 @@ import TeamMarketplaceListingModal from '@/components/subscription/TeamMarketpla
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
-import JobBoardTableABI from '../../const/abis/JobBoardTable.json'
-import MarketplaceTableABI from '../../const/abis/MarketplaceTable.json'
 
 export default function TeamDetailPage({
   tokenId,
@@ -74,11 +78,11 @@ export default function TeamDetailPage({
   queriedListing,
 }: any) {
   const router = useRouter()
-
-  const sdk = useSDK()
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   //privy
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
   const [teamMetadataModalEnabled, setTeamMetadataModalEnabled] =
     useState(false)
@@ -86,27 +90,36 @@ export default function TeamDetailPage({
     useState(false)
   const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
   const [teamListingModalEnabled, setTeamListingModalEnabled] = useState(false)
-  const { contract: hatsContract } = useContract(HATS_ADDRESS)
 
-  //Entity Data
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug],
-    TeamABI
-  )
+  const hatsContract = useContract({
+    address: HATS_ADDRESS,
+    abi: HatsABI,
+    chain: selectedChain,
+  })
 
-  const { contract: citizenConract } = useContract(
-    CITIZEN_ADDRESSES[selectedChain.slug]
-  )
+  const teamContract = useContract({
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI,
+    chain: selectedChain,
+  })
 
-  const { contract: jobTableContract } = useContract(
-    JOBS_TABLE_ADDRESSES[selectedChain.slug],
-    JobBoardTableABI
-  )
+  const citizenContract = useContract({
+    address: CITIZEN_ADDRESSES[chainSlug],
+    abi: CitizenABI,
+    chain: selectedChain,
+  })
 
-  const { contract: marketplaceTableContract } = useContract(
-    MARKETPLACE_TABLE_ADDRESSES[selectedChain.slug],
-    MarketplaceTableABI
-  )
+  const jobTableContract = useContract({
+    address: JOBS_TABLE_ADDRESSES[chainSlug],
+    abi: JobTableABI,
+    chain: selectedChain,
+  })
+
+  const marketplaceTableContract = useContract({
+    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+    abi: MarketplaceTableABI,
+    chain: selectedChain,
+  })
 
   const {
     socials,
@@ -119,34 +132,28 @@ export default function TeamDetailPage({
     subIsValid,
     isLoading: isLoadingTeamData,
   } = useTeamData(teamContract, hatsContract, nft)
-  //Hats
+
   const hats = useSubHats(selectedChain, adminHatId)
 
-  //Entity Balances
-  const { contract: mooneyContract } = useContract(
-    MOONEY_ADDRESSES[selectedChain.slug]
-  )
-  const { data: MOONEYBalance } = useMOONEYBalance(mooneyContract, nft?.owner)
-
-  const [nativeBalance, setNativeBalance] = useState<number>(0)
-
   //Subscription Data
-  const { data: expiresAt } = useContractRead(teamContract, 'expiresAt', [
-    nft?.metadata?.id,
-  ])
+  const { data: expiresAt } = useRead({
+    contract: teamContract,
+    method: 'expiresAt',
+    params: [tokenId],
+  })
 
-  // get native balance for multisigj
-  useEffect(() => {
-    async function getNativeBalance() {
-      const provider = sdk?.getProvider()
-      const balance: any = await provider?.getBalance(nft?.owner as string)
-      setNativeBalance(+(balance.toString() / 10 ** 18).toFixed(5))
-    }
+  const { data: nativeBalance } = useWalletBalance({
+    client,
+    chain: selectedChain,
+    address: nft?.owner,
+  })
 
-    if (sdk && nft?.owner) {
-      getNativeBalance()
-    }
-  }, [sdk, nft])
+  const { data: MOONEYBalance } = useWalletBalance({
+    client,
+    chain: selectedChain,
+    address: nft?.owner,
+    tokenAddress: MOONEY_ADDRESSES[chainSlug],
+  })
 
   useChainDefault()
 
@@ -180,9 +187,10 @@ export default function TeamDetailPage({
                   id="org-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
-                  <ThirdwebNftMedia
+                  <MediaRenderer
+                    client={client}
                     className="rounded-full"
-                    metadata={nft.metadata}
+                    src={nft.metadata.image}
                     height={'300'}
                     width={'300'}
                   />
@@ -375,10 +383,12 @@ export default function TeamDetailPage({
           validPass={subIsValid}
           expiresAt={expiresAt}
           subscriptionContract={teamContract}
+          type="team"
         />
       )}
       {teamMetadataModalEnabled && (
         <TeamMetadataModal
+          account={account}
           nft={nft}
           selectedChain={selectedChain}
           setEnabled={setTeamMetadataModalEnabled}
@@ -502,6 +512,7 @@ export default function TeamDetailPage({
                           Manage Members
                         </StandardButton> */}
                         <TeamManageMembers
+                          account={account}
                           hats={hats}
                           hatsContract={hatsContract}
                           teamContract={teamContract}
@@ -521,7 +532,7 @@ export default function TeamDetailPage({
                         <TeamMembers
                           hats={hats}
                           hatsContract={hatsContract}
-                          citizenConract={citizenConract}
+                          citizenContract={citizenContract}
                         />
                       )}
                     </div>
@@ -547,8 +558,8 @@ export default function TeamDetailPage({
               {isManager && (
                 <TeamTreasury
                   multisigAddress={nft.owner}
-                  mutlisigMooneyBalance={MOONEYBalance}
-                  multisigNativeBalance={nativeBalance}
+                  multisigMooneyBalance={MOONEYBalance?.displayValue}
+                  multisigNativeBalance={nativeBalance?.displayValue}
                 />
               )}
               {/* General Actions */}
@@ -565,8 +576,8 @@ export default function TeamDetailPage({
               {isManager && (
                 <TeamTreasury
                   multisigAddress={nft.owner}
-                  mutlisigMooneyBalance={MOONEYBalance}
-                  multisigNativeBalance={nativeBalance}
+                  multisigMooneyBalance={MOONEYBalance?.displayValue}
+                  multisigNativeBalance={nativeBalance?.displayValue}
                 />
               )}
             </Frame>
@@ -583,16 +594,11 @@ export const getServerSideProps: GetServerSideProps = async ({
 }) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
-  const chain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
-  const sdk = initSDK(chain)
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
 
-  const teamTableStatement = `SELECT name, id FROM ${
-    TEAM_TABLE_NAMES[chain.slug]
-  }`
-  const allTeamsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${teamTableStatement}`
-  )
-  const allTeams = await allTeamsRes.json()
+  const teamTableStatement = `SELECT name, id FROM ${TEAM_TABLE_NAMES[chainSlug]}`
+  const allTeams = (await queryTable(chain, teamTableStatement)) as any
   const { prettyLinks } = generatePrettyLinks(allTeams)
 
   let tokenId
@@ -608,40 +614,45 @@ export const getServerSideProps: GetServerSideProps = async ({
     }
   }
 
-  const teamContract = await sdk.getContract(
-    TEAM_ADDRESSES[chain.slug],
-    TeamABI
-  )
-  const nft = await teamContract.erc721.get(tokenId)
+  const teamContract = getContract({
+    client: serverClient,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+    chain: chain,
+  })
 
-  if (
-    !nft ||
-    !nft.metadata.uri ||
-    blockedTeams.includes(Number(nft.metadata.id))
-  ) {
+  const nft = await getNFT({
+    contract: teamContract,
+    tokenId: BigInt(tokenId),
+    includeOwner: true,
+  })
+
+  if (!nft || blockedTeams.includes(Number(nft.metadata.id))) {
     return {
       notFound: true,
     }
   }
 
-  const rawMetadataRes = await fetch(nft.metadata.uri)
-  const rawMetadata = await rawMetadataRes.json()
-  const imageIpfsLink = rawMetadata.image
+  const imageIpfsLink = nft.metadata.image
 
   //Check for a jobId in the url and get the queried job if it exists
   const jobId = query?.job
   let queriedJob = null
   if (jobId !== undefined) {
-    const jobTableContract = await sdk.getContract(
-      JOBS_TABLE_ADDRESSES[chain.slug],
-      JobBoardTableABI
-    )
-    const jobTableName = await jobTableContract.call('getTableName')
+    const jobTableContract = getContract({
+      client: serverClient,
+      address: JOBS_TABLE_ADDRESSES[chainSlug],
+      abi: JobBoardTableABI as any,
+      chain: chain,
+    })
+    const jobTableName = await readContract({
+      contract: jobTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
     const jobTableStatement = `SELECT * FROM ${jobTableName} WHERE id = ${jobId}`
-    const jobRes = await fetch(
-      `${TABLELAND_ENDPOINT}?statement=${jobTableStatement}`
-    )
-    const jobData = await jobRes.json()
+
+    const jobData = await queryTable(chain, jobTableStatement)
     queriedJob = jobData?.[0] || null
   }
 
@@ -649,24 +660,29 @@ export const getServerSideProps: GetServerSideProps = async ({
   const listingId = query?.listing
   let queriedListing = null
   if (listingId !== undefined) {
-    const marketplaceTableContract = await sdk.getContract(
-      MARKETPLACE_TABLE_ADDRESSES[chain.slug],
-      MarketplaceTableABI
-    )
-    const marketplaceTableName = await marketplaceTableContract.call(
-      'getTableName'
-    )
+    const marketplaceTableContract = getContract({
+      client: serverClient,
+      address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+      abi: MarketplaceTableABI as any,
+      chain: chain,
+    })
+    const marketplaceTableName = await readContract({
+      contract: marketplaceTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
     const marketplaceTableStatement = `SELECT * FROM ${marketplaceTableName} WHERE id = ${listingId}`
-    const marketplaceRes = await fetch(
-      `${TABLELAND_ENDPOINT}?statement=${marketplaceTableStatement}`
-    )
-    const marketplaceData = await marketplaceRes.json()
+
+    const marketplaceData = await queryTable(chain, marketplaceTableStatement)
     queriedListing = marketplaceData?.[0] || null
   }
 
   return {
     props: {
-      nft,
+      nft: {
+        ...nft,
+        id: tokenId,
+      },
       tokenId,
       imageIpfsLink,
       queriedJob,
