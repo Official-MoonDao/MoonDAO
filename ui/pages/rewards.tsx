@@ -8,7 +8,6 @@ import {
 } from 'const/config'
 import { useRouter } from 'next/router'
 import { initSDK } from '@/lib/thirdweb/thirdweb'
-import { useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import {
   RetroactiveRewards,
@@ -20,24 +19,11 @@ export default function Rewards({
   distributions,
 }: RetroactiveRewardsProps) {
   const router = useRouter()
-  const addresses = distributions ? distributions.map((d) => d.address) : []
-  const { walletVPs: _vps } = useTotalVPs(addresses)
-  console.log('vps')
-  console.log(vps)
-  const _vps = [
-    615.8101485063595, 1974.7966915109807, 664.1919232148, 7669.282134091713,
-    2801.158627963541, 2123.996687284473, 3120.363869526136, 325.1534289860256,
-    1961.69081821893, 4358.233692686971, 0,
-  ]
-  const votingPowers = Object.fromEntries(
-    addresses.map((address, index) => [address, _vps[index]])
-  )
 
   return (
     <RetroactiveRewards
       projects={projects}
       distributions={distributions}
-      votingPowers={votingPowers}
       refreshRewards={() => router.reload()}
     />
   )
@@ -116,7 +102,6 @@ export async function getStaticProps() {
     ])
     distributions[3].distribution = { '1': 100 }
     distributions[0].distribution = { '1': 100 }
-
     return {
       props: {
         projects,

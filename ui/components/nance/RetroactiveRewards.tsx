@@ -52,7 +52,6 @@ export type RewardAssetProps = {
 export type RetroactiveRewardsProps = {
   projects: Project[] | undefined
   distributions: Distribution[]
-  votingPowers: any
   refreshRewards: () => void
 }
 
@@ -94,7 +93,6 @@ function RewardAsset({
 export function RetroactiveRewards({
   projects,
   distributions,
-  votingPowers,
   refreshRewards,
 }: RetroactiveRewardsProps) {
   const router = useRouter()
@@ -142,11 +140,10 @@ export function RetroactiveRewards({
 
   const addresses = distributions ? distributions.map((d) => d.address) : []
 
+  const { walletVPs: _vps } = useTotalVPs(addresses)
   const addressToQuadraticVotingPower = Object.fromEntries(
-    addresses.map((address) => [address, votingPowers[address]])
+    addresses.map((address, index) => [address, _vps[index]])
   )
-  //console.log('addressToQuadraticVotingPower')
-  //console.log(addressToQuadraticVotingPower)
   const votingPowerSumIsNonZero =
     _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const userVotingPower = useTotalVP(userAddress || '')
@@ -156,14 +153,20 @@ export function RetroactiveRewards({
 
   // All projects need at least one citizen distribution to do iterative normalization
   const isCitizens = useCitizens(chain, addresses)
-  let citizenDistributions = distributions
-  //let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  const nonCitizenDistributions = []
-  //distributions?.filter(
-  //(_, i) => !isCitizens[i]
-  //)
-  //console.log('nonCitizenDistributions')
-  //console.log(nonCitizenDistributions)
+  console.log('isCitizens')
+  console.log(isCitizens)
+  //let citizenDistributions = distributions
+  console.log('distributions')
+  console.log(distributions)
+
+  let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
+  console.log('citizenDistributions')
+  console.log(citizenDistributions)
+  const nonCitizenDistributions = distributions?.filter(
+    (_, i) => !isCitizens[i]
+  )
+  console.log('nonCitizenDistributions')
+  console.log(nonCitizenDistributions)
   const allProjectsHaveCitizenDistribution = projects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
@@ -218,12 +221,6 @@ export function RetroactiveRewards({
     ethBudget,
     mooneyBudget
   )
-  //console.log('addressToMooneyPayout')
-  //console.log(addressToMooneyPayout)
-  //console.log('addressToEthPayout')
-  //console.log(addressToEthPayout)
-  //console.log('ethPayoutCSV')
-  //console.log(ethPayoutCSV)
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
