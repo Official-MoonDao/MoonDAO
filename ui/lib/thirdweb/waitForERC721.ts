@@ -5,7 +5,7 @@ export default async function waitForERC721(
   contract: any,
   tokenId: string | number
 ) {
-  if (!contract?.erc721) {
+  if (!contract) {
     throw new Error('Invalid contract')
   }
 

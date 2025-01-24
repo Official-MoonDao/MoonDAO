@@ -1,4 +1,3 @@
-import { Arbitrum, Sepolia } from '@thirdweb-dev/chains'
 import { arbitrum, sepolia } from 'thirdweb/chains'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -42,9 +41,6 @@ const arbitrumSepoliaConfig =
 
 const baseSepoliaConfig =
   require('../../contracts/deployments/base-sepolia') as DeploymentConfig
-
-export const DEFAULT_CHAIN =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? Arbitrum : Sepolia
 
 export const DEFAULT_CHAIN_V5 =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia

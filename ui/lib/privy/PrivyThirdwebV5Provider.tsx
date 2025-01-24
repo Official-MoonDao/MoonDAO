@@ -42,14 +42,13 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
 
         await thirdwebWallet.connect({ client })
         setActiveWallet(thirdwebWallet)
-        console.log('Set Active Wallet')
       } catch (err: any) {
         console.log(err.message)
       }
     }
 
     setActive()
-  }, [user, selectedWallet, selectedChain])
+  }, [user, wallets, selectedWallet, selectedChain])
 
   useEffect(() => {
     async function handleAuth() {

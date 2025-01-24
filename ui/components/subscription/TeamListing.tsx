@@ -356,10 +356,6 @@ export default function TeamListing({
                       event.stopPropagation()
                       setIsDeleting(true)
                       try {
-                        await marketplaceTableContract.call('deleteFromTable', [
-                          listing.id,
-                          listing.teamId,
-                        ])
                         const transaction = prepareContractCall({
                           contract: marketplaceTableContract,
                           method: 'deleteFromTable' as string,

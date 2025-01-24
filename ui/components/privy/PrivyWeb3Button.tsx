@@ -1,9 +1,6 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { getChainByChainIdAsync } from '@thirdweb-dev/chains'
 import { useContext, useEffect, useState } from 'react'
-import { defineChain } from 'thirdweb'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import ChainContext from '../../lib/thirdweb/chain-context'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
 /*
@@ -62,11 +59,7 @@ export function PrivyWeb3Button({
   requiredChain,
   v5 = false,
 }: PrivyWeb3BtnProps) {
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
-  const {
-    selectedChain: selectedChainV5,
-    setSelectedChain: setSelectedChainV5,
-  } = useContext(ChainContextV5)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { user, login } = usePrivy()
   const { wallets } = useWallets()
@@ -76,8 +69,8 @@ export function PrivyWeb3Button({
   const [btnState, setBtnState] = useState(0)
 
   useEffect(() => {
-    const chainId = v5 ? selectedChainV5?.id : selectedChain?.chainId
-    const requiredChainId = v5 ? requiredChain?.id : requiredChain?.chainId
+    const chainId = selectedChain?.id
+    const requiredChainId = requiredChain?.id
 
     if (!user) {
       setBtnState(0)
@@ -122,18 +115,12 @@ export function PrivyWeb3Button({
           type="button"
           className={className}
           onClick={async () => {
-            const chain: any = v5 ? selectedChainV5 : selectedChain
-            let chainId = v5 ? chain.id : chain.chainId
             if (requiredChain) {
-              chainId = v5 ? requiredChain.id : requiredChain.chainId
-              const v4Chain = await getChainByChainIdAsync(chainId)
-              const v5Chain = defineChain(chainId)
-              setSelectedChain(v4Chain)
-              setSelectedChainV5(v5Chain)
+              setSelectedChain(requiredChain)
             }
 
             try {
-              await wallets[selectedWallet]?.switchChain(chainId)
+              await wallets[selectedWallet]?.switchChain(selectedChain?.id)
             } catch (err: any) {
               console.log(err.message)
             }
