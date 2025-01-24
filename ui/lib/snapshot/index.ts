@@ -246,13 +246,16 @@ export function useVotingPowers(
   space: string,
   proposal: string
 ) {
+  console.log('useVotingPowers', addresses, space, proposal)
   return useSWR(
     [endpoint, 'useVotingPowers', addresses, space, proposal],
     async (url) => {
-      const votingPowers = await Promise.all(
-        addresses.map((address) => getVotingPower(address, space, proposal))
-      )
-      return votingPowers
+      //const votingPowers = await Promise.all(
+      //addresses.map((address) => getVotingPower(address, space, proposal))
+      //)
+      //console.log('votingPowers', votingPowers)
+      //return votingPowers
+      return getVotingPower(addresses[0], space, proposal)
     }
   )
 }

@@ -286,4 +286,4 @@ export const CHAIN_TOKEN_NAMES: Index = {
 }
 
 export const SNAPSHOT_RETROACTIVE_REWARDS_ID =
-  '0xeb8080c307faf35ecab2910831de90aeddd0711aa5090af74f99214b96484f57'
+  '0xa64b7794e74950bace43025a6b5d74ee95af78c1ab01a1ecd37eb99cd3e41bcb'

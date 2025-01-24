@@ -20,7 +20,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
 import { useVotingPowers } from '@/lib/snapshot'
-import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
+import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter } from '@/lib/utils/dates'
@@ -52,6 +52,7 @@ export type RewardAssetProps = {
 export type RetroactiveRewardsProps = {
   projects: Project[] | undefined
   distributions: Distribution[]
+  votingPowers: any
   refreshRewards: () => void
 }
 
@@ -93,6 +94,7 @@ function RewardAsset({
 export function RetroactiveRewards({
   projects,
   distributions,
+  votingPowers,
   refreshRewards,
 }: RetroactiveRewardsProps) {
   const router = useRouter()
@@ -140,15 +142,11 @@ export function RetroactiveRewards({
 
   const addresses = distributions ? distributions.map((d) => d.address) : []
 
-  const { data: _vps } = useVotingPowers(
-    addresses,
-    SNAPSHOT_SPACE_NAME,
-    SNAPSHOT_RETROACTIVE_REWARDS_ID
-  )
-  const votingPowers = _vps ? _vps.map((vp) => (vp ? vp.vp : 0)) : []
   const addressToQuadraticVotingPower = Object.fromEntries(
-    addresses.map((address, i) => [address, Math.sqrt(votingPowers[i])])
+    addresses.map((address) => [address, votingPowers[address]])
   )
+  //console.log('addressToQuadraticVotingPower')
+  //console.log(addressToQuadraticVotingPower)
   const votingPowerSumIsNonZero =
     _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const userVotingPower = useTotalVP(userAddress || '')
@@ -158,13 +156,19 @@ export function RetroactiveRewards({
 
   // All projects need at least one citizen distribution to do iterative normalization
   const isCitizens = useCitizens(chain, addresses)
-  const citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  const nonCitizenDistributions = distributions?.filter(
-    (_, i) => !isCitizens[i]
-  )
+  let citizenDistributions = distributions
+  //let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
+  const nonCitizenDistributions = []
+  //distributions?.filter(
+  //(_, i) => !isCitizens[i]
+  //)
+  //console.log('nonCitizenDistributions')
+  //console.log(nonCitizenDistributions)
   const allProjectsHaveCitizenDistribution = projects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
+  //console.log('citizenDistributions')
+  //console.log(citizenDistributions)
   const readyToRunVoting = true
 
   const projectIdToEstimatedPercentage: { [key: string]: number } =
@@ -208,13 +212,18 @@ export function RetroactiveRewards({
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
-    mooneyPayoutCSV,
   } = getPayouts(
     projectIdToEstimatedPercentage,
     projects,
     ethBudget,
     mooneyBudget
   )
+  //console.log('addressToMooneyPayout')
+  //console.log(addressToMooneyPayout)
+  //console.log('addressToEthPayout')
+  //console.log(addressToEthPayout)
+  //console.log('ethPayoutCSV')
+  //console.log(ethPayoutCSV)
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
