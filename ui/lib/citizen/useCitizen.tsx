@@ -75,40 +75,35 @@ export function useCitizen(
   return citizenNFT
 }
 
-export function useCitizens(
-  selectedChain: any,
-  citizenAddresses: string[],
-  citizenContract?: any
-) {
+export function useCitizens(selectedChain: any, citizenAddresses: string[]) {
   const chainSlug = getChainSlug(selectedChain)
   const [areCitizens, setAreCitizens] = useState<boolean[]>([])
 
   useEffect(() => {
     async function getAreCitizens() {
       try {
-        let contract
-        if (citizenContract) {
-          contract = citizenContract
-        } else {
-          contract = getContract({
-            client,
-            address: CITIZEN_ADDRESSES[chainSlug],
-            chain: selectedChain,
-            abi: CitizenABI as any,
-          })
-        }
+        const contract = getContract({
+          client,
+          address: CITIZEN_ADDRESSES[chainSlug],
+          chain: selectedChain,
+          abi: CitizenABI as any,
+        })
 
         const areCitizens = await Promise.all(
           citizenAddresses.map(async (address) => {
-            const ownedTokenId = await readContract({
-              contract: contract,
-              method: 'getOwnedToken' as string,
-              params: [address],
-            })
-            return !!ownedTokenId
+            try {
+              const ownedTokenId = await readContract({
+                contract: contract,
+                method: 'getOwnedToken' as string,
+                params: [address],
+              })
+              return !!ownedTokenId
+            } catch (error) {
+              console.error(`Failed to fetch for address ${address}:`, error)
+              return false // or handle it differently if needed
+            }
           })
         )
-
         setAreCitizens(areCitizens)
       } catch (err: any) {
         console.error(err)
@@ -116,7 +111,7 @@ export function useCitizens(
     }
 
     if (selectedChain) getAreCitizens()
-  }, [selectedChain, chainSlug, citizenAddresses, citizenContract])
+  }, [selectedChain, chainSlug, citizenAddresses])
 
   return areCitizens
 }
