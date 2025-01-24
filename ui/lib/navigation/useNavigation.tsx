@@ -23,11 +23,6 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: 'DePrize',
-        href: '/deprize',
-        icon: RocketLaunchIcon,
-      },
-      {
         name: 'Network',
         href: '/network',
         icon: IconOrg,

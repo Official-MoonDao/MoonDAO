@@ -9,11 +9,6 @@ import { LMSRWithTWAP } from "./LMSRWithTWAP.sol";
 import { Whitelist} from '@gnosis.pm/conditional-tokens-market-makers/contracts/Whitelist.sol';
 import { ERC1155TokenReceiver } from "@gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
 
-//interface IERC20 {
-    //function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-    //function approve(address spender, uint256 amount) external returns (bool);
-//}
-
 
 contract LMSRWithTWAPData {
     address internal _owner;

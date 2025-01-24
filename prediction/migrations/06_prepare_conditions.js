@@ -3,14 +3,13 @@ const ConditionalTokens = artifacts.require("ConditionalTokens");
 
 module.exports = function (deployer) {
   deployer.then(async () => {
-    const MAX_OUTCOMES = 3;
     const pmSystem = await ConditionalTokens.deployed();
     const markets = require("../markets.config");
-    for (const { questionId } of markets) {
+    for (const { questionId, numOutcomes } of markets) {
       await pmSystem.prepareCondition(
         deployConfig.oracle,
         questionId,
-        MAX_OUTCOMES
+        numOutcomes
       );
     }
   });

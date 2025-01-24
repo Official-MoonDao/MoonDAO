@@ -17,7 +17,6 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const [selectedWallet, setSelectedWallet] = useState<number>(0)
   const [selectedChainV5, setSelectedChainV5]: any =
     useState<ChainV5>(DEFAULT_CHAIN_V5)
-  console.log('DEFAULT_CHAIN_V5', DEFAULT_CHAIN_V5)
 
   const [lightMode, setLightMode] = useLightMode()
 

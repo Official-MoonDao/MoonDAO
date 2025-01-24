@@ -1,7 +1,6 @@
 import DistributionABI from 'const/abis/DistributionTable.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
-  DEFAULT_CHAIN,
   PROJECT_TABLE_ADDRESSES,
   DISTRIBUTION_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,

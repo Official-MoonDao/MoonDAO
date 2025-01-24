@@ -47,15 +47,7 @@ contract LMSRWithTWAP is LMSRMarketMaker {
         // Update TWAP before trade.
         updateCumulativeTWAP();
         require(outcomeTokenAmounts.length == cumulativeProbabilities.length, "Mismatched array lengths");
-
-
-        // Perform the trade on the LMSR using delegated call.
-        // Note: Make sure the caller has given allowances for collateral tokens or handle that logic externally.
         this.trade(outcomeTokenAmounts, collateralLimit);
-        //bytes memory payload = abi.encodeWithSignature("trade(int256[],int256)", outcomeTokenAmounts, collateralLimit);
-        //(bool success, ) = address(marketMaker).call(payload);
-        //require(success, "Trade execution failed");
-
     }
 
     /**

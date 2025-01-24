@@ -1,4 +1,3 @@
-import { Sepolia } from '@thirdweb-dev/chains'
 import CompetitorABI from 'const/abis/Competitor.json'
 import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_ID, COMPETITOR_TABLE_ADDRESSES } from 'const/config'
@@ -66,7 +65,6 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   })
 
   const userTeams = useTeamWearer(teamContract, selectedChain, userAddress)
-  console.log('userTeams', userTeams)
 
   const isCompetitor = userTeams.some((team: any) =>
     competitors.some(

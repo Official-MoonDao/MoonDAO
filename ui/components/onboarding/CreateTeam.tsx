@@ -360,7 +360,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
                         if (nativeBalance < totalCost) {
                           const roundedCost =
-                            Math.ceil(+totalCost * 100000) / 100000
+                            Math.ceil(+totalCost * 1000000) / 1000000
 
                           return await fundWallet(address, {
                             amount: String(roundedCost),
@@ -428,9 +428,8 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           `${teamData.name} Team Image`
                         )
 
-                        const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                          renamedTeamImage
-                        )
+                        const { cid: newImageIpfsHash } =
+                          await pinBlobOrFile(renamedTeamImage)
 
                         if (!newImageIpfsHash) {
                           return toast.error('Error pinning image to IPFS')

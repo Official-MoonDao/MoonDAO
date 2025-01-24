@@ -2,7 +2,6 @@ import {
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
-  DEFAULT_CHAIN,
 } from 'const/config'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'

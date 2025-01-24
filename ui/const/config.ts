@@ -256,11 +256,6 @@ export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 export const MARKETPLACE_FEE_SPLIT: string =
   polygonConfig.MarketplaceFeeSplit || ''
 
-//export const LMSR_ADDRESSES: Index = {
-//sepolia: '0xCDb2D4d1B02AA041a7dB61159f2080cbfBB37671',
-//sepolia: '0xBB335Fe1BcE1a1d42b23c40D1735f9255B10819b',
-//'arbitrum-sepolia': '0x789fc04493F3c1E3D853E164e767915109814B27',
-//}
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
   sepolia: '0x0087fCc0aF33B00a9AF2f98Eb6788Ffb72bC1C51',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',

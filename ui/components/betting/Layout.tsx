@@ -172,7 +172,7 @@ const Layout: React.FC<LayoutProps> = ({
     <div>
       {isConditionLoaded ? (
         <>
-          <p>Who will be the first team to land on the moon?</p>
+          <p>{marketInfo.title}</p>
           <TradingForm
             isMarketClosed={isMarketClosed}
             marketInfo={marketInfo}
