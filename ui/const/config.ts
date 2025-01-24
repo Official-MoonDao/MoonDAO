@@ -1,4 +1,4 @@
-import { arbitrum, sepolia } from 'thirdweb/chains'
+import { arbitrum, sepolia, arbitrumSepolia } from 'thirdweb/chains'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -48,8 +48,8 @@ const baseSepoliaConfig =
 
 export const TEST_CHAIN =
   process.env.NEXT_PUBLIC_TEST_CHAIN === 'arbitrum-sepolia'
-    ? ArbitrumSepolia
-    : Sepolia
+    ? arbitrumSepolia
+    : sepolia
 export const DEFAULT_CHAIN_V5 =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
 

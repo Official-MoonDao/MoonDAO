@@ -146,7 +146,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
             <div>
               {competitors && (
                 <Market
-                  account={userAddress}
+                  userAddress={userAddress}
                   competitors={competitors}
                   teamContract={teamContract}
                 />

@@ -30,7 +30,7 @@ type OracleActionsProps = {
 }
 
 type LayoutProps = {
-  account: string
+  userAddress: string
   isConditionLoaded: boolean
   isMarketClosed: boolean
   marketInfo: any
@@ -153,7 +153,7 @@ const OracleActions: React.FC<OracleActionsProps> = ({
 )
 
 const Layout: React.FC<LayoutProps> = ({
-  account,
+  userAddress,
   isConditionLoaded,
   isMarketClosed,
   marketInfo,
@@ -195,10 +195,10 @@ const Layout: React.FC<LayoutProps> = ({
               sell={sell}
             />
           )}
-          {account === OPERATOR_ADDRESS && (
+          {userAddress === OPERATOR_ADDRESS && (
             <OperatorActions isMarketClosed={isMarketClosed} close={close} />
           )}
-          {account === ORACLE_ADDRESS && (
+          {userAddress === ORACLE_ADDRESS && (
             <OracleActions
               isMarketClosed={isMarketClosed}
               marketInfo={marketInfo}

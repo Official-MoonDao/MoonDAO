@@ -1,6 +1,10 @@
-import { useContract } from '@thirdweb-dev/react'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import BigNumber from 'bignumber.js'
+import { readContract } from 'thirdweb'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import ConditionalTokens from 'const/abis/ConditionalTokens.json'
+import { useActiveAccount } from 'thirdweb/react'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import LMSR from 'const/abis/LMSR.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import WETH from 'const/abis/WETH.json'
@@ -11,7 +15,7 @@ import {
   ORACLE_ADDRESS,
   COLLATERAL_DECIMALS,
   MAX_OUTCOMES,
-  DEFAULT_CHAIN,
+  DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { ethers } from 'ethers'
 import React, { useState, useEffect } from 'react'
@@ -30,7 +34,7 @@ type Competitor = {
   metadata: Metadata
 }
 type MarketProps = {
-  account: string
+  userAddress: string
   competitors: Competitor[]
   teamContract: any
 }
@@ -63,7 +67,7 @@ const getPositionId = (collateralToken: string, collectionId: string) => {
 let marketMakersRepo: any
 
 const Market: React.FC<MarketProps> = ({
-  account,
+  userAddress,
   competitors,
   teamContract,
 }) => {
@@ -71,25 +75,24 @@ const Market: React.FC<MarketProps> = ({
   const [selectedAmount, setSelectedAmount] = useState<string>('')
   const [selectedOutcomeToken, setSelectedOutcomeToken] = useState<number>(0)
   const [marketInfo, setMarketInfo] = useState<any>(undefined)
-  const chain = DEFAULT_CHAIN
-  //const { contract: marketMakersRepo } = useContract(
-  //LMSR_ADDRESSES[chain.slug],
-  //LMSR
-  //)
-  const { contract: marketMakersRepo } = useContract(
-    LMSR_WITH_TWAP_ADDRESSES[chain.slug],
-    LMSRWithTWAP.abi
-  )
-  console.log('marketMakersRepo', marketMakersRepo)
-  console.log('LMRS_WITH_TWAP_ADDRESSES', LMSR_WITH_TWAP_ADDRESSES[chain.slug])
-  const { contract: conditionalTokensRepo } = useContract(
-    CONDITIONAL_TOKEN_ADDRESSES[chain.slug],
-    ConditionalTokens
-  )
-  const { contract: collateralContract } = useContract(
-    COLLATERAL_TOKEN_ADDRESSES[chain.slug],
-    WETH
-  )
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+  const account = useActiveAccount()
+  const marketMakersRepo = useContract({
+    address: LMSR_WITH_TWAP_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: LMSRWithTWAP.abi,
+  })
+  const conditionalTokensRepo = useContract({
+    address: CONDITIONAL_TOKEN_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: ConditionalTokens,
+  })
+  const collateralContract = useContract({
+    address: COLLATERAL_TOKEN_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: WETH,
+  })
 
   useEffect(() => {
     const init = async () => {
@@ -106,12 +109,7 @@ const Market: React.FC<MarketProps> = ({
   }, [conditionalTokensRepo, marketMakersRepo])
 
   const getMarketInfo = async () => {
-    console.log('getting')
     if (!ORACLE_ADDRESS) return
-    console.log('got')
-
-    //const collateral = await marketMakersRepo.call('collateralToken')
-    //const pmSystem = await marketMakersRepo.call('pmSystem')
 
     const conditionId = getConditionId(
       ORACLE_ADDRESS,
@@ -120,11 +118,9 @@ const Market: React.FC<MarketProps> = ({
     )
 
     const outcomes = []
-    console.log('competitors', competitors)
     for (
       let outcomeIndex = 0;
       outcomeIndex < MAX_OUTCOMES;
-      //outcomeIndex < 5;
       outcomeIndex++
     ) {
       const indexSet = (
@@ -132,46 +128,49 @@ const Market: React.FC<MarketProps> = ({
           ? 1
           : parseInt(Math.pow(10, outcomeIndex).toString(), 2)
       ).toString()
-      //console.log('indexSet', indexSet)
 
-      const collectionId = await conditionalTokensRepo.call('getCollectionId', [
-        `0x${'0'.repeat(64)}`,
-        conditionId,
-        indexSet,
-      ])
+      const collectionId: any = await readContract({
+        contract: conditionalTokensRepo,
+        method: 'getCollectionId' as string,
+        params: [`0x${'0'.repeat(64)}`, conditionId, indexSet],
+      })
       const positionId = getPositionId(
-        COLLATERAL_TOKEN_ADDRESSES[chain.slug],
+        COLLATERAL_TOKEN_ADDRESSES[chainSlug],
         collectionId
       )
-      const balance = await conditionalTokensRepo.call('balanceOf', [
-        account,
-        positionId,
-      ])
-      const probability = await marketMakersRepo.call('calcMarginalPrice', [
-        outcomeIndex,
-      ])
+
+      const balance = await readContract({
+        contract: conditionalTokensRepo,
+        method: 'balanceOf' as string,
+        params: [userAddress,positionId],
+      })
+      const probability = await readContract({
+        contract: marketMakersRepo,
+        method: 'calcMarginalPrice' as string,
+        params: [outcomeIndex],
+      })
 
       const outcome = {
         index: outcomeIndex,
         title: 'Outcome ' + (outcomeIndex + 1),
-        probability: ((probability / 2 ** 64) * 100).toFixed(1),
-        balance: balance / Math.pow(10, COLLATERAL_DECIMALS),
+        probability: ((Number(probability) / 2 ** 64) * 100).toFixed(1),
+        balance: Number(balance) / Math.pow(10, COLLATERAL_DECIMALS),
         teamId:
           outcomeIndex > competitors.length - 1
             ? -1
             : competitors[outcomeIndex].teamId,
-        //teamId: competitors[outcomeIndex].teamId,
-        //payoutNumerator: payoutNumerator,
       }
       outcomes.push(outcome)
     }
-    console.log('outcomes', outcomes)
 
     const marketData = {
-      lmsrAddress: LMSR_WITH_TWAP_ADDRESSES[chain.slug],
+      lmsrAddress: LMSR_WITH_TWAP_ADDRESSES[chainSlug],
       title: markets.markets[0].title,
       outcomes,
-      stage: MarketStage[await marketMakersRepo.call('stage')],
+      stage:
+        MarketStage[
+          await readContract({ contract: marketMakersRepo, method: 'stage' })
+        ],
       questionId: markets.markets[0].questionId,
       conditionId: conditionId,
       //payoutDenominator: payoutDenominator,
@@ -191,31 +190,47 @@ const Market: React.FC<MarketProps> = ({
         (index === selectedIndex ? formatedAmount : new BigNumber(0)).toString()
     )
 
-    console.log('outcomeTokenAmounts', outcomeTokenAmounts)
-    const cost = await marketMakersRepo.call('calcNetCost', [
-      outcomeTokenAmounts,
-    ])
-    console.log('cost', cost)
+    const cost = await readContract({
+      contract: marketMakersRepo,
+      method: 'calcNetCost' as string,
+      params: [outcomeTokenAmounts],
+    })
 
-    const collateralBalance = await collateralContract.call('balanceOf', [
-      account,
-    ])
+    const collateralBalance = await readContract({
+      contract: collateralContract,
+      method: 'balanceOf' as string,
+      params: [userAddress],
+    })
     if (cost.gt(collateralBalance)) {
-      await collateralContract.call('deposit', [], {
+      const depositTransaction = prepareContractCall({
+        contract: collateralContract,
+        method: 'deposit',
         value: formatedAmount.toString(),
       })
-      await collateralContract.call(
-        'approve',
-        [marketInfo.lmsrAddress, formatedAmount.toString()],
-        {
-          from: account,
-        }
-      )
+      await sendAndConfirmTransaction({
+        transaction: depositTransaction,
+        account,
+      })
+      const approveTransaction = prepareContractCall({
+        contract: collateralContract,
+        method: 'approve',
+        params: [marketInfo.lmsrAddress, formatedAmount.toString()],
+      })
+      await sendAndConfirmTransaction({
+        approveTransaction,
+        account,
+      })
     }
 
-    //const tx = await .call('trade', [outcomeTokenAmounts, cost])
-    const tx = await marketMakersRepo.call('trade', [outcomeTokenAmounts, cost])
-    console.log({ tx })
+    const tradeTransaction = prepareContractCall({
+      contract: marketMakersRepo,
+      method: 'trade',
+      params: [outcomeTokenAmounts, cost],
+    })
+    await sendAndConfirmTransaction({
+      transaction: tradeTransaction,
+      account,
+    })
 
     await getMarketInfo()
   }
@@ -225,15 +240,21 @@ const Market: React.FC<MarketProps> = ({
       new BigNumber(Math.pow(10, COLLATERAL_DECIMALS))
     )
 
-    const isApproved = await conditionalTokensRepo.call('isApprovedForAll', [
-      account,
-      marketInfo.lmsrAddress,
-    ])
+    const isApproved = await readContract({
+      contract: conditionalTokensRepo,
+      method: 'isApprovedForAll' as string,
+      params: [userAddress, marketInfo.lmsrAddress],
+    })
     if (!isApproved) {
-      await conditionalTokensRepo.call('setApprovalForAll', [
-        marketInfo.lmsrAddress,
-        true,
-      ])
+      const approveTransaction = prepareContractCall({
+        contract: conditionalTokensRepo,
+        method: 'setApprovalForAll',
+        params: [marketInfo.lmsrAddress, true],
+      })
+      await sendAndConfirmTransaction({
+        approveTransaction,
+        account,
+      })
     }
 
     const outcomeTokenAmounts = Array.from({ length: MAX_OUTCOMES }, (v, i) =>
@@ -242,19 +263,21 @@ const Market: React.FC<MarketProps> = ({
         : new BigNumber(0)
       ).toString()
     )
-    console.log('selectedAmount', selectedAmount)
-    console.log('selectedIndex', selectedIndex)
-    console.log('outcomeTokenAmounts', outcomeTokenAmounts)
-    const profit = await marketMakersRepo.call('calcNetCost', [
-      outcomeTokenAmounts,
-    ])
-    console.log('profit', profit)
+    const profit = readContract({
+      contract: marketMakersRepo,
+      method: 'calcNetCost' as string,
+      params: [outcomeTokenAmounts],
+    })
 
-    const tx = await marketMakersRepo.call('trade', [
-      outcomeTokenAmounts,
-      (profit * -1).toString(),
-    ])
-    console.log({ tx })
+    const tradeTransaction = prepareContractCall({
+      contract: marketMakersRepo,
+      method: 'trade',
+      params: [outcomeTokenAmounts, (profit * -1).toString()],
+    })
+    await sendAndConfirmTransaction({
+      transaction: tradeTransaction,
+      account,
+    })
 
     await getMarketInfo()
   }
@@ -264,21 +287,35 @@ const Market: React.FC<MarketProps> = ({
       i === 0 ? 1 : parseInt(Math.pow(10, i).toString(), 2)
     )
 
-    const tx = await conditionalTokensRepo.call('redeemPositions', [
-      COLLATERAL_TOKEN_ADDRESSES[chain.slug],
-      `0x${'0'.repeat(64)}`,
-      marketInfo.conditionId,
-      indexSets,
+    const transaction = prepareContractCall({
+      contract: conditionalTokensRepo,
+      method: 'redeemPositions',
+      params: [
+        COLLATERAL_TOKEN_ADDRESSES[chainSlug],
+        `0x${'0'.repeat(64)}`,
+        marketInfo.conditionId,
+        indexSets,
+        userAddress,
+      ],
+    })
+    await sendAndConfirmTransaction({
+      transaction,
       account,
-    ])
-    console.log({ tx })
+    })
+
 
     await getMarketInfo()
   }
 
   const close = async () => {
-    const tx = await marketMakersRepo.call('close')
-    console.log({ tx })
+    const transaction = prepareContractCall({
+      contract: marketMakersRepo,
+      method: 'close',
+    })
+    await sendAndConfirmTransaction({
+      transaction,
+      account,
+    })
 
     await getMarketInfo()
   }
@@ -288,16 +325,16 @@ const Market: React.FC<MarketProps> = ({
       { length: MAX_OUTCOMES },
       (value: any, index: number) => (index === resolutionOutcomeIndex ? 1 : 0)
     )
-    console.log(
-      'outcomeSlotCount',
-      await conditionalTokensRepo.call('getOutcomeSlotCount')
-    )
 
-    const tx = await conditionalTokensRepo.call('reportPayouts', [
-      marketInfo.questionId,
-      payouts,
-    ])
-    console.log({ tx })
+    const transaction = prepareContractCall({
+      contract: conditionalTokensRepo,
+      method: 'reportPayouts',
+      params: [marketInfo.questionId, payouts],
+    })
+    await sendAndConfirmTransaction({
+      transaction,
+      account,
+    })
 
     await getMarketInfo()
   }
@@ -307,7 +344,7 @@ const Market: React.FC<MarketProps> = ({
     MarketStage[marketInfo.stage].toString() === MarketStage.Closed.toString()
   return (
     <Layout
-      account={account}
+      userAddress={userAddress}
       isConditionLoaded={isConditionLoaded}
       isMarketClosed={isMarketClosed}
       marketInfo={marketInfo}
