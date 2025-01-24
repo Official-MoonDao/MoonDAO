@@ -66,7 +66,7 @@ export async function getStaticProps() {
     const projects = await queryTable(chain, projectStatement)
 
     const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
-    let distributions = await queryTable(chain, distributionStatement)
+    const distributions = await queryTable(chain, distributionStatement)
 
     return {
       props: {
