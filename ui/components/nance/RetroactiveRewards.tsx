@@ -19,7 +19,6 @@ import { useCitizens } from '@/lib/citizen/useCitizen'
 import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -384,26 +383,6 @@ export function RetroactiveRewards({
                             : undefined
                         }
                       />
-                      {/* TODO */}
-                      {/* {readyToRunVoting && tokens && tokens[0] && (
-                        <>
-                          <div className="w-16 text-right px-4">
-                            {projectIdToEstimatedPercentage?.[
-                              project.id
-                            ]?.toFixed(2)}
-                            %
-                          </div>
-                          <div className="px-4">
-                            {projectIdToETHPayout[project.id].toFixed(1)} ETH
-                          </div>
-                          <div className="w-48 px-4">
-                            {Number(
-                              projectIdToMooneyPayout[project.id].toPrecision(3)
-                            ).toLocaleString()}{' '}
-                            MOONEY
-                          </div>
-                        </>
-                      )} */}
                     </div>
                   ))
                 ) : (
