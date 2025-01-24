@@ -33,21 +33,27 @@ export function getBudget(tokens: any, year: number, quarter: number) {
 export function getPayouts(
   projectIdToEstimatedPercentage: any,
   projects: any,
+  communityCircle: any,
   ethBudget: number,
   mooneyBudget: number
 ) {
-  const projectIdToETHPayout: { [key: string]: number } = {}
-  const projectIdToMooneyPayout: { [key: string]: number } = {}
-  for (const project of projects) {
-    const percentage = projectIdToEstimatedPercentage[project.id]
-    projectIdToETHPayout[project.id] = (percentage / 100) * ethBudget
-    projectIdToMooneyPayout[project.id] = (percentage / 100) * mooneyBudget
-  }
   const addressToEthPayout: { [key: string]: number } = {}
   const addressToMooneyPayout: { [key: string]: number } = {}
-  for (const project of projects) {
+
+  const COMMUNITY_CIRCLE_PERCENTAGE = 10
+  const projectsAndCommunityCircle = projects.concat([
+    {
+      id: -1,
+      upfrontPayments: {},
+      rewardDistribution: JSON.stringify(communityCircle),
+    },
+  ])
+  for (const project of projectsAndCommunityCircle) {
     const projectId = project.id
-    const projectPercentage = projectIdToEstimatedPercentage[projectId]
+    const projectPercentage =
+      projectId == -1
+        ? COMMUNITY_CIRCLE_PERCENTAGE
+        : projectIdToEstimatedPercentage[projectId]
     const rewardDistributionString = project.rewardDistribution || '{}'
     const fixedRewardDistribution = rewardDistributionString.replace(
       /(\b0x[a-fA-F0-9]{40}\b):/g,
@@ -85,25 +91,6 @@ export function getPayouts(
     }
   }
 
-  const communityCircle = {}
-  const COMMUNITY_CIRCLE_PERCENTAGE = 10
-  for (const [contributerAddress, contributorPercentage] of Object.entries(
-    communityCircle
-  )) {
-    if (!(contributerAddress in addressToEthPayout)) {
-      addressToEthPayout[contributerAddress] = 0
-    }
-    if (!(contributerAddress in addressToMooneyPayout)) {
-      addressToMooneyPayout[contributerAddress] = 0
-    }
-    const marginalPayoutProportion =
-      (COMMUNITY_CIRCLE_PERCENTAGE / 100) * (contributorPercentage / 100)
-    addressToMooneyPayout[contributerAddress] +=
-      marginalPayoutProportion * mooneyBudget
-    addressToEthPayout[contributerAddress] +=
-      marginalPayoutProportion * ethBudget
-  }
-
   const addressToPayoutProportion: { [key: string]: number } = {}
   for (const [address, mooneyPayout] of Object.entries(addressToMooneyPayout)) {
     addressToPayoutProportion[address] = mooneyPayout / mooneyBudget
@@ -117,8 +104,6 @@ export function getPayouts(
     .join(',')
 
   return {
-    projectIdToETHPayout,
-    projectIdToMooneyPayout,
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,

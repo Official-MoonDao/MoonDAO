@@ -233,8 +233,6 @@ export function RetroactiveRewards({
   }, [mooneyBudget, DAI, MOONEY])
 
   const {
-    projectIdToETHPayout,
-    projectIdToMooneyPayout,
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
