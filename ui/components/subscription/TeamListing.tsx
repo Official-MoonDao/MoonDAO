@@ -82,7 +82,7 @@ export default function TeamListing({
       })
       setTeamNFT(teamNFT)
     }
-    if (teamContract) getTeamNFT()
+    if (teamContract && listing.teamId) getTeamNFT()
   }, [listing.teamId, teamContract])
 
   useEffect(() => {
@@ -356,10 +356,6 @@ export default function TeamListing({
                       event.stopPropagation()
                       setIsDeleting(true)
                       try {
-                        await marketplaceTableContract.call('deleteFromTable', [
-                          listing.id,
-                          listing.teamId,
-                        ])
                         const transaction = prepareContractCall({
                           contract: marketplaceTableContract,
                           method: 'deleteFromTable' as string,

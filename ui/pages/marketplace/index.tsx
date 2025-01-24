@@ -3,12 +3,12 @@ import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   MARKETPLACE_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
@@ -37,14 +37,14 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   const [input, setInput] = useState('')
 
   const teamContract = useContract({
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI,
     chain: selectedChain,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
   })
   const marketplaceTableContract = useContract({
-    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-    abi: MarketplaceABI,
     chain: selectedChain,
+    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+    abi: MarketplaceABI as any,
   })
 
   useEffect(() => {
@@ -114,39 +114,35 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
+
   const now = Math.floor(Date.now() / 1000)
 
   const marketplaceTableContract = getContract({
     client: serverClient,
+    chain,
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceABI as any,
-    chain: chain,
   })
-
   const teamContract = getContract({
     client: serverClient,
+    chain,
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
-    chain: chain,
   })
 
   const marketplaceTableName = await readContract({
     contract: marketplaceTableContract,
-    method: 'getTableName' as string,
-    params: [],
+    method: 'getTableName',
   })
 
   const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
-  const allListingsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${statement}`
-  )
-  const allListings = await allListingsRes.json()
+  const allListings = await queryTable(chain, statement)
 
-  const validListings = allListings.filter(async (listing: TeamListingType) => {
+  const validListings = allListings.filter(async (listing: any) => {
     const teamExpiration = await readContract({
       contract: teamContract,
-      method: 'expiresAt' as string,
+      method: 'expiresAt',
       params: [listing.teamId],
     })
     return +teamExpiration.toString() > now

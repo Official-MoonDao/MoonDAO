@@ -62,4 +62,39 @@ describe('<TeamJobModal />', () => {
     cy.get('button').contains('Add Job').click()
     cy.get('div').should('contain', 'Please fill out all fields')
   })
+
+  // it('Submits form with valid data', () => {
+  //   cy.mount(
+  //     <TestnetProviders>
+  //       <TeamJobModal {...props} />
+  //     </TestnetProviders>
+  //   )
+
+  //   cy.get('#job-title-input').type('Test Job Title')
+  //   cy.get('#job-description-input').type('Test Job Description')
+  //   cy.get('#job-application-link-input').type('contact@example.com')
+
+  //   const endTime = daysFromNowTimestamp(2)
+  //   const endTimeDate = new Date(endTime * 1000).toISOString().split('T')[0]
+  //   cy.get('#job-end-time-input').type(endTimeDate)
+
+  //   cy.get('form').submit()
+  // })
+
+  // it('Displays expiration status if job is expired', () => {
+  //   const endTime = daysFromNowTimestamp(-1)
+
+  //   cy.mount(
+  //     <TestnetProviders>
+  //       <TeamJobModal {...props} job={{ ...job, endTime }} />
+  //     </TestnetProviders>
+  //   )
+
+  //   cy.get('#job-expiration-status').should(
+  //     'have.text',
+  //     `*This job post expired on ${new Date(
+  //       endTime * 1000
+  //     ).toLocaleDateString()}`
+  //   )
+  // })
 })

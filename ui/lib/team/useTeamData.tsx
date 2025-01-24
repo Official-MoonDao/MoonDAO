@@ -1,3 +1,4 @@
+import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -53,16 +54,24 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
     }
 
     async function getHats() {
-      const adminHID = await readContract({
-        contract: teamContract,
-        method: 'teamAdminHat' as string,
-        params: [nft?.metadata?.id || ''],
-      })
-      const managerHID = await readContract({
-        contract: teamContract,
-        method: 'teamManagerHat' as string,
-        params: [nft?.metadata?.id || ''],
-      })
+      const results = await Promise.allSettled([
+        readContract({
+          contract: teamContract,
+          method: 'teamAdminHat' as string,
+          params: [nft?.metadata?.id || ''],
+        }),
+        readContract({
+          contract: teamContract,
+          method: 'teamManagerHat' as string,
+          params: [nft?.metadata?.id || ''],
+        }),
+      ])
+
+      const adminHID =
+        results[0].status === 'fulfilled' ? results[0].value : null
+      const managerHID =
+        results[1].status === 'fulfilled' ? results[1].value : null
+
       setAdminHatId(adminHID)
       setManagerHatId(managerHID)
     }

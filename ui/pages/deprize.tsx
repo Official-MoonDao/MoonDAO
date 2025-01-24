@@ -3,12 +3,11 @@ import {
   COMPETITOR_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
   DEPRIZE_ID,
-  TABLELAND_ENDPOINT,
-  DEFAULT_CHAIN,
 } from 'const/config'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -40,10 +39,7 @@ export async function getStaticProps() {
   })
 
   const competitorStatement = `SELECT * FROM ${competitorBoardTableName} WHERE deprize = ${DEPRIZE_ID}`
-  const competitorsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${competitorStatement}`
-  )
-  const competitors = await competitorsRes.json()
+  const competitors = await queryTable(chain, competitorStatement)
 
   return {
     props: {

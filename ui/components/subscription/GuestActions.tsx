@@ -23,9 +23,9 @@ export default function GuestActions({
     async function checkIfCanBuyCitizen() {
       const cost = await readContract({
         contract: citizenContract,
-        method: 'getRenewalPrice',
+        method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
-      } as any)
+      })
 
       const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
       const estimatedMaxGas = 0.0001

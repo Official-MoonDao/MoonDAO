@@ -98,7 +98,7 @@ export default function Card({
               </Frame>
             </div>
           )}
-          {metadata && (
+          {metadata?.image && (
             <div id="entity-citizen-image-container" className="z-40">
               <Frame noPadding marginBottom="0px" className="">
                 <MediaRenderer

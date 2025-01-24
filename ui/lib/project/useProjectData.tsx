@@ -5,7 +5,6 @@ import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { NANCE_SPACE_NAME } from '../nance/constants'
 import useProposalJSON from '../nance/useProposalJSON'
-import { useHandleRead } from '../thirdweb/hooks'
 
 export type Project = {
   MDP: number
@@ -71,11 +70,16 @@ export default function useProjectData(
     async function checkManager() {
       try {
         if (address) {
-          const isAddressManager = await projectContract.call('isManager', [
-            project?.id,
-            address,
-          ])
-          const owner = await projectContract.call('ownerOf', [project?.id])
+          const isAddressManager: any = await readContract({
+            contract: projectContract,
+            method: 'isManager' as string,
+            params: [project?.id, address],
+          })
+          const owner: any = await readContract({
+            contract: projectContract,
+            method: 'ownerOf' as string,
+            params: [project?.id],
+          })
           setIsManager(isAddressManager || owner === address)
         } else {
           setIsManager(false)
@@ -85,20 +89,28 @@ export default function useProjectData(
       }
     }
     async function getHats() {
-      const adminHID = await readContract({
-        contract: projectContract,
-        method: 'teamAdminHat' as string,
-        params: [project?.id ?? ''],
-      })
-      const managerHID = await readContract({
-        contract: projectContract,
-        method: 'teamManagerHat' as string,
-        params: [project?.id ?? ''],
-      })
+      const results = await Promise.allSettled([
+        readContract({
+          contract: projectContract,
+          method: 'teamAdminHat' as string,
+          params: [project?.id || ''],
+        }),
+        readContract({
+          contract: projectContract,
+          method: 'teamManagerHat' as string,
+          params: [project?.id || ''],
+        }),
+      ])
+
+      const adminHID =
+        results[0].status === 'fulfilled' ? results[0].value : null
+      const managerHID =
+        results[1].status === 'fulfilled' ? results[1].value : null
+
       setAdminHatId(adminHID)
       setManagerHatId(managerHID)
     }
-    if (projectContract && project?.id) {
+    if (projectContract) {
       checkManager()
       getHats()
     }

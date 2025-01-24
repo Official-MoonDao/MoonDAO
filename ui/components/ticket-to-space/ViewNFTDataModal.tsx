@@ -1,8 +1,8 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
 import { useState, useEffect } from 'react'
 import { useContext } from 'react'
+import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
+import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { ReverifyModal } from './ReverifyModal'
 
@@ -15,7 +15,8 @@ export function ViewNFTDataModal({
   ttsContract,
   setEnabled,
 }: ViewNFTDataModalProps) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
 
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -32,8 +33,7 @@ export function ViewNFTDataModal({
   >([])
 
   async function signMessage() {
-    const privyProvider = await wallets[selectedWallet].getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
     const response = await fetch(`api/db/nonce?address=${address}`)
     const data = await response.json()
@@ -48,8 +48,12 @@ export function ViewNFTDataModal({
   useEffect(() => {
     async function fetchInfoFromDB() {
       const signature = await signMessage()
-      if (!signature) return
-      const ownedNfts = await ttsContract.erc721.getOwnedTokenIds(address)
+      if (!signature || !address) return
+
+      const ownedNfts = await getOwnedNFTs({
+        contract: ttsContract,
+        owner: address,
+      })
 
       //find owned tokenIds in the databse
       const verifiedNftsRes = await fetch(`/api/db/nft?address=${address}`, {
@@ -76,21 +80,21 @@ export function ViewNFTDataModal({
       for (let i = 0; i < ownedNfts.length; i++) {
         let found = false
         for (let j = 0; j < verifiedNfts.length; j++) {
-          if (ownedNfts[i]._hex == verifiedNfts[j].tokenId) {
+          if (ownedNfts[i].id == verifiedNfts[j].tokenId) {
             if (
               found &&
               Date.parse(nftsList[i].updateTime) <
                 Date.parse(verifiedNfts[j].updatedAt)
             ) {
               nftsList[i] = {
-                id: ownedNfts[i]._hex,
+                id: ownedNfts[i].id,
                 name: verifiedNfts[j].name,
                 email: verifiedNfts[j].email,
                 updateTime: verifiedNfts[j].updatedAt,
               }
             } else {
               nftsList.push({
-                id: ownedNfts[i]._hex,
+                id: ownedNfts[i].id,
                 name: verifiedNfts[j].name,
                 email: verifiedNfts[j].email,
                 updateTime: verifiedNfts[j].updatedAt,
@@ -101,7 +105,7 @@ export function ViewNFTDataModal({
         }
         if (!found)
           nftsList.push({
-            id: ownedNfts[i]._hex,
+            id: ownedNfts[i].id,
             name: name || 'Unverified',
             email: email || 'Unverified',
           })

@@ -1,18 +1,18 @@
 import { Tab } from '@headlessui/react'
 import { NanceProvider } from '@nance/nance-hooks'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
-import {
-  PROJECT_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
-  DEFAULT_CHAIN,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, PROJECT_TABLE_ADDRESSES } from 'const/config'
 import { StringParam, useQueryParams } from 'next-query-params'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
+import { getContract, readContract } from 'thirdweb'
 import { NANCE_API_URL } from '../lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import ContributionEditor from '../components/contribution/ContributionEditor'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
@@ -40,6 +40,8 @@ export default function SubmissionPage({
       setSelectedIndex(0)
     }
   }, [tag])
+
+  useChainDefault()
 
   return (
     <>
@@ -234,20 +236,22 @@ export default function SubmissionPage({
 }
 
 export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN
-  const sdk = initSDK(chain)
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
 
-  const projectTableContract = await sdk.getContract(
-    PROJECT_TABLE_ADDRESSES[chain.slug],
-    ProjectTableABI
-  )
-  const projectTableName = await projectTableContract?.call('getTableName')
+  const projectTableContract = getContract({
+    client: serverClient,
+    address: PROJECT_TABLE_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: ProjectTableABI as any,
+  })
+  const projectTableName = await readContract({
+    contract: projectTableContract,
+    method: 'getTableName',
+  })
 
   const statement = `SELECT * FROM ${projectTableName} WHERE finalReportIPFS IS ""`
-  const projectsRes = await fetch(
-    `${TABLELAND_ENDPOINT}?statement=${statement}`
-  )
-  const projects = await projectsRes.json()
+  const projects = await queryTable(chain, statement)
 
   return {
     props: {

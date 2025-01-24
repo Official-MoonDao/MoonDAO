@@ -1,12 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import TeamTableABI from 'const/abis/TeamTable.json'
-import {
-  DEFAULT_CHAIN,
-  DEFAULT_CHAIN_V5,
-  TEAM_TABLE_ADDRESSES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, TEAM_TABLE_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -281,17 +276,14 @@ export default function TeamMetadataModal({
                     ],
                   })
 
-                  console.log(teamTableContract)
-
                   const receipt = await sendAndConfirmTransaction({
                     transaction,
                     account,
                   })
 
-                  setEnabled(false)
-
                   if (receipt) {
                     setTimeout(() => {
+                      setEnabled(false)
                       router.reload()
                     }, 30000)
                   }

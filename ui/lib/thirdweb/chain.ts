@@ -1,4 +1,13 @@
-import { Chain } from 'thirdweb/chains'
+import {
+  arbitrum,
+  arbitrumSepolia,
+  base,
+  baseSepolia,
+  Chain,
+  ethereum,
+  polygon,
+  sepolia,
+} from 'thirdweb/chains'
 
 export function getChainSlug(chain: Chain) {
   let slug
@@ -8,4 +17,18 @@ export function getChainSlug(chain: Chain) {
     slug = chain.name?.toLowerCase().replace(/\s+/g, '-') ?? ''
   }
   return slug
+}
+
+export function v4SlugToV5Chain(slug: string) {
+  const slugsToChains: Record<string, Chain> = {
+    arbitrum,
+    ethereum,
+    polygon,
+    base,
+    sepolia,
+    'arbitrum-sepolia': arbitrumSepolia,
+    'base-sepolia': baseSepolia,
+  }
+
+  return slugsToChains?.[slug]
 }

@@ -1,12 +1,10 @@
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { BigNumber, Contract, ethers } from 'ethers'
 import { useEffect, useState } from 'react'
+import { readContract } from 'thirdweb'
 import { useUserData } from '../../lib/zero-g/google-sheets'
-import {
-  ZERO_G_V1_TOTAL_TOKENS,
-  useCurrentWinner,
-  useRandomSelection,
-} from '../../lib/zero-g/zero-g-sweepstakes'
+import { ZERO_G_V1_TOTAL_TOKENS } from '../../lib/zero-g/zero-g-sweepstakes'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import vMooneySweepstakesZeroGABI from '../../const/abis/vMooneySweepstakes.json'
 import { VMOONEY_SWEEPSTAKES } from '../../const/config'
 
@@ -22,16 +20,17 @@ export default function SweepstakesSelection({
   const [loading, setLoading] = useState(false)
   const [event, setEvent]: any = useState()
 
-  const { data: currWinner }: any = useCurrentWinner(sweepstakesContract)
+  const { data: currWinner }: any = useRead({
+    contract: sweepstakesContract,
+    method: 'winner',
+    params: [],
+  })
 
   const {
     data: winnersData,
     isLoading: isLoadingWinners,
     getUserDataRaffle,
   } = useUserData()
-
-  const { mutateAsync: randomSelection } =
-    useRandomSelection(sweepstakesContract)
 
   useEffect(() => {
     const provider = new ethers.providers.JsonRpcProvider(
@@ -49,19 +48,27 @@ export default function SweepstakesSelection({
       for (let i = 0; i < 10; i++) {
         //get random word for id
         try {
-          const randomWordsId = await contract.callStatic.requestIds(i)
+          const randomWordsId = await readContract({
+            contract: contract,
+            method: 'requestIds' as string,
+            params: [i],
+          })
           if (randomWordsId) {
-            const { randomWords } = await contract.callStatic.getRequestStatus(
-              randomWordsId
-            )
-            const winningTokenId = await randomWords[0]
+            const randomWords = await readContract({
+              contract: contract,
+              method: 'getRequestStatus' as string,
+              params: [randomWordsId],
+            })
+            const winningTokenId = await BigNumber.from(randomWords[0])
               .mod(BigNumber.from(ZERO_G_V1_TOTAL_TOKENS))
               .toString()
-            const winnerAddress = await contract.callStatic.ownerOf(
-              winningTokenId
-            )
+            const winnerAddress = await readContract({
+              contract: contract,
+              method: 'ownerOf' as string,
+              params: [winningTokenId],
+            })
 
-            const winnerData: any = getUserDataRaffle(winnerAddress)
+            const winnerData: any = getUserDataRaffle(winnerAddress as any)
 
             winnersData.push({
               discordUsername: winnerData?.DiscUsername,

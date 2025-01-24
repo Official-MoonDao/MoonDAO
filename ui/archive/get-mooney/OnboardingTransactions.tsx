@@ -1,14 +1,15 @@
-import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
 import { TradeType } from '@uniswap/sdk-core'
 import { nativeOnChain } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useMemo, useState } from 'react'
+import { readContract } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { useHandleWrite } from '../../lib/thirdweb/hooks'
 import { useUniswapTokens } from '../../lib/uniswap/hooks/useUniswapTokens'
 import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
+import { approveToken } from '@/lib/tokens/approve'
+import { createLock as lock } from '@/lib/tokens/ve-token'
 import { PrivyWeb3Button } from '../../components/privy/PrivyWeb3Button'
 import { CHAIN_TOKEN_NAMES, VMOONEY_ADDRESSES } from '../../const/config'
 import { PurhcaseNativeTokenModal } from './PurchaseNativeTokenModal'
@@ -32,7 +33,8 @@ export function OnboardingTransactions({
   vMooneyContract,
   setStage,
 }: any) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   const [currStep, setCurrStep] = useState(1)
   const [checksLoaded, setChecksLoaded] = useState(false)
 
@@ -57,24 +59,32 @@ export function OnboardingTransactions({
     MOONEY
   )
 
-  const { mutateAsync: approveMooney, isLoading: isLoadingApproveMooney } =
-    useHandleWrite(mooneyContract, 'approve', [
-      VMOONEY_ADDRESSES[selectedChain.slug],
-      ethers.utils.parseEther(String(selectedLevel.price / 2 + 1)),
-    ])
-  const { mutateAsync: createLock, isLoading: isLoadingCreateLock } =
-    useHandleWrite(vMooneyContract, 'create_lock', [
-      ethers.utils.parseEther(String(selectedLevel.price / 2)),
-      Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365,
-    ])
+  async function approveMooney() {
+    if (!account) return
+    return await approveToken({
+      account,
+      tokenContract: mooneyContract,
+      allowance: ethers.utils.parseEther(String(selectedLevel.price / 2)),
+      spender: VMOONEY_ADDRESSES[selectedChain.slug],
+    })
+  }
+
+  async function createLock() {
+    if (!account) return
+    return await lock({
+      account,
+      votingEscrowContract: vMooneyContract,
+      amount: ethers.utils.parseEther(String(selectedLevel.price / 2)),
+      time: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365,
+    })
+  }
 
   const [nativeBalance, setNativeBalance] = useState<any>()
 
   async function getNativeBalance() {
     const wallet = wallets[selectedWallet]
     if (!wallet) return
-    const privyProvider = await wallet.getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallet.getEthersProvider()
     const nativeBalance = await provider.getBalance(wallet.address)
     const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
     setNativeBalance(formattedNativeBalance)
@@ -117,15 +127,24 @@ export function OnboardingTransactions({
   }, [selectedChain])
 
   async function checkStep() {
-    const vMooneyLock = await vMooneyContract.call('locked', [address])
-    const mooneyBalance = await mooneyContract.call('balanceOf', [address])
-    const tokenAllowance = await mooneyContract.call('allowance', [
-      address,
-      VMOONEY_ADDRESSES[selectedChain.slug],
-    ])
+    const vMooneyLock: any = await readContract({
+      contract: vMooneyContract,
+      method: 'locked' as string,
+      params: [address],
+    })
+    const mooneyBalance = await readContract({
+      contract: mooneyContract,
+      method: 'balanceOf' as string,
+      params: [address],
+    })
+    const tokenAllowance = await readContract({
+      contract: mooneyContract,
+      method: 'allowance' as string,
+      params: [address, VMOONEY_ADDRESSES[selectedChain.slug]],
+    })
 
     //check for vmooney, approval, mooney balance, and native balance
-    if (vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
+    if (+vMooneyLock?.[0].toString() >= selectedLevel.price * 10 ** 18 * 0.5) {
       setCurrStep(4)
       if (selectedChain.slug !== 'polygon') {
         setStage(2)
@@ -133,25 +152,24 @@ export function OnboardingTransactions({
       return
     } else if (
       !selectedLevel.hasVotingPower &&
-      mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1
+      +mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price - 1
     ) {
       setCurrStep(4)
       return setStage(2)
     } else if (
-      mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price / 2 - 1 &&
-      tokenAllowance?.toString() / 10 ** 18 >= selectedLevel.price / 2 - 1
+      +mooneyBalance?.toString() / 10 ** 18 >= selectedLevel.price / 2 - 1 &&
+      +tokenAllowance?.toString() / 10 ** 18 >= selectedLevel.price / 2 - 1
     ) {
       return setCurrStep(4)
     } else if (
-      mooneyBalance?.toString() / 10 ** 18 >=
+      +mooneyBalance?.toString() / 10 ** 18 >=
       selectedLevel.price - 1
     ) {
       return setCurrStep(3)
     } else {
       const wallet = wallets[selectedWallet]
       if (!wallet) return
-      const privyProvider = await wallet.getEthereumProvider()
-      const provider = new ethers.providers.Web3Provider(privyProvider)
+      const provider = await wallet.getEthersProvider()
       const nativeBalance = await provider.getBalance(wallet.address)
       const formattedNativeBalance = ethers.utils.formatEther(nativeBalance)
       if (

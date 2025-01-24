@@ -1,8 +1,7 @@
-import { Chain } from '@thirdweb-dev/chains'
 import { BigNumber } from 'ethers'
 import { useEffect, useState } from 'react'
 
-export function useHatTree(selectedChain: Chain, treeId: any, topHatId: any) {
+export function useHatTree(selectedChain: any, treeId: any, topHatId: any) {
   const [hats, setHats] = useState<any>()
 
   useEffect(() => {
@@ -15,7 +14,7 @@ export function useHatTree(selectedChain: Chain, treeId: any, topHatId: any) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            chainId: selectedChain.id ?? selectedChain.chainId,
+            chainId: selectedChain.id,
             treeId,
             props: {
               hats: {

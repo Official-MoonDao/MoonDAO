@@ -1,25 +1,16 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import { ethers } from 'ethers'
 import { signIn, signOut } from 'next-auth/react'
 import { useContext, useEffect, useState } from 'react'
-import { Chain, defineChain } from 'thirdweb'
+import { defineChain } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { useSetActiveWallet } from 'thirdweb/react'
 import { createWalletAdapter } from 'thirdweb/wallets'
 import client from '@/lib/thirdweb/client'
 import PrivyWalletContext from './privy-wallet-context'
 
-interface PrivyThirdwebV5ProviderProps {
-  selectedChain: Chain
-  children: any
-}
-
-export function PrivyThirdwebV5Provider({
-  selectedChain,
-  children,
-}: PrivyThirdwebV5ProviderProps) {
-  const { selectedWallet } = useContext(PrivyWalletContext)
+export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
   const { user, ready, authenticated, getAccessToken } = usePrivy()
+  const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const setActiveWallet = useSetActiveWallet()
 
@@ -27,8 +18,7 @@ export function PrivyThirdwebV5Provider({
     async function setActive() {
       try {
         const wallet = wallets[selectedWallet]
-        const privyProvider = await wallet.getEthereumProvider()
-        const provider = new ethers.providers.Web3Provider(privyProvider)
+        const provider = await wallet?.getEthersProvider()
         const signer = provider?.getSigner()
 
         const walletClientType = wallet?.walletClientType
@@ -44,12 +34,10 @@ export function PrivyThirdwebV5Provider({
 
         const thirdwebWallet = createWalletAdapter({
           adaptedAccount,
-          chain: selectedChain,
+          chain: defineChain(selectedChain.id),
           client,
-          onDisconnect: async () => {},
-          switchChain: async (chain: Chain) => {
-            await wallet?.switchChain(chain.id)
-          },
+          onDisconnect: () => {},
+          switchChain: () => {},
         })
 
         await thirdwebWallet.connect({ client })
@@ -60,7 +48,7 @@ export function PrivyThirdwebV5Provider({
     }
 
     setActive()
-  }, [wallets, selectedWallet, selectedChain])
+  }, [user, wallets, selectedWallet, selectedChain])
 
   useEffect(() => {
     async function handleAuth() {

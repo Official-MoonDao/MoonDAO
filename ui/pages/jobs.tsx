@@ -1,7 +1,6 @@
 import {
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
   DEFAULT_CHAIN,
 } from 'const/config'
@@ -9,12 +8,11 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContext from '@/lib/thirdweb/chain-context'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { initSDK } from '@/lib/thirdweb/thirdweb'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
@@ -32,16 +30,16 @@ type JobsProps = {
 
 export default function Jobs({ jobs }: JobsProps) {
   const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
 
   const [filteredJobs, setFilteredJobs] = useState<JobType[]>()
   const [input, setInput] = useState('')
 
-  const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const teamContract = useContract({
+    chain: selectedChain,
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
-    chain: selectedChain,
   })
 
   useEffect(() => {
@@ -123,36 +121,35 @@ export default function Jobs({ jobs }: JobsProps) {
 export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
+
   const now = Math.floor(Date.now() / 1000)
 
   const jobTableContract = getContract({
     client: serverClient,
     address: JOBS_TABLE_ADDRESSES[chainSlug],
-    abi: JobsABI as any,
     chain: chain,
+    abi: JobsABI as any,
   })
   const teamContract = getContract({
     client: serverClient,
     address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
     chain: chain,
+    abi: TeamABI as any,
   })
 
   const jobBoardTableName = await readContract({
     contract: jobTableContract,
-    method: 'getTableName' as string,
-    params: [],
+    method: 'getTableName',
   })
 
   const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
 
-  const allJobsRes = await fetch(`${TABLELAND_ENDPOINT}?statement=${statement}`)
-  const allJobs = await allJobsRes.json()
+  const allJobs = await queryTable(chain, statement)
 
-  const validJobs = allJobs?.filter(async (job: JobType) => {
+  const validJobs = allJobs?.filter(async (job: any) => {
     const teamExpiration = await readContract({
       contract: teamContract,
-      method: 'expiresAt' as string,
+      method: 'expiresAt',
       params: [job.teamId],
     })
     return +teamExpiration.toString() > now

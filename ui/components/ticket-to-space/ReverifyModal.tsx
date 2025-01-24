@@ -1,8 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress } from '@thirdweb-dev/react'
-import { ethers } from 'ethers'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 
 type SubmitInfoModalProps = {
@@ -16,7 +15,8 @@ export function ReverifyModal({
   setViewEnabled,
   nftIds,
 }: SubmitInfoModalProps) {
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
@@ -26,8 +26,7 @@ export function ReverifyModal({
 
   async function signMessage() {
     setStatus('Signing...')
-    const privyProvider = await wallets[selectedWallet].getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet].getEthersProvider()
     const signer = provider?.getSigner()
     const response = await fetch(`api/db/nonce?address=${address}`)
     const data = await response.json()

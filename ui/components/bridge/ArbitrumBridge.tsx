@@ -1,23 +1,30 @@
 import { getL2Network, EthBridger, Erc20Bridger } from '@arbitrum/sdk'
 import { ArrowDownIcon, ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
-import { Arbitrum, Ethereum } from '@thirdweb-dev/chains'
-import { useAddress } from '@thirdweb-dev/react'
+import ERC20ABI from 'const/abis/ERC20.json'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { getContract, readContract } from 'thirdweb'
+import { arbitrum, ethereum } from 'thirdweb/chains'
+import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
+import { EIP1193 } from 'thirdweb/wallets'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { initSDK } from '../../lib/thirdweb/thirdweb'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client from '@/lib/thirdweb/client'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import Frame from '../layout/Frame'
 import Tab from '../layout/Tab'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function ArbitrumBridge() {
-  const address = useAddress()
-  const { selectedChain, setSelectedChain } = useContext(ChainContext)
+  const account = useActiveAccount()
+  const wallet = useActiveWallet()
+  const address = account?.address
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [amount, setAmount] = useState<any>(0)
@@ -30,12 +37,21 @@ export default function ArbitrumBridge() {
   const [skipNetworkCheck, setSkipNetworkCheck] = useState(false)
 
   async function approveMooney(signer: any, erc20Bridger: any) {
-    const sdk = initSDK(Ethereum)
-    const mooneyContract = await sdk.getContract(MOONEY_ADDRESSES['ethereum'])
-    const allowance = await mooneyContract.call('allowance', [
-      wallets[selectedWallet]?.address,
-      '0xa3A7B6F88361F48403514059F1F16C8E78d60EeC',
-    ])
+    const mooneyContract = getContract({
+      client,
+      address: MOONEY_ADDRESSES['ethereum'],
+      abi: ERC20ABI as any,
+      chain: ethereum,
+    })
+    const allowance = await readContract({
+      contract: mooneyContract,
+      method: 'allowance',
+      params: [
+        wallets[selectedWallet]?.address,
+        '0xa3A7B6F88361F48403514059F1F16C8E78d60EeC',
+      ],
+    })
+
     if (ethers.utils.parseEther(amount).gt(allowance)) {
       //approve mooney
       const approveTx = await erc20Bridger.approveToken({
@@ -47,11 +63,11 @@ export default function ArbitrumBridge() {
       return approveReceipt
     }
   }
+
   async function depositEth() {
-    const l2Network = await getL2Network(Arbitrum.chainId)
+    const l2Network = await getL2Network(arbitrum.id)
     const ethBridger = new EthBridger(l2Network)
-    const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
     const depositTx = await ethBridger.deposit({
       amount: ethers.utils.parseEther(amount),
@@ -65,10 +81,9 @@ export default function ArbitrumBridge() {
     return depositReceipt
   }
   async function withdrawEth() {
-    const l2Network = await getL2Network(Arbitrum.chainId)
+    const l2Network = await getL2Network(arbitrum.id)
     const ethBridger = new EthBridger(l2Network)
-    const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
     const withdrawTx = await ethBridger.withdraw({
       amount: ethers.utils.parseEther(amount),
@@ -84,13 +99,14 @@ export default function ArbitrumBridge() {
     return withdrawReceipt
   }
   async function depositMooney() {
-    const l2Network = await getL2Network(Arbitrum.chainId)
+    if (!wallet) return
+    const l2Network = await getL2Network(arbitrum.id)
     const erc20Bridger = new Erc20Bridger(l2Network)
-    const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
-    const l2SDK = initSDK(Arbitrum)
-    const l2Provider = l2SDK.getProvider()
+    const l2Provider = new ethers.providers.JsonRpcProvider(
+      `https://42161.rpc.thirdweb.com/${process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`
+    )
     //get allowance
     await approveMooney(signer, erc20Bridger)
     //deposit mooney
@@ -108,13 +124,11 @@ export default function ArbitrumBridge() {
     return depositReceipt
   }
   async function withdrawMooney() {
-    const l2Network = await getL2Network(Arbitrum.chainId)
+    const l2Network = await getL2Network(arbitrum.id)
     const erc20Bridger = new Erc20Bridger(l2Network)
-    const privyProvider = await wallets[selectedWallet]?.getEthereumProvider()
-    const provider = new ethers.providers.Web3Provider(privyProvider)
+    const provider = await wallets[selectedWallet]?.getEthersProvider()
     const signer = provider.getSigner()
-    const l2SDK = initSDK(Arbitrum)
-    const l2Provider = l2SDK.getProvider()
+
     //withdraw mooney
     const withdrawTx = await erc20Bridger.withdraw({
       amount: ethers.utils.parseEther(amount),
@@ -156,20 +170,40 @@ export default function ArbitrumBridge() {
 
   useEffect(() => {
     async function getEthMooneyBalance() {
-      const sdk = initSDK(Ethereum)
-      const contract = await sdk.getContract(MOONEY_ADDRESSES['ethereum'])
-      const balance = await contract.call('balanceOf', [
-        wallets[selectedWallet]?.address,
-      ])
-      setEthMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+      const mooneyContract = getContract({
+        client,
+        address: MOONEY_ADDRESSES['ethereum'],
+        abi: ERC20ABI as any,
+        chain: ethereum,
+      })
+      try {
+        const balance = await readContract({
+          contract: mooneyContract,
+          method: 'balanceOf',
+          params: [address],
+        })
+        setEthMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+      } catch (err) {
+        console.error(err)
+      }
     }
     async function getArbMooneyBalance() {
-      const sdk = initSDK(Arbitrum)
-      const contract = await sdk.getContract(MOONEY_ADDRESSES['arbitrum'])
-      const balance = await contract.call('balanceOf', [
-        wallets[selectedWallet]?.address,
-      ])
-      setArbMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+      const mooneyContract = getContract({
+        client,
+        address: MOONEY_ADDRESSES['arbitrum'],
+        abi: ERC20ABI as any,
+        chain: arbitrum,
+      })
+      try {
+        const balance = await readContract({
+          contract: mooneyContract,
+          method: 'balanceOf',
+          params: [address],
+        })
+        setArbMooneyBalance((balance.toString() / 10 ** 18).toFixed(2))
+      } catch (err) {
+        console.error(err)
+      }
     }
 
     if (address) {
@@ -180,18 +214,44 @@ export default function ArbitrumBridge() {
 
   useEffect(() => {
     async function getEthBalance() {
-      const provider = initSDK(Ethereum).getProvider()
-      const balance = await provider.getBalance(wallets[selectedWallet].address)
-      if (bridgeType === 'deposit') {
-        setNativeBalance((+balance / 10 ** 18).toFixed(5))
+      if (!wallet) return
+      const provider = EIP1193.toProvider({
+        wallet,
+        chain: ethereum,
+        client,
+      })
+      try {
+        const balanceHex = await provider.request({
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+        })
+        const balance = ethers.utils.formatEther(balanceHex)
+        if (bridgeType === 'deposit') {
+          setNativeBalance(balance)
+        }
+      } catch (err) {
+        console.error(err)
       }
     }
 
     async function getArbBalance() {
-      const provider = initSDK(Arbitrum).getProvider()
-      const balance = await provider.getBalance(wallets[selectedWallet].address)
-      if (bridgeType === 'withdraw') {
-        setNativeBalance((+balance / 10 ** 18).toFixed(5))
+      if (!wallet) return
+      const provider = EIP1193.toProvider({
+        wallet,
+        chain: arbitrum,
+        client,
+      })
+      try {
+        const balanceHex = await provider.request({
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+        })
+        const balance = ethers.utils.formatEther(balanceHex)
+        if (bridgeType === 'withdraw') {
+          setNativeBalance(balance)
+        }
+      } catch (err) {
+        console.error(err)
       }
     }
 
@@ -220,9 +280,9 @@ export default function ArbitrumBridge() {
   useEffect(() => {
     temporarilySkipNetworkCheck()
     if (bridgeType === 'withdraw') {
-      setSelectedChain(Arbitrum)
+      setSelectedChain(arbitrum)
     } else {
-      setSelectedChain(Ethereum)
+      setSelectedChain(ethereum)
     }
   }, [bridgeType, setSelectedChain])
 
@@ -283,9 +343,9 @@ export default function ArbitrumBridge() {
         </div>
 
         {address && (
-          <p className="opacity-50">{`Balance: ${Number(
-            balance
-          ).toLocaleString()}`}</p>
+          <p className="opacity-50">{`Balance: ${Number(balance).toFixed(
+            5
+          )}`}</p>
         )}
       </div>
       <div className="h-0 w-full flex justify-center items-center z-[5]">
@@ -314,8 +374,9 @@ export default function ArbitrumBridge() {
       </div>
 
       <PrivyWeb3Button
+        v5
         skipNetworkCheck={skipNetworkCheck}
-        requiredChain={bridgeType === 'withdraw' ? Arbitrum : Ethereum}
+        requiredChain={bridgeType === 'withdraw' ? arbitrum : ethereum}
         className="mt-2 rounded-[5vmax] rounded-tl-[20px]"
         label={bridgeType === 'deposit' ? 'Bridge' : 'Withdraw'}
         action={async () => {

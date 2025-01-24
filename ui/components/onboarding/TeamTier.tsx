@@ -1,7 +1,11 @@
-import { useAddress, useContract, useSDK } from '@thirdweb-dev/react'
+import WhitelistABI from 'const/abis/Whitelist.json'
 import { TEAM_WHITELIST_ADDRESSES } from 'const/config'
 import { useContext, useState } from 'react'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import { getContract, readContract } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client from '@/lib/thirdweb/client'
 import ApplyModal from '@/components/onboarding/ApplyModal'
 import Tier from '@/components/onboarding/Tier'
 
@@ -11,20 +15,25 @@ type TeamTierProps = {
 }
 
 const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
-  const { selectedChain } = useContext(ChainContext)
-  const sdk = useSDK()
-  const address = useAddress()
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
+  const account = useActiveAccount()
+  const address = account?.address
 
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   const handleTeamClick = async () => {
-    //const teamWhitelistContract = await sdk?.getContract(
-    //TEAM_WHITELIST_ADDRESSES[selectedChain.slug]
-    //)
-    //const isWhitelisted = await teamWhitelistContract?.call('isWhitelisted', [
-    //address,
-    //])
-    const isWhitelisted = true
+    const teamWhitelistContract = getContract({
+      client,
+      address: TEAM_WHITELIST_ADDRESSES[chainSlug],
+      chain: selectedChain,
+      abi: WhitelistABI as any,
+    })
+    const isWhitelisted = await readContract({
+      contract: teamWhitelistContract,
+      method: 'isWhitelisted',
+      params: [address],
+    })
     if (isWhitelisted || process.env.NEXT_PUBLIC_ENV === 'dev') {
       setSelectedTier('team')
     } else {
