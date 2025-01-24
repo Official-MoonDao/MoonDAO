@@ -186,9 +186,19 @@ export function RetroactiveRewards({
     (_, i) => !isCitizens[i]
   )
   // All projects need at least one citizen distribution to do iterative normalization
-  const readyToRunVoting = projects?.every(({ id }) =>
+  const allProjectsHaveCitizenDistribution = projects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
+  const allProjectsHaveRewardDistribution = projects?.every(
+    (project) => project.rewardDistribution !== undefined
+  )
+  // Map from address to percentage of commnity rewards
+  const communityCircle = {}
+  const communityCirclePopulated = Object.keys(communityCircle).length > 0
+  const readyToRunVoting =
+    allProjectsHaveCitizenDistribution &&
+    allProjectsHaveRewardDistribution &&
+    communityCirclePopulated
 
   const projectIdToEstimatedPercentage: { [key: string]: number } =
     readyToRunVoting
@@ -234,6 +244,7 @@ export function RetroactiveRewards({
   } = getPayouts(
     projectIdToEstimatedPercentage,
     projects,
+    communityCircle,
     ethBudget,
     mooneyBudget
   )

@@ -33,6 +33,7 @@ export function getBudget(tokens: any, year: number, quarter: number) {
 export function getPayouts(
   projectIdToEstimatedPercentage: any,
   projects: any,
+  communityCircle: any,
   ethBudget: number,
   mooneyBudget: number
 ) {
@@ -86,7 +87,6 @@ export function getPayouts(
     }
   }
 
-  const communityCircle = {}
   const COMMUNITY_CIRCLE_PERCENTAGE = 10
   for (const [contributerAddress, contributorPercentage] of Object.entries(
     communityCircle
