@@ -21,14 +21,14 @@ export default function Moon({
 }: MoonProps) {
   const size = useGlobeSize()
   const globeRef = useRef<GlobeMethods | undefined>()
-  useGlobeControls(
+  useGlobeControls({
     globeRef,
     size,
     enableControls,
     enableZoom,
     rotateOnMouseMove,
-    rotationFactor
-  )
+    rotationFactor,
+  })
 
   return (
     <Globe

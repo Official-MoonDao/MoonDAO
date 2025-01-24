@@ -15,30 +15,33 @@ type EarthProps = {
   rotationFactor?: number
   globeBrightness?: number
   showPointLabels?: boolean
+  autoRotate?: boolean
 }
 
 export default function Earth({
   pointsData,
-  enableControls = true,
-  enableZoom = true,
+  enableControls,
+  enableZoom,
   rotateOnMouseMove,
   rotationFactor,
   globeBrightness = 9,
   showPointLabels = true,
+  autoRotate = false,
 }: EarthProps) {
   const size = useGlobeSize()
   const globeRef = useRef<GlobeMethods | undefined>()
   const [selectedPoint, setSelectedPoint] = useState(null)
   const [pointModalEnabled, setPointModalEnabled] = useState(false)
 
-  useGlobeControls(
+  useGlobeControls({
     globeRef,
     size,
     enableControls,
     enableZoom,
     rotateOnMouseMove,
-    rotationFactor
-  )
+    rotationFactor,
+    autoRotate,
+  })
 
   useEffect(() => {
     if (globeRef.current) {
@@ -95,7 +98,7 @@ export default function Earth({
                     citizens={d.citizens}
                   />
                 )
-              : `<></>`
+              : ``
           }
           onPointClick={(d: any) => {
             if (showPointLabels) {

@@ -1,22 +1,35 @@
 import { MutableRefObject, useEffect } from 'react'
 import { GlobeMethods } from 'react-globe.gl'
 
-export default function useGlobeControls(
-  globeRef: MutableRefObject<GlobeMethods | undefined>,
-  size: { width: number; height: number },
-  enableControls: boolean = true,
-  enableZoom: boolean = true,
-  rotateOnMouseMove: boolean = false,
-  rotationFactor: number = 1
-) {
+type GlobeControls = {
+  globeRef: MutableRefObject<GlobeMethods | undefined>
+  size: { width: number; height: number }
+  enableControls?: boolean
+  enableZoom?: boolean
+  rotateOnMouseMove?: boolean
+  rotationFactor?: number
+  autoRotate?: boolean
+}
+
+export default function useGlobeControls({
+  globeRef,
+  size,
+  enableControls = true,
+  enableZoom = true,
+  rotateOnMouseMove = false,
+  rotationFactor = 1,
+  autoRotate = false,
+}: GlobeControls) {
   //Zoom & Controls
   useEffect(() => {
     if (globeRef?.current) {
       globeRef.current.controls().enableZoom = enableZoom
       globeRef.current.controls().enableRotate = enableControls
-      globeRef.current.controls().enablePan = enableControls
+      globeRef.current.controls().enablePan = false
+      globeRef.current.controls().autoRotate = autoRotate
+      globeRef.current.controls().autoRotateSpeed = 0.75
     }
-  }, [globeRef, enableControls, enableZoom])
+  }, [globeRef, enableControls, enableZoom, autoRotate])
 
   //Rotate on Mouse Move
   useEffect(() => {
