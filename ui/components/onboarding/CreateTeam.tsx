@@ -428,8 +428,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           `${teamData.name} Team Image`
                         )
 
-                        const { cid: newImageIpfsHash } =
-                          await pinBlobOrFile(renamedTeamImage)
+                        const { cid: newImageIpfsHash } = await pinBlobOrFile(
+                          renamedTeamImage
+                        )
 
                         if (!newImageIpfsHash) {
                           return toast.error('Error pinning image to IPFS')

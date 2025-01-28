@@ -1,11 +1,5 @@
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import BigNumber from 'bignumber.js'
-import { readContract } from 'thirdweb'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import ConditionalTokens from 'const/abis/ConditionalTokens.json'
-import { useActiveAccount } from 'thirdweb/react'
-import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import LMSR from 'const/abis/LMSR.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import WETH from 'const/abis/WETH.json'
 import {
@@ -19,8 +13,11 @@ import {
 } from 'const/config'
 import { ethers } from 'ethers'
 import React, { useState, useEffect } from 'react'
-//import loadConditionalTokensRepo from 'src/logic/ConditionalTokens'
-import loadMarketMakersRepo from 'src/logic/MarketMakers'
+import { readContract } from 'thirdweb'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import Layout from './Layout'
 
 BigNumber.config({ EXPONENTIAL_AT: 50 })
@@ -62,9 +59,6 @@ const getPositionId = (collateralToken: string, collectionId: string) => {
     [collateralToken, collectionId]
   )
 }
-
-//let conditionalTokensRepo: any
-let marketMakersRepo: any
 
 const Market: React.FC<MarketProps> = ({
   userAddress,
@@ -118,11 +112,7 @@ const Market: React.FC<MarketProps> = ({
     )
 
     const outcomes = []
-    for (
-      let outcomeIndex = 0;
-      outcomeIndex < MAX_OUTCOMES;
-      outcomeIndex++
-    ) {
+    for (let outcomeIndex = 0; outcomeIndex < MAX_OUTCOMES; outcomeIndex++) {
       const indexSet = (
         outcomeIndex === 0
           ? 1
@@ -142,7 +132,7 @@ const Market: React.FC<MarketProps> = ({
       const balance = await readContract({
         contract: conditionalTokensRepo,
         method: 'balanceOf' as string,
-        params: [userAddress,positionId],
+        params: [userAddress, positionId],
       })
       const probability = await readContract({
         contract: marketMakersRepo,
@@ -173,7 +163,6 @@ const Market: React.FC<MarketProps> = ({
         ],
       questionId: markets.markets[0].questionId,
       conditionId: conditionId,
-      //payoutDenominator: payoutDenominator,
     }
 
     setMarketInfo(marketData)
@@ -302,7 +291,6 @@ const Market: React.FC<MarketProps> = ({
       transaction,
       account,
     })
-
 
     await getMarketInfo()
   }
