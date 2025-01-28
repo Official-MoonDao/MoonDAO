@@ -455,7 +455,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
                       const totalCost = Number(formattedCost) + estimatedMaxGas
 
-                      if (nativeBalance < totalCost) {
+                      if (+nativeBalance < totalCost) {
                         const roundedCost =
                           Math.ceil(+totalCost * 1000000) / 1000000
 

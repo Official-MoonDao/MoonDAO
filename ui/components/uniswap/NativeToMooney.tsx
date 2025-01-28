@@ -183,7 +183,7 @@ export default function NativeToMooney({ selectedChain }: any) {
           if (!swapRoute) return toast.error('No route found')
 
           // check native balance
-          if (amount > nativeBalance) {
+          if (amount > +nativeBalance) {
             return toast.error('Insufficient balance')
           }
 
