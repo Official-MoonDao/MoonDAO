@@ -89,11 +89,10 @@ const TradingForm: React.FC<TradingFormProps> = ({
           </StandardButton>
           <StandardButton
             variant="contained"
-            className="rounded-full mx-2"
+            className="rounded-full mx-2 rounded-full"
             backgroundColor="bg-moon-orange"
             onClick={() => sell(outcome.index)}
             disabled={isMarketClosed || !selectedAmount}
-            className="rounded-full"
           >
             Sell
           </StandardButton>
@@ -185,16 +184,6 @@ const Layout: React.FC<LayoutProps> = ({
             sell={sell}
             redeem={redeem}
           />
-          {false && (
-            <TraderActions
-              marketInfo={marketInfo}
-              isMarketClosed={isMarketClosed}
-              selectedAmount={selectedAmount}
-              redeem={redeem}
-              buy={buy}
-              sell={sell}
-            />
-          )}
           {userAddress === OPERATOR_ADDRESS && (
             <OperatorActions isMarketClosed={isMarketClosed} close={close} />
           )}
