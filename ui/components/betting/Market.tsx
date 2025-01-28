@@ -28,10 +28,9 @@ type Competitor = {
   id: string
   deprize: number
   teamId: number
-  metadata: Metadata
 }
 type MarketProps = {
-  userAddress: string
+  userAddress?: string
   competitors: Competitor[]
   teamContract: any
 }
@@ -153,14 +152,16 @@ const Market: React.FC<MarketProps> = ({
       outcomes.push(outcome)
     }
 
+    const stage = await readContract({
+      contract: marketMakersRepo,
+      method: 'stage' as string,
+      params: [],
+    })
     const marketData = {
       lmsrAddress: LMSR_WITH_TWAP_ADDRESSES[chainSlug],
       title: markets.markets[0].title,
       outcomes,
-      stage:
-        MarketStage[
-          await readContract({ contract: marketMakersRepo, method: 'stage' })
-        ],
+      stage: MarketStage[stage as any],
       questionId: markets.markets[0].questionId,
       conditionId: conditionId,
     }
@@ -169,6 +170,7 @@ const Market: React.FC<MarketProps> = ({
   }
 
   const buy = async (selectedIndex: number) => {
+    if (!account) return
     const formatedAmount = new BigNumber(selectedAmount).multipliedBy(
       new BigNumber(Math.pow(10, COLLATERAL_DECIMALS))
     )
@@ -190,11 +192,12 @@ const Market: React.FC<MarketProps> = ({
       method: 'balanceOf' as string,
       params: [userAddress],
     })
-    if (cost.gt(collateralBalance)) {
+    if (cost > collateralBalance) {
       const depositTransaction = prepareContractCall({
         contract: collateralContract,
-        method: 'deposit',
-        value: formatedAmount.toString(),
+        method: 'deposit' as string,
+        value: BigInt(formatedAmount.toString()),
+        params: [],
       })
       await sendAndConfirmTransaction({
         transaction: depositTransaction,
@@ -202,18 +205,18 @@ const Market: React.FC<MarketProps> = ({
       })
       const approveTransaction = prepareContractCall({
         contract: collateralContract,
-        method: 'approve',
+        method: 'approve' as string,
         params: [marketInfo.lmsrAddress, formatedAmount.toString()],
       })
       await sendAndConfirmTransaction({
-        approveTransaction,
+        transaction: approveTransaction,
         account,
       })
     }
 
     const tradeTransaction = prepareContractCall({
       contract: marketMakersRepo,
-      method: 'trade',
+      method: 'trade' as string,
       params: [outcomeTokenAmounts, cost],
     })
     await sendAndConfirmTransaction({
@@ -225,6 +228,7 @@ const Market: React.FC<MarketProps> = ({
   }
 
   const sell = async (selectedIndex: number) => {
+    if (!account) return
     const formatedAmount = new BigNumber(selectedAmount).multipliedBy(
       new BigNumber(Math.pow(10, COLLATERAL_DECIMALS))
     )
@@ -237,11 +241,11 @@ const Market: React.FC<MarketProps> = ({
     if (!isApproved) {
       const approveTransaction = prepareContractCall({
         contract: conditionalTokensRepo,
-        method: 'setApprovalForAll',
+        method: 'setApprovalForAll' as string,
         params: [marketInfo.lmsrAddress, true],
       })
       await sendAndConfirmTransaction({
-        approveTransaction,
+        transaction: approveTransaction,
         account,
       })
     }
@@ -260,8 +264,8 @@ const Market: React.FC<MarketProps> = ({
 
     const tradeTransaction = prepareContractCall({
       contract: marketMakersRepo,
-      method: 'trade',
-      params: [outcomeTokenAmounts, (profit * -1).toString()],
+      method: 'trade' as string,
+      params: [outcomeTokenAmounts, (Number(profit) * -1).toString()],
     })
     await sendAndConfirmTransaction({
       transaction: tradeTransaction,
@@ -272,13 +276,14 @@ const Market: React.FC<MarketProps> = ({
   }
 
   const redeem = async () => {
+    if (!account) return
     const indexSets = Array.from({ length: MAX_OUTCOMES }, (v, i) =>
       i === 0 ? 1 : parseInt(Math.pow(10, i).toString(), 2)
     )
 
     const transaction = prepareContractCall({
       contract: conditionalTokensRepo,
-      method: 'redeemPositions',
+      method: 'redeemPositions' as string,
       params: [
         COLLATERAL_TOKEN_ADDRESSES[chainSlug],
         `0x${'0'.repeat(64)}`,
@@ -296,9 +301,11 @@ const Market: React.FC<MarketProps> = ({
   }
 
   const close = async () => {
+    if (!account) return
     const transaction = prepareContractCall({
       contract: marketMakersRepo,
-      method: 'close',
+      method: 'close' as string,
+      params: [],
     })
     await sendAndConfirmTransaction({
       transaction,
@@ -309,6 +316,7 @@ const Market: React.FC<MarketProps> = ({
   }
 
   const resolve = async (resolutionOutcomeIndex: number) => {
+    if (!account) return
     const payouts = Array.from(
       { length: MAX_OUTCOMES },
       (value: any, index: number) => (index === resolutionOutcomeIndex ? 1 : 0)
@@ -316,7 +324,7 @@ const Market: React.FC<MarketProps> = ({
 
     const transaction = prepareContractCall({
       contract: conditionalTokensRepo,
-      method: 'reportPayouts',
+      method: 'reportPayouts' as string,
       params: [marketInfo.questionId, payouts],
     })
     await sendAndConfirmTransaction({

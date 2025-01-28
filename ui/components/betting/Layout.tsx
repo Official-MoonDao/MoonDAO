@@ -30,10 +30,11 @@ type OracleActionsProps = {
 }
 
 type LayoutProps = {
-  userAddress: string
+  userAddress?: string
   isConditionLoaded: boolean
   isMarketClosed: boolean
   marketInfo: any
+  teamContract: any
   setSelectedAmount: any
   selectedAmount: string
   setSelectedOutcomeToken: any
@@ -64,6 +65,7 @@ const TradingForm: React.FC<TradingFormProps> = ({
         type="number"
         onChange={(e: any) => setSelectedAmount(e.target.value)}
         disabled={isMarketClosed}
+        value={selectedAmount}
       />
     </div>
     <div>
