@@ -6,7 +6,6 @@ import {
   DISTRIBUTION_TABLE_ADDRESSES,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
-  SNAPSHOT_RETROACTIVE_REWARDS_ID,
 } from 'const/config'
 import _ from 'lodash'
 import Image from 'next/image'
@@ -20,12 +19,10 @@ import { useCitizens } from '@/lib/citizen/useCitizen'
 import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { SNAPSHOT_SPACE_NAME } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
-import { useVotingPowers } from '@/lib/snapshot'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import useTotalVP from '@/lib/tokens/hooks/useTotalVP'
+import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter } from '@/lib/utils/dates'
@@ -37,8 +34,8 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import ProjectCard from '@/components/project/ProjectCard'
-import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export type Distribution = {
   year: number
@@ -160,14 +157,9 @@ export function RetroactiveRewards({
     return distributions ? distributions.map((d) => d.address) : []
   }, [distributions])
 
-  const { data: _vps } = useVotingPowers(
-    addresses,
-    SNAPSHOT_SPACE_NAME,
-    SNAPSHOT_RETROACTIVE_REWARDS_ID
-  )
-  const votingPowers = _vps ? _vps.map((vp) => (vp ? vp.vp : 0)) : []
+  const { walletVPs: _vps } = useTotalVPs(addresses)
   const addressToQuadraticVotingPower = Object.fromEntries(
-    addresses.map((address, i) => [address, Math.sqrt(votingPowers[i])])
+    addresses.map((address, index) => [address, _vps[index]])
   )
   const votingPowerSumIsNonZero =
     _.sum(Object.values(addressToQuadraticVotingPower)) > 0
@@ -176,16 +168,36 @@ export function RetroactiveRewards({
     return userAddress && userVotingPower > 0
   }, [userVotingPower, userAddress])
 
-  // All projects need at least one citizen distribution to do iterative normalization
-  const isCitizens = useCitizens(chain, addresses)
-  const citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
+  const isCitizenAddresses = useCitizens(chain, addresses)
+  const citizenVotingAddresses = [
+    '0x78176eaabcb3255e898079dc67428e15149cdc99', // payout for ryand2d.eth
+    '0x9fdf876a50ea8f95017dcfc7709356887025b5bb', // payout for mitchmcquinn.eth
+  ]
+  const isCitizenVotingAddresses = addresses.map((address) =>
+    citizenVotingAddresses.includes(address.toLowerCase())
+  )
+  const isCitizens = isCitizenAddresses.map(
+    (isCitizen, i) => isCitizen || isCitizenVotingAddresses[i]
+  )
+
+  let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
+  // All projects need at least one citizen distribution to do iterative normalization
   const allProjectsHaveCitizenDistribution = projects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
-  const readyToRunVoting = true
+  const allProjectsHaveRewardDistribution = projects?.every(
+    (project) => project.rewardDistribution !== undefined
+  )
+  // Map from address to percentage of commnity rewards
+  const communityCircle = {}
+  const communityCirclePopulated = Object.keys(communityCircle).length > 0
+  const readyToRunVoting =
+    allProjectsHaveCitizenDistribution &&
+    allProjectsHaveRewardDistribution &&
+    communityCirclePopulated
 
   const projectIdToEstimatedPercentage: { [key: string]: number } =
     readyToRunVoting
@@ -221,15 +233,15 @@ export function RetroactiveRewards({
   }, [mooneyBudget, DAI, MOONEY])
 
   const {
-    projectIdToETHPayout,
-    projectIdToMooneyPayout,
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
-    mooneyPayoutCSV,
+    vMooneyAddresses,
+    vMooneyAmounts,
   } = getPayouts(
     projectIdToEstimatedPercentage,
     projects,
+    communityCircle,
     ethBudget,
     mooneyBudget
   )
@@ -289,33 +301,6 @@ export function RetroactiveRewards({
       })
     }
   }
-  const handleDelete = async () => {
-    try {
-      if (!account) throw new Error('No account found')
-      const transaction = prepareContractCall({
-        contract: distributionTableContract,
-        method: 'deleteFromTable' as string,
-        params: [quarter, year],
-      })
-      const receipt = await sendAndConfirmTransaction({
-        transaction,
-        account,
-      })
-      if (receipt)
-        toast.success('Distribution deleted successfully!', {
-          style: toastStyle,
-        })
-      setTimeout(() => {
-        refreshRewards()
-      }, 5000)
-    } catch (error) {
-      console.error('Error deleting distribution:', error)
-      toast.error('Error deleting distribution. Please try again.', {
-        style: toastStyle,
-      })
-    }
-  }
-
   return (
     <section id="rewards-container" className="overflow-hidden">
       <Head
@@ -396,26 +381,6 @@ export function RetroactiveRewards({
                             : undefined
                         }
                       />
-                      {/* TODO */}
-                      {/* {readyToRunVoting && tokens && tokens[0] && (
-                        <>
-                          <div className="w-16 text-right px-4">
-                            {projectIdToEstimatedPercentage?.[
-                              project.id
-                            ]?.toFixed(2)}
-                            %
-                          </div>
-                          <div className="px-4">
-                            {projectIdToETHPayout[project.id].toFixed(1)} ETH
-                          </div>
-                          <div className="w-48 px-4">
-                            {Number(
-                              projectIdToMooneyPayout[project.id].toPrecision(3)
-                            ).toLocaleString()}{' '}
-                            MOONEY
-                          </div>
-                        </>
-                      )} */}
                     </div>
                   ))
                 ) : (
@@ -425,20 +390,14 @@ export function RetroactiveRewards({
                 <div className="mt-4 w-full flex justify-end">
                   {projects && userHasVotingPower ? (
                     <span className="flex flex-col md:flex-row md:items-center gap-2">
-                      <StandardButtonRight
-                        onClick={handleSubmit}
+                      <PrivyWeb3Button
+                        action={handleSubmit}
+                        requiredChain={chain}
                         className="gradient-2 rounded-full"
-                      >
-                        {edit ? 'Edit Distribution' : 'Submit Distribution'}
-                      </StandardButtonRight>
-                      {edit && (
-                        <StandardButtonRight
-                          onClick={handleDelete}
-                          className="gradient-1 rounded-full"
-                        >
-                          Delete Distribution
-                        </StandardButtonRight>
-                      )}
+                        label={
+                          edit ? 'Edit Distribution' : 'Submit Distribution'
+                        }
+                      />
                     </span>
                   ) : (
                     <span>

@@ -241,22 +241,6 @@ export function useVotingPower(
   )
 }
 
-export function useVotingPowers(
-  addresses: string[],
-  space: string,
-  proposal: string
-) {
-  return useSWR(
-    [endpoint, 'useVotingPowers', addresses, space, proposal],
-    async (url) => {
-      const votingPowers = await Promise.all(
-        addresses.map((address) => getVotingPower(address, space, proposal))
-      )
-      return votingPowers
-    }
-  )
-}
-
 // map indexed choice number to choice string
 export function getChoiceLabel(
   type: ProposalType,

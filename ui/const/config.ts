@@ -327,6 +327,3 @@ export const CHAIN_TOKEN_NAMES: Index = {
   arbitrum: 'ETH',
   sepolia: 'ETH',
 }
-
-export const SNAPSHOT_RETROACTIVE_REWARDS_ID =
-  '0xeb8080c307faf35ecab2910831de90aeddd0711aa5090af74f99214b96484f57'
