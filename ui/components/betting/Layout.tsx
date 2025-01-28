@@ -1,4 +1,3 @@
-import { RadioGroup } from '@headlessui/react'
 import { ORACLE_ADDRESS, OPERATOR_ADDRESS } from 'const/config'
 import React from 'react'
 import FormInput from '@/components/forms/FormInput'
