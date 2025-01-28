@@ -62,7 +62,7 @@ const TradingForm: React.FC<TradingFormProps> = ({
       <FormInput
         label="Amount (ETH)"
         type="number"
-        onChange={(e) => setSelectedAmount(e.target.value)}
+        onChange={(e: any) => setSelectedAmount(e.target.value)}
         disabled={isMarketClosed}
       />
     </div>
@@ -115,10 +115,7 @@ const OperatorActions: React.FC<OperatorActionsProps> = ({
 }) => (
   <>
     <h3>Operator actions:</h3>
-    <StandardButton
-      onClick={close}
-      disabled={isMarketClosed}
-    >
+    <StandardButton onClick={close} disabled={isMarketClosed}>
       Close
     </StandardButton>
   </>
