@@ -25,14 +25,14 @@ const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
 interface PinResponse {
     cid: string;
 }
-export async function pinBlobOrFile(blob: Blob): Promise<PinResponse> {
+export async function pinBlobOrFile(
+    blob: Blob,
+    name: string
+): Promise<PinResponse> {
     try {
         const url = "https://api.pinata.cloud/pinning/pinFileToIPFS";
         const formData = new FormData();
-        formData.append(
-            "pinataMetadata",
-            JSON.stringify({ name: "uploaded_file" })
-        );
+        formData.append("pinataMetadata", JSON.stringify({ name: name }));
         formData.append("pinataOptions", JSON.stringify({ cidVersion: 0 }));
         formData.append("file", blob);
 
@@ -128,8 +128,11 @@ async function loadProjectData() {
                         type: "application/json",
                     }
                 );
-                const { cid: hatMetadataIpfsHash } =
-                    await pinBlobOrFile(hatMetadataBlob);
+                const name = `MDP-${proposal.proposalId}-${hatType}.json`;
+                const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(
+                    hatMetadataBlob,
+                    name
+                );
                 return "ipfs://" + hat;
             }
             const { quarter, year } = getRelativeQuarter(
@@ -139,9 +142,9 @@ async function loadProjectData() {
                 ? JSON.stringify(proposal.upfrontPayment)
                 : "";
             await projectTeamCreatorContract.call("createProjectTeam", [
-                getHatMetadata("Admin"),
-                getHatMetadata("Manager"),
-                getHatMetadata("Member"),
+                getHatMetadataIPFS("Admin"),
+                getHatMetadataIPFS("Manager"),
+                getHatMetadataIPFS("Member"),
                 proposal.title,
                 "", // description
                 "", // image
