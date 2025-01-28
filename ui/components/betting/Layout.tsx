@@ -60,7 +60,6 @@ const TradingForm: React.FC<TradingFormProps> = ({
   <>
     <div>
       <FormInput
-        variant="filled"
         label="Amount (ETH)"
         type="number"
         onChange={(e) => setSelectedAmount(e.target.value)}
@@ -79,7 +78,6 @@ const TradingForm: React.FC<TradingFormProps> = ({
             <div>Neither</div>
           )}
           <StandardButton
-            variant="contained"
             onClick={() => buy(outcome.index)}
             disabled={isMarketClosed || !selectedAmount}
             className="rounded-full mx-2"
@@ -88,7 +86,6 @@ const TradingForm: React.FC<TradingFormProps> = ({
             Buy {outcome.probability.toString()}%
           </StandardButton>
           <StandardButton
-            variant="contained"
             className="rounded-full mx-2 rounded-full"
             backgroundColor="bg-moon-orange"
             onClick={() => sell(outcome.index)}
@@ -98,7 +95,6 @@ const TradingForm: React.FC<TradingFormProps> = ({
           </StandardButton>
           {isMarketClosed && (
             <StandardButton
-              variant="contained"
               onClick={redeem}
               disabled={!marketInfo.payoutDenominator}
             >
@@ -120,7 +116,6 @@ const OperatorActions: React.FC<OperatorActionsProps> = ({
   <>
     <h3>Operator actions:</h3>
     <StandardButton
-      variant="contained"
       onClick={close}
       disabled={isMarketClosed}
     >
@@ -140,7 +135,6 @@ const OracleActions: React.FC<OracleActionsProps> = ({
       {marketInfo.outcomes.map((outcome: any, index: number) => (
         <StandardButton
           key={index}
-          variant="contained"
           onClick={() => resolve(index)}
           disabled={!isMarketClosed}
         >
