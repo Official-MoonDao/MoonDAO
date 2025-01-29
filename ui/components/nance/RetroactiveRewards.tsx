@@ -328,7 +328,7 @@ export function RetroactiveRewards({
             >
               <RewardAsset
                 name="ETH"
-                value={ethBudget.toFixed(1)}
+                value={ethBudget.toFixed(4)}
                 usdValue={usdBudget.toFixed(2)}
               />
               <div className="flex flex-col md:flex-row md:items-center justify-between">
