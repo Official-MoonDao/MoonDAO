@@ -78,8 +78,8 @@ export default function Withdraw() {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
   }, [VMOONEYLock, VMOONEYLockLoading, address])
 
-  const [hasMoreThan45Months, setHasMoreThan45Months] =
-    useState<boolean>(false)
+  // 3.75 years ~ 45 months
+  const [hasMoreThan45Months, setHasMoreThan45Months] = useState<boolean>(false)
   const fortyFiveMonths = 45 * 30 * 24 * 60 * 60 * 1000
   useEffect(() => {
     !VMOONEYLockLoading &&
