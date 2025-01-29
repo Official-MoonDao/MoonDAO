@@ -6,6 +6,9 @@ import {
   DISTRIBUTION_TABLE_ADDRESSES,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
+  ARBITRUM_ASSETS_URL,
+  POLYGON_ASSETS_URL,
+  BASE_ASSETS_URL,
 } from 'const/config'
 import _ from 'lodash'
 import Image from 'next/image'
@@ -209,7 +212,16 @@ export function RetroactiveRewards({
         )
       : {}
 
-  const { tokens } = useAssets()
+  const { tokens: mainnetTokens } = useAssets()
+  const { tokens: arbitrumTokens } = useAssets(ARBITRUM_ASSETS_URL)
+  const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
+  const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
+
+  const tokens = mainnetTokens
+    .concat(arbitrumTokens)
+    .concat(polygonTokens)
+    .concat(baseTokens)
+  console.log(tokens)
 
   const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
