@@ -126,13 +126,15 @@ export default function SubmissionPage({
                             height={70}
                           />
                           <p className="text-center pt-2 pb-5">
-                            (optional) <br></br> Post to{' '}
+                            Post to{' '}
                             <Link
                               href="https://discord.com/channels/914720248140279868/1027658256706961509"
                               className="text-blue-400 hover:text-blue-300 underline"
+                              target="_blank"
+                              rel="noreferrer"
                             >
                               #ideation
-                            </Link>
+                            </Link> <br></br> (optional)  
                           </p>
                         </div>
                         <div
@@ -160,7 +162,7 @@ export default function SubmissionPage({
                             height={70}
                           />
                           <p className="text-center pt-2 pb-5">
-                            Present Proposal <br></br>at Townhall
+                            Present proposal <br></br>at Town Hall
                           </p>
                         </div>
                       </div>
