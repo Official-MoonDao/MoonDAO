@@ -75,7 +75,7 @@ export default function SubmissionPage({
                       setQuery({ tag: undefined }, 'replaceIn')
                     }}
                   >
-                    Submit Proposal
+                    Proposal
                   </Tab>
                   <Tab
                     className={({ selected }) =>
@@ -90,7 +90,7 @@ export default function SubmissionPage({
                       setQuery({ tag: 'contribution' }, 'replaceIn')
                     }}
                   >
-                    Submit Contribution
+                    Contribution
                   </Tab>
                   <Tab
                     className={({ selected }) =>
@@ -105,7 +105,7 @@ export default function SubmissionPage({
                       setQuery({ tag: 'report' }, 'replaceIn')
                     }}
                   >
-                    Submit Report
+                    Final Report
                   </Tab>
                 </Tab.List>
                 <Tab.Panels className="mt-4">
