@@ -185,7 +185,7 @@ export default function TeamJobModal({
                 edit ? 'updated a' : 'posted a new'
               } job](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
                 teamName
-              )}?job=${jobId}&_timestamp=123456789) <@${DISCORD_CITIZEN_ROLE_ID}>`
+              )}?job=${jobId}&_timestamp=123456789) <@&${DISCORD_CITIZEN_ROLE_ID}>`
             )
 
             setTimeout(() => {

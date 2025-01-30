@@ -245,7 +245,7 @@ export default function TeamMarketplaceListingModal({
                 edit ? 'updated a' : 'posted a new'
               } listing ](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
                 teamName
-              )}?listing=${listingId}&_timestamp=123456789) <@${DISCORD_CITIZEN_ROLE_ID}>`
+              )}?listing=${listingId}&_timestamp=123456789) <@&${DISCORD_CITIZEN_ROLE_ID}>`
             )
 
             setTimeout(() => {
