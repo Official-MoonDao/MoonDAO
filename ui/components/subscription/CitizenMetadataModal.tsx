@@ -16,6 +16,7 @@ import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
+import { addHttpsIfMissing } from '@/lib/utils/strings'
 import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
@@ -322,6 +323,17 @@ export default function CitizenMetadataModal({
                   }
                   const cleanedLocationData = cleanData(citizenLocationData)
 
+                  const formattedCitizenTwitter = addHttpsIfMissing(
+                    cleanedCitizenData.twitter
+                  )
+                  const formattedCitizenWebsite = addHttpsIfMissing(
+                    cleanedCitizenData.website
+                  )
+                  const formattedCitizenDiscord =
+                    cleanedCitizenData.discord.startsWith('@')
+                      ? cleanedCitizenData.discord.replace('@', '')
+                      : cleanedCitizenData.discord
+
                   const transaction = prepareContractCall({
                     contract: citizenTableContract,
                     method: 'updateTable' as string,
@@ -331,9 +343,9 @@ export default function CitizenMetadataModal({
                       cleanedCitizenData.description,
                       imageIpfsLink,
                       JSON.stringify(cleanedLocationData),
-                      cleanedCitizenData.discord,
-                      cleanedCitizenData.twitter,
-                      cleanedCitizenData.website,
+                      formattedCitizenDiscord,
+                      formattedCitizenTwitter,
+                      formattedCitizenWebsite,
                       cleanedCitizenData.view,
                       formResponseId,
                     ],
