@@ -16,6 +16,7 @@ import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
+import { addHttpsIfMissing } from '@/lib/utils/strings'
 import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
@@ -322,14 +323,12 @@ export default function CitizenMetadataModal({
                   }
                   const cleanedLocationData = cleanData(citizenLocationData)
 
-                  const formattedCitizenTwitter =
-                    cleanedCitizenData.twitter.startsWith('https://')
-                      ? cleanedCitizenData.twitter
-                      : `https://${cleanedCitizenData.twitter}`
-                  const formattedCitizenWebsite =
-                    cleanedCitizenData.website.startsWith('https://')
-                      ? cleanedCitizenData.website
-                      : `https://${cleanedCitizenData.website}`
+                  const formattedCitizenTwitter = addHttpsIfMissing(
+                    cleanedCitizenData.twitter
+                  )
+                  const formattedCitizenWebsite = addHttpsIfMissing(
+                    cleanedCitizenData.website
+                  )
                   const formattedCitizenDiscord =
                     cleanedCitizenData.discord.startsWith('@')
                       ? cleanedCitizenData.discord.replace('@', '')
