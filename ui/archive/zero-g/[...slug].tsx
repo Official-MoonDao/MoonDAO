@@ -1,4 +1,3 @@
-import gsap from 'gsap'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -10,27 +9,7 @@ export default function ZeroGDetail({ slug }: any) {
   const router = useRouter()
   const altEntryRef: any = useRef()
   const mainRef: any = useRef()
-  useEffect(() => {
-    if (altEntryRef.current && slug.some((s: any) => s === 'alt-entry')) {
-      setTimeout(() => {
-        altEntryRef.current.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        })
-      }, 1000)
 
-      setTimeout(() => {
-        gsap.to(altEntryRef.current, {
-          background: '#ffbc5c50',
-          duration: 1,
-        })
-      }, 2000)
-    } else {
-      altEntryRef.current.style.background = 'transparent'
-      if (mainRef.current)
-        mainRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [altEntryRef, mainRef])
   return (
     <div
       className="flex flex-col justify-center items-center text-center md:w-[80%] card rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-70 text-white font-RobotoMono shadow-md overflow-visible p-[5%]"

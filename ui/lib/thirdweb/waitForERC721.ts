@@ -14,18 +14,21 @@ export default async function waitForERC721(
   const timeout = 3000
 
   while (attemps < maxAttempts) {
-    const nft = await getNFT({
-      contract,
-      tokenId: BigInt(tokenId),
-    })
-    if (
-      nft?.metadata.name !== '' &&
-      nft?.metadata.name !== 'Failed to load NFT metadata'
-    ) {
-      return nft
+    try {
+      const nft = await getNFT({
+        contract,
+        tokenId: BigInt(tokenId),
+      })
+      console.log(nft)
+      if (nft?.metadata?.name) {
+        return nft
+      }
+      await new Promise((resolve) => setTimeout(resolve, timeout))
+      attemps++
+    } catch (error) {
+      console.error('Error fetching NFT:', error)
+      throw new Error('Failed to fetch NFT')
     }
-    await new Promise((resolve) => setTimeout(resolve, timeout))
-    attemps++
   }
 
   throw new Error(

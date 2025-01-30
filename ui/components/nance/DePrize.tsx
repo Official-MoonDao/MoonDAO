@@ -16,6 +16,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
+import Market from '@/components/betting/Market'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -103,12 +104,12 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
     <section id="rewards-container" className="overflow-hidden">
       <Head
         title="DePrize"
-        description="Distribute rewards to contributors based on their contributions."
+        description="Compete for a prize or predict winners to be rewarded."
       />
       <Container>
         <ContentLayout
           header={'DePrize'}
-          description="Distribute rewards to contributors based on their contributions."
+          description="Compete for a prize or predict winners to be rewarded."
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding
@@ -141,21 +142,13 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
               </h3>
             </div>
             <div>
-              {competitors &&
-                competitors.length > 0 &&
-                competitors.map((competitor, i: number) => (
-                  <div
-                    key={i}
-                    className="flex items-center w-full py-1 text-[17px]"
-                  >
-                    <div className="flex-1 px-8">
-                      <CompetitorPreview
-                        teamId={competitor.teamId}
-                        teamContract={teamContract}
-                      />
-                    </div>
-                  </div>
-                ))}
+              {competitors && (
+                <Market
+                  userAddress={userAddress}
+                  competitors={competitors}
+                  teamContract={teamContract}
+                />
+              )}
             </div>
           </div>
         </ContentLayout>

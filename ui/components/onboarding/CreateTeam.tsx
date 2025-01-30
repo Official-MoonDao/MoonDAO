@@ -358,7 +358,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         const totalCost =
                           Number(formattedCost) + estimatedMaxGas
 
-                        if (nativeBalance < totalCost) {
+                        if (+nativeBalance < totalCost) {
                           const roundedCost =
                             Math.ceil(+totalCost * 1000000) / 1000000
 
@@ -463,9 +463,17 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           account,
                         })
 
-                        const mintedTokenId = parseInt(
-                          receipt.logs[14].topics[3],
-                          16
+                        // Define the event signature for the Transfer event
+                        const transferEventSignature = ethers.utils.id(
+                          'Transfer(address,address,uint256)'
+                        )
+                        // Find the log that matches the Transfer event signature
+                        const transferLog = receipt.logs.find(
+                          (log: any) => log.topics[0] === transferEventSignature
+                        )
+
+                        const mintedTokenId = ethers.BigNumber.from(
+                          transferLog.topics[3]
                         ).toString()
 
                         if (mintedTokenId) {

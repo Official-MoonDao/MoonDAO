@@ -1,0 +1,4 @@
+src/abi/
+package-lock.json
+truffle.js
+.env
