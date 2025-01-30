@@ -253,7 +253,9 @@ export function PrivyConnectWallet({
         router.pathname !== '/withdraw' &&
         router.pathname !== '/rewards' &&
         router.pathname !== '/lock' &&
-        router.pathname !== '/bridge'
+        router.pathname !== '/bridge' &&
+        router.pathname !== '/citizen' &&
+        router.pathname !== '/team'
       ) {
         let citizen
         try {

@@ -1,4 +1,4 @@
-import { arbitrum, sepolia } from 'thirdweb/chains'
+import { arbitrum, sepolia, arbitrumSepolia } from 'thirdweb/chains'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -18,11 +18,13 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -30,11 +32,13 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -42,8 +46,12 @@ const arbitrumSepoliaConfig =
 const baseSepoliaConfig =
   require('../../contracts/deployments/base-sepolia') as DeploymentConfig
 
+export const TEST_CHAIN =
+  process.env.NEXT_PUBLIC_TEST_CHAIN === 'arbitrum-sepolia'
+    ? arbitrumSepolia
+    : sepolia
 export const DEFAULT_CHAIN_V5 =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
 
 export const MOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.MOONEYToken,
@@ -105,39 +113,47 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 export const CITIZEN_ADDRESSES: Index = {
   arbitrum: '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002',
   sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
+  'arbitrum-sepolia': '0x853d6B4BA61115810330c7837FDD24D61CBab855',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
   arbitrum: '0x8F14E436fa0fFcD4239733686d190F1e4F1b84E6',
   sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
+  'arbitrum-sepolia': '0xfF3F124D91D6eD6A47e1066473a78AaEde4c2fbe',
 }
 
 export const CITIZEN_TABLE_NAMES: Index = {
   arbitrum: 'CITIZENTABLE_42161_98',
   sepolia: 'CITIZENTABLE_11155111_1671',
+  'arbitrum-sepolia': 'CITIZENTABLE_421614_1058',
 }
 
 export const PROJECT_ADDRESSES: Index = {
   arbitrum: '0xCb31829B312923C7502766ef4f36948A7A64cD6A',
   sepolia: '0x19124F594c3BbCb82078b157e526B278C8E9EfFc',
+  'arbitrum-sepolia': '0xDC35Dc4F7610678B0389157522734b79ea464101',
 }
 
 export const PROJECT_CREATOR_ADDRESSES: Index = {
   arbitrum: '0xe5709Bc44427DCEF81fF2F718DFc6A032fD23bbF',
   sepolia: '0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D',
+  'arbitrum-sepolia': '0xde26EcE3C1Ec58057348e3a7B28359c8cDfae56A',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x83755AF34867a3513ddCE921E9cAd28f0828CDdB',
   sepolia: '0x17729AFF287d9873F5610c029A5Db814e428e97a',
+  'arbitrum-sepolia': '0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E',
 }
 
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
   sepolia: '0x9057Fff69e8b016a214C4f894430F71dad50b42c',
+  'arbitrum-sepolia': '0x18200Aec1FE277bbA7cA3cBfecF822F099807fFd',
 }
 export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
   sepolia: '0x5217A95F335cd026c877Eb5C1B0Ae6C82945178D',
+  'arbitrum-sepolia': '0x9f0496702Df4889C17b7c6Ef88c74ee0dF14998e',
 }
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: '0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0',
@@ -148,50 +164,59 @@ export const REVNET_ADDRESSES: Index = {
   sepolia: '0x25bc5d5a708c2e426ef3a5196cc18de6b2d5a3d1',
 }
 
-export const DEPRIZE_ID = 1
+export const DEPRIZE_ID = 2
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0xd594DBF360D666c94615Fb186AF3cB1018Be1616',
   sepolia: '',
+  'arbitrum-sepolia': '0x0c7dfCC2B97fAAFD852cEaf62B0CD02BdEa4774A',
 }
 
 export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
   arbitrum: '0x755D48e6C3744B723bd0326C57F99A92a3Ca3287',
   sepolia: '',
+  'arbitrum-sepolia': '0xef813421ea5e6bc8d8Ad09E08912149C4b115EcB',
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
   arbitrum: '0xa7879adeFc81884c76342741FbDdE5BfDceAaB36',
   sepolia: '',
+  'arbitrum-sepolia': '0x18A0f907575b0387CcFEaa40e694FF1E83Fe5F18',
 }
 
 export const TEAM_ADDRESSES: Index = {
   arbitrum: '0xAB2C354eC32880C143e87418f80ACc06334Ff55F',
   sepolia: '0xEb9A6975381468E388C33ebeF4089Be86fe31d78',
+  'arbitrum-sepolia': '0xCa3448e91Cf81Ff8E2A25F0128Bd36f2D01C6205',
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
   arbitrum: '0x203f481336A212Eff43E84761792E307975Cf27b',
   sepolia: '0x55D07Ab23092edc7EdAEC7048B784aCcb2cc4469',
+  'arbitrum-sepolia': '0xC58db82E66803d500A92CeA0fa6DC7Fdb1c6169d',
 }
 
 export const TEAM_TABLE_ADDRESSES: Index = {
   arbitrum: '0x434ADaB0BEdFc9973c5cbF0224dfe0212a20d3D4',
   sepolia: '0x42d356e77f6d9Bad870865e0973Ed32F54fA4006',
+  'arbitrum-sepolia': '0x7cA858a204eD98E2AD157dfdf3b8Aa8773e90FC5',
 }
 
 export const TEAM_TABLE_NAMES: Index = {
   arbitrum: 'TEAMTABLE_42161_92',
   sepolia: 'ENTITYTABLE_11155111_1731',
+  'arbitrum-sepolia': 'TEAMTABLE_421614_1069',
 }
 
 export const TEAM_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0x203ca831edec28b7657A022b8aFe5d28b6BE6Eda',
   sepolia: '',
+  'arbitrum-sepolia': '0x4f269bC8f0984Ee1D0668E3C01d586466aB3535D',
 }
 export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   arbitrum: '0x96E054924258E51d8e3b3aB8A6A27920f6cE53ee',
   sepolia: '',
+  'arbitrum-sepolia': '0x7feF5F345B4DaC759B4bb02FaE1a91Dd668260d9',
 }
 
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
@@ -199,6 +224,7 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 export const MOONDAO_HAT_TREE_IDS: Index = {
   arbitrum: '0x0000002a',
   sepolia: '0x00000182',
+  'arbitrum-sepolia': '0x00000182',
 }
 
 //Projects Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/729
@@ -211,6 +237,7 @@ export const PROJECT_HAT_TREE_IDS: Index = {
 export const JOBS_TABLE_ADDRESSES: Index = {
   arbitrum: '0x94e225DDe1b3E5f861222ca2055739BA12730bd4',
   sepolia: '0x5b26100ae7F244f6805D724A019927E137978659',
+  'arbitrum-sepolia': '0x97F9F6DC65b57af7E0B0CB32E5E3153af14E3332',
 }
 
 export const MARKETPLACE_ADDRESS =
@@ -221,12 +248,32 @@ export const MARKETPLACE_ADDRESS =
 export const MARKETPLACE_TABLE_ADDRESSES: Index = {
   arbitrum: '0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E',
   sepolia: '0xf50aC858f78ff8d4e5E898C155046bd990dE2cED',
+  'arbitrum-sepolia': '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
 }
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 
 export const MARKETPLACE_FEE_SPLIT: string =
   polygonConfig.MarketplaceFeeSplit || ''
+
+export const LMSR_WITH_TWAP_ADDRESSES: Index = {
+  sepolia: '0x0087fCc0aF33B00a9AF2f98Eb6788Ffb72bC1C51',
+  'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
+}
+export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
+  sepolia: '0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8',
+  'arbitrum-sepolia': '0xa0B1b14515C26acb193cb45Be5508A8A46109a27',
+}
+export const COLLATERAL_TOKEN_ADDRESSES: Index = {
+  sepolia: '0x8cfF28F922AeEe80d3a0663e735681469F7374c6',
+  'arbitrum-sepolia': '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
+}
+export const COLLATERAL_DECIMALS = 18
+export const MAX_OUTCOMES = 3
+
+export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
+
+export const OPERATOR_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
@@ -280,6 +327,3 @@ export const CHAIN_TOKEN_NAMES: Index = {
   arbitrum: 'ETH',
   sepolia: 'ETH',
 }
-
-export const SNAPSHOT_RETROACTIVE_REWARDS_ID =
-  '0xeb8080c307faf35ecab2910831de90aeddd0711aa5090af74f99214b96484f57'
