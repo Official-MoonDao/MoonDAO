@@ -93,6 +93,7 @@ export default function ProjectProfile({
     isManager,
     isActive,
     nanceProposal,
+    finalReportLink,
     proposalJSON,
     totalBudget,
     MDP,
@@ -189,21 +190,6 @@ export default function ProjectProfile({
               className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
             >
               <div className="p-5 pb-0 md:p-0 flex flex-col items-start gap-5 pr-12 ">
-                {/* Enable when final report editor is ready */}
-                {/* <Link href={'/submit?tab=report'} passHref>
-                  <StandardButton className="mt-4 md:mt-0 gradient-2 rounded-full">
-                    <div className="flex items-center gap-2">
-                      <Image
-                        src={'/assets/plus-icon.png'}
-                        width={20}
-                        height={20}
-                        alt="Attach Final Report"
-                      />
-                      {'Attach Final Report'}
-                    </div>
-                  </StandardButton>
-                </Link> */}
-
                 <div className="flex gap-4 opacity-[50%]">
                   <Image
                     src={'/assets/icon-star.svg'}
@@ -229,6 +215,17 @@ export default function ProjectProfile({
                   />
                   <p className="opacity-60">{'Review Original Proposal'}</p>
                 </Link>
+                {finalReportLink && (
+                  <Link className="flex gap-2" href={finalReportLink} passHref>
+                    <Image
+                      src="/assets/report.png"
+                      alt="Report Icon"
+                      width={15}
+                      height={15}
+                    />
+                    <p className="opacity-60">{'Review Final Report'}</p>
+                  </Link>
+                )}
               </div>
             </div>
           </Frame>
