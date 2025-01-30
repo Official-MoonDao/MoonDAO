@@ -1,5 +1,7 @@
+import { BigNumber } from 'ethers'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { readContract } from 'thirdweb'
 
 type Winner = {
   tokenId: string
@@ -74,17 +76,27 @@ export function SweepstakesWinners({ ttsContract, supply }: any) {
 
       for (let i = 0; i <= 10; i++) {
         try {
-          const randomWordsId = await ttsContract.call('requestIds', [i])
+          const randomWordsId = await readContract({
+            contract: ttsContract,
+            method: 'requestIds' as string,
+            params: [i],
+          })
           if (randomWordsId) {
-            const { randomWords } = await ttsContract.call('getRequestStatus', [
-              randomWordsId,
-            ])
+            const randomWords = await readContract({
+              contract: ttsContract,
+              method: 'getRequestStatus' as string,
+              params: [randomWordsId],
+            })
 
-            const winningTokenId = await randomWords[0].mod(supply)
+            const winningTokenId = await BigNumber.from(randomWords[0]).mod(
+              BigNumber.from(supply)
+            )
 
-            const ownerOfWinningTokenId = await ttsContract.call('ownerOf', [
-              winningTokenId.toString(),
-            ])
+            const ownerOfWinningTokenId = await readContract({
+              contract: ttsContract,
+              method: 'ownerOf' as string,
+              params: [winningTokenId.toString()],
+            })
 
             const winner = {
               tokenId: winningTokenId,
@@ -98,7 +110,7 @@ export function SweepstakesWinners({ ttsContract, supply }: any) {
           console.log(err)
         }
       }
-      setWinners(winners.reverse())
+      setWinners(winners.reverse() as any)
     }
 
     let refresh: any

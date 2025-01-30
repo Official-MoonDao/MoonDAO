@@ -11,7 +11,7 @@ const indexCardData = [
     hovertext: "Meet Our Astronauts",
     paragraph: (
       <>
-        Sent the first crowdraised astronaut to space, through a democratically governed onchain vote, and randomly chose a second member of the community via an on-chain sweepstakes.
+        Sent the first crowdraised astronaut to space, through a democratically governed onchain vote, and randomly chose a second member of the community via an onchain sweepstakes.
       </>
     )
   },
@@ -54,12 +54,12 @@ const indexCardData = [
   {
     icon: "/assets/icon-lander.svg",
     iconAlt: "Lander",
-    header: "First Moon Mission Planned",
+    header: "First Moon Mission Launched",
     link: "https://docs.moondao.com/Governance/Constitution",
     hovertext: "Read the Constitution",
     paragraph: (
       <>
-        Established a constitution for self-governance, which will be sent to the surface of the Moon in late-2024 as part of a LifeShip capsule alongside the DNA of MoonDAO members.
+        Established a constitution for self-governance, which was launched to the surface of the Moon in early-2025 as part of a LifeShip capsule containing a private wallet and lunar bounty.
       </>
     )
   },

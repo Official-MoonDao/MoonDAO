@@ -1,20 +1,22 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useContract } from '@thirdweb-dev/react'
 import TeamABI from 'const/abis/Team.json'
 import {
-  DEFAULT_CHAIN,
+  DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
-  DISCORD_CITIZEN_ROLE_ID,
   TEAM_ADDRESSES,
+  DISCORD_CITIZEN_ROLE_ID,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
-import ChainContext from '@/lib/thirdweb/chain-context'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import { Job } from '../jobs/Job'
@@ -47,8 +49,8 @@ export default function TeamJobModal({
   job,
 }: TeamJobModalProps) {
   const account = useActiveAccount()
-  const { selectedChain } = useContext(ChainContext)
-
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const [isLoading, setIsLoading] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
   const [jobData, setJobData] = useState<JobData>(
@@ -77,10 +79,11 @@ export default function TeamJobModal({
 
   const currTime = useCurrUnixTime()
 
-  const { contract: teamContract } = useContract(
-    TEAM_ADDRESSES[selectedChain.slug],
-    TeamABI
-  )
+  const teamContract = useContract({
+    chain: selectedChain,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI,
+  })
 
   useEffect(() => {
     if (
@@ -171,7 +174,10 @@ export default function TeamJobModal({
             //Get job id and team id from receipt and send discord notification
             const jobId = parseInt(receipt.logs[1].topics[1], 16).toString()
             const jobTeamId = parseInt(receipt.logs[1].topics[2], 16).toString()
-            const team = await teamContract?.erc721.get(jobTeamId)
+            const team = await getNFT({
+              contract: teamContract,
+              tokenId: BigInt(jobTeamId),
+            })
             const teamName = team?.metadata.name as string
             sendDiscordMessage(
               'networkNotifications',
@@ -272,7 +278,7 @@ export default function TeamJobModal({
         </div>
 
         <PrivyWeb3Button
-          requiredChain={DEFAULT_CHAIN}
+          requiredChain={DEFAULT_CHAIN_V5}
           label={edit ? 'Edit Job' : 'Add Job'}
           type="submit"
           isDisabled={!teamContract || !jobTableContract || isLoading}

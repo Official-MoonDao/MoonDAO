@@ -1,11 +1,17 @@
 import CitizenABI from 'const/abis/Citizen.json'
-import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import {
+  CITIZEN_ADDRESSES,
+  CITIZEN_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
+} from 'const/config'
 import { blockedCitizens } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { getContract, readContract } from 'thirdweb'
+import { getContract, NFT, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
+import { CitizenRow, citizenRowToNFT } from '@/lib/tableland/convertRow'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { getAttribute } from '@/lib/utils/nft'
@@ -98,35 +104,22 @@ export async function getStaticProps() {
   let citizensLocationData = []
   if (process.env.NEXT_PUBLIC_ENV === 'prod') {
     const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
     const citizenContract = getContract({
       client: serverClient,
-      address: CITIZEN_ADDRESSES[getChainSlug(chain)],
+      address: CITIZEN_ADDRESSES[chainSlug],
       abi: CitizenABI as any,
       chain,
     })
 
-    const totalCitizens = await readContract({
-      contract: citizenContract,
-      method: 'totalSupply',
-    })
+    const citizens: NFT[] = []
+    const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
+    const citizenRows = await queryTable(chain, citizenStatement)
 
-    const citizens: any = []
-    async function fetchCitizen(tokenId: number) {
-      try {
-        const citizen = await getNFT({
-          contract: citizenContract,
-          tokenId: BigInt(tokenId),
-        })
-        if (citizen?.metadata?.name) citizens.push(citizen)
-      } catch (err) {
-        console.error(err)
-      }
+    for (const citizen of citizenRows) {
+      citizens.push(citizenRowToNFT(citizen as CitizenRow))
     }
-    for (let i = 0; i < totalCitizens; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 200))
-      await fetchCitizen(i)
-    } //replace with citizenContract.erc721.getAll() if all citizens load
 
     const filteredValidCitizens = citizens.filter(async (c: any) => {
       const now = Math.floor(Date.now() / 1000)
@@ -145,13 +138,20 @@ export async function getStaticProps() {
 
     //Get location data for each citizen
     for (const citizen of filteredValidCitizens) {
-      const citizenLocation = getAttribute(
-        citizen?.metadata?.attributes as any[],
-        'location'
-      )?.value
+      const citizenLocation = JSON.stringify(
+        getAttribute(
+          citizen?.metadata?.attributes as unknown as any[],
+          'location'
+        )?.value
+      )
 
       let locationData
-      if (citizenLocation !== '' && !citizenLocation?.startsWith('{')) {
+
+      if (
+        citizenLocation &&
+        citizenLocation !== '' &&
+        !citizenLocation?.startsWith('{')
+      ) {
         const locationRes = await fetch(
           `https://maps.googleapis.com/maps/api/geocode/json?address=${citizenLocation}&key=${process.env.GOOGLE_MAPS_API_KEY}`
         )

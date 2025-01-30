@@ -1,21 +1,12 @@
-import { PrivyProvider } from '@privy-io/react-auth'
-import { Sepolia } from '@thirdweb-dev/chains'
-import { PrivyThirdwebSDKProvider } from '../../../lib/privy/PrivyThirdwebSDKProvider'
-import ChainContext from '../../../lib/thirdweb/chain-context'
+import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 
 describe('<NetworkSelector />', () => {
   it('Renders Network Selector', () => {
     cy.mount(
-      <ChainContext.Provider
-        value={{ selectedChain: Sepolia, setSelectedChain: () => {} }}
-      >
-        <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-          <PrivyThirdwebSDKProvider selectedChain={Sepolia}>
-            <NetworkSelector />
-          </PrivyThirdwebSDKProvider>
-        </PrivyProvider>
-      </ChainContext.Provider>
+      <TestnetProviders>
+        <NetworkSelector />
+      </TestnetProviders>
     )
 
     cy.get('#network-selector').should('exist')

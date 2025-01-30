@@ -76,7 +76,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col pt-5">
           <Link href="/" passHref>
             <div className="mt-2 ml-7 lg:ml-9 flex flex-shrink-0 items-center px-4 pl-6">
-              {lightMode ? <LogoSidebarLight /> : <LogoSidebar />}
+              <LogoSidebar />
             </div>
           </Link>
           <div className="flex flex-grow flex-col pt-9 lg:pl-2">

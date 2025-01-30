@@ -1,6 +1,5 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
-import { Sepolia } from '@thirdweb-dev/chains'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
 
 describe('<CreateCitizen />', () => {

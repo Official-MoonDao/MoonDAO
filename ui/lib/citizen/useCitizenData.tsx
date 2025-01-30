@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import useDiscordUserSearch from '../nance/DiscordUserSearch'
 import { getAttribute } from '../utils/nft'
+import { addHttpsIfMissing } from '../utils/strings'
 
 export function useCitizenData(nft: any, citizenContract: any) {
   const {
@@ -26,9 +27,9 @@ export function useCitizenData(nft: any, citizenContract: any) {
     const citizenDiscord = getAttribute(attributes, 'discord')
     const citizenWebsite = getAttribute(attributes, 'website')
     return {
-      twitter: citizenTwitter?.value,
-      discord: citizenDiscord?.value,
-      website: citizenWebsite?.value,
+      twitter: addHttpsIfMissing(citizenTwitter?.value),
+      discord: citizenDiscord?.value.replace('@', ''),
+      website: addHttpsIfMissing(citizenWebsite?.value),
     }
   }, [attributes])
 

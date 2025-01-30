@@ -6,6 +6,7 @@ type FormInputProps = {
   label?: string
   type?: string
   className?: string
+  disabled?: boolean
 }
 
 export default function FormInput({
@@ -16,6 +17,7 @@ export default function FormInput({
   onChange,
   className = '',
   label,
+  disabled = false,
 }: FormInputProps) {
   return (
     <>
@@ -27,6 +29,7 @@ export default function FormInput({
         className={`w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm ${className}`}
         onChange={onChange}
         value={value}
+        disabled={disabled}
       />
     </>
   )

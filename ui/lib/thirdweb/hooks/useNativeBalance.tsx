@@ -1,49 +1,32 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useAddress, useSDK } from '@thirdweb-dev/react'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect } from 'react'
+import {
+  useActiveAccount,
+  useActiveWalletChain,
+  useWalletBalance,
+} from 'thirdweb/react'
 import PrivyWalletContext from '../../privy/privy-wallet-context'
+import client from '../client'
 
 export function useNativeBalance() {
-  const sdk = useSDK()
-  const address = useAddress()
+  const account = useActiveAccount()
+  const address = account?.address
+  const activeWalletChain = useActiveWalletChain()
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
 
-  const [nativeBalance, setNativeBalance] = useState<any>()
+  const { data: nativeBalance, refetch } = useWalletBalance({
+    client,
+    address: address,
+    chain: activeWalletChain,
+  })
 
   useEffect(() => {
-    let provider: any
-    let isMounted = true
+    const interval = setInterval(() => {
+      refetch()
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [address, wallets, selectedWallet])
 
-    const wallet = wallets[selectedWallet]
-
-    async function handleBalanceChange() {
-      if (!isMounted) return
-      try {
-        const balance = await provider.getBalance(wallet.address)
-        setNativeBalance((+balance / 10 ** 18).toFixed(5))
-      } catch (err) {}
-    }
-
-    async function getBalanceAndListen() {
-      if (wallet) {
-        provider = sdk?.getProvider()
-        await handleBalanceChange()
-
-        provider.on('block', handleBalanceChange)
-      }
-    }
-
-    getBalanceAndListen()
-
-    // Cleanup listener on unmount or when selectedWallet changes
-    return () => {
-      isMounted = false
-      if (provider) {
-        provider.off('block', handleBalanceChange)
-      }
-    }
-  }, [sdk, address, wallets, selectedWallet])
-
-  return nativeBalance
+  return Number(nativeBalance?.displayValue).toFixed(7)
 }

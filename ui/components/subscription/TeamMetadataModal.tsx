@@ -15,6 +15,7 @@ import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
+import { addHttpsIfMissing } from '@/lib/utils/strings'
 import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
@@ -260,6 +261,16 @@ export default function TeamMetadataModal({
 
                   const cleanedTeamData = cleanData(teamData)
 
+                  const formattedTeamTwitter = addHttpsIfMissing(
+                    cleanedTeamData.twitter
+                  )
+                  const formattedTeamCommunications = addHttpsIfMissing(
+                    cleanedTeamData.communications
+                  )
+                  const formattedTeamWebsite = addHttpsIfMissing(
+                    cleanedTeamData.website
+                  )
+
                   const transaction = prepareContractCall({
                     contract: teamTableContract,
                     method: 'updateTable' as string,
@@ -268,9 +279,9 @@ export default function TeamMetadataModal({
                       cleanedTeamData.name,
                       cleanedTeamData.description,
                       imageIpfsLink,
-                      cleanedTeamData.twitter,
-                      cleanedTeamData.communications,
-                      cleanedTeamData.website,
+                      formattedTeamTwitter,
+                      formattedTeamCommunications,
+                      formattedTeamWebsite,
                       cleanedTeamData.view,
                       formResponseId,
                     ],
