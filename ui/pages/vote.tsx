@@ -1,5 +1,6 @@
 import {
   PlusIcon,
+  PlusCircleIcon,
   QueueListIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/solid'
@@ -16,6 +17,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
+import StandardButton from '@/components/layout/StandardButton'
 
 const links = [
   {
@@ -93,6 +95,12 @@ export default function SpaceIndex() {
         </u>{' '}
         for more details on the project system and governance processes.
       </p>
+      <StandardButton link="/submit" className="mt-4 gradient-2 rounded-full">
+        <div className="flex items-center gap-2">
+          <PlusCircleIcon className="w-6 h-6" />
+          Create a Proposal
+        </div>
+      </StandardButton>
     </div>
   )
 
@@ -110,7 +118,7 @@ export default function SpaceIndex() {
           popOverEffect={false}
           isProfile
         >
-          <div className="pb-10 w-full">
+          <div className="pb-10 w-full md:relative md:right-6">
             <NanceProvider apiUrl={NANCE_API_URL}>
               <ProposalList />
             </NanceProvider>
