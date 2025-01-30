@@ -532,7 +532,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                         setTimeout(async () => {
                           await sendDiscordMessage(
                             'networkNotifications',
-                            `[**${citizenName}** has just become a <@${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789)`
+                            `[**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
                           )
 
                           router.push(`/citizen/${citizenPrettyLink}`)

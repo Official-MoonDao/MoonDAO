@@ -487,7 +487,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           setTimeout(async () => {
                             await sendDiscordMessage(
                               'networkNotifications',
-                              `[**${teamName}** has created a team in the Space Acceleration Network!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) <@${DISCORD_CITIZEN_ROLE_ID}>`
+                              `[**${teamName}**](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) has created a team in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
                             )
 
                             router.push(`/team/${teamPrettyLink}`)
