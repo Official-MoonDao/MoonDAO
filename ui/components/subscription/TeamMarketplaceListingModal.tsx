@@ -1,5 +1,10 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { DEFAULT_CHAIN_V5, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
+import {
+  DEFAULT_CHAIN_V5,
+  DEPLOYED_ORIGIN,
+  TEAM_ADDRESSES,
+  DISCORD_CITIZEN_ROLE_ID,
+} from 'const/config'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -238,9 +243,9 @@ export default function TeamMarketplaceListingModal({
               'networkNotifications',
               `[**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
-              } listing](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
+              } listing ](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
                 teamName
-              )}?listing=${listingId}&_timestamp=123456789)`
+              )}?listing=${listingId}&_timestamp=123456789) <@&${DISCORD_CITIZEN_ROLE_ID}>`
             )
 
             setTimeout(() => {
