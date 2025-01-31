@@ -9,6 +9,7 @@ import { useRouter } from 'next/router'
 const NavigationLink = ({ item, setSidebarOpen }: any) => {
   const router = useRouter()
   const { t } = useTranslation('common')
+  if (!item) return <></>
   return (
     <li
       className={`list-none font-RobotoMono font-normal text-sm md:text-base text-black dark:text-gray-100`}
