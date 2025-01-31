@@ -100,6 +100,7 @@ export default function ProjectCard({
   distribute,
   distribution,
   handleDistributionChange,
+  userHasVotingPower,
 }: ProjectCardProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -136,6 +137,7 @@ export default function ProjectCard({
           handleDistributionChange={handleDistributionChange}
           proposalJSON={proposalJSON}
           totalBudget={totalBudget}
+          userHasVotingPower={userHasVotingPower}
         />
       ) : (
         <Link href={`/project/${project?.id}`} passHref>
@@ -143,6 +145,7 @@ export default function ProjectCard({
             project={project}
             proposalJSON={proposalJSON}
             totalBudget={totalBudget}
+            userHasVotingPower={userHasVotingPower}
           />
         </Link>
       )}

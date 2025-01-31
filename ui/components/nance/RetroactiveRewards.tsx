@@ -259,41 +259,29 @@ export function RetroactiveRewards({
     }
     try {
       if (!account) throw new Error('No account found')
+      let receipt
       if (edit) {
         const transaction = prepareContractCall({
           contract: distributionTableContract,
           method: 'updateTableCol' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
-        const receipt = await sendAndConfirmTransaction({
+        receipt = await sendAndConfirmTransaction({
           transaction,
           account,
         })
-        if (receipt)
-          toast.success('Distribution edited successfully!', {
-            style: toastStyle,
-          })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
       } else {
         const transaction = prepareContractCall({
           contract: distributionTableContract,
           method: 'insertIntoTable' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
-        const receipt = await sendAndConfirmTransaction({
+        receipt = await sendAndConfirmTransaction({
           transaction,
           account,
         })
-        if (receipt)
-          toast.success('Distribution submitted successfully!', {
-            style: toastStyle,
-          })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
       }
+      if (receipt) setTimeout(() => router.push('/rewards/thank-you'), 5000)
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
