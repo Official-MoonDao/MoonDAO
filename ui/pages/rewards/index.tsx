@@ -15,7 +15,7 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import {
   RetroactiveRewards,
   RetroactiveRewardsProps,
-} from '../components/nance/RetroactiveRewards'
+} from '@/components/nance/RetroactiveRewards'
 
 export default function Rewards({
   projects,

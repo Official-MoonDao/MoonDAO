@@ -8,6 +8,7 @@ import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import NumberStepper from '../layout/NumberStepper'
+import StandardButton from '../layout/StandardButton'
 
 type ProjectCardProps = {
   project: Project | undefined
@@ -17,6 +18,7 @@ type ProjectCardProps = {
   userContributed?: boolean
   distribution?: Record<string, number>
   handleDistributionChange?: (projectId: string, value: number) => void
+  userHasVotingPower?: any
 }
 
 const ProjectCardContent = memo(
@@ -28,6 +30,7 @@ const ProjectCardContent = memo(
     totalBudget,
     distribute,
     userContributed,
+    userHasVotingPower,
   }: any) => {
     return (
       <div
@@ -35,21 +38,30 @@ const ProjectCardContent = memo(
         className="p-4 pb-10 flex flex-col gap-2 relative bg-dark-cool w-full h-full rounded-2xl flex-1 border-b-2 border-[#020617]"
       >
         <div className="flex justify-between">
-          <div className="flex flex-col xl:flex-row gap-2 xl:items-center">
+          <div className="w-full flex flex-col xl:flex-row gap-2 xl:items-center justify-between">
             <Link href={`/project/${project?.id}`} passHref>
               <h1 className="font-GoodTimes">{project?.name || ''}</h1>
             </Link>
-            {project?.finalReportLink && (
-              <Link
-                href={project?.finalReportLink}
-                target="_blank"
-                rel="noopener"
-                passHref
+            {project?.finalReportLink || project?.finalReportIPFS ? (
+              <StandardButton
+                className={`gradient-2 xl:w-[200px] font-[14px] ${
+                  distribute && 'mr-4'
+                }`}
+                link={
+                  project?.finalReportIPFS
+                    ? `/project/${project.id}`
+                    : project?.finalReportLink
+                }
+                onClick={(e: any) => {
+                  e.stopPropagation()
+                }}
+                hoverEffect={false}
+                target={project?.finalReportIPFS ? '_self' : '_blank'}
               >
-                <h3 className="text-[14px] font-medium font-GoodTimes">
-                  Review Final Report
-                </h3>
-              </Link>
+                <p className="text-[14px]">Review Final Report</p>
+              </StandardButton>
+            ) : (
+              <></>
             )}
           </div>
           {distribute &&
@@ -66,16 +78,21 @@ const ProjectCardContent = memo(
                 step={1}
                 min={0}
                 max={100}
+                isDisabled={!userHasVotingPower}
               />
             ))}
         </div>
         <div className="flex gap-2"></div>
         <div>
-          <p className="text-[80%] pr-4">{proposalJSON?.abstract}</p>
-          <div className="mt-2 flex items-center gap-2">
-            <p>{`Awarded: ${totalBudget} ETH`}</p>
-            <Image src="/coins/ETH.svg" alt="ETH" width={15} height={15} />
-          </div>
+          <p className="text-[80%] pr-4 break-words">
+            {proposalJSON?.abstract}
+          </p>
+          {!distribute && (
+            <div className="mt-2 flex items-center gap-2">
+              <p>{`Awarded: ${totalBudget} ETH`}</p>
+              <Image src="/coins/ETH.svg" alt="ETH" width={15} height={15} />
+            </div>
+          )}
         </div>
       </div>
     )
@@ -90,6 +107,7 @@ export default function ProjectCard({
   distribute,
   distribution,
   handleDistributionChange,
+  userHasVotingPower,
 }: ProjectCardProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -126,6 +144,7 @@ export default function ProjectCard({
           handleDistributionChange={handleDistributionChange}
           proposalJSON={proposalJSON}
           totalBudget={totalBudget}
+          userHasVotingPower={userHasVotingPower}
         />
       ) : (
         <Link href={`/project/${project?.id}`} passHref>
@@ -133,6 +152,7 @@ export default function ProjectCard({
             project={project}
             proposalJSON={proposalJSON}
             totalBudget={totalBudget}
+            userHasVotingPower={userHasVotingPower}
           />
         </Link>
       )}

@@ -51,25 +51,30 @@ function TeamMember({
 
   useEffect(() => {
     async function getOwnedNFT() {
-      const ownedToken = await readContract({
-        contract: citizenContract,
-        method: 'getOwnedToken' as string,
-        params: [address],
-      })
-      setOwnedToken(ownedToken)
+      setIsLoadingNFT(true)
+      try {
+        const ownedToken = await readContract({
+          contract: citizenContract,
+          method: 'getOwnedToken' as string,
+          params: [address],
+        })
+        setOwnedToken(ownedToken)
 
-      const nft = await getNFT({
-        contract: citizenContract,
-        tokenId: BigInt(ownedToken.toString()),
-      })
-      setNft(nft)
+        const nft = await getNFT({
+          contract: citizenContract,
+          tokenId: BigInt(ownedToken.toString()),
+        })
+        setNft(nft)
+      } catch (err) {}
+      setIsLoadingNFT(false)
     }
     if (address && citizenContract) getOwnedNFT()
   }, [address, citizenContract])
 
   useEffect(() => {
-    if (isLoadingNFT) return
-    if (
+    if (isLoadingNFT) {
+      setMetadata(undefined)
+    } else if (
       nft?.metadata &&
       nft?.metadata?.name !== 'Failed to load NFT metadata'
     ) {

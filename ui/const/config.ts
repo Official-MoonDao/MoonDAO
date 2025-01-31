@@ -18,13 +18,11 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig = require(
-  `../../contracts/deployments/ethereum`
-) as DeploymentConfig
+const ethConfig =
+  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
 
-const polygonConfig = require(
-  `../../contracts/deployments/polygon`
-) as DeploymentConfig
+const polygonConfig =
+  require(`../../contracts/deployments/polygon`) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -32,13 +30,11 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig = require(
-  `../../contracts/deployments/goerli`
-) as DeploymentConfig
+const goerliConfig =
+  require(`../../contracts/deployments/goerli`) as DeploymentConfig
 
-const sepoliaConfig = require(
-  `../../contracts/deployments/sepolia`
-) as DeploymentConfig
+const sepoliaConfig =
+  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -311,6 +307,10 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
 export const DISCORD_GUILD_ID = '914720248140279868'
 export const GENERAL_CHANNEL_ID = '914720248140279871'
 export const TEST_CHANNEL_ID = '1308513773879033886'
+export const DISCORD_CITIZEN_ROLE_ID =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? '1293939046774739106' //@Citizen
+    : '1331745916117323849' //@CitizenTest
 
 export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
 
@@ -327,3 +327,10 @@ export const CHAIN_TOKEN_NAMES: Index = {
   arbitrum: 'ETH',
   sepolia: 'ETH',
 }
+
+export const ARBITRUM_ASSETS_URL =
+  'https://safe-client.safe.global/v1/chains/42161/safes/0xAF26a002d716508b7e375f1f620338442F5470c0/balances/usd?trusted=true'
+export const POLYGON_ASSETS_URL =
+  'https://safe-client.safe.global/v1/chains/137/safes/0x8C0252c3232A2c7379DDC2E44214697ae8fF097a/balances/usd?trusted=true'
+export const BASE_ASSETS_URL =
+  'https://safe-client.safe.global/v1/chains/8453/safes/0x871e232Eb935E54Eb90B812cf6fe0934D45e7354/balances/usd?trusted=true'

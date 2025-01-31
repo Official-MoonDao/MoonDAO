@@ -211,7 +211,7 @@ export default function Projects({
           isProfile
         >
           <>
-            <CardGridContainer>
+            <CardGridContainer maxCols={2}>
               {cachedNFTs?.[0] ? (
                 cachedNFTs
                   ?.slice((pageIdx - 1) * 9, pageIdx * 9)
