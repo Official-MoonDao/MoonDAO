@@ -213,6 +213,12 @@ export default function Card({
     </span>
   )
 
+  if (!metadata) {
+    return (
+      <div className="min-w-[300px] min-h-[400px] bg-dark-cool rounded-[20px] animate-pulse" />
+    )
+  }
+
   return (
     <span
       id="link-frame"

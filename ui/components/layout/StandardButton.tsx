@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 type StandardButtonProps = {
   className?: string
   children?: React.ReactNode
@@ -8,6 +10,7 @@ type StandardButtonProps = {
   hoverEffect?: boolean
   borderRadius?: string
   link?: string
+  target?: string
   paddingOnHover?: string
   textColor?: string
   styleOnly?: boolean
@@ -24,6 +27,7 @@ export default function StandardButton({
   hoverEffect = true,
   borderRadius = 'rounded',
   link = '#',
+  target = '',
   paddingOnHover = 'pl-5',
   textColor = 'text-white',
   styleOnly = false,
@@ -60,5 +64,11 @@ export default function StandardButton({
     </button>
   )
 
-  return styleOnly ? buttonContent : <a href={link}>{buttonContent}</a>
+  return styleOnly ? (
+    buttonContent
+  ) : (
+    <Link href={link} target={target} rel="noopener noreferrer">
+      {buttonContent}
+    </Link>
+  )
 }
