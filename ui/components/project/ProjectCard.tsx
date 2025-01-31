@@ -18,7 +18,7 @@ type ProjectCardProps = {
   userContributed?: boolean
   distribution?: Record<string, number>
   handleDistributionChange?: (projectId: string, value: number) => void
-  userHasVotingPower?: boolean
+  userHasVotingPower?: any
 }
 
 const ProjectCardContent = memo(
