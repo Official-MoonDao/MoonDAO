@@ -380,6 +380,7 @@ export function RetroactiveRewards({
                             ? handleDistributionChange
                             : undefined
                         }
+                        userHasVotingPower={userHasVotingPower}
                       />
                     </div>
                   ))
