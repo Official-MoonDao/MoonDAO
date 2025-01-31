@@ -5,7 +5,7 @@ export const removeMarkdownFormatting = (text: string) => {
 }
 
 export const addHttpsIfMissing = (url: string) => {
-  if (!url.startsWith('https://')) {
+  if (!url?.startsWith('https://')) {
     return `https://${url}`
   }
   return url
