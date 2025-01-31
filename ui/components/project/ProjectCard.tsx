@@ -42,19 +42,26 @@ const ProjectCardContent = memo(
             <Link href={`/project/${project?.id}`} passHref>
               <h1 className="font-GoodTimes">{project?.name || ''}</h1>
             </Link>
-            {project?.finalReportLink && (
+            {project?.finalReportLink || project?.finalReportIPFS ? (
               <StandardButton
                 className={`gradient-2 xl:w-[200px] font-[14px] ${
                   distribute && 'mr-4'
                 }`}
-                link={project?.finalReportLink}
+                link={
+                  project?.finalReportIPFS
+                    ? `/project/${project.id}`
+                    : project?.finalReportLink
+                }
                 onClick={(e: any) => {
                   e.stopPropagation()
                 }}
                 hoverEffect={false}
+                target={project?.finalReportIPFS ? '_self' : '_blank'}
               >
                 <p className="text-[14px]">Review Final Report</p>
               </StandardButton>
+            ) : (
+              <></>
             )}
           </div>
           {distribute &&
