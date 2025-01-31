@@ -25,12 +25,15 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import CollapsibleContainer from '@/components/layout/CollapsibleContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import StandardButton from '@/components/layout/StandardButton'
+import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
@@ -67,6 +70,7 @@ export default function ProjectProfile({
   })
 
   const [owner, setOwner] = useState('')
+  const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
     async function getOwner() {
@@ -93,7 +97,7 @@ export default function ProjectProfile({
     isManager,
     isActive,
     nanceProposal,
-    finalReportLink,
+    finalReportMarkdown,
     proposalJSON,
     totalBudget,
     MDP,
@@ -110,6 +114,10 @@ export default function ProjectProfile({
   })
 
   useChainDefault()
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded)
+  }
 
   //Profile Header Section
   const ProfileHeader = (
@@ -189,46 +197,72 @@ export default function ProjectProfile({
               id="project-overview-container"
               className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
             >
-              <div className="p-5 pb-0 md:p-0 flex flex-col items-start gap-5 pr-12 ">
-                <div className="flex gap-4 opacity-[50%]">
-                  <Image
-                    src={'/assets/icon-star.svg'}
-                    alt="Star Icon"
-                    width={30}
-                    height={30}
-                  />
-                  <h2 className="header font-GoodTimes">Project Overview</h2>
-                </div>
-              </div>
+              <div className="p-5 pb-0 md:p-0 flex flex-col items-start gap-5 pr-12">
+                <div className="flex flex-col md:flex-row gap-4 md:items-center">
+                  <div className="flex gap-4 opacity-[50%]">
+                    <Image
+                      src={'/assets/icon-star.svg'}
+                      alt="Star Icon"
+                      width={30}
+                      height={30}
+                    />
+                    <h2 className="header font-GoodTimes">Proposal</h2>
+                  </div>
 
-              <p className="py-4 px-4 md:px-0 opacity-60">
-                {proposalJSON?.abstract}
-              </p>
-
-              <div className="flex items-center gap-2 px-4 md:px-0">
-                <Link className="flex gap-2" href={`/proposal/${MDP}`} passHref>
-                  <Image
-                    src="/assets/report.png"
-                    alt="Report Icon"
-                    width={15}
-                    height={15}
-                  />
-                  <p className="opacity-60">{'Review Original Proposal'}</p>
-                </Link>
-                {finalReportLink && (
-                  <Link className="flex gap-2" href={finalReportLink} passHref>
+                  <Link
+                    className="flex gap-2"
+                    href={`/proposal/${MDP}`}
+                    passHref
+                  >
                     <Image
                       src="/assets/report.png"
                       alt="Report Icon"
                       width={15}
                       height={15}
                     />
-                    <p className="opacity-60">{'Review Final Report'}</p>
+                    <p className="opacity-60">{'Review Original Proposal'}</p>
                   </Link>
-                )}
+                </div>
               </div>
+
+              <p className="py-4 px-4 md:px-0">
+                <CollapsibleContainer minHeight="400px">
+                  <MarkdownWithTOC body={nanceProposal?.body || ''} />
+                </CollapsibleContainer>
+              </p>
             </div>
           </Frame>
+          {finalReportMarkdown && (
+            <Frame
+              noPadding
+              bottomLeft="0px"
+              bottomRight="0px"
+              topRight="0px"
+              topLeft="0px"
+            >
+              <div
+                id="project-final-report-container"
+                className={`w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section transition-all duration-300`}
+              >
+                <div className="p-5 pb-0 md:p-0 flex items-center gap-5 pr-12 ">
+                  <div className="flex gap-4 opacity-[50%]">
+                    <Image
+                      src={'/assets/icon-star.svg'}
+                      alt="Star Icon"
+                      width={30}
+                      height={30}
+                    />
+                    <h2 className="header font-GoodTimes">Final Report</h2>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <CollapsibleContainer minHeight="400px">
+                    <MarkdownWithTOC body={finalReportMarkdown} />
+                  </CollapsibleContainer>
+                </div>
+              </div>
+            </Frame>
+          )}
 
           <div className="z-50 flex flex-col gap-5 mb-[50px]">
             <Frame
