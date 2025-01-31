@@ -26,7 +26,11 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
     )
     const entityWebsite = getAttribute(nft?.metadata?.attributes, 'website')
     return {
-      twitter: addHttpsIfMissing(entityTwitter?.value),
+      twitter:
+        entityTwitter?.value.startsWith('https://x.com/') ||
+        entityTwitter?.value.startsWith('https://twitter.com/')
+          ? entityTwitter.value
+          : `https://x.com/${entityTwitter?.value.replace('https://', '')}`,
       communications: addHttpsIfMissing(entityCommunications?.value),
       website: addHttpsIfMissing(entityWebsite?.value),
     }

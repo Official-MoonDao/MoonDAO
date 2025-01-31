@@ -27,7 +27,11 @@ export function useCitizenData(nft: any, citizenContract: any) {
     const citizenDiscord = getAttribute(attributes, 'discord')
     const citizenWebsite = getAttribute(attributes, 'website')
     return {
-      twitter: addHttpsIfMissing(citizenTwitter?.value),
+      twitter:
+        citizenTwitter?.value.startsWith('https://x.com/') ||
+        citizenTwitter?.value.startsWith('https://twitter.com/')
+          ? citizenTwitter.value
+          : `https://x.com/${citizenTwitter?.value.replace('https://', '')}`,
       discord: citizenDiscord?.value.replace('@', ''),
       website: addHttpsIfMissing(citizenWebsite?.value),
     }
