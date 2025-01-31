@@ -315,7 +315,7 @@ export default function CitizenMetadataModal({
                   const locationLng =
                     locationData?.results?.[0]?.geometry?.location?.lng || 0
                   const locationName =
-                    locationData?.results?.[0]?.formatted_address || 'Antartica'
+                    locationData?.results?.[0]?.formatted_address || 'Antarctica'
                   const citizenLocationData = {
                     lat: locationLat,
                     lng: locationLng,

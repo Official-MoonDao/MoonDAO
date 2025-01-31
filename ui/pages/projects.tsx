@@ -23,6 +23,7 @@ import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import Container from '@/components/layout/Container'
+import Link from 'next/link'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
@@ -145,7 +146,15 @@ export default function Projects({
   useChainDefault()
 
   const description =
-    'Discover active and archived projects advancing our multiplanetary mission. Have an idea? Submit your proposal and help shape the future of space exploration!'
+  <div className="pt-2">
+    <p>
+      Discover active and archived projects advancing our multiplanetary mission. Have an idea?{' '}
+      <u>
+        <Link href="/submit">Submit your proposal</Link>
+      </u>{' '}
+      and help shape the future of space exploration!
+    </p>
+  </div>
 
   const descriptionSection = (
     <div className="pt-2">

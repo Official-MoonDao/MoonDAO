@@ -175,7 +175,7 @@ export async function getStaticProps() {
         locationData = {
           results: [
             {
-              formatted_address: 'Antartica',
+              formatted_address: 'Antarctica',
               geometry: { location: { lat: -90, lng: 0 } },
             },
           ],
@@ -187,7 +187,7 @@ export async function getStaticProps() {
         name: citizen.metadata.name,
         location: citizenLocation,
         formattedAddress:
-          locationData.results?.[0]?.formatted_address || 'Antartica',
+          locationData.results?.[0]?.formatted_address || 'Antarctica',
         image: citizen.metadata.image,
         lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
         lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
@@ -249,7 +249,7 @@ const dummyData = [
         id: '1',
         name: 'Ryan',
         location: '',
-        formattedAddress: 'Antartica',
+        formattedAddress: 'Antarctica',
         image:
           'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeifh2vwvfxfy6fevqkirldplgp47sfblcfvhn7nsxo4z4krsuulf2e/',
         lat: -90,
@@ -260,7 +260,7 @@ const dummyData = [
         id: '2',
         name: 'name.get',
         location: 'Earth',
-        formattedAddress: 'Antartica',
+        formattedAddress: 'Antarctica',
         image:
           'https://b507f59d2508ebfb5e70996008095782.ipfscdn.io/ipfs/bafybeibo5na6nkatvor7bqisybzwtmh5n4l4wuws3uiyoqvjuuqwzwobna/',
         lat: -90,
@@ -268,7 +268,7 @@ const dummyData = [
         prettyLink: 'name.get-2',
       },
     ],
-    formattedAddress: 'Antartica',
+    formattedAddress: 'Antarctica',
     lat: -90,
     lng: 0,
     color: '#5e4dbf',
