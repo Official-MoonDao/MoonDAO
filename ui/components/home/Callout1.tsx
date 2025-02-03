@@ -20,8 +20,7 @@ export default function Callout1() {
             className="overflow-visible relative pb-10 md:pb-10 w-[100%]"
           >
             <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold bg-clip-text text-dark-cool bg-gradient-to-r from-red-500 to-blue-500 leading-none">
-              MoonDAO is <br></br>
-              Permissionless
+            Bringing the Space Industry Onchain 
             </h1>
             <p
               id="paragraph"
@@ -36,10 +35,10 @@ export default function Callout1() {
               textColor="text-white"
               hoverColor="bg-mid-cool"
               borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-              link="/get-mooney"
+              link="/map"
               paddingOnHover="pl-5"
             >
-              Unlock Voting Power
+              Explore The Network
             </StandardButton>
           </div>
         </div>
