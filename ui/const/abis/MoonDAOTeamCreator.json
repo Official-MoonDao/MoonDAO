@@ -2,6 +2,16 @@
   {
     "inputs": [
       { "internalType": "address", "name": "_hats", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "_hatsModuleFactory",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_hatsPassthrough",
+        "type": "address"
+      },
       { "internalType": "address", "name": "_moonDAOTeam", "type": "address" },
       {
         "internalType": "address",
@@ -71,7 +81,8 @@
       { "internalType": "string", "name": "communications", "type": "string" },
       { "internalType": "string", "name": "website", "type": "string" },
       { "internalType": "string", "name": "_view", "type": "string" },
-      { "internalType": "string", "name": "formId", "type": "string" }
+      { "internalType": "string", "name": "formId", "type": "string" },
+      { "internalType": "address[]", "name": "members", "type": "address[]" }
     ],
     "name": "createMoonDAOTeam",
     "outputs": [
@@ -117,9 +128,27 @@
   },
   {
     "inputs": [
+      { "internalType": "address", "name": "_table", "type": "address" }
+    ],
+    "name": "setMoonDaoTeamTable",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
       { "internalType": "bool", "name": "_openAccess", "type": "bool" }
     ],
     "name": "setOpenAccess",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_whitelist", "type": "address" }
+    ],
+    "name": "setWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

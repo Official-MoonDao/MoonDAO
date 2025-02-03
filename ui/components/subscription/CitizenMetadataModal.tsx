@@ -324,18 +324,31 @@ export default function CitizenMetadataModal({
 
                   const transaction = prepareContractCall({
                     contract: citizenTableContract,
-                    method: 'updateTable' as string,
+                    method: 'updateTableDynamic' as string,
                     params: [
                       nft.metadata.id,
-                      cleanedCitizenData.name,
-                      cleanedCitizenData.description,
-                      imageIpfsLink,
-                      JSON.stringify(cleanedLocationData),
-                      cleanedCitizenData.discord,
-                      cleanedCitizenData.twitter,
-                      cleanedCitizenData.website,
-                      cleanedCitizenData.view,
-                      formResponseId,
+                      [
+                        'name',
+                        'description',
+                        'image',
+                        'location',
+                        'discord',
+                        'twitter',
+                        'website',
+                        'view',
+                        'formId',
+                      ],
+                      [
+                        cleanedCitizenData.name,
+                        cleanedCitizenData.description,
+                        imageIpfsLink,
+                        JSON.stringify(cleanedLocationData),
+                        cleanedCitizenData.discord,
+                        cleanedCitizenData.twitter,
+                        cleanedCitizenData.website,
+                        cleanedCitizenData.view,
+                        formResponseId,
+                      ],
                     ],
                   })
 

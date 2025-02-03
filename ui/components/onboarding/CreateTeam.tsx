@@ -454,6 +454,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                             teamData.website,
                             teamData.view,
                             teamData.formResponseId,
+                            [],
                           ],
                           value: cost,
                         })

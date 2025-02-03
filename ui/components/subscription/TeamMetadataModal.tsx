@@ -262,17 +262,29 @@ export default function TeamMetadataModal({
 
                   const transaction = prepareContractCall({
                     contract: teamTableContract,
-                    method: 'updateTable' as string,
+                    method: 'updateTableDynamic' as string,
                     params: [
                       nft.metadata.id,
-                      cleanedTeamData.name,
-                      cleanedTeamData.description,
-                      imageIpfsLink,
-                      cleanedTeamData.twitter,
-                      cleanedTeamData.communications,
-                      cleanedTeamData.website,
-                      cleanedTeamData.view,
-                      formResponseId,
+                      [
+                        'name',
+                        'description',
+                        'image',
+                        'twitter',
+                        'communications',
+                        'website',
+                        'view',
+                        'formId',
+                      ],
+                      [
+                        cleanedTeamData.name,
+                        cleanedTeamData.description,
+                        imageIpfsLink,
+                        cleanedTeamData.twitter,
+                        cleanedTeamData.communications,
+                        cleanedTeamData.website,
+                        cleanedTeamData.view,
+                        formResponseId,
+                      ],
                     ],
                   })
 

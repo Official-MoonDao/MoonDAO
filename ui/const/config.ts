@@ -18,13 +18,11 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig = require(
-  `../../contracts/deployments/ethereum`
-) as DeploymentConfig
+const ethConfig =
+  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
 
-const polygonConfig = require(
-  `../../contracts/deployments/polygon`
-) as DeploymentConfig
+const polygonConfig =
+  require(`../../contracts/deployments/polygon`) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -32,13 +30,11 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig = require(
-  `../../contracts/deployments/goerli`
-) as DeploymentConfig
+const goerliConfig =
+  require(`../../contracts/deployments/goerli`) as DeploymentConfig
 
-const sepoliaConfig = require(
-  `../../contracts/deployments/sepolia`
-) as DeploymentConfig
+const sepoliaConfig =
+  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -112,19 +108,19 @@ export const CITIZEN_NFT_ADDRESSES: Index = {
 
 export const CITIZEN_ADDRESSES: Index = {
   arbitrum: '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002',
-  sepolia: '0x31bD6111eDde8D8D6E12C8c868C48FF3623CF098',
+  sepolia: '0x48A0E8B6A86a05aeA3C544B7A9916F6FaFb88d8a',
   'arbitrum-sepolia': '0x853d6B4BA61115810330c7837FDD24D61CBab855',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x8F14E436fa0fFcD4239733686d190F1e4F1b84E6',
-  sepolia: '0x369E322EC264dB091ef30032f3ac9B5Da628FE50',
+  arbitrum: '0x40C7F938F1df609092c101614E52d60673A7dC9F',
+  sepolia: '0xbddE39D8b7098c9Dfb86b1fA91f7746f3Ff4dAcC',
   'arbitrum-sepolia': '0xfF3F124D91D6eD6A47e1066473a78AaEde4c2fbe',
 }
 
 export const CITIZEN_TABLE_NAMES: Index = {
-  arbitrum: 'CITIZENTABLE_42161_98',
-  sepolia: 'CITIZENTABLE_11155111_1671',
+  arbitrum: 'CITIZENTABLE_42161_125',
+  sepolia: 'CITIZENTABLE_11155111_1897',
   'arbitrum-sepolia': 'CITIZENTABLE_421614_1058',
 }
 
@@ -168,55 +164,49 @@ export const DEPRIZE_ID = 2
 
 export const CITIZEN_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0xd594DBF360D666c94615Fb186AF3cB1018Be1616',
-  sepolia: '',
+  sepolia: '0x63A4EBd450e4A291b73f18D08ac755a009d5Bb56',
   'arbitrum-sepolia': '0x0c7dfCC2B97fAAFD852cEaf62B0CD02BdEa4774A',
 }
 
 export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
   arbitrum: '0x755D48e6C3744B723bd0326C57F99A92a3Ca3287',
-  sepolia: '',
+  sepolia: '0x4d6CE01C1ebae5771D8411474fEf69af2d4CdfFa',
   'arbitrum-sepolia': '0xef813421ea5e6bc8d8Ad09E08912149C4b115EcB',
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0xa7879adeFc81884c76342741FbDdE5BfDceAaB36',
-  sepolia: '',
+  arbitrum: '0xc5052b22fAa927FBE78AB9A2D35B0B438715fE7B',
+  sepolia: '0x80620708C104633Ca9Ae6cbCb0768F66d9b13E25',
   'arbitrum-sepolia': '0x18A0f907575b0387CcFEaa40e694FF1E83Fe5F18',
 }
 
 export const TEAM_ADDRESSES: Index = {
   arbitrum: '0xAB2C354eC32880C143e87418f80ACc06334Ff55F',
-  sepolia: '0xEb9A6975381468E388C33ebeF4089Be86fe31d78',
-  'arbitrum-sepolia': '0xCa3448e91Cf81Ff8E2A25F0128Bd36f2D01C6205',
+  sepolia: '0x21d2C4bEBd1AEb830277F8548Ae30F505551f961',
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0x203f481336A212Eff43E84761792E307975Cf27b',
-  sepolia: '0x55D07Ab23092edc7EdAEC7048B784aCcb2cc4469',
-  'arbitrum-sepolia': '0xC58db82E66803d500A92CeA0fa6DC7Fdb1c6169d',
+  arbitrum: '0x40C44A32e92358B3407629B1a69225b1858Bc5fe',
+  sepolia: '0x1eafC528435e49Af2b3E970A12Ab2Dddb929bAc1',
 }
 
 export const TEAM_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x434ADaB0BEdFc9973c5cbF0224dfe0212a20d3D4',
-  sepolia: '0x42d356e77f6d9Bad870865e0973Ed32F54fA4006',
-  'arbitrum-sepolia': '0x7cA858a204eD98E2AD157dfdf3b8Aa8773e90FC5',
+  arbitrum: '0x1C9B9847bE88eb3F7154bA6A4560Cb8D52A13dD9',
+  sepolia: '0x6227dBa1e0AbBf6bdc5855327D2293012b91cfeB',
 }
 
 export const TEAM_TABLE_NAMES: Index = {
-  arbitrum: 'TEAMTABLE_42161_92',
-  sepolia: 'ENTITYTABLE_11155111_1731',
-  'arbitrum-sepolia': 'TEAMTABLE_421614_1069',
+  arbitrum: 'TEAMTABLE_42161_124',
+  sepolia: 'TEAMTABLE_11155111_1895',
 }
 
 export const TEAM_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0x203ca831edec28b7657A022b8aFe5d28b6BE6Eda',
-  sepolia: '',
-  'arbitrum-sepolia': '0x4f269bC8f0984Ee1D0668E3C01d586466aB3535D',
+  sepolia: '0xBB22b6bfb410e62BC103CA6cAcc342bEe42117aA',
 }
 export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   arbitrum: '0x96E054924258E51d8e3b3aB8A6A27920f6cE53ee',
-  sepolia: '',
-  'arbitrum-sepolia': '0x7feF5F345B4DaC759B4bb02FaE1a91Dd668260d9',
+  sepolia: '0x1e638C6120d7eF07e0978b68e22CD80bf5E70986',
 }
 
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
