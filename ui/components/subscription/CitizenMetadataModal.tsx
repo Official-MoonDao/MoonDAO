@@ -315,7 +315,8 @@ export default function CitizenMetadataModal({
                   const locationLng =
                     locationData?.results?.[0]?.geometry?.location?.lng || 0
                   const locationName =
-                    locationData?.results?.[0]?.formatted_address || 'Antarctica'
+                    locationData?.results?.[0]?.formatted_address ||
+                    'Antarctica'
                   const citizenLocationData = {
                     lat: locationLat,
                     lng: locationLng,
@@ -323,23 +324,23 @@ export default function CitizenMetadataModal({
                   }
                   const cleanedLocationData = cleanData(citizenLocationData)
 
-                  const formattedCitizenTwitter = addHttpsIfMissing(
-                    cleanedCitizenData.twitter
-                  )
-                  const formattedCitizenWebsite = addHttpsIfMissing(
-                    cleanedCitizenData.website
-                  )
-                  const formattedCitizenDiscord =
-                    cleanedCitizenData.discord.startsWith('@')
+                  const formattedCitizenTwitter = cleanedCitizenData.twitter
+                    ? addHttpsIfMissing(cleanedCitizenData.twitter)
+                    : ''
+                  const formattedCitizenWebsite = cleanedCitizenData.website
+                    ? addHttpsIfMissing(cleanedCitizenData.website)
+                    : ''
+                  const formattedCitizenDiscord = cleanedCitizenData.discord
+                    ? cleanedCitizenData.discord.startsWith('@')
                       ? cleanedCitizenData.discord.replace('@', '')
                       : cleanedCitizenData.discord
+                    : ''
 
                   const transaction = prepareContractCall({
                     contract: citizenTableContract,
                     method: 'updateTableDynamic' as string,
                     params: [
                       nft.metadata.id,
-<<<<<<< HEAD
                       [
                         'name',
                         'description',
@@ -356,23 +357,12 @@ export default function CitizenMetadataModal({
                         cleanedCitizenData.description,
                         imageIpfsLink,
                         JSON.stringify(cleanedLocationData),
-                        cleanedCitizenData.discord,
-                        cleanedCitizenData.twitter,
-                        cleanedCitizenData.website,
+                        formattedCitizenDiscord,
+                        formattedCitizenTwitter,
+                        formattedCitizenWebsite,
                         cleanedCitizenData.view,
                         formResponseId,
                       ],
-=======
-                      cleanedCitizenData.name,
-                      cleanedCitizenData.description,
-                      imageIpfsLink,
-                      JSON.stringify(cleanedLocationData),
-                      formattedCitizenDiscord,
-                      formattedCitizenTwitter,
-                      formattedCitizenWebsite,
-                      cleanedCitizenData.view,
-                      formResponseId,
->>>>>>> 57e4ab3c09e8247b67e1f5a2b04338aa6abedbaa
                     ],
                   })
 
