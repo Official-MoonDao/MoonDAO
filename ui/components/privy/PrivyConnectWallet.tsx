@@ -330,10 +330,10 @@ export function PrivyConnectWallet({
     usdt: 0,
   })
 
-  const mooneyBalance = useWatchTokenBalance(mooneyContract, 18)
-  const daiBalance = useWatchTokenBalance(daiContract, 18)
-  const usdcBalance = useWatchTokenBalance(usdcContract, 6)
-  const usdtBalance = useWatchTokenBalance(usdtContract, 6)
+  const mooneyBalance = useWatchTokenBalance(MOONEY_ADDRESSES[chainSlug], 18)
+  const daiBalance = useWatchTokenBalance(DAI_ADDRESSES[chainSlug], 18)
+  const usdcBalance = useWatchTokenBalance(USDC_ADDRESSES[chainSlug], 6)
+  const usdtBalance = useWatchTokenBalance(USDT_ADDRESSES[chainSlug], 6)
 
   useEffect(() => {
     if (mooneyBalance >= 0)
