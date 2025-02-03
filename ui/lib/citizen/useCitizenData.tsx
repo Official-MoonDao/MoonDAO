@@ -23,17 +23,22 @@ export function useCitizenData(nft: any, citizenContract: any) {
   }, [attributes])
 
   const socials = useMemo(() => {
-    const citizenTwitter = getAttribute(attributes, 'twitter')
-    const citizenDiscord = getAttribute(attributes, 'discord')
-    const citizenWebsite = getAttribute(attributes, 'website')
+    const citizenTwitter = getAttribute(attributes, 'twitter')?.value
+    const citizenDiscord = getAttribute(attributes, 'discord')?.value
+    const citizenWebsite = getAttribute(attributes, 'website')?.value
+
+    const formattedTwitter =
+      !citizenTwitter || citizenTwitter === ''
+        ? ''
+        : citizenTwitter?.startsWith('https://x.com/') ||
+          citizenTwitter?.startsWith('https://twitter.com/')
+        ? citizenTwitter
+        : `https://x.com/${citizenTwitter?.replace('https://', '')}`
+
     return {
-      twitter:
-        citizenTwitter?.value.startsWith('https://x.com/') ||
-        citizenTwitter?.value.startsWith('https://twitter.com/')
-          ? citizenTwitter.value
-          : `https://x.com/${citizenTwitter?.value.replace('https://', '')}`,
-      discord: citizenDiscord?.value.replace('@', ''),
-      website: addHttpsIfMissing(citizenWebsite?.value),
+      twitter: formattedTwitter,
+      discord: citizenDiscord?.replace('@', ''),
+      website: citizenWebsite ? addHttpsIfMissing(citizenWebsite) : '',
     }
   }, [attributes])
 
