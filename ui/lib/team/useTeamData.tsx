@@ -1,4 +1,3 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -19,16 +18,32 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   const [managerHatId, setManagerHatId] = useState<any>()
 
   const socials = useMemo(() => {
-    const entityTwitter = getAttribute(nft?.metadata?.attributes, 'twitter')
+    const entityTwitter = getAttribute(
+      nft?.metadata?.attributes,
+      'twitter'
+    )?.value
     const entityCommunications = getAttribute(
       nft?.metadata?.attributes,
       'communications'
-    )
-    const entityWebsite = getAttribute(nft?.metadata?.attributes, 'website')
+    )?.value
+    const entityWebsite = getAttribute(
+      nft?.metadata?.attributes,
+      'website'
+    )?.value
+
+    const formattedTwitter =
+      !entityTwitter || entityTwitter === ''
+        ? ''
+        : entityTwitter?.startsWith('https://x.com/') ||
+          entityTwitter?.startsWith('https://twitter.com/')
+        ? entityTwitter
+        : `https://x.com/${entityTwitter?.replace('https://', '')}`
     return {
-      twitter: addHttpsIfMissing(entityTwitter?.value),
-      communications: addHttpsIfMissing(entityCommunications?.value),
-      website: addHttpsIfMissing(entityWebsite?.value),
+      twitter: formattedTwitter,
+      communications: entityCommunications
+        ? addHttpsIfMissing(entityCommunications)
+        : '',
+      website: entityWebsite ? addHttpsIfMissing(entityWebsite) : '',
     }
   }, [nft?.metadata?.attributes])
 

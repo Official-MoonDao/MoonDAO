@@ -1,10 +1,10 @@
-import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { usePrivy } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import PrivyWalletContext from '../privy/privy-wallet-context'
+import { useActiveAccount } from 'thirdweb/react'
 import { getChainSlug } from '../thirdweb/chain'
 import client from '../thirdweb/client'
 
@@ -14,20 +14,15 @@ export function useCitizen(
   citizenAddress?: string
 ) {
   const chainSlug = getChainSlug(selectedChain)
-  const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
+  const account = useActiveAccount()
+  const address = account?.address
   const { user, authenticated } = usePrivy()
   const [citizenNFT, setCitizenNFT] = useState<any>()
 
   useEffect(() => {
     async function getCitizenNFTByAddress() {
-      if (
-        citizenNFT &&
-        citizenNFT?.owner === wallets?.[selectedWallet]?.address
-      )
-        return
-
-      if (!authenticated || !user) return setCitizenNFT(undefined)
+      setCitizenNFT(undefined)
+      if (!authenticated || !user) return
       try {
         let contract
         if (citizenContract) {
@@ -41,12 +36,10 @@ export function useCitizen(
           })
         }
 
-        const selectedWalletAddress = wallets[selectedWallet].address
-
         const ownedTokenId: any = await readContract({
           contract: contract,
           method: 'getOwnedToken' as string,
-          params: [citizenAddress || selectedWalletAddress],
+          params: [citizenAddress || address],
         })
 
         const nft = await getNFT({
@@ -65,9 +58,8 @@ export function useCitizen(
     selectedChain,
     chainSlug,
     citizenContract,
-    selectedWallet,
+    address,
     user,
-    wallets,
     authenticated,
     citizenAddress,
   ])

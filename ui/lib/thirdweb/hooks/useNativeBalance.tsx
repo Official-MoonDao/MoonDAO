@@ -1,32 +1,28 @@
 import { useWallets } from '@privy-io/react-auth'
-import { useContext, useEffect } from 'react'
-import {
-  useActiveAccount,
-  useActiveWalletChain,
-  useWalletBalance,
-} from 'thirdweb/react'
-import PrivyWalletContext from '../../privy/privy-wallet-context'
-import client from '../client'
+import { useContext, useEffect, useState } from 'react'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import ChainContextV5 from '../chain-context-v5'
 
 export function useNativeBalance() {
-  const account = useActiveAccount()
-  const address = account?.address
-  const activeWalletChain = useActiveWalletChain()
   const { selectedWallet } = useContext(PrivyWalletContext)
+  const { selectedChain } = useContext(ChainContextV5)
   const { wallets } = useWallets()
-
-  const { data: nativeBalance, refetch } = useWalletBalance({
-    client,
-    address: address,
-    chain: activeWalletChain,
-  })
-
+  const [nativeBalance, setNativeBalance] = useState<any>()
   useEffect(() => {
-    const interval = setInterval(() => {
-      refetch()
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [address, wallets, selectedWallet])
+    async function getNativeBalance() {
+      const wallet = wallets[selectedWallet]
+      if (!wallet) return
+      const provider = await wallet.getEthersProvider()
+      const balance = await provider.getBalance(wallet.address)
+      setNativeBalance(Number(+balance?.toString() / 10 ** 18).toFixed(7))
+    }
 
-  return Number(nativeBalance?.displayValue).toFixed(7)
+    const interval = setInterval(() => {
+      getNativeBalance()
+    }, 5000)
+    getNativeBalance()
+    return () => clearInterval(interval)
+  }, [wallets, selectedWallet, selectedChain])
+
+  return nativeBalance
 }

@@ -175,12 +175,12 @@ export default function TeamListing({
                 id="content"
                 className="animate-fadeIn relative z-50 flex flex-col"
               >
-                <div className="">
+                <div className="rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] w-[300px] pb-5 rounded-br-[5vmax] max-w-[250px] max-h-[250px] md:max-w-[300px] md:max-h-[300px] overflow-hidden">
                   <MediaRenderer
                     client={client}
-                    className="w-full rounded-tl-[20px] rounded-tr-[5vmax] rounded-bl-[5vmax] max-w-[575px] md:max-w-[500px] pb-5 rounded-br-[5vmax] overflow-hidden"
-                    width="100%"
-                    height="200px"
+                    className=""
+                    width="300px"
+                    height="300px"
                     src={listing.image}
                   />
                 </div>
