@@ -7,6 +7,7 @@ type NumberStepperProps = {
   step?: number
   max?: number
   min?: number
+  isDisabled?: boolean
 }
 
 export default function NumberStepper({
@@ -15,6 +16,7 @@ export default function NumberStepper({
   step = 1,
   max,
   min,
+  isDisabled,
 }: NumberStepperProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -42,7 +44,11 @@ export default function NumberStepper({
   }
 
   return (
-    <div className="flex items-center justify-between w-[100px] min-h-[35px] gradient-2 rounded-full">
+    <div
+      className={`flex items-center justify-between w-[100px] h-[35px] gradient-2 rounded-full ${
+        isDisabled && 'opacity-50'
+      }`}
+    >
       <input
         ref={inputRef}
         id="number-stepper"
@@ -51,6 +57,7 @@ export default function NumberStepper({
         value={number}
         onChange={handleChange}
         step={0}
+        disabled={isDisabled}
       />
       <div className="w-[45%] flex flex-col justify-center items-center">
         <button onClick={increase}>

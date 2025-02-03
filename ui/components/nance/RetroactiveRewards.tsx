@@ -6,6 +6,9 @@ import {
   DISTRIBUTION_TABLE_ADDRESSES,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
+  ARBITRUM_ASSETS_URL,
+  POLYGON_ASSETS_URL,
+  BASE_ASSETS_URL,
 } from 'const/config'
 import _ from 'lodash'
 import Image from 'next/image'
@@ -209,7 +212,16 @@ export function RetroactiveRewards({
         )
       : {}
 
-  const { tokens } = useAssets()
+  const { tokens: mainnetTokens } = useAssets()
+  const { tokens: arbitrumTokens } = useAssets(ARBITRUM_ASSETS_URL)
+  const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
+  const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
+
+  const tokens = mainnetTokens
+    .concat(arbitrumTokens)
+    .concat(polygonTokens)
+    .concat(baseTokens)
+  console.log(tokens)
 
   const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
@@ -259,41 +271,29 @@ export function RetroactiveRewards({
     }
     try {
       if (!account) throw new Error('No account found')
+      let receipt
       if (edit) {
         const transaction = prepareContractCall({
           contract: distributionTableContract,
           method: 'updateTableCol' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
-        const receipt = await sendAndConfirmTransaction({
+        receipt = await sendAndConfirmTransaction({
           transaction,
           account,
         })
-        if (receipt)
-          toast.success('Distribution edited successfully!', {
-            style: toastStyle,
-          })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
       } else {
         const transaction = prepareContractCall({
           contract: distributionTableContract,
           method: 'insertIntoTable' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
-        const receipt = await sendAndConfirmTransaction({
+        receipt = await sendAndConfirmTransaction({
           transaction,
           account,
         })
-        if (receipt)
-          toast.success('Distribution submitted successfully!', {
-            style: toastStyle,
-          })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
       }
+      if (receipt) setTimeout(() => router.push('/rewards/thank-you'), 5000)
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -328,7 +328,7 @@ export function RetroactiveRewards({
             >
               <RewardAsset
                 name="ETH"
-                value={ethBudget.toFixed(1)}
+                value={ethBudget.toFixed(4)}
                 usdValue={usdBudget.toFixed(2)}
               />
               <div className="flex flex-col md:flex-row md:items-center justify-between">
@@ -380,6 +380,7 @@ export function RetroactiveRewards({
                             ? handleDistributionChange
                             : undefined
                         }
+                        userHasVotingPower={userHasVotingPower}
                       />
                     </div>
                   ))

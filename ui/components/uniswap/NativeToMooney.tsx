@@ -140,7 +140,7 @@ export default function NativeToMooney({ selectedChain }: any) {
         <div className="flex justify-between items-center">
           <p className="md:text-2xl">{output?.toLocaleString() || 0}</p>
           <div className="p-2 flex items-center gap-2 bg-black rounded-full">
-            <Image src={`/original.png`} width={20} height={20} alt="" />
+            <Image src={`/Original.png`} width={20} height={20} alt="" />
             <p>MOONEY</p>
           </div>
         </div>

@@ -142,8 +142,8 @@ export default function ProposalList() {
   } else {
     const packet = proposalsPacket
     return (
-      <div className="mx-5 rounded-bl-20px overflow-hidden md:mt-[-40px] md:pt-5">
-        <div className="font-[roboto] lg:max-w-[800px] lg:ml-5 ">
+      <div className="rounded-bl-20px overflow-hidden md:mt-[-40px] md:pt-5">
+        <div className="font-[roboto] lg:max-w-[800px] ">
           <ul
             className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
             id="scrollableUl"

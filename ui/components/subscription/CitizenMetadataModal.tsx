@@ -16,6 +16,7 @@ import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
+import { addHttpsIfMissing } from '@/lib/utils/strings'
 import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
@@ -314,7 +315,7 @@ export default function CitizenMetadataModal({
                   const locationLng =
                     locationData?.results?.[0]?.geometry?.location?.lng || 0
                   const locationName =
-                    locationData?.results?.[0]?.formatted_address || 'Antartica'
+                    locationData?.results?.[0]?.formatted_address || 'Antarctica'
                   const citizenLocationData = {
                     lat: locationLat,
                     lng: locationLng,
@@ -322,11 +323,23 @@ export default function CitizenMetadataModal({
                   }
                   const cleanedLocationData = cleanData(citizenLocationData)
 
+                  const formattedCitizenTwitter = addHttpsIfMissing(
+                    cleanedCitizenData.twitter
+                  )
+                  const formattedCitizenWebsite = addHttpsIfMissing(
+                    cleanedCitizenData.website
+                  )
+                  const formattedCitizenDiscord =
+                    cleanedCitizenData.discord.startsWith('@')
+                      ? cleanedCitizenData.discord.replace('@', '')
+                      : cleanedCitizenData.discord
+
                   const transaction = prepareContractCall({
                     contract: citizenTableContract,
                     method: 'updateTableDynamic' as string,
                     params: [
                       nft.metadata.id,
+<<<<<<< HEAD
                       [
                         'name',
                         'description',
@@ -349,6 +362,17 @@ export default function CitizenMetadataModal({
                         cleanedCitizenData.view,
                         formResponseId,
                       ],
+=======
+                      cleanedCitizenData.name,
+                      cleanedCitizenData.description,
+                      imageIpfsLink,
+                      JSON.stringify(cleanedLocationData),
+                      formattedCitizenDiscord,
+                      formattedCitizenTwitter,
+                      formattedCitizenWebsite,
+                      cleanedCitizenData.view,
+                      formResponseId,
+>>>>>>> 57e4ab3c09e8247b67e1f5a2b04338aa6abedbaa
                     ],
                   })
 
