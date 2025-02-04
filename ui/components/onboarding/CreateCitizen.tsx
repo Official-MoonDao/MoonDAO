@@ -501,7 +501,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       //if (selectedChainSlug == 'arbitrum-sepolia') {
                       if (true) {
                         const GAS_LIMIT = 300000 // Gas limit for the executor
-                        const MSG_VALUE = cost // msg.value for the lzReceive() function on destination in wei
+                        console.log('cost', cost)
+                        const MSG_VALUE = 11100000000000000n // msg.value for the lzReceive() function on destination in wei
                         console.log('cost')
                         console.log(cost)
                         console.log(cost * 2n)
@@ -518,7 +519,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                           contract: crossChainMintContract,
                           method: 'crossChainMint',
                           params: [
-                            LAYERZERO_EIDS[arbitrumSepoliaSlug],
+                            LAYERZERO_EIDS[arbitrumSepoliaSlug].toString(),
                             _options.toHex(),
                             address,
                             citizenData.name,
@@ -531,8 +532,25 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                             'public',
                             citizenData.formResponseId,
                           ],
-                          value: cost * 2n,
+                          value: MSG_VALUE * 2n,
                         })
+                        console.log('transaction')
+                        console.log(transaction)
+                        console.log('params')
+                        console.log([
+                          LAYERZERO_EIDS[arbitrumSepoliaSlug].toString(),
+                          _options.toHex(),
+                          address,
+                          citizenData.name,
+                          '',
+                          `ipfs://${newImageIpfsHash}`,
+                          '',
+                          '',
+                          '',
+                          '',
+                          'public',
+                          citizenData.formResponseId,
+                        ])
                         const receipt: any = await sendAndConfirmTransaction({
                           transaction,
                           account,
