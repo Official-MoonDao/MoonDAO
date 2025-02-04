@@ -5,6 +5,7 @@ import {
   arbitrum,
   base,
   baseSepolia,
+  arbitrumSepolia,
   ethereum,
   polygon,
   sepolia,
@@ -92,6 +93,10 @@ export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
             <>
               <NetworkOption chain={sepolia} selectChain={selectChain} />
               <NetworkOption chain={baseSepolia} selectChain={selectChain} />
+              <NetworkOption
+                chain={arbitrumSepolia}
+                selectChain={selectChain}
+              />
             </>
           )}
         </div>
