@@ -23,6 +23,7 @@
     "@heroicons/react": "^2.0.18",
     "@hookform/error-message": "^2.0.1",
     "@layerzerolabs/lz-v2-utilities": "^3.0.61",
+    "@layerzerolabs/scan-client": "^0.0.8",
     "@nance/nance-editor": "^1.8.4",
     "@nance/nance-hooks": "^4.1.6",
     "@nance/nance-sdk": "^4.1.6",

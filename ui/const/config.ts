@@ -305,7 +305,7 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
 }
 
 export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
-  'arbitrum-sepolia': '0x0c7dfCC2B97fAAFD852cEaf62B0CD02BdEa4774A',
+  'arbitrum-sepolia': '0xfF113d31149F63732B8943a9Ea12b738cB343202',
 }
 export const LAYERZERO_EIDS: Index = {
   'arbitrum-sepolia': 40161, //sepolia eid

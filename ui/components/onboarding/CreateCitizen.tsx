@@ -1,5 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Options } from '@layerzerolabs/lz-v2-utilities'
+import { createClient } from '@layerzerolabs/scan-client'
+import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import { useFundWallet } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
@@ -21,6 +23,7 @@ import {
   prepareContractCall,
   readContract,
   sendAndConfirmTransaction,
+  waitForReceipt,
 } from 'thirdweb'
 import { arbitrum, sepolia, arbitrumSepolia, Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
@@ -33,6 +36,7 @@ import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
@@ -60,7 +64,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const selectedChainSlug = getChainSlug(selectedChain)
   const arbitrumSepoliaSlug = getChainSlug(arbitrumSepolia)
-
+  const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
+  const client = createClient(isTestnet ? 'testnet' : 'mainnet')
   const account = useActiveAccount()
   const address = account?.address
 
@@ -121,8 +126,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const tagToNetworkSignup = useTag(CK_NETWORK_SIGNUP_TAG_ID)
 
   const nativeBalance = useNativeBalance()
-  console.log('nativeBalance')
-  console.log(nativeBalance)
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     const { formId, responseId } = formResponse
@@ -157,6 +160,157 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
     setStage(2)
   }, [])
+
+  const callMint = (crossChain) => async () => {
+    if (!citizenImage)
+      return toast.error('Please wait for your image to finish generating.')
+
+    if (!account || !address) {
+      return toast.error('Please connect your wallet to continue.')
+    }
+
+    try {
+      const cost: any = await readContract({
+        contract: citizenContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
+      })
+
+      const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
+
+      const estimatedMaxGas = 0.0001
+
+      const totalCost = Number(formattedCost) + estimatedMaxGas
+
+      if (+nativeBalance < totalCost) {
+        const roundedCost = Math.ceil(+totalCost * 1000000) / 1000000
+
+        return await fundWallet(address, {
+          amount: String(roundedCost),
+        })
+      }
+
+      const renamedCitizenImage = renameFile(
+        citizenImage,
+        `${citizenData.name} Citizen Image`
+      )
+
+      const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
+
+      if (!newImageIpfsHash) {
+        return toast.error('Error pinning image to IPFS')
+      }
+
+      //mint
+      setIsLoadingMint(true)
+
+      let receipt: any
+      if (crossChain) {
+        const GAS_LIMIT = 300000 // Gas limit for the executor
+        // TODO don't hardcode this
+        const MSG_VALUE = 11100000000000000n // msg.value for the lzReceive() function on destination in wei
+
+        const _options = Options.newOptions().addExecutorLzReceiveOption(
+          GAS_LIMIT,
+          MSG_VALUE
+        )
+
+        const transaction = await prepareContractCall({
+          contract: crossChainMintContract,
+          method: 'crossChainMint',
+          params: [
+            LAYERZERO_EIDS[arbitrumSepoliaSlug].toString(),
+            _options.toHex(),
+            address,
+            citizenData.name,
+            '',
+            `ipfs://${newImageIpfsHash}`,
+            '',
+            '',
+            '',
+            '',
+            'public',
+            citizenData.formResponseId,
+          ],
+          value: (MSG_VALUE * 3n) / 2n,
+        })
+        const originReceipt: any = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+        // Get a list of messages by transaction hash
+        const message = await waitForMessageReceived(
+          isTestnet ? 19999 : 1, // 19999 resolves to testnet, 1 to mainnet, see https://cdn.jsdelivr.net/npm/@layerzerolabs/scan-client@0.0.8/dist/client.mjs
+          originReceipt.transactionHash
+        )
+        receipt = await waitForReceipt({
+          client: serverClient,
+          // TODO set dest chain
+          chain: sepolia,
+          transactionHash: message.dstTxHash,
+        })
+      } else {
+        const transaction = await prepareContractCall({
+          contract: citizenContract,
+          method: 'mintTo' as string,
+          params: [
+            address,
+            citizenData.name,
+            '',
+            `ipfs://${newImageIpfsHash}`,
+            '',
+            '',
+            '',
+            '',
+            'public',
+            citizenData.formResponseId,
+          ],
+          value: cost,
+        })
+
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      }
+
+      // Define the event signature for the Transfer event
+      const transferEventSignature = ethers.utils.id(
+        'Transfer(address,address,uint256)'
+      )
+      // Find the log that matches the Transfer event signature
+      const transferLog = receipt.logs.find(
+        (log: any) => log.topics[0] === transferEventSignature
+      )
+
+      const mintedTokenId = ethers.BigNumber.from(
+        transferLog.topics[3]
+      ).toString()
+
+      if (mintedTokenId) {
+        await tagToNetworkSignup(citizenData.email)
+
+        const citizenNFT = await waitForERC721(citizenContract, +mintedTokenId)
+        const citizenName = citizenNFT?.metadata.name as string
+        const citizenPrettyLink = generatePrettyLinkWithId(
+          citizenName,
+          mintedTokenId
+        )
+        setTimeout(async () => {
+          await sendDiscordMessage(
+            'networkNotifications',
+            `[**${citizenName}** has just become a Citizen of the Space Acceleration Network!](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789)`
+          )
+
+          router.push(`/citizen/${citizenPrettyLink}`)
+          setIsLoadingMint(false)
+        }, 5000)
+      }
+    } catch (err) {
+      console.error(err)
+      setIsLoadingMint(false)
+    }
+  }
 
   return (
     <Container>
@@ -441,185 +595,19 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 </div>
                 <PrivyWeb3Button
                   id="citizen-checkout-button"
-                  skipNetworkCheck={true}
+                  skipNetworkCheck={false}
                   label="Check Out"
                   isDisabled={!agreedToCondition || isLoadingMint}
-                  action={async () => {
-                    if (!citizenImage)
-                      return toast.error(
-                        'Please wait for your image to finish generating.'
-                      )
-
-                    if (!account || !address) {
-                      return toast.error(
-                        'Please connect your wallet to continue.'
-                      )
-                    }
-
-                    try {
-                      const cost: any = await readContract({
-                        contract: citizenContract,
-                        method: 'getRenewalPrice' as string,
-                        params: [address, 365 * 24 * 60 * 60],
-                      })
-
-                      const formattedCost = ethers.utils
-                        .formatEther(cost.toString())
-                        .toString()
-
-                      const estimatedMaxGas = 0.0001
-
-                      const totalCost = Number(formattedCost) + estimatedMaxGas
-
-                      //if (+nativeBalance < totalCost) {
-                      //const roundedCost =
-                      //Math.ceil(+totalCost * 1000000) / 1000000
-
-                      //return await fundWallet(address, {
-                      //amount: String(roundedCost),
-                      //})
-                      //}
-
-                      const renamedCitizenImage = renameFile(
-                        citizenImage,
-                        `${citizenData.name} Citizen Image`
-                      )
-
-                      const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                        renamedCitizenImage
-                      )
-
-                      if (!newImageIpfsHash) {
-                        return toast.error('Error pinning image to IPFS')
-                      }
-
-                      //mint
-                      setIsLoadingMint(true)
-
-                      console.log('selectedChainSlug')
-                      console.log(selectedChainSlug)
-                      //if (selectedChainSlug == 'arbitrum-sepolia') {
-                      if (true) {
-                        const GAS_LIMIT = 300000 // Gas limit for the executor
-                        console.log('cost', cost)
-                        const MSG_VALUE = 11100000000000000n // msg.value for the lzReceive() function on destination in wei
-                        console.log('cost')
-                        console.log(cost)
-                        console.log(cost * 2n)
-
-                        const _options =
-                          Options.newOptions().addExecutorLzReceiveOption(
-                            GAS_LIMIT,
-                            MSG_VALUE
-                          )
-                        console.log('_options')
-                        console.log(_options.toHex())
-
-                        const transaction = await prepareContractCall({
-                          contract: crossChainMintContract,
-                          method: 'crossChainMint',
-                          params: [
-                            LAYERZERO_EIDS[arbitrumSepoliaSlug].toString(),
-                            _options.toHex(),
-                            address,
-                            citizenData.name,
-                            '',
-                            `ipfs://${newImageIpfsHash}`,
-                            '',
-                            '',
-                            '',
-                            '',
-                            'public',
-                            citizenData.formResponseId,
-                          ],
-                          value: MSG_VALUE * 2n,
-                        })
-                        console.log('transaction')
-                        console.log(transaction)
-                        console.log('params')
-                        console.log([
-                          LAYERZERO_EIDS[arbitrumSepoliaSlug].toString(),
-                          _options.toHex(),
-                          address,
-                          citizenData.name,
-                          '',
-                          `ipfs://${newImageIpfsHash}`,
-                          '',
-                          '',
-                          '',
-                          '',
-                          'public',
-                          citizenData.formResponseId,
-                        ])
-                        const receipt: any = await sendAndConfirmTransaction({
-                          transaction,
-                          account,
-                        })
-                      } else {
-                        const transaction = await prepareContractCall({
-                          contract: citizenContract,
-                          method: 'mintTo' as string,
-                          params: [
-                            address,
-                            citizenData.name,
-                            '',
-                            `ipfs://${newImageIpfsHash}`,
-                            '',
-                            '',
-                            '',
-                            '',
-                            'public',
-                            citizenData.formResponseId,
-                          ],
-                          value: cost,
-                        })
-
-                        const receipt: any = await sendAndConfirmTransaction({
-                          transaction,
-                          account,
-                        })
-                      }
-
-                      // Define the event signature for the Transfer event
-                      const transferEventSignature = ethers.utils.id(
-                        'Transfer(address,address,uint256)'
-                      )
-                      // Find the log that matches the Transfer event signature
-                      const transferLog = receipt.logs.find(
-                        (log: any) => log.topics[0] === transferEventSignature
-                      )
-
-                      const mintedTokenId = ethers.BigNumber.from(
-                        transferLog.topics[3]
-                      ).toString()
-
-                      if (mintedTokenId) {
-                        await tagToNetworkSignup(citizenData.email)
-
-                        const citizenNFT = await waitForERC721(
-                          citizenContract,
-                          +mintedTokenId
-                        )
-                        const citizenName = citizenNFT?.metadata.name as string
-                        const citizenPrettyLink = generatePrettyLinkWithId(
-                          citizenName,
-                          mintedTokenId
-                        )
-                        setTimeout(async () => {
-                          await sendDiscordMessage(
-                            'networkNotifications',
-                            `[**${citizenName}** has just become a Citizen of the Space Acceleration Network!](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789)`
-                          )
-
-                          router.push(`/citizen/${citizenPrettyLink}`)
-                          setIsLoadingMint(false)
-                        }, 5000)
-                      }
-                    } catch (err) {
-                      console.error(err)
-                      setIsLoadingMint(false)
-                    }
-                  }}
+                  action={callMint(false)}
+                />
+                <PrivyWeb3Button
+                  id="citizen-checkout-button"
+                  skipNetworkCheck={false}
+                  // TODO set to correct chain
+                  requiredChain={arbitrumSepolia}
+                  label="Check Out (Cross-Chain)"
+                  isDisabled={!agreedToCondition || isLoadingMint}
+                  action={callMint(true)}
                 />
                 {isLoadingMint && (
                   <p className="opacity-[50%]">
