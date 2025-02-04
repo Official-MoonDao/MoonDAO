@@ -206,6 +206,7 @@ async function handler(req: any, res: any) {
         to: email,
         ...generateCitizenEmailContent(data),
         subject: 'MoonDAO | Marketplace Purchase',
+        bcc: [opEmail],
       })
 
       return res.status(200).json({ success: true })
