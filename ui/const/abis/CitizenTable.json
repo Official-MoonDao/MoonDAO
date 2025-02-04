@@ -55,10 +55,45 @@
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "_citizenAddress",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "columnName", "type": "string" },
+      { "internalType": "string", "name": "columnType", "type": "string" }
+    ],
+    "name": "addColumn",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "columnName", "type": "string" }
+    ],
+    "name": "deleteColumn",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }],
     "name": "deleteFromTable",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string[]", "name": "attributes", "type": "string[]" }
+    ],
+    "name": "generateURITemplate",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -131,6 +166,15 @@
   },
   {
     "inputs": [
+      { "internalType": "address", "name": "citizenAddress", "type": "address" }
+    ],
+    "name": "setCitizenAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
       { "internalType": "address", "name": "newOwner", "type": "address" }
     ],
     "name": "transferOwnership",
@@ -141,30 +185,19 @@
   {
     "inputs": [
       { "internalType": "uint256", "name": "id", "type": "uint256" },
-      { "internalType": "string", "name": "name", "type": "string" },
-      { "internalType": "string", "name": "description", "type": "string" },
-      { "internalType": "string", "name": "image", "type": "string" },
-      { "internalType": "string", "name": "location", "type": "string" },
-      { "internalType": "string", "name": "discord", "type": "string" },
-      { "internalType": "string", "name": "twitter", "type": "string" },
-      { "internalType": "string", "name": "website", "type": "string" },
-      { "internalType": "string", "name": "_view", "type": "string" },
-      { "internalType": "string", "name": "formId", "type": "string" }
+      { "internalType": "string[]", "name": "columns", "type": "string[]" },
+      { "internalType": "string[]", "name": "values", "type": "string[]" }
     ],
-    "name": "updateTable",
+    "name": "updateTableDynamic",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "string", "name": "colName", "type": "string" },
-      { "internalType": "string", "name": "val", "type": "string" },
-      { "internalType": "address", "name": "currOwner", "type": "address" }
-    ],
-    "name": "updateTableCol",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "inputs": [],
+    "name": "version",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
     "type": "function"
   }
 ]

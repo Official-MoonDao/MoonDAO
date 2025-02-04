@@ -77,8 +77,21 @@ function DeleteProfileDataModal({
 
                   transaction = prepareContractCall({
                     contract: tableContract,
-                    method: 'updateTable' as string,
-                    params: [tokenId, '', '', '', '', '', '', '', ''],
+                    method: 'updateTableDynamic' as string,
+                    params: [
+                      tokenId,
+                      [
+                        'name',
+                        'description',
+                        'image',
+                        'twitter',
+                        'communications',
+                        'website',
+                        'view',
+                        'formId',
+                      ],
+                      ['', '', '', '', '', '', '', '', ''],
+                    ],
                   })
                 } else if (type === 'citizen') {
                   await deleteResponse(
@@ -88,8 +101,22 @@ function DeleteProfileDataModal({
 
                   transaction = prepareContractCall({
                     contract: tableContract,
-                    method: 'updateTable' as string,
-                    params: [tokenId, '', '', '', '', '', '', '', '', ''],
+                    method: 'updateTableDynamic' as string,
+                    params: [
+                      tokenId,
+                      [
+                        'name',
+                        'description',
+                        'image',
+                        'location',
+                        'discord',
+                        'twitter',
+                        'website',
+                        'view',
+                        'formId',
+                      ],
+                      ['', '', '', '', '', '', '', '', ''],
+                    ],
                   })
                 }
 

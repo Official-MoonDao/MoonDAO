@@ -66,8 +66,6 @@ export function useTotalMooneyBalance(address: string | undefined) {
         (result) => (result.status === 'fulfilled' ? result.value : 0)
       )
 
-      console.log(ethMooney + polygonMooney + arbMooney + baseMooney)
-
       setTotalMooneyBalance(
         (Number(ethMooney) +
           Number(polygonMooney) +

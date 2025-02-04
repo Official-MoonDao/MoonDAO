@@ -261,29 +261,42 @@ export default function TeamMetadataModal({
 
                   const cleanedTeamData = cleanData(teamData)
 
-                  const formattedTeamTwitter = addHttpsIfMissing(
-                    cleanedTeamData.twitter
-                  )
-                  const formattedTeamCommunications = addHttpsIfMissing(
+                  const formattedTeamTwitter = cleanedTeamData.twitter
+                    ? addHttpsIfMissing(cleanedTeamData.twitter)
+                    : ''
+                  const formattedTeamCommunications =
                     cleanedTeamData.communications
-                  )
-                  const formattedTeamWebsite = addHttpsIfMissing(
-                    cleanedTeamData.website
-                  )
+                      ? addHttpsIfMissing(cleanedTeamData.communications)
+                      : ''
+                  const formattedTeamWebsite = cleanedTeamData.website
+                    ? addHttpsIfMissing(cleanedTeamData.website)
+                    : ''
 
                   const transaction = prepareContractCall({
                     contract: teamTableContract,
-                    method: 'updateTable' as string,
+                    method: 'updateTableDynamic' as string,
                     params: [
                       nft.metadata.id,
-                      cleanedTeamData.name,
-                      cleanedTeamData.description,
-                      imageIpfsLink,
-                      formattedTeamTwitter,
-                      formattedTeamCommunications,
-                      formattedTeamWebsite,
-                      cleanedTeamData.view,
-                      formResponseId,
+                      [
+                        'name',
+                        'description',
+                        'image',
+                        'twitter',
+                        'communications',
+                        'website',
+                        'view',
+                        'formId',
+                      ],
+                      [
+                        cleanedTeamData.name,
+                        cleanedTeamData.description,
+                        imageIpfsLink,
+                        formattedTeamTwitter,
+                        formattedTeamCommunications,
+                        formattedTeamWebsite,
+                        cleanedTeamData.view,
+                        formResponseId,
+                      ],
                     ],
                   })
 

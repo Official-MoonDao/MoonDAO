@@ -330,37 +330,37 @@ export function PrivyConnectWallet({
     usdt: 0,
   })
 
-  const mooneyBalance = useWatchTokenBalance(mooneyContract, 18)
-  const daiBalance = useWatchTokenBalance(daiContract, 18)
-  const usdcBalance = useWatchTokenBalance(usdcContract, 6)
-  const usdtBalance = useWatchTokenBalance(usdtContract, 6)
+  const mooneyBalance = useWatchTokenBalance(MOONEY_ADDRESSES[chainSlug], 18)
+  const daiBalance = useWatchTokenBalance(DAI_ADDRESSES[chainSlug], 18)
+  const usdcBalance = useWatchTokenBalance(USDC_ADDRESSES[chainSlug], 6)
+  const usdtBalance = useWatchTokenBalance(USDT_ADDRESSES[chainSlug], 6)
 
   useEffect(() => {
     if (mooneyBalance >= 0)
       setFormattedBalances((prev) => ({
         ...prev,
-        mooney: mooneyBalance?.toFixed(2),
+        mooney: Number(mooneyBalance?.toFixed(2)),
       }))
   }, [mooneyBalance])
   useEffect(() => {
     if (daiBalance)
       setFormattedBalances((prev) => ({
         ...prev,
-        dai: daiBalance.toFixed(2),
+        dai: Number(daiBalance.toFixed(2)),
       }))
   }, [daiBalance])
   useEffect(() => {
     if (usdcBalance)
       setFormattedBalances((prev) => ({
         ...prev,
-        usdc: usdcBalance.toFixed(2),
+        usdc: Number(usdcBalance.toFixed(2)),
       }))
   }, [usdcBalance])
   useEffect(() => {
     if (usdtBalance)
       setFormattedBalances((prev) => ({
         ...prev,
-        usdt: usdtBalance.toFixed(2),
+        usdt: Number(usdtBalance.toFixed(2)),
       }))
   }, [usdtBalance])
 

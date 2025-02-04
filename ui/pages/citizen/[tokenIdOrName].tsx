@@ -647,7 +647,14 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
   return {
     props: {
-      nft: { ...nft, id: tokenId },
+      nft: {
+        ...nft,
+        id: tokenId,
+        metadata: {
+          ...nft?.metadata,
+          id: tokenId,
+        },
+      },
       tokenId,
     },
   }
