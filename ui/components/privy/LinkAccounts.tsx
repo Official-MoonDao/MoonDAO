@@ -5,16 +5,29 @@ import { useEffect, useState } from 'react'
 export function LinkAccounts({ user }: any) {
   const [enabled, setEnabled] = useState(false)
   const [linkedAccounts, setLinkedAccounts] = useState<any>({})
-  const { linkWallet, linkEmail, linkPhone, linkGoogle } = usePrivy()
+  const {
+    linkWallet,
+    linkEmail,
+    linkPhone,
+    linkGoogle,
+    unlinkWallet,
+    unlinkPhone,
+    unlinkGoogle,
+    unlinkEmail,
+  } = usePrivy()
 
-  function LinkAcctBtn({ onClick, linked, children }: any) {
+  function LinkAcctBtn({ link, unlink, linked, children }: any) {
     return (
-      <button onClick={onClick} className="pt-1 text-[13px]">
+      <div className="pt-1 text-[13px]">
         <div className="flex w-full items-center justify-between px-2">
           {children}
-          <p>{linked ? '✔' : 'Add'}</p>
+          <div className="flex gap-2">
+            <button onClick={linked ? unlink : link}>
+              <p>{linked ? 'Unlink' : 'Add'}</p>
+            </button>
+          </div>
         </div>
-      </button>
+      </div>
     )
   }
 
@@ -45,13 +58,25 @@ export function LinkAccounts({ user }: any) {
       </button>
       {enabled && (
         <div className="flex flex-col justify-center divide-y gap-1">
-          <LinkAcctBtn onClick={linkWallet} linked={linkedAccounts?.wallet}>
+          <LinkAcctBtn
+            link={linkWallet}
+            unlink={unlinkWallet}
+            linked={linkedAccounts?.wallet}
+          >
             Wallet:
           </LinkAcctBtn>
-          <LinkAcctBtn onClick={linkPhone} linked={linkedAccounts?.phone}>
+          <LinkAcctBtn
+            link={linkPhone}
+            unlink={unlinkPhone}
+            linked={linkedAccounts?.phone}
+          >
             SMS:
           </LinkAcctBtn>
-          <LinkAcctBtn onClick={linkGoogle} linked={linkedAccounts.google}>
+          <LinkAcctBtn
+            link={linkGoogle}
+            unlink={unlinkGoogle}
+            linked={linkedAccounts.google}
+          >
             Google:
           </LinkAcctBtn>
           <div />

@@ -653,14 +653,15 @@ export function PrivyConnectWallet({
                           wallet?.address.slice(-4)}
                       </p>
                       {/*Wallet address and copy button*/}
-                      {wallet.walletClientType != 'metamask' && (
-                        <button
-                          className="ml-12"
-                          onClick={() => wallet.disconnect()}
-                        >
-                          X
-                        </button>
-                      )}
+                      {wallet.walletClientType != 'metamask' &&
+                        wallet.walletClientType != 'privy' && (
+                          <button
+                            className="ml-12"
+                            onClick={() => wallet.disconnect()}
+                          >
+                            X
+                          </button>
+                        )}
                     </div>
                   ))}
                 </div>
