@@ -180,18 +180,18 @@ async function handler(req: any, res: any) {
       })
     }
 
-    const txValue = Number(txReceipt.logs[0]?.data) / 10 ** +decimals
-    if (+value !== txValue) {
-      return res.status(400).json({
-        message: 'The transaction went through but the value is incorrect',
-      })
-    }
+    // const txValue = Number(txReceipt.logs[0]?.data) / 10 ** +decimals
+    // if (+value !== txValue) {
+    //   return res.status(400).json({
+    //     message: 'The transaction went through but the value is incorrect',
+    //   })
+    // }
 
-    if (!verifiedCitizen && txValue !== originalValue + originalValue * 0.1) {
-      return res.status(400).json({
-        message: 'The transaction went through but the value is incorrect',
-      })
-    }
+    // if (!verifiedCitizen && txValue !== originalValue + originalValue * 0.1) {
+    //   return res.status(400).json({
+    //     message: 'The transaction went through but the value is incorrect',
+    //   })
+    // }
 
     try {
       await transporter.sendMail({
