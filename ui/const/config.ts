@@ -119,7 +119,7 @@ export const CITIZEN_TABLE_ADDRESSES: Index = {
 }
 
 export const CITIZEN_TABLE_NAMES: Index = {
-  arbitrum: 'CITIZENTABLE_42161_125',
+  arbitrum: 'CITIZENTABLE_42161_126',
   sepolia: 'CITIZENTABLE_11155111_1897',
   'arbitrum-sepolia': 'CITIZENTABLE_421614_1058',
 }
