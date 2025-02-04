@@ -58,7 +58,7 @@ export default function useProjectData(
       nanceProposal.actions.forEach((action: any) => {
         if (action.type === 'Request Budget') {
           action.payload.budget.forEach(
-            (b: any) => (budget += Number(b.amount))
+            (b: any) => (budget += b.token == 'ETH' ? Number(b.amount) : 0)
           )
         }
       })
