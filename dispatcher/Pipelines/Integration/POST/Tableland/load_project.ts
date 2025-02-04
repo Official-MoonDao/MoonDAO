@@ -1,6 +1,6 @@
 const ProjectTableABI = require("../../../../../ui/const/abis/ProjectTable.json");
 const ProjectTeamCreatorABI = require("../../../../../ui/const/abis/ProjectTeamCreator.json");
-const { getRelativeQuarter } = require("../../../../../lib/utils/dates");
+const { getRelativeQuarter } = require("../../../../../ui/lib/utils/dates");
 require("dotenv").config();
 const { ThirdwebSDK } = require("@thirdweb-dev/sdk");
 const { Arbitrum, Sepolia } = require("@thirdweb-dev/chains");
@@ -18,6 +18,8 @@ const TABLELAND_ENDPOINT = `https://${
 }tableland.network/api/v1/query`;
 const chain = TEST ? Sepolia : Arbitrum;
 const privateKey = process.env.OPERATOR_PRIVATE_KEY;
+console.log("process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY");
+console.log(process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY);
 const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
     secretKey: process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY,
 });
@@ -59,111 +61,118 @@ export async function pinBlobOrFile(
 
 // Main function to load project data
 async function loadProjectData() {
-    try {
-        const projectTableContract = await sdk.getContract(
-            PROJECT_TABLE_ADDRESSES[chain.slug],
-            ProjectTableABI
-        );
-        const projectTeamCreatorContract = await sdk.getContract(
-            PROJECT_CREATOR_ADDRESSES[chain.slug],
-            ProjectTeamCreatorABI
-        );
+    //try {
+    const projectTableContract = await sdk.getContract(
+        PROJECT_TABLE_ADDRESSES[chain.slug],
+        ProjectTableABI
+    );
+    console.log("PROJECT_TABLE_ADDRESSES", PROJECT_TABLE_ADDRESSES[chain.slug]);
+    const projectTeamCreatorContract = await sdk.getContract(
+        PROJECT_CREATOR_ADDRESSES[chain.slug],
+        ProjectTeamCreatorABI
+    );
 
-        const projectBoardTableName =
-            await projectTableContract.call("getTableName");
+    const projectBoardTableName =
+        await projectTableContract.call("getTableName");
+    console.log("projectBoardTableName", projectBoardTableName);
 
-        // Query existing MPDs from Tableland
-        const projectStatement = `SELECT MDP FROM ${projectBoardTableName}`;
-        const projectsRes = await fetch(
-            `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
-        );
+    // Query existing MPDs from Tableland
+    const projectStatement = `SELECT MDP FROM ${projectBoardTableName}`;
+    const projectsRes = await fetch(
+        `${TABLELAND_ENDPOINT}?statement=${projectStatement}`
+    );
 
-        if (!projectsRes.ok) {
-            throw new Error(
-                `Tableland query failed: ${projectsRes.statusText}`
-            );
-        }
-
-        const tablelandMDPs = await projectsRes.json();
-        console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
-
-        // Get proposals from Nance
-        const proposals = await getProposals("moondao", "current");
-
-        if (!proposals) {
-            throw new Error("Failed to fetch proposals from Nance");
-        }
-
-        // Filter MPDs to insert
-        // const newProposals = proposals.filter(proposal => proposal.status=="Approved")
-
-        // Insert new projects
-        const existingMDPs = new Set(tablelandMDPs.map((row) => row.MDP));
-        for (const proposal of newProposals) {
-            if (existingMDPs.has(proposal.proposalId)) {
-                console.log(
-                    "Skipping existing proposal MDP:",
-                    proposal.proposalId,
-                    " ",
-                    proposal.title
-                );
-                continue;
-            }
-            function getHatMetadataIPFS(hatType) {
-                const hatMetadataBlob = new Blob(
-                    [
-                        JSON.stringify({
-                            type: "1.0",
-                            data: {
-                                name:
-                                    "MDP-" +
-                                    proposal.proposalId +
-                                    " " +
-                                    hatType,
-                                description: proposal.title,
-                            },
-                        }),
-                    ],
-                    {
-                        type: "application/json",
-                    }
-                );
-                const name = `MDP-${proposal.proposalId}-${hatType}.json`;
-                const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(
-                    hatMetadataBlob,
-                    name
-                );
-                return "ipfs://" + hat;
-            }
-            const { quarter, year } = getRelativeQuarter(
-                IS_THIS_QUARTER ? 0 : -1
-            );
-            const upfrontPayment = proposal.upfrontPayment
-                ? JSON.stringify(proposal.upfrontPayment)
-                : "";
-            await projectTeamCreatorContract.call("createProjectTeam", [
-                getHatMetadataIPFS("Admin"),
-                getHatMetadataIPFS("Manager"),
-                getHatMetadataIPFS("Member"),
-                proposal.title,
-                "", // description
-                "", // image
-                quarter,
-                year,
-                proposal.proposalId,
-                "", // proposal ipfs
-                proposal.proposalLink,
-                upfrontPayment,
-                proposal.lead, // leadAddress,
-                proposal.members, // members,
-            ]);
-        }
-
-        console.log("Data loading completed successfully");
-    } catch (error) {
-        console.error("Error loading project data:", error);
-        throw error;
+    if (!projectsRes.ok) {
+        throw new Error(`Tableland query failed: ${projectsRes.statusText}`);
     }
+
+    const tablelandMDPs = await projectsRes.json();
+    console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
+
+    // Get proposals from Nance
+    const proposals = await getProposals("moondao", "current");
+
+    if (!proposals) {
+        throw new Error("Failed to fetch proposals from Nance");
+    }
+
+    // Insert new projects
+    const existingMDPs = new Set(tablelandMDPs.map((row) => row.MDP));
+    for (const proposal of proposals) {
+        if (existingMDPs.has(proposal.proposalId)) {
+            console.log(
+                "Skipping existing proposal MDP:",
+                proposal.proposalId,
+                " ",
+                proposal.title
+            );
+            continue;
+        }
+        const getHatMetadataIPFS = async function (hatType: string) {
+            const hatMetadataBlob = new Blob(
+                [
+                    JSON.stringify({
+                        type: "1.0",
+                        data: {
+                            name: "MDP-" + proposal.proposalId + " " + hatType,
+                            description: proposal.title,
+                        },
+                    }),
+                ],
+                {
+                    type: "application/json",
+                }
+            );
+            const name = `MDP-${proposal.proposalId}-${hatType}.json`;
+            const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(
+                hatMetadataBlob,
+                name
+            );
+            return "ipfs://" + hatMetadataIpfsHash;
+        };
+        const { quarter, year } = getRelativeQuarter(IS_THIS_QUARTER ? 0 : -1);
+        const upfrontPayment = proposal.upfrontPayment
+            ? JSON.stringify(proposal.upfrontPayment)
+            : "";
+        console.log("params", [
+            await getHatMetadataIPFS("Admin"),
+            await getHatMetadataIPFS("Manager"),
+            await getHatMetadataIPFS("Member"),
+            proposal.title,
+            "", // description
+            "", // image
+            quarter,
+            year,
+            proposal.proposalId,
+            "", // proposal ipfs
+            proposal.proposalLink,
+            upfrontPayment,
+            proposal.authorAddress, // leadAddress,
+            proposal.members, // members,
+        ]);
+        await projectTeamCreatorContract.call("createProjectTeam", [
+            await getHatMetadataIPFS("Admin"),
+            await getHatMetadataIPFS("Manager"),
+            await getHatMetadataIPFS("Member"),
+            proposal.title,
+            "", // description
+            "", // image
+            quarter,
+            year,
+            proposal.proposalId,
+            "", // proposal ipfs
+            proposal.proposalLink || "",
+            upfrontPayment,
+            proposal.authorAddress || "", // leadAddress,
+            proposal.members || [], // members,
+        ]);
+    }
+
+    console.log("Data loading completed successfully");
+    //} catch (error) {
+    //console.error("Error loading project data:", error);
+    //throw error;
+    //}
 }
 
 // Export an execute function
