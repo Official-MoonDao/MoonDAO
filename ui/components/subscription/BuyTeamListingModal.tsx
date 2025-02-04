@@ -9,6 +9,7 @@ import {
   MOONEY_ADDRESSES,
   USDC_ADDRESSES,
   DEFAULT_CHAIN_V5,
+  DEPLOYED_ORIGIN,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -21,6 +22,7 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import useTeamEmail from '@/lib/team/useTeamEmail'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
@@ -192,6 +194,9 @@ export default function BuyTeamListingModal({
             isCitizen: citizen ? true : false,
             shipping,
             teamEmail,
+            teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
+              teamNFT.metadata.name
+            )}`,
           }),
         })
 
