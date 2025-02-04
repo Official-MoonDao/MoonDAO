@@ -682,6 +682,10 @@ export const getServerSideProps: GetServerSideProps = async ({
       nft: {
         ...nft,
         id: tokenId,
+        metadata: {
+          ...nft.metadata,
+          id: tokenId,
+        },
       },
       tokenId,
       imageIpfsLink,
