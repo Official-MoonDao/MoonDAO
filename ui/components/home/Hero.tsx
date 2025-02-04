@@ -1,4 +1,5 @@
 import MailingList from '../layout/MailingList'; 
+import StandardButton from '../layout/StandardButton';
 
 export default function Hero() {
   return ( 
@@ -6,7 +7,7 @@ export default function Hero() {
       className="overflow-visible relative w-full"
       >
       <div id="hero-container" 
-        className="compact-xxl flex flex-col h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start md:pl-10 md:pr-10 min-h-[675px] mt-[-1px] p-5 pb-[80px] lg:pb-40 relative z-10"
+        className="flex flex-col md:h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start md:pl-10 md:pr-10 min-h-[575px] mt-[-1px] p-5 pb-[80px] lg:pb-40 lg:min-h-[800px] relative z-10"
         >
         <div id="background" 
           className="gradient-1 w-full h-full absolute top-0 right-0 rounded-bl-[2vmax] overflow-hidden z-0"
@@ -18,7 +19,7 @@ export default function Hero() {
           className="absolute h-[100%] left-0 overflow-hidden top-0 w-[100%]"
           >
           <div id="feature-below-1400" 
-            className="hide-xl absolute feature-1 h-full mt-5 right-0 top-0 w-[80vmin] lg:w-[50vmax] md:w-[70%]"
+            className="hide-xl absolute feature-1 h-full mt-5 right-0 top-0 w-[80vmin] lg:w-[50vmax] md:w-[70%] max-[676px]:right-[50%] max-[676px]:translate-x-[50%]"
           ></div>
           <div id="feature-above-1200" 
             className="show-xl absolute feature-1 h-full mt-5 right-0 top-0 w-[850px]"
@@ -38,7 +39,7 @@ export default function Hero() {
             >
             <span 
               style={{fontSize: 'calc(min(4.5vmin, 30px))'}} 
-              className="mt-[5vmax]"
+              className="md:mt-[5vmax]"
               >
               The Internet's 
             </span>
@@ -60,7 +61,16 @@ export default function Hero() {
             >
             MoonDAO is accelerating our multiplanetary future with a global network and open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement.
           </p>
-          <MailingList/>
+          <StandardButton
+              backgroundColor="bg-dark-cool"
+              textColor="text-white"
+              hoverColor="bg-mid-cool"
+              borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+              link="/join"
+              paddingOnHover="pl-5"
+            >
+              Join the Network
+            </StandardButton>
         </div>
       </div>
     </section>

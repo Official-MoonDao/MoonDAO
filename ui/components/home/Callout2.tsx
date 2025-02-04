@@ -3,6 +3,8 @@ import Speaker from '../home/Speaker'
 import StandardButton from '../layout/StandardButton'
 import CitizenTier from '../onboarding/CitizenTier'
 import TeamTier from '../onboarding/TeamTier'
+import Image from 'next/image'
+import toast from 'react-hot-toast'
 
 export default function Callout2() {
   return (
@@ -34,7 +36,7 @@ export default function Callout2() {
           className="relative pt-[220px] lg:pt-20 md:pb-0 w-full pr-5 lg:w-[70%]"
         >
           <h1 className="header font-GoodTimes">
-            Space Acceleration Network
+            MoonDAO is <br></br>Permissionless
           </h1>
           <p
             id="paragraph"
@@ -45,23 +47,36 @@ export default function Callout2() {
             connect space visionaries and organizations with the funding, tools, 
             and support needed to turn bold ideas into reality.
           </p>
+          <div className="flex items-center gap-2 mb-5">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText("0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395")
+                toast.success('Address copied to clipboard')
+              }}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <Image 
+                src="/assets/icon-copy.svg"
+                alt="Copy address"
+                width={20}
+                height={20}
+              />
+              <span className="font-mono break-all text-left">
+                0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395
+              </span>
+            </button>
+          </div>
           <StandardButton
             backgroundColor="bg-white"
             textColor="text-dark-cool"
             borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-            link="/network"
+            link="/get-mooney"
             paddingOnHover="pl-5"
           >
-            Explore the Network
+            Buy $MOONEY
           </StandardButton>
         </div>
       </div>
-      <div className="md:pr-5">
-        <Link href="/citizen" passHref>
-          <CitizenTier setSelectedTier={() => {}} compact />
-        </Link>
-      </div>
-
       <div
         id="our-astronauts-section"
         className="sm:px-2 md:p-5 z-50 flex flex-col items-start overflow-hidden"
