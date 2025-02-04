@@ -337,7 +337,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                       className="flex-shrink-0"
                     />
                     <Link className="font-GoodTimes" href="/map">
-                      {location}
+                      {location.startsWith('[object') ? '' : location}
                     </Link>
                   </div>
                 )}
