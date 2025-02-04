@@ -13,14 +13,10 @@ import IconOrg from '@/components/assets/IconOrg'
 export default function useNavigation(citizen: any) {
   const navigation = useMemo(() => {
     return [
-      {
+      !citizen && {
         name: 'Join',
         href: '/join',
         icon: PlusIcon,
-        children: [
-          !citizen && { name: 'Become a Citizen', href: '/citizen' },
-          { name: 'Create a Team', href: '/team' },
-        ],
       },
       {
         name: 'Network',
@@ -48,7 +44,7 @@ export default function useNavigation(citizen: any) {
             href: 'https://docs.moondao.com/Governance/Constitution',
           },
           {
-            name: '$MOONEY Token', 
+            name: '$MOONEY Token',
           },
           {
             name: 'Buy',
@@ -65,7 +61,7 @@ export default function useNavigation(citizen: any) {
         children: [
           {
             name: 'Projects',
-            href: '/project',
+            href: '/projects',
           },
           {
             name: 'Create Project',

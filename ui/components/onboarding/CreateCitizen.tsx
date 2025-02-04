@@ -12,6 +12,7 @@ import {
   CK_NETWORK_SIGNUP_TAG_ID,
   DEPLOYED_ORIGIN,
   DEFAULT_CHAIN_V5,
+  DISCORD_CITIZEN_ROLE_ID,
 } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -299,7 +300,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         setTimeout(async () => {
           await sendDiscordMessage(
             'networkNotifications',
-            `[**${citizenName}** has just become a Citizen of the Space Acceleration Network!](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789)`
+                            `[**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
           )
 
           router.push(`/citizen/${citizenPrettyLink}`)

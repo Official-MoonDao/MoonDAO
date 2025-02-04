@@ -28,7 +28,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
-import { getRelativeQuarter } from '@/lib/utils/dates'
+import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import { getBudget, getPayouts } from '@/lib/utils/rewards'
 import { computeRewardPercentages } from '@/lib/utils/voting'
 import Container from '@/components/layout/Container'
@@ -107,12 +107,21 @@ export function RetroactiveRewards({
   const account = useActiveAccount()
   const userAddress = account?.address
 
-  const { quarter, year } = getRelativeQuarter(-1)
+  const [active, setActive] = useState(false)
+  const { quarter, year } = getRelativeQuarter(active ? -1 : 0)
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
     {}
   )
+
+  //Check if its the rewards cycle
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActive(isRewardsCycle(new Date()))
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [projects, distributions])
 
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
@@ -271,41 +280,29 @@ export function RetroactiveRewards({
     }
     try {
       if (!account) throw new Error('No account found')
+      let receipt
       if (edit) {
         const transaction = prepareContractCall({
           contract: distributionTableContract,
           method: 'updateTableCol' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
-        const receipt = await sendAndConfirmTransaction({
+        receipt = await sendAndConfirmTransaction({
           transaction,
           account,
         })
-        if (receipt)
-          toast.success('Distribution edited successfully!', {
-            style: toastStyle,
-          })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
       } else {
         const transaction = prepareContractCall({
           contract: distributionTableContract,
           method: 'insertIntoTable' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
-        const receipt = await sendAndConfirmTransaction({
+        receipt = await sendAndConfirmTransaction({
           transaction,
           account,
         })
-        if (receipt)
-          toast.success('Distribution submitted successfully!', {
-            style: toastStyle,
-          })
-        setTimeout(() => {
-          refreshRewards()
-        }, 5000)
       }
+      if (receipt) setTimeout(() => router.push('/rewards/thank-you'), 5000)
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -383,7 +380,7 @@ export function RetroactiveRewards({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
-                        distribute
+                        distribute={active}
                         distribution={
                           userHasVotingPower ? distribution : undefined
                         }
@@ -392,6 +389,7 @@ export function RetroactiveRewards({
                             ? handleDistributionChange
                             : undefined
                         }
+                        userHasVotingPower={userHasVotingPower}
                       />
                     </div>
                   ))
@@ -399,30 +397,32 @@ export function RetroactiveRewards({
                   <div>There are no active projects.</div>
                 )}
 
-                <div className="mt-4 w-full flex justify-end">
-                  {projects && userHasVotingPower ? (
-                    <span className="flex flex-col md:flex-row md:items-center gap-2">
-                      <PrivyWeb3Button
-                        action={handleSubmit}
-                        requiredChain={chain}
-                        className="gradient-2 rounded-full"
-                        label={
-                          edit ? 'Edit Distribution' : 'Submit Distribution'
-                        }
-                      />
-                    </span>
-                  ) : (
-                    <span>
-                      <PrivyWeb3Button
-                        v5
-                        requiredChain={DEFAULT_CHAIN_V5}
-                        label="Get Voting Power"
-                        action={() => router.push('/lock')}
-                        className="gradient-2 rounded-full"
-                      />
-                    </span>
-                  )}
-                </div>
+                {active && (
+                  <div className="mt-4 w-full flex justify-end">
+                    {projects && userHasVotingPower ? (
+                      <span className="flex flex-col md:flex-row md:items-center gap-2">
+                        <PrivyWeb3Button
+                          action={handleSubmit}
+                          requiredChain={chain}
+                          className="gradient-2 rounded-full"
+                          label={
+                            edit ? 'Edit Distribution' : 'Submit Distribution'
+                          }
+                        />
+                      </span>
+                    ) : (
+                      <span>
+                        <PrivyWeb3Button
+                          v5
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          label="Get Voting Power"
+                          action={() => router.push('/lock')}
+                          className="gradient-2 rounded-full"
+                        />
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </SectionCard>

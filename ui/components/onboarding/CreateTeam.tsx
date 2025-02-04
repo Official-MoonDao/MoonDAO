@@ -3,6 +3,7 @@ import { useFundWallet } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
   DEPLOYED_ORIGIN,
+  DISCORD_CITIZEN_ROLE_ID,
   TEAM_ADDRESSES,
   TEAM_CREATOR_ADDRESSES,
 } from 'const/config'
@@ -454,6 +455,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                             teamData.website,
                             teamData.view,
                             teamData.formResponseId,
+                            [],
                           ],
                           value: cost,
                         })
@@ -486,7 +488,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           setTimeout(async () => {
                             await sendDiscordMessage(
                               'networkNotifications',
-                              `[**${teamName}** has created a team in the Space Acceleration Network!](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789)`
+                              `[**${teamName}**](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) has created a team in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
                             )
 
                             router.push(`/team/${teamPrettyLink}`)

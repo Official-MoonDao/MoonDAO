@@ -162,7 +162,7 @@ export default function ArbitrumBridge() {
             alt=""
           />
         ) : (
-          <Image src={`/original.png`} width={20} height={20} alt="" />
+          <Image src={`/Original.png`} width={20} height={20} alt="" />
         )}
       </>
     )

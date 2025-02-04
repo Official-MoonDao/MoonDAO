@@ -248,8 +248,8 @@ module.exports = nextTranslate({
         permanent: true,
       },
       {
-        source: '/projects',
-        destination: '/project',
+        source: '/project',
+        destination: '/submit',
         permanent: true,
       },
       {

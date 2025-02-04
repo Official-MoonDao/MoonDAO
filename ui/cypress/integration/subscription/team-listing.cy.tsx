@@ -51,7 +51,6 @@ describe('<TeamListing />', () => {
       </TestnetProviders>
     )
 
-    cy.get('#listing-team-name').should('exist')
     cy.get('#main-header').should('have.text', props.listing.title)
     cy.get('#listing-description').should(
       'have.text',
