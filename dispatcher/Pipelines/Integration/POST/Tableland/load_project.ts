@@ -149,7 +149,7 @@ async function loadProjectData() {
                 year,
                 proposal.proposalId,
                 "", // proposal ipfs
-                proposal.proposalLink || "",
+                "https://moondao.com/proposal/" + proposal.proposalId,
                 upfrontPayment,
                 proposal.authorAddress || "", // leadAddress,
                 proposal.members || [], // members,
