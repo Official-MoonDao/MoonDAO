@@ -138,10 +138,15 @@ async function loadProjectData() {
             const upfrontPayment = proposal.upfrontPayment
                 ? JSON.stringify(proposal.upfrontPayment)
                 : "";
+            const [adminHatMetadataIpfs, managerHatMetadataIpfs, memberHatMetadataIpfs] = await Promise.allSettled([
+                getHatMetadataIPFS("Admin"),
+                getHatMetadataIPFS("Manager"),
+                getHatMetadataIPFS("Member"),
+            ]);
             await projectTeamCreatorContract.call("createProjectTeam", [
-                await getHatMetadataIPFS("Admin"),
-                await getHatMetadataIPFS("Manager"),
-                await getHatMetadataIPFS("Member"),
+                adminHatMetadataIpfs,
+                managerHatMetadataIpfs,
+                memberHatMetadataIpfs,
                 proposal.title,
                 "", // description
                 "", // image
