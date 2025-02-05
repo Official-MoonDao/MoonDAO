@@ -27,6 +27,24 @@ const client = createThirdwebClient({
     clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string,
 });
 
+function extractInitialTeamSection(text) {
+    const lines = text.split("\n");
+    //console.log("lines", lines);
+    let startIndex = lines.findIndex((line) => line.includes("Initial Team"));
+    if (startIndex === -1) {
+        return null; // "Initial Team" not found
+    }
+    let endIndex = lines.findIndex(
+        (line, i) => i > startIndex && line.includes("Multisig")
+    );
+
+    if (startIndex === -1 || endIndex === -1) {
+        return null; // Return null if either "Initial Team" or "Multisig" is not found
+    }
+
+    return lines.slice(startIndex, endIndex).join("\n");
+}
+
 interface PinResponse {
     cid: string;
 }
@@ -92,7 +110,7 @@ async function loadProjectData() {
         console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
 
         // Get proposals from Nance
-        const proposals = await getProposals("moondao", "current");
+        const proposals = await getProposals("moondao", 38);
 
         if (!proposals) {
             throw new Error("Failed to fetch proposals from Nance");
@@ -114,7 +132,9 @@ async function loadProjectData() {
                 );
                 continue;
             }
-            // find line of proposal.body which contains "Multisig"
+            const initialTeamLine = extractInitialTeamSection(proposal.body);
+            const discordHandles =
+                initialTeamLine.match(/@([a-zA-Z0-9-]+)/g) || [];
             const multisigLine = proposal.body
                 .split("\n")
                 .find((line) => line.includes("Multisig"));
@@ -196,7 +216,8 @@ async function loadProjectData() {
                 "https://moondao.com/proposal/" + proposal.proposalId,
                 upfrontPayment,
                 proposal.authorAddress || "", // leadAddress,
-                signers || [], // members,
+                signers || [], // members
+                signers || [], // signers,
             ]);
         }
 
