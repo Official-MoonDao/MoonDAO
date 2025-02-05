@@ -35,7 +35,6 @@ export async function pinBlobOrFile(
         formData.append("pinataMetadata", JSON.stringify({ name: name }));
         formData.append("pinataOptions", JSON.stringify({ cidVersion: 0 }));
         formData.append("file", blob);
-
         const response = await fetch(url, {
             method: "POST",
             headers: {
