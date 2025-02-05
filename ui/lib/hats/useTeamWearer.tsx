@@ -9,11 +9,12 @@ export function useTeamWearer(
   selectedChain: any,
   address: any
 ) {
-  const [wornMoondaoHats, setWornMoondaoHats] = useState<any>([])
+  const [wornMoondaoHats, setWornMoondaoHats] = useState<any>()
 
   useEffect(() => {
     async function getWearerTeamHats() {
       try {
+        setWornMoondaoHats(undefined)
         if (!address) return []
         const res = await fetch('/api/hats/get-wearer', {
           method: 'POST',
@@ -107,6 +108,7 @@ export function useTeamWearer(
         }
       } catch (err) {
         console.log(err)
+        setWornMoondaoHats([])
       }
     }
 

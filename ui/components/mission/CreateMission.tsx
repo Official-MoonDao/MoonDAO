@@ -103,7 +103,7 @@ export default function CreateMission({
             <StandardButton
               className="gradient-2"
               hoverEffect={false}
-              onClick={() => router.push('/team')}
+              link="/team"
             >
               Create a Team
             </StandardButton>
@@ -264,7 +264,7 @@ export default function CreateMission({
 
                 const transaction = prepareContractCall({
                   contract: missionCreatorContract,
-                  method: 'createTeamProject' as string,
+                  method: 'createMission' as string,
                   params: [
                     selectedTeamId,
                     teamMultisig,
