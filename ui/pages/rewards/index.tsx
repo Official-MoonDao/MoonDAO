@@ -11,11 +11,11 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { getRelativeQuarter } from '@/lib/utils/dates'
+import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import {
   RetroactiveRewards,
   RetroactiveRewardsProps,
-} from '../components/nance/RetroactiveRewards'
+} from '@/components/nance/RetroactiveRewards'
 
 export default function Rewards({
   projects,
@@ -60,7 +60,9 @@ export async function getStaticProps() {
       method: 'getTableName',
     })
 
-    const { quarter, year } = getRelativeQuarter(-1)
+    const { quarter, year } = getRelativeQuarter(
+      isRewardsCycle(new Date()) ? -1 : 0
+    )
 
     const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter}`
     const projects = await queryTable(chain, projectStatement)

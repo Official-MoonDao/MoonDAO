@@ -78,20 +78,19 @@ export default function Withdraw() {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
   }, [VMOONEYLock, VMOONEYLockLoading, address])
 
-  const [hasMoreThanSixMonths, setHasMoreThanSixMonths] =
-    useState<boolean>(false)
-  const sixMonths = 6 * 30 * 24 * 60 * 60 * 1000
+  // 3.75 years ~ 45 months
+  const [hasMoreThan45Months, setHasMoreThan45Months] = useState<boolean>(false)
+  const fortyFiveMonths = 45 * 30 * 24 * 60 * 60 * 1000
   useEffect(() => {
-    console.log()
     !VMOONEYLockLoading &&
-      setHasMoreThanSixMonths(
+      setHasMoreThan45Months(
         VMOONEYLock &&
           VMOONEYLock[1] != 0 &&
-          BigNumber.from(+new Date() + sixMonths).lte(
+          BigNumber.from(+new Date() + fortyFiveMonths).lte(
             VMOONEYLock?.[1].toString() * 1000
           )
       )
-  }, [VMOONEYLock, VMOONEYLockLoading, address, sixMonths])
+  }, [VMOONEYLock, VMOONEYLockLoading, address, fortyFiveMonths])
 
   const handleWithdraw = async () => {
     try {
@@ -169,7 +168,7 @@ export default function Withdraw() {
                   usd=""
                 />
               </section>
-              {address && hasLock && hasMoreThanSixMonths ? (
+              {address && hasLock && hasMoreThan45Months ? (
                 <StandardButton
                   className="gradient-2 rounded-full"
                   onClick={handleWithdraw}

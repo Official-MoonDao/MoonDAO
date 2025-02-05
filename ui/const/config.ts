@@ -191,12 +191,12 @@ export const TEAM_CREATOR_ADDRESSES: Index = {
 }
 
 export const TEAM_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x1C9B9847bE88eb3F7154bA6A4560Cb8D52A13dD9',
+  arbitrum: '0x36A57e45A1F8e378AA3e35bD8799bBfB5b4C00b3',
   sepolia: '0x6227dBa1e0AbBf6bdc5855327D2293012b91cfeB',
 }
 
 export const TEAM_TABLE_NAMES: Index = {
-  arbitrum: 'TEAMTABLE_42161_124',
+  arbitrum: 'TEAMTABLE_42161_127',
   sepolia: 'TEAMTABLE_11155111_1895',
 }
 

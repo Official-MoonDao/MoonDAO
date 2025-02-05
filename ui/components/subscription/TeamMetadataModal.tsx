@@ -15,6 +15,7 @@ import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
+import { addHttpsIfMissing } from '@/lib/utils/strings'
 import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
@@ -260,19 +261,42 @@ export default function TeamMetadataModal({
 
                   const cleanedTeamData = cleanData(teamData)
 
+                  const formattedTeamTwitter = cleanedTeamData.twitter
+                    ? addHttpsIfMissing(cleanedTeamData.twitter)
+                    : ''
+                  const formattedTeamCommunications =
+                    cleanedTeamData.communications
+                      ? addHttpsIfMissing(cleanedTeamData.communications)
+                      : ''
+                  const formattedTeamWebsite = cleanedTeamData.website
+                    ? addHttpsIfMissing(cleanedTeamData.website)
+                    : ''
+
                   const transaction = prepareContractCall({
                     contract: teamTableContract,
-                    method: 'updateTable' as string,
+                    method: 'updateTableDynamic' as string,
                     params: [
                       nft.metadata.id,
-                      cleanedTeamData.name,
-                      cleanedTeamData.description,
-                      imageIpfsLink,
-                      cleanedTeamData.twitter,
-                      cleanedTeamData.communications,
-                      cleanedTeamData.website,
-                      cleanedTeamData.view,
-                      formResponseId,
+                      [
+                        'name',
+                        'description',
+                        'image',
+                        'twitter',
+                        'communications',
+                        'website',
+                        'view',
+                        'formId',
+                      ],
+                      [
+                        cleanedTeamData.name,
+                        cleanedTeamData.description,
+                        imageIpfsLink,
+                        formattedTeamTwitter,
+                        formattedTeamCommunications,
+                        formattedTeamWebsite,
+                        cleanedTeamData.view,
+                        formResponseId,
+                      ],
                     ],
                   })
 

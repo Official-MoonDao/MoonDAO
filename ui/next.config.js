@@ -248,8 +248,8 @@ module.exports = nextTranslate({
         permanent: true,
       },
       {
-        source: '/projects',
-        destination: '/project',
+        source: '/project',
+        destination: '/submit',
         permanent: true,
       },
       {
@@ -257,6 +257,11 @@ module.exports = nextTranslate({
         destination: '/submit?tag=report',
         permanent: true,
       },
+      {
+        source: '/meet',
+        destination: 'https://discord.com/channels/914720248140279868/917498630510878821',
+        permanent: true,
+      },      
     ]
   },
   webpack: (config, { isServer }) => {

@@ -416,7 +416,7 @@ a {
 
   /*Featured images*/
   .feature-1 {
-    background-image: url('/assets/feature-1.svg');
+    background-image: url('/assets/feature-1.png');
     background-repeat: no-repeat;
     background-position: top right;
     background-size: 100% auto;
@@ -527,7 +527,7 @@ html {
 /*Handling of minimum heights for sections on double extra large screens*/
 /*Remove height minimums over 1920px*/  
 @media(min-width:1920px) {
-  .compact-xxl {
+  .compact-xxl:not(#hero-container) {
     min-height:500px !important;
     height:auto !important;
   }

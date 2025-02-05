@@ -23,6 +23,10 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   const handleTeamClick = async () => {
+    if (chainSlug === 'sepolia') {
+      return setSelectedTier('team')
+    }
+
     const teamWhitelistContract = getContract({
       client,
       address: TEAM_WHITELIST_ADDRESSES[chainSlug],
@@ -34,7 +38,7 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
       method: 'isWhitelisted',
       params: [address],
     })
-    if (isWhitelisted || process.env.NEXT_PUBLIC_ENV === 'dev') {
+    if (isWhitelisted) {
       setSelectedTier('team')
     } else {
       setApplyModalEnabled(true)

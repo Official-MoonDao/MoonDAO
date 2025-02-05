@@ -56,10 +56,45 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "_teamCreatorAddress",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "columnName", "type": "string" },
+      { "internalType": "string", "name": "columnType", "type": "string" }
+    ],
+    "name": "addColumn",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "columnName", "type": "string" }
+    ],
+    "name": "deleteColumn",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }],
     "name": "deleteFromTable",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string[]", "name": "attributes", "type": "string[]" }
+    ],
+    "name": "generateURITemplate",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -89,6 +124,16 @@
       { "internalType": "string", "name": "formId", "type": "string" }
     ],
     "name": "insertIntoTable",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string[]", "name": "columns", "type": "string[]" },
+      { "internalType": "string[]", "name": "values", "type": "string[]" }
+    ],
+    "name": "insertIntoTableDynamic",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -139,6 +184,19 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "address",
+        "name": "teamCreatorAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setTeamCreatorAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
       { "internalType": "address", "name": "newOwner", "type": "address" }
     ],
     "name": "transferOwnership",
@@ -149,27 +207,10 @@
   {
     "inputs": [
       { "internalType": "uint256", "name": "id", "type": "uint256" },
-      { "internalType": "string", "name": "name", "type": "string" },
-      { "internalType": "string", "name": "description", "type": "string" },
-      { "internalType": "string", "name": "image", "type": "string" },
-      { "internalType": "string", "name": "twitter", "type": "string" },
-      { "internalType": "string", "name": "communications", "type": "string" },
-      { "internalType": "string", "name": "website", "type": "string" },
-      { "internalType": "string", "name": "_view", "type": "string" },
-      { "internalType": "string", "name": "formId", "type": "string" }
+      { "internalType": "string[]", "name": "columns", "type": "string[]" },
+      { "internalType": "string[]", "name": "values", "type": "string[]" }
     ],
-    "name": "updateTable",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "id", "type": "uint256" },
-      { "internalType": "string", "name": "colName", "type": "string" },
-      { "internalType": "string", "name": "val", "type": "string" }
-    ],
-    "name": "updateTableCol",
+    "name": "updateTableDynamic",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

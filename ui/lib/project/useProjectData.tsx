@@ -48,6 +48,8 @@ export default function useProjectData(
   const [adminHatId, setAdminHatId] = useState<any>()
   const [managerHatId, setManagerHatId] = useState<any>()
 
+  const [finalReportMarkdown, setFinalReportMarkdown] = useState<string>()
+
   const isActive = useMemo(() => {
     return project?.active === 1
   }, [project])
@@ -58,13 +60,24 @@ export default function useProjectData(
       nanceProposal.actions.forEach((action: any) => {
         if (action.type === 'Request Budget') {
           action.payload.budget.forEach(
-            (b: any) => (budget += Number(b.amount))
+            (b: any) => (budget += b.token === 'ETH' ? Number(b.amount) : 0)
           )
         }
       })
     }
     return budget
   }, [nanceProposal])
+
+  useEffect(() => {
+    async function getFinalReportMarkdown() {
+      const res = await fetch(
+        `https://ipfs.io/ipfs/${project?.finalReportIPFS.split('ipfs://')[1]}`
+      )
+      const markdown = await res.text()
+      setFinalReportMarkdown(markdown)
+    }
+    if (project?.finalReportIPFS) getFinalReportMarkdown()
+  }, [project?.finalReportIPFS])
 
   useEffect(() => {
     async function checkManager() {
@@ -110,6 +123,7 @@ export default function useProjectData(
       setAdminHatId(adminHID)
       setManagerHatId(managerHID)
     }
+
     if (projectContract) {
       checkManager()
       getHats()
@@ -137,6 +151,7 @@ export default function useProjectData(
     managerHatId,
     nanceProposal,
     proposalJSON,
+    finalReportMarkdown,
     totalBudget,
     isLoading,
   }

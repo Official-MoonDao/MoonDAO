@@ -337,7 +337,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                       className="flex-shrink-0"
                     />
                     <Link className="font-GoodTimes" href="/map">
-                      {location}
+                      {location.startsWith('[object') ? '' : location}
                     </Link>
                   </div>
                 )}
@@ -647,7 +647,14 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
   return {
     props: {
-      nft: { ...nft, id: tokenId },
+      nft: {
+        ...nft,
+        id: tokenId,
+        metadata: {
+          ...nft?.metadata,
+          id: tokenId,
+        },
+      },
       tokenId,
     },
   }

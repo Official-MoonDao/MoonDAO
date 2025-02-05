@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 
-export function useAssets() {
-  const ASSETS_URL = process.env.NEXT_PUBLIC_ASSETS_URL as string
+export function useAssets(
+  assetsUrl: string = process.env.NEXT_PUBLIC_ASSETS_URL as string
+) {
   const [tokens, setTokens] = useState<any>([])
   const [balanceSum, setBalanceSum] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -9,7 +10,7 @@ export function useAssets() {
 
   useEffect(() => {
     setIsLoading(true)
-    fetch(ASSETS_URL)
+    fetch(assetsUrl)
       .then((res) => res.json())
       .then(
         (result) => {
@@ -29,7 +30,7 @@ export function useAssets() {
           setError(error)
         }
       )
-  }, [ASSETS_URL])
+  }, [assetsUrl])
 
   return { tokens, isLoading, balanceSum, error }
 }
