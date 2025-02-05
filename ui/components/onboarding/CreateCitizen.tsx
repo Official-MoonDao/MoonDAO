@@ -7,7 +7,7 @@ import { Widget } from '@typeform/embed-react'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_CROSS_CHAIN_MINT_ADDRESSES,
-  LAYERZERO_EIDS,
+  LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
   CK_NETWORK_SIGNUP_FORM_ID,
   CK_NETWORK_SIGNUP_TAG_ID,
   DEPLOYED_ORIGIN,
@@ -26,7 +26,13 @@ import {
   sendAndConfirmTransaction,
   waitForReceipt,
 } from 'thirdweb'
-import { arbitrum, sepolia, arbitrumSepolia, Chain } from 'thirdweb/chains'
+import {
+  arbitrum,
+  base,
+  sepolia,
+  arbitrumSepolia,
+  Chain,
+} from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
@@ -65,8 +71,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const selectedChainSlug = getChainSlug(selectedChain)
-  const arbitrumSepoliaSlug = getChainSlug(arbitrumSepolia)
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
+  const crossChain = isTestnet ? arbitrumSepolia : base
+  const crossChainSlug = getChainSlug(crossChain)
+  const destinationChain = isTestnet ? sepolia : arbitrum
   const client = createClient(isTestnet ? 'testnet' : 'mainnet')
   const account = useActiveAccount()
   const address = account?.address
@@ -119,7 +127,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     chain: DEFAULT_CHAIN_V5,
   })
   const crossChainMintContract = useContract({
-    address: CITIZEN_CROSS_CHAIN_MINT_ADDRESSES[arbitrumSepoliaSlug],
+    address: CITIZEN_CROSS_CHAIN_MINT_ADDRESSES[crossChainSlug],
     abi: CrossChainMinterABI,
     chain: arbitrumSepolia,
   })
@@ -209,8 +217,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       let receipt: any
       if (selectedChainSlug !== defaultChainSlug) {
         const GAS_LIMIT = 300000 // Gas limit for the executor
-        // TODO don't hardcode this
-        const MSG_VALUE = 11100000000000000n // msg.value for the lzReceive() function on destination in wei
+        const MSG_VALUE = cost // msg.value for the lzReceive() function on destination in wei
 
         const _options = Options.newOptions().addExecutorLzReceiveOption(
           GAS_LIMIT,
@@ -221,7 +228,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           contract: crossChainMintContract,
           method: 'crossChainMint',
           params: [
-            LAYERZERO_EIDS[arbitrumSepoliaSlug].toString(),
+            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[
+              crossChainSlug
+            ].toString(),
             _options.toHex(),
             address,
             citizenData.name,
@@ -234,7 +243,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             'public',
             citizenData.formResponseId,
           ],
-          value: (MSG_VALUE * 3n) / 2n,
+          value: (MSG_VALUE * 3n) / 2n, // 1.5x the msg.value to cover the cost of the cross-chain transaction
+          // change is returned to sender, tho we can probably lower this
         })
         const originReceipt: any = await sendAndConfirmTransaction({
           transaction,
@@ -247,8 +257,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         )
         receipt = await waitForReceipt({
           client: serverClient,
-          // TODO set dest chain
-          chain: sepolia,
+          chain: destinationChain,
           transactionHash: message.dstTxHash,
         })
       } else {
