@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas'
+import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 import { MediaRenderer } from 'thirdweb/react'

@@ -1,5 +1,5 @@
 // Team Image Generator
-import html2canvas from 'html2canvas'
+import html2canvas from 'html2canvas-pro'
 import { useState } from 'react'
 import { MediaRenderer } from 'thirdweb/react'
 import client from '@/lib/thirdweb/client'
