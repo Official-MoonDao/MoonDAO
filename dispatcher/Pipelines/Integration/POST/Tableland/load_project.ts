@@ -29,7 +29,6 @@ const client = createThirdwebClient({
 
 function extractInitialTeamSection(text) {
     const lines = text.split("\n");
-    //console.log("lines", lines);
     let startIndex = lines.findIndex((line) => line.includes("Initial Team"));
     if (startIndex === -1) {
         return null; // "Initial Team" not found
@@ -110,7 +109,7 @@ async function loadProjectData() {
         console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
 
         // Get proposals from Nance
-        const proposals = await getProposals("moondao", 38);
+        const proposals = await getProposals("moondao", "current");
 
         if (!proposals) {
             throw new Error("Failed to fetch proposals from Nance");
@@ -119,13 +118,12 @@ async function loadProjectData() {
         // Insert new projects
         const existingMDPs = new Set(tablelandMDPs.map((row) => row.MDP));
         for (const proposal of proposals) {
-            // check if "Abstract" and "Problem" appear in proposal.body
             if (
                 !proposal.body.includes("Abstract") ||
                 !proposal.body.includes("Problem")
             ) {
                 console.log(
-                    "Skipping not project proposal MDP:",
+                    "Skipping non project proposal MDP:",
                     proposal.proposalId,
                     " ",
                     proposal.title
