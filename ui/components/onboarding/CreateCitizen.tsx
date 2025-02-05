@@ -47,6 +47,7 @@ import {
 } from '@/lib/typeform/citizenFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
+import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
 import Container from '../layout/Container'
@@ -162,7 +163,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     setStage(2)
   }, [])
 
-  const callMint = (crossChain) => async () => {
+  const callMint = async () => {
     if (!citizenImage)
       return toast.error('Please wait for your image to finish generating.')
 
@@ -206,7 +207,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       setIsLoadingMint(true)
 
       let receipt: any
-      if (crossChain) {
+      if (selectedChainSlug !== defaultChainSlug) {
         const GAS_LIMIT = 300000 // Gas limit for the executor
         // TODO don't hardcode this
         const MSG_VALUE = 11100000000000000n // msg.value for the lzReceive() function on destination in wei
@@ -300,7 +301,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         setTimeout(async () => {
           await sendDiscordMessage(
             'networkNotifications',
-                            `[**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
+            `[**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
           )
 
           router.push(`/citizen/${citizenPrettyLink}`)
@@ -594,21 +595,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     </p>
                   </label>
                 </div>
+                <NetworkSelector chains={[arbitrumSepolia, sepolia]} />
                 <PrivyWeb3Button
                   id="citizen-checkout-button"
-                  skipNetworkCheck={false}
+                  skipNetworkCheck={true}
                   label="Check Out"
                   isDisabled={!agreedToCondition || isLoadingMint}
-                  action={callMint(false)}
-                />
-                <PrivyWeb3Button
-                  id="citizen-checkout-button"
-                  skipNetworkCheck={false}
-                  // TODO set to correct chain
-                  requiredChain={arbitrumSepolia}
-                  label="Check Out (Cross-Chain)"
-                  isDisabled={!agreedToCondition || isLoadingMint}
-                  action={callMint(true)}
+                  action={callMint}
                 />
                 {isLoadingMint && (
                   <p className="opacity-[50%]">
