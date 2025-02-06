@@ -91,7 +91,11 @@ export default function NetworkSelector({
         >
           {chains && chains.length > 0 ? (
             chains.map((chain) => (
-              <NetworkOption chain={chain} selectChain={selectChain} />
+              <NetworkOption
+                key={chain.id}
+                chain={chain}
+                selectChain={selectChain}
+              />
             ))
           ) : (
             <>
