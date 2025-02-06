@@ -5,11 +5,6 @@ import BrandLogo from './BrandLogo'
 export default function PartnerSection() {
   return (
     <>
-      <section className="flex max-w-[1200px] items-center justify-center lg:pb-5 px-1">
-        <Link href="/team" passHref>
-          <TeamTier setSelectedTier={() => {}} compact />
-        </Link>
-      </section>
       <section
         id="network-section-container"
         className="mt-5 flex justify-start bg-white rounded-br-[5vmax] md:rounded-br-[0vmax] rounded-tl-[5vmax] rounded-bl-[5vmax] mb-5"

@@ -26,9 +26,7 @@ export default function Callout1() {
               id="paragraph"
               className="pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]"
             >
-              We are an open source space community where everything is
-              proposed, governed, and created by our members. Co-govern the treasury 
-              by locking $MOONEY to become a fully-fledged voter. 
+            The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond. We aim to connect space visionaries and organizations with the funding, tools, and support needed to turn bold ideas into reality.
             </p>
             <StandardButton
               backgroundColor="bg-dark-cool"
@@ -38,7 +36,7 @@ export default function Callout1() {
               link="/map"
               paddingOnHover="pl-5"
             >
-              Explore The Network
+              Explore the Network
             </StandardButton>
           </div>
         </div>
