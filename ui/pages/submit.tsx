@@ -110,10 +110,10 @@ export default function SubmissionPage({
                 </Tab.List>
                 <Tab.Panels className="mt-4">
                   <Tab.Panel className="flex flex-col items-center">
-                    <div className="mb-8 max-w-[600px]">
+                    <div className="mb-8">
                       <div
                         id="instructions-container"
-                        className="flex items-center justify-center gap-8 pt-5"
+                        className="flex items-center justify-center pt-5"
                       >
                         <div
                           id="step-1"
@@ -167,7 +167,7 @@ export default function SubmissionPage({
                           </p>
                         </div>
                       </div>
-                      <p className="text-gray-300">
+                      <p className="px-[6.5%] text-gray-300 max-w-[600px]">
                         Submit a proposal to receive financing or special
                         permissions from the MoonDAO community. Please refer to{' '}
                         <a
@@ -196,8 +196,8 @@ export default function SubmissionPage({
                     </NanceProvider>
                   </Tab.Panel>
                   <Tab.Panel>
-                    <div className="mb-8">
-                      <p className="text-gray-300">
+                    <div className="mb-8 flex flex-col items-center">
+                      <p className="text-gray-300 max-w-[600px]">
                         What have you done to accelerate the impact of MoonDAO's
                         mission? Submit your non-project work and
                         accomplishments, even if not tied directly to MoonDAO,
@@ -218,9 +218,15 @@ export default function SubmissionPage({
                     <ContributionEditor />
                   </Tab.Panel>
                   <Tab.Panel>
-                    <div className="mb-8">
-                      <p className="text-gray-300">
-                        Submit a final report for your project.
+                    <div className="mb-8 flex flex-col items-center">
+                      <p className="text-gray-300 max-w-[600px]">
+                        {`Submit the final report for your project. For more information on how to fill out the final report, please check the `}
+                        <Link
+                          className="text-blue-400 hover:text-blue-300 underline"
+                          href="https://docs.moondao.com/projects-system"
+                        >
+                          Project System
+                        </Link>
                       </p>
                     </div>
                     <FinalReportEditor
