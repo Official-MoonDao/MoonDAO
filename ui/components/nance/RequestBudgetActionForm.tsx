@@ -1,7 +1,11 @@
-import { XMarkIcon, PlusIcon } from '@heroicons/react/24/solid'
+import { PlusCircleIcon } from '@heroicons/react/20/solid'
+import { XMarkIcon } from '@heroicons/react/24/solid'
+import { MOONEY_ADDRESSES } from 'const/config'
 import { useFieldArray, useFormContext } from 'react-hook-form'
+import StandardButton from '../layout/StandardButton'
 import SafeTokenForm from './form/SafeTokenForm'
 import StringForm from './form/StringForm'
+
 // import { useEffect } from "react"
 
 export default function RequestBudgetActionForm({
@@ -54,6 +58,7 @@ export default function RequestBudgetActionForm({
                 <SafeTokenForm
                   address="0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
                   fieldName={`budget.${index}.token`}
+                  acceptedTokens={['ETH', MOONEY_ADDRESSES['ethereum']]}
                 />
               </div>
 
@@ -77,9 +82,8 @@ export default function RequestBudgetActionForm({
             </div>
           ))}
 
-          <button
-            className="btn gap-2 mt-4"
-            type="button"
+          <StandardButton
+            className="mt-8 gradient-2 rounded-full"
             onClick={() =>
               budgetAppend({
                 token: '',
@@ -88,9 +92,11 @@ export default function RequestBudgetActionForm({
               })
             }
           >
-            <PlusIcon className="w-5 h-5" />
-            Add budget
-          </button>
+            <div className="flex items-center gap-2">
+              <PlusCircleIcon className="w-6 h-6" />
+              Add budget
+            </div>
+          </StandardButton>
         </div>
       </div>
     </div>
