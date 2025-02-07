@@ -1,12 +1,11 @@
 import { Action, RequestBudget } from '@nance/nance-sdk'
-import { formatNumberUSStyle } from '@/lib/nance'
 import { TokenSymbol } from './TokenSymbol'
 
 export default function ActionLabel({ action }: { action: Action }) {
-  const comment = '// Unrecognized action, please check';
+  const comment = '// Unrecognized action, please check'
 
   if (action.type === 'Request Budget') {
-    const requestBudget = action.payload as RequestBudget;
+    const requestBudget = action.payload as RequestBudget
 
     return (
       <div className="flex w-full flex-col break-words">
@@ -18,17 +17,16 @@ export default function ActionLabel({ action }: { action: Action }) {
               {requestBudget.budget.map((item, index) => (
                 <div key={index} className="font-semibold">
                   <div className="font-bold text-lg">
-                    {formatNumberUSStyle(item.amount)}{' '}
-                    <TokenSymbol address={item.token} />
+                    {item.amount} <TokenSymbol address={item.token} />
                   </div>
-                  <div className='mb-5'>{item.justification}</div>
+                  <div className="mb-5">{item.justification}</div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -36,5 +34,5 @@ export default function ActionLabel({ action }: { action: Action }) {
       <p className="text-gray-400">{comment}</p>
       <p>{JSON.stringify(action)}</p>
     </div>
-  );
+  )
 }
