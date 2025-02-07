@@ -62,8 +62,8 @@ export default function Hero() {
             MoonDAO is accelerating our multiplanetary future with a global network and open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement.
           </p>
           <StandardButton
-              backgroundColor="bg-dark-cool"
-              textColor="text-white"
+              backgroundColor="bg-white"
+              textColor="text-dark-cool"
               hoverColor="bg-mid-cool"
               borderRadius="rounded-tl-[10px] rounded-[2vmax]"
               link="/join"

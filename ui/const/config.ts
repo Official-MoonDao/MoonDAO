@@ -131,7 +131,7 @@ export const PROJECT_ADDRESSES: Index = {
 }
 
 export const PROJECT_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0xe5709Bc44427DCEF81fF2F718DFc6A032fD23bbF',
+  arbitrum: '0x2486149B23447c37932471eA6dF091267ebca953',
   sepolia: '0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D',
   'arbitrum-sepolia': '0xde26EcE3C1Ec58057348e3a7B28359c8cDfae56A',
 }

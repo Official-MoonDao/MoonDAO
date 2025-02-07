@@ -1,6 +1,8 @@
 const ProjectTableABI = require("../../../../../ui/const/abis/ProjectTable.json");
 const ProjectTeamCreatorABI = require("../../../../../ui/const/abis/ProjectTeamCreator.json");
-const { getRelativeQuarter } = require("../../../../../lib/utils/dates");
+const { getRelativeQuarter } = require("../../../../../ui/lib/utils/dates");
+import { resolveAddress } from "thirdweb/extensions/ens";
+import { createThirdwebClient } from "thirdweb";
 require("dotenv").config();
 const { ThirdwebSDK } = require("@thirdweb-dev/sdk");
 const { Arbitrum, Sepolia } = require("@thirdweb-dev/chains");
@@ -21,6 +23,26 @@ const privateKey = process.env.OPERATOR_PRIVATE_KEY;
 const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
     secretKey: process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY,
 });
+const client = createThirdwebClient({
+    clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string,
+});
+
+function extractInitialTeamSection(text) {
+    const lines = text.split("\n");
+    let startIndex = lines.findIndex((line) => line.includes("Initial Team"));
+    if (startIndex === -1) {
+        return null; // "Initial Team" not found
+    }
+    let endIndex = lines.findIndex(
+        (line, i) => i > startIndex && line.includes("Multisig")
+    );
+
+    if (startIndex === -1 || endIndex === -1) {
+        return null; // Return null if either "Initial Team" or "Multisig" is not found
+    }
+
+    return lines.slice(startIndex, endIndex).join("\n");
+}
 
 interface PinResponse {
     cid: string;
@@ -35,7 +57,6 @@ export async function pinBlobOrFile(
         formData.append("pinataMetadata", JSON.stringify({ name: name }));
         formData.append("pinataOptions", JSON.stringify({ cidVersion: 0 }));
         formData.append("file", blob);
-
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -94,12 +115,40 @@ async function loadProjectData() {
             throw new Error("Failed to fetch proposals from Nance");
         }
 
-        // Filter MPDs to insert
-        // const newProposals = proposals.filter(proposal => proposal.status=="Approved")
-
         // Insert new projects
         const existingMDPs = new Set(tablelandMDPs.map((row) => row.MDP));
-        for (const proposal of newProposals) {
+        for (const proposal of proposals) {
+            if (
+                !proposal.body.includes("Abstract") ||
+                !proposal.body.includes("Problem")
+            ) {
+                console.log(
+                    "Skipping non project proposal MDP:",
+                    proposal.proposalId,
+                    " ",
+                    proposal.title
+                );
+                continue;
+            }
+            const initialTeamLine = extractInitialTeamSection(proposal.body);
+            const discordHandles =
+                initialTeamLine.match(/@([a-zA-Z0-9-]+)/g) || [];
+            const multisigLine = proposal.body
+                .split("\n")
+                .find((line) => line.includes("Multisig"));
+            const addresses = multisigLine.match(/0x[a-fA-F0-9]{40}/g) || [];
+            const ensNames = multisigLine.match(/([a-zA-Z0-9-]+\.eth)/g) || [];
+            const ensAddresses = await Promise.all(
+                ensNames.map(async (name) => {
+                    const address = await resolveAddress({
+                        client,
+                        name: name,
+                    });
+                    return address;
+                })
+            );
+            const signers = addresses.concat(ensAddresses);
+
             if (existingMDPs.has(proposal.proposalId)) {
                 console.log(
                     "Skipping existing proposal MDP:",
@@ -109,7 +158,8 @@ async function loadProjectData() {
                 );
                 continue;
             }
-            function getHatMetadataIPFS(hatType) {
+            // parse out tables from proposal.body which is in markdown format
+            const getHatMetadataIPFS = async function (hatType: string) {
                 const hatMetadataBlob = new Blob(
                     [
                         JSON.stringify({
@@ -133,18 +183,27 @@ async function loadProjectData() {
                     hatMetadataBlob,
                     name
                 );
-                return "ipfs://" + hat;
-            }
+                return "ipfs://" + hatMetadataIpfsHash;
+            };
             const { quarter, year } = getRelativeQuarter(
                 IS_THIS_QUARTER ? 0 : -1
             );
             const upfrontPayment = proposal.upfrontPayment
                 ? JSON.stringify(proposal.upfrontPayment)
                 : "";
-            await projectTeamCreatorContract.call("createProjectTeam", [
+            const [
+                adminHatMetadataIpfs,
+                managerHatMetadataIpfs,
+                memberHatMetadataIpfs,
+            ] = await Promise.allSettled([
                 getHatMetadataIPFS("Admin"),
                 getHatMetadataIPFS("Manager"),
                 getHatMetadataIPFS("Member"),
+            ]);
+            await projectTeamCreatorContract.call("createProjectTeam", [
+                adminHatMetadataIpfs,
+                managerHatMetadataIpfs,
+                memberHatMetadataIpfs,
                 proposal.title,
                 "", // description
                 "", // image
@@ -152,10 +211,11 @@ async function loadProjectData() {
                 year,
                 proposal.proposalId,
                 "", // proposal ipfs
-                proposal.proposalLink,
+                "https://moondao.com/proposal/" + proposal.proposalId,
                 upfrontPayment,
-                proposal.lead, // leadAddress,
-                proposal.members, // members,
+                proposal.authorAddress || "", // leadAddress,
+                signers || [], // members
+                signers || [], // signers,
             ]);
         }
 
