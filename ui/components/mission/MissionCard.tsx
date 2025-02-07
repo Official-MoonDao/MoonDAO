@@ -1,5 +1,5 @@
+import { Mission } from 'archive/mission/[tokenId]'
 import Link from 'next/link'
-import { Mission } from 'pages/mission/[tokenId]'
 import { useEffect, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer } from 'thirdweb/react'
@@ -35,7 +35,7 @@ export default function MissionCard({
     <Link href={`/mission/${mission?.id}`} passHref>
       <div
         className={`p-4 flex flex-col items-center gap-4 bg-darkest-cool rounded-2xl ${
-          compact ? 'w-[100px] h-[150px]' : 'w-[200px] h-[300px]'
+          compact ? 'w-[100px] h-[150px]' : 'w-[250px] h-[300px]'
         }`}
       >
         <MediaRenderer
@@ -45,22 +45,22 @@ export default function MissionCard({
               ? metadata?.logoUri
               : teamNFT?.metadata?.image
           }
-          className="w-16 h-16 rounded-full"
+          className="w-32 h-32 rounded-full"
         />
-        <p>{metadata?.name}</p>
+        <p className="text-lg font-bold">{metadata?.name}</p>
         {!compact && (
           <p>
-            {metadata?.description && metadata?.description?.length > 100
-              ? metadata?.description?.slice(0, 100) + '...'
+            {metadata?.description && metadata?.description?.length > 50
+              ? metadata?.description?.slice(0, 50) + '...'
               : metadata?.description}
           </p>
         )}
-        {!compact && (
+        {/* {!compact && (
           <div className="flex flex-col">
             <p>{`Mission #${mission?.id}`}</p>
             <p>{`JBX #${mission?.projectId}`}</p>
           </div>
-        )}
+        )} */}
       </div>
     </Link>
   )

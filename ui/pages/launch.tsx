@@ -13,6 +13,8 @@ import {
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { GetStaticProps } from 'next'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
 import React, { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import queryTable from '@/lib/tableland/queryTable'
@@ -21,11 +23,16 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Container from '../components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SectionCard from '@/components/layout/SectionCard'
 import StandardButton from '@/components/layout/StandardButton'
 import CreateMission from '@/components/mission/CreateMission'
 import MissionCard from '@/components/mission/MissionCard'
 
 export default function Launch({ missions }: any) {
+  const router = useRouter()
+
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
 
@@ -49,6 +56,12 @@ export default function Launch({ missions }: any) {
     abi: HatsABI as any,
   })
 
+  async function handleCreateMission() {
+    //check if connected wallet is a manager of a team
+
+    setIsCreatingMission(true)
+  }
+
   if (isCreatingMission) {
     return (
       <CreateMission
@@ -64,60 +77,159 @@ export default function Launch({ missions }: any) {
   return (
     <section className="overflow-auto">
       <Container>
-        <div className="w-full md:w-[90%] flex flex-col items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <h1 className="mt-24 font-GoodTimes text-4xl">Launch Pad</h1>
-            <p className="text-center text-2xl font-bold">
+        <ContentLayout
+          header="Launch Pad"
+          headerSize="max(20px, 3vw)"
+          description={
+            <p className="text-lg">
               Raise Funds. Launch Missions. Accelerate Space.
             </p>
-            <p className="max-w-[800px]">
-              Join the first onchain fundraising platform designed exclusively
-              for space missions. MoonDAO’s Launch Pad empowers teams to raise
-              funds transparently, manage their treasuries independently, and
-              take their space exploration ideas from concept to fully funded
-              launch.
-            </p>
-          </div>
+          }
+          preFooter={<NoticeFooter />}
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+        >
+          <div className="w-full md:w-[90%] flex flex-col items-center justify-center">
+            <SectionCard>
+              <div className="p-10 flex flex-col md:flex-row gap-4">
+                <div className="w-[200px] h-[200px] bg-white rounded-full" />
+                <div className="w-3/4 flex flex-col gap-4">
+                  <h2 className="header font-GoodTimes">Launch Pad</h2>
+                  <p className="text-lg">
+                    Join the first onchain fundraising platform designed
+                    exclusively for space missions. MoonDAO’s Launch Pad
+                    empowers teams to raise funds transparently, manage their
+                    treasuries independently, and take their space exploration
+                    ideas from
+                  </p>
+                  <StandardButton
+                    className="gradient-2 rounded-full"
+                    hoverEffect={false}
+                    onClick={() => setIsCreatingMission(true)}
+                  >
+                    Launch Your Mission
+                  </StandardButton>
+                </div>
+              </div>
+            </SectionCard>
 
-          <div className="w-full max-w-[800px] mt-8 flex gap-[25%] items-center justify-center">
-            <StandardButton
-              className="gradient-2"
-              hoverEffect={false}
-              link="/missions"
+            <SectionCard
+              header="Explore Missions"
+              iconSrc="/assets/icon-org.svg"
+              action={
+                <StandardButton
+                  className="gradient-2 rounded-full"
+                  hoverEffect={false}
+                  link="/missions"
+                >
+                  See More
+                </StandardButton>
+              }
             >
-              Explore Missions
-            </StandardButton>
-            <StandardButton
-              className="gradient-2"
-              hoverEffect={false}
-              onClick={() => setIsCreatingMission(true)}
-            >
-              Launch a Mission
-            </StandardButton>
-          </div>
+              {missions && missions.length > 0 ? (
+                missions.map((mission: any) => (
+                  <MissionCard
+                    key={`mission-card-${mission.id}`}
+                    mission={mission}
+                    teamContract={teamContract}
+                    compact
+                  />
+                ))
+              ) : (
+                <p>No missions found</p>
+              )}
+            </SectionCard>
 
-          <div className="mt-8 flex gap-4">
-            {missions && missions.length > 0 ? (
-              missions.map((mission: any) => (
-                <MissionCard
-                  key={`mission-card-${mission.id}`}
-                  mission={mission}
-                  teamContract={teamContract}
-                  compact
-                />
-              ))
-            ) : (
-              <p>No missions found</p>
-            )}
-          </div>
+            <SectionCard header="Features Title" iconSrc="/assets/icon-org.svg">
+              <div className="flex flex-col md:flex-row gap-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div
+                    key={`feature-${index}`}
+                    className="p-2 md:w-1/3 flex flex-col gap-4 bg-white text-black"
+                  >
+                    <div className="flex gap-4 items-center">
+                      <div className="w-[50px] h-[50px] bg-black rounded-full" />
+                      <h3 className="font-GoodTimes">Feature Title</h3>
+                    </div>
+                    <p className="border-2 border-black p-2 min-h-[100px]">
+                      Callout Paragraph
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <StandardButton
+                className="mt-4 gradient-2 rounded-full"
+                hoverEffect={false}
+                onClick={() => setIsCreatingMission(true)}
+              >
+                Launch Your Mission
+              </StandardButton>
+            </SectionCard>
 
-          <div className="w-full mt-8 flex flex-col gap-4">
-            <h2 className="font-bold text-xl">
-              Built for New Space Innovation
-            </h2>
-            <p>{`Whether you're launching a nanosatellite, testing lunar ISRU tech, or sending humans to space, MoonDAO’s Launch Pad provides the tools you need to turn your vision into reality while tapping into a global network of backers and funding that are passionate about space, as well as leading space companies and service providers that are already part of the Space Acceleration Network.`}</p>
+            <SectionCard className="relative min-h-[800px]">
+              <Image
+                className="absolute top-0 right-0"
+                src="/assets/launchpad-astro.png"
+                alt="Launchpad Astro"
+                width={500}
+                height={500}
+              />
+              <div className="p-10 flex flex-col md:flex-row gap-4">
+                <div className="w-[200px] h-[200px] bg-white rounded-full" />
+                <div className="w-3/4 flex flex-col gap-4">
+                  <h2 className="header font-GoodTimes">Success Stories</h2>
+                  <p className="text-lg">
+                    MoonDAO is no stranger to launching bold ideas. With over
+                    Ξ2,623 (+$8,000,000) crowdraised during our initial launch,
+                    we used those funds to send two people to space and support
+                    60+ projects for over $300,000. We’re proving that the
+                    future of space funding is decentralized and onchain.
+                  </p>
+                </div>
+              </div>
+              <h2 className="text-4xl font-GoodTimes">
+                How the launchpad works
+              </h2>
+              <div className="mt-12 flex flex-col gap-8">
+                {[
+                  {
+                    title: 'step 1',
+                    description: 'step 1 description',
+                  },
+                  { title: 'step 2', description: 'step 2 description' },
+                  { title: 'step 3', description: 'step 3 description' },
+                ].map((step: any, i: number) => (
+                  <div
+                    key={`step-${step.title}`}
+                    className="flex gap-4 items-center h-[100px]"
+                  >
+                    <div className="w-[50px] h-[50px] bg-white rounded-full text-black flex items-center justify-center text-2xl font-bold">
+                      {i + 1}
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-GoodTimes">{step.title}</h3>
+                      <p className="text-lg">{step.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+
+            <SectionCard header="Why Use the Launchpad?">
+              <div></div>
+            </SectionCard>
+
+            <SectionCard header="FAQ">
+              <div></div>
+            </SectionCard>
+
+            <SectionCard header="Get Started Today">
+              <div></div>
+            </SectionCard>
           </div>
-        </div>
+        </ContentLayout>
       </Container>
     </section>
   )

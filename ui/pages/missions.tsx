@@ -36,7 +36,7 @@ import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardButtonPlus from '@/components/layout/StandardButtonPlus'
 import MissionCard from '@/components/mission/MissionCard'
-import { Mission } from './mission/[tokenId]'
+import { Mission } from '../archive/mission/[tokenId]'
 
 type MissionsProps = {
   missions: Mission[]
