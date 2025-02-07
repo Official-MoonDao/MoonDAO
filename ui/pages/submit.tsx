@@ -117,7 +117,7 @@ export default function SubmissionPage({
                       >
                         <div
                           id="step-1"
-                          className="flex flex-col items-center w-1/3 h-[200px]"
+                          className="flex flex-col items-center w-1/3 h-[150px]"
                         >
                           <Image
                             src="/assets/icon-number-1.svg"
@@ -140,7 +140,7 @@ export default function SubmissionPage({
                         </div>
                         <div
                           id="step-2"
-                          className="flex flex-col items-center w-1/3 h-[200px]"
+                          className="flex flex-col items-center w-1/3 h-[150px]"
                         >
                           <Image
                             src="/assets/icon-number-2.svg"
@@ -154,7 +154,7 @@ export default function SubmissionPage({
                         </div>
                         <div
                           id="step-3"
-                          className="flex flex-col items-center w-1/3 h-[200px]"
+                          className="flex flex-col items-center w-1/3 h-[150px]"
                         >
                           <Image
                             src="/assets/icon-number-3.svg"
@@ -167,7 +167,7 @@ export default function SubmissionPage({
                           </p>
                         </div>
                       </div>
-                      <p className="px-[6.5%] text-gray-300 max-w-[600px]">
+                      <p className="mt-4 sm:mt-0 px-[6.5%] text-gray-300 max-w-[600px]">
                         Submit a proposal to receive financing or special
                         permissions from the MoonDAO community. Please refer to{' '}
                         <a
