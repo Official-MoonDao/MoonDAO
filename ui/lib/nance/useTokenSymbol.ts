@@ -1,3 +1,4 @@
+import ERC20ABI from 'const/abis/ERC20.json'
 import { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { ethereum } from 'thirdweb/chains'
@@ -30,7 +31,7 @@ export function useTokenSymbol(address: string | undefined) {
           client,
           address,
           chain: ethereum,
-          abi: '[{"type":"function","name":"symbol","constant":true,"stateMutability":"view","payable":false,"inputs":[],"outputs":[{"type":"string"}]}]' as any,
+          abi: ERC20ABI as any,
         })
 
         const tokenSymbol = await readContract({
