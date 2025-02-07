@@ -2,6 +2,7 @@ import { XMarkIcon } from '@heroicons/react/20/solid'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -12,7 +13,6 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
-import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { renameFile } from '@/lib/utils/files'
 import FormInput from '../forms/FormInput'
@@ -30,7 +30,17 @@ export type CreateMissionProps = {
   missionCreatorContract: any
   hatsContract: any
   teamContract: any
-  setIsCreatingMission: (isCreatingMission: boolean) => void
+  setStatus: (status: 'idle' | 'loggingIn' | 'apply' | 'create') => void
+  userTeamsAsManager: any
+}
+
+export function Stage({ header, children }: any) {
+  return (
+    <div className="w-full flex flex-col gap-4 items-center">
+      <h2 className="font-GoodTimes text-2xl opacity-50">{header}</h2>
+      <div className="mt-4 w-[300px] md:w-[600px]">{children}</div>
+    </div>
+  )
 }
 
 export default function CreateMission({
@@ -38,23 +48,18 @@ export default function CreateMission({
   missionCreatorContract,
   hatsContract,
   teamContract,
-  setIsCreatingMission,
-}: {
-  selectedChain: any
-  missionCreatorContract: any
-  hatsContract: any
-  teamContract: any
-  setIsCreatingMission: (isCreatingMission: boolean) => void
-}) {
+  setStatus,
+  userTeamsAsManager,
+}: CreateMissionProps) {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
+
   const [stage, setStage] = useState(0)
 
-  const userTeams = useTeamWearer(teamContract, selectedChain, address)
-  const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
-
-  const [selectedTeamId, setSelectedTeamId] = useState<number>()
+  const [selectedTeamId, setSelectedTeamId] = useState<number>(
+    userTeamsAsManager?.[0]?.teamId
+  )
   const [selectedTeamNFT, setSelectedTeamNFT] = useState<any>()
   const [missionImage, setMissionImage] = useState<File>()
   const [metadata, setMetadata] = useState({
@@ -68,32 +73,14 @@ export default function CreateMission({
   })
 
   useEffect(() => {
-    async function getUserTeamsAsManager() {
-      setUserTeamsAsManager(undefined)
-      const teamsAsManager = userTeams?.filter(async (team: any) => {
-        if (!team.teamId) return false
-        const isManager = await readContract({
-          contract: teamContract,
-          method: 'isManager' as string,
-          params: [team.teamId, address],
-        })
-        return isManager
-      })
-      setUserTeamsAsManager(teamsAsManager)
-    }
-    if (teamContract && userTeams && address) getUserTeamsAsManager()
-  }, [teamContract, userTeams, address])
-
-  useEffect(() => {
     async function getTeamNFT() {
-      if (!selectedTeamId) return
       const nft = await getNFT({
         contract: teamContract,
         tokenId: BigInt(selectedTeamId),
       })
       setSelectedTeamNFT(nft)
     }
-    if (selectedTeamId) getTeamNFT()
+    if (selectedTeamId !== undefined && teamContract) getTeamNFT()
   }, [selectedTeamId, teamContract])
 
   return (
@@ -109,82 +96,125 @@ export default function CreateMission({
         isProfile
       >
         <div className="flex flex-col justify-center items-center bg-darkest-cool p-8">
-          <div className="flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
+          <div className="relative flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
             <Steps
               className="mb-4 pl-5 md:pl-0 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16"
-              steps={['Select Team', 'Overview', 'Details', 'Confirm']}
+              steps={['Overview', 'Details', 'Token', 'Confirm']}
               currStep={stage}
               lastStep={stage - 1}
               setStep={setStage}
             />
-            <button onClick={() => setIsCreatingMission(false)}>
+            <button
+              className="absolute top-0 right-0"
+              onClick={() => setStatus('idle')}
+            >
               <XMarkIcon width={50} height={50} />
             </button>
           </div>
           {stage === 0 && (
-            <div>
+            <Stage header="Mission Overview">
               <div className="flex justify-between">
-                <p>Please select a team</p>
+                {!userTeamsAsManager ||
+                  (userTeamsAsManager.length === 0 && (
+                    <StandardButton
+                      className="gradient-2"
+                      hoverEffect={false}
+                      link="/team"
+                    >
+                      Create a Team
+                    </StandardButton>
+                  ))}
+              </div>
+              {userTeamsAsManager && userTeamsAsManager.length > 1 && (
+                <div>
+                  <p>You are a manager of multiple teams, please select one</p>
+                  <div className="mt-4 flex flex-col gap-2 max-h-[500px] overflow-y-auto">
+                    {!userTeamsAsManager ? (
+                      Array.from({ length: 3 }).map((_, index) => (
+                        <div
+                          key={`team-${index}`}
+                          className="w-[350px] h-[100px] bg-dark-cool p-2"
+                        ></div>
+                      ))
+                    ) : userTeamsAsManager && userTeamsAsManager.length > 0 ? (
+                      userTeamsAsManager.map((team: any) => (
+                        <button
+                          key={`team-${team.id}`}
+                          className="bg-dark-cool p-2"
+                          onClick={() => {
+                            setSelectedTeamId(team.teamId)
+                            setStage(1)
+                          }}
+                        >
+                          <Hat
+                            hat={team}
+                            selectedChain={selectedChain}
+                            hatsContract={hatsContract}
+                            teamContract={teamContract}
+                            compact
+                            isDisabled={true}
+                          />
+                        </button>
+                      ))
+                    ) : (
+                      <p>You are not a manager of any teams</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {selectedTeamNFT && (
+                <p>
+                  {`Selected Team : `}
+                  <Link
+                    className="text-lg text-light-warm font-bold hover:underline"
+                    href={`/team/${selectedTeamId}`}
+                  >
+                    {selectedTeamNFT?.metadata?.name}
+                  </Link>
+                </p>
+              )}
+              <div className="mt-4 flex flex-col gap-4 max-w-[300px]">
+                <FormInput
+                  label="Mission Title"
+                  value={metadata.name}
+                  onChange={(e: any) =>
+                    setMetadata({ ...metadata, name: e.target.value })
+                  }
+                />
+                {/* <FormInput
+                  label="Tagline"
+                  value={metadata.tagline}
+                  onChange={(e: any) =>
+                    setMetadata({ ...metadata, tagline: e.target.value })
+                  }
+                /> */}
+                <FileInput file={missionImage} setFile={setMissionImage} />
+                <div>
+                  {missionImage ? (
+                    <Image
+                      src={
+                        missionImage ? URL.createObjectURL(missionImage) : ''
+                      }
+                      alt="Mission Image"
+                      width={200}
+                      height={200}
+                    />
+                  ) : (
+                    <div className="w-[200px] h-[200px] bg-dark-cool" />
+                  )}
+                </div>
                 <StandardButton
                   className="gradient-2"
                   hoverEffect={false}
-                  link="/team"
+                  onClick={() => setStage(1)}
                 >
-                  Create a Team
+                  Next
                 </StandardButton>
               </div>
-              <div className="mt-4 flex flex-col gap-2">
-                {!userTeamsAsManager ? (
-                  Array.from({ length: 3 }).map((_, index) => (
-                    <div
-                      key={`team-${index}`}
-                      className="w-[350px] h-[100px] bg-dark-cool p-2"
-                    ></div>
-                  ))
-                ) : userTeamsAsManager && userTeamsAsManager.length > 0 ? (
-                  userTeamsAsManager.map((team: any) => (
-                    <button
-                      key={`team-${team.id}`}
-                      className="bg-dark-cool p-2"
-                      onClick={() => {
-                        setSelectedTeamId(team.teamId)
-                        setStage(1)
-                      }}
-                    >
-                      <Hat
-                        hat={team}
-                        selectedChain={selectedChain}
-                        hatsContract={hatsContract}
-                        teamContract={teamContract}
-                        compact
-                        isDisabled={true}
-                      />
-                    </button>
-                  ))
-                ) : (
-                  <p>You are not a manager of any teams</p>
-                )}
-              </div>
-            </div>
+            </Stage>
           )}
           {stage === 1 && (
-            <div>
-              <div>
-                <Image
-                  src={missionImage ? URL.createObjectURL(missionImage) : ''}
-                  alt="Mission Image"
-                  width={200}
-                  height={200}
-                />
-              </div>
-              <FileInput file={missionImage} setFile={setMissionImage} />
-              <FormInput
-                label="Name"
-                value={metadata.name}
-                onChange={(e: any) =>
-                  setMetadata({ ...metadata, name: e.target.value })
-                }
-              />
+            <Stage header="Mission Details">
               <FormInput
                 label="Description"
                 value={metadata.description}
@@ -221,10 +251,23 @@ export default function CreateMission({
               >
                 Next
               </StandardButton>
-            </div>
+            </Stage>
           )}
           {stage === 2 && (
-            <div>
+            <Stage header="Tokenomics">
+              <p>Please config your token</p>
+              <StandardButton
+                type="submit"
+                className="gradient-2"
+                hoverEffect={false}
+                onClick={() => setStage(3)}
+              >
+                Next
+              </StandardButton>
+            </Stage>
+          )}
+          {stage === 3 && (
+            <Stage header="Mission Confirmation">
               <p>Please review your mission details</p>
               <Image
                 src={missionImage ? URL.createObjectURL(missionImage) : ''}
@@ -318,7 +361,7 @@ export default function CreateMission({
                     if (receipt) {
                       setTimeout(() => {
                         toast.success('Mission created successfully')
-                        setIsCreatingMission(false)
+                        setStatus('idle')
                         router.push(`/mission/${missionId}`)
                       }, 15000)
                     }
@@ -327,7 +370,7 @@ export default function CreateMission({
                   }
                 }}
               />
-            </div>
+            </Stage>
           )}
         </div>
       </ContentLayout>

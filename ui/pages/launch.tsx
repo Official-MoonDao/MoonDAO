@@ -1,3 +1,4 @@
+import { useLogin, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
@@ -15,8 +16,10 @@ import { blockedMissions } from 'const/whitelist'
 import { GetStaticProps } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import React, { useContext, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
+import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -33,10 +36,25 @@ import MissionCard from '@/components/mission/MissionCard'
 export default function Launch({ missions }: any) {
   const router = useRouter()
 
+  const [status, setStatus] = useState<
+    'idle' | 'loggingIn' | 'apply' | 'create'
+  >('idle')
+
+  const account = useActiveAccount()
+  const address = account?.address
+  const { user } = usePrivy()
+  const { login } = useLogin({
+    onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
+      if (!wasAlreadyAuthenticated && status === 'loggingIn') {
+        handleCreateMission()
+      }
+    },
+  })
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
 
-  const [isCreatingMission, setIsCreatingMission] = useState(false)
+  const [missionApplyModalEnabled, setMissionApplyModalEnabled] =
+    useState(false)
 
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
@@ -56,20 +74,52 @@ export default function Launch({ missions }: any) {
     abi: HatsABI as any,
   })
 
-  async function handleCreateMission() {
-    //check if connected wallet is a manager of a team
+  const userTeams = useTeamWearer(teamContract, selectedChain, address)
+  const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
 
-    setIsCreatingMission(true)
+  useEffect(() => {
+    async function getUserTeamsAsManager() {
+      setUserTeamsAsManager(undefined)
+      const teamsAsManager = userTeams?.filter(async (team: any) => {
+        if (!team?.teamId) return false
+        const isManager = await readContract({
+          contract: teamContract,
+          method: 'isManager' as string,
+          params: [team.teamId, address],
+        })
+        return isManager
+      })
+      setUserTeamsAsManager(teamsAsManager)
+    }
+    if (teamContract && userTeams && address) getUserTeamsAsManager()
+  }, [teamContract, userTeams, address])
+
+  async function handleCreateMission() {
+    if (!user) {
+      setStatus('loggingIn')
+      return login()
+    }
+    //Check if wallet is whitelisted or is a manager of a team
+    const isWhitelisted = true
+    if (
+      (userTeamsAsManager && userTeamsAsManager.length > 0) ||
+      isWhitelisted
+    ) {
+      setStatus('create')
+    } else {
+      setStatus('apply')
+    }
   }
 
-  if (isCreatingMission) {
+  if (status === 'create') {
     return (
       <CreateMission
         selectedChain={selectedChain}
         missionCreatorContract={missionCreatorContract}
         teamContract={teamContract}
         hatsContract={hatsContract}
-        setIsCreatingMission={setIsCreatingMission}
+        setStatus={setStatus}
+        userTeamsAsManager={userTeamsAsManager}
       />
     )
   }
@@ -107,7 +157,7 @@ export default function Launch({ missions }: any) {
                   <StandardButton
                     className="gradient-2 rounded-full"
                     hoverEffect={false}
-                    onClick={() => setIsCreatingMission(true)}
+                    onClick={handleCreateMission}
                   >
                     Launch Your Mission
                   </StandardButton>
@@ -162,7 +212,7 @@ export default function Launch({ missions }: any) {
               <StandardButton
                 className="mt-4 gradient-2 rounded-full"
                 hoverEffect={false}
-                onClick={() => setIsCreatingMission(true)}
+                onClick={handleCreateMission}
               >
                 Launch Your Mission
               </StandardButton>

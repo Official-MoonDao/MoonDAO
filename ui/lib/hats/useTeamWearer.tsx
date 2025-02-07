@@ -98,12 +98,12 @@ export function useTeamWearer(
                   ...hat,
                   teamId: teamId.toString(),
                 }
-              } else {
-                return hat
               }
+              return null
             })
-          )
+          ).then((results) => results.filter((result) => result !== null))
 
+          console.log(moondaoHatsWithTeamId)
           setWornMoondaoHats(moondaoHatsWithTeamId)
         }
       } catch (err) {
