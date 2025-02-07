@@ -37,3 +37,59 @@ export async function fitImage(
     img.src = URL.createObjectURL(file)
   })
 }
+
+export async function isImageBlank(file: File): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error('Unable to get canvas context'))
+        return
+      }
+
+      ctx.drawImage(img, 0, 0)
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+
+      // Count pixels that are nearly white or transparent
+      let nonBlankPixels = 0
+      const totalPixels = imageData.length / 4
+
+      for (let i = 0; i < imageData.length; i += 4) {
+        const r = imageData[i]
+        const g = imageData[i + 1]
+        const b = imageData[i + 2]
+        const a = imageData[i + 3]
+
+        // Consider a pixel non-blank if it's not very close to white or transparent
+        if (r < 240 || g < 240 || b < 240) {
+          if (a > 10) {
+            // Only count if pixel isn't transparent
+            nonBlankPixels++
+          }
+        }
+      }
+
+      // Consider image blank if less than 0.1% of pixels are non-blank
+      const isBlank = nonBlankPixels / totalPixels < 0.001
+
+      URL.revokeObjectURL(objectUrl)
+      resolve(isBlank)
+    }
+
+    img.onerror = (error) => {
+      URL.revokeObjectURL(objectUrl)
+      reject(error)
+    }
+
+    img.src = objectUrl
+  })
+}
