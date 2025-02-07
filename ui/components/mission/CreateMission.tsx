@@ -1,5 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -278,13 +279,25 @@ export default function CreateMission({
                   account,
                 })
 
-                if (receipt) {
-                  toast.success('Mission created successfully')
+                // Define the event signature for the Transfer event
+                const transferEventSignature = ethers.utils.id(
+                  'MissionCreated(uint256,uint256,uint256)'
+                )
+                // Find the log that matches the Transfer event signature
+                const transferLog = receipt.logs.find(
+                  (log: any) => log.topics[0] === transferEventSignature
+                )
 
+                const missionId = ethers.BigNumber.from(
+                  transferLog?.topics[1]
+                ).toString()
+
+                if (receipt) {
                   setTimeout(() => {
+                    toast.success('Mission created successfully')
                     setIsCreatingMission(false)
-                    router.reload()
-                  }, 5000)
+                    router.push(`/mission/${missionId}`)
+                  }, 15000)
                 }
               } catch (err) {
                 console.error(err)

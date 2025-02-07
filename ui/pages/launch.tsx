@@ -1,14 +1,18 @@
 import HatsABI from 'const/abis/Hats.json'
+import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
+  JBV4_CONTROLLER_ADDRESSES,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
+import { blockedMissions } from 'const/whitelist'
+import { GetStaticProps } from 'next'
 import React, { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import queryTable from '@/lib/tableland/queryTable'
@@ -76,7 +80,11 @@ export default function Launch({ missions }: any) {
           </div>
 
           <div className="w-full max-w-[800px] mt-8 flex gap-[25%] items-center justify-center">
-            <StandardButton className="gradient-2" hoverEffect={false}>
+            <StandardButton
+              className="gradient-2"
+              hoverEffect={false}
+              link="/missions"
+            >
               Explore Missions
             </StandardButton>
             <StandardButton
@@ -93,8 +101,10 @@ export default function Launch({ missions }: any) {
               missions.map((mission: any) => (
                 <MissionCard
                   key={`mission-card-${mission.id}`}
+                  selectedChain={selectedChain}
                   mission={mission}
                   teamContract={teamContract}
+                  compact
                 />
               ))
             ) : (
@@ -114,28 +124,64 @@ export default function Launch({ missions }: any) {
   )
 }
 
-export async function getStaticProps() {
+export const getStaticProps: GetStaticProps = async () => {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
+
   const missionTableContract = getContract({
     client: serverClient,
     address: MISSION_TABLE_ADDRESSES[chainSlug],
-    chain,
     abi: MissionTableABI as any,
+    chain: chain,
   })
 
   const missionTableName = await readContract({
     contract: missionTableContract,
     method: 'getTableName' as string,
+    params: [],
   })
 
-  const statement = `SELECT * FROM ${missionTableName}`
+  const statement = `SELECT * FROM ${missionTableName} LIMIT 10`
 
-  const missions = await queryTable(chain, statement)
+  const missionRows = await queryTable(chain, statement)
+
+  const filteredMissionRows = missionRows.filter((mission) => {
+    return !blockedMissions.includes(mission.id)
+  })
+
+  const jbV4ControllerContract = getContract({
+    client: serverClient,
+    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+    abi: JBV4ControllerABI as any,
+    chain: chain,
+  })
+
+  const missions = await Promise.all(
+    filteredMissionRows.map(async (missionRow) => {
+      const metadataURI = await readContract({
+        contract: jbV4ControllerContract,
+        method: 'uriOf' as string,
+        params: [missionRow.projectId],
+      })
+
+      const metadataRes = await fetch(
+        `https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`
+      )
+      const metadata = await metadataRes.json()
+
+      return {
+        id: missionRow.id,
+        teamId: missionRow.teamId,
+        projectId: missionRow.projectId,
+        metadata: metadata,
+      }
+    })
+  )
 
   return {
     props: {
       missions,
     },
+    revalidate: 60,
   }
 }

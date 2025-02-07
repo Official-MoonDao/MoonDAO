@@ -221,7 +221,11 @@ export const MISSION_CREATOR_ADDRESSES: Index = {
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x7724a705d345c2a09B576E7D06dFd7ef2A62dae9',
+  sepolia: '0xd1F037EFeBF187A59520bcCe9D1DAbE5CcfAb2c3',
+}
+export const JBV4_TOKENS_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xb4a4D8Ad7636E36d6ff3c7c664f9F797A532BBB2',
 }
 
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
