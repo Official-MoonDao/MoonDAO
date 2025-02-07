@@ -113,11 +113,11 @@ export default function SubmissionPage({
                     <div className="mb-8 max-w-[600px]">
                       <div
                         id="instructions-container"
-                        className="flex flex-col md:flex-row items-center justify-center gap-8 pt-5"
+                        className="flex items-center justify-center gap-8 pt-5"
                       >
                         <div
                           id="step-1"
-                          className="flex flex-col items-center max-w-[200px]"
+                          className="flex flex-col items-center w-1/3 h-[200px]"
                         >
                           <Image
                             src="/assets/icon-number-1.svg"
@@ -140,7 +140,7 @@ export default function SubmissionPage({
                         </div>
                         <div
                           id="step-2"
-                          className="flex flex-col items-center max-w-[200px]"
+                          className="flex flex-col items-center w-1/3 h-[200px]"
                         >
                           <Image
                             src="/assets/icon-number-2.svg"
@@ -154,7 +154,7 @@ export default function SubmissionPage({
                         </div>
                         <div
                           id="step-3"
-                          className="flex flex-col items-center max-w-[200px]"
+                          className="flex flex-col items-center w-1/3 h-[200px]"
                         >
                           <Image
                             src="/assets/icon-number-3.svg"
