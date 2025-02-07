@@ -1,11 +1,18 @@
 import { useState } from 'react'
+import toast from 'react-hot-toast'
+import { isImageBlank } from '@/lib/utils/images'
 
 type FileInputProps = {
   file: File | undefined
   setFile: Function
+  noBlankImages?: boolean
 }
 
-export default function FileInput({ file, setFile }: FileInputProps) {
+export default function FileInput({
+  file,
+  setFile,
+  noBlankImages,
+}: FileInputProps) {
   //get file name
   const [fileName, setFileName] = useState(file?.name || 'No file chosen')
   return (
@@ -13,9 +20,12 @@ export default function FileInput({ file, setFile }: FileInputProps) {
       <input
         type="file"
         accept="image/*"
-        onChange={(e: any) => {
+        onChange={async (e: any) => {
           const file = e.target.files[0]
           const chosenFileName = file?.name.slice(0, 20) || 'No file chosen'
+          if (noBlankImages && (await isImageBlank(file))) {
+            return toast.error('Please ensure your image is not blank.')
+          }
           setFileName(chosenFileName)
           setFile(file)
         }}
