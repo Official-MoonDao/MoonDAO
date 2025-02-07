@@ -1,7 +1,7 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
 import StandardButton from './StandardButton'
 
-export default function StandardButtonPlus(props) {
+export default function StandardButtonPlus(props: any) {
   return (
     <StandardButton {...props}>
       <div className="flex items-center gap-2">

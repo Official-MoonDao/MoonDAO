@@ -101,7 +101,6 @@ export default function Launch({ missions }: any) {
               missions.map((mission: any) => (
                 <MissionCard
                   key={`mission-card-${mission.id}`}
-                  selectedChain={selectedChain}
                   mission={mission}
                   teamContract={teamContract}
                   compact
