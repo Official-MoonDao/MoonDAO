@@ -101,7 +101,11 @@ const ContributionEditor: React.FC = () => {
   }
 
   if (!authenticated) {
-    return <p className="py-24">Please sign in to submit a contribution!</p>
+    return (
+      <p className="w-full text-center py-24">
+        Please sign in to submit a contribution!
+      </p>
+    )
   }
 
   if (coordinapeLink) {
