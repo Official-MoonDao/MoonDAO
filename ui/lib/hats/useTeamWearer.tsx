@@ -103,7 +103,6 @@ export function useTeamWearer(
             })
           ).then((results) => results.filter((result) => result !== null))
 
-          console.log(moondaoHatsWithTeamId)
           setWornMoondaoHats(moondaoHatsWithTeamId)
         }
       } catch (err) {

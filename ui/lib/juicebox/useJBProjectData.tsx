@@ -1,19 +1,22 @@
 //Juicebox V4
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { projectQuery } from './subgraph'
 
 export default function useJBProjectData(
-  projectId: number,
+  projectId: number | undefined,
   jbControllerContract: any,
   jbTokensContract: any,
-  projectMetadata?: any
+  projectMetadata?: any,
+  projectSubgraphData?: any
 ) {
   const [metadata, setMetadata] = useState<any>(projectMetadata)
   const [ruleset, setRuleset] = useState<any>()
   const [rulesetMetadata, setRulesetMetadata] = useState<any>()
   const [tokenAddress, setTokenAddress] = useState<any>()
+  const [subgraphData, setSubgraphData] = useState<any>(projectSubgraphData)
 
-  //Metadata
+  //Metadata and Ruleset
   useEffect(() => {
     async function getProjectMetadata() {
       const metadataURI: any = await readContract({
@@ -26,11 +29,6 @@ export default function useJBProjectData(
       setMetadata(data)
     }
 
-    if (jbControllerContract && !projectMetadata) getProjectMetadata()
-  }, [jbControllerContract, projectId, projectMetadata])
-
-  //Ruleset and Token
-  useEffect(() => {
     async function getProjectRuleset() {
       const [rs, rsMetadata]: any = await readContract({
         contract: jbControllerContract,
@@ -41,6 +39,13 @@ export default function useJBProjectData(
       setRulesetMetadata(rsMetadata)
     }
 
+    if (jbControllerContract && !projectMetadata && projectId)
+      getProjectMetadata()
+    if (jbControllerContract && projectId) getProjectRuleset()
+  }, [jbControllerContract, projectId, projectMetadata])
+
+  //Token
+  useEffect(() => {
     async function getProjectToken() {
       const token: any = await readContract({
         contract: jbTokensContract,
@@ -50,14 +55,32 @@ export default function useJBProjectData(
       setTokenAddress(token)
     }
 
-    if (jbControllerContract) getProjectRuleset()
-    if (jbTokensContract) getProjectToken()
-  }, [projectId, jbControllerContract, jbTokensContract])
+    if (jbTokensContract && projectId) getProjectToken()
+  }, [projectId, jbTokensContract])
+
+  //Project Subgraph Data
+  useEffect(() => {
+    async function getSubgraphData() {
+      if (!projectId) return
+      const res = await fetch(
+        '/api/juicebox/query?query=' + projectQuery(projectId),
+        {
+          method: 'POST',
+        }
+      )
+      const data = await res.json()
+      const projectSubgraphData = data.projects[0]
+      setSubgraphData(projectSubgraphData)
+    }
+
+    if (projectId) getSubgraphData()
+  }, [projectId])
 
   return {
     metadata,
     ruleset,
     rulesetMetadata,
     tokenAddress,
+    subgraphData,
   }
 }

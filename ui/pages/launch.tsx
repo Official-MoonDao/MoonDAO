@@ -1,6 +1,7 @@
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
@@ -8,6 +9,7 @@ import {
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
   JBV4_CONTROLLER_ADDRESSES,
+  JBV4_TOKENS_ADDRESSES,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
@@ -29,6 +31,7 @@ import Container from '../components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
+import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import CreateMission from '@/components/mission/CreateMission'
 import MissionCard from '@/components/mission/MissionCard'
@@ -72,6 +75,18 @@ export default function Launch({ missions }: any) {
     address: HATS_ADDRESS,
     chain: selectedChain,
     abi: HatsABI as any,
+  })
+
+  const jbControllerContract = useContract({
+    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+    chain: selectedChain,
+    abi: JBV4ControllerABI as any,
+  })
+
+  const jbTokensContract = useContract({
+    address: JBV4_TOKENS_ADDRESSES[chainSlug],
+    chain: selectedChain,
+    abi: JBV4TokensABI as any,
   })
 
   const userTeams = useTeamWearer(teamContract, selectedChain, address)
@@ -178,18 +193,22 @@ export default function Launch({ missions }: any) {
                 </StandardButton>
               }
             >
-              {missions && missions.length > 0 ? (
-                missions.map((mission: any) => (
-                  <MissionCard
-                    key={`mission-card-${mission.id}`}
-                    mission={mission}
-                    teamContract={teamContract}
-                    compact
-                  />
-                ))
-              ) : (
-                <p>No missions found</p>
-              )}
+              <SlidingCardMenu>
+                {missions && missions.length > 0 ? (
+                  missions.map((mission: any) => (
+                    <MissionCard
+                      key={`mission-card-${mission.id}`}
+                      mission={mission}
+                      teamContract={teamContract}
+                      jbControllerContract={jbControllerContract}
+                      jbTokensContract={jbTokensContract}
+                      compact
+                    />
+                  ))
+                ) : (
+                  <p>No missions found</p>
+                )}
+              </SlidingCardMenu>
             </SectionCard>
 
             <SectionCard header="Features Title" iconSrc="/assets/icon-org.svg">

@@ -48,8 +48,8 @@ export function Hat({
               client={client}
               src={teamNFT.metadata.image}
               className="object-cover"
-              width="150px"
-              height="150px"
+              width={compact ? '75px' : '150px'}
+              height={compact ? '75px' : '150px'}
             />
           </div>
         )}

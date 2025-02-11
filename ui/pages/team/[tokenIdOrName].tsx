@@ -10,9 +10,12 @@ import {
 } from '@heroicons/react/24/outline'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
+import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import JobBoardTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -23,6 +26,9 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
+  JBV4_CONTROLLER_ADDRESSES,
+  JBV4_TOKENS_ADDRESSES,
+  MISSION_TABLE_ADDRESSES,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -68,6 +74,7 @@ import TeamMarketplace from '@/components/subscription/TeamMarketplace'
 import TeamMarketplaceListingModal from '@/components/subscription/TeamMarketplaceListingModal'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
+import TeamMissions from '@/components/subscription/TeamMissions'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 
 export default function TeamDetailPage({
@@ -118,6 +125,24 @@ export default function TeamDetailPage({
   const marketplaceTableContract = useContract({
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceTableABI,
+    chain: selectedChain,
+  })
+
+  const missionTableContract = useContract({
+    address: MISSION_TABLE_ADDRESSES[chainSlug],
+    abi: MissionTableABI,
+    chain: selectedChain,
+  })
+
+  const jbControllerContract = useContract({
+    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+    abi: JBV4ControllerABI,
+    chain: selectedChain,
+  })
+
+  const jbTokensContract = useContract({
+    address: JBV4_TOKENS_ADDRESSES[chainSlug],
+    abi: JBV4TokensABI,
     chain: selectedChain,
   })
 
@@ -468,6 +493,14 @@ export default function TeamDetailPage({
             </div>
           )}
           {/* Header and socials */}
+          <TeamMissions
+            isManager={isManager}
+            teamId={tokenId}
+            missionTableContract={missionTableContract}
+            jbControllerContract={jbControllerContract}
+            jbTokensContract={jbTokensContract}
+            teamContract={teamContract}
+          />
           {subIsValid && !isDeleted ? (
             <div className="z-50 flex flex-col gap-5 mb-[50px]">
               {/* Team Actions */}

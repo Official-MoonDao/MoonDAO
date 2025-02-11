@@ -1,11 +1,13 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useLocalStorage } from 'react-use'
 import {
   prepareContractCall,
   readContract,
@@ -14,8 +16,11 @@ import {
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { renameFile } from '@/lib/utils/files'
 import FormInput from '../forms/FormInput'
+import FormTextArea from '../forms/FormTextArea'
 import { Hat } from '../hats/Hat'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
@@ -24,6 +29,17 @@ import { NoticeFooter } from '../layout/NoticeFooter'
 import StandardButton from '../layout/StandardButton'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+
+export type MissionCache = {
+  name: string
+  description: string
+  infoUri: string
+  logoUri: string
+  twitter: string
+  discord: string
+  tokens: string[]
+  timestamp: number
+}
 
 export type CreateMissionProps = {
   selectedChain: any
@@ -61,16 +77,33 @@ export default function CreateMission({
     userTeamsAsManager?.[0]?.teamId
   )
   const [selectedTeamNFT, setSelectedTeamNFT] = useState<any>()
-  const [missionImage, setMissionImage] = useState<File>()
+  const [missionCache, setMissionCache, clearMissionCache] =
+    useLocalStorage<MissionCache>(`MissionCacheV1`)
+  const [missionImage, setMissionImage] = useState<File | undefined>()
   const [metadata, setMetadata] = useState({
-    name: '',
-    description: '',
-    infoUri: '',
-    logoUri: '',
-    twitter: '',
-    discord: '',
-    tokens: [],
+    name: missionCache?.name || '',
+    description: missionCache?.description || '',
+    infoUri: missionCache?.infoUri || '',
+    logoUri: missionCache?.logoUri || '',
+    twitter: missionCache?.twitter || '',
+    discord: missionCache?.discord || '',
+    tokens: missionCache?.tokens || [],
   })
+
+  useEffect(() => {
+    if (metadata) {
+      setMissionCache({
+        name: metadata.name,
+        description: metadata.description,
+        infoUri: metadata.infoUri,
+        logoUri: missionCache?.logoUri || '',
+        twitter: metadata.twitter,
+        discord: metadata.discord,
+        tokens: [],
+        timestamp: getUnixTime(new Date()),
+      })
+    }
+  }, [metadata])
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -96,7 +129,7 @@ export default function CreateMission({
         isProfile
       >
         <div className="flex flex-col justify-center items-center bg-darkest-cool p-8">
-          <div className="relative flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
+          <div className="relative flex p-2 pb-0 w-full justify-between max-w-[600px] items-start">
             <Steps
               className="mb-4 pl-5 md:pl-0 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16"
               steps={['Overview', 'Details', 'Token', 'Confirm']}
@@ -105,7 +138,7 @@ export default function CreateMission({
               setStep={setStage}
             />
             <button
-              className="absolute top-0 right-0"
+              className="absolute top-1 right-[-7.5%] md:right-0"
               onClick={() => setStatus('idle')}
             >
               <XMarkIcon width={50} height={50} />
@@ -128,7 +161,7 @@ export default function CreateMission({
               {userTeamsAsManager && userTeamsAsManager.length > 1 && (
                 <div>
                   <p>You are a manager of multiple teams, please select one</p>
-                  <div className="mt-4 flex flex-col gap-2 max-h-[500px] overflow-y-auto">
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
                     {!userTeamsAsManager ? (
                       Array.from({ length: 3 }).map((_, index) => (
                         <div
@@ -143,7 +176,6 @@ export default function CreateMission({
                           className="bg-dark-cool p-2"
                           onClick={() => {
                             setSelectedTeamId(team.teamId)
-                            setStage(1)
                           }}
                         >
                           <Hat
@@ -163,7 +195,7 @@ export default function CreateMission({
                 </div>
               )}
               {selectedTeamNFT && (
-                <p>
+                <p className="mt-4 font-GoodTimes">
                   {`Selected Team : `}
                   <Link
                     className="text-lg text-light-warm font-bold hover:underline"
@@ -206,7 +238,24 @@ export default function CreateMission({
                 <StandardButton
                   className="gradient-2"
                   hoverEffect={false}
-                  onClick={() => setStage(1)}
+                  onClick={() => {
+                    if (selectedTeamId === undefined) {
+                      return toast.error('Please select a team', {
+                        style: toastStyle,
+                      })
+                    }
+                    if (metadata.name.length === 0) {
+                      return toast.error('Please enter a mission title', {
+                        style: toastStyle,
+                      })
+                    }
+                    if (!missionImage) {
+                      return toast.error('Please upload a mission image', {
+                        style: toastStyle,
+                      })
+                    }
+                    setStage(1)
+                  }}
                 >
                   Next
                 </StandardButton>
@@ -215,7 +264,7 @@ export default function CreateMission({
           )}
           {stage === 1 && (
             <Stage header="Mission Details">
-              <FormInput
+              <FormTextArea
                 label="Description"
                 value={metadata.description}
                 onChange={(e: any) =>
@@ -361,8 +410,13 @@ export default function CreateMission({
                     if (receipt) {
                       setTimeout(() => {
                         toast.success('Mission created successfully')
+                        clearMissionCache()
                         setStatus('idle')
-                        router.push(`/mission/${missionId}`)
+                        router.push(
+                          `/team/${generatePrettyLink(
+                            selectedTeamNFT?.metadata?.name
+                          )}?mission=${missionId}`
+                        )
                       }, 15000)
                     }
                   } catch (err) {

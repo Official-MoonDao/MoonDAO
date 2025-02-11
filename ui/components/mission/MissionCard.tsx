@@ -1,23 +1,53 @@
-import { Mission } from 'archive/mission/[tokenId]'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer } from 'thirdweb/react'
+import useJBProjectData from '@/lib/juicebox/useJBProjectData'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import client from '@/lib/thirdweb/client'
+import MissionStat from './MissionStat'
+
+export type Mission = {
+  id: number
+  teamId: number
+  projectId: number
+  metadata: {
+    name: string
+    description: string
+    infoUri: string
+    logoUri: string
+    twitter: string
+    discord: string
+    tokens: string[]
+    version: number
+    payButton: string
+    payDisclosure: string
+  }
+}
 
 export type MissionCardProps = {
   mission: Mission
+  jbControllerContract?: any
+  jbTokensContract?: any
   teamContract?: any
   compact?: boolean
 }
 
 export default function MissionCard({
+  jbControllerContract,
+  jbTokensContract,
   teamContract,
   mission,
   compact,
 }: MissionCardProps) {
   const { metadata } = mission
   const [teamNFT, setTeamNFT] = useState<any>(null)
+
+  const projectData = useJBProjectData(
+    mission?.projectId,
+    jbControllerContract,
+    jbTokensContract
+  )
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -32,11 +62,18 @@ export default function MissionCard({
   }, [mission, teamContract])
 
   return (
-    <Link href={`/mission/${mission?.id}`} passHref>
+    <Link
+      id="mission-link"
+      href={`/team/${
+        teamNFT?.metadata?.name
+          ? generatePrettyLink(teamNFT?.metadata?.name)
+          : mission?.teamId
+      }?mission=${mission?.id}`}
+      passHref
+    >
       <div
-        className={`p-4 flex flex-col items-center gap-4 bg-darkest-cool rounded-2xl ${
-          compact ? 'w-[100px] h-[150px]' : 'w-[250px] h-[300px]'
-        }`}
+        id="mission-card"
+        className={`p-4 flex flex-col items-center gap-4 bg-darkest-cool rounded-2xl`}
       >
         <MediaRenderer
           client={client}
@@ -49,7 +86,7 @@ export default function MissionCard({
         />
         <p className="text-lg font-bold">{metadata?.name}</p>
         {!compact && (
-          <p>
+          <p id="mission-description">
             {metadata?.description && metadata?.description?.length > 50
               ? metadata?.description?.slice(0, 50) + '...'
               : metadata?.description}
@@ -61,6 +98,16 @@ export default function MissionCard({
             <p>{`JBX #${mission?.projectId}`}</p>
           </div>
         )} */}
+        <div id="missions-stats" className="flex gap-4">
+          <MissionStat
+            label="VOLUME"
+            value={'Ξ' + projectData?.subgraphData?.volume}
+          />
+          <MissionStat
+            label="PAYMENTS"
+            value={projectData?.subgraphData?.paymentsCount}
+          />
+        </div>
       </div>
     </Link>
   )

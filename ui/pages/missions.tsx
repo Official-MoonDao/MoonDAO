@@ -1,15 +1,10 @@
-import { PlusCircleIcon, PlusIcon } from '@heroicons/react/20/solid'
-import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
-import ProjectABI from 'const/abis/Project.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
-  HATS_ADDRESS,
   JBV4_CONTROLLER_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
-  PROJECT_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
@@ -33,10 +28,8 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
-import StandardButton from '@/components/layout/StandardButton'
 import StandardButtonPlus from '@/components/layout/StandardButtonPlus'
-import MissionCard from '@/components/mission/MissionCard'
-import { Mission } from '../archive/mission/[tokenId]'
+import MissionCard, { Mission } from '@/components/mission/MissionCard'
 
 type MissionsProps = {
   missions: Mission[]

@@ -33,24 +33,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-
-export type Mission = {
-  id: number
-  teamId: number
-  projectId: number
-  metadata: {
-    name: string
-    description: string
-    infoUri: string
-    logoUri: string
-    twitter: string
-    discord: string
-    tokens: string[]
-    version: number
-    payButton: string
-    payDisclosure: string
-  }
-}
+import { Mission } from '@/components/mission/MissionCard'
 
 type ProjectProfileProps = {
   tokenId: string
