@@ -9,6 +9,7 @@ import { daysSinceTimestamp } from '@/lib/utils/timestamp'
 import Frame from '../layout/Frame'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
+import StandardCard from '../layout/StandardCard'
 import TeamJobModal from '../subscription/TeamJobModal'
 
 export type Job = {
@@ -84,115 +85,117 @@ export default function Job({
     }
   }, [currTime, job.endTime, editable])
 
+  if (!isActive) return null
+
+  const jobActions = (
+    <div className="flex gap-2 items-center">
+      {job.contactInfo && (
+        <StandardButton
+          className="gradient-2 rounded-[5vmax] rounded-bl-[20px]"
+          onClick={() => {
+            window.open(job.contactInfo)
+          }}
+        >
+          Apply
+        </StandardButton>
+      )}
+      {editable && (
+        <div className="flex gap-4">
+          <button
+            id="edit-job-button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setEnabledEditJobModal(true)
+            }}
+          >
+            {!isDeleting && (
+              <PencilIcon className="h-6 w-6 text-light-warm hover:text-light-cool" />
+            )}
+          </button>
+          {isDeleting ? (
+            <LoadingSpinner className="scale-[75%]" />
+          ) : (
+            <button
+              id="delete-job-button"
+              onClick={async (e) => {
+                e.stopPropagation()
+                setIsDeleting(true)
+                try {
+                  if (!account) throw new Error('No account found')
+                  const transaction = prepareContractCall({
+                    contract: jobTableContract,
+                    method: 'deleteFromTable' as string,
+                    params: [job.id, job.teamId],
+                  })
+                  const receipt = await sendAndConfirmTransaction({
+                    transaction,
+                    account,
+                  })
+                  if (receipt) {
+                    setTimeout(() => {
+                      refreshJobs()
+                      setIsDeleting(false)
+                    }, 25000)
+                  }
+                } catch (err) {
+                  console.log(err)
+                  setIsDeleting(false)
+                }
+              }}
+            >
+              <TrashIcon className="h-6 w-6 text-light-warm hover:text-light-cool" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  const jobFooter = (
+    <>
+      {editable && isExpired && (
+        <p id="job-expired-status" className="mt-4 opacity-60">
+          {`*This job post has expired and is no longer available.`}
+        </p>
+      )}
+      {!isExpired && job.endTime != 0 && (
+        <p id="job-posted-status" className="mt-4 opacity-60">
+          {`This job was posted ${
+            daysSincePosting === 0
+              ? `today`
+              : daysSincePosting === 1
+              ? `${daysSincePosting} day ago`
+              : `${daysSincePosting} days ago`
+          }`}
+        </p>
+      )}
+    </>
+  )
+
   return (
     <>
-      {isActive && (
-        <div
-          id={id}
-          className={`flex flex-col justify-between bg-dark-cool rounded-md mx-5 lg:mx-0`}
-        >
-          <Frame>
-            <div className="flex justify-between items-end">
-              <div className="flex flex-col">
-                {showTeam && teamNFT && (
-                  <Link
-                    href={`/team/${job.teamId}`}
-                    className="font-bold text-light-warm"
-                  >
-                    {teamNFT.metadata.name}
-                  </Link>
-                )}
-                <p className="font-bold font-GoodTimes pb-2">{job.title}</p>
-              </div>
-              <div className="flex gap-2 items-center">
-                <div className="flex flex-col lg:flex-row pb-5 items-center gap-2 lg:gap-4">
-                  {job.contactInfo && (
-                    <StandardButton
-                      className="gradient-2 rounded-[5vmax] rounded-bl-[20px]"
-                      onClick={() => {
-                        window.open(job.contactInfo)
-                      }}
-                    >
-                      Apply
-                    </StandardButton>
-                  )}
-                  {editable && (
-                    <div className="flex gap-4">
-                      <button
-                        id="edit-job-button"
-                        onClick={() => setEnabledEditJobModal(true)}
-                      >
-                        {!isDeleting && (
-                          <PencilIcon className="h-6 w-6 text-light-warm" />
-                        )}
-                      </button>
-                      {isDeleting ? (
-                        <LoadingSpinner className="scale-[75%]" />
-                      ) : (
-                        <button
-                          id="delete-job-button"
-                          onClick={async () => {
-                            setIsDeleting(true)
-                            try {
-                              if (!account) throw new Error('No account found')
-                              const transaction = prepareContractCall({
-                                contract: jobTableContract,
-                                method: 'deleteFromTable' as string,
-                                params: [job.id, job.teamId],
-                              })
-                              const receipt = await sendAndConfirmTransaction({
-                                transaction,
-                                account,
-                              })
-                              if (receipt) {
-                                setTimeout(() => {
-                                  refreshJobs()
-                                  setIsDeleting(false)
-                                }, 25000)
-                              }
-                            } catch (err) {
-                              console.log(err)
-                              setIsDeleting(false)
-                            }
-                          }}
-                        >
-                          <TrashIcon className="h-6 w-6 text-light-warm" />
-                        </button>
-                      )}
-                      {enabledEditJobModal && (
-                        <TeamJobModal
-                          teamId={job.teamId as any}
-                          setEnabled={setEnabledEditJobModal}
-                          jobTableContract={jobTableContract}
-                          job={job}
-                          edit
-                          refreshJobs={refreshJobs}
-                        />
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <p>{job.description}</p>
-            {editable && isExpired && (
-              <p id="job-expired-status" className="mt-4 opacity-60">
-                {`*This job post has expired and is no longer available.`}
-              </p>
-            )}
-            {!isExpired && job.endTime != 0 && (
-              <p id="job-posted-status" className="mt-4 opacity-60">
-                {`This job was posted ${
-                  daysSincePosting === 0
-                    ? `today`
-                    : daysSincePosting === 1
-                    ? `${daysSincePosting} day ago`
-                    : `${daysSincePosting} days ago`
-                }`}
-              </p>
-            )}
-          </Frame>
-        </div>
+      <StandardCard
+        title={job.title}
+        headerLink={showTeam && teamNFT ? `/team/${job.teamId}` : undefined}
+        headerLinkLabel={
+          showTeam && teamNFT ? teamNFT.metadata.name : undefined
+        }
+        paragraph={job.description}
+        footer={jobFooter}
+        actions={jobActions}
+        fullParagraph
+        inline
+      />
+
+      {enabledEditJobModal && (
+        <TeamJobModal
+          teamId={job.teamId as any}
+          setEnabled={setEnabledEditJobModal}
+          jobTableContract={jobTableContract}
+          job={job}
+          edit
+          refreshJobs={refreshJobs}
+        />
       )}
     </>
   )
