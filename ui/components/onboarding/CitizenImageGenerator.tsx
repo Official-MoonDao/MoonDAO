@@ -52,7 +52,7 @@ export function ImageGenerator({
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col mt-5">
-        <FileInput file={inputImage} setFile={setInputImage} />
+        <FileInput file={inputImage} setFile={setInputImage} noBlankImages />
       </div>
       <div
         id="citizenPic"

@@ -56,12 +56,12 @@ export default function SubmissionPage({
             mode="compact"
             isProfile={true}
           >
-            <div className="flex flex-col gap-4 p-5 bg-slide-section rounded-tl-[2vw] rounded-bl-[2vw]">
+            <div className="flex flex-col gap-4 p-5 bg-slide-section rounded-tl-[2vw] rounded-bl-[2vw] max-w-[816px]">
               <Tab.Group
                 selectedIndex={selectedIndex}
                 onChange={setSelectedIndex}
               >
-                <Tab.List className="flex rounded-xl">
+                <Tab.List className="flex flex-col md:flex-row rounded-xl justify-center">
                   <Tab
                     className={({ selected }) =>
                       `rounded-lg py-2.5 px-5 font-GoodTimes leading-5 focus:outline-none
@@ -109,15 +109,15 @@ export default function SubmissionPage({
                   </Tab>
                 </Tab.List>
                 <Tab.Panels className="mt-4">
-                  <Tab.Panel>
-                    <div className="mb-8 max-w-[600px]">
+                  <Tab.Panel className="flex flex-col items-center">
+                    <div className="mb-8">
                       <div
                         id="instructions-container"
-                        className="flex flex-col md:flex-row items-center justify-center gap-8 pt-5"
+                        className="flex items-center justify-center pt-5"
                       >
                         <div
                           id="step-1"
-                          className="flex flex-col items-center max-w-[200px]"
+                          className="flex flex-col items-center w-1/3 h-[150px]"
                         >
                           <Image
                             src="/assets/icon-number-1.svg"
@@ -134,12 +134,13 @@ export default function SubmissionPage({
                               rel="noreferrer"
                             >
                               #ideation
-                            </Link> <br></br> (optional)  
+                            </Link>{' '}
+                            <br></br> (optional)
                           </p>
                         </div>
                         <div
                           id="step-2"
-                          className="flex flex-col items-center max-w-[200px]"
+                          className="flex flex-col items-center w-1/3 h-[150px]"
                         >
                           <Image
                             src="/assets/icon-number-2.svg"
@@ -153,7 +154,7 @@ export default function SubmissionPage({
                         </div>
                         <div
                           id="step-3"
-                          className="flex flex-col items-center max-w-[200px]"
+                          className="flex flex-col items-center w-1/3 h-[150px]"
                         >
                           <Image
                             src="/assets/icon-number-3.svg"
@@ -166,7 +167,7 @@ export default function SubmissionPage({
                           </p>
                         </div>
                       </div>
-                      <p className="text-gray-300">
+                      <p className="mt-4 sm:mt-0 px-[6.5%] text-gray-300 max-w-[600px]">
                         Submit a proposal to receive financing or special
                         permissions from the MoonDAO community. Please refer to{' '}
                         <a
@@ -195,8 +196,8 @@ export default function SubmissionPage({
                     </NanceProvider>
                   </Tab.Panel>
                   <Tab.Panel>
-                    <div className="mb-8">
-                      <p className="text-gray-300">
+                    <div className="mb-8 flex flex-col items-center">
+                      <p className="text-gray-300 max-w-[600px]">
                         What have you done to accelerate the impact of MoonDAO's
                         mission? Submit your non-project work and
                         accomplishments, even if not tied directly to MoonDAO,
@@ -217,9 +218,15 @@ export default function SubmissionPage({
                     <ContributionEditor />
                   </Tab.Panel>
                   <Tab.Panel>
-                    <div className="mb-8">
-                      <p className="text-gray-300">
-                        Submit a final report for your project.
+                    <div className="mb-8 flex flex-col items-center">
+                      <p className="text-gray-300 max-w-[600px]">
+                        {`Submit the final report for your project. For more information on how to fill out the final report, please check the `}
+                        <Link
+                          className="text-blue-400 hover:text-blue-300 underline"
+                          href="https://docs.moondao.com/projects-system"
+                        >
+                          Project System
+                        </Link>
                       </p>
                     </div>
                     <FinalReportEditor
