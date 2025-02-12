@@ -251,201 +251,174 @@ a {
 
 /* These two classes control the color of the sidebar*/
 
-
-
-
-
 /* New Design Classes*/
 /*Gradients*/
-  .text-gradient {
-    background: linear-gradient(220deg, #2D121A 5%, #080C20 30%, #182254 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-  }
+.text-gradient {
+  background: linear-gradient(220deg, #2d121a 5%, #080c20 30%, #182254 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
 
-  .gradient-1 {
-    background: linear-gradient(220deg, #2D121A 5%, #080C20 30%, #182254 100%);
-  }
+.gradient-1 {
+  background: linear-gradient(220deg, #2d121a 5%, #080c20 30%, #182254 100%);
+}
 
-  .gradient-2 {
-    background: linear-gradient(90deg,#425EEB 5%, #6D3F79 90%);
-  }
+.gradient-2 {
+  background: linear-gradient(90deg, #425eeb 5%, #6d3f79 90%);
+}
 
-  .gradient-3 {
-    background: linear-gradient(180deg, transparent 20%, #080C20 100%);
-  }
+.gradient-3 {
+  background: linear-gradient(180deg, transparent 20%, #080c20 100%);
+}
 
-  .gradient-4 {
-    background: linear-gradient(190deg, #2D121A 5%, #080C20 30%, #182254 100%);
-  }
+.gradient-4 {
+  background: linear-gradient(190deg, #2d121a 5%, #080c20 30%, #182254 100%);
+}
 
-  .gradient-5 {
-    background: linear-gradient(0deg, #2D121A 5%, #080C20 30%, #182254 100%);
-  }
+.gradient-5 {
+  background: linear-gradient(0deg, #2d121a 5%, #080c20 30%, #182254 100%);
+}
 
-  .gradient-6 {
-    @media(max-width:768px) {
-      background-color:#fff;
-    }
-    @media(min-width:767px) {
-      background-image: linear-gradient(90deg, transparent 20%, #FFF 20%);
-    }
+.gradient-6 {
+  @media (max-width: 768px) {
+    background-color: #fff;
   }
-
-  .gradient-7 {
-    background: linear-gradient(90deg, transparent 50%, #FFF 50%);
+  @media (min-width: 767px) {
+    background-image: linear-gradient(90deg, transparent 20%, #fff 20%);
   }
+}
 
-  .gradient-8 {
-    background: linear-gradient(60deg, transparent 25%, #080C20 60%);
-  }  
+.gradient-7 {
+  background: linear-gradient(90deg, transparent 50%, #fff 50%);
+}
 
-  .gradient-9 {
-    background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
-  }
+.gradient-8 {
+  background: linear-gradient(60deg, transparent 25%, #080c20 60%);
+}
 
-  .gradient-10 {
-    background: linear-gradient(90deg, #3344A8 0%, transparent 90%), #090d21;
-  }
+.gradient-9 {
+  background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
+}
 
-  .gradient-11 {
-    background: linear-gradient(180deg, #090d21 20%, transparent 100%);
-  }
+.gradient-10 {
+  background: linear-gradient(90deg, #3344a8 0%, transparent 90%), #090d21;
+}
 
-  .gradient-12 {
-    background: linear-gradient(260deg, #6D3F79 5%, #425EEB 95%);
-  }
+.gradient-11 {
+  background: linear-gradient(180deg, #090d21 20%, transparent 100%);
+}
 
-  .gradient-13 {
-    background: linear-gradient(0deg, #425EEB 50%,  #090d21 50%);
-  }
+.gradient-12 {
+  background: linear-gradient(260deg, #6d3f79 5%, #425eeb 95%);
+}
 
-  .gradient-14 {
-    background: linear-gradient(0deg,#182254 0%, #020617 20%);
-  }  
+.gradient-13 {
+  background: linear-gradient(0deg, #425eeb 50%, #090d21 50%);
+}
 
-  .gradient-15{
-    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
-  }
-  .gradient-16 {
-    background: linear-gradient(-90deg, #020617 60%, #090D21 85% )
-  }
+.gradient-14 {
+  background: linear-gradient(0deg, #182254 0%, #020617 20%);
+}
+
+.gradient-15 {
+  background: linear-gradient(90deg, #020617 5%, #090d21 60%);
+}
+.gradient-16 {
+  background: linear-gradient(-90deg, #020617 60%, #090d21 85%);
+}
 
 /*Mobile footer gradient*/
-  @media(max-width:768px) {
-    .mob-footer-gradient{
-      background: linear-gradient(90deg, #020617 5%, #090D21 60%);
-    }
+@media (max-width: 768px) {
+  .mob-footer-gradient {
+    background: linear-gradient(90deg, #020617 5%, #090d21 60%);
   }
+}
 
-  /*Dividers*/
-  .divider-1 {
-    background-repeat: no-repeat;
-    background-image: url('/assets/divider-5.svg');
-    @media(min-width:768px) {
-      background-image: url('/assets/divider-1.svg');
-    }
+/*Dividers*/
+.divider-1 {
+  background-repeat: no-repeat;
+  background-image: url('/assets/divider-5.svg');
+  @media (min-width: 768px) {
+    background-image: url('/assets/divider-1.svg');
   }
+}
 
-  .divider-2 {
-    background-image: url('/assets/divider-2.svg');
-    background-repeat: no-repeat;
-    background-position: bottom right;
-  }
+.divider-2 {
+  background-image: url('/assets/divider-2.svg');
+  background-repeat: no-repeat;
+  background-position: bottom right;
+}
 
-  .divider-3 {
-    background-image: url('/assets/divider-3.svg');
-    background-repeat: no-repeat;
-    background-position: bottom right;
-  }
+.divider-3 {
+  background-image: url('/assets/divider-3.svg');
+  background-repeat: no-repeat;
+  background-position: bottom right;
+}
 
-  .divider-4 {
-    background-image: url('/assets/divider-4.svg');
-    background-repeat: no-repeat;
-    background-position: bottom left;
-  }
+.divider-4 {
+  background-image: url('/assets/divider-4.svg');
+  background-repeat: no-repeat;
+  background-position: bottom left;
+}
 
-  .divider-5 {
-    background-image: url('/assets/divider-5.svg');
-    background-repeat: no-repeat;
-    background-position:top right;
-  }
+.divider-5 {
+  background-image: url('/assets/divider-5.svg');
+  background-repeat: no-repeat;
+  background-position: top right;
+}
 
-  .divider-6 {
-    background-image: url('/assets/divider-6.svg');
-    background-repeat: no-repeat;
-    background-position: top left;
-    background-size: contain;
-  }
+.divider-6 {
+  background-image: url('/assets/divider-6.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+  background-size: contain;
+}
 
-  .divider-7 {
-    background-image: url('/assets/divider-7.svg');
-    background-repeat: no-repeat;
-    background-position: bottom right;
-  }
+.divider-7 {
+  background-image: url('/assets/divider-7.svg');
+  background-repeat: no-repeat;
+  background-position: bottom right;
+}
 
-  .divider-8 {
-    background-image: url('/assets/divider-8.svg');
-    background-repeat: no-repeat;
-    background-position: top left;
-  }
+.divider-8 {
+  background-image: url('/assets/divider-8.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+}
 
-  .divider-9 {
-    background-image: url('/assets/divider-9.svg');
-    background-repeat: no-repeat;
-    background-position: top left;
-  }
-  
-  .divider-10 {
-    background-image: url('/assets/divider-10.svg');
-    background-repeat: no-repeat;
-    background-position: top left;
-  }
+.divider-9 {
+  background-image: url('/assets/divider-9.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+}
 
-  .divider-11 {
-    background-image: url('/assets/divider-11.svg');
-    background-repeat: no-repeat;
-    background-position: bottom right;
-  }  
+.divider-10 {
+  background-image: url('/assets/divider-10.svg');
+  background-repeat: no-repeat;
+  background-position: top left;
+}
 
-  .divider-12 {
-    background-image: url('/assets/divider-12.svg');
-    background-repeat: no-repeat;
-    background-position: bottom right;
-  }  
+.divider-11 {
+  background-image: url('/assets/divider-11.svg');
+  background-repeat: no-repeat;
+  background-position: bottom right;
+}
 
-  /*Featured images*/
-  .feature-1 {
-    background-image: url('/assets/feature-1.png');
-    background-repeat: no-repeat;
-    background-position: top right;
-    background-size: 100% auto;
-    background-clip: border-box;
-  }
-
-  .feature-2 {
-    background-image: url('/assets/feature-2.svg');
-    background-repeat: no-repeat;
-    background-position-x:cover;
-    background-position-y: center;
-  }
-
-  .feature-3 {
-    background-image: url('/assets/feature-3.svg');
-    background-repeat: no-repeat;
-    background-position: top right;
-    background-size: contain;
-  }
+.divider-12 {
+  background-image: url('/assets/divider-12.svg');
+  background-repeat: no-repeat;
+  background-position: bottom right;
+}
 
 /*Typeface styles*/
-@media(max-width:1399px) {
+@media (max-width: 1399px) {
   .header {
     font-size: calc(max(2.5vmax, 25px));
     line-height: 1.2;
   }
 }
 
-@media(min-width:1400px) {
+@media (min-width: 1400px) {
   .header {
     font-size: 40px;
     line-height: 1.2;
@@ -455,18 +428,17 @@ a {
 .sub-header {
   font-size: calc(max(2vmin, 20px));
   line-height: 1.2;
-  padding-bottom:20px;
+  padding-bottom: 20px;
 }
 
 .static-sub-header {
   font-size: 15px;
   line-height: 1;
-
 }
 
 /*Hide the scrollbar on mobile*/
 .no-bar {
-  @media(max-width:768px) {
+  @media (max-width: 768px) {
     scrollbar-width: none;
   }
 }
@@ -477,59 +449,59 @@ a {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0,0,0,0.5); 
+  background: rgba(0, 0, 0, 0.5);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,.8); 
-  border-radius: 10px; 
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
 }
 
 /* For Firefox */
 html {
   scrollbar-width: auto;
-  scrollbar-color: rgba(255,255,255,.8) rgba(0,0,0,0.5); /* thumb and track color */
+  scrollbar-color: rgba(255, 255, 255, 0.8) rgba(0, 0, 0, 0.5); /* thumb and track color */
 }
 
 /*Handing of visility for assets on extra large screens*/
 /*Hide on extra large screens*/
-@media(min-width:1400px) {
+@media (min-width: 1400px) {
   .hide-xl {
-    display:none !important;
+    display: none !important;
   }
 }
 
 /*Show on extra large screens*/
-@media(max-width:1399px) {
+@media (max-width: 1399px) {
   .show-xl {
-    display:none !important;
+    display: none !important;
   }
 }
 
 /*Handing of visility for assets on large screens*/
 /*Hide under 1200px*/
-@media(max-width:1200px) {
+@media (max-width: 1200px) {
   .hide-lg {
-    display:none !important;
+    display: none !important;
   }
 }
 
 /*Handling of minimum heights for sections on large screens*/
 /*Remove height minimums over 1200px*/
-@media(min-width:1200px) {
+@media (min-width: 1200px) {
   .compact-lg {
-    min-height:500px !important;
-    height:auto !important;
+    min-height: 500px !important;
+    height: auto !important;
   }
 }
 
 /*Handling of minimum heights for sections on double extra large screens*/
-/*Remove height minimums over 1920px*/  
-@media(min-width:1920px) {
+/*Remove height minimums over 1920px*/
+@media (min-width: 1920px) {
   .compact-xxl:not(#hero-container) {
-    min-height:500px !important;
-    height:auto !important;
+    min-height: 500px !important;
+    height: auto !important;
   }
 }
 
@@ -540,32 +512,30 @@ html {
 
 /*Hover effect for cards*/
 .clip {
-  transition: width .5s ease-in-out;
+  transition: width 0.5s ease-in-out;
   background-image: url('/assets/divider-8.svg');
   background-repeat: no-repeat;
   background-position: top left;
-  width:80%;
-  max-height:300%;
-
+  width: 80%;
+  max-height: 300%;
 }
 
 @media (min-width: 768px) {
-
   .card-container .clip {
     transition: all 0.5s ease-in-out;
   }
 
   .card-container:hover .clip {
     width: 1000%;
-    height:300%;
-    transition: all 0.5s ease-in-out .25s;
+    height: 300%;
+    transition: all 0.5s ease-in-out 0.25s;
   }
 
   .card-container .description {
     opacity: 100%;
     transition: opacity 0.25s ease-in-out 0.25s; /* Transition with delay on the return */
   }
-  
+
   .card-container:hover .description {
     opacity: 0%;
     transition: opacity 0.25s ease-in-out; /* Immediate transition on hover */
@@ -573,32 +543,33 @@ html {
   }
 
   .card-container .hovertext {
-    margin-bottom:-60px;
-    transition: .5s ease-in-out .25s;
+    margin-bottom: -60px;
+    transition: 0.5s ease-in-out 0.25s;
     opacity: 0%;
   }
   .card-container:hover .hovertext {
-    margin-bottom:0px;
+    margin-bottom: 0px;
     opacity: 100%;
-    transition: .5s ease-in-out .25s;
+    transition: 0.5s ease-in-out 0.25s;
   }
 
   .hovertext-bg {
-    background: linear-gradient(90deg,#3344A8 5%, #6D3F79 90%);
+    background: linear-gradient(90deg, #3344a8 5%, #6d3f79 90%);
   }
 }
 
-@media (max-width:768px ){
-.mailinglist-bg {
-  background:linear-gradient(90deg, transparent 20%, #090d21 20%), linear-gradient(180deg, #090d21 50%, transparent 50%),  linear-gradient(90deg, #425EEB 50%,  #090d21 50%);
+@media (max-width: 768px) {
+  .mailinglist-bg {
+    background: linear-gradient(90deg, transparent 20%, #090d21 20%),
+      linear-gradient(180deg, #090d21 50%, transparent 50%),
+      linear-gradient(90deg, #425eeb 50%, #090d21 50%);
+  }
 }
 
-}
-
-@media (min-width:768px ){
-.mailinglist-bg {
-  background: linear-gradient(0deg, #425EEB 50%,  #090d21 50%);
-}
+@media (min-width: 768px) {
+  .mailinglist-bg {
+    background: linear-gradient(0deg, #425eeb 50%, #090d21 50%);
+  }
 }
 
 /*Hover effect for single input field forms*/
@@ -613,34 +584,32 @@ html {
 }
 
 /*Background for the main section of the ContentLayout component*/
-@media(min-width:1100px) {
+@media (min-width: 1100px) {
   .popout-base-bg {
     background: linear-gradient(90deg, transparent 40%, rgba(9, 13, 33, 1) 40%);
   }
 
-  .popout-bg{
-    background: linear-gradient(90deg, #020617 5%, #090D21 90%);
+  .popout-bg {
+    background: linear-gradient(90deg, #020617 5%, #090d21 90%);
   }
 
   .innerprefooter-popout-bg {
-    background: linear-gradient(90deg, transparent 50%, #090D21 0%);
+    background: linear-gradient(90deg, transparent 50%, #090d21 0%);
   }
-
 }
 
-@media(max-width:1099px) {
+@media (max-width: 1099px) {
   .popout-base-bg {
     background: linear-gradient(90deg, transparent 40%, rgba(9, 13, 33, 1) 40%);
   }
 
-  .popout-bg{
-    background: linear-gradient(90deg, #020617 5%, #090D21 60%);
+  .popout-bg {
+    background: linear-gradient(90deg, #020617 5%, #090d21 60%);
   }
 
   .innerprefooter-popout-bg {
-    background: linear-gradient(90deg, transparent 50%, #090D21 0%);
+    background: linear-gradient(90deg, transparent 50%, #090d21 0%);
   }
-
 }
 
 /*Backgrounds for the title section of the ContentLayout component*/
@@ -659,46 +628,49 @@ html {
 }
 
 /*Search and filter button backgrounds*/
-  .bg-filter {
-    background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 95%);
-  }
+.bg-filter {
+  background: linear-gradient(-220deg, #6d3f79 5%, #425eeb 95%);
+}
 
-  .bg-search {
-    background: linear-gradient(-220deg, #6D3F79 5%, #425EEB 50%, transparent 50%);
-  }
+.bg-search {
+  background: linear-gradient(
+    -220deg,
+    #6d3f79 5%,
+    #425eeb 50%,
+    transparent 50%
+  );
+}
 
 /*Profile page cards background*/
-  .bg-slide-section {
-    background: linear-gradient(90deg, #020617 60%, #090D21 85% )
-  }
+.bg-slide-section {
+  background: linear-gradient(90deg, #020617 60%, #090d21 85%);
+}
 
-  .left-fadeout {
-    background: linear-gradient(90deg, #020617 5%, transparent);
-  }
+.left-fadeout {
+  background: linear-gradient(90deg, #020617 5%, transparent);
+}
 
-  .right-fadein {
-    background: linear-gradient(90deg, transparent 5%, #090D21 75%);
-  }
+.right-fadein {
+  background: linear-gradient(90deg, transparent 5%, #090d21 75%);
+}
 
 /*Overlay background for the onboarding process background*/
 
 .bg-overlay {
-  background:rgba(0,0,0,.2);
+  background: rgba(0, 0, 0, 0.2);
 }
-
 
 /*Sticky bar for the proposal page*/
 .sticky-bar {
   position: sticky;
   top: 0;
-  
 }
 
 /* Define your custom colors */
 :root {
-  --dark-cool-color: #182254;     /* Adjust to your dark cool color */
-  --dark-warm-color: #2d121a;     /* Adjust to your dark warm color */
-  --darkest-cool-color: #080c20;  /* Adjust to your darkest cool color */
+  --dark-cool-color: #182254; /* Adjust to your dark cool color */
+  --dark-warm-color: #2d121a; /* Adjust to your dark warm color */
+  --darkest-cool-color: #080c20; /* Adjust to your darkest cool color */
 }
 
 #ball {
@@ -707,7 +679,11 @@ html {
   height: 50vw;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(circle at center, var(--dark-cool-color) 0%, transparent 100%);
+  background: radial-gradient(
+    circle at center,
+    var(--dark-cool-color) 0%,
+    transparent 100%
+  );
   mix-blend-mode: screen;
   left: 0;
   top: 0;
