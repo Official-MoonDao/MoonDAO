@@ -1,10 +1,10 @@
+import Image from 'next/image'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 import Speaker from '../home/Speaker'
 import StandardButton from '../layout/StandardButton'
 import CitizenTier from '../onboarding/CitizenTier'
 import TeamTier from '../onboarding/TeamTier'
-import Image from 'next/image'
-import toast from 'react-hot-toast'
 
 export default function Callout2() {
   return (
@@ -21,15 +21,38 @@ export default function Callout2() {
           <div
             id="bottom-divider"
             className="hidden divider-4 absolute left-0 bottom-[-2px] w-[60%] h-full"
-          ></div>
+          >
+            <Image
+              src="/assets/divider-4.svg"
+              alt="Divider 4"
+              width={1000}
+              height={1000}
+            />
+          </div>
           <div
             id="featured-image-large"
-            className="hide-xl feature-3 absolute top-0 right-0 w-[80vmin] md:w-[70%] lg:w-[45vmax] mt-[-5vmax] h-full mt-5"
-          ></div>
+            className="hide-xl absolute top-0 right-0 w-[80vmin] md:w-[70%] lg:w-[45vmax] mt-[-5vmax] h-full mt-5"
+          >
+            <Image
+              className="absolute top-0 right-0"
+              src="/assets/feature-3.svg"
+              alt="Feature 3"
+              width={400}
+              height={400}
+            />
+          </div>
           <div
             id="featured-image-extra-large"
-            className="show-xl feature-3 absolute top-0 right-0 w-[900px] h-[50vw]"
-          ></div>
+            className="show-xl absolute top-0 right-0 w-[900px] h-[50vw]"
+          >
+            <Image
+              className="absolute top-0 right-0"
+              src="/assets/feature-3.svg"
+              alt="Feature 3"
+              width={650}
+              height={650}
+            />
+          </div>
         </div>
         <div
           id="content"
@@ -42,17 +65,21 @@ export default function Callout2() {
             id="paragraph"
             className="pt-2 pb-5 text-lg w-[100%] md:w-[100%] lg:max-w-[500px]"
           >
-            We are an open source space community where everything is proposed, governed, and created by our members. Co-govern the treasury by locking $MOONEY to become a fully-fledged voter. 
+            We are an open source space community where everything is proposed,
+            governed, and created by our members. Co-govern the treasury by
+            locking $MOONEY to become a fully-fledged voter.
           </p>
           <div className="flex items-center gap-2 mb-5">
             <button
               onClick={() => {
-                navigator.clipboard.writeText("0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395")
+                navigator.clipboard.writeText(
+                  '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395'
+                )
                 toast.success('Address copied to clipboard')
               }}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <Image 
+              <Image
                 src="/assets/icon-copy.svg"
                 alt="Copy address"
                 width={20}
