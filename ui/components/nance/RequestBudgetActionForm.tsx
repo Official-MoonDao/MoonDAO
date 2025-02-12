@@ -58,7 +58,6 @@ export default function RequestBudgetActionForm({
                 <SafeTokenForm
                   address="0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
                   fieldName={`budget.${index}.token`}
-                  acceptedTokens={['ETH', MOONEY_ADDRESSES['ethereum']]}
                 />
               </div>
 
