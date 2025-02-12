@@ -128,21 +128,11 @@ export default function TeamListing({
 
   if (!isActive) return null
 
-  const listingContent = (
-    <div className="flex flex-col gap-4">
-      <div className="w-full flex flex-col gap-4">
-        {/* Team Name & Description */}
-
-        {/* Pricing Section */}
-      </div>
-    </div>
-  )
-
   const listingFooter = (
     <div className="text-sm">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <p className="font-bold">
+          <p id="listing-price" className="font-bold">
             {`${
               isCitizen
                 ? truncateTokenValue(listing.price, listing.currency)
@@ -150,7 +140,10 @@ export default function TeamListing({
             } ${listing.currency}`}
           </p>
           {isCitizen && (
-            <p className="line-through text-xs opacity-70">
+            <p
+              id="listing-original-price"
+              className="line-through text-xs opacity-70"
+            >
               {`${truncateTokenValue(+listing.price * 1.1, listing.currency)} ${
                 listing.currency
               }`}
@@ -159,6 +152,7 @@ export default function TeamListing({
         </div>
         {!isCitizen && (
           <button
+            id="listing-savings"
             onClick={(e) => {
               e.stopPropagation()
               router.push('/citizen')
@@ -176,7 +170,7 @@ export default function TeamListing({
         )}
       </div>
       {editable && (
-        <p className="opacity-60">
+        <p id="listing-status" className="opacity-60">
           {isExpired
             ? `*This listing has expired and is no longer available for purchase.`
             : isUpcoming
@@ -189,7 +183,7 @@ export default function TeamListing({
         </p>
       )}
       {!isExpired && !isUpcoming && listing.endTime != 0 && (
-        <p className="mt-2 opacity-60">
+        <p id="listing-end-time" className="mt-2 opacity-60">
           {`Offer ends in ${daysUntilExpiry} ${
             +daysUntilExpiry === 1 ? 'day' : 'days'
           }`}
@@ -208,6 +202,7 @@ export default function TeamListing({
       {editable && (
         <>
           <button
+            id="edit-listing-button"
             onClick={(event) => {
               event.stopPropagation()
               setEnabledMarketplaceListingModal(true)
@@ -221,6 +216,7 @@ export default function TeamListing({
             <LoadingSpinner className="scale-[75%]" />
           ) : (
             <button
+              id="delete-listing-button"
               onClick={async (event) => {
                 if (!account) return
                 event.stopPropagation()
