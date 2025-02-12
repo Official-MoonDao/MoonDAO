@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas'
+import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 import { MediaRenderer } from 'thirdweb/react'
@@ -52,7 +52,7 @@ export function ImageGenerator({
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col mt-5">
-        <FileInput file={inputImage} setFile={setInputImage} />
+        <FileInput file={inputImage} setFile={setInputImage} noBlankImages />
       </div>
       <div
         id="citizenPic"

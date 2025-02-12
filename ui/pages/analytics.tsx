@@ -13,8 +13,10 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
   const { t } = useTranslation('common')
 
   const descriptionSection = (
-    <div className="h-[50px] p-2 flex gap-2 items-center">
-      {'Key stats and insights around our governance token $MOONEY, including voting power distribution and locking stats. Dive into detailed and transparent analytics on treasury holdings, transaction history, and more to stay informed.'}
+    <div className="flex flex-col gap-2">
+      {
+        'Key stats and insights around our governance token $MOONEY, including voting power distribution and locking stats. Dive into detailed and transparent analytics on treasury holdings, transaction history, and more to stay informed.'
+      }
       {dateUpdated ? (
         <span className="font-bold">{dateUpdated}</span>
       ) : (
