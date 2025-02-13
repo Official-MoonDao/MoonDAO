@@ -43,7 +43,7 @@ import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
+import { client } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
@@ -218,6 +218,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       if (selectedChainSlug !== defaultChainSlug) {
         const GAS_LIMIT = 300000 // Gas limit for the executor
         const MSG_VALUE = cost // msg.value for the lzReceive() function on destination in wei
+        const TRANSFER_COST = 3000000000000000n // lz fee
 
         const _options = Options.newOptions().addExecutorLzReceiveOption(
           GAS_LIMIT,
@@ -243,8 +244,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             'public',
             citizenData.formResponseId,
           ],
-          value: (MSG_VALUE * 3n) / 2n, // 1.5x the msg.value to cover the cost of the cross-chain transaction
-          // change is returned to sender, tho we can probably lower this
+          value: MSG_VALUE + TRANSFER_COST,
         })
         const originReceipt: any = await sendAndConfirmTransaction({
           transaction,
@@ -256,7 +256,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           originReceipt.transactionHash
         )
         receipt = await waitForReceipt({
-          client: serverClient,
+          client: client,
           chain: destinationChain,
           transactionHash: message.dstTxHash,
         })

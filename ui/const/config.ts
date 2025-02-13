@@ -299,7 +299,7 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
 }
 
 export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
-  'arbitrum-sepolia': '0xfF113d31149F63732B8943a9Ea12b738cB343202',
+  'arbitrum-sepolia': '0x77E5c79341eeE988634caa5B28C16638F1Eb91E1',
   base: 0x83755af34867a3513ddce921e9cad28f0828cddb,
 }
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: Index = {
