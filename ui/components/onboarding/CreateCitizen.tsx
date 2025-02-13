@@ -75,7 +75,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const crossChain = isTestnet ? arbitrumSepolia : base
   const crossChainSlug = getChainSlug(crossChain)
   const destinationChain = isTestnet ? sepolia : arbitrum
-  const client = createClient(isTestnet ? 'testnet' : 'mainnet')
   const account = useActiveAccount()
   const address = account?.address
 
@@ -218,7 +217,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       if (selectedChainSlug !== defaultChainSlug) {
         const GAS_LIMIT = 300000 // Gas limit for the executor
         const MSG_VALUE = cost // msg.value for the lzReceive() function on destination in wei
-        const TRANSFER_COST = 3000000000000000n // lz fee
+        const TRANSFER_COST = BigInt('3000000000000000')
 
         const _options = Options.newOptions().addExecutorLzReceiveOption(
           GAS_LIMIT,
@@ -227,7 +226,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
         const transaction = await prepareContractCall({
           contract: crossChainMintContract,
-          method: 'crossChainMint',
+          method: 'crossChainMint' as string,
           params: [
             LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[
               crossChainSlug
@@ -258,7 +257,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         receipt = await waitForReceipt({
           client: client,
           chain: destinationChain,
-          transactionHash: message.dstTxHash,
+          transactionHash: message.dstTxHash as `0x${string}`,
         })
       } else {
         const transaction = await prepareContractCall({
