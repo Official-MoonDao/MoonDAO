@@ -35,6 +35,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, name: target.value }))
         }
         placeholder="Enter your name"
+        maxLength={100}
       />
       <FormInput
         id="citizen-bio-input"
@@ -47,6 +48,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           }))
         }
         placeholder="Enter your bio"
+        maxLength={1024}
       />
       <FormInput
         id="citizen-location-input"
@@ -56,6 +58,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, location: target.value }))
         }
         placeholder="Enter your city and/or country"
+        maxLength={1024}
       />
       <FormInput
         id="citizen-discord-input"
@@ -65,6 +68,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, discord: target.value }))
         }
         placeholder="Enter your discord username"
+        maxLength={1024}
       />
       <FormInput
         id="citizen-twitter-input"
@@ -74,6 +78,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, twitter: target.value }))
         }
         placeholder="Enter your Twitter link including https://"
+        maxLength={1024}
       />
       <FormInput
         id="citizen-website-input"
@@ -83,6 +88,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, website: target.value }))
         }
         placeholder="Enter your website link including https://"
+        maxLength={1024}
       />
     </div>
   )
