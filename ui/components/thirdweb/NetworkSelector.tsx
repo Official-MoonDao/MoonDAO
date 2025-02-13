@@ -38,7 +38,7 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
 
 type NetworkSelectorProps = {
   iconsOnly?: boolean
-  chains: any[]
+  chains?: any[]
 }
 
 export default function NetworkSelector({
