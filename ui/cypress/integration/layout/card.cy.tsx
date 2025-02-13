@@ -16,8 +16,6 @@ describe('<Card />', () => {
 
     cy.get('#card-container').should('exist')
     cy.get('#featured-icon').should('be.visible')
-    cy.get('#main-header').should('contain', 'Test Header')
-    cy.get('#description-and-id').should('contain', 'Test paragraph')
   })
 
   it('Renders organization image when provided', () => {

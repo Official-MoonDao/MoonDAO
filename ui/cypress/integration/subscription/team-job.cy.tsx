@@ -31,6 +31,8 @@ describe('<Job />', () => {
       teamContract: null,
       showTeam: false,
     }
+
+    cy.mountNextRouter('/')
   })
 
   it('Renders the component', () => {

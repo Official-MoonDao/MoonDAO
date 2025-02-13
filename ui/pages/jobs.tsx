@@ -14,6 +14,7 @@ import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
+import CardGridContainer from '@/components/layout/CardGridContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -88,7 +89,7 @@ export default function Jobs({ jobs }: JobsProps) {
           isProfile
         >
           {citizen ? (
-            <div className="pb-10 w-full flex flex-col gap-4">
+            <CardGridContainer>
               {filteredJobs &&
                 filteredJobs.map((job: JobType, i: number) => (
                   <Job
@@ -98,7 +99,7 @@ export default function Jobs({ jobs }: JobsProps) {
                     teamContract={teamContract}
                   />
                 ))}
-            </div>
+            </CardGridContainer>
           ) : (
             <>
               <p className="">
