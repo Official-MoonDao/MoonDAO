@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import StandardButton from '../layout/StandardButton'
 
 export default function Callout1() {
@@ -13,20 +14,31 @@ export default function Callout1() {
         >
           <div
             id="featured-image"
-            className=" compact-lg hide-lg feature-2 lg:min-h-[450px] mt-5 md:mr-10 w-[100%] h-[250px] md:h-[70vmax] lg:h-[60vh]"
-          ></div>
+            className=" compact-lg hide-lg lg:min-h-[450px] mt-5 md:mr-10 w-[100%] h-[250px] md:h-[70vmax] lg:h-[60vh]"
+          >
+            <Image
+              src="/assets/feature-2.png"
+              alt="Feature 2"
+              width={1000}
+              height={1000}
+            />
+          </div>
           <div
             id="content"
             className="overflow-visible relative pb-10 md:pb-10 w-[100%]"
           >
             <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold bg-clip-text text-dark-cool bg-gradient-to-r from-red-500 to-blue-500 leading-none">
-            Bringing the Space Industry Onchain 
+              Bringing the Space Industry Onchain
             </h1>
             <p
               id="paragraph"
               className="pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]"
             >
-            The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond. We aim to connect space visionaries and organizations with the funding, tools, and support needed to turn bold ideas into reality.
+              The Space Acceleration Network is an onchain startup society
+              focused on building a permanent settlement on the Moon and beyond.
+              We aim to connect space visionaries and organizations with the
+              funding, tools, and support needed to turn bold ideas into
+              reality.
             </p>
             <StandardButton
               backgroundColor="bg-dark-cool"

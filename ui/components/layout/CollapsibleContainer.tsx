@@ -18,7 +18,7 @@ function CollapsibleContainer({
   }
 
   return (
-    <div className="relative mb-4 pb-8 lg:pb-0">
+    <div className="relative mb-8 pb-8 lg:pb-0">
       <div
         className="overflow-hidden transition-all duration-300"
         style={{
@@ -28,9 +28,9 @@ function CollapsibleContainer({
         <div>{children}</div>
       </div>
       <div
-        className={`absolute bottom-0 md:bottom-[-10px] ${
+        className={`absolute bottom-0 md:bottom-[-25px] ${
           rightAlign ? 'right-0' : 'left-0'
-        } ${isExpanded && 'md:bottom-[-30px]'} w-full z-20`}
+        } w-full z-20`}
       >
         <button
           onClick={toggleExpand}

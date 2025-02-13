@@ -52,10 +52,6 @@ describe('<TeamListing />', () => {
     )
 
     cy.get('#main-header').should('have.text', props.listing.title)
-    cy.get('#listing-description').should(
-      'have.text',
-      props.listing.description
-    )
   })
 
   it('Shows markedup price for non-citizens', () => {

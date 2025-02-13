@@ -14,6 +14,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
+import {
+  generatePrettyLink,
+  generatePrettyLinkWithId,
+} from '@/lib/subscription/pretty-links'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -220,9 +224,16 @@ export default function Network({
                           <Card
                             inline
                             metadata={nft.metadata}
-                            owner={nft.owner}
                             type={type}
                             hovertext="Explore Profile"
+                            link={`/${type === 'team' ? 'team' : 'citizen'}/${
+                              type === 'team'
+                                ? generatePrettyLink(nft.metadata.name)
+                                : generatePrettyLinkWithId(
+                                    nft.metadata.name,
+                                    nft.metadata.id
+                                  )
+                            }`}
                           />
                         </div>
                       )

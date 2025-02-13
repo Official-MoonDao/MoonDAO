@@ -7,6 +7,7 @@ type FormInputProps = {
   type?: string
   className?: string
   disabled?: boolean
+  maxLength?: number
 }
 
 export default function FormInput({
@@ -18,6 +19,7 @@ export default function FormInput({
   className = '',
   label,
   disabled = false,
+  maxLength,
 }: FormInputProps) {
   return (
     <>
@@ -30,6 +32,7 @@ export default function FormInput({
         onChange={onChange}
         value={value}
         disabled={disabled}
+        maxLength={maxLength}
       />
     </>
   )

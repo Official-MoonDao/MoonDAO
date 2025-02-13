@@ -34,6 +34,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
           setTeamData((prev: any) => ({ ...prev, name: target.value }))
         }
         placeholder="Enter your name"
+        maxLength={100}
       />
       <FormInput
         id="team-bio-input"
@@ -43,6 +44,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
           setTeamData((prev: any) => ({ ...prev, description: target.value }))
         }
         placeholder="Enter your bio"
+        maxLength={1024}
       />
       <FormInput
         id="team-twitter-input"
@@ -52,6 +54,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
           setTeamData((prev: any) => ({ ...prev, twitter: target.value }))
         }
         placeholder="Enter your twitter link"
+        maxLength={1024}
       />
       <FormInput
         id="team-communications-input"
@@ -64,6 +67,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
           }))
         }
         placeholder="Enter your communications link"
+        maxLength={1024}
       />
       <FormInput
         id="team-website-input"
@@ -73,6 +77,7 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
           setTeamData((prev: any) => ({ ...prev, website: target.value }))
         }
         placeholder="Enter your website link"
+        maxLength={1024}
       />
     </div>
   )
