@@ -298,6 +298,17 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
   'base-sepolia-testnet': '0x050E797f3625EC8785265e1d9BDd4799b97528A1',
 }
 
+export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
+  'arbitrum-sepolia': '0xF4f865fA947376f47C74ffD05dd59763c0824bAD',
+  base: '0xe5709Bc44427DCEF81fF2F718DFc6A032fD23bbF',
+}
+export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
+  [key: string]: number
+} = {
+  'arbitrum-sepolia': 40161, //sepolia eid
+  base: 30110, //arbitrum eid
+}
+
 export const DISCORD_GUILD_ID = '914720248140279868'
 export const GENERAL_CHANNEL_ID = '914720248140279871'
 export const TEST_CHANNEL_ID = '1308513773879033886'

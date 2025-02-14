@@ -5,6 +5,7 @@ import {
   arbitrum,
   base,
   baseSepolia,
+  arbitrumSepolia,
   ethereum,
   polygon,
   sepolia,
@@ -37,9 +38,13 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
 
 type NetworkSelectorProps = {
   iconsOnly?: boolean
+  chains?: any[]
 }
 
-export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
+export default function NetworkSelector({
+  iconsOnly,
+  chains,
+}: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const [dropdown, setDropdown] = useState(false)
 
@@ -84,14 +89,33 @@ export default function NetworkSelector({ iconsOnly }: NetworkSelectorProps) {
           id="network-selector-dropdown"
           className="w-[250px] absolute flex flex-col items-start gap-2 text-black z-10"
         >
-          <NetworkOption chain={ethereum} selectChain={selectChain} />
-          <NetworkOption chain={arbitrum} selectChain={selectChain} />
-          <NetworkOption chain={base} selectChain={selectChain} />
-          <NetworkOption chain={polygon} selectChain={selectChain} />
-          {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+          {chains && chains.length > 0 ? (
+            chains.map((chain) => (
+              <NetworkOption
+                key={chain.id}
+                chain={chain}
+                selectChain={selectChain}
+              />
+            ))
+          ) : (
             <>
-              <NetworkOption chain={sepolia} selectChain={selectChain} />
-              <NetworkOption chain={baseSepolia} selectChain={selectChain} />
+              <NetworkOption chain={ethereum} selectChain={selectChain} />
+              <NetworkOption chain={arbitrum} selectChain={selectChain} />
+              <NetworkOption chain={base} selectChain={selectChain} />
+              <NetworkOption chain={polygon} selectChain={selectChain} />
+              {process.env.NEXT_PUBLIC_ENV === 'dev' && (
+                <>
+                  <NetworkOption chain={sepolia} selectChain={selectChain} />
+                  <NetworkOption
+                    chain={baseSepolia}
+                    selectChain={selectChain}
+                  />
+                  <NetworkOption
+                    chain={arbitrumSepolia}
+                    selectChain={selectChain}
+                  />
+                </>
+              )}
             </>
           )}
         </div>
