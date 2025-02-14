@@ -185,12 +185,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
       })
+      const LAYER_ZERO_TRANSFER_COST = BigInt('3000000000000000')
 
       const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
 
       const estimatedMaxGas = 0.0001
 
-      const totalCost = Number(formattedCost) + estimatedMaxGas
+      let totalCost = Number(formattedCost) + estimatedMaxGas
+      if (selectedChainSlug !== defaultChainSlug) {
+        totalCost += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
+      }
 
       if (+nativeBalance < totalCost) {
         const roundedCost = Math.ceil(+totalCost * 1000000) / 1000000
@@ -218,7 +222,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       if (selectedChainSlug !== defaultChainSlug) {
         const GAS_LIMIT = 300000 // Gas limit for the executor
         const MSG_VALUE = cost // msg.value for the lzReceive() function on destination in wei
-        const TRANSFER_COST = BigInt('3000000000000000')
 
         const _options = Options.newOptions().addExecutorLzReceiveOption(
           GAS_LIMIT,
@@ -244,7 +247,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             'public',
             citizenData.formResponseId,
           ],
-          value: MSG_VALUE + TRANSFER_COST,
+          value: MSG_VALUE + LAYER_ZERO_TRANSFER_COST,
         })
         const originReceipt: any = await sendAndConfirmTransaction({
           transaction,
