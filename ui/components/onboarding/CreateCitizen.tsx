@@ -72,6 +72,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const selectedChainSlug = getChainSlug(selectedChain)
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
+  const chains = isTestnet ? [sepolia, arbitrumSepolia] : [arbitrum, base]
   const crossChain = isTestnet ? arbitrumSepolia : base
   const crossChainSlug = getChainSlug(crossChain)
   const destinationChain = isTestnet ? sepolia : arbitrum
@@ -603,7 +604,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     </p>
                   </label>
                 </div>
-                <NetworkSelector chains={[arbitrumSepolia, sepolia]} />
+                <NetworkSelector chains={chains} />
                 <PrivyWeb3Button
                   id="citizen-checkout-button"
                   skipNetworkCheck={true}
