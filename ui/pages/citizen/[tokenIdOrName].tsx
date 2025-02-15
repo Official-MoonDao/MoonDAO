@@ -373,7 +373,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
             address={address}
             nft={nft}
             incompleteProfile={incompleteProfile}
-            isTeamMember={hats.length > 0}
+            isTeamMember={hats?.length > 0}
             mooneyBalance={MOONEYBalance}
             vmooneyBalance={VMOONEYBalance}
             setCitizenMetadataModalEnabled={setCitizenMetadataModalEnabled}
@@ -480,7 +480,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                 </Frame>
               </div>
             )}
-            {hats.length > 1 && (
+            {hats?.length > 1 && (
               <Frame
                 noPadding
                 bottomLeft="0px"
@@ -492,7 +492,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                   <div className=" w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
                     <p className="header font-GoodTimes opacity-[50%]">Teams</p>
                     <div className="mt-5 py-5 flex flex-col gap-2 overflow-y-scroll">
-                      {hats.map((hat: any) => (
+                      {hats?.map((hat: any) => (
                         <div
                           key={hat.id}
                           className="py-3 gradient-16 rounded-[20px]"

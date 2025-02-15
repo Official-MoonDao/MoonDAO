@@ -93,13 +93,25 @@ export default function StandardCard({
             {image && (
               <div id="team-citizen-image-container" className="z-40">
                 <Frame noPadding marginBottom="0px" className="aspect-square">
-                  <MediaRenderer
-                    className="w-full h-full object-cover"
-                    client={client}
-                    src={image}
-                    width="100%"
-                    height="100%"
-                  />
+                  {image.startsWith('blob:') ? (
+                    // For local blob URLs (like from URL.createObjectURL)
+                    <Image
+                      className="w-full h-full object-cover"
+                      src={image}
+                      alt="Card image"
+                      width={500}
+                      height={500}
+                    />
+                  ) : (
+                    // For IPFS/remote URLs
+                    <MediaRenderer
+                      className="w-full h-full object-cover"
+                      client={client}
+                      src={image}
+                      width="100%"
+                      height="100%"
+                    />
+                  )}
                 </Frame>
               </div>
             )}

@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { isImageBlank } from '@/lib/utils/images'
+import { fitImage } from '@/lib/utils/images'
 
 type FileInputProps = {
   file: File | undefined
   setFile: Function
   noBlankImages?: boolean
+  dimensions?: number[]
 }
 
 export default function FileInput({
   file,
   setFile,
   noBlankImages,
+  dimensions,
 }: FileInputProps) {
   //get file name
   const [fileName, setFileName] = useState(file?.name || 'No file chosen')
@@ -27,7 +30,16 @@ export default function FileInput({
             return toast.error('Please ensure your image is not blank.')
           }
           setFileName(chosenFileName)
-          setFile(file)
+          if (dimensions) {
+            const resizedImage = await fitImage(
+              file,
+              dimensions[0],
+              dimensions[1]
+            )
+            setFile(resizedImage)
+          } else {
+            setFile(file)
+          }
         }}
         className="hidden"
         id="file-upload"

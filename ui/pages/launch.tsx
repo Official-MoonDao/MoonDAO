@@ -107,6 +107,7 @@ export default function Launch({ missions }: any) {
       setUserTeamsAsManager(teamsAsManager)
     }
     if (teamContract && userTeams && address) getUserTeamsAsManager()
+    else setUserTeamsAsManager(undefined)
   }, [teamContract, userTeams, address])
 
   async function handleCreateMission() {

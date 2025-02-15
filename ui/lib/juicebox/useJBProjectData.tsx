@@ -62,15 +62,20 @@ export default function useJBProjectData(
   useEffect(() => {
     async function getSubgraphData() {
       if (!projectId) return
-      const res = await fetch(
-        '/api/juicebox/query?query=' + projectQuery(projectId),
-        {
-          method: 'POST',
-        }
-      )
-      const data = await res.json()
-      const projectSubgraphData = data.projects[0]
-      setSubgraphData(projectSubgraphData)
+      try {
+        const res = await fetch(
+          '/api/juicebox/query?query=' + projectQuery(projectId),
+          {
+            method: 'POST',
+          }
+        )
+        console.log(res)
+        const data = await res.json()
+        const projectSubgraphData = data.projects?.[0]
+        setSubgraphData(projectSubgraphData)
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     if (projectId) getSubgraphData()
