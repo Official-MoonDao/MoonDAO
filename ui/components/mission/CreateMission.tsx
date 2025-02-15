@@ -116,7 +116,13 @@ export function Stage({
             <StandardButton
               className="gradient-2 rounded-full"
               hoverEffect={false}
-              onClick={action}
+              onClick={
+                process.env.NEXT_PUBLIC_ENV === 'dev'
+                  ? () => {
+                      setStage((prev: number) => prev + 1)
+                    }
+                  : action
+              }
             >
               Next
             </StandardButton>
