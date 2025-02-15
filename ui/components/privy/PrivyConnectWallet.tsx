@@ -255,7 +255,8 @@ export function PrivyConnectWallet({
         router.pathname !== '/lock' &&
         router.pathname !== '/bridge' &&
         router.pathname !== '/citizen' &&
-        router.pathname !== '/team'
+        router.pathname !== '/team' &&
+        router.pathname !== '/launch'
       ) {
         let citizen
         try {
