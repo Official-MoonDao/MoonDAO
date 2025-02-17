@@ -129,7 +129,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const crossChainMintContract = useContract({
     address: CITIZEN_CROSS_CHAIN_MINT_ADDRESSES[crossChainSlug],
     abi: CrossChainMinterABI,
-    chain: arbitrumSepolia,
+    chain: crossChain,
   })
 
   const subscribeToNetworkSignup = useSubscribe(CK_NETWORK_SIGNUP_FORM_ID)
