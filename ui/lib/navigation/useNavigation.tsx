@@ -38,7 +38,6 @@ export default function useNavigation(citizen: any) {
             name: 'Proposals',
             href: '/vote',
           },
-          { name: 'Allocate Rewards', href: '/rewards' },
           {
             name: 'Constitution',
             href: 'https://docs.moondao.com/Governance/Constitution',

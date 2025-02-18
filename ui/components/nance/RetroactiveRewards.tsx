@@ -38,6 +38,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import PastProjects from '@/components/project/PastProjects'
 import ProjectCard from '@/components/project/ProjectCard'
 
 export type Distribution = {
@@ -55,7 +56,8 @@ export type RewardAssetProps = {
 }
 
 export type RetroactiveRewardsProps = {
-  projects: Project[] | undefined
+  currentProjects: Project[]
+  pastProjects: Project[]
   distributions: Distribution[]
   refreshRewards: () => void
 }
@@ -96,7 +98,8 @@ function RewardAsset({
 }
 
 export function RetroactiveRewards({
-  projects,
+  currentProjects,
+  pastProjects,
   distributions,
   refreshRewards,
 }: RetroactiveRewardsProps) {
@@ -121,7 +124,7 @@ export function RetroactiveRewards({
       setActive(isRewardsCycle(new Date()))
     }, 30000)
     return () => clearInterval(interval)
-  }, [projects, distributions])
+  }, [currentProjects, distributions])
 
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
@@ -197,10 +200,10 @@ export function RetroactiveRewards({
     (_, i) => !isCitizens[i]
   )
   // All projects need at least one citizen distribution to do iterative normalization
-  const allProjectsHaveCitizenDistribution = projects?.every(({ id }) =>
+  const allProjectsHaveCitizenDistribution = currentProjects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
-  const allProjectsHaveRewardDistribution = projects?.every(
+  const allProjectsHaveRewardDistribution = currentProjects?.every(
     (project) => project.rewardDistribution !== undefined
   )
   // Map from address to percentage of commnity rewards
@@ -216,7 +219,7 @@ export function RetroactiveRewards({
       ? computeRewardPercentages(
           citizenDistributions,
           nonCitizenDistributions,
-          projects,
+          currentProjects,
           addressToQuadraticVotingPower
         )
       : {}
@@ -230,7 +233,6 @@ export function RetroactiveRewards({
     .concat(arbitrumTokens)
     .concat(polygonTokens)
     .concat(baseTokens)
-  console.log(tokens)
 
   const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
@@ -261,7 +263,7 @@ export function RetroactiveRewards({
     vMooneyAmounts,
   } = getPayouts(
     projectIdToEstimatedPercentage,
-    projects,
+    currentProjects,
     communityCircle,
     ethBudget,
     mooneyBudget
@@ -372,8 +374,8 @@ export function RetroactiveRewards({
               </h1>
 
               <div className="mt-12 flex flex-col gap-4">
-                {projects && projects?.length > 0 ? (
-                  projects.map((project: any, i) => (
+                {currentProjects && currentProjects?.length > 0 ? (
+                  currentProjects.map((project: any, i) => (
                     <div key={`project-card-${i}`}>
                       <ProjectCard
                         key={`project-card-${i}`}
@@ -399,7 +401,7 @@ export function RetroactiveRewards({
 
                 {active && (
                   <div className="mt-4 w-full flex justify-end">
-                    {projects && userHasVotingPower ? (
+                    {currentProjects && userHasVotingPower ? (
                       <span className="flex flex-col md:flex-row md:items-center gap-2">
                         <PrivyWeb3Button
                           action={handleSubmit}
@@ -425,6 +427,7 @@ export function RetroactiveRewards({
                 )}
               </div>
             </div>
+            <PastProjects projects={pastProjects} />
           </SectionCard>
         </ContentLayout>
       </Container>
