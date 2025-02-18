@@ -1,5 +1,4 @@
 //This component dipslays a project card using project data directly from tableland
-import Image from 'next/image'
 import Link from 'next/link'
 import React, { useContext, memo } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
@@ -101,7 +100,6 @@ export default function ProjectCard({
   distribution,
   handleDistributionChange,
   userHasVotingPower,
-  awarded,
 }: ProjectCardProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -138,7 +136,6 @@ export default function ProjectCard({
           handleDistributionChange={handleDistributionChange}
           proposalJSON={proposalJSON}
           userHasVotingPower={userHasVotingPower}
-          awarded={awarded}
         />
       ) : (
         <Link href={`/project/${project?.id}`} passHref>
@@ -146,7 +143,6 @@ export default function ProjectCard({
             project={project}
             proposalJSON={proposalJSON}
             userHasVotingPower={userHasVotingPower}
-            awarded={awarded}
           />
         </Link>
       )}

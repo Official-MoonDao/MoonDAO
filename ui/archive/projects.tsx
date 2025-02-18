@@ -224,7 +224,6 @@ export default function Projects({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
-                        awarded
                       />
                     )
                   })
