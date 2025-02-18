@@ -9,13 +9,14 @@ export default function useProposalJSON(proposalMarkdown: string) {
     if (!proposalMarkdown) return
 
     // Parse the markdown into sections
-    const sections = proposalMarkdown.split('## ').filter(Boolean)
+    const sections = proposalMarkdown.split(/\n#+\s*/).filter(Boolean)
+
     const parsedSections: Record<string, string> = {}
 
     sections.forEach((section) => {
       const [title, ...content] = section.split('\n')
       // Clean up the title and content
-      const cleanTitle = removeMarkdownFormatting(title.trim())
+      const cleanTitle = removeMarkdownFormatting(title.trim()).trim()
       const cleanContent = removeMarkdownFormatting(content.join('\n').trim())
 
       if (cleanTitle && cleanContent) {

@@ -69,7 +69,7 @@ export const TEMPLATE = `\n*Note: Please remove the italicized instructions befo
 
 | Project Lead | *@DiscordUsername* |
 | :---- | :---- |
-| **Initial Team** | *Role 1: “Developer” @DiscordUsername1. “Description of the role and deliverable for this member” Role 2: “Designer” @DiscordUsername2. “Description of the role and deliverable for this member”* |
+| **Initial Team** | *Role 1: “Developer” @DiscordUsername1: eth:0x0...1. “Description of the role and deliverable for this member” Role 2: “Designer” @DiscordUsername2: eth:0x0...2. “Description of the role and deliverable for this member”* |
 | **Multi-sig signers\*** | *Five required with their ETH addresses listed. “@DiscordUsername1: eth:0x0...1” “@DiscordUsername2: eth:0x0...2” “@DiscordUsername3: eth:0x0...3” “@DiscordUsername4: eth:0x0...4” “@DiscordUsername5: eth:0x0...5” You can create a multi-sig [here](https://app.safe.global/welcome)* |
 | **Multi-sig Address\*** | *ETH address with the multi-sig* |
 
