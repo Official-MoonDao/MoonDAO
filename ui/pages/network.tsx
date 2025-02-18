@@ -1,4 +1,9 @@
-import { MapIcon } from '@heroicons/react/24/outline'
+import {
+  GlobeAmericasIcon,
+  MapIcon,
+  ListBulletIcon,
+  Squares2X2Icon,
+} from '@heroicons/react/24/outline'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
@@ -34,6 +39,7 @@ import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
+import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
 import CitizenABI from '../const/abis/Citizen.json'
 import TeamABI from '../const/abis/Team.json'
@@ -132,6 +138,8 @@ export default function Network({
 
   useChainDefault()
 
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
   const descriptionSection = (
     <div className="pt-2">
       <div className="mb-4">
@@ -173,15 +181,92 @@ export default function Network({
           </Frame>
         </div>
 
+        <div className="flex gap-2">
+          <StandardButton
+            className="gradient-2 h-[40px] flex items-center justify-center"
+            onClick={() => router.push('/map')}
+          >
+            <GlobeAmericasIcon width={30} height={30} />
+          </StandardButton>
+        </div>
+      </div>
+      <div className="flex gap-2">
         <StandardButton
-          className="gradient-2 h-[40px]"
-          onClick={() => router.push('/map')}
+          className={`h-[40px] flex items-center justify-center ${
+            viewMode === 'grid'
+              ? 'gradient-2 opacity-100'
+              : 'bg-mid-cool opacity-50'
+          }`}
+          onClick={() => setViewMode('grid')}
+          hoverEffect={false}
         >
-          <MapIcon width={20} height={20} />
+          <Squares2X2Icon width={30} height={30} />
+        </StandardButton>
+
+        <StandardButton
+          className={`h-[40px] flex items-center justify-center ${
+            viewMode === 'list'
+              ? 'gradient-2 opacity-100'
+              : 'bg-mid-cool opacity-50'
+          }`}
+          onClick={() => setViewMode('list')}
+          hoverEffect={false}
+        >
+          <ListBulletIcon width={30} height={30} />
         </StandardButton>
       </div>
     </div>
   )
+
+  const renderNFTs = () => {
+    if (!cachedNFTs?.[0]) {
+      return (
+        <>
+          {Array.from({ length: 9 }).map((_, i) => (
+            <CardSkeleton key={`card-skeleton-${i}`} />
+          ))}
+        </>
+      )
+    }
+
+    const nftsToShow = cachedNFTs?.slice((pageIdx - 1) * 9, pageIdx * 9)
+
+    return nftsToShow.map((nft: any, I: number) => {
+      if (nft.metadata.name === 'Failed to load NFT metadata') return null
+
+      const type = nft.metadata.attributes.find(
+        (attr: any) => attr.trait_type === 'communications'
+      )
+        ? 'team'
+        : 'citizen'
+
+      const link = `/${type === 'team' ? 'team' : 'citizen'}/${
+        type === 'team'
+          ? generatePrettyLink(nft.metadata.name)
+          : generatePrettyLinkWithId(nft.metadata.name, nft.metadata.id)
+      }`
+
+      return (
+        <div className="justify-center flex" key={'team-citizen-' + I}>
+          {viewMode === 'grid' ? (
+            <Card
+              inline
+              metadata={nft.metadata}
+              type={type}
+              hovertext="Explore Profile"
+              link={link}
+            />
+          ) : (
+            <StandardDetailCard
+              title={nft.metadata.name}
+              paragraph={nft.metadata.description}
+              image={nft.metadata.image}
+            />
+          )}
+        </div>
+      )
+    })
+  }
 
   return (
     <section id="network-container" className="overflow-hidden">
@@ -204,48 +289,22 @@ export default function Network({
           isProfile
         >
           <>
-            <CardGridContainer>
-              {cachedNFTs?.[0] ? (
-                cachedNFTs
-                  ?.slice((pageIdx - 1) * 9, pageIdx * 9)
-                  .map((nft: any, I: number) => {
-                    if (nft.metadata.name !== 'Failed to load NFT metadata') {
-                      const type = nft.metadata.attributes.find(
-                        (attr: any) => attr.trait_type === 'communications'
-                      )
-                        ? 'team'
-                        : 'citizen'
-                      return (
-                        <div
-                          className="justify-center mt-5 flex"
-                          key={'team-citizen-' + I}
-                        >
-                          <Card
-                            inline
-                            metadata={nft.metadata}
-                            type={type}
-                            hovertext="Explore Profile"
-                            link={`/${type === 'team' ? 'team' : 'citizen'}/${
-                              type === 'team'
-                                ? generatePrettyLink(nft.metadata.name)
-                                : generatePrettyLinkWithId(
-                                    nft.metadata.name,
-                                    nft.metadata.id
-                                  )
-                            }`}
-                          />
-                        </div>
-                      )
-                    }
-                  })
-              ) : (
-                <>
-                  {Array.from({ length: 9 }).map((_, i) => (
-                    <CardSkeleton key={`card-skeleton-${i}`} />
-                  ))}
-                </>
-              )}
-            </CardGridContainer>
+            {viewMode === 'grid' ? (
+              <CardGridContainer xsCols={1} smCols={2} mdCols={3} maxCols={3}>
+                {renderNFTs()}
+              </CardGridContainer>
+            ) : (
+              <CardGridContainer
+                xsCols={1}
+                smCols={1}
+                mdCols={1}
+                maxCols={2}
+                noGap
+              >
+                {renderNFTs()}
+              </CardGridContainer>
+            )}
+
             <Frame noPadding marginBottom="0px">
               <div
                 id="pagination-container"
