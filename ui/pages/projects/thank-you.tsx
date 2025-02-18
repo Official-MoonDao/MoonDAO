@@ -72,7 +72,7 @@ export default function RewardsThankYou({
           <SectionCard>
             <p>
               {`Thank you for performing your duty as a member of the MoonDAO community! Your allocation has been received. You can update your allocation at any time before the end of the quarter by resubmitting on the `}
-              <Link href="/rewards" className="text-light-warm">
+              <Link href="/projects" className="text-light-warm">
                 rewards
               </Link>
               {` page`}

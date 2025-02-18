@@ -251,7 +251,7 @@ export function PrivyConnectWallet({
         !wasAlreadyAuthenticated &&
         router.pathname !== '/submit' &&
         router.pathname !== '/withdraw' &&
-        router.pathname !== '/rewards' &&
+        router.pathname !== '/projects' &&
         router.pathname !== '/lock' &&
         router.pathname !== '/bridge' &&
         router.pathname !== '/citizen' &&
