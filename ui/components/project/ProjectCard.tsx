@@ -1,5 +1,4 @@
 //This component dipslays a project card using project data directly from tableland
-import Image from 'next/image'
 import Link from 'next/link'
 import React, { useContext, memo } from 'react'
 import { useActiveAccount } from 'thirdweb/react'

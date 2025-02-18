@@ -63,10 +63,6 @@ export default function useNavigation(citizen: any) {
             href: '/projects',
           },
           {
-            name: 'Create Project',
-            href: '/submit',
-          },
-          {
             name: 'Get Rewards',
             href: '/submit?tag=contribution',
           },

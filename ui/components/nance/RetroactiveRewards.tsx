@@ -304,7 +304,7 @@ export function RetroactiveRewards({
           account,
         })
       }
-      if (receipt) setTimeout(() => router.push('/rewards/thank-you'), 5000)
+      if (receipt) setTimeout(() => router.push('/projects/thank-you'), 5000)
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -313,16 +313,16 @@ export function RetroactiveRewards({
     }
   }
   return (
-    <section id="rewards-container" className="overflow-hidden">
+    <section id="projects-container" className="overflow-hidden">
       <Head
-        title="Rewards"
-        description="Distribute rewards to contributors based on their contributions."
+        title="Projects"
+        description="View active projects and allocate retroactive rewards to completed projects and their contributors based on impact and results.'"
       />
       <Container>
         <ContentLayout
-          header={'Project Rewards'}
+          header={'Projects'}
           description={
-            'Allocate retroactive rewards to completed projects and their contributors based on impact and results.'
+            'View active projects and allocate retroactive rewards to completed projects and their contributors based on impact and results.'
           }
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
