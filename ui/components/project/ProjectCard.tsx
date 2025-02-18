@@ -19,7 +19,6 @@ type ProjectCardProps = {
   distribution?: Record<string, number>
   handleDistributionChange?: (projectId: string, value: number) => void
   userHasVotingPower?: any
-  awarded?: boolean
 }
 
 const ProjectCardContent = memo(
@@ -28,11 +27,9 @@ const ProjectCardContent = memo(
     distribution,
     handleDistributionChange,
     proposalJSON,
-    totalBudget,
     distribute,
     userContributed,
     userHasVotingPower,
-    awarded,
   }: any) => {
     return (
       <div
@@ -89,12 +86,6 @@ const ProjectCardContent = memo(
           <p className="text-[80%] pr-4 break-words">
             {proposalJSON?.abstract}
           </p>
-          {awarded && (
-            <div className="mt-2 flex items-center gap-2">
-              <p>{`Awarded: ${totalBudget} ETH`}</p>
-              <Image src="/coins/ETH.svg" alt="ETH" width={15} height={15} />
-            </div>
-          )}
         </div>
       </div>
     )
@@ -115,7 +106,7 @@ export default function ProjectCard({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { adminHatId, proposalJSON, totalBudget } = useProjectData(
+  const { adminHatId, proposalJSON } = useProjectData(
     projectContract,
     hatsContract,
     project
@@ -146,7 +137,6 @@ export default function ProjectCard({
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
           proposalJSON={proposalJSON}
-          totalBudget={totalBudget}
           userHasVotingPower={userHasVotingPower}
           awarded={awarded}
         />
@@ -155,7 +145,6 @@ export default function ProjectCard({
           <ProjectCardContent
             project={project}
             proposalJSON={proposalJSON}
-            totalBudget={totalBudget}
             userHasVotingPower={userHasVotingPower}
             awarded={awarded}
           />
