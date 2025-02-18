@@ -5,13 +5,16 @@ export function getBudget(tokens: any, year: number, quarter: number) {
   let usdBudget = 0
   let mooneyBudget = 0
   let ethPrice = 0
-  if (tokens && tokens[0]) {
+  const ethToken = tokens.find(
+    (token) => token.symbol === 'ETH' && token.balance > 0
+  )
+  if (tokens && ethToken) {
     for (const token of tokens) {
       if (token.symbol !== 'MOONEY') {
         usdValue += token.usd
       }
     }
-    ethPrice = tokens[0].usd / tokens[0].balance
+    ethPrice = ethToken.usd / ethToken.balance
     const ethValue = usdValue / ethPrice
     usdBudget = usdValue * 0.05
     ethBudget = ethValue * 0.05
