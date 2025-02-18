@@ -23,8 +23,8 @@ export default function useNavigation(citizen: any) {
         href: '/network',
         icon: IconOrg,
         children: [
-          { name: 'Citizens', href: '/citizens' },
-          { name: 'Teams', href: '/teams' },
+          { name: 'Citizens', href: '/network?tab=citizens' },
+          { name: 'Teams', href: '/network?tab=teams' },
           { name: 'Map', href: '/map' },
           { name: 'Create a Team', href: '/team' },
         ],
