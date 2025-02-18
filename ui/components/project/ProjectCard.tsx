@@ -19,6 +19,7 @@ type ProjectCardProps = {
   distribution?: Record<string, number>
   handleDistributionChange?: (projectId: string, value: number) => void
   userHasVotingPower?: any
+  awarded?: boolean
 }
 
 const ProjectCardContent = memo(
@@ -31,6 +32,7 @@ const ProjectCardContent = memo(
     distribute,
     userContributed,
     userHasVotingPower,
+    awarded,
   }: any) => {
     return (
       <div
@@ -87,7 +89,7 @@ const ProjectCardContent = memo(
           <p className="text-[80%] pr-4 break-words">
             {proposalJSON?.abstract}
           </p>
-          {!distribute && (
+          {awarded && (
             <div className="mt-2 flex items-center gap-2">
               <p>{`Awarded: ${totalBudget} ETH`}</p>
               <Image src="/coins/ETH.svg" alt="ETH" width={15} height={15} />
@@ -108,6 +110,7 @@ export default function ProjectCard({
   distribution,
   handleDistributionChange,
   userHasVotingPower,
+  awarded,
 }: ProjectCardProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -145,6 +148,7 @@ export default function ProjectCard({
           proposalJSON={proposalJSON}
           totalBudget={totalBudget}
           userHasVotingPower={userHasVotingPower}
+          awarded={awarded}
         />
       ) : (
         <Link href={`/project/${project?.id}`} passHref>
@@ -153,6 +157,7 @@ export default function ProjectCard({
             proposalJSON={proposalJSON}
             totalBudget={totalBudget}
             userHasVotingPower={userHasVotingPower}
+            awarded={awarded}
           />
         </Link>
       )}

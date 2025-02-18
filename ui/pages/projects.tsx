@@ -9,6 +9,7 @@ import {
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
@@ -23,7 +24,6 @@ import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import Container from '@/components/layout/Container'
-import Link from 'next/link'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
@@ -145,16 +145,18 @@ export default function Projects({
 
   useChainDefault()
 
-  const description =
-  <div className="pt-2">
-    <p>
-      Discover active and archived projects advancing our multiplanetary mission. Have an idea?{' '}
-      <u>
-        <Link href="/submit">Submit your proposal</Link>
-      </u>{' '}
-      and help shape the future of space exploration!
-    </p>
-  </div>
+  const description = (
+    <div className="pt-2">
+      <p>
+        Discover active and archived projects advancing our multiplanetary
+        mission. Have an idea?{' '}
+        <u>
+          <Link href="/submit">Submit your proposal</Link>
+        </u>{' '}
+        and help shape the future of space exploration!
+      </p>
+    </div>
+  )
 
   const descriptionSection = (
     <div className="pt-2">
@@ -222,6 +224,7 @@ export default function Projects({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
+                        awarded
                       />
                     )
                   })

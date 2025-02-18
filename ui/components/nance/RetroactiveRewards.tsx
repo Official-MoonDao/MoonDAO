@@ -230,7 +230,6 @@ export function RetroactiveRewards({
     .concat(arbitrumTokens)
     .concat(polygonTokens)
     .concat(baseTokens)
-  console.log(tokens)
 
   const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
