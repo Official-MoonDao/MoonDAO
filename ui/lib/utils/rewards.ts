@@ -6,7 +6,7 @@ export function getBudget(tokens: any, year: number, quarter: number) {
   let mooneyBudget = 0
   let ethPrice = 0
   const ethToken = tokens.find(
-    (token) => token.symbol === 'ETH' && token.balance > 0
+    (token: any) => token.symbol === 'ETH' && token.balance > 0
   )
   if (tokens && ethToken) {
     for (const token of tokens) {

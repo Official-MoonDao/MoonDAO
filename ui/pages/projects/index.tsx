@@ -22,7 +22,6 @@ export default function Rewards({
   currentProjects,
   pastProjects,
   distributions,
-  projecto,
 }: RetroactiveRewardsProps) {
   const router = useRouter()
   useChainDefault()

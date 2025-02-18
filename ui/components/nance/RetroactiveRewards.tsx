@@ -56,8 +56,8 @@ export type RewardAssetProps = {
 }
 
 export type RetroactiveRewardsProps = {
-  currentProjects: Project[] | undefined
-  pastProjects: Project[] | undefined
+  currentProjects: Project[]
+  pastProjects: Project[]
   distributions: Distribution[]
   refreshRewards: () => void
 }
