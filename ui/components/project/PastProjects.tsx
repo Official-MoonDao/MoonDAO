@@ -18,7 +18,7 @@ import Search from '@/components/layout/Search'
 import ProjectCard from '@/components/project/ProjectCard'
 
 type PastProjectProps = {
-  projects: Project[]
+  projects: Project[] | undefined
 }
 
 export default function PastProjects({ projects }: PastProjectProps) {
