@@ -1,8 +1,14 @@
-import { XMarkIcon } from '@heroicons/react/20/solid'
+import {
+  ArrowLeftCircleIcon,
+  ArrowRightCircleIcon,
+  RocketLaunchIcon,
+  XMarkIcon,
+} from '@heroicons/react/20/solid'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
+import { marked } from 'marked'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -23,19 +29,21 @@ import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { renameFile } from '@/lib/utils/files'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
+import FormDate from '../forms/FormDate'
 import FormInput from '../forms/FormInput'
+import FormYesNo from '../forms/FormYesNo'
 import { Hat } from '../hats/Hat'
-import Checkbox from '../layout/Checkbox'
+import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import FileInput from '../layout/FileInput'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { NoticeFooter } from '../layout/NoticeFooter'
+import Point from '../layout/Point'
 import StandardButton from '../layout/StandardButton'
-import StandardCard from '../layout/StandardCard'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import MissionStat from './MissionStat'
+import MissionWideCard from './MissionWideCard'
 
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
@@ -64,7 +72,7 @@ export type MissionData = {
     name: string
     symbol: string
     decimals: number
-    deadline: number | undefined
+    deadline: string | undefined
     fundingGoal: number | undefined
     tradeable: boolean
   }
@@ -83,6 +91,52 @@ export type CreateMissionProps = {
   userTeamsAsManager: any
 }
 
+const MISSION_DESCRIPTION_TEMPLATE = `
+# Your Mission Details
+### Mission Overview
+The text below is a template to help you craft a compelling mission. Please consider these as suggestions 
+for best practices for information to include, but customize it to your needs, eliminating what is not needed.
+
+### Introduce Your Mission
+Contributors are more likely to support your mission if they connect with its purpose and trust the team 
+behind it. Consider including:
+- A concise summary of your mission and why it matters.
+- A brief introduction to your team and any relevant experience.
+- A compelling call to action explaining what supporters will help you achieve and what they get in return.
+
+Think of this as your mission's elevator pitch—make it clear and engaging! If you don't capture their 
+attention in the first paragraph, they are unlikely to continue reading.
+
+### Mission Details (Optional but recommended)
+Use this section to provide additional context, such as:
+- The core objectives and impact of your mission.
+- Technical aspects or unique innovations involved.
+- Any personal stories or insights that add depth to your mission's purpose.
+If you were reading this for the first time, would you be excited to contribute?
+
+### Funding & Rewards
+What will supporters receive in return? Funding a mission is more engaging when contributors get something meaningful in return. Outline what 
+backers can expect:
+- Governance Tokens – Enable participation in mission decisions.
+- Mission Patches & Digital Collectibles – Unique digital memorabilia tied to the mission.
+`
+
+const TOKENOMICS_POINTS = [
+  'Payouts : Unlimited withdrawals for up to 80% of the total raise. 7.5% allocated to MoonDAO to support the space ecosystem, 2.5% to the Juicebox protocol, and 10% to support token liquidity.',
+  'Mission Tokens : Each mission generates its own token, with 1,000,000 tokens minted per 1 ETH. Distribution: 50% to contributors, 30% to the team (1-year cliff, 3-year stream), 10% to MoonDAO (1-year cliff, 3-year stream), and 10% locked for liquidity.',
+  'ERC-20 Option : ERC-20 tokens are not created by default, but teams can choose to deploy one, if they would like a market tradeable token.',
+  'Funding Cycles : Runs in 28-day cycles, locked by default for stability. Teams have three days to make changes before a cycle begins.',
+  'Mission Ownership : The mission is fully and solely controlled by your team wallet.',
+]
+
+const ADDITIONAL_POINTS = [
+  'Mission Ownership : The mission is fully controlled by your team wallet.',
+  'Funding Cycles : Runs in 28-day cycles, locked by default for stability.',
+  'Payouts : Unlimited withdrawals, with 10% allocated to MoonDAO to support the ecosystem.',
+  'Mission Tokens : Each mission generates its own token, with 10% reserved for MoonDAO.',
+  'ERC-20 Option : ERC-20 tokens are not created by default, but teams can choose to deploy one.',
+]
+
 export function Stage({
   stage,
   setStage,
@@ -93,19 +147,22 @@ export function Stage({
   children,
 }: any) {
   return (
-    <div className="w-full flex flex-col gap-4 items-start">
-      <h2 className="font-GoodTimes text-2xl opacity-50">{header}</h2>
+    <div className="w-full flex flex-col gap-4">
+      <h2 className="font-GoodTimes text-2xl md:text-4xl">{header}</h2>
       <p className="opacity-50">{description}</p>
-      <div className="mt-4 w-[300px] md:w-[600px]">
+      <div className="flex flex-col gap-5 w-full md:max-w-[600px] lg:max-w-[800px]">
         {children}
-        <div className="mt-4 w-full flex justify-between">
+        <div className="mt-4 w-full flex flex-wrap gap-4 justify-between items-center">
           {stage > 0 ? (
             <StandardButton
               className="gradient-2 rounded-full"
               hoverEffect={false}
               onClick={() => setStage((prev: number) => prev - 1)}
             >
-              Back
+              <div className="flex items-center gap-2">
+                <ArrowLeftCircleIcon width={20} height={20} />
+                Go Back
+              </div>
             </StandardButton>
           ) : (
             <div />
@@ -119,12 +176,16 @@ export function Stage({
               onClick={
                 process.env.NEXT_PUBLIC_ENV === 'dev'
                   ? () => {
+                      action()
                       setStage((prev: number) => prev + 1)
                     }
                   : action
               }
             >
-              Next
+              <div className="flex items-center gap-2">
+                Continue
+                <ArrowRightCircleIcon width={20} height={20} />
+              </div>
             </StandardButton>
           )}
         </div>
@@ -171,6 +232,15 @@ export default function CreateMission({
       tradeable: false,
     },
   })
+  const [hasDeadline, setHasDeadline] = useState(
+    missionData.token.deadline !== undefined
+  )
+  const [hasFundingGoal, setHasFundingGoal] = useState(
+    missionData.token.fundingGoal !== undefined
+  )
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] =
+    useState(false)
 
   useEffect(() => {
     if (missionData) {
@@ -214,7 +284,22 @@ export default function CreateMission({
       <ContentLayout
         header="Launch A Mission"
         headerSize="max(20px, 3vw)"
-        description={<p className="text-lg">Subheader</p>}
+        description={
+          <p className="">
+            {
+              'The Launchpad is an onchain fundraising platform that connects your space mission to the global cryptocurrency economy, providing transparent funding, community engagement, and real stakeholder participation to turn your vision into reality. For more information, check out '
+            }
+            <Link
+              className="underline"
+              href="https://docs.moondao.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              our documentation
+            </Link>
+            {'.'}
+          </p>
+        }
         preFooter={<NoticeFooter />}
         mainPadding
         mode="compact"
@@ -222,20 +307,20 @@ export default function CreateMission({
         isProfile
       >
         <div className="flex flex-col justify-center items-start bg-darkest-cool p-8 rounded-[2vmax]">
-          <div className="relative flex p-2 pb-0 w-full justify-between max-w-[600px] items-start">
-            <Steps
-              className="mb-4 pl-5 md:pl-0 w-[300px] sm:w-[600px] lg:w-[800px] md:-ml-16"
-              steps={['Overview', 'Details', 'Token', 'Confirm']}
-              currStep={stage}
-              lastStep={stage - 1}
-              setStep={setStage}
-            />
+          <div className="relative flex flex-col md:flex-row items-center md:items-start p-2 pb-0 w-full justify-between max-w-[600px] items-start">
             <button
-              className="absolute top-1 right-[-7.5%] md:right-0"
+              className="md:absolute top-1 right-[-7.5%] md:right-0"
               onClick={() => setStatus('idle')}
             >
               <XMarkIcon width={50} height={50} />
             </button>
+            <Steps
+              className="mb-4 pl-5 md:pl-0 w-full md:w-[600px] lg:w-[800px] md:-ml-16"
+              steps={['Overview', 'Details', 'Goals', 'Confirm']}
+              currStep={stage}
+              lastStep={stage - 1}
+              setStep={setStage}
+            />
           </div>
           {stage === 0 && (
             <Stage
@@ -245,7 +330,14 @@ export default function CreateMission({
               description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential backers and compel them to contribute.
 "
               action={() => {
-                if (selectedTeamId === undefined) {
+                if (!userTeamsAsManager || userTeamsAsManager.length === 0) {
+                  return toast.error(
+                    'Please create a team or join one as a manager',
+                    {
+                      style: toastStyle,
+                    }
+                  )
+                } else if (selectedTeamId === undefined) {
                   return toast.error('Please select a team', {
                     style: toastStyle,
                   })
@@ -260,7 +352,6 @@ export default function CreateMission({
                     style: toastStyle,
                   })
                 }
-                setStage(1)
               }}
             >
               <div className="flex justify-between">
@@ -323,7 +414,7 @@ export default function CreateMission({
                   </Link>
                 </p>
               )}
-              <div className="mt-4 flex flex-col gap-4 max-w-[300px]">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <FormInput
                   label="Mission Title"
                   placeholder="Enter a title for your mission"
@@ -342,25 +433,40 @@ export default function CreateMission({
                   }
                   mode="dark"
                 />
-                <FileInput
-                  file={missionImage}
-                  setFile={setMissionImage}
-                  dimensions={[1024, 1024]}
+
+                <FormInput
+                  label="Website"
+                  placeholder="Enter a website link"
+                  value={missionData.infoUri}
+                  onChange={(e: any) =>
+                    setMissionData({ ...missionData, infoUri: e.target.value })
+                  }
+                  mode="dark"
                 />
-                <div>
-                  {missionImage ? (
-                    <Image
-                      src={
-                        missionImage ? URL.createObjectURL(missionImage) : ''
-                      }
-                      alt="Mission Image"
-                      width={200}
-                      height={200}
-                    />
-                  ) : (
-                    <div className="h-[200px] w-[200px] bg-dark-cool" />
-                  )}
-                </div>
+                <FormInput
+                  label="Social Link"
+                  placeholder="Enter a Twitter link"
+                  value={missionData.twitter}
+                  onChange={(e: any) =>
+                    setMissionData({ ...missionData, twitter: e.target.value })
+                  }
+                  mode="dark"
+                />
+              </div>
+              <FileInput
+                file={missionImage}
+                setFile={setMissionImage}
+                dimensions={[1024, 1024]}
+              />
+              <div>
+                {missionImage && (
+                  <Image
+                    src={missionImage ? URL.createObjectURL(missionImage) : ''}
+                    alt="Mission Image"
+                    width={200}
+                    height={200}
+                  />
+                )}
               </div>
             </Stage>
           )}
@@ -369,166 +475,168 @@ export default function CreateMission({
               stage={stage}
               setStage={setStage}
               header="Mission Details"
-              action={() => {
+              action={async () => {
                 if (missionData.description.length < 10) {
                   return toast.error('Please enter a mission description', {
                     style: toastStyle,
                   })
                 }
-                setStage(2)
+                const html = await marked(missionData.description)
+                setMissionData({ ...missionData, description: html })
               }}
             >
+              <StandardButton
+                className="gradient-2 rounded-full"
+                hoverEffect={false}
+                onClick={() => {
+                  setMarkdown(MISSION_DESCRIPTION_TEMPLATE)
+                }}
+              >
+                Restore Template
+              </StandardButton>
               <div className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50%">
                 <NanceEditor
-                  initialValue={missionData.description}
+                  initialValue={
+                    missionData.description.length === 0
+                      ? MISSION_DESCRIPTION_TEMPLATE
+                      : missionData.description
+                  }
                   fileUploadExternal={async (val) => {
                     const res = await pinBlobOrFile(val)
                     return res.url
                   }}
                   darkMode={true}
-                  onEditorChange={(m) => {
+                  onEditorChange={(m: string) => {
                     setMissionData({ ...missionData, description: m })
                   }}
                 />
               </div>
-              <FormInput
-                label="Info URL"
-                placeholder="Enter an info link"
-                value={missionData.infoUri}
-                onChange={(e: any) =>
-                  setMissionData({ ...missionData, infoUri: e.target.value })
-                }
-                mode="dark"
-              />
-              <FormInput
-                label="Twitter"
-                placeholder="Enter a Twitter link"
-                value={missionData.twitter}
-                onChange={(e: any) =>
-                  setMissionData({ ...missionData, twitter: e.target.value })
-                }
-                mode="dark"
-              />
-              <FormInput
-                label="Discord"
-                placeholder="Enter a Discord link"
-                value={missionData.discord}
-                onChange={(e: any) =>
-                  setMissionData({ ...missionData, discord: e.target.value })
-                }
-                mode="dark"
-              />
             </Stage>
           )}
           {stage === 2 && (
-            <Stage
-              stage={stage}
-              setStage={setStage}
-              header="Tokenomics"
-              description="Configure your tokenomics"
-              action={() => setStage(3)}
-            >
-              <FormInput
-                label="Token Name"
-                placeholder="Enter a token name"
-                value={missionData.token.name}
-                onChange={(e: any) =>
+            <Stage stage={stage} setStage={setStage} action={() => {}}>
+              <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <FormInput
+                  label="Token Name"
+                  placeholder="Enter a token name"
+                  value={missionData.token.name}
+                  onChange={(e: any) =>
+                    setMissionData({
+                      ...missionData,
+                      token: { ...missionData.token, name: e.target.value },
+                    })
+                  }
+                  mode="dark"
+                />
+                <FormInput
+                  label="Token Symbol"
+                  placeholder="Enter a token symbol"
+                  value={missionData.token.symbol}
+                  onChange={(e: any) =>
+                    setMissionData({
+                      ...missionData,
+                      token: { ...missionData.token, symbol: e.target.value },
+                    })
+                  }
+                  mode="dark"
+                />
+                <FormYesNo
+                  label="Set A Fundraising Deadline"
+                  value={hasDeadline}
+                  onChange={(value: boolean) => {
+                    setHasDeadline(value)
+                    if (!value) {
+                      setMissionData({
+                        ...missionData,
+                        token: { ...missionData.token, deadline: '' },
+                      })
+                    }
+                  }}
+                  mode="dark"
+                  tooltip="Set a specific date to end fundraising, or keep it open-ended for a goal-based raise."
+                />
+                <div
+                  className={`w-full ${
+                    hasDeadline ? 'opacity-100' : 'opacity-30'
+                  }`}
+                >
+                  <FormDate
+                    label="Deadline"
+                    value={missionData.token.deadline || ''}
+                    onChange={(value: string) => {
+                      setMissionData({
+                        ...missionData,
+                        token: {
+                          ...missionData.token,
+                          deadline: value,
+                        },
+                      })
+                    }}
+                    min={new Date()}
+                    disabled={!hasDeadline}
+                    mode="dark"
+                  />
+                </div>
+                <FormYesNo
+                  label="Define a Funding Goal"
+                  value={hasFundingGoal}
+                  onChange={(value: boolean) => {
+                    setHasFundingGoal(value)
+                    if (!value) {
+                      setMissionData({
+                        ...missionData,
+                        token: { ...missionData.token, fundingGoal: 0 },
+                      })
+                    }
+                  }}
+                  mode="dark"
+                  tooltip="Set a target amount for your mission, or allow unlimited contributions for continuous fundraising."
+                />
+                <div
+                  className={`w-full ${
+                    hasFundingGoal ? 'opacity-100' : 'opacity-30'
+                  }`}
+                >
+                  <FormInput
+                    label="Funding Goal"
+                    placeholder="Enter a funding goal"
+                    value={missionData.token.fundingGoal}
+                    onChange={(e: any) =>
+                      setMissionData({
+                        ...missionData,
+                        token: {
+                          ...missionData.token,
+                          fundingGoal: e.target.value,
+                        },
+                      })
+                    }
+                    disabled={!hasFundingGoal}
+                    mode="dark"
+                  />
+                </div>
+              </div>
+              <FormYesNo
+                label="Create A Mission Token"
+                value={missionData.token.tradeable}
+                onChange={(value: boolean) =>
                   setMissionData({
                     ...missionData,
-                    token: { ...missionData.token, name: e.target.value },
+                    token: { ...missionData.token, tradeable: value },
                   })
                 }
                 mode="dark"
               />
-              <FormInput
-                label="Token Symbol"
-                placeholder="Enter a token symbol"
-                value={missionData.token.symbol}
-                onChange={(e: any) =>
-                  setMissionData({
-                    ...missionData,
-                    token: { ...missionData.token, symbol: e.target.value },
-                  })
-                }
-                mode="dark"
-              />
-              <div className="flex gap-4 items-center justify-between">
-                <FormInput
-                  label="Deadline"
-                  placeholder="Enter a deadline"
-                  value={missionData.token.deadline}
-                  onChange={(e: any) =>
-                    setMissionData({
-                      ...missionData,
-                      token: { ...missionData.token, deadline: e.target.value },
-                    })
+              <div className="font-sm">
+                <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
+                <p className="mt-2">
+                  {
+                    'When you deploy your mission on the MoonDAO Launch Pad, your funding structure will follow a transparent standardized model designed for success and long-term sustainability.'
                   }
-                  mode="dark"
-                  tooltip="Enter a deadline for your mission"
-                />
-
-                <Checkbox
-                  label="Unlimited"
-                  checked={missionData.token.deadline === 0}
-                  onChange={(e: any) =>
-                    setMissionData({
-                      ...missionData,
-                      token: {
-                        ...missionData.token,
-                        deadline: e.target.checked ? 0 : undefined,
-                      },
-                    })
-                  }
-                  tooltip="Check this box if you'd like the deadline to be unlimited"
-                />
+                </p>
+                {TOKENOMICS_POINTS.map((p: string, i: number) => (
+                  <Point key={`tokenomics-point-${i}`} point={p} />
+                ))}
               </div>
-              <div className="flex gap-4 items-center justify-between">
-                <FormInput
-                  label="Funding Goal"
-                  placeholder="Enter a funding goal"
-                  value={missionData.token.fundingGoal}
-                  onChange={(e: any) =>
-                    setMissionData({
-                      ...missionData,
-                      token: {
-                        ...missionData.token,
-                        fundingGoal: e.target.value,
-                      },
-                    })
-                  }
-                  mode="dark"
-                  tooltip="Enter a funding goal for your mission"
-                />
-
-                <Checkbox
-                  label="Unlimited"
-                  checked={missionData.token.fundingGoal === 0}
-                  onChange={(e: any) =>
-                    setMissionData({
-                      ...missionData,
-                      token: {
-                        ...missionData.token,
-                        fundingGoal: e.target.checked ? 0 : undefined,
-                      },
-                    })
-                  }
-                  tooltip="Check this box if you'd like the funding goal to be unlimited"
-                />
-              </div>
-              <Checkbox
-                label="Tradeable"
-                checked={missionData.token.tradeable}
-                onChange={(e: any) =>
-                  setMissionData({
-                    ...missionData,
-                    token: {
-                      ...missionData.token,
-                      tradeable: e.target.checked,
-                    },
-                  })
-                }
-                tooltip="Allow your mission's token to be tradeable"
-              />
             </Stage>
           )}
           {stage === 3 && (
@@ -539,10 +647,18 @@ export default function CreateMission({
               description="Please review your mission details"
               customButton={
                 <PrivyWeb3Button
-                  label="Confirm"
+                  label={
+                    <div className="flex items-center gap-2">
+                      Launch Your Mission
+                      <RocketLaunchIcon width={20} height={20} />
+                    </div>
+                  }
                   requiredChain={DEFAULT_CHAIN_V5}
                   className="gradient-2 rounded-full px-4"
-                  noPadding
+                  isDisabled={
+                    !agreedToTerms ||
+                    (missionData.token.tradeable && !agreedToTokenNotSecurity)
+                  }
                   action={async () => {
                     try {
                       if (!account)
@@ -636,77 +752,57 @@ export default function CreateMission({
                 />
               }
             >
-              {' '}
-              <StandardCard
-                title={missionData.name}
-                paragraph={missionData.description}
-                image={
-                  missionImage
-                    ? URL.createObjectURL(missionImage)
-                    : missionData.logoUri
-                }
-                footer={
-                  <div className="flex flex-col gap-2">
-                    <hr className="my-4 opacity-50" />
-                    <p className="font-GoodTimes text-lg opacity-50">
-                      Metadata
-                    </p>
-
-                    <div className="w-full grid grid-cols-2 gap-4">
-                      <MissionStat
-                        label="Team"
-                        value={selectedTeamNFT?.metadata?.name}
-                      />
-                      <MissionStat
-                        label="Tagline"
-                        value={missionData.tagline}
-                      />
-                      {missionData.discord && (
-                        <MissionStat
-                          label="Discord"
-                          value={missionData.discord}
-                        />
-                      )}
-                      {missionData.twitter && (
-                        <MissionStat
-                          label="Twitter"
-                          value={missionData.twitter}
-                        />
-                      )}
-                      {missionData.infoUri && (
-                        <MissionStat
-                          label="Info URL"
-                          value={missionData.infoUri}
-                        />
-                      )}
-                    </div>
-                    <hr className="my-4 opacity-50" />
-                    <p className="font-GoodTimes text-lg opacity-50">
-                      Tokenomics
-                    </p>
-
-                    <div className="w-full grid grid-cols-2 gap-4">
-                      <MissionStat
-                        label="Token Name"
-                        value={missionData.token.name || ''}
-                      />
-                      <MissionStat
-                        label="Token Symbol"
-                        value={missionData.token.symbol || ''}
-                      />
-                      <MissionStat
-                        label="Deadline"
-                        value={missionData.token.deadline}
-                      />
-                      <MissionStat
-                        label="Funding Goal"
-                        value={missionData.token.fundingGoal}
-                      />
-                    </div>
-                  </div>
-                }
-                fullParagraph
+              <MissionWideCard
+                name={missionData.name}
+                tagline={missionData.tagline}
+                deadline={missionData.token.deadline || 'None'}
+                fundingGoal={missionData.token.fundingGoal}
+                tradeable={missionData.token.tradeable}
+                description={missionData.description}
+                logoUri={missionData.logoUri}
+                missionImage={missionImage}
               />
+              <div id="additional-details">
+                <h1 className="font-GoodTimes text-2xl">Additional Details</h1>
+                <div className="mt-3">
+                  {ADDITIONAL_POINTS.map((p: string, i: number) => (
+                    <Point key={`additional-point-${i}`} point={p} />
+                  ))}
+                </div>
+              </div>
+              <ConditionCheckbox
+                label={
+                  <p>
+                    I HAVE READ AND ACCEPTED THE{' '}
+                    <Link
+                      className="text-blue-500 hover:underline"
+                      href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      TERMS AND CONDITIONS
+                    </Link>{' '}
+                    AND THE{' '}
+                    <Link
+                      className="text-blue-500 hover:underline"
+                      href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      PRIVACY POLICY
+                    </Link>
+                  </p>
+                }
+                agreedToCondition={agreedToTerms}
+                setAgreedToCondition={setAgreedToTerms}
+              />
+              {missionData.token.tradeable && (
+                <ConditionCheckbox
+                  label={'I AGREE THAT THIS TOKEN IS NOT A SECURITY, ETC...'}
+                  agreedToCondition={agreedToTokenNotSecurity}
+                  setAgreedToCondition={setAgreedToTokenNotSecurity}
+                />
+              )}
             </Stage>
           )}
         </div>

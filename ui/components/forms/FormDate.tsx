@@ -1,34 +1,32 @@
 import Tooltip from '../layout/Tooltip'
 
-type FormInputProps = {
+type FormDateProps = {
   id?: string
-  value: string | number | undefined
-  onChange: any
-  placeholder?: string
+  value: string | undefined
+  onChange: (value: string) => void
   label?: string
-  type?: string
   className?: string
   disabled?: boolean
-  maxLength?: number
   mode?: 'standard' | 'dark'
   tooltip?: string
+  min?: Date
+  max?: Date
 }
 
-export default function FormInput({
+export default function FormDate({
   id,
-  type = 'text',
-  placeholder,
   value,
   onChange,
   className = '',
   label,
   disabled = false,
-  maxLength,
   mode = 'standard',
   tooltip,
-}: FormInputProps) {
+  min,
+  max,
+}: FormDateProps) {
   return (
-    <div className="w-full h-full py-1 flex flex-col justify-between gap-2 max-w-[300px]">
+    <div className="w-full h-full py-1 flex flex-col justify-between gap-2 max-w-[200px]">
       <div className="flex flex-row items-center gap-2">
         {label && (
           <p
@@ -43,17 +41,18 @@ export default function FormInput({
       </div>
       <input
         id={id}
-        type={type}
-        placeholder={placeholder}
+        type="date"
         className={`w-full p-2 px-4 ${
           mode === 'dark'
-            ? 'bg-gradient-to-r from-[#000000] to-[#040617] placeholder:opacity-50'
-            : 'bg-[#0f152f]'
-        } rounded-full ${className}`}
-        onChange={onChange}
+            ? 'bg-gradient-to-r from-[#000000] to-[#040617] placeholder:opacity-50 text-white'
+            : 'bg-[#0f152f] text-white'
+        } rounded-full ${className}
+        [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert`}
+        onChange={(e) => onChange(e.target.value)}
         value={value}
         disabled={disabled}
-        maxLength={maxLength}
+        min={min?.toISOString().split('T')[0]}
+        max={max?.toISOString().split('T')[0]}
       />
     </div>
   )
