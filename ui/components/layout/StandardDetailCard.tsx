@@ -19,7 +19,7 @@ export default function StandardDetailCard({
   onClick,
 }: StandardDetailCardProps) {
   const CardContent = (
-    <div className="w-full flex items-center p-2 hover:bg-darkest-cool/20 rounded-lg transition-colors">
+    <div className="w-full min-w-[300px] flex items-center p-2 hover:bg-darkest-cool/20 rounded-lg transition-colors">
       <span
         id="card-container"
         className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full md:w-[600px] rounded-[20px]`}
