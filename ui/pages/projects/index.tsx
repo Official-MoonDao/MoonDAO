@@ -5,6 +5,7 @@ import {
   DISTRIBUTION_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
+import { blockedProjects } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import queryTable from '@/lib/tableland/queryTable'
@@ -18,14 +19,16 @@ import {
 } from '@/components/nance/RetroactiveRewards'
 
 export default function Rewards({
-  projects,
+  currentProjects,
+  pastProjects,
   distributions,
 }: RetroactiveRewardsProps) {
   const router = useRouter()
   useChainDefault()
   return (
     <RetroactiveRewards
-      projects={projects}
+      currentProjects={currentProjects}
+      pastProjects={pastProjects}
       distributions={distributions}
       refreshRewards={() => router.reload()}
     />
@@ -64,15 +67,30 @@ export async function getStaticProps() {
       isRewardsCycle(new Date()) ? -1 : 0
     )
 
-    const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter}`
+    const projectStatement = `SELECT * FROM ${projectTableName}`
     const projects = await queryTable(chain, projectStatement)
+
+    const currentProjects = []
+    const pastProjects = []
+    for (let i = 0; i < projects.length; i++) {
+      if (!blockedProjects.includes(i)) {
+        const current =
+          projects[i].quarter === quarter && projects[i].year === year
+        if (!current) {
+          pastProjects.push(projects[i])
+        } else {
+          currentProjects.push(projects[i])
+        }
+      }
+    }
 
     const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
     const distributions = await queryTable(chain, distributionStatement)
 
     return {
       props: {
-        projects,
+        currentProjects: currentProjects.reverse(),
+        pastProjects: pastProjects.reverse(),
         distributions,
       },
       revalidate: 60,
@@ -81,7 +99,8 @@ export async function getStaticProps() {
     console.error('Error fetching projects or distributions:', error)
     return {
       props: {
-        projects: [],
+        currentProjects: [],
+        pastProjects: [],
         distributions: [],
       },
       revalidate: 60,
