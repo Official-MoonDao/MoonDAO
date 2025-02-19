@@ -1,3 +1,4 @@
+import { GlobeAmericasIcon, MoonIcon } from '@heroicons/react/24/outline'
 import CitizenABI from 'const/abis/Citizen.json'
 import {
   CITIZEN_ADDRESSES,
@@ -9,7 +10,6 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { CitizenRow, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -42,22 +42,35 @@ export default function NetworkMap({
         Explore the network map and discover moon landings!
       </div>
       <div className="flex gap-4">
-        <Frame className="w-[300px]" noPadding>
+        <Frame className="w-[325px]" noPadding>
           <div className="flex flex-wrap text-sm bg-filter">
-            <Tab tab="earth" setTab={setTab} currentTab={tab}>
+            <Tab
+              tab="earth"
+              setTab={setTab}
+              currentTab={tab}
+              icon={<GlobeAmericasIcon width={20} height={20} />}
+            >
               Earth
             </Tab>
-            <Tab tab="moon" setTab={setTab} currentTab={tab}>
+            <Tab
+              tab="moon"
+              setTab={setTab}
+              currentTab={tab}
+              icon={<MoonIcon width={20} height={20} />}
+            >
               Moon
+            </Tab>
+            <Tab
+              className="pr-6"
+              tab="network"
+              setTab={() => router.push('/network')}
+              currentTab={tab}
+              icon={<IconOrg />}
+            >
+              Network
             </Tab>
           </div>
         </Frame>
-        <StandardButton
-          className="gradient-2"
-          onClick={() => router.push('/network')}
-        >
-          <IconOrg />
-        </StandardButton>
       </div>
     </div>
   )

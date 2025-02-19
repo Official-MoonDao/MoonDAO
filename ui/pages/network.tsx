@@ -177,17 +177,18 @@ export default function Network({
               >
                 Citizens
               </Tab>
+              <Tab
+                tab="map"
+                currentTab={tab}
+                setTab={() => {
+                  router.push('/map')
+                }}
+                icon={<GlobeAmericasIcon width={20} height={20} />}
+              >
+                Map
+              </Tab>
             </div>
           </Frame>
-        </div>
-
-        <div className="flex gap-2">
-          <StandardButton
-            className="gradient-2 h-[40px] flex items-center justify-center"
-            onClick={() => router.push('/map')}
-          >
-            <GlobeAmericasIcon width={30} height={30} />
-          </StandardButton>
         </div>
       </div>
       <div className="flex gap-2">

@@ -17,7 +17,7 @@ export default function StandardDetailCard({
     <div className="w-full flex items-center p-2 hover:bg-darkest-cool/20 rounded-lg transition-colors">
       <span
         id="card-container"
-        className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full md:max-w-[600px]`}
+        className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full md:max-w-[600px] rounded-[20px]`}
       >
         {/* Ensure the card content takes full height */}
         <div className="flex-grow">
@@ -49,7 +49,7 @@ export default function StandardDetailCard({
               )}
               <div className="w-3/4">
                 <h1 className="font-bold font-GoodTimes">{title}</h1>
-                <p className="text-sm text-gray-500 overflow-hidden">
+                <p className="text-sm text-gray-500 overflow-hidden min-h-[80px]">
                   {paragraph && paragraph?.length > 200
                     ? paragraph.slice(0, 200) + '...'
                     : paragraph}
