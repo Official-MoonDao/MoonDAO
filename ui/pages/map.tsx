@@ -42,7 +42,7 @@ export default function NetworkMap({
         Explore the network map and discover moon landings!
       </div>
       <div className="flex gap-4">
-        <Frame className="w-[325px]" noPadding>
+        <Frame className="w-full max-w-[350px]" noPadding>
           <div className="flex flex-wrap text-sm bg-filter">
             <Tab
               tab="earth"

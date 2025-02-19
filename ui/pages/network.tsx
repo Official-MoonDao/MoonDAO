@@ -1,3 +1,4 @@
+import { PlusCircleIcon } from '@heroicons/react/20/solid'
 import {
   GlobeAmericasIcon,
   MapIcon,
@@ -91,7 +92,7 @@ export default function Network({
     (newTab: string) => {
       setTab(newTab)
       setPageIdx(1)
-      shallowQueryRoute({ tab: newTab, page: '1' })
+      shallowQueryRoute({ tab: newTab, page: '1', view: viewMode })
     },
     [shallowQueryRoute]
   )
@@ -99,9 +100,9 @@ export default function Network({
   const handlePageChange = useCallback(
     (newPage: number) => {
       setPageIdx(newPage)
-      shallowQueryRoute({ tab, page: newPage.toString() })
+      shallowQueryRoute({ page: newPage.toString(), view: viewMode })
     },
-    [shallowQueryRoute, tab]
+    [shallowQueryRoute]
   )
 
   const [maxPage, setMaxPage] = useState(1)
@@ -123,12 +124,15 @@ export default function Network({
   const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
-    const { tab: urlTab, page: urlPage } = router.query
+    const { tab: urlTab, page: urlPage, view: urlView } = router.query
     if (urlTab && (urlTab === 'teams' || urlTab === 'citizens')) {
       setTab(urlTab as string)
     }
     if (urlPage && !isNaN(Number(urlPage))) {
       setPageIdx(Number(urlPage))
+    }
+    if (urlView && (urlView === 'grid' || urlView === 'list')) {
+      setViewMode(urlView as 'grid' | 'list')
     }
   }, [router.query])
 
@@ -139,6 +143,16 @@ export default function Network({
   useChainDefault()
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  const handleViewModeChange = useCallback(
+    (newMode: 'grid' | 'list') => {
+      setViewMode(newMode)
+      setTimeout(() => {
+        shallowQueryRoute({ tab, page: pageIdx.toString(), view: newMode })
+      }, 30)
+    },
+    [shallowQueryRoute]
+  )
 
   const descriptionSection = (
     <div className="pt-2">
@@ -151,70 +165,134 @@ export default function Network({
         </u>
         .
       </div>
-      <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
-        <Search input={input} setInput={setInput} />
-      </Frame>
-      <div className="w-full flex gap-4">
-        <div
-          id="filter-container"
-          className="max-w-[350px] border-b-5 border-black"
-        >
-          <Frame noPadding>
-            <div className="flex flex-wrap text-sm bg-filter">
-              <Tab
-                tab="teams"
-                currentTab={tab}
-                setTab={handleTabChange}
-                icon="/../.././assets/icon-org.svg"
-              >
-                Teams
-              </Tab>
-              <Tab
-                tab="citizens"
-                currentTab={tab}
-                setTab={handleTabChange}
-                icon="/../.././assets/icon-passport.svg"
-              >
-                Citizens
-              </Tab>
-              <Tab
-                tab="map"
-                currentTab={tab}
-                setTab={() => {
-                  router.push('/map')
-                }}
-                icon={<GlobeAmericasIcon width={20} height={20} />}
-              >
-                Map
-              </Tab>
-            </div>
-          </Frame>
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <StandardButton
-          className={`h-[40px] flex items-center justify-center ${
-            viewMode === 'grid'
-              ? 'gradient-2 opacity-100'
-              : 'bg-mid-cool opacity-50'
-          }`}
-          onClick={() => setViewMode('grid')}
-          hoverEffect={false}
-        >
-          <Squares2X2Icon width={30} height={30} />
-        </StandardButton>
+      <div className="relative w-full flex justify-between">
+        <div className="w-fuil flex flex-col min-[1200px]:flex-row md:gap-2">
+          <div className="w-full flex flex-col min-[800px]:flex-row gap-4">
+            <Frame
+              className="w-full h-fit flex-grow"
+              bottomLeft="20px"
+              topLeft="5vmax"
+              noPadding
+              marginBottom="0px"
+            >
+              <Search
+                className="w-full flex-grow"
+                input={input}
+                setInput={setInput}
+              />
+            </Frame>
 
-        <StandardButton
-          className={`h-[40px] flex items-center justify-center ${
-            viewMode === 'list'
-              ? 'gradient-2 opacity-100'
-              : 'bg-mid-cool opacity-50'
-          }`}
-          onClick={() => setViewMode('list')}
-          hoverEffect={false}
-        >
-          <ListBulletIcon width={30} height={30} />
-        </StandardButton>
+            <div
+              id="filter-container"
+              className="hidden min-[1150px]:flex max-w-[350px] border-b-5 border-black"
+            >
+              <Frame noPadding className="w-[300px] h-fit" marginBottom="0px">
+                <div className="flex flex-wrap text-sm bg-filter">
+                  <Tab
+                    tab="teams"
+                    currentTab={tab}
+                    setTab={handleTabChange}
+                    icon="/../.././assets/icon-org.svg"
+                  >
+                    Teams
+                  </Tab>
+                  <Tab
+                    tab="citizens"
+                    currentTab={tab}
+                    setTab={handleTabChange}
+                    icon="/../.././assets/icon-passport.svg"
+                  >
+                    Citizens
+                  </Tab>
+                  <Tab
+                    tab="map"
+                    currentTab={tab}
+                    setTab={() => {
+                      router.push('/map')
+                    }}
+                    icon={<GlobeAmericasIcon width={20} height={20} />}
+                  >
+                    Map
+                  </Tab>
+                </div>
+              </Frame>
+            </div>
+
+            <div className="w-full flex justify-between gap-2">
+              <div className="flex gap-2">
+                <StandardButton
+                  className={`h-[40px] flex items-center justify-center ${
+                    viewMode === 'grid'
+                      ? 'gradient-2 opacity-100'
+                      : 'bg-mid-cool opacity-50'
+                  }`}
+                  onClick={() => handleViewModeChange('grid')}
+                  hoverEffect={false}
+                >
+                  <Squares2X2Icon width={30} height={30} />
+                </StandardButton>
+
+                <StandardButton
+                  className={`h-[40px] flex items-center justify-center ${
+                    viewMode === 'list'
+                      ? 'gradient-2 opacity-100'
+                      : 'bg-mid-cool opacity-50'
+                  }`}
+                  onClick={() => handleViewModeChange('list')}
+                  hoverEffect={false}
+                >
+                  <ListBulletIcon width={30} height={30} />
+                </StandardButton>
+              </div>
+
+              <StandardButton
+                className="gradient-2 rounded-full"
+                hoverEffect={false}
+                link="/join"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <PlusCircleIcon width={20} height={20} />
+                  {'Join'}
+                </div>
+              </StandardButton>
+            </div>
+          </div>
+          <div
+            id="filter-container"
+            className="min-[1150px]:hidden mt-4 min-[900px]:mt-2 border-b-5 border-black"
+          >
+            <Frame noPadding className="w-full h-fit" marginBottom="0px">
+              <div className="flex flex-wrap text-sm bg-filter">
+                <Tab
+                  tab="teams"
+                  currentTab={tab}
+                  setTab={handleTabChange}
+                  icon="/../.././assets/icon-org.svg"
+                >
+                  Teams
+                </Tab>
+                <Tab
+                  tab="citizens"
+                  currentTab={tab}
+                  setTab={handleTabChange}
+                  icon="/../.././assets/icon-passport.svg"
+                >
+                  Citizens
+                </Tab>
+                <Tab
+                  tab="map"
+                  currentTab={tab}
+                  setTab={() => {
+                    router.push('/map')
+                  }}
+                  icon={<GlobeAmericasIcon width={20} height={20} />}
+                >
+                  Map
+                </Tab>
+              </div>
+            </Frame>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -262,6 +340,7 @@ export default function Network({
               title={nft.metadata.name}
               paragraph={nft.metadata.description}
               image={nft.metadata.image}
+              link={link}
             />
           )}
         </div>
@@ -299,8 +378,10 @@ export default function Network({
                 xsCols={1}
                 smCols={1}
                 mdCols={1}
+                lgCols={2}
                 maxCols={2}
                 noGap
+                center
               >
                 {renderNFTs()}
               </CardGridContainer>
