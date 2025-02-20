@@ -57,7 +57,9 @@
     "google-spreadsheet": "^3.3.0",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
+    "gsap": "^3.12.7",
     "html2canvas-pro": "^1.5.8",
+    "marked": "^15.0.7",
     "merkletreejs": "^0.3.11",
     "moment": "^2.29.4",
     "mongoose": "^8.0.0",
@@ -99,7 +101,7 @@
   "devDependencies": {
     "@bygdle/javascript-lp-solver": "^0.4.26",
     "@cypress/webpack-preprocessor": "^6.0.2",
-    "@tailwindcss/typography": "^0.5.13",
+    "@tailwindcss/typography": "^0.5.16",
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
     "@types/formidable": "^3.4.5",
     "@types/google-spreadsheet": "^3.3.2",
