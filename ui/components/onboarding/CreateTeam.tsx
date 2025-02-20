@@ -493,7 +493,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
                             router.push(`/team/${teamPrettyLink}`)
                             setIsLoadingMint(false)
-                          }, 5000)
+                          }, 10000)
                         }
                       } catch (err) {
                         console.error(err)

@@ -318,7 +318,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
           router.push(`/citizen/${citizenPrettyLink}`)
           setIsLoadingMint(false)
-        }, 5000)
+        }, 10000)
       }
     } catch (err) {
       console.error(err)
