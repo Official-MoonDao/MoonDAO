@@ -234,7 +234,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           method: 'crossChainMint' as string,
           params: [
             LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[
-              crossChainSlug
+              selectedChainSlug
             ].toString(),
             _options.toHex(),
             address,
