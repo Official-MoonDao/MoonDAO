@@ -1,11 +1,14 @@
 import { ShareIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
+import { MediaRenderer } from 'thirdweb/react'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import client from '@/lib/thirdweb/client'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import CollapsibleContainer from '../layout/CollapsibleContainer'
 import PaginationButtons from '../layout/PaginationButtons'
@@ -13,6 +16,7 @@ import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import { Mission } from '../mission/MissionCard'
 import MissionStat from '../mission/MissionStat'
+import MissionWideCard from '../mission/MissionWideCard'
 
 type TeamMissionProps = {
   mission: Mission
@@ -36,88 +40,32 @@ export function TeamMission({
   jbTokensContract,
   teamContract,
 }: TeamMissionProps) {
-  const { subgraphData } = useJBProjectData(
+  const { subgraphData, tokenAddress, ruleset } = useJBProjectData(
     mission?.projectId,
     jbControllerContract,
     jbTokensContract,
     teamContract
   )
+
+  // Calculate deadline date from duration (seconds)
+  const deadlineDate = ruleset?.duration
+    ? new Date(Date.now() + ruleset.duration * 1000).toLocaleDateString()
+    : 'UNLIMITED'
+
   return (
-    <div
-      id={`team-mission-${mission.id}`}
-      className="relative flex flex-col gap-5 w-[300px] md:w-full bg-dark-cool p-4 rounded-2xl"
-    >
-      <StandardButton
-        className="absolute top-4 right-4 gradient-2 h-[30px] w-[30px] flex items-center justify-center"
-        onClick={(e: any) => {
-          e.stopPropagation()
-          const link = `${window.location.origin}/team/${mission.teamId}?mission=${mission.id}`
-          navigator.clipboard.writeText(link)
-          toast.success('Link copied to clipboard', { style: toastStyle })
-        }}
-        hoverEffect={false}
-      >
-        <div className="flex items-center gap-2">
-          <ShareIcon className="h-4 w-4" />
-        </div>
-      </StandardButton>
-      <div className="flex flex-col md:flex-row items-center gap-12">
-        {mission?.metadata.logoUri ? (
-          <Image
-            className="w-[200px] h-[200px] rounded-full"
-            src={mission?.metadata.logoUri as string}
-            alt="Mission image"
-            width={100}
-            height={100}
-          />
-        ) : (
-          <div className="w-[100px] h-[100px] animate-pulse bg-dark-cool rounded-full" />
-        )}
-        <div className="flex flex-col gap-2">
-          <h2 className="font-GoodTimes text-2xl">{mission?.metadata.name}</h2>
-          <div
-            id="selected-mission-stats"
-            className="font-GoodTimes text-sm grid grid-cols-2 lg:grid-cols-3 max-w-[400px]"
-          >
-            <MissionStat
-              label="VOLUME"
-              value={
-                subgraphData?.volume ? 'Ξ' + subgraphData?.volume : undefined
-              }
-            />
-            <MissionStat label="PAYMENTS" value={subgraphData?.paymentsCount} />
-            <MissionStat
-              label="CREATED"
-              value={
-                subgraphData?.createdAt
-                  ? new Date(
-                      subgraphData?.createdAt * 1000
-                    ).toLocaleDateString()
-                  : undefined
-              }
-            />
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          {mission?.metadata?.description?.length > 100 ? (
-            <CollapsibleContainer minHeight={'100px'} rightAlign>
-              <p>{mission?.metadata.description}</p>
-            </CollapsibleContainer>
-          ) : (
-            <p className="h-[115px]">{mission?.metadata.description}</p>
-          )}
-        </div>
-        <StandardButton
-          className="gradient-2 rounded-full"
-          link={`https://sepolia.juicebox.money/v4/p/${mission?.projectId}`}
-          target="_blank"
-        >
-          {'Contribute'}
-        </StandardButton>
-      </div>
-    </div>
+    <MissionWideCard
+      name={mission.metadata.name}
+      description={mission.metadata.description}
+      tagline={mission.metadata.tagline}
+      logoUri={mission.metadata.logoUri || ''}
+      deadline={deadlineDate}
+      fundingGoal={mission.fundingGoal}
+      tokenAddress={tokenAddress}
+      volume={subgraphData?.volume}
+      paymentsCount={subgraphData?.paymentsCount}
+      contribute
+      projectId={mission.projectId}
+    />
   )
 }
 
@@ -170,6 +118,7 @@ export default function TeamMissions({
             id: row.id,
             teamId: row.teamId,
             projectId: row.projectId,
+            fundingGoal: row.fundingGoal,
             metadata: metadata,
           }
         })

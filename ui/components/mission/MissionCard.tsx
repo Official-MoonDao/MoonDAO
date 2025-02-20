@@ -12,9 +12,11 @@ export type Mission = {
   id: number
   teamId: number
   projectId: number
+  fundingGoal: number
   metadata: {
     name: string
     description: string
+    tagline: string
     infoUri: string
     logoUri: string
     twitter: string
@@ -85,7 +87,7 @@ export default function MissionCard({
           : mission?.teamId
       }?mission=${mission?.id}`}
       title={metadata?.name}
-      paragraph={metadata?.description}
+      subheader={metadata?.tagline}
       image={metadata?.logoUri}
       footer={<MissionFooter />}
     />

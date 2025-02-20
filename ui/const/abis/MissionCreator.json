@@ -7,6 +7,7 @@
         "name": "_jbMultiTerminal",
         "type": "address"
       },
+      { "internalType": "address", "name": "_jbProjects", "type": "address" },
       { "internalType": "address", "name": "_moonDAOTeam", "type": "address" },
       { "internalType": "address", "name": "_missionTable", "type": "address" },
       {
@@ -52,6 +53,24 @@
         "internalType": "uint256",
         "name": "projectId",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "duration",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fundingGoal",
+        "type": "uint256"
       }
     ],
     "name": "MissionCreated",
@@ -81,6 +100,11 @@
       { "internalType": "uint256", "name": "teamId", "type": "uint256" },
       { "internalType": "address", "name": "to", "type": "address" },
       { "internalType": "string", "name": "projectUri", "type": "string" },
+      { "internalType": "uint32", "name": "duration", "type": "uint32" },
+      { "internalType": "uint256", "name": "fundingGoal", "type": "uint256" },
+      { "internalType": "bool", "name": "token", "type": "bool" },
+      { "internalType": "string", "name": "tokenName", "type": "string" },
+      { "internalType": "string", "name": "tokenSymbol", "type": "string" },
       { "internalType": "string", "name": "memo", "type": "string" }
     ],
     "name": "createMission",
@@ -110,6 +134,15 @@
   },
   {
     "inputs": [],
+    "name": "jbProjects",
+    "outputs": [
+      { "internalType": "contract IJBProjects", "name": "", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "missionTable",
     "outputs": [
       { "internalType": "contract MissionTable", "name": "", "type": "address" }
@@ -131,6 +164,18 @@
     "name": "moonDAOTreasury",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "", "type": "address" },
+      { "internalType": "address", "name": "", "type": "address" },
+      { "internalType": "uint256", "name": "", "type": "uint256" },
+      { "internalType": "bytes", "name": "", "type": "bytes" }
+    ],
+    "name": "onERC721Received",
+    "outputs": [{ "internalType": "bytes4", "name": "", "type": "bytes4" }],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -165,6 +210,15 @@
       }
     ],
     "name": "setJBMultiTerminal",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_jbProjects", "type": "address" }
+    ],
+    "name": "setJBProjects",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

@@ -516,30 +516,6 @@ export default function CreateMission({
           {stage === 2 && (
             <Stage stage={stage} setStage={setStage} action={() => {}}>
               <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <FormInput
-                  label="Token Name"
-                  placeholder="Enter a token name"
-                  value={missionData.token.name}
-                  onChange={(e: any) =>
-                    setMissionData({
-                      ...missionData,
-                      token: { ...missionData.token, name: e.target.value },
-                    })
-                  }
-                  mode="dark"
-                />
-                <FormInput
-                  label="Token Symbol"
-                  placeholder="Enter a token symbol"
-                  value={missionData.token.symbol}
-                  onChange={(e: any) =>
-                    setMissionData({
-                      ...missionData,
-                      token: { ...missionData.token, symbol: e.target.value },
-                    })
-                  }
-                  mode="dark"
-                />
                 <FormYesNo
                   label="Set A Fundraising Deadline"
                   value={hasDeadline}
@@ -614,18 +590,48 @@ export default function CreateMission({
                     mode="dark"
                   />
                 </div>
+                <FormYesNo
+                  label="Create A Mission Token"
+                  value={missionData.token.tradeable}
+                  onChange={(value: boolean) =>
+                    setMissionData({
+                      ...missionData,
+                      token: { ...missionData.token, tradeable: value },
+                    })
+                  }
+                  mode="dark"
+                />
+                <div
+                  className={`w-full flex ${
+                    missionData?.token?.tradeable ? 'opacity-100' : 'opacity-30'
+                  }`}
+                >
+                  <FormInput
+                    label="Token Name"
+                    placeholder="Enter a token name"
+                    value={missionData.token.name}
+                    onChange={(e: any) =>
+                      setMissionData({
+                        ...missionData,
+                        token: { ...missionData.token, name: e.target.value },
+                      })
+                    }
+                    mode="dark"
+                  />
+                  <FormInput
+                    label="Token Symbol"
+                    placeholder="Enter a token symbol"
+                    value={missionData.token.symbol}
+                    onChange={(e: any) =>
+                      setMissionData({
+                        ...missionData,
+                        token: { ...missionData.token, symbol: e.target.value },
+                      })
+                    }
+                    mode="dark"
+                  />
+                </div>
               </div>
-              <FormYesNo
-                label="Create A Mission Token"
-                value={missionData.token.tradeable}
-                onChange={(value: boolean) =>
-                  setMissionData({
-                    ...missionData,
-                    token: { ...missionData.token, tradeable: value },
-                  })
-                }
-                mode="dark"
-              />
               <div className="font-sm">
                 <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
                 <p className="mt-2">
@@ -686,6 +692,7 @@ export default function CreateMission({
                           JSON.stringify({
                             name: missionData.name,
                             description: missionData.description,
+                            tagline: missionData.tagline,
                             infoUri: missionData.infoUri,
                             twitter: missionData.twitter,
                             discord: missionData.discord,
@@ -704,6 +711,11 @@ export default function CreateMission({
                       const { cid: missionMetadataIpfsHash } =
                         await pinBlobOrFile(missionMetadataBlob)
 
+                      const durationInSeconds = hasDeadline
+                        ? getUnixTime(new Date(missionData?.token?.deadline)) -
+                          getUnixTime(new Date())
+                        : 0
+
                       const transaction = prepareContractCall({
                         contract: missionCreatorContract,
                         method: 'createMission' as string,
@@ -711,6 +723,11 @@ export default function CreateMission({
                           selectedTeamId,
                           teamMultisig,
                           missionMetadataIpfsHash,
+                          durationInSeconds,
+                          missionData.token.fundingGoal,
+                          missionData.token.tradeable,
+                          missionData?.token?.name,
+                          missionData?.token?.symbol,
                           'MoonDAO Mission',
                         ],
                       })
@@ -721,16 +738,17 @@ export default function CreateMission({
                       })
 
                       // Define the event signature for the Transfer event
-                      const transferEventSignature = ethers.utils.id(
-                        'MissionCreated(uint256,uint256,uint256)'
+                      const missionCreatedEventSignature = ethers.utils.id(
+                        'MissionCreated(uint256,uint256,uint256,address,uint256,uint256)'
                       )
                       // Find the log that matches the Transfer event signature
-                      const transferLog = receipt.logs.find(
-                        (log: any) => log.topics[0] === transferEventSignature
+                      const missionCreatedLog = receipt.logs.find(
+                        (log: any) =>
+                          log.topics[0] === missionCreatedEventSignature
                       )
 
                       const missionId = ethers.BigNumber.from(
-                        transferLog?.topics[1]
+                        missionCreatedLog?.topics[1]
                       ).toString()
 
                       if (receipt) {
