@@ -226,9 +226,7 @@ export default function ProjectProfile({
               </div>
 
               <p className="py-4 px-4 md:px-0">
-                <CollapsibleContainer minHeight="400px">
-                  <MarkdownWithTOC body={nanceProposal?.body || ''} />
-                </CollapsibleContainer>
+                <MarkdownWithTOC body={nanceProposal?.body || ''} />
               </p>
             </div>
           </Frame>
