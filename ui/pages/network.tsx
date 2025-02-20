@@ -100,7 +100,7 @@ export default function Network({
   const handlePageChange = useCallback(
     (newPage: number) => {
       setPageIdx(newPage)
-      shallowQueryRoute({ page: newPage.toString(), view: viewMode })
+      shallowQueryRoute({ tab, page: newPage.toString(), view: viewMode })
     },
     [shallowQueryRoute]
   )
