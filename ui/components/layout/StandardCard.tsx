@@ -186,7 +186,11 @@ export default function StandardCard({
                     {paragraph}
                   </CollapsibleContainer>
                 ) : (
-                  <div className="flex opacity-[70%] min-h-[100px]">
+                  <div
+                    className={`flex opacity-[70%] ${
+                      paragraph ? 'min-h-[100px]' : 'min-h-[20px]'
+                    }`}
+                  >
                     {paragraph &&
                     !fullParagraph &&
                     typeof paragraph === 'string' &&
