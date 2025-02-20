@@ -223,10 +223,23 @@ export default function SubmissionPage({
                         {`Submit the final report for your project. For more information on how to fill out the final report, please check the `}
                         <Link
                           className="text-blue-400 hover:text-blue-300 underline"
-                          href="https://docs.moondao.com/projects-system"
+                          href="https://docs.moondao.com/Projects/Project-System"
+                          target="_blank"
+                          rel="noreferrer"
                         >
                           Project System
                         </Link>
+                        {'. We recommend starting your draft with the '}
+
+                        <Link
+                          className="text-blue-400 hover:text-blue-300 underline"
+                          href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Google doc template
+                        </Link>
+                        {'.'}
                       </p>
                     </div>
                     <FinalReportEditor

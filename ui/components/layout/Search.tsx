@@ -2,9 +2,11 @@ import Image from 'next/image'
 import Frame from '@/components/layout/Frame'
 import { SearchIcon } from '../assets'
 
-export default function Search({ input, setInput }: any) {
+export default function Search({ input, setInput, className }: any) {
   return (
-    <div className="relative px-4 bg-search w-full max-w-[350px] flex items-center space-x-2 text-black dark:text-white">
+    <div
+      className={`relative pl-4 bg-search w-full flex items-center space-x-2 text-black dark:text-white ${className}`}
+    >
       <div id="search-icon-bg" className="bg-search"></div>
       <Image
         src="/assets/icon-mag.svg"
@@ -12,10 +14,10 @@ export default function Search({ input, setInput }: any) {
         width={20}
         height={20}
       />
-      <div id="input-field-container" className="">
+      <div id="input-field-container" className="flex-grow">
         <Frame noPadding marginBottom="0px">
           <input
-            className="w-full rounded-sm px-4 pt-2 pb-4 bg-dark-cool text-white placeholder:text-grey outline-none"
+            className="w-full rounded-sm px-4 pt-2 pb-3 bg-dark-cool text-white placeholder:text-grey outline-none"
             onChange={({ target }) => setInput(target.value)}
             value={input}
             type="text"

@@ -122,7 +122,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                   )}
                   <div
                     className={`
-                                            pt-2 pb-2 lg:max-w-[800px]
+                                            pt-2 pb-2 lg:max-w-[1200px]
                                             ${
                                               isCompact
                                                 ? 'pb-0 w-full'

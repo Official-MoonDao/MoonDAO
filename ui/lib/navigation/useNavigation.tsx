@@ -23,8 +23,8 @@ export default function useNavigation(citizen: any) {
         href: '/network',
         icon: IconOrg,
         children: [
-          { name: 'Citizens', href: '/citizens' },
-          { name: 'Teams', href: '/teams' },
+          { name: 'Citizens', href: '/network?tab=citizens' },
+          { name: 'Teams', href: '/network?tab=teams' },
           { name: 'Map', href: '/map' },
           { name: 'Create a Team', href: '/team' },
         ],
@@ -38,7 +38,6 @@ export default function useNavigation(citizen: any) {
             name: 'Proposals',
             href: '/vote',
           },
-          { name: 'Allocate Rewards', href: '/rewards' },
           {
             name: 'Constitution',
             href: 'https://docs.moondao.com/Governance/Constitution',
@@ -62,10 +61,6 @@ export default function useNavigation(citizen: any) {
           {
             name: 'Projects',
             href: '/projects',
-          },
-          {
-            name: 'Create Project',
-            href: '/submit',
           },
           {
             name: 'Get Rewards',
