@@ -711,10 +711,11 @@ export default function CreateMission({
                       const { cid: missionMetadataIpfsHash } =
                         await pinBlobOrFile(missionMetadataBlob)
 
-                      const durationInSeconds = hasDeadline
-                        ? getUnixTime(new Date(missionData?.token?.deadline)) -
-                          getUnixTime(new Date())
-                        : 0
+                      const durationInSeconds =
+                        hasDeadline && missionData?.token?.deadline
+                          ? getUnixTime(new Date(missionData.token.deadline)) -
+                            getUnixTime(new Date())
+                          : 0
 
                       const transaction = prepareContractCall({
                         contract: missionCreatorContract,
