@@ -5,7 +5,7 @@
 // 5,000,000 $vMOONEY to all vMOONEY stakers (proportional to staked amount up to 100k vMOONEY).
 //
 // This implementation
-// 5,010,000 $vMOONEY between all MoonDAO Citizens (**102**), locked for 4 years. (50k vMOONEY each).
+// 5,100,000 $vMOONEY between all MoonDAO Citizens (**102**), locked for 4 years. (50k vMOONEY each).
 // 5,000,000 $vMOONEY to all vMOONEY stakers (proportional to VOTING POWER up to 100k vMOONEY).
 
 require("dotenv").config();
