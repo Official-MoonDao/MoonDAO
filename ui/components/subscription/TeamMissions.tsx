@@ -40,7 +40,7 @@ export function TeamMission({
   jbTokensContract,
   teamContract,
 }: TeamMissionProps) {
-  const { subgraphData, tokenAddress, ruleset } = useJBProjectData(
+  const { subgraphData, tokenAddress, ruleset, tokenSymbol } = useJBProjectData(
     mission?.projectId,
     jbControllerContract,
     jbTokensContract,
@@ -61,6 +61,7 @@ export function TeamMission({
       deadline={deadlineDate}
       fundingGoal={mission.fundingGoal}
       tokenAddress={tokenAddress}
+      tokenSymbol={tokenSymbol}
       volume={subgraphData?.volume}
       paymentsCount={subgraphData?.paymentsCount}
       contribute
