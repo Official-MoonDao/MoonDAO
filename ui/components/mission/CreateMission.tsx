@@ -755,6 +755,23 @@ export default function CreateMission({
                       if (receipt) {
                         setTimeout(() => {
                           toast.success('Mission created successfully')
+                          setMissionData({
+                            name: '',
+                            description: '',
+                            infoUri: '',
+                            logoUri: '',
+                            twitter: '',
+                            discord: '',
+                            tagline: '',
+                            token: {
+                              name: '',
+                              symbol: '',
+                              decimals: 18,
+                              deadline: undefined,
+                              fundingGoal: undefined,
+                              tradeable: false,
+                            },
+                          })
                           clearMissionCache()
                           setStatus('idle')
                           router.push(
