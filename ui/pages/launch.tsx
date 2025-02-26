@@ -1,4 +1,5 @@
 import { useLogin, usePrivy } from '@privy-io/react-auth'
+import { C } from '@upstash/redis/zmscore-uDFFyCiZ'
 import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
@@ -27,18 +28,17 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import Container from '../components/layout/Container'
+import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import FAQ from '@/components/launchpad/FAQ'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
-import ContentLayout from '@/components/layout/ContentLayout'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import SectionCard from '@/components/layout/SectionCard'
-import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
 import StandardButton from '@/components/layout/StandardButton'
+import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
-import MissionCard from '@/components/mission/MissionCard'
 
 export default function Launch({ missions }: any) {
   const router = useRouter()
+  const shallowQueryRoute = useShallowQueryRoute()
 
   const [status, setStatus] = useState<
     'idle' | 'loggingIn' | 'apply' | 'create'
@@ -122,6 +122,7 @@ export default function Launch({ missions }: any) {
       (userTeamsAsManager && userTeamsAsManager.length > 0) ||
       isWhitelisted
     ) {
+      shallowQueryRoute({ create: true })
       setStatus('create')
     } else {
       setStatus('apply')
@@ -142,7 +143,7 @@ export default function Launch({ missions }: any) {
   }
 
   return (
-    <section className="overflow-auto">
+    <section>
       {/* Video Section */}
       <div className="relative w-full h-auto flex justify-between">
         <div className="w-[20vw] h-6" />
@@ -170,7 +171,7 @@ export default function Launch({ missions }: any) {
             height={250}
           />
           <div className="mt-12 ml-8 h-full flex flex-col gap-2">
-            <h1 className="text-white text-[3vw] font-GoodTimes">
+            <h1 className="text-white text-[3vw] xl:text-[300%] font-GoodTimes">
               {'MoonDAO'}
               <br />
               {'Launchpad'}
@@ -183,7 +184,7 @@ export default function Launch({ missions }: any) {
                 width={45}
                 height={45}
               />
-              <p className="text-white text-[2vw] font-GoodTimes">
+              <p className="text-white text-[2vw] 2xl:text-lg font-GoodTimes">
                 {'Raise Funds'}
               </p>
             </div>
@@ -193,7 +194,7 @@ export default function Launch({ missions }: any) {
       {/* Featured Section */}
       <div className="relative px-[4vw] pb-[4vw] flex flex-col gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]">
         <div className="mt-4 flex flex-col md:flex-row justify-center gap-4 md:gap-12 md:items-center">
-          <p className="text-white text-lg font-GoodTimes">
+          <p className="text-white md:text-lg font-GoodTimes">
             {'Launch Your Space Mission With MoonDAO'}
           </p>
           <StandardButton
@@ -215,7 +216,7 @@ export default function Launch({ missions }: any) {
 
         <div className="relative flex flex-col md:flex-row gap-12">
           <Image
-            className="absolute top-0 left-0 z-20"
+            className="absolute top-0 -left-1 z-20"
             src="/assets/launchpad/image-frame-1.svg"
             alt="Image Frame 1"
             width={315}
@@ -255,7 +256,10 @@ export default function Launch({ missions }: any) {
               "Whether you're launching a nanosatellite, testing lunar ISRU tech, or sending humans to space, MoonDAO’s Launch Pad provides the tools you need to turn your vision into reality while tapping into a global network of backers with funding that are passionate about space, as well as leading space companies and service providers that are already part of the Space Acceleration Network."
             }
           </p>
-          <StandardButton className="gradient-2 rounded-full">
+          <StandardButton
+            className="gradient-2 rounded-full"
+            onClick={handleCreateMission}
+          >
             {'Launch Your Mission'}
           </StandardButton>
         </div>
@@ -282,7 +286,7 @@ export default function Launch({ missions }: any) {
       {/* Success Stories Section */}
       <div className="relative px-[4vw] pb-[4vw] flex flex-col gap-12 bg-gradient-to-t from-[#010618] to-[#1B1C4B]">
         <Image
-          className="hidden md:block absolute top-[-0.7px] right-0"
+          className="hidden md:block absolute top-[-1px] right-0"
           src="/assets/launchpad/offwhite-divider-rl-inverted.svg"
           alt="Divider"
           width={500}
@@ -299,7 +303,10 @@ export default function Launch({ missions }: any) {
                 'MoonDAO is no stranger to launching bold ideas. With over Ξ2,623 (+$8,000,000) crowdraised during our initial launch, we used those funds to send two people to space and support 60+ projects for over $300,000. We’re proving that the future of space funding is decentralized and onchain.'
               }
             </p>
-            <StandardButton className="gradient-2 rounded-full">
+            <StandardButton
+              className="gradient-2 rounded-full"
+              onClick={handleCreateMission}
+            >
               {'Launch Your Mission'}
             </StandardButton>
           </div>
@@ -320,146 +327,238 @@ export default function Launch({ missions }: any) {
             />
           </div>
         </div>
-      </div>
-      {/* <div className="w-full md:w-[90%] flex flex-col items-center justify-center">
-        <SectionCard>
-          <div className="p-10 flex flex-col md:flex-row gap-4">
-            <div className="w-[200px] h-[200px] bg-white rounded-full" />
-            <div className="w-3/4 flex flex-col gap-4">
-              <h2 className="header font-GoodTimes">Launch Pad</h2>
-              <p className="text-lg">
-                Join the first onchain fundraising platform designed exclusively
-                for space missions. MoonDAO's Launch Pad empowers teams to raise
-                funds transparently, manage their treasuries independently, and
-                take their space exploration ideas from
-              </p>
-              <StandardButton
-                className="gradient-2 rounded-full"
-                hoverEffect={false}
-                onClick={handleCreateMission}
-              >
-                Launch Your Mission
-              </StandardButton>
-            </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          header="Explore Missions"
-          iconSrc="/assets/icon-org.svg"
-          action={
-            <StandardButton
-              className="gradient-2 rounded-full"
-              hoverEffect={false}
-              link="/missions"
-            >
-              See More
-            </StandardButton>
-          }
-        >
-          <SlidingCardMenu>
-            {missions && missions.length > 0 ? (
-              missions.map((mission: any) => (
-                <MissionCard
-                  key={`mission-card-${mission.id}`}
-                  mission={mission}
-                  teamContract={teamContract}
-                  jbControllerContract={jbControllerContract}
-                  jbTokensContract={jbTokensContract}
-                  compact
-                />
-              ))
-            ) : (
-              <p>No missions found</p>
-            )}
-          </SlidingCardMenu>
-        </SectionCard>
-
-        <SectionCard header="Features Title" iconSrc="/assets/icon-org.svg">
-          <div className="flex flex-col md:flex-row gap-4">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={`feature-${index}`}
-                className="p-2 md:w-1/3 flex flex-col gap-4 bg-white text-black"
-              >
-                <div className="flex gap-4 items-center">
-                  <div className="w-[50px] h-[50px] bg-black rounded-full" />
-                  <h3 className="font-GoodTimes">Feature Title</h3>
-                </div>
-                <p className="border-2 border-black p-2 min-h-[100px]">
-                  Callout Paragraph
-                </p>
-              </div>
-            ))}
-          </div>
-          <StandardButton
-            className="mt-4 gradient-2 rounded-full"
-            hoverEffect={false}
-            onClick={handleCreateMission}
-          >
-            Launch Your Mission
-          </StandardButton>
-        </SectionCard>
-
-        <SectionCard className="relative min-h-[800px]">
+        <Image
+          className="absolute bottom-[-1px] left-0"
+          src="/assets/launchpad/white-divider-lr.svg"
+          alt="Divider"
+          width={850}
+          height={850}
+        />
+        <div className="relative w-full h-full">
           <Image
-            className="absolute top-0 right-0"
-            src="/assets/launchpad-astro.png"
-            alt="Launchpad Astro"
+            className="absolute bottom-0 left-0 z-10"
+            src="/assets/launchpad/image-frame-3.svg"
+            alt="Divider"
+            width={505}
+            height={500}
+          />
+          <Image
+            className="relative left-[4px] bottom-[4px] rounded-full"
+            src="/assets/eiman-jahangir.png"
+            alt="Divider"
             width={500}
             height={500}
           />
-          <div className="p-10 flex flex-col md:flex-row gap-4">
-            <div className="w-[200px] h-[200px] bg-white rounded-full" />
-            <div className="w-3/4 flex flex-col gap-4">
-              <h2 className="header font-GoodTimes">Success Stories</h2>
-              <p className="text-lg">
-                MoonDAO is no stranger to launching bold ideas. With over Ξ2,623
-                (+$8,000,000) crowdraised during our initial launch, we used
-                those funds to send two people to space and support 60+ projects
-                for over $300,000. We're proving that the future of space
-                funding is decentralized and onchain.
-              </p>
-            </div>
+        </div>
+      </div>
+
+      {/* How Launchpad Works Section */}
+      <div
+        id="how-launchpad-works"
+        className="relative px-[4vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
+      >
+        <div className="w-full mt-8 flex flex-col gap-2 items-center">
+          <h1 className="mt-8 text-2xl font-GoodTimes">
+            {'How Launchpad Works'}
+          </h1>
+        </div>
+
+        <div className="w-full max-w-[800px]">
+          <div className="absolute hidden md:block h-full max-h-[75%] md:left-1/2 md:transform md:-translate-x-1/2 top-32">
+            <VerticalProgressScrollBar sectionId="how-launchpad-works" />
           </div>
-          <h2 className="text-4xl font-GoodTimes">How the launchpad works</h2>
-          <div className="mt-12 flex flex-col gap-8">
-            {[
+
+          <div className="absolute md:hidden h-full max-h-[75%] right-2 top-32">
+            <VerticalProgressScrollBar sectionId="how-launchpad-works" />
+          </div>
+
+          <FeatureIcon
+            title="Create Your Team"
+            description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
+            icon={<p className="text-4xl font-GoodTimes text-white">1</p>}
+          />
+          <div className="md:mt-[-10%] w-full flex md:justify-end">
+            <FeatureIcon
+              title="Create Your Team"
+              description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
+              icon={<p className="text-4xl font-GoodTimes text-white">2</p>}
+            />
+          </div>
+          <FeatureIcon
+            className="md:mt-[-10%]"
+            title="Create Your Team"
+            description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
+            icon={<p className="text-4xl font-GoodTimes text-white">3</p>}
+          />
+          <div className="md:mt-[-10%] w-full flex md:justify-end">
+            <FeatureIcon
+              title="Create Your Team"
+              description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
+              icon={<p className="text-4xl font-GoodTimes text-white">4</p>}
+            />
+          </div>
+          <div className="mt-24 w-full flex items-center justify-center">
+            <StandardButton
+              className="gradient-2 rounded-full"
+              hoverEffect={false}
+            >
+              {'Launch Your Mission'}
+            </StandardButton>
+          </div>
+        </div>
+
+        <Image
+          className="absolute bottom-[-1px] left-0 -scale-x-100"
+          src="/assets/launchpad/blue-divider-rl.svg"
+          alt="Divider"
+          width={250}
+          height={250}
+        />
+      </div>
+
+      {/* Launchpad Benefits */}
+      <div>
+        <div className="relative p-[4vw] py-[6vw] flex flex-col items-center gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]">
+          <div className="w-full flex flex-col gap-2 items-center">
+            <h1 className="text-2xl font-GoodTimes">
+              {'Why use MoonDAO Launchpad?'}
+            </h1>
+          </div>
+          <Image
+            className="absolute bottom-[-1px] left-0 -scale-x-100"
+            src="/assets/launchpad/blue-divider-rl.svg"
+            alt="Divider"
+            width={500}
+            height={500}
+          />
+          <div className="mt-8 z-10">
+            <LaunchpadBenefit
+              title="Space is Global & Borderless"
+              description="Space is Global & Borderless Tap into the power of a borderless, global crypto network with trillions of dollars in market cap that is available in seconds."
+              icon="/assets/launchpad/globe.svg"
+              align="left"
+            />
+          </div>
+        </div>
+
+        <div className="relative p-[4vw] py-[8vw] flex flex-col items-center gap-12 bg-gradient-to-b from-[#010618] to-[#0C0F28]">
+          <div className="z-10">
+            <LaunchpadBenefit
+              title="Trustless & Transparent"
+              description="All transactions are transparent and onchain, ensuring that everyone can see the funds raised and used."
+              icon="/assets/launchpad/sign.svg"
+              align="right"
+            />
+          </div>
+        </div>
+
+        <div className="relative p-[4vw] flex flex-col items-center gap-12 bg-gradient-to-t from-[#010618] to-[#1B1C4B]">
+          <Image
+            className="absolute top-0 left-[-30px]"
+            src="/assets/launchpad/blue-divider-lr-inverted.svg"
+            alt="Divider"
+            width={500}
+            height={500}
+          />
+          <div className="z-10 flex flex-col gap-24">
+            <LaunchpadBenefit
+              title="Battle Tested"
+              description="Powered by Juicebox, a proven platform for decentralized fundraising with over 1,000+ projects and over $200,000,000 raised."
+              icon="/assets/launchpad/checkmark.svg"
+              align="left"
+            />
+            <LaunchpadBenefit
+              title="Scalable & Flexible"
+              description="Adapt your fundraising strategy as your space mission evolves or utilize our quick launch guidelines and templates."
+              icon="/assets/launchpad/scalable.svg"
+              align="right"
+            />
+          </div>
+          <Image
+            className="absolute bottom-0 right-0"
+            src="/assets/launchpad/blue-divider-rl.svg"
+            alt="Divider"
+            width={500}
+            height={500}
+          />
+        </div>
+        <div className="relative p-[8vw] pb-48 flex flex-col items-center gap-12 bg-gradient-to-b from-[#010618] to-[#0C0F28]">
+          <div className="z-10">
+            <LaunchpadBenefit
+              title="Power of the Network"
+              description="The Space Acceleration Network brings industry leading space companies onchain, alongside space enthusiasts and professionals from around the globe."
+              icon="/assets/launchpad/power.svg"
+              align="left"
+            />
+          </div>
+          <Image
+            className="absolute bottom-0 right-0"
+            src="/assets/launchpad/gradient-divider-rl.png"
+            alt="Divider"
+            width={300}
+            height={300}
+          />
+        </div>
+      </div>
+
+      {/* Get Started Section */}
+      <div className="relative p-[8vw] flex flex-col start gap-12 bg-gradient-to-bl from-[#6D3F79] to-[#435EEB] from-20%">
+        <div className="flex flex-col md:flex-row gap-4">
+          <Image
+            src="/assets/MoonDAO-Logo-White.svg"
+            alt="Divider"
+            width={250}
+            height={250}
+          />
+          <div className="mt-[5%] flex flex-col gap-2">
+            <h3 className="text-white text-2xl font-GoodTimes">
+              {'Get Started Today'}
+            </h3>
+            <p className="text-white text-sm">
               {
-                title: 'step 1',
-                description: 'step 1 description',
-              },
-              { title: 'step 2', description: 'step 2 description' },
-              { title: 'step 3', description: 'step 3 description' },
-            ].map((step: any, i: number) => (
-              <div
-                key={`step-${step.title}`}
-                className="flex gap-4 items-center h-[100px]"
-              >
-                <div className="w-[50px] h-[50px] bg-white rounded-full text-black flex items-center justify-center text-2xl font-bold">
-                  {i + 1}
-                </div>
-                <div>
-                  <h3 className="text-2xl font-GoodTimes">{step.title}</h3>
-                  <p className="text-lg">{step.description}</p>
-                </div>
-              </div>
-            ))}
+                'The next great space mission starts here. Join the decentralized space race and fund your mission with the MoonDAO Launch Pad. The Launch Pad is available permissionlessly to teams in the Space Acceleration Network.'
+              }
+            </p>
+            <StandardButton
+              className="bg-[#FFFFFF] rounded-full"
+              textColor="text-black"
+              onClick={handleCreateMission}
+            >
+              {'Launch Your Mission'}
+            </StandardButton>
           </div>
-        </SectionCard>
+        </div>
+      </div>
 
-        <SectionCard header="Why Use the Launchpad?">
-          <div></div>
-        </SectionCard>
+      {/* FAQ Section */}
+      <div className="relative px-[4vw] pb-[4vw] flex flex-col gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black">
+        <Image
+          className="absolute top-0 left-0"
+          src="/assets/launchpad/gradient-blue-divider-lr-inverted.svg"
+          alt="Divider"
+          width={250}
+          height={250}
+        />
 
-        <SectionCard header="FAQ">
-          <div></div>
-        </SectionCard>
-
-        <SectionCard header="Get Started Today">
-          <div></div>
-        </SectionCard>
-      </div> */}
+        <div className="mt-12 ml-4 md:ml-0 md:mt-8 md:pl-[4vw] xl:pl-0 w-full flex gap-6 items-center z-10">
+          <Image
+            className=""
+            src="/assets/launchpad/question-mark.svg"
+            alt="Divider"
+            width={75}
+            height={75}
+          />
+          <h1 className="text-2xl font-GoodTimes">
+            {'Frequently Asked Questions'}
+          </h1>
+        </div>
+        <div className="ml-4 md:ml-4 md:mt-8 md:pl-[4vw] xl:pl-0 w-full">
+          <FAQ
+            question="What is MoonDAO?"
+            answer="MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators. MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators. MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators. MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators. MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators. MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators. MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators. MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators. MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators. MoonDAO is a decentralized autonomous organization that is building a network of space explorers and innovators."
+          />
+        </div>
+      </div>
     </section>
   )
 }

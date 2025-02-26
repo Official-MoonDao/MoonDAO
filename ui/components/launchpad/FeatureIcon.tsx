@@ -4,15 +4,19 @@ type FeatureIconProps = {
   title: string
   description: string
   icon: string | React.ReactNode
+  className?: string
 }
 
 export default function FeatureIcon({
   title,
   description,
   icon,
+  className,
 }: FeatureIconProps) {
   return (
-    <div className="flex flex-col text-center max-w-[300px] items-center">
+    <div
+      className={`flex flex-col text-center max-w-[300px] items-center ${className}`}
+    >
       <div className="flex items-center justify-center w-fit h-fit gradient-2 rounded-full p-8 aspect-square">
         {typeof icon === 'string' ? (
           <Image
