@@ -149,7 +149,7 @@ export default function Launch({ missions }: any) {
         <div className="hidden md:block absolute left-0 top-0 h-full max-w-[500px] w-[100%] z-[10] bg-gradient-to-r from-[#080C20] from-35% via-[#080C20] to-transparent" />
         <Image
           className="w-full"
-          src="/assets/launchpad-video.png"
+          src="/assets/launchpad/launchpad-video.png"
           alt="Launch Background"
           width={1000}
           height={1000}
