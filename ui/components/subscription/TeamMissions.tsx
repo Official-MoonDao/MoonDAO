@@ -23,6 +23,7 @@ type TeamMissionProps = {
   jbControllerContract: any
   jbTokensContract: any
   teamContract: any
+  isManager: boolean
 }
 
 type TeamMissionsProps = {
@@ -39,6 +40,7 @@ export function TeamMission({
   jbControllerContract,
   jbTokensContract,
   teamContract,
+  isManager,
 }: TeamMissionProps) {
   const { subgraphData, tokenAddress, ruleset, tokenSymbol } = useJBProjectData(
     mission?.projectId,
@@ -66,6 +68,7 @@ export function TeamMission({
       paymentsCount={subgraphData?.paymentsCount}
       contribute
       projectId={mission.projectId}
+      editable={isManager}
     />
   )
 }
@@ -188,6 +191,7 @@ export default function TeamMissions({
                 jbControllerContract={jbControllerContract}
                 jbTokensContract={jbTokensContract}
                 teamContract={teamContract}
+                isManager={isManager}
               />
             ))}
       </div>

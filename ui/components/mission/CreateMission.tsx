@@ -722,7 +722,7 @@ export default function CreateMission({
                         method: 'createMission' as string,
                         params: [
                           selectedTeamId,
-                          teamMultisig,
+                          address,
                           missionMetadataIpfsHash,
                           durationInSeconds,
                           missionData.token.fundingGoal,

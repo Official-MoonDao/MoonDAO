@@ -1,6 +1,7 @@
+import { PencilIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { Line } from 'rc-progress'
-import ProgressLine from '../layout/ProgressLine'
+import ProgressBar from '../layout/ProgressBar'
 import StandardButton from '../layout/StandardButton'
 import StandardWideCard from '../layout/StandardWideCard'
 import MissionStat from './MissionStat'
@@ -20,6 +21,7 @@ export type MissionWideCardProps = {
   missionImage?: File
   contribute?: boolean
   projectId?: number
+  editable?: boolean
 }
 
 export default function MissionWideCard({
@@ -37,10 +39,24 @@ export default function MissionWideCard({
   missionImage,
   contribute,
   projectId,
+  editable,
 }: MissionWideCardProps) {
   return (
     <StandardWideCard
-      title={name}
+      title={
+        <div className="flex items-start justify-between gap-4">
+          {name}
+          {editable && (
+            <button
+              onClick={() => {
+                //open modal, complete form, missionCreator.updateMissionMetadata()
+              }}
+            >
+              <PencilIcon width={35} height={35} />
+            </button>
+          )}
+        </div>
+      }
       subheader={tagline}
       stats={
         <div>
@@ -98,9 +114,9 @@ export default function MissionWideCard({
           </div>
           <div className="mt-4 max-w-full">
             {volume && fundingGoal && (
-              <ProgressLine
-                label={`${20} ETH`}
-                progress={(20 / fundingGoal) * 100}
+              <ProgressBar
+                label={`${5} ETH`}
+                progress={(5 / fundingGoal) * 100}
                 height="25px"
               />
             )}

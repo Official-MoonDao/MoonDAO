@@ -1,59 +1,38 @@
-import { P } from '@privy-io/react-auth/dist/dts/types-CWBSfCm7'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { ReactNode, useState } from 'react'
 import { MediaRenderer } from 'thirdweb/react'
 import client from '@/lib/thirdweb/client'
-import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
-import CollapsibleContainer from './CollapsibleContainer'
 
 type StandardWideCardProps = {
-  icon?: string
-  iconAlt?: string
   header?: string
-  title?: string
+  title?: any
   paragraph?: ReactNode
-  fullParagraph?: boolean
   link?: string
-  headerLink?: string
-  headerLinkLabel?: string
   onClick?: () => void
-  hovertext?: string
-  inline?: boolean
   orgimage?: string
   subheader?: any
   image?: string
   stats?: any
-  type?: string
   profile?: boolean
   footer?: any
   height?: string
 }
 
 export default function StandardWideCard({
-  icon,
   header,
   title,
   paragraph,
-  fullParagraph,
   link,
-  headerLink,
-  headerLinkLabel,
   onClick,
-  hovertext,
-  inline,
-  iconAlt,
   orgimage,
   subheader,
   image,
   stats,
-  type,
   profile = false,
   footer,
 }: StandardWideCardProps) {
-  const router = useRouter()
   const [isExpanded, setIsExpanded] = useState(false)
 
   const cardContent = (
