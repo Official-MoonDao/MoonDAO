@@ -13,7 +13,7 @@ export default function LaunchpadBenefit({
 }) {
   function Icon() {
     return (
-      <div className="w-[200px] h-[200px] rounded-full flex items-center justify-center">
+      <div className="w-[150px] h-[150px] md:w-[200px] md:h-[200px] rounded-full flex items-center justify-center">
         {typeof icon === 'string' ? (
           <Image src={icon} alt="Icon" width={200} height={200} />
         ) : (
@@ -25,7 +25,9 @@ export default function LaunchpadBenefit({
 
   return (
     <div
-      className={`flex gap-4 ${align === 'left' ? 'items-start' : 'items-end'}`}
+      className={`w-full flex gap-4 ${
+        align === 'left' ? 'items-start' : 'items-end'
+      }`}
     >
       <div className="flex gap-[5vw] items-center">
         {align === 'left' && <Icon />}

@@ -1,5 +1,4 @@
 import { useLogin, usePrivy } from '@privy-io/react-auth'
-import { C } from '@upstash/redis/zmscore-uDFFyCiZ'
 import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
@@ -122,12 +121,19 @@ export default function Launch({ missions }: any) {
       (userTeamsAsManager && userTeamsAsManager.length > 0) ||
       isWhitelisted
     ) {
-      shallowQueryRoute({ create: true })
       setStatus('create')
     } else {
       setStatus('apply')
     }
   }
+
+  useEffect(() => {
+    if (status === 'create') {
+      shallowQueryRoute({ create: true })
+    } else {
+      shallowQueryRoute({})
+    }
+  }, [status])
 
   if (status === 'create') {
     return (
@@ -214,21 +220,23 @@ export default function Launch({ missions }: any) {
           height={500}
         />
 
-        <div className="relative flex flex-col md:flex-row gap-12">
-          <Image
-            className="absolute top-0 -left-1 z-20"
-            src="/assets/launchpad/image-frame-1.svg"
-            alt="Image Frame 1"
-            width={315}
-            height={315}
-          />
-          <Image
-            className="z-10"
-            src="/assets/launchpad/space-mice.png"
-            alt="Astro"
-            width={300}
-            height={300}
-          />
+        <div className="relative flex flex-col md:flex-row gap-12 md:items-center">
+          <div className="relative">
+            <Image
+              className="absolute top-0 -left-1 z-20 scale-[1.075]"
+              src="/assets/launchpad/image-frame-1.svg"
+              alt="Image Frame 1"
+              width={315}
+              height={315}
+            />
+            <Image
+              className="z-10"
+              src="/assets/launchpad/space-mice.png"
+              alt="Astro"
+              width={300}
+              height={300}
+            />
+          </div>
           <div className="w-full h-auto flex flex-col gap-2 max-w-[500px]">
             <p className="text-white text-lg font-GoodTimes">
               {'Save the Space Mice!'}
@@ -368,34 +376,36 @@ export default function Launch({ missions }: any) {
             <VerticalProgressScrollBar sectionId="how-launchpad-works" />
           </div>
 
-          <div className="absolute md:hidden h-full max-h-[75%] right-2 top-32">
+          <div className="absolute md:hidden h-full max-h-[75%] left-2 min-[450px]:left-[5vw] top-32">
             <VerticalProgressScrollBar sectionId="how-launchpad-works" />
           </div>
 
-          <FeatureIcon
-            title="Create Your Team"
-            description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
-            icon={<p className="text-4xl font-GoodTimes text-white">1</p>}
-          />
-          <div className="md:mt-[-10%] w-full flex md:justify-end">
+          <div className="w-full flex flex-col items-end md:items-start gap-4">
             <FeatureIcon
               title="Create Your Team"
               description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
-              icon={<p className="text-4xl font-GoodTimes text-white">2</p>}
+              icon={<p className="text-4xl font-GoodTimes text-white">1</p>}
             />
-          </div>
-          <FeatureIcon
-            className="md:mt-[-10%]"
-            title="Create Your Team"
-            description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
-            icon={<p className="text-4xl font-GoodTimes text-white">3</p>}
-          />
-          <div className="md:mt-[-10%] w-full flex md:justify-end">
+            <div className="md:mt-[-10%] w-full flex justify-end">
+              <FeatureIcon
+                title="Create Your Team"
+                description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
+                icon={<p className="text-4xl font-GoodTimes text-white">2</p>}
+              />
+            </div>
             <FeatureIcon
+              className="md:mt-[-10%]"
               title="Create Your Team"
               description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
-              icon={<p className="text-4xl font-GoodTimes text-white">4</p>}
+              icon={<p className="text-4xl font-GoodTimes text-white">3</p>}
             />
+            <div className="md:mt-[-10%] w-full flex justify-end">
+              <FeatureIcon
+                title="Create Your Team"
+                description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
+                icon={<p className="text-4xl font-GoodTimes text-white">4</p>}
+              />
+            </div>
           </div>
           <div className="mt-24 w-full flex items-center justify-center">
             <StandardButton
