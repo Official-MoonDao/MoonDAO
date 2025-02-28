@@ -37,7 +37,6 @@ import CreateMission from '@/components/mission/CreateMission'
 
 export default function Launch({ missions }: any) {
   const router = useRouter()
-  const shallowQueryRoute = useShallowQueryRoute()
 
   const [status, setStatus] = useState<
     'idle' | 'loggingIn' | 'apply' | 'create'
@@ -127,14 +126,6 @@ export default function Launch({ missions }: any) {
     }
   }
 
-  useEffect(() => {
-    if (status === 'create') {
-      shallowQueryRoute({ create: true })
-    } else {
-      shallowQueryRoute({})
-    }
-  }, [status])
-
   if (status === 'create') {
     return (
       <CreateMission
@@ -149,68 +140,98 @@ export default function Launch({ missions }: any) {
   }
 
   return (
-    <section>
+    <section className="w-[100vw] overflow-hidden ">
       {/* Video Section */}
-      <div className="relative w-full h-auto flex justify-between">
-        <div className="w-[20vw] h-6" />
-        <div className="hidden md:block absolute left-0 top-0 h-full max-w-[500px] w-[100%] z-[10] bg-gradient-to-r from-[#080C20] from-35% via-[#080C20] to-transparent" />
-        <Image
-          className="w-full"
-          src="/assets/launchpad/launchpad-video.png"
-          alt="Launch Background"
-          width={1000}
-          height={1000}
-        />
-        <Image
-          className="absolute right-0 bottom-[-1px] z-[10]"
-          src="/assets/launchpad/blue-divider-rl.svg"
-          alt="Divider"
-          width={250}
-          height={250}
-        />
-        <div className="absolute top-1/4 left-[10%] flex z-[10]">
-          <Image
-            className="w-[25vw] h-[25vw] md:w-full md:h-full"
-            src="/assets/moondao-logo.svg"
-            alt="Logo"
-            width={250}
-            height={250}
-          />
-          <div className="mt-12 ml-8 h-full flex flex-col gap-2">
-            <h1 className="text-white text-[3vw] xl:text-[300%] font-GoodTimes">
-              {'MoonDAO'}
-              <br />
-              {'Launchpad'}
-            </h1>
-            <div className="mt-4 flex gap-4 items-center">
-              <Image
-                className="w-[4vw] h-[4vw]"
-                src="/assets/launchpad/token.svg"
-                alt="Org"
-                width={45}
-                height={45}
+      <div className="relative md:h-[max(40vh,400px)] lg:h-[max(80vh,650px)] flex justify-between items-center">
+        <div className="w-[20vw] h-6"/>
+          <div id="gradient-container" className="absolute left-0 top-0 h-full w-[100vw] z-[10] bg-gradient-to-b md:bg-gradient-to-r from-[#080C20] from-0% md:from-0% to-transparent to-50% md:to-100%" />
+            <video
+              className="min-w-[100vw] md:w-full object-cover md:h-[max(40vh,400px)] lg:h-[max(80vh,650px)] object-right"
+              autoPlay
+              loop
+              muted
+              playsInline
+              >
+              <source src="/assets/moondao-video-hero.mp4" type="video/mp4" />
+            </video>
+            <div id="content" className="flex items-center">
+              <Image id="hero-divider-bottom-right"
+                className="absolute right-0 bottom-[-1px] z-[10] w-[30vw]"
+                src="/assets/launchpad/blue-divider-rl.svg"
+                alt="Divider"
+                width={250}
+                height={250}
               />
-              <p className="text-white text-[2vw] 2xl:text-lg font-GoodTimes">
-                {'Raise Funds'}
-              </p>
+              <div id="logo-container" className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-end flex-col md:flex-row flex md:items-center md:justify-start z-[10]">
+                <Image
+                  className="hidden md:flex w-[30vw] h-[30vw] w-full md:w-auto"
+                  src="/assets/MoonDAO Animated Logo - Original.svg"
+                  alt="Logo"
+                  width={250}
+                  height={250}
+                />
+                <Image
+                  className="md:hidden w-[30vw] h-[30vw] w-full md:w-auto"
+                  src="/assets/MoonDAO Animated Logo - White.svg"
+                  alt="Logo"
+                  width={250}
+                  height={250}
+                />                
+                <div className="md:h-full flex flex-col items-center md:items-left justify-center pb-[5vw] md:pb-0">
+                  <div className="hidden md:flex">
+                  <Image
+                    src="/assets/MoonDAOLaunchpad.svg"
+                    alt="MoonDAO Launchpad"
+                    width={500}
+                    height={150}
+                    className="w-[40vw]"
+                  />
+                  </div>
+                  <div className="md:hidden">
+                  <Image
+                    src="/assets/MoonDAOLaunchpadCentered.svg"
+                    alt="MoonDAO Launchpad"
+                    width={500}
+                    height={150}
+                    className="w-[40vw]"
+                  />                
+                  </div>  
+                  <div className="hidden w-full md:flex justify-center items-center">
+                    <Image
+                      className="w-[90vw] h-[17vw] md:w-[40vw] md:h-[6.86vw]"
+                      src="/assets/Animated-Icon-Tagline.svg"
+                      alt="Org"
+                      width={450}
+                      height={450}
+                    />
+                    </div>
+                    <div className="ml-[5vw] w-full md:hidden justify-center items-center">
+                    <Image
+                      className="w-[90vw] h-[17vw] md:w-[40vw] md:h-[6.86vw]"
+                      src="/assets/Tagline Animation Centered.svg"
+                      alt="Org"
+                      width={450}
+                      height={450}
+                    />
+                    </div>                    
+                  </div>
+                </div>
+              </div>                
             </div>
-          </div>
-        </div>
-      </div>
-      {/* Featured Section */}
-      <div className="relative px-[4vw] pb-[4vw] flex flex-col gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]">
-        <div className="mt-4 flex flex-col md:flex-row justify-center gap-4 md:gap-12 md:items-center">
-          <p className="text-white md:text-lg font-GoodTimes">
-            {'Launch Your Space Mission With MoonDAO'}
-          </p>
-          <StandardButton
-            className="gradient-2 rounded-full"
-            hoverEffect={false}
-            onClick={handleCreateMission}
-          >
-            {'Launch Your Mission'}
-          </StandardButton>
-        </div>
+            {/* Featured Section */}
+            <div className="relative px-[4vw] pb-[4vw] flex flex-col gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]">
+              <div className="mt-4 flex flex-col md:flex-row justify-center gap-4 md:gap-12 md:items-center">
+                <p className="text-white text-lg font-GoodTimes">
+                  {'Launch Your Space Mission With MoonDAO'}
+                </p>
+                <StandardButton
+                  className="gradient-2 rounded-full"
+                  hoverEffect={false}
+                  onClick={handleCreateMission}
+                >
+                  {'Launch Your Mission'}
+                </StandardButton>
+              </div>
 
         <Image
           className="hidden md:block absolute bottom-[-1px] left-0"
@@ -220,23 +241,21 @@ export default function Launch({ missions }: any) {
           height={500}
         />
 
-        <div className="relative flex flex-col md:flex-row gap-12 md:items-center">
-          <div className="relative">
-            <Image
-              className="absolute top-0 -left-1 z-20 scale-[1.075]"
-              src="/assets/launchpad/image-frame-1.svg"
-              alt="Image Frame 1"
-              width={315}
-              height={315}
-            />
-            <Image
-              className="z-10"
-              src="/assets/launchpad/space-mice.png"
-              alt="Astro"
-              width={300}
-              height={300}
-            />
-          </div>
+        <div className="relative flex flex-col md:flex-row gap-12">
+          <Image
+            className="absolute top-0 left-0 z-20"
+            src="/assets/launchpad/image-frame-1.svg"
+            alt="Image Frame 1"
+            width={315}
+            height={315}
+          />
+          <Image
+            className="z-10"
+            src="/assets/launchpad/space-mice.png"
+            alt="Astro"
+            width={300}
+            height={300}
+          />
           <div className="w-full h-auto flex flex-col gap-2 max-w-[500px]">
             <p className="text-white text-lg font-GoodTimes">
               {'Save the Space Mice!'}
@@ -253,6 +272,7 @@ export default function Launch({ missions }: any) {
         </div>
       </div>
 
+      {/* Launch Pad CTA Section */}
       {/* Launch Pad CTA Section */}
       <div className="relative px-[4vw] pb-[4vw] flex flex-col gap-12 bg-gradient-to-r from-[#FFFFFF] to-[#F1F1F1] text-black">
         <div className="flex flex-col gap-2">

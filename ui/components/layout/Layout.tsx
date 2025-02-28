@@ -134,7 +134,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         <section
           className={`${
             isFullscreen
-              ? 'w-full max-w-[1500px]'
+              ? 'w-full '
               : 'mt-4 md:w-[90%] lg:px-14 xl:px-16 2xl:px-20'
           } flex flex-col`}
         >
