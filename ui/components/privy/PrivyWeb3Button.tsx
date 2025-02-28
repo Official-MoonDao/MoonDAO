@@ -22,6 +22,7 @@ type PrivyWeb3BtnProps = {
   skipNetworkCheck?: boolean
   requiredChain?: any
   v5?: boolean
+  noPadding?: boolean
 }
 
 function Button({
@@ -31,13 +32,15 @@ function Button({
   onClick,
   isDisabled,
   children,
+  noPadding = false,
 }: any) {
   return (
     <button
       id={id}
       type={type}
-      // className={`px-8 py-2 w-[200px] rounded-md text-black ${className}`}
-      className={`px-5 py-3 text-lg gradient-2 text-white disabled:opacity-50 ${className}`}
+      className={`${
+        noPadding ? '' : 'px-5 py-3'
+      } text-lg gradient-2 text-white disabled:opacity-50 ${className}`}
       onClick={onClick}
       disabled={isDisabled}
     >
@@ -58,6 +61,7 @@ export function PrivyWeb3Button({
   skipNetworkCheck = false,
   requiredChain,
   v5 = false,
+  noPadding = false,
 }: PrivyWeb3BtnProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -105,7 +109,12 @@ export function PrivyWeb3Button({
   return (
     <>
       {btnState === 0 && (
-        <Button id={id} className={className} onClick={login}>
+        <Button
+          id={id}
+          className={className}
+          onClick={login}
+          noPadding={noPadding}
+        >
           Connect
         </Button>
       )}
@@ -126,6 +135,7 @@ export function PrivyWeb3Button({
             }
           }}
           isDisabled={isDisabled}
+          noPadding={noPadding}
         >
           Switch Network
         </Button>
@@ -147,6 +157,7 @@ export function PrivyWeb3Button({
             setIsLoading(false)
           }}
           isDisabled={isDisabled || isLoading}
+          noPadding={noPadding}
         >
           {isLoading ? 'loading...' : label}
         </Button>
