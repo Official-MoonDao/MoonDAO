@@ -1,11 +1,9 @@
-import CitizenABI from 'const/abis/Citizen.json'
-import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
-import { getContract, readContract, waitForReceipt } from 'thirdweb'
+import { waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { transporter, opEmail } from '@/lib/nodemailer/nodemailer'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 
 const MARKETPLACE_VENDOR_PURHCASE_FIELDS: any = {
@@ -114,19 +112,7 @@ async function handler(req: any, res: any) {
       return res.status(400).send({ message: 'Bad request' })
     }
 
-    const {
-      teamEmail,
-      email,
-      txHash,
-      isCitizen,
-      recipient,
-      value,
-      originalValue,
-      decimals,
-    } = JSON.parse(data)
-
-    let verifiedCitizen = false
-    let fromIsNotCitizen = false
+    const { teamEmail, email, txHash } = JSON.parse(data)
 
     const txReceipt = await waitForReceipt({
       client: serverClient,
@@ -134,64 +120,11 @@ async function handler(req: any, res: any) {
       transactionHash: txHash,
     })
 
-    try {
-      const citizenContract = getContract({
-        client: serverClient,
-        address: CITIZEN_ADDRESSES[getChainSlug(DEFAULT_CHAIN_V5)],
-        chain: DEFAULT_CHAIN_V5,
-        abi: CitizenABI as any,
-      })
-
-      const ownedTokenId = await readContract({
-        contract: citizenContract,
-        method: 'getOwnedToken' as string,
-        params: [txReceipt.from],
-      })
-
-      if (ownedTokenId !== undefined) {
-        verifiedCitizen = true
-      }
-    } catch (err: any) {
-      if (isCitizen) {
-        fromIsNotCitizen = true
-      }
-    }
-
-    if (isCitizen && !verifiedCitizen) {
-      fromIsNotCitizen = true
-    }
-
-    if (fromIsNotCitizen) {
-      return res.status(400).json({
-        message:
-          'The transaction went through but the citizen cannot be verified',
-      })
-    }
-
     const provider = ethers5Adapter.provider.toEthers({
       client: serverClient,
       chain: DEFAULT_CHAIN_V5,
     })
     const currBlockNumber = await provider?.getBlockNumber()
-
-    if (recipient.toLowerCase() !== txReceipt.to?.toLowerCase()) {
-      return res.status(400).json({
-        message: 'The transaction went through but the recipient is incorrect',
-      })
-    }
-
-    // const txValue = Number(txReceipt.logs[0]?.data) / 10 ** +decimals
-    // if (+value !== txValue) {
-    //   return res.status(400).json({
-    //     message: 'The transaction went through but the value is incorrect',
-    //   })
-    // }
-
-    // if (!verifiedCitizen && txValue !== originalValue + originalValue * 0.1) {
-    //   return res.status(400).json({
-    //     message: 'The transaction went through but the value is incorrect',
-    //   })
-    // }
 
     try {
       await transporter.sendMail({
