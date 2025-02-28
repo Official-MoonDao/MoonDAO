@@ -319,6 +319,7 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
 
 export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
   'arbitrum-sepolia': '0xF4f865fA947376f47C74ffD05dd59763c0824bAD',
+  ethereum: '0xDc07FbCcF7Dd55014C8A2a605C671d01137B4937',
   base: '0xe5709Bc44427DCEF81fF2F718DFc6A032fD23bbF',
 }
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
@@ -326,6 +327,7 @@ export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
 } = {
   'arbitrum-sepolia': 40161, //sepolia eid
   base: 30110, //arbitrum eid
+  ethereum: 30110, //arbitrum eid
 }
 
 export const DISCORD_GUILD_ID = '914720248140279868'

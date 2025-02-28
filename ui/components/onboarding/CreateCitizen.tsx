@@ -29,6 +29,7 @@ import {
 import {
   arbitrum,
   base,
+  ethereum,
   sepolia,
   arbitrumSepolia,
   Chain,
@@ -72,9 +73,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const selectedChainSlug = getChainSlug(selectedChain)
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
-  const chains = isTestnet ? [sepolia, arbitrumSepolia] : [arbitrum, base]
-  const crossChain = isTestnet ? arbitrumSepolia : base
-  const crossChainSlug = getChainSlug(crossChain)
+  const chains = isTestnet
+    ? [sepolia, arbitrumSepolia]
+    : [arbitrum, base, ethereum]
   const destinationChain = isTestnet ? sepolia : arbitrum
   const account = useActiveAccount()
   const address = account?.address
@@ -127,9 +128,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     chain: DEFAULT_CHAIN_V5,
   })
   const crossChainMintContract = useContract({
-    address: CITIZEN_CROSS_CHAIN_MINT_ADDRESSES[crossChainSlug],
+    address: CITIZEN_CROSS_CHAIN_MINT_ADDRESSES[selectedChainSlug],
     abi: CrossChainMinterABI,
-    chain: crossChain,
+    chain: selectedChain,
   })
 
   const subscribeToNetworkSignup = useSubscribe(CK_NETWORK_SIGNUP_FORM_ID)
@@ -233,7 +234,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           method: 'crossChainMint' as string,
           params: [
             LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[
-              crossChainSlug
+              selectedChainSlug
             ].toString(),
             _options.toHex(),
             address,
