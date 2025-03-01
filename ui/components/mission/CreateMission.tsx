@@ -147,7 +147,10 @@ export function Stage({
   children,
 }: any) {
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div
+      className="w-full flex flex-col gap-4"
+      data-testid={`mission-${header.toLowerCase().replace(' ', '-')}-stage`}
+    >
       <h2 className="font-GoodTimes text-2xl md:text-4xl">{header}</h2>
       <p className="opacity-50">{description}</p>
       <div className="flex flex-col gap-5 w-full md:max-w-[600px] lg:max-w-[800px]">
@@ -155,6 +158,7 @@ export function Stage({
         <div className="mt-4 w-full flex flex-wrap gap-4 justify-between items-center">
           {stage > 0 ? (
             <StandardButton
+              id="back-button"
               className="gradient-2 rounded-full"
               hoverEffect={false}
               onClick={() => setStage((prev: number) => prev - 1)}
@@ -171,6 +175,7 @@ export function Stage({
             customButton
           ) : (
             <StandardButton
+              id="continue-button"
               className="gradient-2 rounded-full"
               hoverEffect={false}
               onClick={
@@ -283,6 +288,7 @@ export default function CreateMission({
     <Container>
       <ContentLayout
         header="Launch A Mission"
+        data-testid="launch-mission-header"
         headerSize="max(20px, 3vw)"
         description={
           <p className="">
@@ -416,6 +422,8 @@ export default function CreateMission({
               )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <FormInput
+                  id="mission-title"
+                  data-testid="mission-title-input"
                   label="Mission Title"
                   placeholder="Enter a title for your mission"
                   value={missionData.name}
@@ -425,6 +433,7 @@ export default function CreateMission({
                   mode="dark"
                 />
                 <FormInput
+                  id="mission-tagline"
                   label="Tagline"
                   placeholder="Enter a tagline for your mission"
                   value={missionData.tagline}
@@ -435,6 +444,7 @@ export default function CreateMission({
                 />
 
                 <FormInput
+                  id="mission-website"
                   label="Website"
                   placeholder="Enter a website link"
                   value={missionData.infoUri}
@@ -444,6 +454,7 @@ export default function CreateMission({
                   mode="dark"
                 />
                 <FormInput
+                  id="mission-social"
                   label="Social Link"
                   placeholder="Enter a Twitter link"
                   value={missionData.twitter}
@@ -454,6 +465,7 @@ export default function CreateMission({
                 />
               </div>
               <FileInput
+                id="mission-image"
                 file={missionImage}
                 setFile={setMissionImage}
                 dimensions={[1024, 1024]}
@@ -653,6 +665,7 @@ export default function CreateMission({
               description="Please review your mission details"
               customButton={
                 <PrivyWeb3Button
+                  id="launch-mission-button"
                   label={
                     <div className="flex items-center gap-2">
                       Launch Your Mission
@@ -807,6 +820,7 @@ export default function CreateMission({
                 </div>
               </div>
               <ConditionCheckbox
+                id="terms-checkbox"
                 label={
                   <p>
                     I HAVE READ AND ACCEPTED THE{' '}
@@ -834,6 +848,7 @@ export default function CreateMission({
               />
               {missionData.token.tradeable && (
                 <ConditionCheckbox
+                  id="token-security-checkbox"
                   label={'I AGREE THAT THIS TOKEN IS NOT A SECURITY, ETC...'}
                   agreedToCondition={agreedToTokenNotSecurity}
                   setAgreedToCondition={setAgreedToTokenNotSecurity}
