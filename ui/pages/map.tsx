@@ -165,10 +165,13 @@ export async function getStaticProps() {
         citizenLocation !== '' &&
         !citizenLocation?.startsWith('{')
       ) {
-        const locationRes = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${citizenLocation}&key=${process.env.GOOGLE_MAPS_API_KEY}`
-        )
-        locationData = await locationRes.json()
+        locationData = {
+          results: [
+            {
+              formatted_address: citizenLocation,
+            },
+          ],
+        }
       } else if (citizenLocation?.startsWith('{')) {
         const parsedLocationData = JSON.parse(citizenLocation)
         locationData = {
