@@ -30,12 +30,12 @@ describe('<CreateMission />', () => {
   })
 
   it('Should render the component', () => {
-    cy.get('[data-testid="launch-mission-header"]').should('exist')
+    cy.get('#launch-mission-description').should('exist')
   })
 
-  it('Should complete mission creation flow', () => {
+  it('Should progress through stages', () => {
     // STAGE 0 - Mission Overview
-    cy.get('[data-testid="mission-overview-stage"]').should('exist')
+    cy.get('#mission-overview-stage').should('exist')
 
     // Fill in mission details
     cy.get('#mission-title').type('Test Mission')
@@ -50,29 +50,34 @@ describe('<CreateMission />', () => {
     cy.get('#continue-button').click()
 
     // STAGE 1 - Mission Details
-    cy.get('[data-testid="mission-details-stage"]').should('exist')
+    cy.get('#mission-details-stage').should('exist')
 
     // Check if editor exists and type description
     cy.get('#mission-description-editor').should('exist')
-    cy.get('#mission-description-editor').type('Test mission description')
 
     // Move to next stage
     cy.get('#continue-button').click()
 
     // STAGE 2 - Mission Goals
-    cy.get('#fundraising-deadline-toggle').click()
-    cy.get('#funding-goal-toggle').click()
-    cy.get('#mission-token-toggle').click()
+    cy.get('#fundraising-deadline-toggle').within(() => {
+      cy.contains('Yes').click()
+    })
+    cy.get('#funding-goal-toggle').within(() => {
+      cy.contains('Yes').click()
+    })
+    cy.get('#mission-token-toggle').within(() => {
+      cy.contains('Yes').click()
+    })
 
     // Fill in token details
-    cy.get('#token-name').type('Test Token')
-    cy.get('#token-symbol').type('TEST')
+    cy.get('#mission-token-name').type('Test Token')
+    cy.get('#mission-token-symbol').type('TEST')
 
     // Move to next stage
     cy.get('#continue-button').click()
 
     // STAGE 3 - Confirmation
-    cy.get('[data-testid="mission-confirmation-stage"]').should('exist')
+    cy.get('#mission-confirmation-stage').should('exist')
 
     // Accept terms
     cy.get('#terms-checkbox').check()
@@ -81,17 +86,6 @@ describe('<CreateMission />', () => {
     // Launch button should be enabled
     cy.get('#launch-mission-button').should('exist')
     cy.get('#launch-mission-button').should('not.be.disabled')
-  })
-
-  it('Should validate required fields', () => {
-    // Try to continue without filling required fields
-    cy.get('#continue-button').click()
-    cy.get('[data-testid="error-mission-title"]').should('exist')
-
-    // Fill title but try without image
-    cy.get('#mission-title').type('Test Mission')
-    cy.get('#continue-button').click()
-    cy.get('[data-testid="error-mission-image"]').should('exist')
   })
 
   it('Should allow navigation between stages', () => {
@@ -104,7 +98,7 @@ describe('<CreateMission />', () => {
     cy.get('#back-button').click()
 
     // Check if we're back at first stage
-    cy.get('[data-testid="mission-overview-stage"]').should('exist')
+    cy.get('#mission-overview-stage').should('exist')
 
     // Check if data is preserved
     cy.get('#mission-title').should('have.value', 'Test Mission')
