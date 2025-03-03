@@ -1,10 +1,7 @@
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer } from 'thirdweb/react'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
-import client from '@/lib/thirdweb/client'
 import StandardCard from '../layout/StandardCard'
 import MissionStat from './MissionStat'
 
@@ -49,7 +46,8 @@ export default function MissionCard({
   const projectData = useJBProjectData(
     mission?.projectId,
     jbControllerContract,
-    jbTokensContract
+    jbTokensContract,
+    mission?.metadata
   )
 
   useEffect(() => {

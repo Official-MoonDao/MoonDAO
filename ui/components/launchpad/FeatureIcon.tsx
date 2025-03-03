@@ -15,11 +15,16 @@ export default function FeatureIcon({
 }: FeatureIconProps) {
   return (
     <div
+      id="feature-icon-container"
       className={`flex flex-col text-center max-w-[300px] items-center ${className}`}
     >
-      <div className="flex items-center justify-center w-fit h-fit gradient-2 rounded-full p-8 aspect-square">
+      <div
+        id="feature-icon-circle"
+        className="flex items-center justify-center w-fit h-fit gradient-2 rounded-full p-8 aspect-square"
+      >
         {typeof icon === 'string' ? (
           <Image
+            id="feature-icon-image"
             className="w-125 h-125"
             src={icon}
             alt={title}
@@ -27,11 +32,13 @@ export default function FeatureIcon({
             height={125}
           />
         ) : (
-          icon
+          <div id="feature-icon-custom">{icon}</div>
         )}
       </div>
-      <h2 className="mt-4 text-2xl font-GoodTimes">{title}</h2>
-      <p>{description}</p>
+      <h2 id="feature-icon-title" className="mt-4 text-2xl font-GoodTimes">
+        {title}
+      </h2>
+      <p id="feature-icon-description">{description}</p>
     </div>
   )
 }

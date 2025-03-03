@@ -4,6 +4,7 @@ import { isImageBlank } from '@/lib/utils/images'
 import { fitImage } from '@/lib/utils/images'
 
 type FileInputProps = {
+  id?: string
   file: File | undefined
   setFile: Function
   noBlankImages?: boolean
@@ -11,6 +12,7 @@ type FileInputProps = {
 }
 
 export default function FileInput({
+  id,
   file,
   setFile,
   noBlankImages,
@@ -19,7 +21,7 @@ export default function FileInput({
   //get file name
   const [fileName, setFileName] = useState(file?.name || 'No file chosen')
   return (
-    <div className="relative">
+    <div id={id} className="relative">
       <input
         type="file"
         accept="image/*"

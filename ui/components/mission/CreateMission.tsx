@@ -138,6 +138,7 @@ const ADDITIONAL_POINTS = [
 ]
 
 export function Stage({
+  id,
   stage,
   setStage,
   header,
@@ -147,10 +148,7 @@ export function Stage({
   children,
 }: any) {
   return (
-    <div
-      className="w-full flex flex-col gap-4"
-      data-testid={`mission-${header.toLowerCase().replace(' ', '-')}-stage`}
-    >
+    <div className="w-full flex flex-col gap-4" id={id}>
       <h2 className="font-GoodTimes text-2xl md:text-4xl">{header}</h2>
       <p className="opacity-50">{description}</p>
       <div className="flex flex-col gap-5 w-full md:max-w-[600px] lg:max-w-[800px]">
@@ -288,10 +286,9 @@ export default function CreateMission({
     <Container>
       <ContentLayout
         header="Launch A Mission"
-        data-testid="launch-mission-header"
         headerSize="max(20px, 3vw)"
         description={
-          <p className="">
+          <p id="launch-mission-description" className="">
             {
               'The Launchpad is an onchain fundraising platform that connects your space mission to the global cryptocurrency economy, providing transparent funding, community engagement, and real stakeholder participation to turn your vision into reality. For more information, check out '
             }
@@ -330,6 +327,7 @@ export default function CreateMission({
           </div>
           {stage === 0 && (
             <Stage
+              id="mission-overview-stage"
               stage={stage}
               setStage={setStage}
               header="Mission Overview"
@@ -423,7 +421,6 @@ export default function CreateMission({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <FormInput
                   id="mission-title"
-                  data-testid="mission-title-input"
                   label="Mission Title"
                   placeholder="Enter a title for your mission"
                   value={missionData.name}
@@ -484,6 +481,7 @@ export default function CreateMission({
           )}
           {stage === 1 && (
             <Stage
+              id="mission-details-stage"
               stage={stage}
               setStage={setStage}
               header="Mission Details"
@@ -506,7 +504,10 @@ export default function CreateMission({
               >
                 Restore Template
               </StandardButton>
-              <div className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50%">
+              <div
+                id="mission-description-editor"
+                className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50%"
+              >
                 <NanceEditor
                   initialValue={
                     missionData.description.length === 0
@@ -526,9 +527,15 @@ export default function CreateMission({
             </Stage>
           )}
           {stage === 2 && (
-            <Stage stage={stage} setStage={setStage} action={() => {}}>
+            <Stage
+              id="mission-goals-stage"
+              stage={stage}
+              setStage={setStage}
+              action={() => {}}
+            >
               <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <FormYesNo
+                  id="fundraising-deadline-toggle"
                   label="Set A Fundraising Deadline"
                   value={hasDeadline}
                   onChange={(value: boolean) => {
@@ -566,6 +573,7 @@ export default function CreateMission({
                   />
                 </div>
                 <FormYesNo
+                  id="funding-goal-toggle"
                   label="Define a Funding Goal"
                   value={hasFundingGoal}
                   onChange={(value: boolean) => {
@@ -603,6 +611,7 @@ export default function CreateMission({
                   />
                 </div>
                 <FormYesNo
+                  id="mission-token-toggle"
                   label="Create A Mission Token"
                   value={missionData.token.tradeable}
                   onChange={(value: boolean) =>
@@ -619,6 +628,7 @@ export default function CreateMission({
                   }`}
                 >
                   <FormInput
+                    id="mission-token-name"
                     label="Token Name"
                     placeholder="Enter a token name"
                     value={missionData.token.name}
@@ -631,6 +641,7 @@ export default function CreateMission({
                     mode="dark"
                   />
                   <FormInput
+                    id="mission-token-symbol"
                     label="Token Symbol"
                     placeholder="Enter a token symbol"
                     value={missionData.token.symbol}
@@ -659,6 +670,7 @@ export default function CreateMission({
           )}
           {stage === 3 && (
             <Stage
+              id="mission-confirmation-stage"
               stage={stage}
               setStage={setStage}
               header="Mission Confirmation"

@@ -13,11 +13,20 @@ export default function LaunchpadBenefit({
 }) {
   function Icon() {
     return (
-      <div className="w-[150px] h-[150px] md:w-[200px] md:h-[200px] rounded-full flex items-center justify-center">
+      <div
+        id="benefit-icon-container"
+        className="w-[150px] h-[150px] md:w-[200px] md:h-[200px] rounded-full flex items-center justify-center"
+      >
         {typeof icon === 'string' ? (
-          <Image src={icon} alt="Icon" width={200} height={200} />
+          <Image
+            id="benefit-icon-image"
+            src={icon}
+            alt="Icon"
+            width={200}
+            height={200}
+          />
         ) : (
-          icon
+          <div id="benefit-icon-custom">{icon}</div>
         )}
       </div>
     )
@@ -25,15 +34,23 @@ export default function LaunchpadBenefit({
 
   return (
     <div
+      id="benefit-container"
       className={`w-full flex gap-4 ${
         align === 'left' ? 'items-start' : 'items-end'
       }`}
     >
-      <div className="flex gap-[5vw] items-center">
+      <div id="benefit-content" className="flex gap-[5vw] items-center">
         {align === 'left' && <Icon />}
-        <div className="flex flex-col gap-2">
-          <h3 className="text-xl font-bold font-GoodTimes">{title}</h3>
-          <p className="text-sm text-gray-500 max-w-[500px]">{description}</p>
+        <div id="benefit-text" className="flex flex-col gap-2">
+          <h3 id="benefit-title" className="text-xl font-bold font-GoodTimes">
+            {title}
+          </h3>
+          <p
+            id="benefit-description"
+            className="text-sm text-gray-500 max-w-[500px]"
+          >
+            {description}
+          </p>
         </div>
         {align === 'right' && <Icon />}
       </div>

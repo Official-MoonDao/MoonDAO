@@ -23,7 +23,10 @@ export default function FormYesNo({
   tooltip,
 }: FormYesNoProps) {
   return (
-    <div className="w-auto h-full py-1 flex flex-col justify-between gap-2">
+    <div
+      id={id}
+      className="w-auto h-full py-1 flex flex-col justify-between gap-2"
+    >
       <div className="flex flex-row gap-2 items-center">
         {label && (
           <p
