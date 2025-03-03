@@ -25,7 +25,7 @@ function CollapsibleContainer({
           height: isExpanded ? 'auto' : minHeight,
         }}
       >
-        <div>{children}</div>
+        <div className="break-words">{children}</div>
       </div>
       <div
         className={`absolute bottom-0 md:bottom-[-25px] ${
