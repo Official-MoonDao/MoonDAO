@@ -81,6 +81,7 @@ export default function useNavigation(citizen: any) {
           { name: 'About', href: '/about' },
           { name: 'Events', href: '/events' },
           { name: 'Analytics', href: '/analytics' },
+          { name: 'FAQ', href: 'https://docs.moondao.com/About/FAQ' },
         ],
       },
       {
