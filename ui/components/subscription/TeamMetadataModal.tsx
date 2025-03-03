@@ -15,7 +15,7 @@ import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
-import { addHttpsIfMissing } from '@/lib/utils/strings'
+import { addHttpsIfMissing, bytesOfString } from '@/lib/utils/strings'
 import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
@@ -44,7 +44,11 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
           setTeamData((prev: any) => ({ ...prev, description: target.value }))
         }
         placeholder="Enter your bio"
-        maxLength={1024}
+        maxLength={
+          bytesOfString(teamData.description) >= 1024
+            ? teamData.description.length
+            : 1024
+        }
       />
       <FormInput
         id="team-twitter-input"
@@ -54,7 +58,11 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
           setTeamData((prev: any) => ({ ...prev, twitter: target.value }))
         }
         placeholder="Enter your twitter link"
-        maxLength={1024}
+        maxLength={
+          bytesOfString(teamData.twitter) >= 1024
+            ? teamData.twitter.length
+            : 1024
+        }
       />
       <FormInput
         id="team-communications-input"
@@ -67,7 +75,11 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
           }))
         }
         placeholder="Enter your communications link"
-        maxLength={1024}
+        maxLength={
+          bytesOfString(teamData.communications) >= 1024
+            ? teamData.communications.length
+            : 1024
+        }
       />
       <FormInput
         id="team-website-input"
@@ -77,7 +89,11 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
           setTeamData((prev: any) => ({ ...prev, website: target.value }))
         }
         placeholder="Enter your website link"
-        maxLength={1024}
+        maxLength={
+          bytesOfString(teamData.website) >= 1024
+            ? teamData.website.length
+            : 1024
+        }
       />
     </div>
   )

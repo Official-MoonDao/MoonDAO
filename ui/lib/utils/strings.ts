@@ -10,3 +10,7 @@ export const addHttpsIfMissing = (url: string) => {
   }
   return url
 }
+
+export const bytesOfString = (str: string) => {
+  return new TextEncoder().encode(str).length
+}

@@ -18,6 +18,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
+import { bytesOfString } from '@/lib/utils/strings'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import { Job } from '../jobs/Job'
 import Modal from '../layout/Modal'
@@ -221,6 +222,7 @@ export default function TeamJobModal({
               setJobData({ ...jobData, title: e.target.value })
             }}
             value={jobData.title}
+            maxLength={100}
           />
           <textarea
             id="job-description-input"
@@ -231,7 +233,11 @@ export default function TeamJobModal({
             }}
             value={jobData.description}
             style={{ resize: 'none' }}
-            maxLength={500}
+            maxLength={
+              bytesOfString(jobData.description) >= 1024
+                ? jobData.description.length
+                : 1024
+            }
           />
           <input
             id="job-application-link-input"
@@ -242,6 +248,7 @@ export default function TeamJobModal({
               setJobData({ ...jobData, contactInfo: e.target.value })
             }}
             value={jobData.contactInfo}
+            maxLength={500}
           />
           <div className="w-full flex gap-2 items-center">
             <p>Expiration:</p>
