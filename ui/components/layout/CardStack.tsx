@@ -11,10 +11,7 @@ export default function CardStack({ children }: CardStackProps) {
   const cardRefs = useRef<(HTMLDivElement | null)[]>([])
   const isAnimating = useRef(false)
   const [isActive, setIsActive] = useState(false)
-  const isNearComponent = useRef(false)
   const hasCompletedStack = useRef(false)
-
-  // Add touch handling state
   const touchStart = useRef<number | null>(null)
 
   // Reset refs array when children change
@@ -97,7 +94,6 @@ export default function CardStack({ children }: CardStackProps) {
     setCurrentIndex(nextIndex)
   }
 
-  // Add these helper functions at the top of the component
   const unlockScroll = () => {
     document.documentElement.style.overflow = ''
     document.body.style.overflow = ''
@@ -179,7 +175,6 @@ export default function CardStack({ children }: CardStackProps) {
     return false
   }
 
-  // Refactored scroll effect
   useEffect(() => {
     if (!containerRef.current) return
 
