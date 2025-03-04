@@ -1,19 +1,40 @@
 import Image from 'next/image'
-import toast from 'react-hot-toast'
-import { CopyIcon } from '../assets'
-import Address from '../layout/Address'
 import StandardButton from '../layout/StandardButton'
 
 type TeamTreasuryProps = {
   multisigAddress: string
   multisigMooneyBalance: any
   multisigNativeBalance: any
+  multisigDAIBalance: any
+  multisigUSDCBalance: any
+}
+
+function TreasuryAsset({
+  icon,
+  label,
+  balance,
+}: {
+  icon: string
+  label: string
+  balance: string
+}) {
+  return (
+    <div className="flex gap-4 items-center text-lg justify-between">
+      <Image src={icon} alt={icon} width={20} height={20} />
+      <div className="flex gap-2">
+        <p className="font-GoodTimes">{`${label} :`}</p>
+        <p className="pl-6 font-GoodTimes">{balance}</p>
+      </div>
+    </div>
+  )
 }
 
 export default function TeamTreasury({
   multisigAddress,
   multisigMooneyBalance,
   multisigNativeBalance,
+  multisigDAIBalance,
+  multisigUSDCBalance,
 }: TeamTreasuryProps) {
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-24 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
@@ -44,15 +65,27 @@ export default function TeamTreasury({
           </div>
         </div>
         <div className="mt-4 flex items-center gap-4"></div>
-        <div className="p-4">
-          <div className="mt-4 flex gap-4 items-center text-lg">
-            <p>{`MOONEY :`}</p>
-            <p>{multisigMooneyBalance}</p>
-          </div>
-          <div className="flex gap-4 items-center text-lg">
-            <p>{`ETHER :`}</p>
-            <p className="pl-6">{multisigNativeBalance}</p>
-          </div>
+        <div className="w-fit p-4 flex flex-col gap-4">
+          <TreasuryAsset
+            icon={'/coins/MOONEY.png'}
+            label={'MOONEY'}
+            balance={multisigMooneyBalance}
+          />
+          <TreasuryAsset
+            icon={'/coins/ETH.svg'}
+            label={'ETHER'}
+            balance={multisigNativeBalance}
+          />
+          <TreasuryAsset
+            icon={'/coins/DAI.svg'}
+            label={'DAI'}
+            balance={multisigDAIBalance}
+          />
+          <TreasuryAsset
+            icon={'/coins/USDC.svg'}
+            label={'USDC'}
+            balance={multisigUSDCBalance}
+          />
         </div>
       </div>
     </div>
