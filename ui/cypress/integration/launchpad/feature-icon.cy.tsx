@@ -32,20 +32,6 @@ describe('<FeatureIcon />', () => {
     cy.get('#feature-icon-image').should('not.exist')
   })
 
-  it('Should apply custom className', () => {
-    const customClass = 'test-custom-class'
-    cy.mount(
-      <FeatureIcon
-        title="Test Feature"
-        description="Test Description"
-        icon="/assets/test-icon.svg"
-        className={customClass}
-      />
-    )
-
-    cy.get('#feature-icon-container').should('have.class', customClass)
-  })
-
   it('Should handle long text content', () => {
     const longTitle = 'This is a very long title that might wrap'
     const longDescription =

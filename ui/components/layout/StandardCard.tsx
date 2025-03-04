@@ -191,13 +191,14 @@ export default function StandardCard({
                       paragraph ? 'min-h-[100px]' : 'min-h-[20px]'
                     }`}
                   >
-                  <div className="flex opacity-[70%] min-h-[100px] break-words">
-                    {paragraph &&
-                    !fullParagraph &&
-                    typeof paragraph === 'string' &&
-                    paragraph.length > 100
-                      ? `${paragraph.slice(0, 100)}...`
-                      : paragraph}
+                    <div className="flex opacity-[70%] min-h-[100px] break-words">
+                      {paragraph &&
+                      !fullParagraph &&
+                      typeof paragraph === 'string' &&
+                      paragraph.length > 100
+                        ? `${paragraph.slice(0, 100)}...`
+                        : paragraph}
+                    </div>
                   </div>
                 )}
                 {footer && footer}
