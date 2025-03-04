@@ -127,7 +127,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
       {/*The content, child rendered here*/}
       <main
-        className={`flex pb-24 justify-center ${
+        className={`flex justify-center ${
           isFullscreen ? 'md:ml-0' : 'md:ml-60'
         } relative`}
       >
