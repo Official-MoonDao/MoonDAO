@@ -14,84 +14,325 @@ export default function CardStack({ children }: CardStackProps) {
   const hasCompletedStack = useRef(false)
   const touchStart = useRef<number | null>(null)
 
+  // For scroll-linked animation
+  const targetProgress = useRef(0)
+  const currentProgress = useRef(0)
+  const lastDirection = useRef<'up' | 'down'>('down')
+  const nextIndex = useRef<number>(0)
+  const animationContext = useRef({
+    current: null as HTMLDivElement | null,
+    next: null as HTMLDivElement | null,
+  })
+  const animationFrame = useRef<number | null>(null)
+  const directionChangeTimeout = useRef<NodeJS.Timeout | null>(null)
+
+  // Add these refs at the top of the component with other refs
+  const lastScrollInputTime = useRef<number>(0)
+  const isInTransition = useRef<boolean>(false)
+  const transitionCooldown = useRef<boolean>(false)
+  const forcedCardProgression = useRef<boolean>(false)
+
   // Reset refs array when children change
   useEffect(() => {
     cardRefs.current = cardRefs.current.slice(0, children.length)
   }, [children])
 
-  // Animation function
-  const animateCards = (nextIndex: number, scrollingDown: boolean) => {
-    if (!containerRef.current || isAnimating.current) return
+  // Smooth animation function that runs on each frame
+  const animateFrame = () => {
+    // Calculate the new progress with damping for smoothness
+    // The damping factor controls the smoothing - lower = smoother but slower
+    const progressDiff = targetProgress.current - currentProgress.current
 
-    const currentCard = cardRefs.current[currentIndex]
-    const nextCard = cardRefs.current[nextIndex]
+    // Use a variable damping factor based on the size of the difference
+    // This makes small adjustments smoother and large jumps more responsive
+    const minDampingFactor = 0.08 // Slower for small changes (smoother)
+    const maxDampingFactor = 0.2 // Faster for large changes (more responsive)
 
-    if (!currentCard || !nextCard) return
+    // Calculate a dynamic damping factor based on the progress difference
+    const dampingFactor = Math.min(
+      maxDampingFactor,
+      minDampingFactor + Math.abs(progressDiff) * 0.5
+    )
 
-    isAnimating.current = true
+    currentProgress.current += progressDiff * dampingFactor
 
-    if (scrollingDown) {
-      // Sliding animation for scrolling down
-      gsap.set(nextCard, {
-        x: '100%',
-        opacity: 0,
-        scale: 0.8,
-        display: 'block',
+    updateCardPositions(currentProgress.current)
+
+    // Check if we've reached the target
+    if (
+      Math.abs(progressDiff) < 0.001 &&
+      Math.abs(targetProgress.current - currentProgress.current) < 0.01
+    ) {
+      // We're close enough to the target
+      currentProgress.current = targetProgress.current
+      updateCardPositions(currentProgress.current)
+
+      // If we've completed the animation, handle the transition
+      if (targetProgress.current >= 0.99 && !isAnimating.current) {
+        completeTransition()
+      } else if (targetProgress.current <= 0.01) {
+        // Reset if we went back to the start
+        resetAnimation()
+      }
+
+      // Stop the animation loop
+      animationFrame.current = null
+      return
+    }
+
+    // Continue the animation loop
+    animationFrame.current = requestAnimationFrame(animateFrame)
+  }
+
+  // Update the target progress and start the animation if needed
+  const setTargetProgress = (progress: number) => {
+    targetProgress.current = Math.max(0, Math.min(1, progress))
+
+    // Start the animation loop if it's not already running
+    if (animationFrame.current === null) {
+      animationFrame.current = requestAnimationFrame(animateFrame)
+    }
+  }
+
+  // Simple function to update card positions based on progress
+  const updateCardPositions = (progress: number) => {
+    const { current, next } = animationContext.current
+    if (!current || !next) return
+
+    // Ensure progress is between 0 and 1
+    const clampedProgress = Math.max(0, Math.min(1, progress))
+
+    if (lastDirection.current === 'down') {
+      // Current card moves left and fades
+      gsap.set(current, {
+        x: '0%',
+        opacity: 1 - clampedProgress * 2,
+        scale: 1 - clampedProgress * 0.2,
       })
 
-      gsap.to(currentCard, {
-        x: '0%',
-        opacity: 0,
-        scale: 0.8,
-        duration: 0.5,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          gsap.set(currentCard, { display: 'none' })
-        },
-      })
-
-      gsap.to(nextCard, {
-        x: '0%',
-        opacity: 1,
-        scale: 1,
-        duration: 0.5,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          isAnimating.current = false
-        },
+      // Next card comes in from right
+      gsap.set(next, {
+        x: (1 - clampedProgress) * 100 + '%',
+        opacity: clampedProgress,
+        scale: 0.8 + clampedProgress * 0.2,
       })
     } else {
-      // Fade animation for scrolling up
-      gsap.set(nextCard, {
-        x: '0%',
-        opacity: 0,
-        scale: 1,
-        display: 'block',
+      // Current card moves right
+      gsap.set(current, {
+        x: clampedProgress * 100 + '%',
+        opacity: 1 - clampedProgress * 0.7,
+        scale: 1 - clampedProgress * 0.2,
       })
 
-      gsap.to(currentCard, {
+      // Next card fades in
+      gsap.set(next, {
+        x: '0%',
+        opacity: clampedProgress,
+        scale: 0.8 + clampedProgress * 0.2,
+      })
+    }
+  }
+
+  // Reset the animation state
+  const resetAnimation = () => {
+    currentProgress.current = 0
+    targetProgress.current = 0
+
+    // Reset card positions
+    if (animationContext.current.current && animationContext.current.next) {
+      if (lastDirection.current === 'down') {
+        gsap.set(animationContext.current.current, {
+          x: '0%',
+          opacity: 1,
+          scale: 1,
+        })
+        gsap.set(animationContext.current.next, {
+          x: '100%',
+          opacity: 0,
+          scale: 0.8,
+        })
+      } else {
+        gsap.set(animationContext.current.current, {
+          x: '0%',
+          opacity: 1,
+          scale: 1,
+        })
+        gsap.set(animationContext.current.next, {
+          x: '0%',
+          opacity: 0,
+          scale: 0.8,
+        })
+      }
+    }
+  }
+
+  // Handle direction change safely
+  const handleDirectionChange = (newDirection: 'up' | 'down') => {
+    // Clear any existing timeout
+    if (directionChangeTimeout.current) {
+      clearTimeout(directionChangeTimeout.current)
+    }
+
+    // Get current cards
+    const current = animationContext.current.current
+    const next = animationContext.current.next
+
+    if (!current || !next) {
+      // If no animation is in progress, just update the direction
+      lastDirection.current = newDirection
+      return
+    }
+
+    // Cancel any running animation frame
+    if (animationFrame.current !== null) {
+      cancelAnimationFrame(animationFrame.current)
+      animationFrame.current = null
+    }
+
+    // Smoothly transition to the initial state for the new direction
+    const progress = currentProgress.current
+
+    // If we've barely started the animation, just reset
+    if (progress < 0.1) {
+      resetAnimation()
+      lastDirection.current = newDirection
+      animationContext.current.current = null
+      animationContext.current.next = null
+      return
+    }
+    // Animate back to initial positions
+    gsap.to(current, {
+      x: '0%',
+      opacity: 1,
+      scale: 1,
+      duration: 0.3,
+      ease: 'power2.out',
+      onComplete: () => {
+        // Update direction after animation completes
+        lastDirection.current = newDirection
+        currentProgress.current = 0
+        targetProgress.current = 0
+
+        // Reset animation context
+        animationContext.current.current = null
+        animationContext.current.next = null
+
+        // Clear the timeout
+        if (directionChangeTimeout.current) {
+          clearTimeout(directionChangeTimeout.current)
+          directionChangeTimeout.current = null
+        }
+      },
+    })
+
+    // Animate next card back to its initial position
+    if (lastDirection.current === 'down') {
+      gsap.to(next, {
         x: '100%',
         opacity: 0,
         scale: 0.8,
-        duration: 0.5,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          gsap.set(currentCard, { display: 'none' })
-        },
+        duration: 0.3,
+        ease: 'power2.out',
       })
-
-      gsap.to(nextCard, {
-        opacity: 1,
-        scale: 1,
-        duration: 0.5,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          isAnimating.current = false
-        },
+    } else {
+      gsap.to(next, {
+        x: '0%',
+        opacity: 0,
+        scale: 0.8,
+        duration: 0.3,
+        ease: 'power2.out',
       })
     }
 
-    setCurrentIndex(nextIndex)
+    // Add a small delay before allowing new animations
+    directionChangeTimeout.current = setTimeout(() => {
+      directionChangeTimeout.current = null
+    }, 350) // Slightly longer than the animation duration
+  }
+
+  // Prepare cards for animation
+  const prepareAnimation = (direction: 'up' | 'down') => {
+    if (isAnimating.current) return false
+
+    const isLastCard = currentIndex === children.length - 1
+    const isFirstCard = currentIndex === 0
+
+    // Don't proceed if we're at the edges
+    if (
+      (isLastCard && direction === 'down') ||
+      (isFirstCard && direction === 'up')
+    ) {
+      if (isLastCard && direction === 'down') {
+        hasCompletedStack.current = true
+        setIsActive(false)
+        unlockScroll()
+      }
+      return false
+    }
+
+    // Calculate next index
+    nextIndex.current =
+      direction === 'down'
+        ? Math.min(children.length - 1, currentIndex + 1)
+        : Math.max(0, currentIndex - 1)
+
+    // Get card elements
+    const current = cardRefs.current[currentIndex]
+    const next = cardRefs.current[nextIndex.current]
+
+    if (!current || !next) return false
+
+    // Store in context
+    animationContext.current.current = current
+    animationContext.current.next = next
+
+    // Make sure next card is visible
+    gsap.set(next, { display: 'block' })
+
+    // Set initial positions based on direction
+    if (direction === 'down') {
+      gsap.set(next, {
+        x: '100%',
+        opacity: 0,
+        scale: 0.8,
+      })
+    } else {
+      gsap.set(next, {
+        x: '0%',
+        opacity: 0,
+        scale: 0.8,
+      })
+    }
+
+    lastDirection.current = direction
+    currentProgress.current = 0
+    targetProgress.current = 0
+
+    return true
+  }
+
+  // Complete the transition to the next card
+  const completeTransition = () => {
+    isAnimating.current = true
+
+    // Update the current index
+    setCurrentIndex(nextIndex.current)
+
+    // Reset after a short delay
+    setTimeout(() => {
+      isAnimating.current = false
+      currentProgress.current = 0
+      targetProgress.current = 0
+
+      // Hide the previous card
+      if (animationContext.current.current) {
+        gsap.set(animationContext.current.current, { display: 'none' })
+      }
+
+      // Reset animation context
+      animationContext.current.current = null
+      animationContext.current.next = null
+    }, 50)
   }
 
   const unlockScroll = () => {
@@ -116,7 +357,12 @@ export default function CardStack({ children }: CardStackProps) {
     const elementCenter = rect.top + rect.height / 2
     const viewportCenter = viewportHeight / 2
     const distanceFromCenter = Math.abs(elementCenter - viewportCenter)
-    const activationThreshold = viewportHeight * 0.4
+
+    // Make this threshold stricter to ensure better centering
+    const activationThreshold = viewportHeight * 0.25
+
+    // Check if component is fully visible in viewport
+    const isFullyVisible = rect.top >= 0 && rect.bottom <= viewportHeight
 
     return {
       rect,
@@ -124,55 +370,70 @@ export default function CardStack({ children }: CardStackProps) {
       elementCenter,
       distanceFromCenter,
       activationThreshold,
-      isNearCenter: distanceFromCenter < activationThreshold,
+      isNearCenter: distanceFromCenter < activationThreshold && isFullyVisible,
     }
   }
 
-  const handleStackNavigation = async (
-    scrollingDown: boolean,
-    deltaY: number = 0
-  ) => {
-    const isLastCard = currentIndex === children.length - 1
+  // Handle scroll events
+  const handleScrollInput = (deltaY: number) => {
+    if (!isActive || isAnimating.current || directionChangeTimeout.current)
+      return false
+
+    const now = Date.now()
+
+    // Debounce rapid consecutive scrolls
+    // Minimum time between scroll inputs (in ms)
+    // Reduce debounce time to make scrolling more responsive
+    const scrollDebounceTime = 30 // Reduced from 50ms
+    if (now - lastScrollInputTime.current < scrollDebounceTime) {
+      return false
+    }
+
+    lastScrollInputTime.current = now
+
+    const direction = deltaY > 0 ? 'down' : 'up'
+
+    // Check if we're at the first card and trying to scroll up
     const isFirstCard = currentIndex === 0
-
-    // Handle exiting the stack
-    if ((isLastCard && scrollingDown) || (isFirstCard && !scrollingDown)) {
-      if (isLastCard && scrollingDown) {
-        hasCompletedStack.current = true
-      }
-
-      // Create a promise that resolves when animation is complete
-      const waitForAnimation = new Promise<void>((resolve) => {
-        const checkAnimation = () => {
-          if (!isAnimating.current) {
-            resolve()
-          } else {
-            requestAnimationFrame(checkAnimation)
-          }
-        }
-        checkAnimation()
-      })
-
-      // Wait for any ongoing animation to complete
-      await waitForAnimation
-
+    if (isFirstCard && direction === 'up' && currentProgress.current < 0.05) {
+      // Unlock scroll to allow page scrolling
       setIsActive(false)
       unlockScroll()
-      return true
+      return false
     }
 
-    // Handle card navigation
-    if (deltaY === 0 || Math.abs(deltaY) > 50) {
-      if (scrollingDown && !isLastCard) {
-        animateCards(currentIndex + 1, true)
-        return true
-      } else if (!scrollingDown && !isFirstCard) {
-        animateCards(currentIndex - 1, false)
-        return true
-      }
+    // If direction changed, handle it safely
+    if (
+      lastDirection.current !== direction &&
+      (currentProgress.current > 0.05 || animationContext.current.current)
+    ) {
+      handleDirectionChange(direction)
+      return false
     }
 
-    return false
+    // Setup animation if needed
+    if (!animationContext.current.current || !animationContext.current.next) {
+      const prepared = prepareAnimation(direction)
+      if (!prepared) return false
+    }
+
+    // Calculate new progress
+    // Adjust sensitivity here - higher number = less sensitive
+    const progressDelta = Math.abs(deltaY) / 300 // Increased sensitivity from 500 to 300
+
+    // Limit the maximum progress change per input to prevent skipping
+    const maxProgressDelta = 0.25 // Increased from 0.15 to 0.25
+    const limitedProgressDelta = Math.min(progressDelta, maxProgressDelta)
+
+    const newTarget = Math.max(
+      0,
+      Math.min(1, targetProgress.current + limitedProgressDelta)
+    )
+
+    // Update target progress
+    setTargetProgress(newTarget)
+
+    return true
   }
 
   useEffect(() => {
@@ -203,13 +464,12 @@ export default function CardStack({ children }: CardStackProps) {
           hasCompletedStack.current = false
         }
 
+        // Only activate when truly centered and fully visible
         if (position.isNearCenter && !hasCompletedStack.current) {
           setIsActive(true)
           lockScroll()
-        } else if (
-          position.distanceFromCenter >= position.activationThreshold &&
-          !scrollingUp
-        ) {
+        } else {
+          // Deactivate if not centered or if scrolling down past threshold
           setIsActive(false)
           unlockScroll()
         }
@@ -217,86 +477,348 @@ export default function CardStack({ children }: CardStackProps) {
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
+
+    // Also check position on resize to handle orientation changes
+    window.addEventListener('resize', handleScroll, { passive: true })
+
+    // Initial check
     handleScroll()
 
     return () => {
       window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleScroll)
       if (scrollTimeout) clearTimeout(scrollTimeout)
       unlockScroll()
     }
   }, [])
 
-  // Update wheel handler to handle async navigation
+  // Wheel event handler
   useEffect(() => {
-    const handleWheel = async (e: WheelEvent) => {
-      if (!isActive || isAnimating.current) return
+    let accumulatedDelta = 0
+    let lastWheelTime = 0
+    let consecutiveUpScrolls = 0
+    let lastWheelDirection: 'up' | 'down' | null = null
+
+    const handleWheel = (e: WheelEvent) => {
+      // First check if component is properly centered
+      const position = checkComponentPosition()
+      if (!position?.isNearCenter) {
+        // Don't handle wheel events if not centered
+        return
+      }
+
+      if (!isActive) {
+        // If component is centered but not active yet, activate it
+        if (!hasCompletedStack.current) {
+          setIsActive(true)
+          lockScroll()
+        }
+        return
+      }
+
+      const now = Date.now()
+      const isScrollingUp = e.deltaY < 0
+      const currentDirection = isScrollingUp ? 'up' : 'down'
+
+      // Detect direction change
+      if (
+        lastWheelDirection !== null &&
+        lastWheelDirection !== currentDirection
+      ) {
+        // Direction changed, reset state
+        accumulatedDelta = 0
+      }
+
+      lastWheelDirection = currentDirection
+
+      // Reset accumulated delta if there's been a pause
+      // Reduce this time to make scrolling more responsive
+      if (now - lastWheelTime > 100) {
+        // Reduced from 150ms
+        accumulatedDelta = 0
+        consecutiveUpScrolls = 0
+      }
+
+      lastWheelTime = now
+
+      // Track consecutive up scrolls at the first card
+      if (
+        isScrollingUp &&
+        currentIndex === 0 &&
+        currentProgress.current < 0.05
+      ) {
+        consecutiveUpScrolls++
+
+        // After 3 consecutive up scrolls at the first card, unlock vertical scrolling
+        if (consecutiveUpScrolls >= 3) {
+          setIsActive(false)
+          unlockScroll()
+          return
+        }
+      } else if (!isScrollingUp) {
+        consecutiveUpScrolls = 0
+      }
+
       e.preventDefault()
       e.stopPropagation()
 
-      await handleStackNavigation(e.deltaY > 0)
+      // Throttle fast scrolling by capping the delta value
+      // Increase max delta to allow faster scrolling
+      const maxDeltaY = 150 // Increased from 100
+      const throttledDeltaY =
+        Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), maxDeltaY)
+
+      // Accumulate delta for smoother control with a cap to prevent large jumps
+      accumulatedDelta += throttledDeltaY
+
+      // Apply a maximum accumulated delta to prevent skipping
+      // Increase max accumulated delta to allow faster scrolling
+      const maxAccumulatedDelta = 200 // Increased from 150
+      accumulatedDelta =
+        Math.sign(accumulatedDelta) *
+        Math.min(Math.abs(accumulatedDelta), maxAccumulatedDelta)
+
+      // Apply with some throttling for smoother experience
+      // Increase sensitivity multipliers
+      const sensitivityMultiplier = isScrollingUp ? 1.8 : 1.2 // Increased from 1.5:1.0
+
+      // Use a fixed step size for more consistent scrolling
+      // Increase step size for faster progression
+      const scrollStep = 25 // Increased from 15
+      const direction = accumulatedDelta > 0 ? 1 : -1
+
+      // Only process scroll if we're not already animating at high velocity
+      // Increase threshold to allow more overlapping animations
+      if (Math.abs(targetProgress.current - currentProgress.current) < 0.4) {
+        // Increased from 0.3
+        handleScrollInput(direction * scrollStep * sensitivityMultiplier)
+      }
     }
 
     if (isActive) {
       window.addEventListener('wheel', handleWheel, { passive: false })
     }
 
-    return () => window.removeEventListener('wheel', handleWheel)
+    return () => {
+      window.removeEventListener('wheel', handleWheel)
+      if (animationFrame.current !== null) {
+        cancelAnimationFrame(animationFrame.current)
+        animationFrame.current = null
+      }
+      if (directionChangeTimeout.current !== null) {
+        clearTimeout(directionChangeTimeout.current)
+        directionChangeTimeout.current = null
+      }
+    }
   }, [isActive, currentIndex, children.length])
 
-  // Update touch handler to handle async navigation
+  // Touch event handlers
   useEffect(() => {
+    let lastTouchY = 0
+    let touchVelocity = 0
+    let lastTouchTime = 0
+    let consecutiveUpSwipes = 0
+    let lastTouchDirection: 'up' | 'down' | null = null
+    let touchEventCount = 0
+    let touchEventTimer: NodeJS.Timeout | null = null
+
     const handleTouchStart = (e: TouchEvent) => {
       if (!containerRef.current) return
-      touchStart.current = e.touches[0].clientY
 
+      // Check if component is centered before activating
       const position = checkComponentPosition()
-      if (position?.isNearCenter && !hasCompletedStack.current) {
+      if (!position?.isNearCenter) {
+        // Don't activate if not centered
+        return
+      }
+
+      touchStart.current = e.touches[0].clientY
+      lastTouchY = e.touches[0].clientY
+      touchVelocity = 0
+      lastTouchTime = Date.now()
+      consecutiveUpSwipes = 0
+      lastTouchDirection = null
+      touchEventCount = 0
+
+      if (!hasCompletedStack.current) {
         setIsActive(true)
         lockScroll()
       }
     }
 
-    const handleTouchMove = async (e: TouchEvent) => {
-      if (!containerRef.current || !touchStart.current) return
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!containerRef.current || touchStart.current === null) return
 
-      const touchY = e.touches[0].clientY
-      const deltaY = touchStart.current - touchY
-      const scrollingDown = deltaY > 0
+      // Count touch events in a short time period to detect fast swiping
+      touchEventCount++
 
-      const position = checkComponentPosition()
-      if (!position) return
+      // Reset the counter after a delay
+      if (touchEventTimer) clearTimeout(touchEventTimer)
+      touchEventTimer = setTimeout(() => {
+        touchEventCount = 0
+        // Disable forced progression after a period of no touch events
+        forcedCardProgression.current = false
+      }, 300)
 
-      if (!scrollingDown && position.isNearCenter) {
-        hasCompletedStack.current = false
+      // If user is swiping very quickly, enable forced card progression
+      if (touchEventCount > 4 && !isInTransition.current) {
+        forcedCardProgression.current = true
       }
 
+      const now = Date.now()
+      const touchY = e.touches[0].clientY
+      const deltaY = lastTouchY - touchY
+      const deltaTime = now - lastTouchTime
+      const isSwipingUp = deltaY < 0
+      const currentDirection = isSwipingUp ? 'up' : 'down'
+
+      // Detect direction change
+      if (
+        lastTouchDirection !== null &&
+        lastTouchDirection !== currentDirection
+      ) {
+        // Direction changed, reset state
+        touchVelocity = 0
+      }
+
+      lastTouchDirection = currentDirection
+
+      // Track consecutive up swipes at the first card
+      if (isSwipingUp && currentIndex === 0 && currentProgress.current < 0.05) {
+        consecutiveUpSwipes++
+
+        // After 3 consecutive up swipes at the first card, unlock vertical scrolling
+        if (consecutiveUpSwipes >= 3) {
+          setIsActive(false)
+          unlockScroll()
+          return
+        }
+      } else if (!isSwipingUp) {
+        consecutiveUpSwipes = 0
+      }
+
+      // Calculate velocity (pixels per ms)
+      if (deltaTime > 0) {
+        // Cap the velocity to prevent extremely fast swipes
+        // Increase max velocity to allow faster swiping
+        const maxVelocity = 1.5 // Increased from 1.0
+        const rawVelocity = deltaY / deltaTime
+        touchVelocity =
+          Math.sign(rawVelocity) * Math.min(Math.abs(rawVelocity), maxVelocity)
+      }
+
+      lastTouchY = touchY
+      lastTouchTime = now
+
+      // Only prevent default if we're actively handling the card stack
       if (isActive) {
         e.preventDefault()
-        const navigationComplete = await handleStackNavigation(
-          scrollingDown,
-          deltaY
-        )
-        if (navigationComplete) {
-          touchStart.current = touchY
+
+        // Throttle fast swipes by capping the delta value
+        // Increase max delta to allow faster swiping
+        const maxDeltaY = 25 // Increased from 15
+        const throttledDeltaY =
+          Math.sign(deltaY) * Math.min(Math.abs(deltaY), maxDeltaY)
+
+        // Increase sensitivity for upward swipes by applying a multiplier
+        // This makes upward swipes require less movement
+        // Increase sensitivity multipliers
+        const sensitivityMultiplier = isSwipingUp ? 2.0 : 1.0 // Increased from 1.5:0.8
+        const adjustedDeltaY = throttledDeltaY * sensitivityMultiplier
+
+        // Only process touch if we're not already animating at high velocity
+        // and not in cooldown or transition
+        // Increase threshold to allow more overlapping animations
+        if (
+          Math.abs(targetProgress.current - currentProgress.current) < 0.3 && // Increased from 0.2
+          !transitionCooldown.current &&
+          !isInTransition.current
+        ) {
+          // Use a fixed small value for smoother control, but adjust for direction
+          // Increase step size for faster progression
+          handleScrollInput(adjustedDeltaY > 0 ? 20 : -20) // Increased from 12
         }
       }
     }
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (touchStart.current === null) return
+
+      // Use velocity to determine if we should complete the animation
+      const velocityThreshold = 0.4 // Reduced from 0.5 to 0.4
+      const isSwipingUp = touchVelocity < 0
+
+      // Lower threshold for upward swipes
+      const adjustedThreshold = isSwipingUp ? 0.25 : 0.4 // Reduced from 0.3:0.5 to 0.25:0.4
+
+      if (Math.abs(touchVelocity) > adjustedThreshold) {
+        // Fast swipe - complete in the direction of the swipe
+        setTargetProgress(touchVelocity > 0 ? 1 : 0)
+      } else if (
+        currentProgress.current > 0.1 &&
+        currentProgress.current < 0.9
+      ) {
+        // For upward swipes, make it easier to complete the animation
+        const midPoint = isSwipingUp ? 0.35 : 0.5 // Reduced from 0.4 to 0.35 for upward swipes
+        setTargetProgress(currentProgress.current > midPoint ? 1 : 0)
+      }
+
+      // If we're more than halfway through a transition, force it to complete
+      if (currentProgress.current > 0.5 && !isInTransition.current) {
+        setTimeout(() => {
+          setTargetProgress(1.0)
+        }, 50)
+      }
+
       touchStart.current = null
+
+      // Reset touch event counter
+      touchEventCount = 0
+      if (touchEventTimer) {
+        clearTimeout(touchEventTimer)
+      }
     }
 
+    // Use passive: true for touchstart to improve performance
     window.addEventListener('touchstart', handleTouchStart, { passive: true })
+
+    // Use passive: false for touchmove to allow preventDefault when needed
     window.addEventListener('touchmove', handleTouchMove, { passive: false })
-    window.addEventListener('touchend', handleTouchEnd)
+
+    // Use passive: true for touchend as we don't need to prevent default
+    window.addEventListener('touchend', handleTouchEnd, { passive: true })
 
     return () => {
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('touchend', handleTouchEnd)
+      if (touchEventTimer) clearTimeout(touchEventTimer)
+      if (animationFrame.current !== null) {
+        cancelAnimationFrame(animationFrame.current)
+        animationFrame.current = null
+      }
+      if (directionChangeTimeout.current !== null) {
+        clearTimeout(directionChangeTimeout.current)
+        directionChangeTimeout.current = null
+      }
     }
   }, [isActive, currentIndex, children.length])
 
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrame.current !== null) {
+        cancelAnimationFrame(animationFrame.current)
+        animationFrame.current = null
+      }
+      if (directionChangeTimeout.current !== null) {
+        clearTimeout(directionChangeTimeout.current)
+        directionChangeTimeout.current = null
+      }
+    }
+  }, [])
+
+  // Initialize cards
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -318,7 +840,7 @@ export default function CardStack({ children }: CardStackProps) {
     <div className="flex items-center justify-center py-20">
       <div
         ref={containerRef}
-        className="relative w-full overflow-hidden"
+        className={`relative w-full overflow-hidden transition-all duration-300`}
         style={{
           minHeight: '500px',
           maxHeight: '800px',
