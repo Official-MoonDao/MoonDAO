@@ -15,7 +15,7 @@ export default function LaunchpadBenefit({
     return (
       <div
         id="benefit-icon-container"
-        className="w-[150px] h-[150px] md:w-[200px] md:h-[200px] rounded-full flex items-center justify-center"
+        className="w-[max(20vw,260px)] h-[max(20vw,260px)] pb-[5vw] md:pb-0 md:w-[max(25vw,250px)] md:h-[max(25vw,250px)] rounded-full flex items-center justify-center"
       >
         {typeof icon === 'string' ? (
           <Image
@@ -24,9 +24,10 @@ export default function LaunchpadBenefit({
             alt="Icon"
             width={200}
             height={200}
+            className="w-[60vw] h-[60vw] md:w-[max(20vw,200px)] md:h-[max(20vw,200px)]"
           />
         ) : (
-          <div id="benefit-icon-custom">{icon}</div>
+          <div id="benefit-icon-custom" className="w-[35vw] md:w-[20vw]">{icon}</div>
         )}
       </div>
     )
@@ -35,24 +36,30 @@ export default function LaunchpadBenefit({
   return (
     <div
       id="benefit-container"
-      className={`w-full flex gap-4 ${
-        align === 'left' ? 'items-start' : 'items-end'
-      }`}
+      className="w-full flex items-center"
     >
-      <div id="benefit-content" className="flex gap-[5vw] items-center">
-        {align === 'left' && <Icon />}
-        <div id="benefit-text" className="flex flex-col gap-2">
-          <h3 id="benefit-title" className="text-xl font-bold font-GoodTimes">
+      <div 
+        id="benefit-content" 
+        className="flex flex-col md:flex-row items-center justify-center w-full"
+      >
+        <div className="block md:hidden">
+          <Icon />
+        </div>
+        {align === 'left' && <div className="hidden md:block"><Icon /></div>}
+        <div id="benefit-text" className={`flex flex-col items-center ${
+          align === 'left' ? 'md:items-start text-center md:text-left pl-[5vw] pr-[5vw] md:pl-[2vw] md:pr-0' : 'md:items-end text-center md:text-right pr-[5vw] pl-[5vw] md:pr-[2vw] md:pl-0'
+        }`}>
+          <h3 id="benefit-title" className="text-[4vw] text-[5vw] md:text-[2vw] font-bold font-GoodTimes ">
             {title}
           </h3>
           <p
             id="benefit-description"
-            className="text-sm text-gray-500 max-w-[500px]"
+            className="md:max-w-[35vw] text-[3vw] md:text-[1.2vw] text-gray-500"
           >
             {description}
           </p>
         </div>
-        {align === 'right' && <Icon />}
+        {align === 'right' && <div className="hidden md:block"><Icon /></div>}
       </div>
     </div>
   )

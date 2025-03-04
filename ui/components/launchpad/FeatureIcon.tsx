@@ -32,7 +32,7 @@ export default function FeatureIcon({
         )}
       </div>
       </div>
-      <h2 className="mt-4 text-2xl font-GoodTimes">{title}</h2>
+      <h2 className="mt-[5vw] md:mt-[2vw] text-[5vw] md:text-[2vw] md:text-[2vw] font-GoodTimes">{title}</h2>
       <p className="md:text-[1.2vw]">{description}</p>
     </div>
   )

@@ -92,7 +92,7 @@ export default function ProposalInfo({
       : ''
   const router = useRouter()
   proposal.voteSetup = {
-    type: 'quadratic', // could make this dynamic in the future
+    type: 'weighted', // could make this dynamic in the future
     choices: ['Yes', 'No', 'Abstain'], // could make this dynamic in the future
   }
   const { isLinked, wallet } = useAccount()

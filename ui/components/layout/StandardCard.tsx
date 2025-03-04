@@ -191,6 +191,7 @@ export default function StandardCard({
                       paragraph ? 'min-h-[100px]' : 'min-h-[20px]'
                     }`}
                   >
+                  <div className="flex opacity-[70%] min-h-[100px] break-words">
                     {paragraph &&
                     !fullParagraph &&
                     typeof paragraph === 'string' &&
