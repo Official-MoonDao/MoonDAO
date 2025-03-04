@@ -1,7 +1,6 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
 import {
   GlobeAmericasIcon,
-  MapIcon,
   ListBulletIcon,
   Squares2X2Icon,
 } from '@heroicons/react/24/outline'
@@ -190,20 +189,20 @@ export default function Network({
               <Frame noPadding className="w-[300px] h-fit" marginBottom="0px">
                 <div className="flex flex-wrap text-sm bg-filter">
                   <Tab
-                    tab="teams"
-                    currentTab={tab}
-                    setTab={handleTabChange}
-                    icon="/../.././assets/icon-org.svg"
-                  >
-                    Teams
-                  </Tab>
-                  <Tab
                     tab="citizens"
                     currentTab={tab}
                     setTab={handleTabChange}
                     icon="/../.././assets/icon-passport.svg"
                   >
                     Citizens
+                  </Tab>
+                  <Tab
+                    tab="teams"
+                    currentTab={tab}
+                    setTab={handleTabChange}
+                    icon="/../.././assets/icon-org.svg"
+                  >
+                    Teams
                   </Tab>
                   <Tab
                     tab="map"

@@ -1,9 +1,9 @@
 import React from 'react'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import IndexCardGrid from '../components/layout/IndexCardGrid'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
+import IndexCardGrid from '../components/layout/IndexCardGrid'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 const cardData = [
@@ -36,20 +36,6 @@ const cardData = [
     inline: true,
   },
   {
-    icon: '/assets/icon-constitution.svg',
-    iconAlt: 'Constitution',
-    header: 'Our Constitution',
-    link: 'https://docs.moondao.com/Governance/Constitution',
-    hovertext: 'Read the Constitution',
-    paragraph: (
-      <>
-        This foundational document guides our governance processes, including
-        the roles of the Senate, Member House, Executive Branch, and more.
-      </>
-    ),
-    inline: true,
-  },
-  {
     icon: '/assets/icon-events.svg',
     iconAlt: 'Events',
     header: 'Our Events',
@@ -74,6 +60,17 @@ const cardData = [
         Transparent data and analytics related to our treasury, token,
         transactions, and more.
       </>
+    ),
+    inline: true,
+  },
+  {
+    icon: '/assets/icon-contract.svg',
+    iconAlt: 'FAQ',
+    header: 'FAQ',
+    link: 'https://docs.moondao.com/About/FAQ',
+    hovertext: 'Read the FAQ',
+    paragraph: (
+      <>Find answers to common questions about MoonDAO, projects, and more.</>
     ),
     inline: true,
   },

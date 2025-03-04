@@ -16,7 +16,7 @@ import deleteResponse from '@/lib/typeform/deleteResponse'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
-import { addHttpsIfMissing } from '@/lib/utils/strings'
+import { addHttpsIfMissing, bytesOfString } from '@/lib/utils/strings'
 import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
@@ -48,7 +48,11 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           }))
         }
         placeholder="Enter your bio"
-        maxLength={1024}
+        maxLength={
+          bytesOfString(citizenData?.description) >= 1024
+            ? citizenData?.description.length
+            : 1024
+        }
       />
       <FormInput
         id="citizen-location-input"
@@ -58,7 +62,11 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, location: target.value }))
         }
         placeholder="Enter your city and/or country"
-        maxLength={1024}
+        maxLength={
+          bytesOfString(citizenData?.location) >= 1024
+            ? citizenData?.location.length
+            : 1024
+        }
       />
       <FormInput
         id="citizen-discord-input"
@@ -68,7 +76,11 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, discord: target.value }))
         }
         placeholder="Enter your discord username"
-        maxLength={1024}
+        maxLength={
+          bytesOfString(citizenData?.discord) >= 1024
+            ? citizenData?.discord.length
+            : 1024
+        }
       />
       <FormInput
         id="citizen-twitter-input"
@@ -78,7 +90,11 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, twitter: target.value }))
         }
         placeholder="Enter your Twitter link including https://"
-        maxLength={1024}
+        maxLength={
+          bytesOfString(citizenData?.twitter) >= 1024
+            ? citizenData?.twitter.length
+            : 1024
+        }
       />
       <FormInput
         id="citizen-website-input"
@@ -88,7 +104,11 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, website: target.value }))
         }
         placeholder="Enter your website link including https://"
-        maxLength={1024}
+        maxLength={
+          bytesOfString(citizenData?.website) >= 1024
+            ? citizenData?.website.length
+            : 1024
+        }
       />
     </div>
   )
