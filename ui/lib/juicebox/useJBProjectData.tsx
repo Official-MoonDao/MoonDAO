@@ -103,7 +103,6 @@ export default function useJBProjectData(
             method: 'POST',
           }
         )
-        console.log(res)
         const data = await res.json()
         const projectSubgraphData = data.projects?.[0]
         setSubgraphData(projectSubgraphData)

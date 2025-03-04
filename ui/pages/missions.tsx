@@ -1,11 +1,9 @@
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
-import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   JBV4_CONTROLLER_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
-  TEAM_ADDRESSES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { GetStaticProps } from 'next'
@@ -18,7 +16,6 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
@@ -40,13 +37,6 @@ export default function Missions({ missions }: MissionsProps) {
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
-
-  //Contracts
-  const teamContract = useContract({
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
-    chain: selectedChain,
-  })
 
   const [input, setInput] = useState('')
   function filterBySearch(missions: Mission[]) {
@@ -171,7 +161,6 @@ export default function Missions({ missions }: MissionsProps) {
                       <MissionCard
                         key={`mission-card-${I}`}
                         mission={mission}
-                        teamContract={teamContract}
                       />
                     )
                   })

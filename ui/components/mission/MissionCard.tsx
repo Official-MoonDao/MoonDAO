@@ -1,7 +1,4 @@
-import { useEffect, useState } from 'react'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
-import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import StandardCard from '../layout/StandardCard'
 import MissionStat from './MissionStat'
 
@@ -29,38 +26,21 @@ export type MissionCardProps = {
   mission: Mission
   jbControllerContract?: any
   jbTokensContract?: any
-  teamContract?: any
-  compact?: boolean
 }
 
 export default function MissionCard({
   jbControllerContract,
   jbTokensContract,
-  teamContract,
   mission,
-  compact,
 }: MissionCardProps) {
   const { metadata } = mission
-  const [teamNFT, setTeamNFT] = useState<any>(null)
 
   const projectData = useJBProjectData(
     mission?.projectId,
     jbControllerContract,
     jbTokensContract,
-    mission?.metadata
+    metadata
   )
-
-  useEffect(() => {
-    async function getTeamNFT() {
-      if (!mission?.teamId) return
-      const nft = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(mission.teamId),
-      })
-      setTeamNFT(nft)
-    }
-    if (teamContract && mission?.teamId) getTeamNFT()
-  }, [mission, teamContract])
 
   function MissionFooter() {
     return (
@@ -79,11 +59,7 @@ export default function MissionCard({
 
   return (
     <StandardCard
-      link={`/team/${
-        teamNFT?.metadata?.name
-          ? generatePrettyLink(teamNFT?.metadata?.name)
-          : mission?.teamId
-      }?mission=${mission?.id}`}
+      link={`/mission/${mission?.id}`}
       title={metadata?.name}
       subheader={metadata?.tagline}
       image={metadata?.logoUri}
