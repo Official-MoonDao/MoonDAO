@@ -23,6 +23,8 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
+  DAI_ADDRESSES,
+  USDC_ADDRESSES,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -155,6 +157,19 @@ export default function TeamDetailPage({
     tokenAddress: MOONEY_ADDRESSES[chainSlug],
   })
 
+  const { data: DAIBalance } = useWalletBalance({
+    client,
+    chain: selectedChain,
+    address: nft?.owner,
+    tokenAddress: DAI_ADDRESSES[chainSlug],
+  })
+
+  const { data: USDCBalance } = useWalletBalance({
+    client,
+    chain: selectedChain,
+    address: nft?.owner,
+    tokenAddress: USDC_ADDRESSES[chainSlug],
+  })
   useChainDefault()
 
   //Profile Header Section
@@ -560,6 +575,8 @@ export default function TeamDetailPage({
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}
+                  multisigDAIBalance={DAIBalance?.displayValue}
+                  multisigUSDCBalance={USDCBalance?.displayValue}
                 />
               )}
               {/* General Actions */}
@@ -578,6 +595,8 @@ export default function TeamDetailPage({
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}
+                  multisigDAIBalance={DAIBalance?.displayValue}
+                  multisigUSDCBalance={USDCBalance?.displayValue}
                 />
               )}
             </Frame>

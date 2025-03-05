@@ -4,11 +4,13 @@ import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   CITIZEN_ADDRESSES,
+  DAI_ADDRESSES,
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
   MOONEY_ADDRESSES,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
+  USDC_ADDRESSES,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -88,6 +90,20 @@ export default function ProjectProfile({
     client,
     chain: selectedChain,
     tokenAddress: MOONEY_ADDRESSES[chainSlug],
+    address: owner,
+  })
+
+  const { data: DAIBalance } = useWalletBalance({
+    client,
+    chain: selectedChain,
+    tokenAddress: DAI_ADDRESSES[chainSlug],
+    address: owner,
+  })
+
+  const { data: USDCBalance } = useWalletBalance({
+    client,
+    chain: selectedChain,
+    tokenAddress: USDC_ADDRESSES[chainSlug],
     address: owner,
   })
 
@@ -326,6 +342,8 @@ export default function ProjectProfile({
                 multisigAddress={owner}
                 multisigMooneyBalance={MOONEYBalance?.displayValue}
                 multisigNativeBalance={nativeBalance?.displayValue}
+                multisigDAIBalance={DAIBalance?.displayValue}
+                multisigUSDCBalance={USDCBalance?.displayValue}
               />
             )}
           </div>
