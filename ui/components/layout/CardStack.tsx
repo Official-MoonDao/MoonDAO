@@ -572,23 +572,18 @@ export default function CardStack({ children }: CardStackProps) {
       accumulatedDelta += throttledDeltaY
 
       // Apply a maximum accumulated delta to prevent skipping
-      // Increase max accumulated delta to allow faster scrolling
-      const maxAccumulatedDelta = 200 // Increased from 150
+      const maxAccumulatedDelta = 200
       accumulatedDelta =
         Math.sign(accumulatedDelta) *
         Math.min(Math.abs(accumulatedDelta), maxAccumulatedDelta)
 
-      // Apply with some throttling for smoother experience
-      // Increase sensitivity multipliers
-      const sensitivityMultiplier = isScrollingUp ? 1.8 : 1.2 // Increased from 1.5:1.0
+      const sensitivityMultiplier = isScrollingUp ? 1.8 : 1.2
 
       // Use a fixed step size for more consistent scrolling
       // Increase step size for faster progression
-      const scrollStep = 25 // Increased from 15
+      const scrollStep = 25
       const direction = accumulatedDelta > 0 ? 1 : -1
 
-      // Only process scroll if we're not already animating at high velocity
-      // Increase threshold to allow more overlapping animations
       if (Math.abs(targetProgress.current - currentProgress.current) < 0.4) {
         // Increased from 0.3
         handleScrollInput(direction * scrollStep * sensitivityMultiplier)
@@ -720,23 +715,15 @@ export default function CardStack({ children }: CardStackProps) {
         const throttledDeltaY =
           Math.sign(deltaY) * Math.min(Math.abs(deltaY), maxDeltaY)
 
-        // Increase sensitivity for upward swipes by applying a multiplier
-        // This makes upward swipes require less movement
-        // Increase sensitivity multipliers
-        const sensitivityMultiplier = isSwipingUp ? 2.0 : 1.0 // Increased from 1.5:0.8
+        const sensitivityMultiplier = 1
         const adjustedDeltaY = throttledDeltaY * sensitivityMultiplier
 
-        // Only process touch if we're not already animating at high velocity
-        // and not in cooldown or transition
-        // Increase threshold to allow more overlapping animations
         if (
-          Math.abs(targetProgress.current - currentProgress.current) < 0.3 && // Increased from 0.2
+          Math.abs(targetProgress.current - currentProgress.current) < 0.3 &&
           !transitionCooldown.current &&
           !isInTransition.current
         ) {
-          // Use a fixed small value for smoother control, but adjust for direction
-          // Increase step size for faster progression
-          handleScrollInput(adjustedDeltaY > 0 ? 20 : -20) // Increased from 12
+          handleScrollInput(adjustedDeltaY > 0 ? 20 : -20)
         }
       }
     }
@@ -745,11 +732,11 @@ export default function CardStack({ children }: CardStackProps) {
       if (touchStart.current === null) return
 
       // Use velocity to determine if we should complete the animation
-      const velocityThreshold = 0.4 // Reduced from 0.5 to 0.4
+      const velocityThreshold = 0.4
       const isSwipingUp = touchVelocity < 0
 
       // Lower threshold for upward swipes
-      const adjustedThreshold = isSwipingUp ? 0.25 : 0.4 // Reduced from 0.3:0.5 to 0.25:0.4
+      const adjustedThreshold = 0.4
 
       if (Math.abs(touchVelocity) > adjustedThreshold) {
         // Fast swipe - complete in the direction of the swipe
@@ -759,7 +746,7 @@ export default function CardStack({ children }: CardStackProps) {
         currentProgress.current < 0.9
       ) {
         // For upward swipes, make it easier to complete the animation
-        const midPoint = isSwipingUp ? 0.35 : 0.5 // Reduced from 0.4 to 0.35 for upward swipes
+        const midPoint = 0.5
         setTargetProgress(currentProgress.current > midPoint ? 1 : 0)
       }
 
