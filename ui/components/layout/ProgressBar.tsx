@@ -1,28 +1,35 @@
 interface ProgressBarProps {
   progress: number // Value between 0 and 100
-  height?: string // Optional height prop
-  label?: string // Optional label to display
+  height?: string
+  label?: string
+  padding?: string
 }
 
 export default function ProgressBar({
   progress,
   height = '8px',
   label,
+  padding = '2px',
 }: ProgressBarProps) {
   return (
     <div
-      className="relative w-full rounded-full border bg-black/20 overflow-hidden border-light-warm"
-      style={{ height }}
+      className="relative w-full rounded-full bg-gradient-to-r from-[#425eeb] to-[#6d3f79] overflow-hidden"
+      style={{ height: `calc(${height} + ${padding} * 2)` }}
     >
       <div
-        className="h-full rounded-full gradient-2 transition-all duration-300"
-        style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
+        className="absolute inset-0 m-[2px] rounded-full bg-[#020617] overflow-hidden"
+        style={{ margin: padding }}
       >
-        {label && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs font-medium text-white">{label}</span>
-          </div>
-        )}
+        <div
+          className="h-full gradient-2 transition-all duration-300 relative"
+          style={{ width: `${Math.min(Math.max(progress, 10), 100)}%` }}
+        >
+          {label && (
+            <div className="absolute inset-y-0 right-2 flex items-center">
+              <span className="text-xs font-medium text-white">{label}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -33,7 +33,11 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import ProgressBar from '@/components/layout/ProgressBar'
+import StandardWideCard from '@/components/layout/StandardWideCard'
 import { Mission } from '@/components/mission/MissionCard'
+import MissionInfo from '@/components/mission/MissionInfo'
+import MissionStat from '@/components/mission/MissionStat'
 
 type ProjectProfileProps = {
   tokenId: string
@@ -67,9 +71,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   })
 
   const {
-    ruleset,
-    rulesetMetadata,
+    rulesets,
     tokenAddress: missionTokenAddress,
+    tokenSymbol: missionTokenSymbol,
+    tokenName: missionTokenName,
   } = useJBProjectData(
     mission?.projectId,
     jbV4ControllerContract,
@@ -86,7 +91,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       })
       setTeamNFT(teamNFT)
     }
-    if (teamContract && mission.teamId) {
+    if (teamContract ?? mission.teamId) {
       getTeamNFT()
     }
   }, [teamContract, mission.teamId])
@@ -155,86 +160,34 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           id="profile-description-container"
                           className="w-full pr-12"
                         >
-                          {mission?.metadata?.description || ''}
+                          {mission?.metadata?.tagline || ''}
                         </p>
                       ) : (
                         <></>
                       )}
                     </div>
                   </div>
-                  <div
-                    id="interactions-container"
-                    className="flex flex-col md:flex-row items-center justify-start lg:pr-10"
-                  >
-                    {mission?.metadata?.discord ||
-                    mission?.metadata?.twitter ||
-                    mission?.metadata?.infoUri ? (
-                      <div
-                        id="socials-container"
-                        className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
-                      >
-                        {mission?.metadata?.discord &&
-                          !mission?.metadata?.discord.includes(
-                            '/users/undefined'
-                          ) && (
-                            <Link
-                              className="flex gap-2"
-                              href={mission?.metadata?.discord}
-                              target="_blank"
-                              passHref
-                            >
-                              <DiscordIcon />
-                            </Link>
-                          )}
-                        {mission?.metadata?.twitter && (
-                          <Link
-                            className="flex gap-2"
-                            href={mission?.metadata?.twitter}
-                            target="_blank"
-                            passHref
-                          >
-                            <TwitterIcon />
-                          </Link>
-                        )}
-                        {mission?.metadata?.infoUri && (
-                          <Link
-                            className="flex gap-2"
-                            href={mission?.metadata?.infoUri}
-                            target="_blank"
-                            passHref
-                          >
-                            <GlobeAltIcon height={25} width={25} />
-                          </Link>
-                        )}
-                      </div>
-                    ) : null}
-                    <Link
-                      href={`https://sepolia.juicebox.money/v4/p/${mission.projectId}`}
-                      target="_blank"
-                      passHref
-                    >
-                      <JuiceboxLogoWhite />
-                    </Link>
+                  <div className="flex flex-wrap gap-2">
+                    <MissionStat
+                      label="Deadline"
+                      value={`Cyle # ${rulesets?.[0]?.cycleNumber}`}
+                      icon={'/assets/launchpad/clock.svg'}
+                    />
+                    <MissionStat
+                      label="Goal"
+                      value="10 ETH"
+                      icon={'/assets/launchpad/target.svg'}
+                    />
+                    <MissionStat
+                      label="Mission Token"
+                      value={`${missionTokenSymbol} (${missionTokenName})`}
+                      icon={'/assets/launchpad/token.svg'}
+                    />
+                  </div>
+                  <div className="w-full">
+                    <ProgressBar height="25px" progress={80} label="8 ETH" />
                   </div>
                 </div>
-                {teamNFT?.owner ? (
-                  <>
-                    <div className="mt-4 lg:ml-5">
-                      <Address address={teamNFT?.owner} />
-                    </div>
-                  </>
-                ) : (
-                  <></>
-                )}
-                <p className="lg:ml-5 flex items-center gap-2">
-                  {`This mission was created by `}
-                  <Link
-                    className="mt-1 text-light-warm font-GoodTimes hover:underline"
-                    href=""
-                  >
-                    {teamNFT?.metadata.name}
-                  </Link>
-                </p>
               </div>
             </div>
           </div>
@@ -275,6 +228,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               id="project-overview-container"
               className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
             >
+              {/* About the Team */}
               <Frame
                 noPadding
                 bottomLeft="0px"
@@ -283,19 +237,71 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 topLeft="0px"
               >
                 <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <div id="vote-title-section" className="flex justify-between">
-                    <h2 className="header font-GoodTimes opacity-[50%]">
-                      Funding Cycle
-                    </h2>
+                  <div
+                    id="vote-title-section"
+                    className="flex gap-2 opacity-60"
+                  >
+                    <Image
+                      src="/assets/icon-star.svg"
+                      alt="Star Icon"
+                      width={30}
+                      height={30}
+                    />
+                    <h2 className="header font-GoodTimes">About the Team</h2>
                   </div>
                   <div className="mt-5 flex flex-col gap-5 opacity-60">
-                    <p className="">{`Cyle # ${ruleset?.cycleNumber}`}</p>
-                    <p className="">{`Start : ${new Date(
-                      ruleset?.start * 1000
-                    ).toLocaleDateString()}`}</p>
+                    <StandardWideCard
+                      title={teamNFT?.metadata.name}
+                      subheader={
+                        <div className="flex flex-col gap-2">
+                          <div
+                            id="socials-container"
+                            className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
+                          >
+                            {mission?.metadata?.discord &&
+                              !mission?.metadata?.discord.includes(
+                                '/users/undefined'
+                              ) && (
+                                <Link
+                                  className="flex gap-2"
+                                  href={mission?.metadata?.discord}
+                                  target="_blank"
+                                  passHref
+                                >
+                                  <DiscordIcon />
+                                </Link>
+                              )}
+                            {mission?.metadata?.twitter && (
+                              <Link
+                                className="flex gap-2"
+                                href={mission?.metadata?.twitter}
+                                target="_blank"
+                                passHref
+                              >
+                                <TwitterIcon />
+                              </Link>
+                            )}
+                            {mission?.metadata?.infoUri && (
+                              <Link
+                                className="flex gap-2"
+                                href={mission?.metadata?.infoUri}
+                                target="_blank"
+                                passHref
+                              >
+                                <GlobeAltIcon height={25} width={25} />
+                              </Link>
+                            )}
+                          </div>
+                          <Address address={teamNFT?.owner} />
+                        </div>
+                      }
+                      paragraph={teamNFT?.metadata.description}
+                      image={teamNFT?.metadata.image}
+                    />
                   </div>
                 </div>
               </Frame>
+              {/* Info & Statistics */}
               <Frame
                 noPadding
                 bottomLeft="0px"
@@ -304,16 +310,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 topLeft="0px"
               >
                 <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <div id="vote-title-section" className="flex justify-between">
-                    <h2 className="header font-GoodTimes opacity-[50%]">
-                      Token
-                    </h2>
-                  </div>
-                  <div className="mt-5 flex flex-col gap-5 opacity-60">
-                    <div>
-                      <p className="">{`Token Address : ${missionTokenAddress}`}</p>
-                    </div>
-                  </div>
+                  <MissionInfo mission={mission} rulesets={rulesets} />
                 </div>
               </Frame>
             </div>

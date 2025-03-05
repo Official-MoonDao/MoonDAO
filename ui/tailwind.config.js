@@ -42,6 +42,7 @@ module.exports = {
         'darkest-cool': '#020617',
         'dark-cool': '#090D21',
         'mid-cool': '#182254',
+        cool: '#121C42',
         'light-cool': '#425EEB',
         'dark-warm': '#2D121A',
         'light-warm': '#753F73',

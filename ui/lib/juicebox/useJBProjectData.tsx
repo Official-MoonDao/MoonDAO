@@ -15,8 +15,7 @@ export default function useJBProjectData(
 ) {
   const { selectedChain } = useContext(ChainContextV5)
   const [metadata, setMetadata] = useState<any>(projectMetadata)
-  const [ruleset, setRuleset] = useState<any>()
-  const [rulesetMetadata, setRulesetMetadata] = useState<any>()
+  const [rulesets, setRulesets] = useState<any>()
   const [tokenAddress, setTokenAddress] = useState<any>()
   const [tokenName, setTokenName] = useState<any>()
   const [tokenSymbol, setTokenSymbol] = useState<any>()
@@ -42,13 +41,12 @@ export default function useJBProjectData(
     }
 
     async function getProjectRuleset() {
-      const [rs, rsMetadata]: any = await readContract({
+      const rs: any = await readContract({
         contract: jbControllerContract,
-        method: 'currentRulesetOf' as string,
-        params: [projectId],
+        method: 'allRulesetsOf' as string,
+        params: [projectId, 0, 10000],
       })
-      setRuleset(rs)
-      setRulesetMetadata(rsMetadata)
+      setRulesets(rs)
     }
 
     if (jbControllerContract && !projectMetadata && projectId)
@@ -116,8 +114,7 @@ export default function useJBProjectData(
 
   return {
     metadata,
-    ruleset,
-    rulesetMetadata,
+    rulesets,
     tokenAddress,
     tokenName,
     tokenSymbol,

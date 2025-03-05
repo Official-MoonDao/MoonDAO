@@ -62,7 +62,7 @@ export default function MissionWideCard({
         <div>
           <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 justify-between">
             <MissionStat
-              icon="/assets/clock.png"
+              icon="/assets/launchpad/clock.svg"
               label="Deadline"
               value={deadline}
             />
@@ -73,7 +73,7 @@ export default function MissionWideCard({
             />
             {tradeable !== undefined && (
               <MissionStat
-                icon="/assets/token.png"
+                icon="/assets/launchpad/token.svg"
                 label="Mission Token"
                 value={tradeable ? 'Yes' : 'No'}
               />
@@ -89,7 +89,7 @@ export default function MissionWideCard({
                 rel="noopener noreferrer"
               >
                 <MissionStat
-                  icon="/assets/token.png"
+                  icon="/assets/launchpad/token.svg"
                   label="Token"
                   value={tokenSymbol}
                 />
