@@ -93,11 +93,15 @@ export default function FAQ({
           {question}
         </h3>
       </div>
-      {isExpanded && (
+      <div 
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
         <p className="md:text-[1.2vw] h-full">
           {answer}
         </p>
-      )}
+      </div>
       <hr className="mt-4 w-full border-t border-gray-300" />
     </div>
   )
