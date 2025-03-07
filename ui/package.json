@@ -106,6 +106,7 @@
     "@cypress/webpack-preprocessor": "^6.0.2",
     "@tailwindcss/typography": "^0.5.16",
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
+    "@types/ethereum-block-by-date": "^1.4.1",
     "@types/formidable": "^3.4.5",
     "@types/google-spreadsheet": "^3.3.2",
     "@types/gtag.js": "^0.0.20",

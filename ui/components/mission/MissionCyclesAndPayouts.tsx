@@ -68,7 +68,7 @@ export default function MissionCyclesAndPayouts({ rulesets }: any) {
         </div>
       </div>
 
-      <div className="mt-4" x>
+      <div className="mt-4">
         {tab === 'current' && (
           <>
             <div className="grid grid-cols-4 gap-4">
