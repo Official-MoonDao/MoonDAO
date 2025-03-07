@@ -1,8 +1,8 @@
 import { CalendarDateRangeIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useState } from 'react'
-import MissionActivity from './MissionActivity'
 import MissionCyclesAndPayouts from './MissionCyclesAndPayouts'
+import MissionTimelineChart from './MissionTimelineChart'
 
 export type MissionInfoTabType =
   | 'activity'
@@ -31,9 +31,13 @@ function MissionInfoTab({
   )
 }
 
-export default function MissionInfo({ mission, rulesets }: any) {
+export default function MissionInfo({
+  mission,
+  subgraphData,
+  rulesets,
+  points,
+}: any) {
   const [tab, setTab] = useState<MissionInfoTabType>('activity')
-
   return (
     <div>
       <div id="mission-info-header" className="flex justify-between opacity-60">
@@ -48,7 +52,9 @@ export default function MissionInfo({ mission, rulesets }: any) {
         </div>
         <div className="flex gap-2 items-center">
           <CalendarDateRangeIcon className="w-8 h-8 " />
-          <p className="text-xl">{`Created ${new Date().toLocaleDateString()}`}</p>
+          <p className="text-xl">{`Created ${new Date(
+            subgraphData.createdAt * 1000
+          ).toLocaleDateString()}`}</p>
         </div>
       </div>
       <div id="mission-info-tabs" className="mt-4 flex gap-8 w-3/4">
@@ -63,7 +69,9 @@ export default function MissionInfo({ mission, rulesets }: any) {
       </div>
       <hr className="my-4 w-full border-1 border-grasy-400" />
       <div id="mission-info-content">
-        {tab === 'activity' && <MissionActivity />}
+        {tab === 'activity' && (
+          <MissionTimelineChart points={points} range={7} height={500} />
+        )}
         {tab === 'about' && (
           <div>
             {' '}
