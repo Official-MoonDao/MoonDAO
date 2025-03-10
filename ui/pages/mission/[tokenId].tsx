@@ -19,6 +19,7 @@ import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
+import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -75,11 +76,18 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     tokenAddress: missionTokenAddress,
     tokenSymbol: missionTokenSymbol,
     tokenName: missionTokenName,
+    subgraphData,
   } = useJBProjectData(
     mission?.projectId,
     jbV4ControllerContract,
     jbTokensContract,
     mission?.metadata
+  )
+
+  const { points } = useJBProjectTimeline(
+    selectedChain,
+    mission?.projectId,
+    subgraphData?.createdAt
   )
 
   useEffect(() => {
@@ -250,54 +258,56 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     <h2 className="header font-GoodTimes">About the Team</h2>
                   </div>
                   <div className="mt-5 flex flex-col gap-5 opacity-60">
-                    <StandardWideCard
-                      title={teamNFT?.metadata.name}
-                      subheader={
-                        <div className="flex flex-col gap-2">
-                          <div
-                            id="socials-container"
-                            className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
-                          >
-                            {mission?.metadata?.discord &&
-                              !mission?.metadata?.discord.includes(
-                                '/users/undefined'
-                              ) && (
+                    {teamNFT && (
+                      <StandardWideCard
+                        title={teamNFT?.metadata.name}
+                        subheader={
+                          <div className="flex flex-col gap-2">
+                            <div
+                              id="socials-container"
+                              className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
+                            >
+                              {mission?.metadata?.discord &&
+                                !mission?.metadata?.discord.includes(
+                                  '/users/undefined'
+                                ) && (
+                                  <Link
+                                    className="flex gap-2"
+                                    href={mission?.metadata?.discord}
+                                    target="_blank"
+                                    passHref
+                                  >
+                                    <DiscordIcon />
+                                  </Link>
+                                )}
+                              {mission?.metadata?.twitter && (
                                 <Link
                                   className="flex gap-2"
-                                  href={mission?.metadata?.discord}
+                                  href={mission?.metadata?.twitter}
                                   target="_blank"
                                   passHref
                                 >
-                                  <DiscordIcon />
+                                  <TwitterIcon />
                                 </Link>
                               )}
-                            {mission?.metadata?.twitter && (
-                              <Link
-                                className="flex gap-2"
-                                href={mission?.metadata?.twitter}
-                                target="_blank"
-                                passHref
-                              >
-                                <TwitterIcon />
-                              </Link>
-                            )}
-                            {mission?.metadata?.infoUri && (
-                              <Link
-                                className="flex gap-2"
-                                href={mission?.metadata?.infoUri}
-                                target="_blank"
-                                passHref
-                              >
-                                <GlobeAltIcon height={25} width={25} />
-                              </Link>
-                            )}
+                              {mission?.metadata?.infoUri && (
+                                <Link
+                                  className="flex gap-2"
+                                  href={mission?.metadata?.infoUri}
+                                  target="_blank"
+                                  passHref
+                                >
+                                  <GlobeAltIcon height={25} width={25} />
+                                </Link>
+                              )}
+                            </div>
+                            <Address address={teamNFT?.owner} />
                           </div>
-                          <Address address={teamNFT?.owner} />
-                        </div>
-                      }
-                      paragraph={teamNFT?.metadata.description}
-                      image={teamNFT?.metadata.image}
-                    />
+                        }
+                        paragraph={teamNFT?.metadata.description}
+                        image={teamNFT?.metadata.image}
+                      />
+                    )}
                   </div>
                 </div>
               </Frame>
@@ -310,7 +320,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 topLeft="0px"
               >
                 <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <MissionInfo mission={mission} rulesets={rulesets} />
+                  <MissionInfo
+                    mission={mission}
+                    rulesets={rulesets}
+                    points={points}
+                    subgraphData={subgraphData}
+                  />
                 </div>
               </Frame>
             </div>

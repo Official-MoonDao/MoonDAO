@@ -42,16 +42,17 @@ export function TeamMission({
   teamContract,
   isManager,
 }: TeamMissionProps) {
-  const { subgraphData, tokenAddress, ruleset, tokenSymbol } = useJBProjectData(
-    mission?.projectId,
-    jbControllerContract,
-    jbTokensContract,
-    teamContract
-  )
+  const { subgraphData, tokenAddress, rulesets, tokenSymbol } =
+    useJBProjectData(
+      mission?.projectId,
+      jbControllerContract,
+      jbTokensContract,
+      teamContract
+    )
 
-  // Calculate deadline date from duration (seconds)
-  const deadlineDate = ruleset?.duration
-    ? new Date(Date.now() + ruleset.duration * 1000).toLocaleDateString()
+  // TODO : Calculate deadline date from duration of current ruleset
+  const deadlineDate = rulesets?.[0]?.duration
+    ? new Date(Date.now() + rulesets[0].duration * 1000).toLocaleDateString()
     : 'UNLIMITED'
 
   return (
