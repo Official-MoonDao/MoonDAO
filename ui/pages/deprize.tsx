@@ -23,28 +23,35 @@ export default function DePrizePage({ competitors }: DePrizeProps) {
 
 export async function getStaticProps() {
   // TODO enable mainnet
-  const chain = sepolia
-  const chainSlug = getChainSlug(chain)
+  try {
+    const chain = sepolia
+    const chainSlug = getChainSlug(chain)
 
-  const competitorTableContract = getContract({
-    client: serverClient,
-    address: COMPETITOR_TABLE_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: CompetitorABI as any,
-  })
+    const competitorTableContract = getContract({
+      client: serverClient,
+      address: COMPETITOR_TABLE_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: CompetitorABI as any,
+    })
 
-  const competitorBoardTableName = await readContract({
-    contract: competitorTableContract,
-    method: 'getTableName',
-  })
+    const competitorBoardTableName = await readContract({
+      contract: competitorTableContract,
+      method: 'getTableName',
+    })
 
-  const competitorStatement = `SELECT * FROM ${competitorBoardTableName} WHERE deprize = ${DEPRIZE_ID}`
-  const competitors = await queryTable(chain, competitorStatement)
+    const competitorStatement = `SELECT * FROM ${competitorBoardTableName} WHERE deprize = ${DEPRIZE_ID}`
+    const competitors = await queryTable(chain, competitorStatement)
 
-  return {
-    props: {
-      competitors,
-    },
-    revalidate: 60,
+    return {
+      props: {
+        competitors,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      props: { competitors: [] },
+    }
   }
 }
