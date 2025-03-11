@@ -135,6 +135,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
   }, [citizenContract, nft?.metadata?.id, isGuest])
   // Hats
   const hats = useTeamWearer(teamContract, selectedChain, nft?.owner)
+
   const hatsContract = useContract({
     chain: selectedChain,
     address: HATS_ADDRESS,
@@ -480,7 +481,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                 </Frame>
               </div>
             )}
-            {hats.length > 1 && (
+            {hats.length > 0 && (
               <Frame
                 noPadding
                 bottomLeft="0px"
