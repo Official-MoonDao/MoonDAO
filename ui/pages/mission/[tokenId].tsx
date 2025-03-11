@@ -1,5 +1,6 @@
 import { GlobeAltIcon } from '@heroicons/react/20/solid'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
@@ -26,6 +27,7 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import { DiscordIcon, TwitterIcon } from '@/components/assets'
 import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
 import Address from '@/components/layout/Address'
@@ -71,13 +73,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     chain: selectedChain,
   })
 
-  const {
-    rulesets,
-    tokenAddress: missionTokenAddress,
-    tokenSymbol: missionTokenSymbol,
-    tokenName: missionTokenName,
-    subgraphData,
-  } = useJBProjectData(
+  const { rulesets, token, subgraphData } = useJBProjectData(
     mission?.projectId,
     jbV4ControllerContract,
     jbTokensContract,
@@ -89,6 +85,21 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     mission?.projectId,
     subgraphData?.createdAt
   )
+
+  const missionTokenContract = useContract({
+    address: token.tokenAddress,
+    abi: JBV4TokenABI as any,
+    chain: selectedChain,
+  })
+
+  const {
+    data: userMissionTokenBalance,
+    isLoading: userMissionTokenBalanceLoading,
+  } = useRead({
+    contract: missionTokenContract,
+    method: 'balanceOf',
+    params: [account?.address],
+  })
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -188,7 +199,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     />
                     <MissionStat
                       label="Mission Token"
-                      value={`${missionTokenSymbol} (${missionTokenName})`}
+                      value={`${token.tokenSymbol} (${token.tokenName})`}
                       icon={'/assets/launchpad/token.svg'}
                     />
                   </div>
@@ -325,6 +336,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     rulesets={rulesets}
                     points={points}
                     subgraphData={subgraphData}
+                    token={token}
                   />
                 </div>
               </Frame>

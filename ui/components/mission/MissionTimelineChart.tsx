@@ -14,29 +14,37 @@ import {
 } from 'recharts'
 import useJBTrendingProjects from '@/lib/juicebox/useJBTrendingProjects'
 import { useTicks } from '@/lib/juicebox/useTicks'
+import { useTimelineRange } from '@/lib/juicebox/useTimelineRange'
 import { useTimelineYDomain } from '@/lib/juicebox/useTimelineYDomain'
 import { wadToFloat } from '@/lib/utils/numbers'
 import { daysToMS } from '@/lib/utils/timestamp'
+import RangeSelector from '../layout/RangeSelector'
+import MissionTimelineViewSelector from './MissionTimelineViewSelector'
 
 export type MissionTimelineChartProps = {
   points: any[]
-  range: number
   height: number
+  createdAt: number
 }
 
 const now = Date.now().valueOf()
 
 export default function MissionTimelineChart({
   points,
-  range,
   height,
+  createdAt,
 }: MissionTimelineChartProps) {
   const stroke = 'white'
   const color = 'white'
   const bg = 'black'
   const fontSize = '0.75rem'
 
-  const [view, setView] = useState<'volume' | 'trendingScore'>('volume')
+  const [view, setView] = useState<'volume' | 'balance' | 'trendingScore'>(
+    'volume'
+  )
+  const [range, setRange] = useTimelineRange({
+    createdAt,
+  })
 
   const defaultYDomain = useTimelineYDomain(points?.map((point) => point[view]))
 
@@ -76,7 +84,11 @@ export default function MissionTimelineChart({
 
   return (
     <div>
-      <ResponsiveContainer width={'100%'} height={height}>
+      <div className="w-full flex items-center justify-end gap-8">
+        <MissionTimelineViewSelector view={view} setView={setView} />
+        <RangeSelector range={range} setRange={setRange} />
+      </div>
+      <ResponsiveContainer className="mt-4" height={height}>
         <LineChart
           margin={{
             top: -1, // hacky way to hide top border of CartesianGrid
@@ -100,10 +112,9 @@ export default function MissionTimelineChart({
 
               const { value } = props.payload
 
-              // Improved formatting for small values without scientific notation
               let formattedValue
               if (value < 0.0001) {
-                formattedValue = value.toFixed(6) // Show 6 decimal places for very small values
+                formattedValue = value.toFixed(6)
               } else if (value < 0.001) {
                 formattedValue = value.toFixed(5)
               } else if (value < 0.01) {
@@ -131,6 +142,7 @@ export default function MissionTimelineChart({
                     fill={color}
                     transform={`translate(${props.x + 4},${props.y + 4})`}
                   >
+                    {'ETH'}
                     <Image
                       src={`/coins/ETH.svg`}
                       width={20}
@@ -216,6 +228,7 @@ export default function MissionTimelineChart({
                   </div>
                   {view !== 'trendingScore' && (
                     <div className="font-medium">
+                      {'ETH'}
                       <Image
                         src={`/coins/ETH.svg`}
                         width={20}
