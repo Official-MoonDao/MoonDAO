@@ -4,7 +4,7 @@ const { createThirdwebClient, getContract, readContract } = require('thirdweb')
 const { arbitrum } = require('thirdweb/chains')
 require('dotenv').config({ path: '../.env.local' })
 
-const ADDRESSES = []
+const ADDRESSES: any[] = []
 
 const MOONEY_ADDRESS = '0x1Fa56414549BdccBB09916f61f0A5827f779a85c'
 const VMOONEY_ADDRESS = '0xB255c74F8576f18357cE6184DA033c6d93C71899'
