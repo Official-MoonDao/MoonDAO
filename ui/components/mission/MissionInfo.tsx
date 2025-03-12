@@ -1,7 +1,7 @@
 import { CalendarDateRangeIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useState } from 'react'
-import MissionCyclesAndPayouts from './MissionCyclesAndPayouts'
+import MissionFunding from './MissionFunding'
 import MissionTimelineChart from './MissionTimelineChart'
 import MissionTokenInfo from './MissionTokenInfo'
 
@@ -34,6 +34,7 @@ export default function MissionInfo({
   token,
   rulesets,
   points,
+  userMissionTokenBalance,
 }: any) {
   const [tab, setTab] = useState<MissionInfoTabType>('activity')
   return (
@@ -81,8 +82,15 @@ export default function MissionInfo({
             />
           </div>
         )}
-        {tab === 'funding' && <MissionCyclesAndPayouts rulesets={rulesets} />}
-        {tab === 'token' && <MissionTokenInfo token={token} />}
+        {tab === 'funding' && (
+          <MissionFunding mission={mission} rulesets={rulesets} />
+        )}
+        {tab === 'token' && (
+          <MissionTokenInfo
+            token={token}
+            userMissionTokenBalance={userMissionTokenBalance}
+          />
+        )}
       </div>
     </div>
   )

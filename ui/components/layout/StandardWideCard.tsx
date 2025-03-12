@@ -9,6 +9,7 @@ type StandardWideCardProps = {
   header?: string
   title?: any
   paragraph?: ReactNode
+  fullParagraph?: boolean
   link?: string
   onClick?: () => void
   orgimage?: string
@@ -24,6 +25,7 @@ export default function StandardWideCard({
   header,
   title,
   paragraph,
+  fullParagraph = true,
   link,
   onClick,
   orgimage,
@@ -110,10 +112,10 @@ export default function StandardWideCard({
               {/* Description section */}
               <div
                 className={`text-gray-300 overflow-hidden ${
-                  isExpanded ? 'h-full' : 'h-[100px]'
+                  isExpanded ? 'h-full' : 'max-h-[100px]'
                 }`}
               >
-                {paragraph}
+                {fullParagraph ? paragraph : paragraph?.slice(0, 100)}
               </div>
 
               {/* Add Show More button */}
@@ -123,18 +125,20 @@ export default function StandardWideCard({
           </span>
         </div>
       </span>
-      <div className="absolute bottom-[-20px] left-[5%] gradient-2 rounded-full">
-        <StandardButton
-          onClick={(e: React.MouseEvent) => {
-            e.preventDefault()
-            e.stopPropagation()
-            setIsExpanded(!isExpanded)
-          }}
-          styleOnly={true}
-        >
-          {isExpanded ? 'Show Less' : 'Show More'}
-        </StandardButton>
-      </div>
+      {fullParagraph && (
+        <div className="absolute bottom-[-20px] left-[5%] gradient-2 rounded-full">
+          <StandardButton
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setIsExpanded(!isExpanded)
+            }}
+            styleOnly={true}
+          >
+            {isExpanded ? 'Show Less' : 'Show More'}
+          </StandardButton>
+        </div>
+      )}
     </div>
   )
 

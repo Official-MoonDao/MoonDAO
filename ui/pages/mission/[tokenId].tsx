@@ -1,5 +1,6 @@
 import { GlobeAltIcon } from '@heroicons/react/20/solid'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
@@ -7,6 +8,7 @@ import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   JBV4_CONTROLLER_ADDRESSES,
+  JBV4_DIRECTORY_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
@@ -29,7 +31,6 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { DiscordIcon, TwitterIcon } from '@/components/assets'
-import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
 import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -40,6 +41,7 @@ import ProgressBar from '@/components/layout/ProgressBar'
 import StandardWideCard from '@/components/layout/StandardWideCard'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionInfo from '@/components/mission/MissionInfo'
+import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
 
 type ProjectProfileProps = {
@@ -70,6 +72,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const jbTokensContract = useContract({
     address: JBV4_TOKENS_ADDRESSES[chainSlug],
     abi: JBV4TokensABI as any,
+    chain: selectedChain,
+  })
+
+  const jbDirectoryContract = useContract({
+    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
+    abi: JBV4DirectoryABI as any,
     chain: selectedChain,
   })
 
@@ -235,6 +243,28 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
         >
+          {/* Pay & Redeem Section */}
+          <Frame
+            noPadding
+            bottomLeft="0px"
+            bottomRight="0px"
+            topRight="0px"
+            topLeft="0px"
+          >
+            <div
+              id="mission-pay-redeem-container"
+              className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+            >
+              <MissionPayRedeem
+                mission={mission}
+                token={token}
+                paymentsCount={subgraphData?.paymentsCount}
+                totalRaised={subgraphData?.totalRaised}
+                increaseThisWeek={subgraphData?.increaseThisWeek}
+                jbDirectoryContract={jbDirectoryContract}
+              />
+            </div>
+          </Frame>
           {/* Project Overview */}
           <Frame
             noPadding
@@ -268,7 +298,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     />
                     <h2 className="header font-GoodTimes">About the Team</h2>
                   </div>
-                  <div className="mt-5 flex flex-col gap-5 opacity-60">
+                  <div className="mt-5 flex flex-col gap-5">
                     {teamNFT && (
                       <StandardWideCard
                         title={teamNFT?.metadata.name}
@@ -316,7 +346,13 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           </div>
                         }
                         paragraph={teamNFT?.metadata.description}
+                        fullParagraph={false}
                         image={teamNFT?.metadata.image}
+                        footer={
+                          <Link href={`/team/${mission?.teamId}`}>
+                            Read More
+                          </Link>
+                        }
                       />
                     )}
                   </div>
@@ -337,6 +373,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     points={points}
                     subgraphData={subgraphData}
                     token={token}
+                    userMissionTokenBalance={userMissionTokenBalance}
                   />
                 </div>
               </Frame>

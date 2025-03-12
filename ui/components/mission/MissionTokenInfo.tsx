@@ -1,10 +1,10 @@
 import MissionInfoCard from './MissionInfoCard'
 
 export default function MissionTokenInfo({
-  userBalance,
+  userMissionTokenBalance,
   token,
 }: {
-  userBalance: string
+  userMissionTokenBalance: string
   token: {
     tokenAddress: string
     tokenSupply: string
@@ -17,7 +17,7 @@ export default function MissionTokenInfo({
       <h1 className="mt-4 text-2xl font-bold">Tokens</h1>
       <div className="grid grid-cols-4 gap-4">
         <MissionInfoCard className="col-span-4" title="Your balance">
-          {userBalance}
+          {userMissionTokenBalance.toString() / 10 ** 18}
         </MissionInfoCard>
         <MissionInfoCard className="col-span-4" title="Token Supply">
           {token.tokenSupply.toString() / 10 ** 18}
@@ -26,10 +26,10 @@ export default function MissionTokenInfo({
       <h1 className="mt-4 text-2xl font-bold">Reserved Tokens</h1>
       <div className="mt-4 grid grid-cols-4 gap-4">
         <MissionInfoCard className="col-span-2" title="Reserved Tokens">
-          {token.tokenSupply}
+          {token.reservedTokens.toString() / 10 ** 18}
         </MissionInfoCard>
         <MissionInfoCard className="col-span-2" title="Reserved Rate">
-          {token.tokenSupply}
+          {`${token.reservedRate || 5}%`}
         </MissionInfoCard>
       </div>
     </>

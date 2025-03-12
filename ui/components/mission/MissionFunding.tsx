@@ -1,11 +1,12 @@
+import Link from 'next/link'
 import { useState } from 'react'
 import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 import MissionInfoCard from './MissionInfoCard'
 
-export type MissionCyclesAndPayoutsTabType = 'current' | 'upcoming' | 'history'
+export type MissionFundingTabType = 'current' | 'upcoming' | 'history'
 
-export default function MissionCyclesAndPayouts({ rulesets }: any) {
-  const [tab, setTab] = useState<MissionCyclesAndPayoutsTabType>('current')
+export default function MissionFunding({ mission, rulesets }: any) {
+  const [tab, setTab] = useState<MissionFundingTabType>('current')
 
   const currentCycle = rulesets?.[rulesets?.length - 1]
   const upcomingCycle = rulesets?.[rulesets?.length - 2]
@@ -22,8 +23,16 @@ export default function MissionCyclesAndPayouts({ rulesets }: any) {
               <MissionInfoCard title="Phase #" className="col-span-4">
                 {`${currentCycle?.ruleset?.cycleNumber}`}
               </MissionInfoCard>
-              <MissionInfoCard title="" className="col-span-4">
-                <JuiceboxLogoWhite />
+              <MissionInfoCard
+                title="View full ruleset on "
+                className="col-span-4"
+              >
+                <Link
+                  href={`https://sepolia.juicebox.money/p/${mission?.projectId}`}
+                  target="_blank"
+                >
+                  <JuiceboxLogoWhite />
+                </Link>
               </MissionInfoCard>
             </div>
           </>
