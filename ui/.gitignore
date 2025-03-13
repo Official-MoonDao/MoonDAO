@@ -46,3 +46,4 @@ public/sitemap*.xml
 
 # generated files
 scripts/generated/*
+!scripts/generated/.gitkeep
