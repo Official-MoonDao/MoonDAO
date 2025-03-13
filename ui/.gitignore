@@ -43,3 +43,6 @@ notes.txt
 
 # sitemap
 public/sitemap*.xml
+
+# generated files
+scripts/generated/*
