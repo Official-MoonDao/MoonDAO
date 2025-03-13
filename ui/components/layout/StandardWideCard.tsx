@@ -115,7 +115,9 @@ export default function StandardWideCard({
                   isExpanded ? 'h-full' : 'max-h-[100px]'
                 }`}
               >
-                {fullParagraph ? paragraph : paragraph?.slice(0, 100)}
+                {fullParagraph || typeof paragraph !== 'string'
+                  ? paragraph
+                  : paragraph?.slice(0, 100)}
               </div>
 
               {/* Add Show More button */}

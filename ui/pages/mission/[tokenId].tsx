@@ -81,7 +81,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     chain: selectedChain,
   })
 
-  const { rulesets, token, subgraphData } = useJBProjectData(
+  const { ruleset, token, subgraphData } = useJBProjectData(
     mission?.projectId,
     jbV4ControllerContract,
     jbTokensContract,
@@ -197,7 +197,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   <div className="flex flex-wrap gap-2">
                     <MissionStat
                       label="Deadline"
-                      value={`Cyle # ${rulesets?.[0]?.cycleNumber}`}
+                      value={`Cyle # ${ruleset?.[0]?.cycleNumber}`}
                       icon={'/assets/launchpad/clock.svg'}
                     />
                     <MissionStat
@@ -250,17 +250,19 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             bottomRight="0px"
             topRight="0px"
             topLeft="0px"
+            className="xl:hidden"
           >
             <div
               id="mission-pay-redeem-container"
               className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
             >
               <MissionPayRedeem
+                selectedChain={selectedChain}
                 mission={mission}
+                teamNFT={teamNFT}
                 token={token}
-                paymentsCount={subgraphData?.paymentsCount}
-                totalRaised={subgraphData?.totalRaised}
-                increaseThisWeek={subgraphData?.increaseThisWeek}
+                subgraphData={subgraphData}
+                ruleset={ruleset}
                 jbDirectoryContract={jbDirectoryContract}
               />
             </div>
@@ -273,110 +275,16 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             topRight="0px"
             topLeft="0px"
           >
-            <div
-              id="project-overview-container"
-              className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
-            >
-              {/* About the Team */}
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
-              >
-                <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <div
-                    id="vote-title-section"
-                    className="flex gap-2 opacity-60"
-                  >
-                    <Image
-                      src="/assets/icon-star.svg"
-                      alt="Star Icon"
-                      width={30}
-                      height={30}
-                    />
-                    <h2 className="header font-GoodTimes">About the Team</h2>
-                  </div>
-                  <div className="mt-5 flex flex-col gap-5">
-                    {teamNFT && (
-                      <StandardWideCard
-                        title={teamNFT?.metadata.name}
-                        subheader={
-                          <div className="flex flex-col gap-2">
-                            <div
-                              id="socials-container"
-                              className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
-                            >
-                              {mission?.metadata?.discord &&
-                                !mission?.metadata?.discord.includes(
-                                  '/users/undefined'
-                                ) && (
-                                  <Link
-                                    className="flex gap-2"
-                                    href={mission?.metadata?.discord}
-                                    target="_blank"
-                                    passHref
-                                  >
-                                    <DiscordIcon />
-                                  </Link>
-                                )}
-                              {mission?.metadata?.twitter && (
-                                <Link
-                                  className="flex gap-2"
-                                  href={mission?.metadata?.twitter}
-                                  target="_blank"
-                                  passHref
-                                >
-                                  <TwitterIcon />
-                                </Link>
-                              )}
-                              {mission?.metadata?.infoUri && (
-                                <Link
-                                  className="flex gap-2"
-                                  href={mission?.metadata?.infoUri}
-                                  target="_blank"
-                                  passHref
-                                >
-                                  <GlobeAltIcon height={25} width={25} />
-                                </Link>
-                              )}
-                            </div>
-                            <Address address={teamNFT?.owner} />
-                          </div>
-                        }
-                        paragraph={teamNFT?.metadata.description}
-                        fullParagraph={false}
-                        image={teamNFT?.metadata.image}
-                        footer={
-                          <Link href={`/team/${mission?.teamId}`}>
-                            Read More
-                          </Link>
-                        }
-                      />
-                    )}
-                  </div>
-                </div>
-              </Frame>
-              {/* Info & Statistics */}
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
-              >
-                <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <MissionInfo
-                    mission={mission}
-                    rulesets={rulesets}
-                    points={points}
-                    subgraphData={subgraphData}
-                    token={token}
-                    userMissionTokenBalance={userMissionTokenBalance}
-                  />
-                </div>
-              </Frame>
+            <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 px-12 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+              <MissionInfo
+                mission={mission}
+                teamNFT={teamNFT}
+                ruleset={ruleset}
+                points={points}
+                subgraphData={subgraphData}
+                token={token}
+                userMissionTokenBalance={userMissionTokenBalance}
+              />
             </div>
           </Frame>
         </div>

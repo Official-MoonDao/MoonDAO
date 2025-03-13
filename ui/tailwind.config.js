@@ -28,6 +28,7 @@ module.exports = {
         faded: '#6b7280',
         'moon-gold': '#F9B95C',
         'moon-blue': '#3b82f6',
+        'moon-indigo': '#3F3FA6',
         'moon-green': '#0DED8F',
         'moon-orange': '#D7594F',
         'detail-light': '#60a5fa',

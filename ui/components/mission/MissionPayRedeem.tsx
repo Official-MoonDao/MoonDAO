@@ -1,5 +1,5 @@
-import { ArrowDownIcon } from '@heroicons/react/20/solid'
-import { ArrowDownCircleIcon } from '@heroicons/react/24/outline'
+import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
+import { nativeOnChain } from '@uniswap/smart-order-router'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import {
@@ -7,7 +7,13 @@ import {
   readContract,
   sendAndConfirmTransaction,
 } from 'thirdweb'
+import { ethereum } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
+import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
+import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
+import Modal from '../layout/Modal'
+import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 function PayRedeemStat({ label, value, children }: any) {
@@ -20,18 +26,147 @@ function PayRedeemStat({ label, value, children }: any) {
   )
 }
 
+function MissionPayRedeemContent({
+  token,
+  ruleset,
+  input,
+  output,
+  setInput,
+  setMissionPayModalEnabled,
+}: any) {
+  return (
+    <div
+      id="mission-pay-redeem-container"
+      className="w-full flex flex-row flex-col md:flex-row xl:flex-col gap-4 xl:max-w-[300px]"
+    >
+      <div
+        id="mission-pay-container"
+        className="p-2 max-w-[300px] flex flex-col gap-4 bg-[#020617] rounded-2xl"
+      >
+        <div id="mission-pay-header" className="flex justify-between">
+          {/* <PayRedeemStat label="Payments" value={paymentsCount} />
+          <PayRedeemStat label="Total Raised" value={totalRaised} />
+          <PayRedeemStat label="Last 7 Days">
+            <Image
+              src="/assets/launchpad/increase.svg"
+              alt="increase"
+              width={30}
+              height={30}
+            />
+          </PayRedeemStat> */}
+        </div>
+        {/* You pay */}
+        <div className="relative flex flex-col gap-4">
+          <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl rounded-tr-2xl">
+            <div className="flex flex-col">
+              <h3 className="text-sm opacity-60">You pay</h3>
+              <input
+                type="number"
+                className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={input}
+                onChange={(e) => setInput(+e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+              <Image
+                src="/coins/ETH.svg"
+                alt="ETH"
+                width={20}
+                height={20}
+                className="w-12 h-5 bg-light-cool rounded-full"
+              />
+              {'ETH'}
+            </div>
+          </div>
+          <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
+            <ArrowDownIcon
+              className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
+              color={'#121C42'}
+            />
+          </div>
+          {/* You receive */}
+          <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
+            <div className="flex flex-col">
+              <h3 className="text-sm opacity-60">You receive</h3>
+              <p className="text-2xl font-bold">{output}</p>
+            </div>
+            <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+              <Image
+                src="/assets/icon-star.svg"
+                alt="ETH"
+                width={20}
+                height={20}
+                className="bg-orange-500 rounded-full p-1w-5 h-5"
+              />
+              <Image
+                src="/coins/ETH.svg"
+                alt="ETH"
+                width={20}
+                height={20}
+                className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
+              />
+              {token?.tokenSymbol}
+            </div>
+          </div>
+        </div>
+        <PrivyWeb3Button
+          className="rounded-full"
+          label="Pay"
+          action={() => setMissionPayModalEnabled(true)}
+        />
+      </div>
+      <div className="pt-4 flex flex-col justify-between gap-4">
+        <div
+          id="mission-token-stats"
+          className="p-2 bg-darkest-cool rounded-2xl"
+        >
+          <div>
+            <h3 className="opacity-60 text-sm">Current Supply</h3>
+            <p>{token?.tokenSupply.toString() / 1e18}</p>
+          </div>
+          <div>
+            <h3 className="opacity-60 text-sm">Current Exchange Rate</h3>
+            <p>{`1 ETH = ${(
+              ruleset?.[0].weight.toString() / 1e18
+            ).toLocaleString()} ${token?.tokenSymbol}`}</p>
+          </div>
+        </div>
+        <div
+          id="mission-redeem-container"
+          className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
+        >
+          <div>
+            <h3 className="opacity-60 text-sm">Your Balance</h3>
+            <p>{token?.tokenSupply.toString() / 1e18}</p>
+          </div>
+
+          <PrivyWeb3Button
+            className="w-full rounded-full"
+            label="Redeem"
+            action={() => setMissionPayModalEnabled(true)}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function MissionPayRedeem({
+  selectedChain,
   mission,
   token,
-  paymentsCount,
-  totalRaised,
-  increaseThisWeek,
+  subgraphData,
+  teamNFT,
+  ruleset,
   jbDirectoryContract,
 }: any) {
+  const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const account = useActiveAccount()
   const address = account?.address
   const [input, setInput] = useState(0)
   const [output, setOutput] = useState(0)
+
+  const [usdQuote, setUSDQuote] = useState(0)
 
   const [primaryTerminalContract, setPrimaryTerminalContract] = useState<any>()
 
@@ -46,7 +181,7 @@ export default function MissionPayRedeem({
         token?.tokenAddress,
         input,
         address,
-        100,
+        output,
         'Pay to Mission',
         '0x0',
       ],
@@ -73,6 +208,29 @@ export default function MissionPayRedeem({
     })
   }
 
+  const { DAI } = useUniswapTokens(ethereum)
+
+  useEffect(() => {
+    async function getUSDQuote() {
+      setUSDQuote(undefined)
+      const route = await pregenSwapRoute(
+        ethereum,
+        input,
+        nativeOnChain(ethereum.id),
+        DAI
+      )
+      setUSDQuote(route?.route[0]?.rawQuote.toString() / 1e18)
+    }
+
+    if (input > 0 && ruleset) {
+      const output = input * (+ruleset?.[0].weight.toString() / 1e18)
+      setOutput(output)
+    }
+    if (input > 0) {
+      getUSDQuote()
+    }
+  }, [input, ruleset, DAI])
+
   useEffect(() => {
     async function getPrimaryTerminal() {
       const terminal = await readContract({
@@ -82,79 +240,74 @@ export default function MissionPayRedeem({
       })
       setPrimaryTerminalContract(terminal)
     }
-    getPrimaryTerminal()
+    if (
+      jbDirectoryContract &&
+      mission?.projectId !== undefined &&
+      token?.tokenAddress !== undefined
+    )
+      getPrimaryTerminal()
   }, [mission?.projectId, token?.tokenAddress, jbDirectoryContract])
-
   return (
-    <div className="p-2 max-w-[300px] flex flex-col gap-4 bg-[#020617] rounded-2xl">
-      <div id="mission-pay-redeem-header" className="flex justify-between">
-        <PayRedeemStat label="Payments" value={paymentsCount} />
-        <PayRedeemStat label="Total Raised" value={totalRaised} />
-        <PayRedeemStat label="Last 7 Days">
-          <Image
-            src="/assets/launchpad/increase.svg"
-            alt="increase"
-            width={30}
-            height={30}
-          />
-        </PayRedeemStat>
+    <>
+      <div className="hidden md:block">
+        <MissionPayRedeemContent
+          token={token}
+          ruleset={ruleset}
+          input={input}
+          output={output}
+          setInput={setInput}
+          setMissionPayModalEnabled={setMissionPayModalEnabled}
+        />
       </div>
-      {/* You pay */}
-      <div className="relative flex flex-col gap-4">
-        <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl rounded-tr-2xl">
-          <div className="flex flex-col">
-            <h3 className="text-sm opacity-60">You pay</h3>
-            <input
-              type="number"
-              className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={input}
-              onChange={(e) => setInput(+e.target.value)}
-              min={0}
-            />
-          </div>
-          <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1">
-            <Image
-              src="/coins/ETH.svg"
-              alt="ETH"
-              width={20}
-              height={20}
-              className="w-5 h-5"
-            />
-            {'ETH'}
-          </div>
-        </div>
-        <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
-          <ArrowDownIcon
-            className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
-            color={'#121C42'}
-          />
-        </div>
-        {/* You receive */}
-        <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
-          <div className="flex flex-col">
-            <h3 className="text-sm opacity-60">You receive</h3>
-            <p className="text-2xl font-bold">{output}</p>
-          </div>
-          <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1">
-            <Image
-              src="/assets/icon-star.svg"
-              alt="ETH"
-              width={20}
-              height={20}
-              className="bg-orange-500 rounded-full p-1w-5 h-5"
-            />
-            <Image
-              src="/coins/ETH.svg"
-              alt="ETH"
-              width={20}
-              height={20}
-              className="absolute bottom-0 w-5 h-5"
-            />
-            {token?.tokenSymbol}
-          </div>
-        </div>
+      <div className="fixed bottom-0 left-0 w-full p-4 bg-darkest-cool rounded-t-2xl md:hidden z-[1000]">
+        <StandardButton
+          className="w-full gradient-2 rounded-full"
+          onClick={() => setMissionPayModalEnabled(true)}
+        >
+          Pay
+        </StandardButton>
       </div>
-      <PrivyWeb3Button className="rounded-full" label="Pay" action={() => {}} />
-    </div>
+      {missionPayModalEnabled && (
+        <Modal id="mission-pay-modal" setEnabled={setMissionPayModalEnabled}>
+          <div className="w-screen rounded-[2vmax] flex flex-col gap-2 items-start justify-start p-5 bg-gradient-to-b from-dark-cool to-darkest-cool h-screen md:h-auto">
+            <div className="w-full flex gap-4 items-start justify-between">
+              <h3 className="text- font-GoodTimes">{`Pay ${teamNFT?.metadata?.name}`}</h3>
+              <button
+                type="button"
+                className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                onClick={() => setMissionPayModalEnabled(false)}
+              >
+                <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="w-full flex justify-between">
+              <p>{'Total Amont'}</p>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="number"
+                  className="text-right bg-transparent border-none outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  value={input}
+                  onChange={(e) => setInput(+e.target.value)}
+                />
+                {'ETH'}
+                {usdQuote !== undefined ? (
+                  <p className="opacity-60">{`(US $${usdQuote.toLocaleString()})`}</p>
+                ) : (
+                  <div className="scale-[75%]">
+                    <LoadingSpinner />
+                  </div>
+                )}
+              </div>
+            </div>
+            <hr className="w-full" />
+            <div className="w-full flex justify-between">
+              <p>{'Receive'}</p>
+              <p>{`${output.toLocaleString()} ${token?.tokenSymbol}`}</p>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </>
   )
 }
