@@ -94,7 +94,7 @@ async function loadProjectData() {
         console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
 
         // Get proposals from Nance
-        const proposals = await getProposals("moondao", 26);
+        const proposals = await getProposals("moondao", "current");
 
         if (!proposals) {
             throw new Error("Failed to fetch proposals from Nance");
