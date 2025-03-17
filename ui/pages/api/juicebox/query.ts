@@ -17,14 +17,23 @@ const subgraphClient = createClient({
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { query } = req.query
 
+  if (!query) {
+    return res.status(400).json({ error: 'Query parameter is required' })
+  }
+
   try {
     const subgraphRes = await subgraphClient
       .query(query as string, {})
       .toPromise()
+
+    if (subgraphRes.error) {
+      return res.status(500).json({ error: subgraphRes.error.message })
+    }
+
     const subgraphData = subgraphRes.data
     res.status(200).json(subgraphData)
   } catch (error) {
-    console.error(error)
+    console.error('Subgraph query error:', error)
     res.status(500).json({ error: 'Failed to fetch subgraph data' })
   }
 }

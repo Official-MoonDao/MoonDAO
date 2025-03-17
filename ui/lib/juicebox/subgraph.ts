@@ -46,6 +46,234 @@ ${projectQueries}
   `
 }
 
+export function projectEventsQuery(
+  projectId: string,
+  orderBy: string = 'timestamp',
+  orderDirection: string = 'desc',
+  first: number = 100,
+  skip: number = 0,
+  block: string = ''
+) {
+  return `
+    fragment ProjectFields on Project {
+      projectId
+      metadataUri
+      handle
+      contributorsCount
+      createdAt
+      volume
+      trendingVolume
+      paymentsCount
+    }
+
+    query {
+      projectEvents(
+        where: {projectId: ${projectId}}
+        orderBy: ${orderBy}
+        orderDirection: ${orderDirection}
+        first: ${first}
+        skip: ${skip}
+        ${block ? `block: ${block}` : ''}
+      ) {
+        id
+        project {
+          ...ProjectFields
+        }
+        payEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          amount
+          amountUSD
+          note
+          distributionFromProjectId
+          beneficiary
+          feeFromProject
+          beneficiaryTokenCount
+        }
+        addToBalanceEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          amount
+          amountUSD
+          note
+        }
+        mintTokensEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          amount
+          beneficiary
+          memo
+        }
+        cashOutEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          metadata
+          holder
+          beneficiary
+          cashOutCount
+          reclaimAmount
+          reclaimAmountUSD
+        }
+        deployedERC20Event {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          symbol
+          address
+        }
+        projectCreateEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+        }
+        distributePayoutsEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          amount
+          amountUSD
+          amountPaidOut
+          amountPaidOutUSD
+          rulesetCycleNumber
+          rulesetId
+          fee
+          feeUSD
+        }
+        distributeReservedTokensEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          rulesetCycleNumber
+          tokenCount
+        }
+        distributeToReservedTokenSplitEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          tokenCount
+          preferAddToBalance
+          percent
+          splitProjectId
+          beneficiary
+          lockedUntil
+        }
+        distributeToPayoutSplitEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          amount
+          amountUSD
+          preferAddToBalance
+          percent
+          splitProjectId
+          beneficiary
+          lockedUntil
+        }
+        useAllowanceEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          rulesetId
+          rulesetCycleNumber
+          beneficiary
+          amount
+          amountUSD
+          distributedAmount
+          distributedAmountUSD
+          netDistributedamount
+          netDistributedamountUSD
+          memo
+        }
+        burnEvent {
+          id
+          project {
+            ...ProjectFields
+          }
+          projectId
+          timestamp
+          txHash
+          from
+          caller
+          holder
+          amount
+          stakedAmount
+          erc20Amount
+        }
+      }
+    }
+  `
+}
+
 export function trendingProjectsQuery(
   count: number,
   skip: number = 0,

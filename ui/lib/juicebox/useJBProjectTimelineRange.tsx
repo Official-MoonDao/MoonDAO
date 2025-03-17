@@ -24,7 +24,7 @@ export const useJBProjectTimelineRange = ({
     if (secondsToMS(createdAt) > nowMillis - daysToMS(7)) {
       setRange(7)
     } else {
-      setRange(30)
+      setRange(20)
     }
   }, [createdAt])
 

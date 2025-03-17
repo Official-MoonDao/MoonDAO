@@ -1,3 +1,4 @@
+import { CalendarDateRangeIcon } from '@heroicons/react/24/outline'
 import moment from 'moment'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
@@ -84,11 +85,16 @@ export default function MissionTimelineChart({
 
   return (
     <div>
-      <div className="w-full flex items-center justify-end gap-8">
-        <MissionTimelineViewSelector view={view} setView={setView} />
+      <div className="mt-8 w-full flex items-center justify-between gap-8">
         <RangeSelector range={range} setRange={setRange} />
+        <div className="flex items-center gap-2">
+          <CalendarDateRangeIcon className="w-5 h-5" />
+          <span className="text-sm">
+            {`Created ${new Date(createdAt * 1000).toLocaleDateString()}`}
+          </span>
+        </div>
       </div>
-      <ResponsiveContainer className="mt-4" height={height}>
+      <ResponsiveContainer className="mt-4 w-full" height={height}>
         <LineChart
           margin={{
             top: -1, // hacky way to hide top border of CartesianGrid

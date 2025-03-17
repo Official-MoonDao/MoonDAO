@@ -6,7 +6,7 @@ export default function useJBTrendingProjects() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    async function fetchTrendingProjects() {
+    async function getTrendingProjects() {
       setIsLoading(true)
       const query = trendingProjectsQuery(10)
       const res = await fetch(`/api/juicebox/query?query=${query}`, {
@@ -17,11 +17,10 @@ export default function useJBTrendingProjects() {
       })
 
       const data = await res.json()
-      console.log('TRENDING', data)
       setTrendingProjects(data.data)
       setIsLoading(false)
     }
-    fetchTrendingProjects()
+    getTrendingProjects()
   }, [])
 
   return { trendingProjects, isLoading }

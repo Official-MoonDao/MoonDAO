@@ -38,7 +38,7 @@
     "@snapshot-labs/snapshot.js": "^0.11.23",
     "@solana/web3.js": "^1.98.0",
     "@tableland/sdk": "^7.2.1",
-    "@tanstack/react-query": "^5.67.1",
+    "@tanstack/react-query": "^5.49.2",
     "@typeform/embed": "^4.5.0",
     "@typeform/embed-react": "^3.17.0",
     "@uniswap/sdk-core": "^4.0.7",
@@ -61,6 +61,8 @@
     "graphql-request": "^6.1.0",
     "gsap": "^3.12.7",
     "html2canvas-pro": "^1.5.8",
+    "juice-sdk-core": "^1.7.0-beta",
+    "juice-sdk-react": "^1.7.0-beta",
     "marked": "^15.0.7",
     "merkletreejs": "^0.3.11",
     "moment": "^2.29.4",
@@ -99,7 +101,8 @@
     "typescript": "^5.1.6",
     "urql": "^4.0.4",
     "uuid": "^10.0.0",
-    "viem": "^2.21.10"
+    "viem": "^2.21.10",
+    "wagmi": "^2.14.13"
   },
   "devDependencies": {
     "@bygdle/javascript-lp-solver": "^0.4.26",

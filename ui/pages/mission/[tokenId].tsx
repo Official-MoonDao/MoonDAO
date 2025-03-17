@@ -1,4 +1,4 @@
-import { GlobeAltIcon } from '@heroicons/react/20/solid'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
@@ -16,11 +16,11 @@ import {
 import { blockedMissions } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import queryTable from '@/lib/tableland/queryTable'
@@ -30,19 +30,18 @@ import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
-import { DiscordIcon, TwitterIcon } from '@/components/assets'
-import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import ProgressBar from '@/components/layout/ProgressBar'
-import StandardWideCard from '@/components/layout/StandardWideCard'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
+
+const queryClient = new QueryClient()
 
 type ProjectProfileProps = {
   tokenId: string
@@ -224,72 +223,79 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   )
 
   return (
-    <Container>
-      <Head
-        title={mission?.metadata?.name}
-        description={mission?.metadata?.description}
-      />
-      <ContentLayout
-        header={''}
-        headerSize="max(20px, 3vw)"
-        description={ProfileHeader}
-        mainPadding
-        mode="compact"
-        popOverEffect={false}
-        isProfile
-        preFooter={<NoticeFooter darkBackground={true} />}
-      >
-        <div
-          id="page-container"
-          className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
+    <JuiceProviders
+      projectId={mission?.projectId}
+      selectedChain={selectedChain}
+    >
+      <Container>
+        <Head
+          title={mission?.metadata?.name}
+          description={mission?.metadata?.description}
+        />
+        <ContentLayout
+          header={''}
+          headerSize="max(20px, 3vw)"
+          description={ProfileHeader}
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+          preFooter={<NoticeFooter darkBackground={true} />}
         >
-          {/* Pay & Redeem Section */}
-          <Frame
-            noPadding
-            bottomLeft="0px"
-            bottomRight="0px"
-            topRight="0px"
-            topLeft="0px"
-            className="xl:hidden"
+          <div
+            id="page-container"
+            className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
           >
-            <div
-              id="mission-pay-redeem-container"
-              className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+            {/* Pay & Redeem Section */}
+            <Frame
+              noPadding
+              bottomLeft="0px"
+              bottomRight="0px"
+              topRight="0px"
+              topLeft="0px"
+              className="xl:hidden"
             >
-              <MissionPayRedeem
-                selectedChain={selectedChain}
-                mission={mission}
-                teamNFT={teamNFT}
-                token={token}
-                subgraphData={subgraphData}
-                ruleset={ruleset}
-                jbDirectoryContract={jbDirectoryContract}
-              />
-            </div>
-          </Frame>
-          {/* Project Overview */}
-          <Frame
-            noPadding
-            bottomLeft="0px"
-            bottomRight="0px"
-            topRight="0px"
-            topLeft="0px"
-          >
-            <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 px-12 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-              <MissionInfo
-                mission={mission}
-                teamNFT={teamNFT}
-                ruleset={ruleset}
-                points={points}
-                subgraphData={subgraphData}
-                token={token}
-                userMissionTokenBalance={userMissionTokenBalance}
-              />
-            </div>
-          </Frame>
-        </div>
-      </ContentLayout>
-    </Container>
+              <div
+                id="mission-pay-redeem-container"
+                className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+              >
+                <MissionPayRedeem
+                  selectedChain={selectedChain}
+                  mission={mission}
+                  teamNFT={teamNFT}
+                  token={token}
+                  subgraphData={subgraphData}
+                  ruleset={ruleset}
+                  jbDirectoryContract={jbDirectoryContract}
+                />
+              </div>
+            </Frame>
+            {/* Project Overview */}
+            <Frame
+              noPadding
+              bottomLeft="0px"
+              bottomRight="0px"
+              topRight="0px"
+              topLeft="0px"
+            >
+              <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 px-12 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+                <MissionInfo
+                  selectedChain={selectedChain}
+                  mission={mission}
+                  teamNFT={teamNFT}
+                  ruleset={ruleset}
+                  jbDirectoryContract={jbDirectoryContract}
+                  points={points}
+                  subgraphData={subgraphData}
+                  token={token}
+                  userMissionTokenBalance={userMissionTokenBalance}
+                />
+              </div>
+            </Frame>
+          </div>
+        </ContentLayout>
+      </Container>
+    </JuiceProviders>
   )
 }
 

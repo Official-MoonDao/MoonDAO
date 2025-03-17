@@ -2,6 +2,7 @@
 import EthDater from 'ethereum-block-by-date'
 import { useEffect, useMemo, useState } from 'react'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
+import { sepolia } from 'thirdweb/chains'
 import client from '../thirdweb/client'
 import { wadToFloat } from '../utils/numbers'
 import { daysToMS, minutesToMS } from '../utils/timestamp'
@@ -80,12 +81,12 @@ export default function useJBProjectTimeline(
   }, [timestamps, subgraphTimelinePoints])
 
   useEffect(() => {
-    async function fetchBlockData() {
+    async function getBlockData() {
       setIsLoadingBlockNumbers(true)
       try {
         const provider = ethers5Adapter.provider.toEthers({
           client,
-          chain: selectedChain,
+          chain: sepolia,
         })
         const dater = new EthDater(provider)
 
@@ -105,10 +106,10 @@ export default function useJBProjectTimeline(
       }
     }
 
-    if (range && selectedChain) fetchBlockData()
+    if (range && selectedChain) getBlockData()
 
     const intervalId = setInterval(() => {
-      if (range && selectedChain) fetchBlockData()
+      if (range && selectedChain) getBlockData()
     }, minutesToMS(5))
 
     return () => clearInterval(intervalId)
@@ -116,10 +117,10 @@ export default function useJBProjectTimeline(
 
   useEffect(() => {
     async function getTimelinePoints() {
-      if (!projectId || !blocks) return
+      if (projectId === undefined || !blocks) return
+      console.log(blocks)
       try {
-        const query = projectTimelineQuery(projectId.toString(), blocks)
-        // Send both query and variables to the API
+        const query = projectTimelineQuery(projectId?.toString(), blocks)
         const res = await fetch(`/api/juicebox/query?query=${query}`, {
           method: 'POST',
           headers: {
@@ -132,13 +133,14 @@ export default function useJBProjectTimeline(
           throw new Error(`HTTP error! Status: ${res.status}`)
         }
         const data = await res.json()
+        console.log('DATA', data)
         setSubgraphTimelinePoints(data)
       } catch (error) {
         console.error('Error fetching subgraph data:', error)
       }
     }
 
-    if (projectId && blockData) {
+    if (projectId !== undefined && blockData) {
       getTimelinePoints()
     }
   }, [projectId, blocks, blockData])
