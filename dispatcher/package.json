@@ -40,7 +40,8 @@
   },
   "homepage": "https://github.com/MitchMcQuinn/Dispatcher#readme",
   "devDependencies": {
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "ts-node": "^10.9.2"
   },
   "engines": {
     "node": ">=18.0.0"
