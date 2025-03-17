@@ -130,12 +130,9 @@ async function loadProjectData() {
                 );
                 continue;
             }
-            const initialTeamLine = extractInitialTeamSection(proposal.body);
-            const discordHandles =
-                initialTeamLine.match(/@([a-zA-Z0-9-]+)/g) || [];
             const multisigLine = proposal.body
                 .split("\n")
-                .find((line) => line.includes("Multisig"));
+                .find((line) => line.includes("Multisig") || line.includes("Multi-sig"));
             const addresses = multisigLine.match(/0x[a-fA-F0-9]{40}/g) || [];
             const ensNames = multisigLine.match(/([a-zA-Z0-9-]+\.eth)/g) || [];
             const ensAddresses = await Promise.all(
