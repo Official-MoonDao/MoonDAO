@@ -94,7 +94,7 @@ async function loadProjectData() {
         console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
 
         // Get proposals from Nance
-        const proposals = await getProposals("moondao", "current");
+        const proposals = await getProposals("moondao",26);
 
         if (!proposals) {
             throw new Error("Failed to fetch proposals from Nance");
@@ -115,21 +115,31 @@ async function loadProjectData() {
                 );
                 continue;
             }
-            const multisigLine = proposal.body
-                .split("\n")
-                .find((line) => line.includes("Multisig") || line.includes("Multi-sig") || line.includes("multisig"));
-            const addresses = multisigLine.match(/0x[a-fA-F0-9]{40}/g) || [];
-            const ensNames = multisigLine.match(/([a-zA-Z0-9-]+\.eth)/g) || [];
-            const ensAddresses = await Promise.all(
-                ensNames.map(async (name) => {
-                    const address = await resolveAddress({
-                        client,
-                        name: name,
-                    });
-                    return address;
-                })
-            );
-            const signers = addresses.concat(ensAddresses);
+            var signers;
+            var members = []
+            if ("actions" in proposal){
+                signers = proposal.actions[0].payload.multisigTeam.map((member) => member.address);
+                members = proposal.actions[0].payload.projectTeam.map((member) => member.votingAddress);
+            }else{
+                const multisigLine = proposal.body
+                    .split("\n")
+                    .find((line) => line.includes("Multisig") || line.includes("Multi-sig") || line.includes("multisig"));
+                console.log('multisigLine:', multisigLine);
+                const addresses = multisigLine.match(/0x[a-fA-F0-9]{40}/g) || [];
+                console.log("addresses:", addresses);
+                const ensNames = multisigLine.match(/([a-zA-Z0-9-]+\.eth)/g) || [];
+                console.log("ensNames:", ensNames);
+                const ensAddresses = await Promise.all(
+                    ensNames.map(async (name) => {
+                        const address = await resolveAddress({
+                            client,
+                            name: name,
+                        });
+                        return address;
+                    })
+                );
+                signers = addresses.concat(ensAddresses);
+            }
 
             if (existingMDPs.has(proposal.proposalId)) {
                 console.log(
@@ -204,7 +214,7 @@ async function loadProjectData() {
                 "https://moondao.com/proposal/" + proposal.proposalId,
                 upfrontPayment,
                 proposal.authorAddress || "", // leadAddress,
-                signers || [], // members
+                members || [], // members
                 signers || [], // signers,
             ]);
         }
