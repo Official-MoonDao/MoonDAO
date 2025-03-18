@@ -21,6 +21,7 @@ import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { renameFile } from '@/lib/utils/files'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
+import { bytesOfString } from '@/lib/utils/strings'
 import TeamABI from '../../const/abis/Team.json'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -316,6 +317,7 @@ export default function TeamMarketplaceListingModal({
               setListingData({ ...listingData, title: e.target.value })
             }}
             value={listingData.title}
+            maxLength={100}
           />
           <textarea
             id="listing-description-input"
@@ -326,7 +328,11 @@ export default function TeamMarketplaceListingModal({
             }}
             value={listingData.description}
             style={{ resize: 'none' }}
-            maxLength={250}
+            maxLength={
+              bytesOfString(listingData.description) >= 1024
+                ? listingData.description.length
+                : 1024
+            }
           />
           <div className="flex gap-2">
             <input

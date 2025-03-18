@@ -94,7 +94,7 @@ async function loadProjectData() {
         console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
 
         // Get proposals from Nance
-        const proposals = await getProposals("moondao",26);
+        const proposals = await getProposals("moondao", 26);
 
         if (!proposals) {
             throw new Error("Failed to fetch proposals from Nance");
@@ -158,10 +158,10 @@ async function loadProjectData() {
                             type: "1.0",
                             data: {
                                 name:
-                                    "MDP-" +
-                                    proposal.proposalId +
-                                    " " +
-                                    hatType,
+                                "MDP-" +
+                                proposal.proposalId +
+                                " " +
+                                hatType,
                                 description: proposal.title,
                             },
                         }),
@@ -194,8 +194,8 @@ async function loadProjectData() {
             ]);
             // allow keyboard input to confirm the proposal, otherwise skip
             const conf = prompt(
-               `Create project for proposal ${proposal.proposalId} ${proposal.title}? (y/n)`
-               );
+                `Create project for proposal ${proposal.proposalId} ${proposal.title}? (y/n)`
+            );
             if (conf !== "y") {
                 console.log("Skipping proposal MDP:", proposal.proposalId, " ", proposal.title);
                 continue;
