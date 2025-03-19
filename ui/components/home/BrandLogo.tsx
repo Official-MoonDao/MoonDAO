@@ -19,7 +19,7 @@ export default function BrandLogo({ logo, alt, link }: LogoProps) {
                     className="opacity-[50%] hover:opacity-[100%] grayscale hover:grayscale-0 transition-all duration-300"
                     >
                     <Image 
-                        width="300" 
+                        width="350" 
                         height="100" 
                         src={logo} 
                         alt={alt} 
