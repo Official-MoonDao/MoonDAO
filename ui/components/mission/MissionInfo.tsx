@@ -189,6 +189,7 @@ export default function MissionInfo({
               icon="/assets/icon-star-blue.svg"
             />
             <MissionTokenInfo
+              mission={mission}
               token={token}
               userMissionTokenBalance={userMissionTokenBalance}
               ruleset={ruleset}

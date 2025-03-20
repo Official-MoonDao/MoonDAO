@@ -68,7 +68,7 @@ export default function MissionTimelineChart({
 
   const xDomain = useMemo(() => {
     const endOfDay = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60) // Round to midnight
-    const startOfDay = endOfDay - range * 24 * 60 * 60
+    const startOfDay = endOfDay - +range * 24 * 60 * 60
     return [startOfDay, endOfDay] as [number, number]
   }, [range])
 

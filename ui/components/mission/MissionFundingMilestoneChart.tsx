@@ -12,12 +12,14 @@ import {
 } from 'recharts'
 
 export type MissionFundingMilestoneChartProps = {
+  mission: any
   subgraphData: any
   ruleset: any
   height?: number
 }
 
 export default function MissionFundingMilestoneChart({
+  mission,
   subgraphData,
   ruleset,
   height = 300,
@@ -32,8 +34,8 @@ export default function MissionFundingMilestoneChart({
   const progressBarRef = useRef<HTMLDivElement>(null)
   const [chartDimensions, setChartDimensions] = useState({ width: 0, left: 0 })
   //TODO : Add real volume
-  const volume = 14 || subgraphData?.volume / 1e18 || 0
-
+  // const volume = 14 || subgraphData?.volume / 1e18 || 0
+  const volume = 14
   const weight = ruleset?.[0].weight.toString() / 1e18
 
   //TODO : Add real milestones

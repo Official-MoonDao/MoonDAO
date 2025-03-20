@@ -2,7 +2,8 @@ import moment from 'moment'
 import React, { useEffect, useState } from 'react'
 import { daysToMS, minutesToMS, secondsToMS } from '../utils/timestamp'
 
-export type ProjectTimelineRange = 7 | 30 | 365
+//TODO : Change 20 to 30 when the subgraph supports going that far back
+export type ProjectTimelineRange = 7 | 20 | 365
 
 export const useJBProjectTimelineRange = ({
   createdAt,

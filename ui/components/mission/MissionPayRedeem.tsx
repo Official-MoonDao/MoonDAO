@@ -365,7 +365,7 @@ export default function MissionPayRedeem({
                 }}
               >
                 {address?.slice(0, 6)}...{address?.slice(-4)}
-                <CopyIcon className="w-4 h-4" />
+                <CopyIcon />
               </button>
             </div>
 
