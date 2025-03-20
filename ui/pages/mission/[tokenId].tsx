@@ -1,4 +1,3 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
@@ -35,13 +34,11 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import ProgressBar from '@/components/layout/ProgressBar'
 import { Mission } from '@/components/mission/MissionCard'
+import MissionFundingProgressBar from '@/components/mission/MissionFundingProgressBar'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
-
-const queryClient = new QueryClient()
 
 type ProjectProfileProps = {
   tokenId: string
@@ -196,7 +193,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   <div className="flex flex-wrap gap-2">
                     <MissionStat
                       label="Deadline"
-                      value={`Cyle # ${ruleset?.[0]?.cycleNumber}`}
+                      value={`${new Date(
+                        Date.now() + ruleset?.[0]?.duration * 1000
+                      ).toLocaleDateString()}`}
                       icon={'/assets/launchpad/clock.svg'}
                     />
                     <MissionStat
@@ -211,7 +210,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     />
                   </div>
                   <div className="w-full">
-                    <ProgressBar height="25px" progress={80} label="8 ETH" />
+                    <MissionFundingProgressBar
+                      progress={80}
+                      label="8 ETH"
+                      goalAsPercentage={10}
+                      goalIndicatorLabel={` 1 ETH secured`}
+                    />
                   </div>
                 </div>
               </div>

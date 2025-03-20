@@ -26,6 +26,7 @@ import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import MissionTokenExchangeRates from './MissionTokenExchangeRates'
 
 function PayRedeemStat({ label, value, children }: any) {
   return (
@@ -40,6 +41,7 @@ function PayRedeemStat({ label, value, children }: any) {
 function MissionPayRedeemContent({
   token,
   ruleset,
+  subgraphData,
   input,
   output,
   setInput,
@@ -53,19 +55,25 @@ function MissionPayRedeemContent({
     >
       <div
         id="mission-pay-container"
-        className="p-2 max-w-[300px] flex flex-col gap-4 bg-[#020617] rounded-2xl"
+        className="p-2 max-w-[300px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
       >
-        <div id="mission-pay-header" className="flex justify-between">
-          {/* <PayRedeemStat label="Payments" value={paymentsCount} />
-          <PayRedeemStat label="Total Raised" value={totalRaised} />
+        <div id="mission-pay-header" className="flex justify-between gap-2">
+          <PayRedeemStat label="Payments" value={subgraphData?.paymentsCount} />
+          <PayRedeemStat
+            label="Total Raised"
+            value={subgraphData?.volume / 1e18}
+          />
           <PayRedeemStat label="Last 7 Days">
-            <Image
-              src="/assets/launchpad/increase.svg"
-              alt="increase"
-              width={30}
-              height={30}
-            />
-          </PayRedeemStat> */}
+            <div className="flex items-center gap-2">
+              <Image
+                src="/assets/launchpad/upwards.svg"
+                alt="increase"
+                width={30}
+                height={30}
+              />
+              <p className="text-moon-green">{'+125%'}</p>
+            </div>
+          </PayRedeemStat>
         </div>
         {/* You pay */}
         <div className="relative flex flex-col gap-4">
@@ -121,27 +129,31 @@ function MissionPayRedeemContent({
             </div>
           </div>
         </div>
-        <PrivyWeb3Button
-          className="rounded-full"
-          label="Pay"
-          action={() => setMissionPayModalEnabled(true)}
-        />
+        <StandardButton
+          className="rounded-full gradient-2 rounded-full w-full py-1"
+          onClick={() => setMissionPayModalEnabled(true)}
+          hoverEffect={false}
+        >
+          Pay
+        </StandardButton>
       </div>
-      <div className="pt-4 flex flex-col justify-between gap-4">
+      {/* Token stats and redeem container */}
+      <div className="xl:pt-4 flex flex-col justify-between gap-4">
         <div
           id="mission-token-stats"
-          className="p-2 bg-darkest-cool rounded-2xl"
+          className="px-2 pt-1 bg-darkest-cool rounded-2xl"
         >
-          <div>
+          <div className="text-lg">
             <h3 className="opacity-60 text-sm">Current Supply</h3>
-            <p>{token?.tokenSupply.toString() / 1e18}</p>
+            <p>
+              {token?.tokenSupply.toString() / 1e18} {token?.tokenSymbol}
+            </p>
           </div>
-          <div>
-            <h3 className="opacity-60 text-sm">Current Exchange Rate</h3>
-            <p>{`1 ETH = ${(
-              ruleset?.[0].weight.toString() / 1e18
-            ).toLocaleString()} ${token?.tokenSymbol}`}</p>
-          </div>
+
+          <MissionTokenExchangeRates
+            ruleset={ruleset}
+            tokenSymbol={token?.tokenSymbol}
+          />
         </div>
         <div
           id="mission-redeem-container"
@@ -149,13 +161,16 @@ function MissionPayRedeemContent({
         >
           <div>
             <h3 className="opacity-60 text-sm">Your Balance</h3>
-            <p>{token?.tokenSupply.toString() / 1e18}</p>
+            <p className="text-2xl">{`${token?.tokenSupply.toString() / 1e18} ${
+              token?.tokenSymbol
+            }`}</p>
           </div>
 
           <PrivyWeb3Button
-            className="w-full rounded-full"
+            className="w-full rounded-full py-2"
             label="Redeem"
             action={redeem}
+            noPadding
           />
         </div>
       </div>
@@ -274,6 +289,7 @@ export default function MissionPayRedeem({
         <MissionPayRedeemContent
           token={token}
           ruleset={ruleset}
+          subgraphData={subgraphData}
           input={input}
           output={output}
           redeem={redeemMissionToken}
@@ -281,13 +297,20 @@ export default function MissionPayRedeem({
           setMissionPayModalEnabled={setMissionPayModalEnabled}
         />
       </div>
-      <div className="fixed bottom-0 left-0 w-full p-4 bg-darkest-cool rounded-t-2xl md:hidden z-[1000]">
+      <div className="fixed bottom-0 left-0 w-full p-4 bg-darkest-cool rounded-t-2xl md:hidden z-[1000] flex flex-col gap-4">
         <StandardButton
-          className="w-full gradient-2 rounded-full"
+          className="w-full gradient-2 rounded-full text-lg"
           onClick={() => setMissionPayModalEnabled(true)}
+          hoverEffect={false}
         >
           Pay
         </StandardButton>
+        <PrivyWeb3Button
+          label="Redeem"
+          className="w-full gradient-2 rounded-full py-2"
+          action={redeemMissionToken}
+          noPadding
+        />
       </div>
       {missionPayModalEnabled && (
         <Modal id="mission-pay-modal" setEnabled={setMissionPayModalEnabled}>

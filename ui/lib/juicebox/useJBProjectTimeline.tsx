@@ -1,4 +1,3 @@
-//PV = 1
 import EthDater from 'ethereum-block-by-date'
 import { useEffect, useMemo, useState } from 'react'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
@@ -118,7 +117,6 @@ export default function useJBProjectTimeline(
   useEffect(() => {
     async function getTimelinePoints() {
       if (projectId === undefined || !blocks) return
-      console.log(blocks)
       try {
         const query = projectTimelineQuery(projectId?.toString(), blocks)
         const res = await fetch(`/api/juicebox/query?query=${query}`, {
@@ -133,17 +131,16 @@ export default function useJBProjectTimeline(
           throw new Error(`HTTP error! Status: ${res.status}`)
         }
         const data = await res.json()
-        console.log('DATA', data)
         setSubgraphTimelinePoints(data)
       } catch (error) {
         console.error('Error fetching subgraph data:', error)
       }
     }
 
-    if (projectId !== undefined && blockData) {
+    if (projectId !== undefined && blocks) {
       getTimelinePoints()
     }
-  }, [projectId, blocks, blockData])
+  }, [projectId, blockData])
 
   return { points, isLoading }
 }

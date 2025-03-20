@@ -1,5 +1,6 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
+import MissionFundingMilestoneChart from './MissionFundingMilestoneChart'
 
 function FundingStage({
   stage,
@@ -13,7 +14,7 @@ function FundingStage({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <h2 className="font-GoodTimes text-2xl 2xl:text-4xl text-moon-indigo">
+        <h2 className="font-GoodTimes text-xl lg:text-2xl text-moon-indigo">
           {`Stage ${stage} : `}
           <span className="text-white">{title}</span>
         </h2>
@@ -34,8 +35,7 @@ export default function MissionTokenInfo({
   ruleset: any
   subgraphData: any
 }) {
-  console.log(ruleset)
-
+  //TODO : Add real stage weights and durations
   const stage1Weight = ruleset?.[0].weight.toString() / 1e18
   const stage2Weight = stage1Weight / 2
   const stage3Weight = stage1Weight / 4
@@ -49,6 +49,11 @@ export default function MissionTokenInfo({
       {/* Funding Dynamics / Stages */}
       <h1 className="mt-4 text-2xl font-bold">Funding Dynamics</h1>
       <p>The token funding for this project works in stages.</p>
+      <MissionFundingMilestoneChart
+        mission={subgraphData}
+        ruleset={ruleset}
+        subgraphData={subgraphData}
+      />
       {/* <Image/> */}
       <FundingStage
         stage={1}
@@ -107,6 +112,20 @@ export default function MissionTokenInfo({
         width={500}
         height={500}
       />
+
+      {/* Auditing Resources */}
+      <h1 className="mt-4 text-2xl font-bold">Auditing Resources</h1>
+      {['Juicebox', 'Bubblemaps?', 'Rug Checker?', 'Etherscan'].map((v, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <Image
+            src="/assets/launchpad/star-icon-indigo.svg"
+            alt="Star Icon"
+            width={20}
+            height={20}
+          />
+          <p>{v}</p>
+        </div>
+      ))}
     </div>
   )
 }

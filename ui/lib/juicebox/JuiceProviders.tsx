@@ -3,21 +3,15 @@ import { JBProjectProvider } from 'juice-sdk-react'
 import { createConfig, http, WagmiProvider } from 'wagmi'
 import { mainnet, arbitrum, base, sepolia } from 'wagmi/chains'
 
+const thirdwebClientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID
+
 const wagmiConfig = createConfig({
   chains: [mainnet, arbitrum, base, sepolia],
   transports: {
-    [mainnet.id]: http(
-      `https://1.rpc.thirdweb.com/${process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`
-    ),
-    [arbitrum.id]: http(
-      `https://42161.rpc.thirdweb.com/${process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`
-    ),
-    [base.id]: http(
-      `https://8453.rpc.thirdweb.com/${process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`
-    ),
-    [sepolia.id]: http(
-      `https://11155111.rpc.thirdweb.com/${process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID}`
-    ),
+    [mainnet.id]: http(`https://1.rpc.thirdweb.com/${thirdwebClientId}`),
+    [arbitrum.id]: http(`https://42161.rpc.thirdweb.com/${thirdwebClientId}`),
+    [base.id]: http(`https://8453.rpc.thirdweb.com/${thirdwebClientId}`),
+    [sepolia.id]: http(`https://11155111.rpc.thirdweb.com/${thirdwebClientId}`),
   },
 })
 

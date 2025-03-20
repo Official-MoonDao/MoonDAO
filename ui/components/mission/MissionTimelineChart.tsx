@@ -20,7 +20,6 @@ import { useTimelineYDomain } from '@/lib/juicebox/useTimelineYDomain'
 import { wadToFloat } from '@/lib/utils/numbers'
 import { daysToMS } from '@/lib/utils/timestamp'
 import RangeSelector from '../layout/RangeSelector'
-import MissionTimelineViewSelector from './MissionTimelineViewSelector'
 
 export type MissionTimelineChartProps = {
   points: any[]
@@ -67,16 +66,17 @@ export default function MissionTimelineChart({
         ]
       : defaultYDomain
 
-  const xDomain = useMemo(
-    () =>
-      [Math.floor((now - daysToMS(range)) / 1000), Math.floor(now / 1000)] as [
-        number,
-        number
-      ],
-    [range]
-  )
+  const xDomain = useMemo(() => {
+    const endOfDay = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60) // Round to midnight
+    const startOfDay = endOfDay - range * 24 * 60 * 60
+    return [startOfDay, endOfDay] as [number, number]
+  }, [range])
 
-  const xTicks = useTicks({ range: xDomain, resolution: 7, offset: 0.5 })
+  const xTicks = useTicks({
+    range: xDomain,
+    resolution: 7,
+    offset: 0.5,
+  })
 
   const yTicks = useTicks({ range: yDomain, resolution: 5, offset: 0.5 })
 

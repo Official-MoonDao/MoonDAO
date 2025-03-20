@@ -48,6 +48,7 @@ ${projectQueries}
 
 export function projectEventsQuery(
   projectId: string,
+  filter?: string,
   orderBy: string = 'timestamp',
   orderDirection: string = 'desc',
   first: number = 100,
@@ -68,7 +69,7 @@ export function projectEventsQuery(
 
     query {
       projectEvents(
-        where: {projectId: ${projectId}}
+        where: {projectId: ${projectId}${filter ? `, ${filter}_not: null` : ''}}
         orderBy: ${orderBy}
         orderDirection: ${orderDirection}
         first: ${first}

@@ -16,7 +16,7 @@ export type EventType =
   | 'useAllowanceEvent'
   | 'burnEvent'
 
-type ProjectEventFilter = 'all' | EventType
+type ProjectEventFilter = 'all' | EventType | ''
 
 const PAGE_SIZE = 10
 
@@ -42,7 +42,8 @@ const useOmnichainSubgraphProjectEvents = ({
         return { data: { projectEvents: [] }, nextCursor: undefined }
 
       const query = projectEventsQuery(
-        projectId ?? sucker?.projectId.toString() ?? '',
+        sucker?.projectId.toString() ?? projectId ?? '',
+        filter,
         'timestamp',
         'desc',
         PAGE_SIZE,

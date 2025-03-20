@@ -1,27 +1,31 @@
 import { NativeTokenValue, useSuckers } from 'juice-sdk-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { transformEventData } from '@/lib/juicebox/transformEventData'
 import useOmnichainSubgraphProjectEvents from '@/lib/juicebox/useOmnichainSubgraphProjectEvents'
 import { tokenSymbolText } from '@/lib/utils/strings'
+import Selector from '../layout/Selector'
 import MissionActivityEvent from './MissionActivityEvent'
-
-const PAGE_SIZE = 10
+import MissionActivityModal from './MissionActivityModal'
 
 export default function MissionActivityList({
   selectedChain,
   tokenSymbol,
   projectId,
 }: any) {
-  const { data: suckers, refetch } = useSuckers()
+  const [missionActivityModalEnabled, setMissionActivityModalEnabled] =
+    useState(false)
+  const [filter, setFilter] = useState<'all' | 'payEvent' | 'mintTokensEvent'>(
+    'all'
+  )
 
-  console.log('SUCKERS', suckers)
+  const { data: suckers, refetch } = useSuckers()
 
   const {
     data: projectEventsQueryResult,
     isLoading: loadingEvents,
     fetchNextPage,
   } = useOmnichainSubgraphProjectEvents({
-    filter: 'payEvent',
+    filter: filter === 'all' ? undefined : filter,
     sucker: suckers?.find((s: any) => s.peerChainId === selectedChain.id),
     projectId,
   })
@@ -38,10 +42,23 @@ export default function MissionActivityList({
 
   return (
     <div>
+      <div className="flex justify-end items-center gap-4">
+        <Selector
+          value={filter}
+          onChange={(value) => {
+            setFilter(value as 'all' | 'payEvent' | 'mintTokensEvent')
+          }}
+          options={[
+            { label: 'All', value: 'all' },
+            { label: 'Payments', value: 'payEvent' },
+            { label: 'Tokens', value: 'mintTokensEvent' },
+          ]}
+        />
+      </div>
       <div className="flex flex-col gap-4">
-        {projectEvents.map((event) => (
+        {projectEvents.map((event, i) => (
           <MissionActivityEvent
-            key={event?.event.id}
+            key={event?.event.id + i}
             header={event?.header}
             subject={event?.subject}
             extra={event?.extra}
@@ -52,6 +69,9 @@ export default function MissionActivityList({
           Load more
         </button>
       </div>
+      {missionActivityModalEnabled && (
+        <MissionActivityModal setEnabled={setMissionActivityModalEnabled} />
+      )}
     </div>
   )
 }
