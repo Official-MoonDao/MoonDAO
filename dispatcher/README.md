@@ -124,3 +124,9 @@ The Wordware API supports streaming responses, allowing real-time processing of 
    ```bash
    npm run start-orchestrator
    ```
+
+4. **Run Locally**:
+   ```bash
+   # Update getProposals call with the relavent nance cycle or use "current"
+   npx ts-node Pipelines/Integration/POST/Tableland/load_project.ts
+   ```

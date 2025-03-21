@@ -6,6 +6,8 @@ import { createThirdwebClient } from "thirdweb";
 require("dotenv").config();
 const { ThirdwebSDK } = require("@thirdweb-dev/sdk");
 const { Arbitrum, Sepolia } = require("@thirdweb-dev/chains");
+const prompt = require('prompt-sync')();
+
 const { getProposals } = require("../../GET/Nance/get_proposals");
 const {
     PROJECT_TABLE_ADDRESSES,
@@ -26,23 +28,6 @@ const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
 const client = createThirdwebClient({
     clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string,
 });
-
-function extractInitialTeamSection(text) {
-    const lines = text.split("\n");
-    let startIndex = lines.findIndex((line) => line.includes("Initial Team"));
-    if (startIndex === -1) {
-        return null; // "Initial Team" not found
-    }
-    let endIndex = lines.findIndex(
-        (line, i) => i > startIndex && line.includes("Multisig")
-    );
-
-    if (startIndex === -1 || endIndex === -1) {
-        return null; // Return null if either "Initial Team" or "Multisig" is not found
-    }
-
-    return lines.slice(startIndex, endIndex).join("\n");
-}
 
 interface PinResponse {
     cid: string;
@@ -109,7 +94,7 @@ async function loadProjectData() {
         console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
 
         // Get proposals from Nance
-        const proposals = await getProposals("moondao", "current");
+        const proposals = await getProposals("moondao", 26);
 
         if (!proposals) {
             throw new Error("Failed to fetch proposals from Nance");
@@ -130,24 +115,31 @@ async function loadProjectData() {
                 );
                 continue;
             }
-            const initialTeamLine = extractInitialTeamSection(proposal.body);
-            const discordHandles =
-                initialTeamLine.match(/@([a-zA-Z0-9-]+)/g) || [];
-            const multisigLine = proposal.body
-                .split("\n")
-                .find((line) => line.includes("Multisig"));
-            const addresses = multisigLine.match(/0x[a-fA-F0-9]{40}/g) || [];
-            const ensNames = multisigLine.match(/([a-zA-Z0-9-]+\.eth)/g) || [];
-            const ensAddresses = await Promise.all(
-                ensNames.map(async (name) => {
-                    const address = await resolveAddress({
-                        client,
-                        name: name,
-                    });
-                    return address;
-                })
-            );
-            const signers = addresses.concat(ensAddresses);
+            var signers;
+            var members = []
+            if ("actions" in proposal){
+                signers = proposal.actions[0].payload.multisigTeam.map((member) => member.address);
+                members = proposal.actions[0].payload.projectTeam.map((member) => member.votingAddress);
+            }else{
+                const multisigLine = proposal.body
+                    .split("\n")
+                    .find((line) => line.includes("Multisig") || line.includes("Multi-sig") || line.includes("multisig"));
+                console.log('multisigLine:', multisigLine);
+                const addresses = multisigLine.match(/0x[a-fA-F0-9]{40}/g) || [];
+                console.log("addresses:", addresses);
+                const ensNames = multisigLine.match(/([a-zA-Z0-9-]+\.eth)/g) || [];
+                console.log("ensNames:", ensNames);
+                const ensAddresses = await Promise.all(
+                    ensNames.map(async (name) => {
+                        const address = await resolveAddress({
+                            client,
+                            name: name,
+                        });
+                        return address;
+                    })
+                );
+                signers = addresses.concat(ensAddresses);
+            }
 
             if (existingMDPs.has(proposal.proposalId)) {
                 console.log(
@@ -166,10 +158,10 @@ async function loadProjectData() {
                             type: "1.0",
                             data: {
                                 name:
-                                    "MDP-" +
-                                    proposal.proposalId +
-                                    " " +
-                                    hatType,
+                                "MDP-" +
+                                proposal.proposalId +
+                                " " +
+                                hatType,
                                 description: proposal.title,
                             },
                         }),
@@ -200,6 +192,14 @@ async function loadProjectData() {
                 getHatMetadataIPFS("Manager"),
                 getHatMetadataIPFS("Member"),
             ]);
+            // allow keyboard input to confirm the proposal, otherwise skip
+            const conf = prompt(
+                `Create project for proposal ${proposal.proposalId} ${proposal.title}? (y/n)`
+            );
+            if (conf !== "y") {
+                console.log("Skipping proposal MDP:", proposal.proposalId, " ", proposal.title);
+                continue;
+            }
             await projectTeamCreatorContract.call("createProjectTeam", [
                 adminHatMetadataIpfs,
                 managerHatMetadataIpfs,
@@ -214,7 +214,7 @@ async function loadProjectData() {
                 "https://moondao.com/proposal/" + proposal.proposalId,
                 upfrontPayment,
                 proposal.authorAddress || "", // leadAddress,
-                signers || [], // members
+                members || [], // members
                 signers || [], // signers,
             ]);
         }
