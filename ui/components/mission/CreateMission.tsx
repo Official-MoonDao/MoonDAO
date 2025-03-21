@@ -238,10 +238,10 @@ export default function CreateMission({
     },
   })
   const [hasDeadline, setHasDeadline] = useState(
-    missionData.token.deadline !== undefined
+    missionData.deadline !== undefined
   )
   const [hasFundingGoal, setHasFundingGoal] = useState(
-    missionData.token.fundingGoal !== undefined
+    missionData.fundingGoal !== undefined
   )
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] =
@@ -669,7 +669,7 @@ export default function CreateMission({
                     if (!value) {
                       setMissionData({
                         ...missionData,
-                        token: { ...missionData.token, deadline: '' },
+                        deadline: '',
                       })
                     }
                   }}
@@ -683,14 +683,11 @@ export default function CreateMission({
                 >
                   <FormDate
                     label="Deadline"
-                    value={missionData.token.deadline || ''}
+                    value={missionData.deadline || ''}
                     onChange={(value: string) => {
                       setMissionData({
                         ...missionData,
-                        token: {
-                          ...missionData.token,
-                          deadline: value,
-                        },
+                        deadline: value,
                       })
                     }}
                     min={new Date()}
