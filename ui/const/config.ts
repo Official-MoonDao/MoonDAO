@@ -211,12 +211,12 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x020E1a921ecEcb275f59D403e8cCD15B679D6cE1',
+  sepolia: '0x9DA538A508e5DD77bCDc02651659a68a554833Be',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x3Fee3e3De7d8000C1Ac670D87e907fB33db426eD',
+  sepolia: '0x2486149B23447c37932471eA6dF091267ebca953',
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {

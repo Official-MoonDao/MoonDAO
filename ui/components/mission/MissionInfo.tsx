@@ -1,5 +1,4 @@
 import {
-  CalendarDateRangeIcon,
   GlobeAltIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline'

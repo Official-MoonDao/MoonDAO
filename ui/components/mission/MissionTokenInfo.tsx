@@ -26,7 +26,6 @@ function FundingStage({
 
 export default function MissionTokenInfo({
   mission,
-  userMissionTokenBalance,
   token,
   ruleset,
   subgraphData,
@@ -52,8 +51,8 @@ export default function MissionTokenInfo({
       <h1 className="mt-4 text-2xl font-bold">Funding Dynamics</h1>
       <p>The token funding for this project works in stages.</p>
       <MissionFundingMilestoneChart
-        mission={mission}
-        ruleset={ruleset}
+        fundingGoal={mission?.fundingGoal}
+        minRequiredFunding={mission?.minFundingRequired}
         subgraphData={subgraphData}
       />
       {/* <Image/> */}

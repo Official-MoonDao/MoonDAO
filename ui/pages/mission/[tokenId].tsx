@@ -20,8 +20,8 @@ import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
-import useJBProjectData from '@/lib/juicebox/useJBProjectData'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
+import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -77,12 +77,20 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     chain: selectedChain,
   })
 
-  const { ruleset, token, subgraphData } = useJBProjectData(
-    mission?.projectId,
-    jbV4ControllerContract,
-    jbTokensContract,
-    mission?.metadata
-  )
+  const missionTableContract = useContract({
+    address: MISSION_TABLE_ADDRESSES[chainSlug],
+    abi: MissionTableABI as any,
+    chain: selectedChain,
+  })
+
+  const { ruleset, token, subgraphData, fundingGoal, minRequiredFunding } =
+    useMissionData(
+      mission?.projectId,
+      missionTableContract,
+      jbV4ControllerContract,
+      jbTokensContract,
+      mission?.metadata
+    )
 
   const { points } = useJBProjectTimeline(
     selectedChain,
@@ -212,9 +220,13 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   <div className="w-full">
                     <MissionFundingProgressBar
                       progress={80}
-                      label="8 ETH"
-                      goalAsPercentage={10}
-                      goalIndicatorLabel={` 1 ETH secured`}
+                      label={`${subgraphData?.volume / 1e18} ETH`}
+                      goalAsPercentage={
+                        (fundingGoal / minRequiredFunding) * 100
+                      }
+                      goalIndicatorLabel={`${
+                        minRequiredFunding / 1e18
+                      } ETH secured`}
                     />
                   </div>
                 </div>

@@ -12,16 +12,16 @@ import {
 } from 'recharts'
 
 export type MissionFundingMilestoneChartProps = {
-  mission: any
   subgraphData: any
-  ruleset: any
+  fundingGoal: number
+  minRequiredFunding: number
   height?: number
 }
 
 export default function MissionFundingMilestoneChart({
-  mission,
   subgraphData,
-  ruleset,
+  fundingGoal,
+  minRequiredFunding,
   height = 300,
 }: MissionFundingMilestoneChartProps) {
   const stroke = 'white'
@@ -33,43 +33,32 @@ export default function MissionFundingMilestoneChart({
   const containerRef = useRef<HTMLDivElement>(null)
   const progressBarRef = useRef<HTMLDivElement>(null)
   const [chartDimensions, setChartDimensions] = useState({ width: 0, left: 0 })
-  //TODO : Add real volume
-  // const volume = 14 || subgraphData?.volume / 1e18 || 0
-  const volume = 14
-  const weight = ruleset?.[0].weight.toString() / 1e18
 
-  //TODO : Add real milestones
+  const volume = subgraphData?.volume / 1e18 || 0
+
   const points = useMemo(() => {
     return [
       {
         target: 0,
-        weight: weight,
+        weight: missionTokenWeights[0],
         milestone: 1,
       },
       {
-        target: 15,
-        weight: weight / 2,
+        target: minRequiredFunding,
+        weight: missionTokenWeights[1],
         milestone: 2,
       },
       {
-        target: 30,
-        weight: weight / 4,
+        target: fundingGoal,
+        weight: missionTokenWeights[2],
         milestone: 3,
       },
     ]
-  }, [ruleset])
+  }, [minRequiredFunding, fundingGoal])
 
-  const minTarget = useMemo(() => {
-    return points?.[0].target
-  }, [points])
-
-  const midTarget = useMemo(() => {
-    return points?.[1].target
-  }, [points])
-
-  const maxTarget = useMemo(() => {
-    return points?.[points.length - 1].target
-  }, [points])
+  const minTarget = points?.[0].target
+  const midTarget = points?.[1].target
+  const maxTarget = points?.[2].target
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

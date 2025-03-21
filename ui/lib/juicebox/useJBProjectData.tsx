@@ -14,6 +14,7 @@ export default function useJBProjectData(
   projectSubgraphData?: any
 ) {
   const { selectedChain } = useContext(ChainContextV5)
+
   const [metadata, setMetadata] = useState<any>(projectMetadata)
   const [ruleset, setRuleset] = useState<any>()
   const [token, setToken] = useState<any>({

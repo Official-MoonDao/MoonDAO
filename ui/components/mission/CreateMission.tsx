@@ -68,12 +68,13 @@ export type MissionData = {
   twitter: string
   discord: string
   tagline: string
+  deadline: string | undefined
+  fundingGoal: number | undefined
+  minFundingRequired: number | undefined
   token: {
     name: string
     symbol: string
     decimals: number
-    deadline: string | undefined
-    fundingGoal: number | undefined
     tradeable: boolean
   }
 }
@@ -226,12 +227,13 @@ export default function CreateMission({
     twitter: missionCache?.twitter || '',
     discord: missionCache?.discord || '',
     tagline: missionCache?.tagline || '',
+    deadline: missionCache?.deadline || undefined,
+    fundingGoal: missionCache?.fundingGoal || undefined,
+    minFundingRequired: missionCache?.minFundingRequired || undefined,
     token: missionCache?.token || {
       name: '',
       symbol: '',
       decimals: 18,
-      deadline: undefined,
-      fundingGoal: undefined,
       tradeable: false,
     },
   })
@@ -245,6 +247,127 @@ export default function CreateMission({
   const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] =
     useState(false)
 
+  async function createMission() {
+    try {
+      if (!account) throw new Error('Please connect your wallet')
+      if (!missionImage) throw new Error('Please upload a mission image')
+
+      const teamMultisig = await readContract({
+        contract: teamContract,
+        method: 'ownerOf' as string,
+        params: [selectedTeamId],
+      })
+
+      const renamedMissionImage = renameFile(
+        missionImage,
+        `${missionData.name} Mission Image`
+      )
+
+      const { cid: missionLogoIpfsHash } = await pinBlobOrFile(
+        renamedMissionImage
+      )
+
+      const missionMetadataBlob = new Blob(
+        [
+          JSON.stringify({
+            name: missionData.name,
+            description: missionData.description,
+            tagline: missionData.tagline,
+            infoUri: missionData.infoUri,
+            twitter: missionData.twitter,
+            discord: missionData.discord,
+            logoUri: `https://ipfs.io/ipfs/${missionLogoIpfsHash}`,
+            tokens: [],
+            payButton: 'Brew',
+            payDisclosure: '',
+            version: 4,
+          }),
+        ],
+        {
+          type: 'application/json',
+        }
+      )
+
+      const { cid: missionMetadataIpfsHash } = await pinBlobOrFile(
+        missionMetadataBlob
+      )
+
+      const durationInSeconds =
+        hasDeadline && missionData?.deadline
+          ? getUnixTime(new Date(missionData.deadline)) -
+            getUnixTime(new Date())
+          : 0
+
+      const transaction = prepareContractCall({
+        contract: missionCreatorContract,
+        method: 'createMission' as string,
+        params: [
+          selectedTeamId,
+          address,
+          missionMetadataIpfsHash,
+          durationInSeconds,
+          missionData.minFundingRequired,
+          missionData.fundingGoal,
+          missionData.token.tradeable,
+          missionData?.token?.name,
+          missionData?.token?.symbol,
+          'MoonDAO Mission',
+        ],
+      })
+
+      const receipt = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+
+      // Define the event signature for the Transfer event
+      const missionCreatedEventSignature = ethers.utils.id(
+        'MissionCreated(uint256,uint256,uint256,address,uint256,uint256)'
+      )
+      // Find the log that matches the Transfer event signature
+      const missionCreatedLog = receipt.logs.find(
+        (log: any) => log.topics[0] === missionCreatedEventSignature
+      )
+
+      const missionId = ethers.BigNumber.from(
+        missionCreatedLog?.topics[1]
+      ).toString()
+
+      if (receipt) {
+        setTimeout(() => {
+          toast.success('Mission created successfully')
+          setMissionData({
+            name: '',
+            description: '',
+            infoUri: '',
+            logoUri: '',
+            twitter: '',
+            discord: '',
+            tagline: '',
+            deadline: undefined,
+            fundingGoal: undefined,
+            minFundingRequired: undefined,
+            token: {
+              name: '',
+              symbol: '',
+              decimals: 18,
+              tradeable: false,
+            },
+          })
+          clearMissionCache()
+          setStatus('idle')
+          router.push(
+            `/team/${generatePrettyLink(
+              selectedTeamNFT?.metadata?.name
+            )}?mission=${missionId}`
+          )
+        }, 15000)
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   useEffect(() => {
     if (missionData) {
       setMissionCache({
@@ -255,7 +378,10 @@ export default function CreateMission({
         twitter: missionData.twitter,
         discord: missionData.discord,
         tagline: missionData.tagline,
-        token: missionData.token as any,
+        deadline: missionData.deadline,
+        fundingGoal: missionData.fundingGoal,
+        minFundingRequired: missionData.minFundingRequired,
+        token: missionData.token,
         timestamp: getUnixTime(new Date()),
       })
     }
@@ -572,44 +698,35 @@ export default function CreateMission({
                     mode="dark"
                   />
                 </div>
-                <FormYesNo
-                  id="funding-goal-toggle"
-                  label="Define a Funding Goal"
-                  value={hasFundingGoal}
-                  onChange={(value: boolean) => {
-                    setHasFundingGoal(value)
-                    if (!value) {
-                      setMissionData({
-                        ...missionData,
-                        token: { ...missionData.token, fundingGoal: 0 },
-                      })
-                    }
-                  }}
+
+                <FormInput
+                  label="Min Funding Required"
+                  placeholder="Enter a funding goal"
+                  value={missionData.minFundingRequired}
+                  onChange={(e: any) =>
+                    setMissionData({
+                      ...missionData,
+                      minFundingRequired: e.target.value,
+                    })
+                  }
+                  disabled={!hasFundingGoal}
                   mode="dark"
-                  tooltip="Set a target amount for your mission, or allow unlimited contributions for continuous fundraising."
+                  tooltip="The minimum amount of funding required for your mission to be successful."
                 />
-                <div
-                  className={`w-full ${
-                    hasFundingGoal ? 'opacity-100' : 'opacity-30'
-                  }`}
-                >
-                  <FormInput
-                    label="Funding Goal"
-                    placeholder="Enter a funding goal"
-                    value={missionData.token.fundingGoal}
-                    onChange={(e: any) =>
-                      setMissionData({
-                        ...missionData,
-                        token: {
-                          ...missionData.token,
-                          fundingGoal: e.target.value,
-                        },
-                      })
-                    }
-                    disabled={!hasFundingGoal}
-                    mode="dark"
-                  />
-                </div>
+                <FormInput
+                  label="Funding Goal"
+                  placeholder="Enter a funding goal"
+                  value={missionData.fundingGoal}
+                  onChange={(e: any) =>
+                    setMissionData({
+                      ...missionData,
+                      fundingGoal: e.target.value,
+                    })
+                  }
+                  disabled={!hasFundingGoal}
+                  mode="dark"
+                  tooltip="The maximum amount of funding required for your mission to be successful."
+                />
                 <FormYesNo
                   id="mission-token-toggle"
                   label="Create A Mission Token"
@@ -690,134 +807,16 @@ export default function CreateMission({
                     !agreedToTerms ||
                     (missionData.token.tradeable && !agreedToTokenNotSecurity)
                   }
-                  action={async () => {
-                    try {
-                      if (!account)
-                        throw new Error('Please connect your wallet')
-                      if (!missionImage)
-                        throw new Error('Please upload a mission image')
-
-                      const teamMultisig = await readContract({
-                        contract: teamContract,
-                        method: 'ownerOf' as string,
-                        params: [selectedTeamId],
-                      })
-
-                      const renamedMissionImage = renameFile(
-                        missionImage,
-                        `${missionData.name} Mission Image`
-                      )
-
-                      const { cid: missionLogoIpfsHash } = await pinBlobOrFile(
-                        renamedMissionImage
-                      )
-
-                      const missionMetadataBlob = new Blob(
-                        [
-                          JSON.stringify({
-                            name: missionData.name,
-                            description: missionData.description,
-                            tagline: missionData.tagline,
-                            infoUri: missionData.infoUri,
-                            twitter: missionData.twitter,
-                            discord: missionData.discord,
-                            logoUri: `https://ipfs.io/ipfs/${missionLogoIpfsHash}`,
-                            tokens: [],
-                            payButton: 'Brew',
-                            payDisclosure: '',
-                            version: 4,
-                          }),
-                        ],
-                        {
-                          type: 'application/json',
-                        }
-                      )
-
-                      const { cid: missionMetadataIpfsHash } =
-                        await pinBlobOrFile(missionMetadataBlob)
-
-                      const durationInSeconds =
-                        hasDeadline && missionData?.token?.deadline
-                          ? getUnixTime(new Date(missionData.token.deadline)) -
-                            getUnixTime(new Date())
-                          : 0
-
-                      const transaction = prepareContractCall({
-                        contract: missionCreatorContract,
-                        method: 'createMission' as string,
-                        params: [
-                          selectedTeamId,
-                          address,
-                          missionMetadataIpfsHash,
-                          durationInSeconds,
-                          missionData.token.fundingGoal,
-                          missionData.token.tradeable,
-                          missionData?.token?.name,
-                          missionData?.token?.symbol,
-                          'MoonDAO Mission',
-                        ],
-                      })
-
-                      const receipt = await sendAndConfirmTransaction({
-                        transaction,
-                        account,
-                      })
-
-                      // Define the event signature for the Transfer event
-                      const missionCreatedEventSignature = ethers.utils.id(
-                        'MissionCreated(uint256,uint256,uint256,address,uint256,uint256)'
-                      )
-                      // Find the log that matches the Transfer event signature
-                      const missionCreatedLog = receipt.logs.find(
-                        (log: any) =>
-                          log.topics[0] === missionCreatedEventSignature
-                      )
-
-                      const missionId = ethers.BigNumber.from(
-                        missionCreatedLog?.topics[1]
-                      ).toString()
-
-                      if (receipt) {
-                        setTimeout(() => {
-                          toast.success('Mission created successfully')
-                          setMissionData({
-                            name: '',
-                            description: '',
-                            infoUri: '',
-                            logoUri: '',
-                            twitter: '',
-                            discord: '',
-                            tagline: '',
-                            token: {
-                              name: '',
-                              symbol: '',
-                              decimals: 18,
-                              deadline: undefined,
-                              fundingGoal: undefined,
-                              tradeable: false,
-                            },
-                          })
-                          clearMissionCache()
-                          setStatus('idle')
-                          router.push(
-                            `/team/${generatePrettyLink(
-                              selectedTeamNFT?.metadata?.name
-                            )}?mission=${missionId}`
-                          )
-                        }, 15000)
-                      }
-                    } catch (err) {
-                      console.error(err)
-                    }
-                  }}
+                  action={createMission}
                 />
               }
             >
               <MissionWideCard
                 name={missionData.name}
                 tagline={missionData.tagline}
-                deadline={missionData.token.deadline || 'None'}
-                fundingGoal={missionData.token.fundingGoal}
+                deadline={missionData.deadline || 'None'}
+                minFundingRequired={missionData.minFundingRequired}
+                fundingGoal={missionData.fundingGoal}
                 tradeable={missionData.token.tradeable}
                 description={missionData.description}
                 logoUri={missionData.logoUri}
