@@ -298,6 +298,9 @@ export default function CreateMission({
             getUnixTime(new Date())
           : 0
 
+      const fundingGoal = missionData.fundingGoal * 1e18
+      const minFundingRequired = missionData.minFundingRequired * 1e18
+
       const transaction = prepareContractCall({
         contract: missionCreatorContract,
         method: 'createMission' as string,
@@ -306,8 +309,8 @@ export default function CreateMission({
           address,
           missionMetadataIpfsHash,
           durationInSeconds,
-          missionData.minFundingRequired,
-          missionData.fundingGoal,
+          fundingGoal,
+          minFundingRequired,
           missionData.token.tradeable,
           missionData?.token?.name,
           missionData?.token?.symbol,

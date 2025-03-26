@@ -2,6 +2,7 @@ import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
+import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -9,6 +10,7 @@ import {
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
+  MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
@@ -77,16 +79,16 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     chain: selectedChain,
   })
 
-  const missionTableContract = useContract({
-    address: MISSION_TABLE_ADDRESSES[chainSlug],
-    abi: MissionTableABI as any,
+  const missionCreatorContract = useContract({
+    address: MISSION_CREATOR_ADDRESSES[chainSlug],
+    abi: MissionCreatorABI as any,
     chain: selectedChain,
   })
 
-  const { ruleset, token, subgraphData, fundingGoal, minRequiredFunding } =
+  const { ruleset, token, subgraphData, fundingGoal, minFundingRequired } =
     useMissionData(
-      mission?.projectId,
-      missionTableContract,
+      mission,
+      missionCreatorContract,
       jbV4ControllerContract,
       jbTokensContract,
       mission?.metadata
@@ -222,7 +224,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       progress={80}
                       label={`${subgraphData?.volume / 1e18} ETH`}
                       goalAsPercentage={
-                        (fundingGoal / minRequiredFunding) * 100
+                        (fundingGoal / minFundingRequired) * 100
                       }
                       goalIndicatorLabel={`${
                         minRequiredFunding / 1e18

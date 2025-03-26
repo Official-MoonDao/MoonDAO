@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react'
+import { readContract } from 'thirdweb'
 import useJBProjectData from '../juicebox/useJBProjectData'
 
 export default function useMissionData(
-  projectId: number,
-  missionTableContract: any,
+  mission: any,
+  missionCreatorContract: any,
   jbControllerContract: any,
   jbTokensContract: any,
   projectMetadata?: any,
   projectSubgraphData?: any
 ) {
   const [fundingGoal, setFundingGoal] = useState(0)
-  const [minRequiredFunding, setMinRequiredFunding] = useState(0)
+  const [minFundingRequired, setMinFundingRequired] = useState(0)
 
   const jbProjectData = useJBProjectData(
-    projectId,
+    mission.projectId,
     jbControllerContract,
     jbTokensContract,
     projectMetadata,
@@ -21,24 +22,24 @@ export default function useMissionData(
   )
 
   useEffect(() => {
-    async function getMissionTableData() {
-      const tableName = await readContract({
-        contract: missionTableContract,
-        method: 'getTableName' as string,
-        params: [],
+    async function getFundingData() {
+      const fundingGoal = await readContract({
+        contract: missionCreatorContract,
+        method: 'missionIdToFundingGoal' as string,
+        params: [mission.id],
       })
-      const statement = `SELECT * FROM ${tableName} WHERE projectId = ${projectId}`
-      const missionTableData = await fetch(
-        `/api/tableland/query?statement=${statement}`
-      )
-      const data = await missionTableData.json()
-      setFundingGoal(data[0].fundingGoal)
-      setMinRequiredFunding(data[0].minFundingRequired)
+      const minFundingRequired = await readContract({
+        contract: missionCreatorContract,
+        method: 'missionIdToMinFundingRequired' as string,
+        params: [mission.id],
+      })
+      setFundingGoal(Number(fundingGoal))
+      setMinFundingRequired(Number(minFundingRequired))
     }
-    if (missionTableContract && projectId !== undefined) {
-      getMissionTableData()
+    if (missionCreatorContract && mission.id !== undefined) {
+      getFundingData()
     }
-  }, [missionTableContract, projectId])
+  }, [missionCreatorContract, mission.id])
 
-  return { ...jbProjectData, fundingGoal, minRequiredFunding }
+  return { ...jbProjectData, fundingGoal, minFundingRequired }
 }
