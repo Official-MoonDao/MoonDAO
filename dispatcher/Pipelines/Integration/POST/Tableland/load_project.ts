@@ -74,7 +74,6 @@ async function loadProjectData() {
             PROJECT_CREATOR_ADDRESSES[chain.slug],
             ProjectTeamCreatorABI
         );
-        console.log("projectTeamCreatorContract:", projectTeamCreatorContract.functions);
 
         const projectBoardTableName =
             await projectTableContract.call("getTableName");
@@ -198,23 +197,23 @@ async function loadProjectData() {
                 console.log("Skipping proposal MDP:", proposal.proposalId, " ", proposal.title);
                 continue;
             }
-            //await projectTeamCreatorContract.call("createProjectTeam", [
-                //adminHatMetadataIpfs,
-                //managerHatMetadataIpfs,
-                //memberHatMetadataIpfs,
-                //proposal.title,
-                //"", // description
-                //"", // image
-                //quarter,
-                //year,
-                //proposal.proposalId,
-                //"", // proposal ipfs
-                //"https://moondao.com/proposal/" + proposal.proposalId,
-                //upfrontPayment,
-                //proposal.authorAddress || "", // leadAddress,
-                //members || [], // members
-                //signers || [], // signers,
-            //]);
+            await projectTeamCreatorContract.call("createProjectTeam", [
+                adminHatMetadataIpfs,
+                managerHatMetadataIpfs,
+                memberHatMetadataIpfs,
+                proposal.title,
+                "", // description
+                "", // image
+                quarter,
+                year,
+                proposal.proposalId,
+                "", // proposal ipfs
+                "https://moondao.com/proposal/" + proposal.proposalId,
+                upfrontPayment,
+                proposal.authorAddress || "", // leadAddress,
+                members || [], // members
+                signers || [], // signers,
+            ]);
         }
 
         console.log("Data loading completed successfully");
