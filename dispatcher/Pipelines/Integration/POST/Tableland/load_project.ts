@@ -197,7 +197,6 @@ async function loadProjectData() {
                 console.log("Skipping proposal MDP:", proposal.proposalId, " ", proposal.title);
                 continue;
             }
-
             await projectTeamCreatorContract.call("createProjectTeam", [
                 adminHatMetadataIpfs.value,
                 managerHatMetadataIpfs.value,
