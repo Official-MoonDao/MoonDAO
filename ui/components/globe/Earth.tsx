@@ -33,9 +33,7 @@ export default function Earth({ pointsData }: EarthProps) {
         width={size.width}
         height={size.height}
         backgroundColor="#00000000"
-        globeImageUrl={
-          'https://unpkg.com/three-globe@2.33.0/example/img/earth-night.jpg'
-        }
+        globeImageUrl={'/react-globe/earth-night.jpg'}
         pointsData={pointsData}
         pointAltitude="size"
         pointColor="color"

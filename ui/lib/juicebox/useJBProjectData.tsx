@@ -14,16 +14,22 @@ export default function useJBProjectData(
   projectSubgraphData?: any
 ) {
   const { selectedChain } = useContext(ChainContextV5)
+
   const [metadata, setMetadata] = useState<any>(projectMetadata)
-  const [rulesets, setRulesets] = useState<any>()
-  const [tokenAddress, setTokenAddress] = useState<any>()
-  const [tokenName, setTokenName] = useState<any>()
-  const [tokenSymbol, setTokenSymbol] = useState<any>()
+  const [ruleset, setRuleset] = useState<any>()
+  const [token, setToken] = useState<any>({
+    tokenAddress: '',
+    tokenName: '',
+    tokenSymbol: '',
+    tokenSupply: '',
+    reservedTokens: '',
+    reservedRate: '',
+  })
   const [subgraphData, setSubgraphData] = useState<any>(projectSubgraphData)
 
   const tokenContract = useContract({
     chain: selectedChain,
-    address: tokenAddress,
+    address: token?.tokenAddress,
     abi: JBV4TokenABI,
   })
 
@@ -43,10 +49,10 @@ export default function useJBProjectData(
     async function getProjectRuleset() {
       const rs: any = await readContract({
         contract: jbControllerContract,
-        method: 'allRulesetsOf' as string,
-        params: [projectId, 0, 10000],
+        method: 'currentRulesetOf' as string,
+        params: [projectId],
       })
-      setRulesets(rs)
+      setRuleset(rs)
     }
 
     if (jbControllerContract && !projectMetadata && projectId)
@@ -62,7 +68,7 @@ export default function useJBProjectData(
         method: 'tokenOf' as string,
         params: [projectId],
       })
-      setTokenAddress(token)
+      setToken((prev: any) => ({ ...prev, tokenAddress: token }))
     }
 
     if (jbTokensContract && projectId) getProjectToken()
@@ -71,21 +77,31 @@ export default function useJBProjectData(
   useEffect(() => {
     async function getTokenData() {
       if (!tokenContract) return
-      const [nameResult, symbolResult] = await Promise.allSettled([
-        readContract({
-          contract: tokenContract,
-          method: 'name' as string,
-          params: [],
-        }),
-        readContract({
-          contract: tokenContract,
-          method: 'symbol' as string,
-          params: [],
-        }),
-      ])
-      if (nameResult.status === 'fulfilled') setTokenName(nameResult.value)
-      if (symbolResult.status === 'fulfilled')
-        setTokenSymbol(symbolResult.value)
+      const [nameResult, symbolResult, supplyResult] = await Promise.allSettled(
+        [
+          readContract({
+            contract: tokenContract,
+            method: 'name' as string,
+            params: [],
+          }),
+          readContract({
+            contract: tokenContract,
+            method: 'symbol' as string,
+            params: [],
+          }),
+          readContract({
+            contract: tokenContract,
+            method: 'totalSupply' as string,
+            params: [],
+          }),
+        ]
+      )
+      if (nameResult.status === 'fulfilled' && nameResult.value)
+        setToken((prev: any) => ({ ...prev, tokenName: nameResult.value }))
+      if (symbolResult.status === 'fulfilled' && symbolResult.value)
+        setToken((prev: any) => ({ ...prev, tokenSymbol: symbolResult.value }))
+      if (supplyResult.status === 'fulfilled' && supplyResult.value)
+        setToken((prev: any) => ({ ...prev, tokenSupply: supplyResult.value }))
     }
     if (tokenContract) getTokenData()
   }, [tokenContract])
@@ -114,10 +130,8 @@ export default function useJBProjectData(
 
   return {
     metadata,
-    rulesets,
-    tokenAddress,
-    tokenName,
-    tokenSymbol,
+    ruleset,
+    token,
     subgraphData,
   }
 }

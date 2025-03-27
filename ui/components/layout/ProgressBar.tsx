@@ -13,7 +13,7 @@ export default function ProgressBar({
 }: ProgressBarProps) {
   return (
     <div
-      className="relative w-full rounded-full bg-gradient-to-r from-[#425eeb] to-[#6d3f79] overflow-hidden"
+      className="relative w-full rounded-full bg-gradient-to-l from-[#425eeb] to-[#6d3f79] overflow-hidden"
       style={{ height: `calc(${height} + ${padding} * 2)` }}
     >
       <div
@@ -21,7 +21,7 @@ export default function ProgressBar({
         style={{ margin: padding }}
       >
         <div
-          className="h-full gradient-2 transition-all duration-300 relative"
+          className="h-full  bg-gradient-to-l from-[#425eeb] to-[#6d3f79] transition-all duration-300 relative"
           style={{ width: `${Math.min(Math.max(progress, 10), 100)}%` }}
         >
           {label && (

@@ -211,12 +211,12 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x020E1a921ecEcb275f59D403e8cCD15B679D6cE1',
+  sepolia: '0x613B64AE4A5f5354bA15c9e5c988A6A32c14b6da',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x3Fee3e3De7d8000C1Ac670D87e907fB33db426eD',
+  sepolia: '0xB4A4f6dE7f750fD386DF97D31AE195703a4fd346',
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
@@ -226,6 +226,10 @@ export const JBV4_CONTROLLER_ADDRESSES: Index = {
 export const JBV4_TOKENS_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0xA59e9F424901fB9DBD8913a9A32A081F9425bf36',
+}
+export const JBV4_DIRECTORY_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x0bC9F153DEe4d3D474ce0903775b9b2AAae9AA41',
 }
 
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386

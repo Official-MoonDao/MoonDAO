@@ -1,3 +1,4 @@
+import { CalendarDateRangeIcon } from '@heroicons/react/24/outline'
 import moment from 'moment'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
@@ -14,29 +15,36 @@ import {
 } from 'recharts'
 import useJBTrendingProjects from '@/lib/juicebox/useJBTrendingProjects'
 import { useTicks } from '@/lib/juicebox/useTicks'
+import { useTimelineRange } from '@/lib/juicebox/useTimelineRange'
 import { useTimelineYDomain } from '@/lib/juicebox/useTimelineYDomain'
 import { wadToFloat } from '@/lib/utils/numbers'
 import { daysToMS } from '@/lib/utils/timestamp'
+import RangeSelector from '../layout/RangeSelector'
 
 export type MissionTimelineChartProps = {
   points: any[]
-  range: number
   height: number
+  createdAt: number
 }
 
 const now = Date.now().valueOf()
 
 export default function MissionTimelineChart({
   points,
-  range,
   height,
+  createdAt,
 }: MissionTimelineChartProps) {
   const stroke = 'white'
   const color = 'white'
   const bg = 'black'
   const fontSize = '0.75rem'
 
-  const [view, setView] = useState<'volume' | 'trendingScore'>('volume')
+  const [view, setView] = useState<'volume' | 'balance' | 'trendingScore'>(
+    'volume'
+  )
+  const [range, setRange] = useTimelineRange({
+    createdAt,
+  })
 
   const defaultYDomain = useTimelineYDomain(points?.map((point) => point[view]))
 
@@ -58,16 +66,17 @@ export default function MissionTimelineChart({
         ]
       : defaultYDomain
 
-  const xDomain = useMemo(
-    () =>
-      [Math.floor((now - daysToMS(range)) / 1000), Math.floor(now / 1000)] as [
-        number,
-        number
-      ],
-    [range]
-  )
+  const xDomain = useMemo(() => {
+    const endOfDay = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60) // Round to midnight
+    const startOfDay = endOfDay - +range * 24 * 60 * 60
+    return [startOfDay, endOfDay] as [number, number]
+  }, [range])
 
-  const xTicks = useTicks({ range: xDomain, resolution: 7, offset: 0.5 })
+  const xTicks = useTicks({
+    range: xDomain,
+    resolution: 7,
+    offset: 0.5,
+  })
 
   const yTicks = useTicks({ range: yDomain, resolution: 5, offset: 0.5 })
 
@@ -76,7 +85,16 @@ export default function MissionTimelineChart({
 
   return (
     <div>
-      <ResponsiveContainer width={'100%'} height={height}>
+      <div className="mt-8 w-full flex items-center justify-between gap-8">
+        <RangeSelector range={range} setRange={setRange} />
+        <div className="flex items-center gap-2">
+          <CalendarDateRangeIcon className="w-5 h-5" />
+          <span className="text-sm">
+            {`Created ${new Date(createdAt * 1000).toLocaleDateString()}`}
+          </span>
+        </div>
+      </div>
+      <ResponsiveContainer className="mt-4 w-full" height={height}>
         <LineChart
           margin={{
             top: -1, // hacky way to hide top border of CartesianGrid
@@ -100,10 +118,9 @@ export default function MissionTimelineChart({
 
               const { value } = props.payload
 
-              // Improved formatting for small values without scientific notation
               let formattedValue
               if (value < 0.0001) {
-                formattedValue = value.toFixed(6) // Show 6 decimal places for very small values
+                formattedValue = value.toFixed(6)
               } else if (value < 0.001) {
                 formattedValue = value.toFixed(5)
               } else if (value < 0.01) {
@@ -131,6 +148,7 @@ export default function MissionTimelineChart({
                     fill={color}
                     transform={`translate(${props.x + 4},${props.y + 4})`}
                   >
+                    {'ETH'}
                     <Image
                       src={`/coins/ETH.svg`}
                       width={20}
@@ -216,6 +234,7 @@ export default function MissionTimelineChart({
                   </div>
                   {view !== 'trendingScore' && (
                     <div className="font-medium">
+                      {'ETH'}
                       <Image
                         src={`/coins/ETH.svg`}
                         width={20}

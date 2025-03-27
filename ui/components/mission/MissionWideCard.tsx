@@ -11,6 +11,7 @@ export type MissionWideCardProps = {
   tagline?: string
   deadline?: string
   fundingGoal?: number
+  minFundingRequired?: number
   tradeable?: boolean
   tokenAddress?: string
   tokenSymbol?: string
@@ -29,6 +30,7 @@ export default function MissionWideCard({
   tagline,
   deadline,
   fundingGoal,
+  minFundingRequired,
   tradeable,
   tokenAddress,
   tokenSymbol,
@@ -94,6 +96,12 @@ export default function MissionWideCard({
                   value={tokenSymbol}
                 />
               </Link>
+            )}
+            {minFundingRequired !== undefined && (
+              <MissionStat
+                label="Min Funding Required"
+                value={`${minFundingRequired} ETH`}
+              />
             )}
             {volume !== undefined && (
               <MissionStat label="VOLUME" value={'Ξ' + volume} />

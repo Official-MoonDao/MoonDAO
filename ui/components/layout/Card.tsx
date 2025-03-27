@@ -45,7 +45,7 @@ export default function Card({
   const enhancedParagraph = (
     <>
       {paragraph}
-      {metadata?.id ? (
+      {metadata?.id !== undefined ? (
         <div id="details-container" className="">
           <p id="org-description">
             {metadata.description && metadata.description.length > 100

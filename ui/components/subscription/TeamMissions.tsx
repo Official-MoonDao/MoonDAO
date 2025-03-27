@@ -1,21 +1,12 @@
-import { ShareIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
-import { MediaRenderer } from 'thirdweb/react'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import client from '@/lib/thirdweb/client'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
-import CollapsibleContainer from '../layout/CollapsibleContainer'
 import PaginationButtons from '../layout/PaginationButtons'
-import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import { Mission } from '../mission/MissionCard'
-import MissionStat from '../mission/MissionStat'
 import MissionWideCard from '../mission/MissionWideCard'
 
 type TeamMissionProps = {
@@ -42,17 +33,16 @@ export function TeamMission({
   teamContract,
   isManager,
 }: TeamMissionProps) {
-  const { subgraphData, tokenAddress, rulesets, tokenSymbol } =
-    useJBProjectData(
-      mission?.projectId,
-      jbControllerContract,
-      jbTokensContract,
-      teamContract
-    )
+  const { subgraphData, token, ruleset } = useJBProjectData(
+    mission?.projectId,
+    jbControllerContract,
+    jbTokensContract,
+    teamContract
+  )
 
   // TODO : Calculate deadline date from duration of current ruleset
-  const deadlineDate = rulesets?.[0]?.duration
-    ? new Date(Date.now() + rulesets[0].duration * 1000).toLocaleDateString()
+  const deadlineDate = ruleset?.[0]?.duration
+    ? new Date(Date.now() + ruleset[0].duration * 1000).toLocaleDateString()
     : 'UNLIMITED'
 
   return (
@@ -63,8 +53,8 @@ export function TeamMission({
       logoUri={mission.metadata.logoUri || ''}
       deadline={deadlineDate}
       fundingGoal={mission.fundingGoal}
-      tokenAddress={tokenAddress}
-      tokenSymbol={tokenSymbol}
+      tokenAddress={token?.tokenAddress}
+      tokenSymbol={token?.tokenSymbol}
       volume={subgraphData?.volume}
       paymentsCount={subgraphData?.paymentsCount}
       contribute

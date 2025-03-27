@@ -18,6 +18,9 @@ export function getBudget(tokens: any, year: number, quarter: number) {
     const ethValue = usdValue / ethPrice
     usdBudget = usdValue * 0.05
     ethBudget = ethValue * 0.05
+    //FIXME undo hardcoded values
+    ethBudget = 295.7818 * 0.05
+    usdBudget = ethBudget * ethPrice
     const MOONEY_INITIAL_BUDGET = 15_000_000
     const MOONEY_DECAY_RATE = 0.95
 

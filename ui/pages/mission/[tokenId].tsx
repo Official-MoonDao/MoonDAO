@@ -1,43 +1,45 @@
-import { GlobeAltIcon } from '@heroicons/react/20/solid'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
+import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
+import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   JBV4_CONTROLLER_ADDRESSES,
+  JBV4_DIRECTORY_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
+  MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
-import useJBProjectData from '@/lib/juicebox/useJBProjectData'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
+import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { DiscordIcon, TwitterIcon } from '@/components/assets'
-import JuiceboxLogoWhite from '@/components/assets/JuiceboxLogoWhite'
-import Address from '@/components/layout/Address'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import ProgressBar from '@/components/layout/ProgressBar'
-import StandardWideCard from '@/components/layout/StandardWideCard'
 import { Mission } from '@/components/mission/MissionCard'
+import MissionFundingProgressBar from '@/components/mission/MissionFundingProgressBar'
 import MissionInfo from '@/components/mission/MissionInfo'
+import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
 
 type ProjectProfileProps = {
@@ -71,24 +73,47 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     chain: selectedChain,
   })
 
-  const {
-    rulesets,
-    tokenAddress: missionTokenAddress,
-    tokenSymbol: missionTokenSymbol,
-    tokenName: missionTokenName,
-    subgraphData,
-  } = useJBProjectData(
-    mission?.projectId,
-    jbV4ControllerContract,
-    jbTokensContract,
-    mission?.metadata
-  )
+  const jbDirectoryContract = useContract({
+    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
+    abi: JBV4DirectoryABI as any,
+    chain: selectedChain,
+  })
+
+  const missionCreatorContract = useContract({
+    address: MISSION_CREATOR_ADDRESSES[chainSlug],
+    abi: MissionCreatorABI as any,
+    chain: selectedChain,
+  })
+
+  const { ruleset, token, subgraphData, fundingGoal, minFundingRequired } =
+    useMissionData(
+      mission,
+      missionCreatorContract,
+      jbV4ControllerContract,
+      jbTokensContract,
+      mission?.metadata
+    )
 
   const { points } = useJBProjectTimeline(
     selectedChain,
     mission?.projectId,
     subgraphData?.createdAt
   )
+
+  const missionTokenContract = useContract({
+    address: token.tokenAddress,
+    abi: JBV4TokenABI as any,
+    chain: selectedChain,
+  })
+
+  const {
+    data: userMissionTokenBalance,
+    isLoading: userMissionTokenBalanceLoading,
+  } = useRead({
+    contract: missionTokenContract,
+    method: 'balanceOf',
+    params: [account?.address],
+  })
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -178,7 +203,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   <div className="flex flex-wrap gap-2">
                     <MissionStat
                       label="Deadline"
-                      value={`Cyle # ${rulesets?.[0]?.cycleNumber}`}
+                      value={`${new Date(
+                        Date.now() + ruleset?.[0]?.duration * 1000
+                      ).toLocaleDateString()}`}
                       icon={'/assets/launchpad/clock.svg'}
                     />
                     <MissionStat
@@ -188,12 +215,21 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     />
                     <MissionStat
                       label="Mission Token"
-                      value={`${missionTokenSymbol} (${missionTokenName})`}
+                      value={`${token.tokenSymbol} (${token.tokenName})`}
                       icon={'/assets/launchpad/token.svg'}
                     />
                   </div>
                   <div className="w-full">
-                    <ProgressBar height="25px" progress={80} label="8 ETH" />
+                    <MissionFundingProgressBar
+                      progress={80}
+                      label={`${subgraphData?.volume / 1e18} ETH`}
+                      goalAsPercentage={
+                        (fundingGoal / minFundingRequired) * 100
+                      }
+                      goalIndicatorLabel={`${
+                        minRequiredFunding / 1e18
+                      } ETH secured`}
+                    />
                   </div>
                 </div>
               </div>
@@ -205,134 +241,79 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   )
 
   return (
-    <Container>
-      <Head
-        title={mission?.metadata?.name}
-        description={mission?.metadata?.description}
-      />
-      <ContentLayout
-        header={''}
-        headerSize="max(20px, 3vw)"
-        description={ProfileHeader}
-        mainPadding
-        mode="compact"
-        popOverEffect={false}
-        isProfile
-        preFooter={<NoticeFooter darkBackground={true} />}
-      >
-        <div
-          id="page-container"
-          className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
+    <JuiceProviders
+      projectId={mission?.projectId}
+      selectedChain={selectedChain}
+    >
+      <Container>
+        <Head
+          title={mission?.metadata?.name}
+          description={mission?.metadata?.description}
+        />
+        <ContentLayout
+          header={''}
+          headerSize="max(20px, 3vw)"
+          description={ProfileHeader}
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+          preFooter={<NoticeFooter darkBackground={true} />}
         >
-          {/* Project Overview */}
-          <Frame
-            noPadding
-            bottomLeft="0px"
-            bottomRight="0px"
-            topRight="0px"
-            topLeft="0px"
+          <div
+            id="page-container"
+            className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
           >
-            <div
-              id="project-overview-container"
-              className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+            {/* Pay & Redeem Section */}
+            <Frame
+              noPadding
+              bottomLeft="0px"
+              bottomRight="0px"
+              topRight="0px"
+              topLeft="0px"
+              className="xl:hidden"
             >
-              {/* About the Team */}
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
+              <div
+                id="mission-pay-redeem-container"
+                className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
               >
-                <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <div
-                    id="vote-title-section"
-                    className="flex gap-2 opacity-60"
-                  >
-                    <Image
-                      src="/assets/icon-star.svg"
-                      alt="Star Icon"
-                      width={30}
-                      height={30}
-                    />
-                    <h2 className="header font-GoodTimes">About the Team</h2>
-                  </div>
-                  <div className="mt-5 flex flex-col gap-5 opacity-60">
-                    {teamNFT && (
-                      <StandardWideCard
-                        title={teamNFT?.metadata.name}
-                        subheader={
-                          <div className="flex flex-col gap-2">
-                            <div
-                              id="socials-container"
-                              className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
-                            >
-                              {mission?.metadata?.discord &&
-                                !mission?.metadata?.discord.includes(
-                                  '/users/undefined'
-                                ) && (
-                                  <Link
-                                    className="flex gap-2"
-                                    href={mission?.metadata?.discord}
-                                    target="_blank"
-                                    passHref
-                                  >
-                                    <DiscordIcon />
-                                  </Link>
-                                )}
-                              {mission?.metadata?.twitter && (
-                                <Link
-                                  className="flex gap-2"
-                                  href={mission?.metadata?.twitter}
-                                  target="_blank"
-                                  passHref
-                                >
-                                  <TwitterIcon />
-                                </Link>
-                              )}
-                              {mission?.metadata?.infoUri && (
-                                <Link
-                                  className="flex gap-2"
-                                  href={mission?.metadata?.infoUri}
-                                  target="_blank"
-                                  passHref
-                                >
-                                  <GlobeAltIcon height={25} width={25} />
-                                </Link>
-                              )}
-                            </div>
-                            <Address address={teamNFT?.owner} />
-                          </div>
-                        }
-                        paragraph={teamNFT?.metadata.description}
-                        image={teamNFT?.metadata.image}
-                      />
-                    )}
-                  </div>
-                </div>
-              </Frame>
-              {/* Info & Statistics */}
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
-              >
-                <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <MissionInfo
-                    mission={mission}
-                    rulesets={rulesets}
-                    points={points}
-                    subgraphData={subgraphData}
-                  />
-                </div>
-              </Frame>
-            </div>
-          </Frame>
-        </div>
-      </ContentLayout>
-    </Container>
+                <MissionPayRedeem
+                  selectedChain={selectedChain}
+                  mission={mission}
+                  teamNFT={teamNFT}
+                  token={token}
+                  subgraphData={subgraphData}
+                  ruleset={ruleset}
+                  jbDirectoryContract={jbDirectoryContract}
+                />
+              </div>
+            </Frame>
+            {/* Project Overview */}
+            <Frame
+              noPadding
+              bottomLeft="0px"
+              bottomRight="0px"
+              topRight="0px"
+              topLeft="0px"
+            >
+              <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 px-12 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+                <MissionInfo
+                  selectedChain={selectedChain}
+                  mission={mission}
+                  teamNFT={teamNFT}
+                  ruleset={ruleset}
+                  jbDirectoryContract={jbDirectoryContract}
+                  points={points}
+                  subgraphData={subgraphData}
+                  token={token}
+                  userMissionTokenBalance={userMissionTokenBalance}
+                />
+              </div>
+            </Frame>
+          </div>
+        </ContentLayout>
+      </Container>
+    </JuiceProviders>
   )
 }
 

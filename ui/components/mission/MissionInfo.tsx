@@ -1,14 +1,19 @@
-import { CalendarDateRangeIcon } from '@heroicons/react/24/outline'
+import {
+  GlobeAltIcon,
+  InformationCircleIcon,
+} from '@heroicons/react/24/outline'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState } from 'react'
-import MissionCyclesAndPayouts from './MissionCyclesAndPayouts'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
+import { DiscordIcon, TwitterIcon } from '../assets'
+import StandardWideCard from '../layout/StandardWideCard'
+import MissionActivityList from './MissionActivityList'
+import MissionPayRedeem from './MissionPayRedeem'
 import MissionTimelineChart from './MissionTimelineChart'
+import MissionTokenInfo from './MissionTokenInfo'
 
-export type MissionInfoTabType =
-  | 'activity'
-  | 'about'
-  | 'cycles & payouts'
-  | 'token'
+export type MissionInfoTabType = 'activity' | 'about' | 'tokenomics'
 
 function MissionInfoTab({
   tab,
@@ -20,73 +25,188 @@ function MissionInfoTab({
   setTab: (tab: MissionInfoTabType) => void
 }) {
   return (
-    <button
-      className={`text-xl ${
-        currentTab === tab ? 'text-white' : 'text-gray-400'
-      }`}
-      onClick={() => setTab(tab)}
-    >
-      {tab.toLocaleUpperCase()}
-    </button>
+    <div className="relative">
+      <button
+        className={`text-xl ${
+          currentTab === tab ? 'text-white' : 'text-gray-400'
+        }`}
+        onClick={() => setTab(tab)}
+      >
+        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+      </button>
+      {currentTab === tab && (
+        <div className="absolute w-[150%] h-1 bg-white -bottom-2 left-1/2 -translate-x-1/2" />
+      )}
+    </div>
+  )
+}
+
+function MissionInfoHeader({ title, icon }: { title: string; icon: string }) {
+  return (
+    <div className="flex gap-2 text-light-cool">
+      <Image src={icon} alt="Star Icon" width={30} height={30} />
+      <h1 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
+        {title}
+      </h1>
+    </div>
   )
 }
 
 export default function MissionInfo({
+  selectedChain,
   mission,
+  teamNFT,
   subgraphData,
-  rulesets,
+  token,
+  ruleset,
+  jbDirectoryContract,
   points,
+  userMissionTokenBalance,
 }: any) {
-  const [tab, setTab] = useState<MissionInfoTabType>('activity')
+  const [tab, setTab] = useState<MissionInfoTabType>('about')
   return (
     <div>
-      <div id="mission-info-header" className="flex justify-between opacity-60">
-        <div className="flex gap-2">
-          <Image
-            src="/assets/icon-star.svg"
-            alt="Star Icon"
-            width={30}
-            height={30}
-          />
-          <h1 className="header font-GoodTimes">Info & Statistics</h1>
-        </div>
-        <div className="flex gap-2 items-center">
-          <CalendarDateRangeIcon className="w-8 h-8 " />
-          <p className="text-xl">{`Created ${new Date(
-            subgraphData.createdAt * 1000
-          ).toLocaleDateString()}`}</p>
-        </div>
-      </div>
-      <div id="mission-info-tabs" className="mt-4 flex gap-8 w-3/4">
-        <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
+      <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
         <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
-        <MissionInfoTab
-          tab="cycles & payouts"
-          currentTab={tab}
-          setTab={setTab}
-        />
-        <MissionInfoTab tab="token" currentTab={tab} setTab={setTab} />
+        <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
+        <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
       </div>
-      <hr className="my-4 w-full border-1 border-grasy-400" />
-      <div id="mission-info-content">
-        {tab === 'activity' && (
-          <MissionTimelineChart points={points} range={7} height={500} />
-        )}
+
+      <div id="mission-info-content" className="mt-8 w-full flex gap-4">
         {tab === 'about' && (
-          <div>
-            {' '}
-            <div
-              className="prose prose-invert max-w-none"
-              dangerouslySetInnerHTML={{
-                __html: mission?.metadata?.description || '',
-              }}
+          <div className="flex gap-4 w-full">
+            <div>
+              <MissionInfoHeader
+                title="About the Mission"
+                icon="/assets/icon-star-blue.svg"
+              />
+              <div
+                className="mt-4 prose prose-invert w-full"
+                dangerouslySetInnerHTML={{
+                  __html: mission?.metadata?.description || '',
+                }}
+              />
+              <div className="mt-8 flex gap-2 text-light-cool max-w-none">
+                <Image
+                  src="/assets/icon-star-blue.svg"
+                  alt="Star Icon"
+                  width={30}
+                  height={30}
+                />
+                <h1 className="header font-GoodTimes text-moon-indigo">
+                  About the Team
+                </h1>
+              </div>
+              <div className="mt-4">
+                {teamNFT && (
+                  <StandardWideCard
+                    title={teamNFT?.metadata.name}
+                    subheader={
+                      <div className="flex flex-col gap-2">
+                        <div
+                          id="socials-container"
+                          className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
+                        >
+                          {mission?.metadata?.discord &&
+                            !mission?.metadata?.discord.includes(
+                              '/users/undefined'
+                            ) && (
+                              <Link
+                                className="flex gap-2"
+                                href={mission?.metadata?.discord}
+                                target="_blank"
+                                passHref
+                              >
+                                <DiscordIcon />
+                              </Link>
+                            )}
+                          {mission?.metadata?.twitter && (
+                            <Link
+                              className="flex gap-2"
+                              href={mission?.metadata?.twitter}
+                              target="_blank"
+                              passHref
+                            >
+                              <TwitterIcon />
+                            </Link>
+                          )}
+                          {mission?.metadata?.infoUri && (
+                            <Link
+                              className="flex gap-2"
+                              href={mission?.metadata?.infoUri}
+                              target="_blank"
+                              passHref
+                            >
+                              <GlobeAltIcon height={25} width={25} />
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    }
+                    fullParagraph={false}
+                    image={teamNFT?.metadata.image}
+                    paragraph={
+                      <Link
+                        href={`/team/${generatePrettyLink(
+                          teamNFT?.metadata?.name || ''
+                        )}`}
+                        passHref
+                        className="flex gap-2 items-center hover:underline"
+                      >
+                        <InformationCircleIcon width={20} height={20} />
+                        {'Learn more about the team'}
+                      </Link>
+                    }
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        {tab === 'activity' && (
+          <div className="w-full">
+            <MissionInfoHeader
+              title="Mission Activity"
+              icon="/assets/icon-star-blue.svg"
+            />
+            <MissionTimelineChart
+              points={points}
+              height={500}
+              createdAt={subgraphData?.createdAt}
+            />
+            <MissionActivityList
+              selectedChain={selectedChain}
+              tokenSymbol={token?.tokenSymbol}
+              projectId={mission?.projectId}
             />
           </div>
         )}
-        {tab === 'cycles & payouts' && (
-          <MissionCyclesAndPayouts rulesets={rulesets} />
+        {tab === 'tokenomics' && (
+          <div className="w-full">
+            <MissionInfoHeader
+              title="Mission Tokenomics"
+              icon="/assets/icon-star-blue.svg"
+            />
+            <MissionTokenInfo
+              mission={mission}
+              token={token}
+              userMissionTokenBalance={userMissionTokenBalance}
+              ruleset={ruleset}
+              subgraphData={subgraphData}
+            />
+          </div>
         )}
-        {tab === 'token' && <div>Token</div>}
+        <div className="w-full hidden xl:block">
+          <MissionPayRedeem
+            selectedChain={selectedChain}
+            mission={mission}
+            teamNFT={teamNFT}
+            token={token}
+            subgraphData={subgraphData}
+            ruleset={ruleset}
+            jbDirectoryContract={jbDirectoryContract}
+          />
+        </div>
       </div>
     </div>
   )
