@@ -74,6 +74,7 @@ async function loadProjectData() {
             PROJECT_CREATOR_ADDRESSES[chain.slug],
             ProjectTeamCreatorABI
         );
+        console.log("projectTeamCreatorContract:", projectTeamCreatorContract.functions);
 
         const projectBoardTableName =
             await projectTableContract.call("getTableName");
@@ -94,7 +95,7 @@ async function loadProjectData() {
         console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
 
         // Get proposals from Nance
-        const proposals = await getProposals("moondao", 26);
+        const proposals = await getProposals("moondao", 40);
 
         if (!proposals) {
             throw new Error("Failed to fetch proposals from Nance");
@@ -117,18 +118,15 @@ async function loadProjectData() {
             }
             var signers;
             var members = []
-            if ("actions" in proposal){
+            if (proposal?.actions?.[0]?.payload?.multisigTeam && proposal.actions[0].payload.projectTeam) {
                 signers = proposal.actions[0].payload.multisigTeam.map((member) => member.address);
                 members = proposal.actions[0].payload.projectTeam.map((member) => member.votingAddress);
             }else{
                 const multisigLine = proposal.body
                     .split("\n")
                     .find((line) => line.includes("Multisig") || line.includes("Multi-sig") || line.includes("multisig"));
-                console.log('multisigLine:', multisigLine);
                 const addresses = multisigLine.match(/0x[a-fA-F0-9]{40}/g) || [];
-                console.log("addresses:", addresses);
                 const ensNames = multisigLine.match(/([a-zA-Z0-9-]+\.eth)/g) || [];
-                console.log("ensNames:", ensNames);
                 const ensAddresses = await Promise.all(
                     ensNames.map(async (name) => {
                         const address = await resolveAddress({
@@ -200,23 +198,23 @@ async function loadProjectData() {
                 console.log("Skipping proposal MDP:", proposal.proposalId, " ", proposal.title);
                 continue;
             }
-            await projectTeamCreatorContract.call("createProjectTeam", [
-                adminHatMetadataIpfs,
-                managerHatMetadataIpfs,
-                memberHatMetadataIpfs,
-                proposal.title,
-                "", // description
-                "", // image
-                quarter,
-                year,
-                proposal.proposalId,
-                "", // proposal ipfs
-                "https://moondao.com/proposal/" + proposal.proposalId,
-                upfrontPayment,
-                proposal.authorAddress || "", // leadAddress,
-                members || [], // members
-                signers || [], // signers,
-            ]);
+            //await projectTeamCreatorContract.call("createProjectTeam", [
+                //adminHatMetadataIpfs,
+                //managerHatMetadataIpfs,
+                //memberHatMetadataIpfs,
+                //proposal.title,
+                //"", // description
+                //"", // image
+                //quarter,
+                //year,
+                //proposal.proposalId,
+                //"", // proposal ipfs
+                //"https://moondao.com/proposal/" + proposal.proposalId,
+                //upfrontPayment,
+                //proposal.authorAddress || "", // leadAddress,
+                //members || [], // members
+                //signers || [], // signers,
+            //]);
         }
 
         console.log("Data loading completed successfully");
