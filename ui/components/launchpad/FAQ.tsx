@@ -73,7 +73,7 @@ export default function FAQ({
   });
   
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col">
       <div className="flex gap-4 mt-[5vw] md:mt-[2vw] items-center">
         <button
           type="button"
@@ -98,7 +98,7 @@ export default function FAQ({
           isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <p className="md:text-[1.2vw] h-full">
+        <p className="md:text-[1.2vw] h-full pt-2 pb-5">
           {answer}
         </p>
       </div>

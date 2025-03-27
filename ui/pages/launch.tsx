@@ -35,6 +35,7 @@ import CardStack from '@/components/layout/CardStack'
 import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
+import Footer from '@/components/layout/Footer'
 
 export default function Launch({ missions }: any) {
   const router = useRouter()
@@ -142,7 +143,7 @@ export default function Launch({ missions }: any) {
 
   return (
     <>
-      <section id="🌌hero-section">
+      <section id="hero-section">
         <div id="hero-content-container" className="">
           <div
             id="hero-content"
@@ -272,7 +273,7 @@ export default function Launch({ missions }: any) {
       </section>
 
       <section
-        id="🐭featured-project-section"
+        id="featured-project-section"
         className="relative px-[5vw] pb-[5vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
       >
         <Image
@@ -300,16 +301,8 @@ export default function Launch({ missions }: any) {
             className="md:ml-0 relative w-[80vw] md:w-[max(40vw,450px)]"
           >
             <Image
-              id="featured-image-frame"
-              className="absolute top-0 right-0 z-20 w-full h-full"
-              src="/assets/launchpad/image-frame-1.svg"
-              alt="Image Frame 1"
-              width={315}
-              height={315}
-            />
-            <Image
               id="featured-image"
-              className="z-10 w-full h-full"
+              className="z-10 w-full h-full bg-[#1B1C4B] p-2 md:p-5 rounded-full"
               src="/assets/launchpad/space-mice.png"
               alt="Astro"
               width={300}
@@ -320,16 +313,17 @@ export default function Launch({ missions }: any) {
             id="featured-text-container"
             className="w-full h-auto flex justify-center flex-col"
           >
-            <h2 className="text-white font-GoodTimes text-[5vw] md:text-[2vw] md:pb-[1vw]">
-              {'Save the Space Mice!'}
+            <h2 className="text-white font-GoodTimes text-[4vw] md:text-[1.5vw] md:pb-[1vw]">
+              {'Space Mice: Save generations of space research!'}
             </h2>
+            <p className="md:text-[1.2vw] font-bold">
+            The only study of its kind — About to be lost forever.
+            </p>
             <p className="md:text-[1.2vw] pb-[2vw]">
-              {
-                "Join the first onchain fundraising platform designed exclusively for space missions. MoonDAO's Launch Pad empowers teams to raise funds transparently, manage their treasuries independently, and take their space exploration ideas from concept to fully funded launch."
-              }
+              {`NASA-funded research into spaceflight's impact on reproduction has reached a funding crisis. These mice, descended from ISS-flown astronauts, are a one-of-a-kind biological archive. Without action, we may never know if mammals can truly thrive in space. Support this mission today!`}
             </p>
             <StandardButton className="gradient-2 rounded-full md:text-[1.2vw]">
-              {'Check It Out'}
+              {'Learn More'}
             </StandardButton>
           </div>
         </div>
@@ -422,14 +416,7 @@ export default function Launch({ missions }: any) {
               className="mt-[-20vw] md:mt-0 z-10 relative flex w-full max-w-[650px] h-full ml-auto"
             >
               <Image
-                className="absolute bottom-0 right-0 z-10"
-                src="/assets/launchpad/image-frame-3.svg"
-                alt="Divider"
-                width={900}
-                height={900}
-              />
-              <Image
-                className="relative rounded-full"
+                className="relative rounded-full p-2 md:p-5 bg-white"
                 src="/assets/eiman-jahangir.png"
                 alt="Divider"
                 width={900}
@@ -441,19 +428,9 @@ export default function Launch({ missions }: any) {
             id="coby-desktop-container"
             className="hidden md:block relative min-w-[30vw] h-auto "
           >
-            <div className="absolute top-0 right-0 z-20 min-w-[30vw] h-full">
-              <Image
-                id="image-frame-2"
-                className="w-full h-full scale-[1.3]"
-                src="/assets/launchpad/image-frame-2.svg"
-                alt="Image Frame 2"
-                width={315}
-                height={315}
-              />
-            </div>
             <Image
               id="astronaut-coby-desktop"
-              className="z-10 rounded-full h-full w-full top-0"
+              className="z-10 rounded-full h-full w-full top-0 bg-[#191B47] p-2 md:p-5"
               src="/assets/astronaut-coby.png"
               alt="Astro"
               width={500}
@@ -475,60 +452,49 @@ export default function Launch({ missions }: any) {
         className="relative px-[4vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
       >
         <div className="w-full mt-8 flex flex-col gap-2 items-center">
-          <h1 className="mt-8 text-2xl font-GoodTimes">
+          <h1 className="mt-8 text-[5vw] md:text-[3vw] font-GoodTimes">
             {'How Launchpad Works'}
           </h1>
         </div>
 
-        <div className="w-full max-w-[800px]">
-          <div className="absolute hidden md:block h-full max-h-[75%] md:left-1/2 md:transform md:-translate-x-1/2 top-32">
+        <div className="w-full md:max-w-[70vw] ">
+          <div className="absolute hidden md:block h-full max-h-[75%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw]">
             <VerticalProgressScrollBar sectionId="how-launchpad-works" />
           </div>
           <div className="w-full flex flex-col items-end md:items-start gap-4">
             <FeatureIcon
               title="Create Your Team"
               description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
-              icon={
-                <p className="md:text-[1.2vw] pb-[2vw] font-GoodTimes text-white">
-                  1
-                </p>
-              }
+              icon={<p>1</p>}
+              numberBackground="bg-gradient-to-br from-[#6C407D] to-[#5F4BA2]"
             />
             <div className="md:mt-[-10%] w-full flex justify-end">
               <FeatureIcon
-                title="Create Your Team"
-                description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
-                icon={
-                  <p className="md:text-[1.2vw] pb-[2vw] font-GoodTimes text-white">
-                    2
-                  </p>
-                }
+                title="Launch Your Mission"
+                description="Set up your fundraising campaign with transparent funding goals, payouts, and backer incentives."
+                icon={<p>2</p>}
+                numberBackground="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC]"
               />
             </div>
             <FeatureIcon
-              title="Create Your Team"
-              description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
-              icon={
-                <p className="md:text-[1.2vw] pb-[2vw] font-GoodTimes text-white">
-                  3
-                </p>
-              }
+              title="Manage Your Treasury"
+              description="Receive funds in ETH, automate payouts, and adjust financial strategies as your mission scales."
+              icon={<p>3</p>}
+              numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
             />
             <div className="md:mt-[-10%] w-full flex justify-end">
               <FeatureIcon
-                title="Create Your Team"
-                description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
-                icon={
-                  <p className="md:text-[1.2vw] pb-[2vw] font-GoodTimes text-white">
-                    4
-                  </p>
-                }
+                title="Build A Spacefaring Community"
+                description="Engage supporters through governance, votes, NFTs, and token-based incentives."
+                icon={<p>4</p>}
+                numberBackground="bg-gradient-to-br from-[#4660E7] to-[#3B67FF]"
               />
             </div>
           </div>
-          <div className="mt-24 w-full flex items-center justify-center">
+          <div className="mt-24 w-full flex flex-col items-center justify-center gap-4">
+            <h3 className="font-GoodTimes text-[4vw] md:text-[1.5vw] md:pb-[1vw]">Your tools, your team, your mission</h3>
             <StandardButton
-              className="gradient-2 rounded-full"
+              className="gradient-2 rounded-full md:text-[2vw]"
               hoverEffect={false}
             >
               {'Launch Your Mission'}
@@ -546,19 +512,12 @@ export default function Launch({ missions }: any) {
       </section>
 
       <section id="benefits-section" className="relative">
-        <div className="pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 md:h-[max(30vh,300px)] lg:h-[max(50vh,700px)] justify-center relative flex flex-col items-center bg-gradient-to-b from-[#010618] to-[#1B1C4B]">
-          <div className="w-full flex flex-col pt-[2vw] md:pt-[10vw] items-center">
+        <div className="pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 justify-center relative flex flex-col items-center bg-gradient-to-b from-[#010618] to-[#1B1C4B]">
+          <div className="w-full flex flex-col pt-[2vw] md:pt-[5vw] items-center">
             <h1 className="text-[5vw] md:text-[3vw] text-center pb-[5vw] md:pb-0 font-GoodTimes">
               {'Why use MoonDAO Launchpad?'}
             </h1>
           </div>
-          {/* <Image
-            className="absolute bottom-[-1px] left-0 -scale-x-100 w-[30vw] md:w-[20vw]"
-            src="/assets/launchpad/blue-divider-rl.svg"
-            alt="Divider"
-            width={500}
-            height={500}
-          /> */}
           <div className="mt-[5vw] md:mt-[2vw] z-10 w-full md:w-[80%]">
             <CardStack>
               <LaunchpadBenefit
@@ -572,7 +531,7 @@ export default function Launch({ missions }: any) {
                 title="Trustless & Transparent"
                 description="All transactions are transparent and onchain, ensuring that everyone can see the funds raised and used."
                 icon="/assets/icon-signature.svg"
-                align="right"
+                align="left"
                 slideDirection="left"
               />
               <LaunchpadBenefit
@@ -586,7 +545,7 @@ export default function Launch({ missions }: any) {
                 title="Scalable & Flexible"
                 description="Adapt your fundraising strategy as your space mission evolves or utilize our quick launch guidelines and templates."
                 icon="/assets/icon-scalable.svg"
-                align="right"
+                align="left"
                 slideDirection="left"
               />
               <LaunchpadBenefit
@@ -707,6 +666,11 @@ export default function Launch({ missions }: any) {
             />
           </FAQProvider>
         </div>  
+      </section>
+      <section id="footer-section"
+        className="bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
+      >
+        <Footer darkBackground={false} centerContent={true} />
       </section>
     </>
   )
