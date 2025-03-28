@@ -298,8 +298,8 @@ export default function CreateMission({
             getUnixTime(new Date())
           : 0
 
-      const fundingGoal = missionData.fundingGoal * 1e18
-      const minFundingRequired = missionData.minFundingRequired * 1e18
+      const fundingGoal = (missionData?.fundingGoal || 0) * 1e18
+      const minFundingRequired = (missionData?.minFundingRequired || 0) * 1e18
 
       const transaction = prepareContractCall({
         contract: missionCreatorContract,

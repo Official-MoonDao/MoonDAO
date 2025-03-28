@@ -227,7 +227,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         (fundingGoal / minFundingRequired) * 100
                       }
                       goalIndicatorLabel={`${
-                        minRequiredFunding / 1e18
+                        minFundingRequired / 1e18
                       } ETH secured`}
                     />
                   </div>
