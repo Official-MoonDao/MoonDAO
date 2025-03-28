@@ -3,7 +3,6 @@ import Link from 'next/link'
 
 interface FooterProps {
   darkBackground?: boolean
-  centerContent?: boolean
 }
 
 type FooterTokenLinkProps = {
@@ -23,17 +22,17 @@ function FooterTokenLink({ href, label }: FooterTokenLinkProps) {
   )
 }
 
-export default function Footer({ darkBackground = false, centerContent = false }: FooterProps) {
+export default function Footer({ darkBackground = false }: FooterProps) {
   return (
     <div
       id="footer-container"
-      className={`flex flex-col items-center pt-5 ${centerContent ? 'w-screen' : 'max-w-[1200px]'} ${
+      className={`flex flex-col items-center pt-5 max-w-[1200px] ${
         darkBackground ? 'w-full h-full' : 'pb-10'
       }`}
     >
-      <div id="disclaimer-container" className={`p-5 ${centerContent ? 'text-center' : ''}`}>
+      <div id="disclaimer-container" className="p-5 ">
         <span className="break-words">
-          <div className={`inline-block ${centerContent ? 'text-center' : ''}`}>
+          <div className="inline-block">
             <span className="opacity-[60%]">
               <strong>Disclaimer:&nbsp;</strong>
               There is no expectation of profit with the $MOONEY token. It is a
@@ -91,7 +90,7 @@ export default function Footer({ darkBackground = false, centerContent = false }
       >
         <div
           id="bottom-links-container"
-          className={`flex items-center ${centerContent ? 'justify-center' : 'justify-center'} min-h-[80px] md:min-h-[0px]`}
+          className={`flex items-center justify-center min-h-[80px] md:min-h-[0px]`}
         >
           <Link
             className="pr-5 opacity-[60%] hover:opacity-[100%]"
