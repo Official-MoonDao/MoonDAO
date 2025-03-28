@@ -48,6 +48,9 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const [currentLang, setCurrentLang] = useState(router.locale)
   const { t } = useTranslation('common')
   //Background is defined in this root div.
+
+  const isFullscreen = router.pathname === '/launch'
+
   const layout = (
     <div
       id="app-layout"
@@ -61,6 +64,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         lightMode={lightMode}
         setLightMode={setLightMode}
         citizenContract={citizenContract}
+        isFullscreen={isFullscreen}
       />
 
       <MobileSidebar
@@ -68,10 +72,17 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         lightMode={lightMode}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        isFullscreen={isFullscreen}
       />
 
       {/* Static sidebar for desktop */}
-      <div className="relative z-10 hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]">
+      <div
+        className={`relative z-10 hidden ${
+          isFullscreen
+            ? ''
+            : 'md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]'
+        }`}
+      >
         {/* Sidebar component*/}
         <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col pt-5">
           <Link href="/" passHref>
@@ -115,9 +126,17 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       </div>
 
       {/*The content, child rendered here*/}
-      <main className="flex justify-center pb-24 md:ml-60 relative">
+      <main
+        className={`flex justify-center ${
+          isFullscreen ? 'md:ml-0' : 'md:ml-60'
+        } relative`}
+      >
         <section
-          className={`mt-4 flex flex-col md:w-[90%] lg:px-14 xl:px-16 2xl:px-20`}
+          className={`${
+            isFullscreen
+              ? 'w-full '
+              : 'mt-4 md:w-[90%] lg:px-14 xl:px-16 2xl:px-20'
+          } flex flex-col`}
         >
           {/*Connect Wallet and Preferred network warning*/}
           {children}
