@@ -30,6 +30,7 @@ module.exports = nextTranslate({
       'ipfs.io',
     ],
   },
+  output: 'standalone',
   async headers() {
     return [
       {
