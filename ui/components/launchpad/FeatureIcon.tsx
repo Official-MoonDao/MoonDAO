@@ -5,6 +5,7 @@ type FeatureIconProps = {
   description: string
   icon: string | React.ReactNode
   gradient?: string
+  numberBackground?: string
 }
 
 export default function FeatureIcon({
@@ -12,25 +13,30 @@ export default function FeatureIcon({
   description,
   icon,
   gradient,
+  numberBackground,
 }: FeatureIconProps) {
   return (
     <div
-      className={`flex flex-col text-center w-full md:w-[27.5vw] h-auto items-center mb-[5vw] md:mb-[2vw]  `}
+      className={`flex flex-col text-center w-full md:w-[27.5vw] h-auto items-center mb-[5vw] md:mb-[2vw]`}
     >
-      <div className={`${gradient} rounded-full m-[] m-[2vw]`}>
-      <div className="flex items-start mix-blend-screen justify-center w-fit h-fit rounded-full p-8 aspect-square">
+      <div className={`${gradient || numberBackground} rounded-full m-[2vw]`}>
         {typeof icon === 'string' ? (
-          <Image
-            className=""
-            src={icon}
-            alt={title}
-            width={300}
-            height={300}
-          />
+          <div className="flex items-start mix-blend-screen justify-center w-fit h-fit rounded-full p-8 aspect-square">
+            <Image
+              className=""
+              src={icon}
+              alt={title}
+              width={300}
+              height={300}
+            />
+          </div>
         ) : (
-          <div id="feature-icon-custom">{icon}</div>
+          <div className="flex items-center justify-center w-[120px] h-[120px] md:w-[150px] md:h-[150px] rounded-full">
+            <div className="text-[5vw] md:text-[3vw] font-GoodTimes text-white">
+              {icon}
+            </div>
+          </div>
         )}
-      </div>
       </div>
       <h2 className="mt-[5vw] md:mt-[2vw] text-[5vw] md:text-[2vw] md:text-[2vw] font-GoodTimes">{title}</h2>
       <p className="md:text-[1.2vw]">{description}</p>
