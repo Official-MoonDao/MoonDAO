@@ -293,7 +293,7 @@ export default function CreateMission({
           : 0
 
       const durationInSeconds = deadline
-        ? getUnixTime(new Date(missionData.deadline)) - getUnixTime(new Date())
+        ? deadline - getUnixTime(new Date())
         : 0
 
       const fundingGoal = (missionData?.fundingGoal || 0) * 1e18
