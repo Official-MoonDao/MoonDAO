@@ -177,7 +177,9 @@ export function Stage({
               id="continue-button"
               className="gradient-2 rounded-full"
               hoverEffect={false}
-              onClick={action}
+              onClick={() => {
+                action()
+              }}
             >
               <div className="flex items-center gap-2">
                 Continue
@@ -285,11 +287,14 @@ export default function CreateMission({
         missionMetadataBlob
       )
 
-      const durationInSeconds =
+      const deadline =
         hasDeadline && missionData?.deadline
-          ? getUnixTime(new Date(missionData.deadline)) -
-            getUnixTime(new Date())
+          ? getUnixTime(new Date(missionData?.deadline))
           : 0
+
+      const durationInSeconds = deadline
+        ? getUnixTime(new Date(missionData.deadline)) - getUnixTime(new Date())
+        : 0
 
       const fundingGoal = (missionData?.fundingGoal || 0) * 1e18
       const minFundingRequired = (missionData?.minFundingRequired || 0) * 1e18
@@ -302,8 +307,9 @@ export default function CreateMission({
           address,
           missionMetadataIpfsHash,
           durationInSeconds,
-          fundingGoal,
+          deadline,
           minFundingRequired,
+          fundingGoal,
           missionData.token.tradeable,
           missionData?.token?.name,
           missionData?.token?.symbol,
@@ -478,6 +484,7 @@ export default function CreateMission({
                     style: toastStyle,
                   })
                 }
+                setStage((prev: number) => prev + 1)
               }}
             >
               <div className="flex justify-between">
@@ -615,6 +622,7 @@ export default function CreateMission({
                 }
                 const html = await marked(missionData.description)
                 setMissionData({ ...missionData, description: html })
+                setStage((prev: number) => prev + 1)
               }}
             >
               <StandardButton
@@ -653,7 +661,9 @@ export default function CreateMission({
               id="mission-goals-stage"
               stage={stage}
               setStage={setStage}
-              action={() => {}}
+              action={() => {
+                setStage((prev: number) => prev + 1)
+              }}
             >
               <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <FormYesNo
