@@ -177,14 +177,7 @@ export function Stage({
               id="continue-button"
               className="gradient-2 rounded-full"
               hoverEffect={false}
-              onClick={
-                process.env.NEXT_PUBLIC_ENV === 'dev'
-                  ? () => {
-                      action()
-                      setStage((prev: number) => prev + 1)
-                    }
-                  : action
-              }
+              onClick={action}
             >
               <div className="flex items-center gap-2">
                 Continue
