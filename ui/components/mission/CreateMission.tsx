@@ -358,11 +358,7 @@ export default function CreateMission({
           })
           clearMissionCache()
           setStatus('idle')
-          router.push(
-            `/team/${generatePrettyLink(
-              selectedTeamNFT?.metadata?.name
-            )}?mission=${missionId}`
-          )
+          router.push(`/mission/${missionId}`)
         }, 15000)
       }
     } catch (err) {
