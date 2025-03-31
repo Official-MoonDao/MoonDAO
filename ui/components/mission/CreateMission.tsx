@@ -712,7 +712,7 @@ export default function CreateMission({
                       minFundingRequired: e.target.value,
                     })
                   }
-                  disabled={!hasFundingGoal}
+                  disabled={false}
                   mode="dark"
                   tooltip="The minimum amount of funding required for your mission to be successful."
                 />
@@ -726,7 +726,7 @@ export default function CreateMission({
                       fundingGoal: e.target.value,
                     })
                   }
-                  disabled={!hasFundingGoal}
+                  disabled={false}
                   mode="dark"
                   tooltip="The maximum amount of funding required for your mission to be successful."
                 />
