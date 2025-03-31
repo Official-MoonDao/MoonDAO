@@ -403,8 +403,8 @@ export default function CreateMission({
   }, [selectedTeamId, teamContract])
 
   useEffect(() => {
-    if (userTeamsAsManager) {
-      setSelectedTeamId(userTeamsAsManager[0].teamId)
+    if (userTeamsAsManager?.[0]) {
+      setSelectedTeamId(userTeamsAsManager[0]?.teamId)
     } else {
       setSelectedTeamId(undefined)
     }
