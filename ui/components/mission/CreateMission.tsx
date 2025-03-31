@@ -38,7 +38,6 @@ import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import FileInput from '../layout/FileInput'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import { NoticeFooter } from '../layout/NoticeFooter'
 import Point from '../layout/Point'
 import StandardButton from '../layout/StandardButton'
 import { Steps } from '../layout/Steps'
@@ -116,7 +115,7 @@ Use this section to provide additional context, such as:
 If you were reading this for the first time, would you be excited to contribute?
 
 ### Funding & Rewards
-What will supporters receive in return? Funding a mission is more engaging when contributors get something meaningful in return. Outline what 
+What will supporters receive in return?Funding a mission is more engaging when contributors get something meaningful in return. Outline what 
 backers can expect:
 - Governance Tokens – Enable participation in mission decisions.
 - Mission Patches & Digital Collectibles – Unique digital memorabilia tied to the mission.
@@ -407,467 +406,450 @@ export default function CreateMission({
   }, [userTeamsAsManager, address])
 
   return (
-    <Container>
-      <ContentLayout
-        header="Launch A Mission"
-        headerSize="max(20px, 3vw)"
-        description={
-          <p id="launch-mission-description" className="">
-            {
-              'The Launchpad is an onchain fundraising platform that connects your space mission to the global cryptocurrency economy, providing transparent funding, community engagement, and real stakeholder participation to turn your vision into reality. For more information, check out '
-            }
-            <Link
-              className="underline"
-              href="https://docs.moondao.com"
-              target="_blank"
-              rel="noreferrer"
-            >
-              our documentation
-            </Link>
-            {'.'}
-          </p>
-        }
-        preFooter={<NoticeFooter />}
-        mainPadding
-        mode="compact"
-        popOverEffect={false}
-        isProfile
-      >
-        <div className="flex flex-col justify-center items-start bg-darkest-cool p-8 rounded-[2vmax]">
-          <div className="relative flex flex-col md:flex-row items-center md:items-start p-2 pb-0 w-full justify-between max-w-[600px] items-start">
-            <button
-              className="md:absolute top-1 right-[-7.5%] md:right-0"
-              onClick={() => setStatus('idle')}
-            >
-              <XMarkIcon width={50} height={50} />
-            </button>
-            <Steps
-              className="mb-4 pl-5 md:pl-0 w-full md:w-[600px] lg:w-[800px] md:-ml-16"
-              steps={['Overview', 'Details', 'Goals', 'Confirm']}
-              currStep={stage}
-              lastStep={stage - 1}
-              setStep={setStage}
-            />
-          </div>
-          {stage === 0 && (
-            <Stage
-              id="mission-overview-stage"
-              stage={stage}
-              setStage={setStage}
-              header="Mission Overview"
-              description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential backers and compel them to contribute.
-"
-              action={() => {
-                if (!userTeamsAsManager || userTeamsAsManager.length === 0) {
-                  return toast.error(
-                    'Please create a team or join one as a manager',
-                    {
-                      style: toastStyle,
-                    }
-                  )
-                } else if (selectedTeamId === undefined) {
-                  return toast.error('Please select a team', {
-                    style: toastStyle,
-                  })
-                }
-                if (missionData.name.length === 0) {
-                  return toast.error('Please enter a mission title', {
-                    style: toastStyle,
-                  })
-                }
-                if (!missionImage) {
-                  return toast.error('Please upload a mission image', {
-                    style: toastStyle,
-                  })
-                }
-                setStage((prev: number) => prev + 1)
-              }}
-            >
-              <div className="flex justify-between">
-                {!userTeamsAsManager || userTeamsAsManager.length === 0 ? (
-                  <StandardButton
-                    className="gradient-2"
-                    hoverEffect={false}
-                    link="/team"
-                  >
-                    Create a Team
-                  </StandardButton>
-                ) : (
-                  <></>
-                )}
+    <Container containerwidth={true}>
+      <div className="flex flex-col items-center w-full min-h-screen">
+        <div className="w-full max-w-[1200px] flex flex-col items-center px-4 pb-4 md:px-8">
+          <h1 className="font-GoodTimes text-[max(20px,3vw)] mt-[100px] mb-4 text-center">Launch A Mission</h1>
+          
+          
+          <div className="w-full bg-darkest-cool p-8 rounded-[2vmax]">
+            <div className="max-w-[800px] mx-auto">
+              <div className="relative flex flex-col md:flex-row items-center p-2 pb-0 w-full">
+                <button
+                  className="absolute top-1 right-1"
+                  onClick={() => setStatus('idle')}
+                >
+                  <XMarkIcon width={50} height={50} />
+                </button>
+                <Steps
+                  className="mb-4 w-full"
+                  steps={['Overview', 'Details', 'Goals', 'Confirm']}
+                  currStep={stage}
+                  lastStep={stage - 1}
+                  setStep={setStage}
+                />
               </div>
-              {userTeamsAsManager && userTeamsAsManager.length > 1 && (
-                <div>
-                  <p>You are a manager of multiple teams, please select one</p>
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
-                    {!userTeamsAsManager ? (
-                      Array.from({ length: 3 }).map((_, index) => (
-                        <div
-                          key={`team-${index}`}
-                          className="w-[350px] h-[100px] bg-dark-cool p-2"
-                        ></div>
-                      ))
-                    ) : userTeamsAsManager && userTeamsAsManager.length > 0 ? (
-                      userTeamsAsManager.map((team: any) => (
-                        <button
-                          key={`team-${team.id}`}
-                          className="bg-dark-cool p-2"
-                          onClick={() => {
-                            setSelectedTeamId(team.teamId)
-                          }}
-                        >
-                          <Hat
-                            hat={team}
-                            selectedChain={selectedChain}
-                            hatsContract={hatsContract}
-                            teamContract={teamContract}
-                            compact
-                            isDisabled={true}
-                          />
-                        </button>
-                      ))
+              {stage === 0 && (
+                <Stage
+                  id="mission-overview-stage"
+                  stage={stage}
+                  setStage={setStage}
+                  header="Mission Overview"
+                  description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential backers and compel them to contribute.
+"
+                  action={() => {
+                    if (!userTeamsAsManager || userTeamsAsManager.length === 0) {
+                      return toast.error(
+                        'Please create a team or join one as a manager',
+                        {
+                          style: toastStyle,
+                        }
+                      )
+                    } else if (selectedTeamId === undefined) {
+                      return toast.error('Please select a team', {
+                        style: toastStyle,
+                      })
+                    }
+                    if (missionData.name.length === 0) {
+                      return toast.error('Please enter a mission title', {
+                        style: toastStyle,
+                      })
+                    }
+                    if (!missionImage) {
+                      return toast.error('Please upload a mission image', {
+                        style: toastStyle,
+                      })
+                    }
+                    setStage((prev: number) => prev + 1)
+              }}
+                >
+                  <div className="flex justify-between">
+                    {!userTeamsAsManager || userTeamsAsManager.length === 0 ? (
+                      <StandardButton
+                        className="gradient-2"
+                        hoverEffect={false}
+                        link="/team"
+                      >
+                        Create a Team
+                      </StandardButton>
                     ) : (
-                      <p>You are not a manager of any teams</p>
+                      <></>
                     )}
                   </div>
-                </div>
-              )}
-              {selectedTeamNFT && (
-                <p className="mt-4 font-GoodTimes">
-                  {`Selected Team : `}
-                  <Link
-                    className="text-lg text-light-warm font-bold hover:underline"
-                    href={`/team/${selectedTeamId}`}
-                  >
-                    {selectedTeamNFT?.metadata?.name}
-                  </Link>
-                </p>
-              )}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <FormInput
-                  id="mission-title"
-                  label="Mission Title"
-                  placeholder="Enter a title for your mission"
-                  value={missionData.name}
-                  onChange={(e: any) =>
-                    setMissionData({ ...missionData, name: e.target.value })
-                  }
-                  mode="dark"
-                />
-                <FormInput
-                  id="mission-tagline"
-                  label="Tagline"
-                  placeholder="Enter a tagline for your mission"
-                  value={missionData.tagline}
-                  onChange={(e: any) =>
-                    setMissionData({ ...missionData, tagline: e.target.value })
-                  }
-                  mode="dark"
-                />
-
-                <FormInput
-                  id="mission-website"
-                  label="Website"
-                  placeholder="Enter a website link"
-                  value={missionData.infoUri}
-                  onChange={(e: any) =>
-                    setMissionData({ ...missionData, infoUri: e.target.value })
-                  }
-                  mode="dark"
-                />
-                <FormInput
-                  id="mission-social"
-                  label="Social Link"
-                  placeholder="Enter a Twitter link"
-                  value={missionData.twitter}
-                  onChange={(e: any) =>
-                    setMissionData({ ...missionData, twitter: e.target.value })
-                  }
-                  mode="dark"
-                />
-              </div>
-              <FileInput
-                id="mission-image"
-                file={missionImage}
-                setFile={setMissionImage}
-                dimensions={[1024, 1024]}
-              />
-              <div>
-                {missionImage && (
-                  <Image
-                    src={missionImage ? URL.createObjectURL(missionImage) : ''}
-                    alt="Mission Image"
-                    width={200}
-                    height={200}
-                  />
-                )}
-              </div>
-            </Stage>
-          )}
-          {stage === 1 && (
-            <Stage
-              id="mission-details-stage"
-              stage={stage}
-              setStage={setStage}
-              header="Mission Details"
-              action={async () => {
-                if (missionData.description.length < 10) {
-                  return toast.error('Please enter a mission description', {
-                    style: toastStyle,
-                  })
-                }
-                const html = await marked(missionData.description)
-                setMissionData({ ...missionData, description: html })
-                setStage((prev: number) => prev + 1)
-              }}
-            >
-              <StandardButton
-                className="gradient-2 rounded-full"
-                hoverEffect={false}
-                onClick={() => {
-                  setMarkdown(MISSION_DESCRIPTION_TEMPLATE)
-                }}
-              >
-                Restore Template
-              </StandardButton>
-              <div
-                id="mission-description-editor"
-                className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50%"
-              >
-                <NanceEditor
-                  initialValue={
-                    missionData.description.length === 0
-                      ? MISSION_DESCRIPTION_TEMPLATE
-                      : missionData.description
-                  }
-                  fileUploadExternal={async (val) => {
-                    const res = await pinBlobOrFile(val)
-                    return res.url
-                  }}
-                  darkMode={true}
-                  onEditorChange={(m: string) => {
-                    setMissionData({ ...missionData, description: m })
-                  }}
-                />
-              </div>
-            </Stage>
-          )}
-          {stage === 2 && (
-            <Stage
-              id="mission-goals-stage"
-              stage={stage}
-              setStage={setStage}
-              action={() => {
-                setStage((prev: number) => prev + 1)
-              }}
-            >
-              <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <FormYesNo
-                  id="fundraising-deadline-toggle"
-                  label="Set A Fundraising Deadline"
-                  value={hasDeadline}
-                  onChange={(value: boolean) => {
-                    setHasDeadline(value)
-                    if (!value) {
-                      setMissionData({
-                        ...missionData,
-                        deadline: '',
-                      })
-                    }
-                  }}
-                  mode="dark"
-                  tooltip="Set a specific date to end fundraising, or keep it open-ended for a goal-based raise."
-                />
-                <div
-                  className={`w-full ${
-                    hasDeadline ? 'opacity-100' : 'opacity-30'
-                  }`}
-                >
-                  <FormDate
-                    label="Deadline"
-                    value={missionData.deadline || ''}
-                    onChange={(value: string) => {
-                      setMissionData({
-                        ...missionData,
-                        deadline: value,
-                      })
-                    }}
-                    min={new Date()}
-                    disabled={!hasDeadline}
-                    mode="dark"
-                  />
-                </div>
-
-                <FormInput
-                  label="Min Funding Required"
-                  placeholder="Enter a funding goal"
-                  value={missionData.minFundingRequired}
-                  onChange={(e: any) =>
-                    setMissionData({
-                      ...missionData,
-                      minFundingRequired: e.target.value,
-                    })
-                  }
-                  disabled={false}
-                  mode="dark"
-                  tooltip="The minimum amount of funding required for your mission to be successful."
-                />
-                <FormInput
-                  label="Funding Goal"
-                  placeholder="Enter a funding goal"
-                  value={missionData.fundingGoal}
-                  onChange={(e: any) =>
-                    setMissionData({
-                      ...missionData,
-                      fundingGoal: e.target.value,
-                    })
-                  }
-                  disabled={false}
-                  mode="dark"
-                  tooltip="The maximum amount of funding required for your mission to be successful."
-                />
-                <FormYesNo
-                  id="mission-token-toggle"
-                  label="Create A Mission Token"
-                  value={missionData.token.tradeable}
-                  onChange={(value: boolean) =>
-                    setMissionData({
-                      ...missionData,
-                      token: { ...missionData.token, tradeable: value },
-                    })
-                  }
-                  mode="dark"
-                />
-                <div
-                  className={`w-full flex ${
-                    missionData?.token?.tradeable ? 'opacity-100' : 'opacity-30'
-                  }`}
-                >
-                  <FormInput
-                    id="mission-token-name"
-                    label="Token Name"
-                    placeholder="Enter a token name"
-                    value={missionData.token.name}
-                    onChange={(e: any) =>
-                      setMissionData({
-                        ...missionData,
-                        token: { ...missionData.token, name: e.target.value },
-                      })
-                    }
-                    mode="dark"
-                  />
-                  <FormInput
-                    id="mission-token-symbol"
-                    label="Token Symbol"
-                    placeholder="Enter a token symbol"
-                    value={missionData.token.symbol}
-                    onChange={(e: any) =>
-                      setMissionData({
-                        ...missionData,
-                        token: { ...missionData.token, symbol: e.target.value },
-                      })
-                    }
-                    mode="dark"
-                  />
-                </div>
-              </div>
-              <div className="font-sm">
-                <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
-                <p className="mt-2">
-                  {
-                    'When you deploy your mission on the MoonDAO Launch Pad, your funding structure will follow a transparent standardized model designed for success and long-term sustainability.'
-                  }
-                </p>
-                {TOKENOMICS_POINTS.map((p: string, i: number) => (
-                  <Point key={`tokenomics-point-${i}`} point={p} />
-                ))}
-              </div>
-            </Stage>
-          )}
-          {stage === 3 && (
-            <Stage
-              id="mission-confirmation-stage"
-              stage={stage}
-              setStage={setStage}
-              header="Mission Confirmation"
-              description="Please review your mission details"
-              customButton={
-                <PrivyWeb3Button
-                  id="launch-mission-button"
-                  label={
-                    <div className="flex items-center gap-2">
-                      Launch Your Mission
-                      <RocketLaunchIcon width={20} height={20} />
+                  {userTeamsAsManager && userTeamsAsManager.length > 1 && (
+                    <div>
+                      <p>You are a manager of multiple teams, please select one</p>
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
+                        {!userTeamsAsManager ? (
+                          Array.from({ length: 3 }).map((_, index) => (
+                            <div
+                              key={`team-${index}`}
+                              className="w-[350px] h-[100px] bg-dark-cool p-2"
+                            ></div>
+                          ))
+                        ) : userTeamsAsManager && userTeamsAsManager.length > 0 ? (
+                          userTeamsAsManager.map((team: any) => (
+                            <button
+                              key={`team-${team.id}`}
+                              className="bg-dark-cool p-2"
+                              onClick={() => {
+                                setSelectedTeamId(team.teamId)
+                              }}
+                            >
+                              <Hat
+                                hat={team}
+                                selectedChain={selectedChain}
+                                hatsContract={hatsContract}
+                                teamContract={teamContract}
+                                compact
+                                isDisabled={true}
+                              />
+                            </button>
+                          ))
+                        ) : (
+                          <p>You are not a manager of any teams</p>
+                        )}
+                      </div>
                     </div>
-                  }
-                  requiredChain={DEFAULT_CHAIN_V5}
-                  className="gradient-2 rounded-full px-4"
-                  isDisabled={
-                    !agreedToTerms ||
-                    (missionData.token.tradeable && !agreedToTokenNotSecurity)
-                  }
-                  action={createMission}
-                />
-              }
-            >
-              <MissionWideCard
-                name={missionData.name}
-                tagline={missionData.tagline}
-                deadline={missionData.deadline || 'None'}
-                minFundingRequired={missionData.minFundingRequired}
-                fundingGoal={missionData.fundingGoal}
-                tradeable={missionData.token.tradeable}
-                description={missionData.description}
-                logoUri={missionData.logoUri}
-                missionImage={missionImage}
-              />
-              <div id="additional-details">
-                <h1 className="font-GoodTimes text-2xl">Additional Details</h1>
-                <div className="mt-3">
-                  {ADDITIONAL_POINTS.map((p: string, i: number) => (
-                    <Point key={`additional-point-${i}`} point={p} />
-                  ))}
-                </div>
-              </div>
-              <ConditionCheckbox
-                id="terms-checkbox"
-                label={
-                  <p>
-                    I HAVE READ AND ACCEPTED THE{' '}
-                    <Link
-                      className="text-blue-500 hover:underline"
-                      href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      TERMS AND CONDITIONS
-                    </Link>{' '}
-                    AND THE{' '}
-                    <Link
-                      className="text-blue-500 hover:underline"
-                      href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      PRIVACY POLICY
-                    </Link>
-                  </p>
-                }
-                agreedToCondition={agreedToTerms}
-                setAgreedToCondition={setAgreedToTerms}
-              />
-              {missionData.token.tradeable && (
-                <ConditionCheckbox
-                  id="token-security-checkbox"
-                  label={'I AGREE THAT THIS TOKEN IS NOT A SECURITY, ETC...'}
-                  agreedToCondition={agreedToTokenNotSecurity}
-                  setAgreedToCondition={setAgreedToTokenNotSecurity}
-                />
+                  )}
+                  {selectedTeamNFT && (
+                    <p className="mt-4 font-GoodTimes">
+                      {`Selected Team : `}
+                      <Link
+                        className="text-lg text-light-warm font-bold hover:underline"
+                        href={`/team/${selectedTeamId}`}
+                      >
+                        {selectedTeamNFT?.metadata?.name}
+                      </Link>
+                    </p>
+                  )}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <FormInput
+                      id="mission-title"
+                      label="Mission Title"
+                      placeholder="Enter a title for your mission"
+                      value={missionData.name}
+                      onChange={(e: any) =>
+                        setMissionData({ ...missionData, name: e.target.value })
+                      }
+                      mode="dark"
+                    />
+                    <FormInput
+                      id="mission-tagline"
+                      label="Tagline"
+                      placeholder="Enter a tagline for your mission"
+                      value={missionData.tagline}
+                      onChange={(e: any) =>
+                        setMissionData({ ...missionData, tagline: e.target.value })
+                      }
+                      mode="dark"
+                    />
+
+                    <FormInput
+                      id="mission-website"
+                      label="Website"
+                      placeholder="Enter a website link"
+                      value={missionData.infoUri}
+                      onChange={(e: any) =>
+                        setMissionData({ ...missionData, infoUri: e.target.value })
+                      }
+                      mode="dark"
+                    />
+                    <FormInput
+                      id="mission-social"
+                      label="Social Link"
+                      placeholder="Enter a Twitter link"
+                      value={missionData.twitter}
+                      onChange={(e: any) =>
+                        setMissionData({ ...missionData, twitter: e.target.value })
+                      }
+                      mode="dark"
+                    />
+                  </div>
+                  <FileInput
+                    id="mission-image"
+                    file={missionImage}
+                    setFile={setMissionImage}
+                    dimensions={[1024, 1024]}
+                  />
+                  <div>
+                    {missionImage && (
+                      <Image
+                        src={missionImage ? URL.createObjectURL(missionImage) : ''}
+                        alt="Mission Image"
+                        width={200}
+                        height={200}
+                      />
+                    )}
+                  </div>
+                </Stage>
               )}
-            </Stage>
-          )}
+              {stage === 1 && (
+                <Stage
+                  id="mission-details-stage"
+                  stage={stage}
+                  setStage={setStage}
+                  header="Mission Details"
+                  action={async () => {
+                    if (missionData.description.length < 10) {
+                      return toast.error('Please enter a mission description', {
+                        style: toastStyle,
+                      })
+                    }
+                    const html = await marked(missionData.description)
+                    setMissionData({ ...missionData, description: html })
+                    setStage((prev: number) => prev + 1)
+              }}
+                >
+                  <StandardButton
+                    className="gradient-2 rounded-full"
+                    hoverEffect={false}
+                    onClick={() => {
+                      setMarkdown(MISSION_DESCRIPTION_TEMPLATE)
+                    }}
+                  >
+                    Restore Template
+                  </StandardButton>
+                  <div
+                    id="mission-description-editor"
+                    className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50%"
+                  >
+                    <NanceEditor
+                      initialValue={
+                        missionData.description.length === 0
+                          ? MISSION_DESCRIPTION_TEMPLATE
+                          : missionData.description
+                      }
+                      fileUploadExternal={async (val) => {
+                        const res = await pinBlobOrFile(val)
+                        return res.url
+                      }}
+                      darkMode={true}
+                      onEditorChange={(m: string) => {
+                        setMissionData({ ...missionData, description: m })
+                      }}
+                    />
+                  </div>
+                </Stage>
+              )}
+              {stage === 2 && (
+                <Stage
+                  id="mission-goals-stage"
+                  stage={stage}
+                  setStage={setStage}
+                  action={() => {
+                setStage((prev: number) => prev + 1)
+              }}
+                >
+                  <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <FormYesNo
+                      id="fundraising-deadline-toggle"
+                      label="Set A Fundraising Deadline"
+                      value={hasDeadline}
+                      onChange={(value: boolean) => {
+                        setHasDeadline(value)
+                        if (!value) {
+                          setMissionData({
+                            ...missionData,
+                            deadline: '',
+                          })
+                        }
+                      }}
+                      mode="dark"
+                      tooltip="Set a specific date to end fundraising, or keep it open-ended for a goal-based raise."
+                    />
+                    <div
+                      className={`w-full ${
+                        hasDeadline ? 'opacity-100' : 'opacity-30'
+                      }`}
+                    >
+                      <FormDate
+                        label="Deadline"
+                        value={missionData.deadline || ''}
+                        onChange={(value: string) => {
+                          setMissionData({
+                            ...missionData,
+                            deadline: value,
+                          })
+                        }}
+                        min={new Date()}
+                        disabled={!hasDeadline}
+                        mode="dark"
+                      />
+                    </div>
+
+                    <FormInput
+                      label="Min Funding Required"
+                      placeholder="Enter a funding goal"
+                      value={missionData.minFundingRequired}
+                      onChange={(e: any) =>
+                        setMissionData({
+                          ...missionData,
+                          minFundingRequired: e.target.value,
+                        })
+                      }
+                      disabled={false}
+                      mode="dark"
+                      tooltip="The minimum amount of funding required for your mission to be successful."
+                    />
+                    <FormInput
+                      label="Funding Goal"
+                      placeholder="Enter a funding goal"
+                      value={missionData.fundingGoal}
+                      onChange={(e: any) =>
+                        setMissionData({
+                          ...missionData,
+                          fundingGoal: e.target.value,
+                        })
+                      }
+                      disabled={false}
+                      mode="dark"
+                      tooltip="The maximum amount of funding required for your mission to be successful."
+                    />
+                    <FormYesNo
+                      id="mission-token-toggle"
+                      label="Create A Mission Token"
+                      value={missionData.token.tradeable}
+                      onChange={(value: boolean) =>
+                        setMissionData({
+                          ...missionData,
+                          token: { ...missionData.token, tradeable: value },
+                        })
+                      }
+                      mode="dark"
+                    />
+                    <div
+                      className={`w-full flex ${
+                        missionData?.token?.tradeable ? 'opacity-100' : 'opacity-30'
+                      }`}
+                    >
+                      <FormInput
+                        id="mission-token-name"
+                        label="Token Name"
+                        placeholder="Enter a token name"
+                        value={missionData.token.name}
+                        onChange={(e: any) =>
+                          setMissionData({
+                            ...missionData,
+                            token: { ...missionData.token, name: e.target.value },
+                          })
+                        }
+                        mode="dark"
+                      />
+                      <FormInput
+                        id="mission-token-symbol"
+                        label="Token Symbol"
+                        placeholder="Enter a token symbol"
+                        value={missionData.token.symbol}
+                        onChange={(e: any) =>
+                          setMissionData({
+                            ...missionData,
+                            token: { ...missionData.token, symbol: e.target.value },
+                          })
+                        }
+                        mode="dark"
+                      />
+                    </div>
+                  </div>
+                  <div className="font-sm">
+                    <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
+                    <p className="mt-2">
+                      {
+                        'When you deploy your mission on the MoonDAO Launch Pad, your funding structure will follow a transparent standardized model designed for success and long-term sustainability.'
+                      }
+                    </p>
+                    {TOKENOMICS_POINTS.map((p: string, i: number) => (
+                      <Point key={`tokenomics-point-${i}`} point={p} />
+                    ))}
+                  </div>
+                </Stage>
+              )}
+              {stage === 3 && (
+                <Stage
+                  id="mission-confirmation-stage"
+                  stage={stage}
+                  setStage={setStage}
+                  header="Mission Confirmation"
+                  description="Please review your mission details"
+                  customButton={
+                    <PrivyWeb3Button
+                      id="launch-mission-button"
+                      label={
+                        <div className="flex items-center gap-2">
+                          Launch Your Mission
+                          <RocketLaunchIcon width={20} height={20} />
+                        </div>
+                      }
+                      requiredChain={DEFAULT_CHAIN_V5}
+                      className="gradient-2 rounded-full px-4"
+                      isDisabled={
+                        !agreedToTerms ||
+                        (missionData.token.tradeable && !agreedToTokenNotSecurity)
+                      }
+                      action={createMission}
+                    />
+                  }
+                >
+                  <MissionWideCard
+                    name={missionData.name}
+                    tagline={missionData.tagline}
+                    deadline={missionData.deadline || 'None'}
+                    minFundingRequired={missionData.minFundingRequired}
+                    fundingGoal={missionData.fundingGoal}
+                    tradeable={missionData.token.tradeable}
+                    description={missionData.description}
+                    logoUri={missionData.logoUri}
+                    missionImage={missionImage}
+                  />
+                  <div id="additional-details">
+                    <h1 className="font-GoodTimes text-2xl">Additional Details</h1>
+                    <div className="mt-3">
+                      {ADDITIONAL_POINTS.map((p: string, i: number) => (
+                        <Point key={`additional-point-${i}`} point={p} />
+                      ))}
+                    </div>
+                  </div>
+                  <ConditionCheckbox
+                    id="terms-checkbox"
+                    label={
+                      <p>
+                        I HAVE READ AND ACCEPTED THE{' '}
+                        <Link
+                          className="text-blue-500 hover:underline"
+                          href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          TERMS AND CONDITIONS
+                        </Link>{' '}
+                        AND THE{' '}
+                        <Link
+                          className="text-blue-500 hover:underline"
+                          href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          PRIVACY POLICY
+                        </Link>
+                      </p>
+                    }
+                    agreedToCondition={agreedToTerms}
+                    setAgreedToCondition={setAgreedToTerms}
+                  />
+                  {missionData.token.tradeable && (
+                    <ConditionCheckbox
+                      id="token-security-checkbox"
+                      label={'I AGREE THAT THIS TOKEN IS NOT A SECURITY, ETC...'}
+                      agreedToCondition={agreedToTokenNotSecurity}
+                      setAgreedToCondition={setAgreedToTokenNotSecurity}
+                    />
+                  )}
+                </Stage>
+              )}
+            </div>
+          </div>
         </div>
-      </ContentLayout>
+      </div>
     </Container>
   )
 }

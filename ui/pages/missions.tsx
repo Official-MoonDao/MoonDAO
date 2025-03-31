@@ -20,7 +20,6 @@ import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
@@ -88,51 +87,6 @@ export default function Missions({ missions }: MissionsProps) {
     </div>
   )
 
-  const descriptionSection = (
-    <div className="pt-2">
-      <div className="mb-4">{description}</div>
-
-      <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
-        <Search input={input} setInput={setInput} />
-      </Frame>
-      <StandardButtonPlus
-        className="gradient-2 rounded-full"
-        hoverEffect={false}
-        link="/launch"
-      >
-        Launch a Mission
-      </StandardButtonPlus>
-
-      <div className="w-full flex gap-4">
-        <div
-          id="filter-container"
-          className="max-w-[350px] border-b-5 border-black"
-        >
-          {/* <Frame noPadding>
-            <div className="flex flex-wrap text-sm bg-filter">
-              <Tab
-                tab="active"
-                currentTab={tab}
-                setTab={handleTabChange}
-                icon="/../.././assets/icon-org.svg"
-              >
-                Active
-              </Tab>
-              <Tab
-                tab="inactive"
-                currentTab={tab}
-                setTab={handleTabChange}
-                icon="/../.././assets/icon-passport.svg"
-              >
-                Past
-              </Tab>
-            </div>
-          </Frame> */}
-        </div>
-      </div>
-    </div>
-  )
-
   return (
     <section id="missions-container" className="overflow-hidden">
       <Head
@@ -141,87 +95,129 @@ export default function Missions({ missions }: MissionsProps) {
         image="https://ipfs.io/ipfs/QmbExwDgVoDYpThFaVRRxUkusHnXxMj3Go8DdWrXg1phxi"
       />
       <Container>
-        <ContentLayout
-          header="Missions"
-          headerSize="max(20px, 3vw)"
-          description={descriptionSection}
-          preFooter={<NoticeFooter />}
-          mainPadding
-          mode="compact"
-          popOverEffect={false}
-          isProfile
-        >
-          <>
-            <CardGridContainer maxCols={3}>
-              {cachedMissions?.[0] ? (
-                cachedMissions
-                  ?.slice((pageIdx - 1) * 9, pageIdx * 9)
-                  .map((mission: any, I: number) => {
-                    return (
-                      <MissionCard
-                        key={`mission-card-${I}`}
-                        mission={mission}
-                      />
-                    )
-                  })
-              ) : (
-                <>
-                  {Array.from({ length: 9 }).map((_, i) => (
-                    <CardSkeleton key={`card-skeleton-${i}`} />
-                  ))}
-                </>
-              )}
-            </CardGridContainer>
-            <Frame noPadding marginBottom="0px">
-              <div
-                id="pagination-container"
-                className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
-              >
-                <button
-                  onClick={() => {
-                    if (pageIdx > 1) {
-                      handlePageChange(pageIdx - 1)
-                    }
-                  }}
-                  className={`pagination-button ${
-                    pageIdx === 1 ? 'opacity-10' : 'cursor-pointer opacity-100'
-                  }`}
-                  disabled={pageIdx === 1}
-                >
-                  <Image
-                    src="/../.././assets/icon-left.svg"
-                    alt="Left Arrow"
-                    width={35}
-                    height={35}
-                  />
-                </button>
-                <p id="page-number" className="px-5 font-bold">
-                  Page {pageIdx} of {maxPage}
-                </p>
-                <button
-                  onClick={() => {
-                    if (pageIdx < maxPage) {
-                      handlePageChange(pageIdx + 1)
-                    }
-                  }}
-                  className={`pagination-button ${
-                    pageIdx === maxPage
-                      ? 'opacity-10'
-                      : 'cursor-pointer opacity-100'
-                  }`}
-                  disabled={pageIdx === maxPage}
-                >
-                  <Image
-                    src="/../.././assets/icon-right.svg"
-                    alt="Right Arrow"
-                    width={35}
-                    height={35}
-                  />
-                </button>
-              </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-[max(20px,3vw)] font-bold mb-4">Missions</h1>
+            {description}
+          </div>
+
+          <div className="mb-8">
+            <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
+              <Search input={input} setInput={setInput} />
             </Frame>
-          </>
-        </ContentLayout>
+            <div className="flex justify-center mb-8">
+              <StandardButtonPlus
+                className="gradient-2 rounded-full"
+                hoverEffect={false}
+                link="/launch"
+              >
+                Launch a Mission!
+              </StandardButtonPlus>
+            </div>
+
+            <div className="w-full flex justify-center">
+              <div
+                id="filter-container"
+                className="max-w-[350px] border-b-5 border-black"
+              >
+                {/* <Frame noPadding>
+                  <div className="flex flex-wrap text-sm bg-filter">
+                    <Tab
+                      tab="active"
+                      currentTab={tab}
+                      setTab={handleTabChange}
+                      icon="/../.././assets/icon-org.svg"
+                    >
+                      Active
+                    </Tab>
+                    <Tab
+                      tab="inactive"
+                      currentTab={tab}
+                      setTab={handleTabChange}
+                      icon="/../.././assets/icon-passport.svg"
+                    >
+                      Past
+                    </Tab>
+                  </div>
+                </Frame> */}
+              </div>
+            </div>
+          </div>
+
+          <CardGridContainer maxCols={3}>
+            {cachedMissions?.[0] ? (
+              cachedMissions
+                ?.slice((pageIdx - 1) * 9, pageIdx * 9)
+                .map((mission: any, I: number) => {
+                  return (
+                    <MissionCard
+                      key={`mission-card-${I}`}
+                      mission={mission}
+                    />
+                  )
+                })
+            ) : (
+              <>
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <CardSkeleton key={`card-skeleton-${i}`} />
+                ))}
+              </>
+            )}
+          </CardGridContainer>
+
+          <Frame noPadding marginBottom="0px">
+            <div
+              id="pagination-container"
+              className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
+            >
+              <button
+                onClick={() => {
+                  if (pageIdx > 1) {
+                    handlePageChange(pageIdx - 1)
+                  }
+                }}
+                className={`pagination-button ${
+                  pageIdx === 1 ? 'opacity-10' : 'cursor-pointer opacity-100'
+                }`}
+                disabled={pageIdx === 1}
+              >
+                <Image
+                  src="/../.././assets/icon-left.svg"
+                  alt="Left Arrow"
+                  width={35}
+                  height={35}
+                />
+              </button>
+              <p id="page-number" className="px-5 font-bold">
+                Page {pageIdx} of {maxPage}
+              </p>
+              <button
+                onClick={() => {
+                  if (pageIdx < maxPage) {
+                    handlePageChange(pageIdx + 1)
+                  }
+                }}
+                className={`pagination-button ${
+                  pageIdx === maxPage
+                    ? 'opacity-10'
+                    : 'cursor-pointer opacity-100'
+                }`}
+                disabled={pageIdx === maxPage}
+              >
+                <Image
+                  src="/../.././assets/icon-right.svg"
+                  alt="Right Arrow"
+                  width={35}
+                  height={35}
+                />
+              </button>
+            </div>
+          </Frame>
+
+          <div className="mt-8">
+            <NoticeFooter />
+          </div>
+        </div>
       </Container>
     </section>
   )
