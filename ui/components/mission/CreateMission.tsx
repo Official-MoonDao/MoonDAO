@@ -176,14 +176,9 @@ export function Stage({
               id="continue-button"
               className="gradient-2 rounded-full"
               hoverEffect={false}
-              onClick={
-                process.env.NEXT_PUBLIC_ENV === 'dev'
-                  ? () => {
-                      action()
-                      setStage((prev: number) => prev + 1)
-                    }
-                  : action
-              }
+              onClick={() => {
+                action()
+              }}
             >
               <div className="flex items-center gap-2">
                 Continue
@@ -291,14 +286,17 @@ export default function CreateMission({
         missionMetadataBlob
       )
 
-      const durationInSeconds =
+      const deadline =
         hasDeadline && missionData?.deadline
-          ? getUnixTime(new Date(missionData.deadline)) -
-            getUnixTime(new Date())
+          ? getUnixTime(new Date(missionData?.deadline))
           : 0
 
-      const fundingGoal = missionData.fundingGoal * 1e18
-      const minFundingRequired = missionData.minFundingRequired * 1e18
+      const durationInSeconds = deadline
+        ? deadline - getUnixTime(new Date())
+        : 0
+
+      const fundingGoal = (missionData?.fundingGoal || 0) * 1e18
+      const minFundingRequired = (missionData?.minFundingRequired || 0) * 1e18
 
       const transaction = prepareContractCall({
         contract: missionCreatorContract,
@@ -308,8 +306,9 @@ export default function CreateMission({
           address,
           missionMetadataIpfsHash,
           durationInSeconds,
-          fundingGoal,
+          deadline,
           minFundingRequired,
+          fundingGoal,
           missionData.token.tradeable,
           missionData?.token?.name,
           missionData?.token?.symbol,
@@ -403,8 +402,8 @@ export default function CreateMission({
   }, [selectedTeamId, teamContract])
 
   useEffect(() => {
-    if (userTeamsAsManager) {
-      setSelectedTeamId(userTeamsAsManager[0].teamId)
+    if (userTeamsAsManager?.[0]) {
+      setSelectedTeamId(userTeamsAsManager[0]?.teamId)
     } else {
       setSelectedTeamId(undefined)
     }
@@ -465,7 +464,8 @@ export default function CreateMission({
                         style: toastStyle,
                       })
                     }
-                  }}
+                    setStage((prev: number) => prev + 1)
+              }}
                 >
                   <div className="flex justify-between">
                     {!userTeamsAsManager || userTeamsAsManager.length === 0 ? (
@@ -602,7 +602,8 @@ export default function CreateMission({
                     }
                     const html = await marked(missionData.description)
                     setMissionData({ ...missionData, description: html })
-                  }}
+                    setStage((prev: number) => prev + 1)
+              }}
                 >
                   <StandardButton
                     className="gradient-2 rounded-full"
@@ -640,7 +641,9 @@ export default function CreateMission({
                   id="mission-goals-stage"
                   stage={stage}
                   setStage={setStage}
-                  action={() => {}}
+                  action={() => {
+                setStage((prev: number) => prev + 1)
+              }}
                 >
                   <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <FormYesNo
@@ -689,7 +692,7 @@ export default function CreateMission({
                           minFundingRequired: e.target.value,
                         })
                       }
-                      disabled={!hasFundingGoal}
+                      disabled={false}
                       mode="dark"
                       tooltip="The minimum amount of funding required for your mission to be successful."
                     />
@@ -703,7 +706,7 @@ export default function CreateMission({
                           fundingGoal: e.target.value,
                         })
                       }
-                      disabled={!hasFundingGoal}
+                      disabled={false}
                       mode="dark"
                       tooltip="The maximum amount of funding required for your mission to be successful."
                     />

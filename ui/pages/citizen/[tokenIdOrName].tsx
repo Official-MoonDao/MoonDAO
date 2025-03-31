@@ -481,7 +481,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                 </Frame>
               </div>
             )}
-            {hats.length > 0 && (
+            {hats && hats?.length > 0 && (
               <Frame
                 noPadding
                 bottomLeft="0px"
