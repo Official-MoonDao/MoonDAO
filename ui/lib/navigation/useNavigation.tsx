@@ -1,5 +1,6 @@
 import {
   BuildingLibraryIcon,
+  BuildingStorefrontIcon,
   ClipboardDocumentListIcon,
   DocumentIcon,
   FolderIcon,
@@ -11,7 +12,7 @@ import { useMemo } from 'react'
 import IconOrg from '@/components/assets/IconOrg'
 
 export default function useNavigation(citizen: any) {
-  const navigation = useMemo(() => {
+  return useMemo(() => {
     return [
       !citizen && {
         name: 'Join',
@@ -86,11 +87,15 @@ export default function useNavigation(citizen: any) {
       },
       {
         name: 'Marketplace',
-        icon: RocketLaunchIcon,
+
+        icon: BuildingStorefrontIcon,
         href: '/marketplace',
+      },
+      {
+        name: 'Launchpad',
+        icon: RocketLaunchIcon,
+        href: '/launch',
       },
     ]
   }, [citizen])
-
-  return navigation
 }

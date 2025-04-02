@@ -4,18 +4,19 @@ import useJBProjectData from '../juicebox/useJBProjectData'
 
 export default function useMissionData(
   mission: any,
-  missionCreatorContract: any,
+  missionTableContract: any,
   jbControllerContract: any,
+  jbDirectoryContract: any,
   jbTokensContract: any,
   projectMetadata?: any,
   projectSubgraphData?: any
 ) {
   const [fundingGoal, setFundingGoal] = useState(0)
-  const [minFundingRequired, setMinFundingRequired] = useState(0)
 
   const jbProjectData = useJBProjectData(
     mission.projectId,
     jbControllerContract,
+    jbDirectoryContract,
     jbTokensContract,
     projectMetadata,
     projectSubgraphData
@@ -23,23 +24,21 @@ export default function useMissionData(
 
   useEffect(() => {
     async function getFundingData() {
-      const fundingGoal = await readContract({
-        contract: missionCreatorContract,
-        method: 'missionIdToFundingGoal' as string,
-        params: [mission.id],
+      const tableName = await readContract({
+        contract: missionTableContract,
+        method: 'getTableName' as string,
+        params: [],
       })
-      const minFundingRequired = await readContract({
-        contract: missionCreatorContract,
-        method: 'missionIdToMinFundingRequired' as string,
-        params: [mission.id],
-      })
-      setFundingGoal(Number(fundingGoal))
-      setMinFundingRequired(Number(minFundingRequired))
+
+      const statement = `SELECT * FROM ${tableName} WHERE id = ${mission.id}`
+      const res = await fetch(`/api/tableland/query?statement=${statement}`)
+      const rows = await res.json()
+      setFundingGoal(rows[0].fundingGoal)
     }
-    if (missionCreatorContract && mission.id !== undefined) {
+    if (missionTableContract && mission?.id !== undefined) {
       getFundingData()
     }
-  }, [missionCreatorContract, mission.id])
+  }, [missionTableContract, mission.id])
 
-  return { ...jbProjectData, fundingGoal, minFundingRequired }
+  return { ...jbProjectData, fundingGoal }
 }

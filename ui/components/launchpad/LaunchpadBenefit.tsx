@@ -1,10 +1,14 @@
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/dist/ScrollTrigger'
 import Image from 'next/image'
+import { useEffect, useRef } from 'react'
 
 export default function LaunchpadBenefit({
   title,
   description,
   icon,
   align = 'left',
+  slideDirection = 'left',
 }: {
   title: string
   description: string
@@ -12,6 +16,40 @@ export default function LaunchpadBenefit({
   align: 'left' | 'right'
   slideDirection?: 'left' | 'right'
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger)
+
+    if (containerRef.current) {
+      const xOffset = slideDirection === 'left' ? -100 : 100
+
+      gsap.fromTo(
+        containerRef.current,
+        {
+          x: xOffset,
+          opacity: 0,
+        },
+        {
+          x: 0,
+          opacity: 1,
+          duration: 0.8,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: 'top center+=100', // Trigger when top of element reaches center+100px of viewport
+            end: 'bottom center', // End when bottom of element passes center of viewport
+            toggleActions: 'play none none reverse', // Play animation when entering, reverse when leaving
+          },
+        }
+      )
+    }
+
+    return () => {
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
+    }
+  }, [slideDirection])
+
   function Icon() {
     return (
       <div
@@ -37,7 +75,11 @@ export default function LaunchpadBenefit({
   }
 
   return (
-    <div id="benefit-container" className="w-full flex items-center">
+    <div
+      id="benefit-container"
+      ref={containerRef}
+      className="w-full flex items-center"
+    >
       <div
         id="benefit-content"
         className="flex flex-col md:flex-row items-center justify-center w-full"

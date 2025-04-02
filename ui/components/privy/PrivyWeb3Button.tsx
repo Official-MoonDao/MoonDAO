@@ -159,7 +159,7 @@ export function PrivyWeb3Button({
           isDisabled={isDisabled || isLoading}
           noPadding={noPadding}
         >
-          {isLoading ? 'loading...' : label}
+          {isLoading ? 'Loading...' : label}
         </Button>
       )}
     </>

@@ -10,18 +10,17 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { missionTokenWeights } from '@/lib/mission/missionConfig'
 
 export type MissionFundingMilestoneChartProps = {
   subgraphData: any
   fundingGoal: number
-  minRequiredFunding: number
   height?: number
 }
 
 export default function MissionFundingMilestoneChart({
   subgraphData,
   fundingGoal,
-  minRequiredFunding,
   height = 300,
 }: MissionFundingMilestoneChartProps) {
   const stroke = 'white'
@@ -36,6 +35,8 @@ export default function MissionFundingMilestoneChart({
 
   const volume = subgraphData?.volume / 1e18 || 0
 
+  console.log(fundingGoal)
+
   const points = useMemo(() => {
     return [
       {
@@ -44,17 +45,17 @@ export default function MissionFundingMilestoneChart({
         milestone: 1,
       },
       {
-        target: minRequiredFunding,
+        target: (fundingGoal / 1e18) * 0.5,
         weight: missionTokenWeights[1],
         milestone: 2,
       },
       {
-        target: fundingGoal,
+        target: fundingGoal / 1e18,
         weight: missionTokenWeights[2],
         milestone: 3,
       },
     ]
-  }, [minRequiredFunding, fundingGoal])
+  }, [fundingGoal])
 
   const minTarget = points?.[0].target
   const midTarget = points?.[1].target

@@ -79,19 +79,19 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     chain: selectedChain,
   })
 
-  const missionCreatorContract = useContract({
-    address: MISSION_CREATOR_ADDRESSES[chainSlug],
-    abi: MissionCreatorABI as any,
+  const missionTableContract = useContract({
+    address: MISSION_TABLE_ADDRESSES[chainSlug],
+    abi: MissionTableABI as any,
     chain: selectedChain,
   })
 
-  const { ruleset, token, subgraphData, fundingGoal, minFundingRequired } =
+  const { ruleset, token, subgraphData, fundingGoal, primaryTerminalAddress } =
     useMissionData(
       mission,
-      missionCreatorContract,
+      missionTableContract,
       jbV4ControllerContract,
-      jbTokensContract,
-      mission?.metadata
+      jbDirectoryContract,
+      jbTokensContract
     )
 
   const { points } = useJBProjectTimeline(
@@ -210,7 +210,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     />
                     <MissionStat
                       label="Goal"
-                      value="10 ETH"
+                      value={`${fundingGoal / 1e18} ETH`}
                       icon={'/assets/launchpad/target.svg'}
                     />
                     <MissionStat
@@ -221,14 +221,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   </div>
                   <div className="w-full">
                     <MissionFundingProgressBar
-                      progress={80}
-                      label={`${subgraphData?.volume / 1e18} ETH`}
-                      goalAsPercentage={
-                        (fundingGoal / minFundingRequired) * 100
-                      }
-                      goalIndicatorLabel={`${
-                        minFundingRequired / 1e18
-                      } ETH secured`}
+                      fundingGoal={fundingGoal}
+                      volume={subgraphData?.volume / 1e18}
                     />
                   </div>
                 </div>
@@ -277,15 +271,23 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 id="mission-pay-redeem-container"
                 className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
               >
-                <MissionPayRedeem
-                  selectedChain={selectedChain}
-                  mission={mission}
-                  teamNFT={teamNFT}
-                  token={token}
-                  subgraphData={subgraphData}
-                  ruleset={ruleset}
-                  jbDirectoryContract={jbDirectoryContract}
-                />
+                {primaryTerminalAddress &&
+                primaryTerminalAddress !==
+                  '0x0000000000000000000000000000000000000000' ? (
+                  <MissionPayRedeem
+                    selectedChain={selectedChain}
+                    mission={mission}
+                    teamNFT={teamNFT}
+                    token={token}
+                    subgraphData={subgraphData}
+                    ruleset={ruleset}
+                    primaryTerminalAddress={primaryTerminalAddress}
+                  />
+                ) : (
+                  <div className="p-4 text-center">
+                    <p>Loading payment terminal...</p>
+                  </div>
+                )}
               </div>
             </Frame>
             {/* Project Overview */}
@@ -305,6 +307,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   jbDirectoryContract={jbDirectoryContract}
                   points={points}
                   subgraphData={subgraphData}
+                  fundingGoal={fundingGoal}
                   token={token}
                   userMissionTokenBalance={userMissionTokenBalance}
                 />

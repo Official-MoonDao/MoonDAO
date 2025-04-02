@@ -5,7 +5,9 @@ import {
   XMarkIcon,
 } from '@heroicons/react/20/solid'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
-import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { Token } from '@uniswap/sdk-core'
+import { nativeOnChain } from '@uniswap/smart-order-router'
+import { DAI_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
 import { marked } from 'marked'
@@ -21,28 +23,30 @@ import {
   readContract,
   sendAndConfirmTransaction,
 } from 'thirdweb'
+import { ethereum } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { generatePrettyLink } from '@/lib/subscription/pretty-links'
+import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
+import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { renameFile } from '@/lib/utils/files'
+import { getAttribute } from '@/lib/utils/nft'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
-import FormDate from '../forms/FormDate'
 import FormInput from '../forms/FormInput'
 import FormYesNo from '../forms/FormYesNo'
 import { Hat } from '../hats/Hat'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Container from '../layout/Container'
-import ContentLayout from '../layout/ContentLayout'
 import FileInput from '../layout/FileInput'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import Point from '../layout/Point'
 import StandardButton from '../layout/StandardButton'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import MissionTokenomicsExplainer from './MissionTokenomicsExplainer'
 import MissionWideCard from './MissionWideCard'
+import TeamRequirementModal from './TeamRequiredModal'
 
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
@@ -64,12 +68,9 @@ export type MissionData = {
   description: string
   infoUri: string
   logoUri: string
-  twitter: string
-  discord: string
+  socialLink: string
   tagline: string
-  deadline: string | undefined
   fundingGoal: number | undefined
-  minFundingRequired: number | undefined
   token: {
     name: string
     symbol: string
@@ -92,42 +93,35 @@ export type CreateMissionProps = {
 }
 
 const MISSION_DESCRIPTION_TEMPLATE = `
-# Your Mission Details
+*Please delete all italicized instructions*
+
 ### Mission Overview
-The text below is a template to help you craft a compelling mission. Please consider these as suggestions 
-for best practices for information to include, but customize it to your needs, eliminating what is not needed.
+*The text below is a template to help you craft a compelling mission. Please consider these as suggestions 
+for best practices for information to include, but customize it to your needs, eliminating what is not needed.*
 
 ### Introduce Your Mission
-Contributors are more likely to support your mission if they connect with its purpose and trust the team 
-behind it. Consider including:
+*Contributors are more likely to support your mission if they connect with its purpose and trust the team 
+behind it. Consider including:*
 - A concise summary of your mission and why it matters.
 - A brief introduction to your team and any relevant experience.
 - A compelling call to action explaining what supporters will help you achieve and what they get in return.
 
-Think of this as your mission's elevator pitch—make it clear and engaging! If you don't capture their 
-attention in the first paragraph, they are unlikely to continue reading.
+*Think of this as your mission's elevator pitch—make it clear and engaging! If you don't capture their 
+attention in the first paragraph, they are unlikely to continue reading.*
 
 ### Mission Details (Optional but recommended)
-Use this section to provide additional context, such as:
+*Use this section to provide additional context, such as:*
 - The core objectives and impact of your mission.
 - Technical aspects or unique innovations involved.
 - Any personal stories or insights that add depth to your mission's purpose.
-If you were reading this for the first time, would you be excited to contribute?
+*If you were reading this for the first time, would you be excited to contribute?*
 
 ### Funding & Rewards
-What will supporters receive in return?Funding a mission is more engaging when contributors get something meaningful in return. Outline what 
-backers can expect:
+*What will supporters receive in return? Funding a mission is more engaging when contributors get something meaningful in return. Outline what 
+backers can expect:*
 - Governance Tokens – Enable participation in mission decisions.
 - Mission Patches & Digital Collectibles – Unique digital memorabilia tied to the mission.
 `
-
-const TOKENOMICS_POINTS = [
-  'Payouts : Unlimited withdrawals for up to 80% of the total raise. 7.5% allocated to MoonDAO to support the space ecosystem, 2.5% to the Juicebox protocol, and 10% to support token liquidity.',
-  'Mission Tokens : Each mission generates its own token, with 1,000,000 tokens minted per 1 ETH. Distribution: 50% to contributors, 30% to the team (1-year cliff, 3-year stream), 10% to MoonDAO (1-year cliff, 3-year stream), and 10% locked for liquidity.',
-  'ERC-20 Option : ERC-20 tokens are not created by default, but teams can choose to deploy one, if they would like a market tradeable token.',
-  'Funding Cycles : Runs in 28-day cycles, locked by default for stability. Teams have three days to make changes before a cycle begins.',
-  'Mission Ownership : The mission is fully and solely controlled by your team wallet.',
-]
 
 const ADDITIONAL_POINTS = [
   'Mission Ownership : The mission is fully controlled by your team wallet.',
@@ -216,14 +210,15 @@ export default function CreateMission({
   const [missionData, setMissionData] = useState<MissionData>({
     name: missionCache?.name || '',
     description: missionCache?.description || '',
-    infoUri: missionCache?.infoUri || '',
+    infoUri:
+      getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')?.value ||
+      '',
     logoUri: missionCache?.logoUri || '',
-    twitter: missionCache?.twitter || '',
-    discord: missionCache?.discord || '',
+    socialLink:
+      getAttribute(selectedTeamNFT?.metadata?.attributes, 'communications') ||
+      '',
     tagline: missionCache?.tagline || '',
-    deadline: missionCache?.deadline || undefined,
     fundingGoal: missionCache?.fundingGoal || undefined,
-    minFundingRequired: missionCache?.minFundingRequired || undefined,
     token: missionCache?.token || {
       name: '',
       symbol: '',
@@ -231,15 +226,62 @@ export default function CreateMission({
       tradeable: false,
     },
   })
-  const [hasDeadline, setHasDeadline] = useState(
-    missionData.deadline !== undefined
-  )
-  const [hasFundingGoal, setHasFundingGoal] = useState(
-    missionData.fundingGoal !== undefined
-  )
+  const { USDT, DAI, NATIVE } = useUniswapTokens(ethereum)
+
+  const [fundingGoalInETH, setFundingGoalInETH] = useState<number>()
+  const [fundingGoalIsLoading, setFundingGoalIsLoading] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] =
     useState(false)
+
+  const [teamRequirementModalEnabled, setTeamRequirementModalEnabled] =
+    useState(userTeamsAsManager?.[0] === undefined)
+
+  useEffect(() => {
+    setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
+  }, [userTeamsAsManager])
+
+  // useEffect(() => {
+  //   async function getEthQuote() {
+  //     console.log(missionData?.fundingGoal)
+  //     const swapRoute = await pregenSwapRoute(
+  //       ethereum,
+  //       missionData?.fundingGoal || 0,
+  //       new Token(ethereum.id, DAI_ADDRESSES['ethereum'], 18),
+  //       nativeOnChain(ethereum.id)
+  //     )
+
+  //     setFundingGoalInETH(
+  //       (swapRoute?.route?.[0].rawQuote.toString() / 1e18).toFixed(8)
+  //     )
+  //   }
+
+  //   if (
+  //     missionData?.fundingGoal !== undefined &&
+  //     +missionData?.fundingGoal > 0
+  //   ) {
+  //     getEthQuote()
+  //   }
+  // }, [missionData?.fundingGoal])
+
+  async function getFundingGoalInETH() {
+    if (!missionData?.fundingGoal || missionData?.fundingGoal === 0)
+      return setFundingGoalInETH(0)
+    setFundingGoalIsLoading(true)
+    const swapRoute = await pregenSwapRoute(
+      ethereum,
+      missionData?.fundingGoal || 0,
+      new Token(ethereum.id, DAI_ADDRESSES['ethereum'], 18),
+      nativeOnChain(ethereum.id)
+    )
+
+    setFundingGoalInETH(swapRoute?.route?.[0].rawQuote.toString())
+    setFundingGoalIsLoading(false)
+  }
+
+  useEffect(() => {
+    getFundingGoalInETH()
+  }, [])
 
   async function createMission() {
     try {
@@ -268,8 +310,7 @@ export default function CreateMission({
             description: missionData.description,
             tagline: missionData.tagline,
             infoUri: missionData.infoUri,
-            twitter: missionData.twitter,
-            discord: missionData.discord,
+            socialLink: missionData.socialLink,
             logoUri: `https://ipfs.io/ipfs/${missionLogoIpfsHash}`,
             tokens: [],
             payButton: 'Brew',
@@ -286,17 +327,11 @@ export default function CreateMission({
         missionMetadataBlob
       )
 
-      const deadline =
-        hasDeadline && missionData?.deadline
-          ? getUnixTime(new Date(missionData?.deadline))
-          : 0
+      const deadline = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 // 30 days in seconds
 
-      const durationInSeconds = deadline
-        ? deadline - getUnixTime(new Date())
-        : 0
+      const durationInSeconds = deadline - Math.floor(Date.now() / 1000)
 
       const fundingGoal = (missionData?.fundingGoal || 0) * 1e18
-      const minFundingRequired = (missionData?.minFundingRequired || 0) * 1e18
 
       const transaction = prepareContractCall({
         contract: missionCreatorContract,
@@ -306,9 +341,7 @@ export default function CreateMission({
           address,
           missionMetadataIpfsHash,
           durationInSeconds,
-          deadline,
-          minFundingRequired,
-          fundingGoal,
+          fundingGoalInETH,
           missionData.token.tradeable,
           missionData?.token?.name,
           missionData?.token?.symbol,
@@ -342,12 +375,9 @@ export default function CreateMission({
             description: '',
             infoUri: '',
             logoUri: '',
-            twitter: '',
-            discord: '',
+            socialLink: '',
             tagline: '',
-            deadline: undefined,
             fundingGoal: undefined,
-            minFundingRequired: undefined,
             token: {
               name: '',
               symbol: '',
@@ -372,17 +402,28 @@ export default function CreateMission({
         description: missionData.description,
         infoUri: missionData.infoUri,
         logoUri: missionData.logoUri,
-        twitter: missionData.twitter,
-        discord: missionData.discord,
+        socialLink: missionData.socialLink,
         tagline: missionData.tagline,
-        deadline: missionData.deadline,
         fundingGoal: missionData.fundingGoal,
-        minFundingRequired: missionData.minFundingRequired,
         token: missionData.token,
         timestamp: getUnixTime(new Date()),
       })
     }
   }, [missionData])
+
+  useEffect(() => {
+    if (selectedTeamNFT) {
+      setMissionData({
+        ...missionData,
+        socialLink:
+          getAttribute(selectedTeamNFT?.metadata?.attributes, 'communications')
+            .value || '',
+        infoUri:
+          getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')
+            .value || '',
+      })
+    }
+  }, [selectedTeamNFT])
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -409,9 +450,10 @@ export default function CreateMission({
     <Container containerwidth={true}>
       <div className="flex flex-col items-center w-full min-h-screen">
         <div className="w-full max-w-[1200px] flex flex-col items-center px-4 pb-4 md:px-8">
-          <h1 className="font-GoodTimes text-[max(20px,3vw)] mt-[100px] mb-4 text-center">Launch A Mission</h1>
-          
-          
+          <h1 className="font-GoodTimes text-[max(20px,3vw)] mt-[100px] mb-4 text-center">
+            Launch A Mission
+          </h1>
+
           <div className="w-full bg-darkest-cool p-8 rounded-[2vmax]">
             <div className="max-w-[800px] mx-auto">
               <div className="relative flex flex-col md:flex-row items-center p-2 pb-0 w-full">
@@ -429,6 +471,9 @@ export default function CreateMission({
                   setStep={setStage}
                 />
               </div>
+              {teamRequirementModalEnabled && (
+                <TeamRequirementModal setEnabled={() => {}} />
+              )}
               {stage === 0 && (
                 <Stage
                   id="mission-overview-stage"
@@ -438,7 +483,10 @@ export default function CreateMission({
                   description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential backers and compel them to contribute.
 "
                   action={() => {
-                    if (!userTeamsAsManager || userTeamsAsManager.length === 0) {
+                    if (
+                      !userTeamsAsManager ||
+                      userTeamsAsManager.length === 0
+                    ) {
                       return toast.error(
                         'Please create a team or join one as a manager',
                         {
@@ -461,7 +509,7 @@ export default function CreateMission({
                       })
                     }
                     setStage((prev: number) => prev + 1)
-              }}
+                  }}
                 >
                   <div className="flex justify-between">
                     {!userTeamsAsManager || userTeamsAsManager.length === 0 ? (
@@ -478,7 +526,9 @@ export default function CreateMission({
                   </div>
                   {userTeamsAsManager && userTeamsAsManager.length > 1 && (
                     <div>
-                      <p>You are a manager of multiple teams, please select one</p>
+                      <p>
+                        You are a manager of multiple teams, please select one
+                      </p>
                       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
                         {!userTeamsAsManager ? (
                           Array.from({ length: 3 }).map((_, index) => (
@@ -487,7 +537,8 @@ export default function CreateMission({
                               className="w-[350px] h-[100px] bg-dark-cool p-2"
                             ></div>
                           ))
-                        ) : userTeamsAsManager && userTeamsAsManager.length > 0 ? (
+                        ) : userTeamsAsManager &&
+                          userTeamsAsManager.length > 0 ? (
                           userTeamsAsManager.map((team: any) => (
                             <button
                               key={`team-${team.id}`}
@@ -540,7 +591,10 @@ export default function CreateMission({
                       placeholder="Enter a tagline for your mission"
                       value={missionData.tagline}
                       onChange={(e: any) =>
-                        setMissionData({ ...missionData, tagline: e.target.value })
+                        setMissionData({
+                          ...missionData,
+                          tagline: e.target.value,
+                        })
                       }
                       mode="dark"
                     />
@@ -551,23 +605,30 @@ export default function CreateMission({
                       placeholder="Enter a website link"
                       value={missionData.infoUri}
                       onChange={(e: any) =>
-                        setMissionData({ ...missionData, infoUri: e.target.value })
+                        setMissionData({
+                          ...missionData,
+                          infoUri: e.target.value,
+                        })
                       }
                       mode="dark"
                     />
                     <FormInput
                       id="mission-social"
                       label="Social Link"
-                      placeholder="Enter a Twitter link"
-                      value={missionData.twitter}
+                      placeholder="Enter a social media link"
+                      value={missionData.socialLink}
                       onChange={(e: any) =>
-                        setMissionData({ ...missionData, twitter: e.target.value })
+                        setMissionData({
+                          ...missionData,
+                          socialLink: e.target.value,
+                        })
                       }
                       mode="dark"
                     />
                   </div>
                   <FileInput
                     id="mission-image"
+                    label="Mission Logo"
                     file={missionImage}
                     setFile={setMissionImage}
                     dimensions={[1024, 1024]}
@@ -575,7 +636,9 @@ export default function CreateMission({
                   <div>
                     {missionImage && (
                       <Image
-                        src={missionImage ? URL.createObjectURL(missionImage) : ''}
+                        src={
+                          missionImage ? URL.createObjectURL(missionImage) : ''
+                        }
                         alt="Mission Image"
                         width={200}
                         height={200}
@@ -599,7 +662,7 @@ export default function CreateMission({
                     const html = await marked(missionData.description)
                     setMissionData({ ...missionData, description: html })
                     setStage((prev: number) => prev + 1)
-              }}
+                  }}
                 >
                   <StandardButton
                     className="gradient-2 rounded-full"
@@ -638,63 +701,13 @@ export default function CreateMission({
                   stage={stage}
                   setStage={setStage}
                   action={() => {
-                setStage((prev: number) => prev + 1)
-              }}
+                    setStage((prev: number) => prev + 1)
+                  }}
                 >
                   <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <FormYesNo
-                      id="fundraising-deadline-toggle"
-                      label="Set A Fundraising Deadline"
-                      value={hasDeadline}
-                      onChange={(value: boolean) => {
-                        setHasDeadline(value)
-                        if (!value) {
-                          setMissionData({
-                            ...missionData,
-                            deadline: '',
-                          })
-                        }
-                      }}
-                      mode="dark"
-                      tooltip="Set a specific date to end fundraising, or keep it open-ended for a goal-based raise."
-                    />
-                    <div
-                      className={`w-full ${
-                        hasDeadline ? 'opacity-100' : 'opacity-30'
-                      }`}
-                    >
-                      <FormDate
-                        label="Deadline"
-                        value={missionData.deadline || ''}
-                        onChange={(value: string) => {
-                          setMissionData({
-                            ...missionData,
-                            deadline: value,
-                          })
-                        }}
-                        min={new Date()}
-                        disabled={!hasDeadline}
-                        mode="dark"
-                      />
-                    </div>
-
-                    <FormInput
-                      label="Min Funding Required"
-                      placeholder="Enter a funding goal"
-                      value={missionData.minFundingRequired}
-                      onChange={(e: any) =>
-                        setMissionData({
-                          ...missionData,
-                          minFundingRequired: e.target.value,
-                        })
-                      }
-                      disabled={false}
-                      mode="dark"
-                      tooltip="The minimum amount of funding required for your mission to be successful."
-                    />
                     <FormInput
                       label="Funding Goal"
-                      placeholder="Enter a funding goal"
+                      placeholder="Enter a funding goal in USD"
                       value={missionData.fundingGoal}
                       onChange={(e: any) =>
                         setMissionData({
@@ -705,6 +718,22 @@ export default function CreateMission({
                       disabled={false}
                       mode="dark"
                       tooltip="The maximum amount of funding required for your mission to be successful."
+                      extra={
+                        <>
+                          <p className="opacity-60">
+                            {fundingGoalIsLoading ? (
+                              <div className="flex">
+                                <LoadingSpinner className="scale-75" />
+                              </div>
+                            ) : (
+                              `${(Number(fundingGoalInETH) / 1e18).toFixed(
+                                5
+                              )} ETH`
+                            )}
+                          </p>
+                        </>
+                      }
+                      onBlur={getFundingGoalInETH}
                     />
                     <FormYesNo
                       id="mission-token-toggle"
@@ -717,10 +746,13 @@ export default function CreateMission({
                         })
                       }
                       mode="dark"
+                      tooltip="ERC-20 tokens are not created by default, but teams can choose to deploy one, if they would like a market tradeable token."
                     />
                     <div
                       className={`w-full flex ${
-                        missionData?.token?.tradeable ? 'opacity-100' : 'opacity-30'
+                        missionData?.token?.tradeable
+                          ? 'opacity-100'
+                          : 'opacity-30'
                       }`}
                     >
                       <FormInput
@@ -731,10 +763,16 @@ export default function CreateMission({
                         onChange={(e: any) =>
                           setMissionData({
                             ...missionData,
-                            token: { ...missionData.token, name: e.target.value },
+                            token: {
+                              ...missionData.token,
+                              name: e.target.value,
+                            },
                           })
                         }
+                        maxLength={32}
+                        disabled={!missionData.token.tradeable}
                         mode="dark"
+                        tooltip="The name for your mission token (ex: Ethereum, Bitcoin, Mooney)."
                       />
                       <FormInput
                         id="mission-token-symbol"
@@ -744,23 +782,27 @@ export default function CreateMission({
                         onChange={(e: any) =>
                           setMissionData({
                             ...missionData,
-                            token: { ...missionData.token, symbol: e.target.value },
+                            token: {
+                              ...missionData.token,
+                              symbol: e.target.value,
+                            },
                           })
                         }
+                        maxLength={8}
+                        disabled={!missionData.token.tradeable}
                         mode="dark"
+                        tooltip="The symbol for your mission token (ex: ETH, BTC, MOONEY)."
                       />
                     </div>
                   </div>
                   <div className="font-sm">
                     <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
-                    <p className="mt-2">
+                    <p className="my-2">
                       {
-                        'When you deploy your mission on the MoonDAO Launch Pad, your funding structure will follow a transparent standardized model designed for success and long-term sustainability.'
+                        'When you launch a mission on the MoonDAO Launchpad, your fundraising structure follows a transparent, standardized model designed for long-term sustainability and success.'
                       }
                     </p>
-                    {TOKENOMICS_POINTS.map((p: string, i: number) => (
-                      <Point key={`tokenomics-point-${i}`} point={p} />
-                    ))}
+                    <MissionTokenomicsExplainer />
                   </div>
                 </Stage>
               )}
@@ -784,31 +826,31 @@ export default function CreateMission({
                       className="gradient-2 rounded-full px-4"
                       isDisabled={
                         !agreedToTerms ||
-                        (missionData.token.tradeable && !agreedToTokenNotSecurity)
+                        (missionData.token.tradeable &&
+                          !agreedToTokenNotSecurity)
                       }
                       action={createMission}
                     />
                   }
                 >
                   <MissionWideCard
-                    name={missionData.name}
-                    tagline={missionData.tagline}
-                    deadline={missionData.deadline || 'None'}
-                    minFundingRequired={missionData.minFundingRequired}
-                    fundingGoal={missionData.fundingGoal}
-                    tradeable={missionData.token.tradeable}
-                    description={missionData.description}
-                    logoUri={missionData.logoUri}
+                    mission={
+                      {
+                        metadata: {
+                          name: missionData.name,
+                          tagline: missionData.tagline,
+                          description: missionData.description,
+                          logoUri: missionData.logoUri,
+                        },
+                      } as any
+                    }
+                    token={missionData.token}
+                    fundingGoal={missionData.fundingGoal || 0}
+                    subgraphData={{}}
                     missionImage={missionImage}
+                    showMore
                   />
-                  <div id="additional-details">
-                    <h1 className="font-GoodTimes text-2xl">Additional Details</h1>
-                    <div className="mt-3">
-                      {ADDITIONAL_POINTS.map((p: string, i: number) => (
-                        <Point key={`additional-point-${i}`} point={p} />
-                      ))}
-                    </div>
-                  </div>
+                  <MissionTokenomicsExplainer />
                   <ConditionCheckbox
                     id="terms-checkbox"
                     label={
@@ -830,6 +872,15 @@ export default function CreateMission({
                           rel="noreferrer"
                         >
                           PRIVACY POLICY
+                        </Link>{' '}
+                        AND{' '}
+                        <Link
+                          className="text-blue-500 hover:underline"
+                          href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          RISKS
                         </Link>
                       </p>
                     }
@@ -839,7 +890,9 @@ export default function CreateMission({
                   {missionData.token.tradeable && (
                     <ConditionCheckbox
                       id="token-security-checkbox"
-                      label={'I AGREE THAT THIS TOKEN IS NOT A SECURITY, ETC...'}
+                      label={
+                        'I AGREE THAT THIS TOKEN IS NOT A SECURITY, ETC...'
+                      }
                       agreedToCondition={agreedToTokenNotSecurity}
                       setAgreedToCondition={setAgreedToTokenNotSecurity}
                     />

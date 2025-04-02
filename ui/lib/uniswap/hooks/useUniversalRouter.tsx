@@ -47,7 +47,7 @@ export function useUniversalRouter(
       const route = await router.route(
         CurrencyAmount.fromRawAmount(
           tokenIn,
-          ethers.utils.parseEther(String(swapAmnt)).toString()
+          ethers.utils.parseUnits(String(swapAmnt), tokenIn.decimals).toString()
         ),
         tokenOut,
         tradeType,

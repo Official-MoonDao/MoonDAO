@@ -11,6 +11,7 @@ import {
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import JobBoardTableABI from 'const/abis/JobBoardTable.json'
@@ -31,6 +32,7 @@ import {
   MISSION_TABLE_ADDRESSES,
   DAI_ADDRESSES,
   USDC_ADDRESSES,
+  JBV4_DIRECTORY_ADDRESSES,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -139,6 +141,12 @@ export default function TeamDetailPage({
   const jbControllerContract = useContract({
     address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
     abi: JBV4ControllerABI,
+    chain: selectedChain,
+  })
+
+  const jbDirectoryContract = useContract({
+    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
+    abi: JBV4DirectoryABI,
     chain: selectedChain,
   })
 
@@ -481,9 +489,9 @@ export default function TeamDetailPage({
                     <div className="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
                       <Action
                         title="Fund"
-                        description="Submit a proposal to secure space project funding."
+                        description="Launch a mission to raise funds."
                         icon={<BanknotesIcon height={30} width={30} />}
-                        onClick={() => router.push('/propose')}
+                        onClick={() => router.push('/launch')}
                       />
                       <Action
                         title="Hire"
@@ -509,10 +517,12 @@ export default function TeamDetailPage({
           )}
           {/* Header and socials */}
           <TeamMissions
+            selectedChain={selectedChain}
             isManager={isManager}
             teamId={tokenId}
             missionTableContract={missionTableContract}
             jbControllerContract={jbControllerContract}
+            jbDirectoryContract={jbDirectoryContract}
             jbTokensContract={jbTokensContract}
             teamContract={teamContract}
           />

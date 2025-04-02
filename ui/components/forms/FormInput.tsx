@@ -11,7 +11,9 @@ type FormInputProps = {
   disabled?: boolean
   maxLength?: number
   mode?: 'standard' | 'dark'
+  extra?: React.ReactNode
   tooltip?: string
+  onBlur?: () => void
 }
 
 export default function FormInput({
@@ -25,7 +27,9 @@ export default function FormInput({
   disabled = false,
   maxLength,
   mode = 'standard',
+  extra,
   tooltip,
+  onBlur,
 }: FormInputProps) {
   return (
     <div className="w-full h-full py-1 flex flex-col justify-between gap-2 max-w-[300px]">
@@ -54,7 +58,9 @@ export default function FormInput({
         value={value}
         disabled={disabled}
         maxLength={maxLength}
+        onBlur={onBlur}
       />
+      {extra}
     </div>
   )
 }

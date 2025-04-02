@@ -1,4 +1,9 @@
+import Link from 'next/link'
+import { useState } from 'react'
+import { useEffect } from 'react'
+import { getNFT } from 'thirdweb/extensions/erc721'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import StandardCard from '../layout/StandardCard'
 import MissionStat from './MissionStat'
 
@@ -24,12 +29,16 @@ export type Mission = {
 
 export type MissionCardProps = {
   mission: Mission
+  teamContract?: any
   jbControllerContract?: any
+  jbDirectoryContract?: any
   jbTokensContract?: any
 }
 
 export default function MissionCard({
+  teamContract,
   jbControllerContract,
+  jbDirectoryContract,
   jbTokensContract,
   mission,
 }: MissionCardProps) {
@@ -38,9 +47,23 @@ export default function MissionCard({
   const projectData = useJBProjectData(
     mission?.projectId,
     jbControllerContract,
+    jbDirectoryContract,
     jbTokensContract,
     metadata
   )
+
+  const [teamNFT, setTeamNFT] = useState<any>(null)
+
+  useEffect(() => {
+    async function getTeamNFT() {
+      const nft = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(mission?.teamId),
+      })
+      setTeamNFT(nft)
+    }
+    if (teamContract) getTeamNFT()
+  }, [mission?.teamId, teamContract])
 
   function MissionFooter() {
     return (
@@ -61,7 +84,17 @@ export default function MissionCard({
     <StandardCard
       link={`/mission/${mission?.id}`}
       title={metadata?.name}
-      subheader={metadata?.tagline}
+      subheader={
+        <Link
+          href={`/team/${generatePrettyLink(teamNFT?.metadata?.name || '')}`}
+          passHref
+        >
+          <p className="text-light-warm hover:underline">
+            {teamNFT?.metadata?.name}
+          </p>
+        </Link>
+      }
+      paragraph={metadata?.tagline}
       image={metadata?.logoUri}
       footer={<MissionFooter />}
     />

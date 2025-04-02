@@ -6,6 +6,7 @@ import { fitImage } from '@/lib/utils/images'
 type FileInputProps = {
   id?: string
   file: File | undefined
+  label?: string
   setFile: Function
   noBlankImages?: boolean
   dimensions?: number[]
@@ -13,6 +14,7 @@ type FileInputProps = {
 
 export default function FileInput({
   id,
+  label,
   file,
   setFile,
   noBlankImages,
@@ -21,7 +23,8 @@ export default function FileInput({
   //get file name
   const [fileName, setFileName] = useState(file?.name || 'No file chosen')
   return (
-    <div id={id} className="relative">
+    <div id={id} className="relative flex flex-col gap-2 max-w-[250px]">
+      {label && <p className={`text-sm font-GoodTimes opacity-50`}>{label}</p>}
       <input
         type="file"
         accept="image/*"

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { missionTokenWeights } from '@/lib/mission/missionConfig'
 
 function Rate({
   title,
@@ -58,21 +59,21 @@ export default function MissionTokenExchangeRates({
     <div id="mission-token-exchange-rates">
       <Rate
         title="Stage 1: Early Bird Rate"
-        rate={weight}
+        rate={missionTokenWeights[0]}
         cycle={0}
         currentCycle={currentCycle}
         tokenSymbol={tokenSymbol}
       />
       <Rate
         title="Stage 2: Main Event Rate"
-        rate={weight / 2}
+        rate={missionTokenWeights[1]}
         cycle={1}
         currentCycle={currentCycle}
         tokenSymbol={tokenSymbol}
       />
       <Rate
         title="Stage 3: Closing Window Rate"
-        rate={weight / 4}
+        rate={missionTokenWeights[2]}
         cycle={2}
         currentCycle={currentCycle}
         tokenSymbol={tokenSymbol}

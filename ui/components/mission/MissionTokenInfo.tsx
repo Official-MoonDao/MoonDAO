@@ -1,5 +1,6 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
+import Link from 'next/link'
 import MissionFundingMilestoneChart from './MissionFundingMilestoneChart'
 
 function FundingStage({
@@ -29,12 +30,14 @@ export default function MissionTokenInfo({
   token,
   ruleset,
   subgraphData,
+  fundingGoal,
 }: {
   mission: any
   userMissionTokenBalance: string
   token: any
   ruleset: any
   subgraphData: any
+  fundingGoal: number
 }) {
   //TODO : Add real stage weights and durations
   const stage1Weight = ruleset?.[0].weight.toString() / 1e18
@@ -51,8 +54,7 @@ export default function MissionTokenInfo({
       <h1 className="mt-4 text-2xl font-bold">Funding Dynamics</h1>
       <p>The token funding for this project works in stages.</p>
       <MissionFundingMilestoneChart
-        fundingGoal={mission?.fundingGoal}
-        minRequiredFunding={mission?.minFundingRequired}
+        fundingGoal={fundingGoal}
         subgraphData={subgraphData}
       />
       {/* <Image/> */}
@@ -116,17 +118,47 @@ export default function MissionTokenInfo({
 
       {/* Auditing Resources */}
       <h1 className="mt-4 text-2xl font-bold">Auditing Resources</h1>
-      {['Juicebox', 'Bubblemaps?', 'Rug Checker?', 'Etherscan'].map((v, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <Image
-            src="/assets/launchpad/star-icon-indigo.svg"
-            alt="Star Icon"
-            width={20}
-            height={20}
-          />
-          <p>{v}</p>
-        </div>
-      ))}
+
+      <div className="flex items-center gap-2">
+        <Image
+          src="/assets/launchpad/star-icon-indigo.svg"
+          alt="Star Icon"
+          width={20}
+          height={20}
+        />
+        <Link
+          className="hover:underline"
+          href={`https://${
+            process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+              ? 'etherscan.io'
+              : 'sepolia.etherscan.io'
+          }/address/${token.tokenAddress}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {'Etherscan'}
+        </Link>
+      </div>
+      <div className="flex items-center gap-2">
+        <Image
+          src="/assets/launchpad/star-icon-indigo.svg"
+          alt="Star Icon"
+          width={20}
+          height={20}
+        />
+        <Link
+          className="hover:underline"
+          href={`https://${
+            process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+              ? 'juicebox.money'
+              : 'sepolia.juicebox.money'
+          }/v4/p/${mission?.projectId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {'Juicebox'}
+        </Link>
+      </div>
     </div>
   )
 }

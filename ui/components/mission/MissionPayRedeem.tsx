@@ -1,23 +1,17 @@
-import {
-  ArrowDownIcon,
-  ChevronDownIcon,
-  XMarkIcon,
-} from '@heroicons/react/20/solid'
+import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { nativeOnChain } from '@uniswap/smart-order-router'
 import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
-import {
-  prepareContractCall,
-  readContract,
-  sendAndConfirmTransaction,
-  ZERO_ADDRESS,
-} from 'thirdweb'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { ethereum } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { CopyIcon } from '../assets'
@@ -27,6 +21,7 @@ import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
+import MissionTokenNotice from './MissionTokenNotice'
 
 function PayRedeemStat({ label, value, children }: any) {
   return (
@@ -47,6 +42,7 @@ function MissionPayRedeemContent({
   setInput,
   redeem,
   setMissionPayModalEnabled,
+  tokenBalance,
 }: any) {
   return (
     <div
@@ -64,14 +60,18 @@ function MissionPayRedeemContent({
             value={subgraphData?.volume / 1e18}
           />
           <PayRedeemStat label="Last 7 Days">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Image
                 src="/assets/launchpad/upwards.svg"
                 alt="increase"
                 width={30}
                 height={30}
               />
-              <p className="text-moon-green">{'+125%'}</p>
+              <p className="text-moon-green">{`${
+                subgraphData?.last7DaysPercent === Infinity
+                  ? '0'
+                  : subgraphData?.last7DaysPercent
+              }%`}</p>
             </div>
           </PayRedeemStat>
         </div>
@@ -161,9 +161,7 @@ function MissionPayRedeemContent({
         >
           <div>
             <h3 className="opacity-60 text-sm">Your Balance</h3>
-            <p className="text-2xl">{`${token?.tokenSupply.toString() / 1e18} ${
-              token?.tokenSymbol
-            }`}</p>
+            <p className="text-2xl">{`${tokenBalance} ${token?.tokenSymbol}`}</p>
           </div>
 
           <PrivyWeb3Button
@@ -178,6 +176,19 @@ function MissionPayRedeemContent({
   )
 }
 
+export type MissionPayRedeemProps = {
+  selectedChain: any
+  mission: any
+  token: any
+  subgraphData: any
+  teamNFT: any
+  ruleset: any
+  onlyModal?: boolean
+  modalEnabled?: boolean
+  setModalEnabled?: (enabled: boolean) => void
+  primaryTerminalAddress: string
+}
+
 export default function MissionPayRedeem({
   selectedChain,
   mission,
@@ -185,8 +196,12 @@ export default function MissionPayRedeem({
   subgraphData,
   teamNFT,
   ruleset,
-  jbDirectoryContract,
-}: any) {
+  onlyModal = false,
+  modalEnabled = false,
+  setModalEnabled,
+  primaryTerminalAddress,
+}: MissionPayRedeemProps) {
+  const router = useRouter()
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const account = useActiveAccount()
   const address = account?.address
@@ -198,50 +213,94 @@ export default function MissionPayRedeem({
 
   const [agreedToCondition, setAgreedToCondition] = useState(false)
 
-  const [primaryTerminalAddress, setPrimaryTerminalAddress] =
-    useState<string>(ZERO_ADDRESS)
-
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
     chain: selectedChain,
     abi: JBMultiTerminalABI as any,
   })
 
-  async function buyMissionToken() {
+  const tokenBalance = useWatchTokenBalance(selectedChain, token?.tokenAddress)
+
+  const buyMissionToken = useCallback(async () => {
     if (!account) return
-    const transaction = prepareContractCall({
-      contract: primaryTerminalContract,
-      method: 'pay' as string,
-      params: [
-        mission?.projectId,
-        token?.tokenAddress,
-        input,
-        address,
-        output,
-        message,
-        '0x0',
-      ],
-    })
 
-    const receipt = await sendAndConfirmTransaction({
-      transaction,
-      account,
-    })
-  }
+    try {
+      const transaction = prepareContractCall({
+        contract: primaryTerminalContract,
+        method: 'pay' as string,
+        params: [
+          mission?.projectId,
+          '0x000000000000000000000000000000000000EEEe',
+          input * 1e18,
+          address,
+          output,
+          message,
+          '0x00',
+        ],
+        value: BigInt(input * 1e18),
+      })
 
-  async function redeemMissionToken() {
+      const receipt = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+
+      toast.success('Mission token purchased', {
+        style: toastStyle,
+      })
+
+      setMissionPayModalEnabled(false)
+      router.reload()
+    } catch (error) {
+      console.error('Error purchasing tokens:', error)
+      toast.error('Failed to purchase tokens', {
+        style: toastStyle,
+      })
+    }
+  }, [
+    account,
+    primaryTerminalContract,
+    mission?.projectId,
+    input,
+    address,
+    output,
+    message,
+    router,
+  ])
+
+  const redeemMissionToken = useCallback(async () => {
     if (!account) return
-    const transaction = prepareContractCall({
-      contract: primaryTerminalContract,
-      method: 'cashOutTokensOf' as string,
-      params: [address, mission?.projectId, 0, 0, 0, address, '0x0'],
-    })
+    try {
+      const transaction = prepareContractCall({
+        contract: primaryTerminalContract,
+        method: 'cashOutTokensOf' as string,
+        params: [
+          address,
+          mission?.projectId,
+          tokenBalance,
+          '0x000000000000000000000000000000000000EEEe',
+          0,
+          address,
+          '0x0',
+        ],
+      })
 
-    const receipt = await sendAndConfirmTransaction({
-      transaction,
-      account,
-    })
-  }
+      const receipt = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+
+      toast.success('Tokens redeemed successfully', {
+        style: toastStyle,
+      })
+      router.reload()
+    } catch (error) {
+      console.error('Error redeeming tokens:', error)
+      toast.error('Failed to redeem tokens', {
+        style: toastStyle,
+      })
+    }
+  }, [account, primaryTerminalContract, address, mission?.projectId, router])
 
   const { DAI } = useUniswapTokens(ethereum)
 
@@ -256,7 +315,6 @@ export default function MissionPayRedeem({
       )
       setUSDQuote(route?.route[0]?.rawQuote.toString() / 1e18)
     }
-
     if (input > 0 && ruleset) {
       const output = input * (+ruleset?.[0].weight.toString() / 1e18)
       setOutput(output)
@@ -266,53 +324,41 @@ export default function MissionPayRedeem({
     }
   }, [input, ruleset, DAI])
 
-  useEffect(() => {
-    async function getPrimaryTerminal() {
-      const terminal = await readContract({
-        contract: jbDirectoryContract,
-        method: 'primaryTerminalOf' as string,
-        params: [mission?.projectId, token?.tokenAddress],
-      })
-      setPrimaryTerminalAddress(terminal as any)
-    }
-    if (
-      jbDirectoryContract &&
-      mission?.projectId !== undefined &&
-      token?.tokenAddress !== undefined
-    )
-      getPrimaryTerminal()
-  }, [mission?.projectId, token?.tokenAddress, jbDirectoryContract])
-
   return (
     <>
-      <div className="hidden md:block">
-        <MissionPayRedeemContent
-          token={token}
-          ruleset={ruleset}
-          subgraphData={subgraphData}
-          input={input}
-          output={output}
-          redeem={redeemMissionToken}
-          setInput={setInput}
-          setMissionPayModalEnabled={setMissionPayModalEnabled}
-        />
-      </div>
-      <div className="fixed bottom-0 left-0 w-full p-4 bg-darkest-cool rounded-t-2xl md:hidden z-[1000] flex flex-col gap-4">
-        <StandardButton
-          className="w-full gradient-2 rounded-full text-lg"
-          onClick={() => setMissionPayModalEnabled(true)}
-          hoverEffect={false}
-        >
-          Pay
-        </StandardButton>
-        <PrivyWeb3Button
-          label="Redeem"
-          className="w-full gradient-2 rounded-full py-2"
-          action={redeemMissionToken}
-          noPadding
-        />
-      </div>
-      {missionPayModalEnabled && (
+      {!onlyModal && (
+        <>
+          <div className="hidden md:block">
+            <MissionPayRedeemContent
+              token={token}
+              ruleset={ruleset}
+              subgraphData={subgraphData}
+              input={input}
+              output={output}
+              redeem={redeemMissionToken}
+              setInput={setInput}
+              setMissionPayModalEnabled={setMissionPayModalEnabled}
+              tokenBalance={tokenBalance}
+            />
+          </div>
+          <div className="fixed bottom-0 left-0 w-full p-4 bg-darkest-cool rounded-t-2xl md:hidden z-[1000] flex flex-col gap-4">
+            <StandardButton
+              className="w-full gradient-2 rounded-full text-lg"
+              onClick={() => setMissionPayModalEnabled(true)}
+              hoverEffect={false}
+            >
+              Pay
+            </StandardButton>
+            <PrivyWeb3Button
+              label="Redeem"
+              className="w-full gradient-2 rounded-full py-2"
+              action={redeemMissionToken}
+              noPadding
+            />
+          </div>
+        </>
+      )}
+      {(modalEnabled || missionPayModalEnabled) && (
         <Modal id="mission-pay-modal" setEnabled={setMissionPayModalEnabled}>
           <div className="mt-12 w-screen h-full rounded-[2vmax] max-w-[500px] flex flex-col gap-4 items-start justify-start p-5 bg-gradient-to-b from-dark-cool to-darkest-cool">
             <div className="w-full flex gap-4 items-start justify-between">
@@ -320,7 +366,11 @@ export default function MissionPayRedeem({
               <button
                 type="button"
                 className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                onClick={() => setMissionPayModalEnabled(false)}
+                onClick={(e: any) => {
+                  setModalEnabled
+                    ? setModalEnabled(false)
+                    : setMissionPayModalEnabled(false)
+                }}
               >
                 <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
               </button>
@@ -339,7 +389,7 @@ export default function MissionPayRedeem({
                   {'ETH'}
                 </div>
                 {usdQuote !== undefined ? (
-                  <p className="opacity-60">{`(US ~$${usdQuote.toLocaleString()})`}</p>
+                  <p className="opacity-60">{`(USD ~$${usdQuote.toLocaleString()})`}</p>
                 ) : (
                   <div className="scale-[75%]">
                     <LoadingSpinner />
@@ -357,7 +407,7 @@ export default function MissionPayRedeem({
               <p>{`NFTs, tokens and rewards will be sent to:`}</p>
               <button
                 className="p-1 px-4 flex items-center gap-2 bg-moon-indigo rounded-xl"
-                onClick={() => {
+                onClick={(e: any) => {
                   navigator.clipboard.writeText(address || '')
                   toast.success('Address copied to clipboard', {
                     style: toastStyle,
@@ -393,19 +443,21 @@ export default function MissionPayRedeem({
               />
             </div>
 
-            <div className="relative p-4 bg-moon-indigo rounded-xl w-full">
-              <button className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                <ChevronDownIcon className="w-6 h-6" />
-              </button>
-              <p className="text-sm pr-12">{`Notice from ${teamNFT?.metadata?.name}`}</p>
-            </div>
+            <MissionTokenNotice />
 
             <div>
               <ConditionCheckbox
                 label={
                   <p className="text-sm">
                     {`I understand and accept this project's notice and the `}
-                    <span className="text-moon-blue">risks</span>{' '}
+                    <Link
+                      href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+                      className="text-moon-blue"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      risks
+                    </Link>{' '}
                     {`associated with the Juicebox protocol.`}
                   </p>
                 }
@@ -418,13 +470,19 @@ export default function MissionPayRedeem({
               <StandardButton
                 styleOnly
                 className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
+                onClick={() => {
+                  setModalEnabled
+                    ? setModalEnabled(false)
+                    : setMissionPayModalEnabled(false)
+                }}
               >
                 Cancel
               </StandardButton>
               <PrivyWeb3Button
                 className="w-1/2 bg-moon-indigo rounded-xl"
                 label={`Pay ${input} ETH`}
-                action={() => {}}
+                action={buyMissionToken}
+                isDisabled={!agreedToCondition}
               />
             </div>
           </div>

@@ -3,22 +3,42 @@ import { useRef } from 'react'
 import ProgressBar from '../layout/ProgressBar'
 
 export default function MissionFundingProgressBar({
-  progress,
-  label,
-  goalAsPercentage = 0,
-  goalIndicatorLabel,
-}: any) {
+  fundingGoal,
+  volume,
+  compact = false,
+}: {
+  fundingGoal: number
+  volume: number
+  compact?: boolean
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
 
-  return (
-    <div className="relative mb-12" ref={containerRef}>
-      <ProgressBar height="25px" progress={progress} label={label} />
+  const progress =
+    volume && fundingGoal ? (volume / (fundingGoal / 1e18)) * 100 : 0
+  const goalAsPercentage = 10
 
-      {goalAsPercentage >= progress && (
+  return (
+    <div
+      className={`relative ${compact ? 'mb-4' : 'mb-12'} max-w-[800px]`}
+      ref={containerRef}
+    >
+      {compact && (
+        <div className="text-left text-light-warm mb-1">
+          {volume} / {fundingGoal / 1e18} ETH
+        </div>
+      )}
+
+      <ProgressBar
+        height={compact ? '10px' : '25px'}
+        progress={progress}
+        label={compact ? undefined : `${volume} ETH`}
+        compact={compact}
+      />
+
+      {!compact && progress >= goalAsPercentage && (
         <div
           id="funding-goal-indicator-container"
-          className="absolute flex items-center gap-2 -bottom-12"
-          style={{ left: `${goalAsPercentage - 2.5}%` }}
+          className="absolute flex items-center gap-2 -bottom-12 left-[7%]"
         >
           <Image
             id="funding-goal-indicator"
@@ -27,11 +47,10 @@ export default function MissionFundingProgressBar({
             width={30}
             height={30}
           />
-          {goalIndicatorLabel && (
-            <p className="text-[#425eeb] font-GoodTimes font-bold">
-              {goalIndicatorLabel}
-            </p>
-          )}
+
+          <p className="text-[#425eeb] font-GoodTimes font-bold">
+            {`${(fundingGoal / 1e18) * 0.1} ETH secured`}
+          </p>
         </div>
       )}
     </div>

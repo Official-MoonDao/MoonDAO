@@ -58,6 +58,7 @@ export default function MissionInfo({
   teamNFT,
   subgraphData,
   token,
+  fundingGoal,
   ruleset,
   jbDirectoryContract,
   points,
@@ -193,6 +194,7 @@ export default function MissionInfo({
               userMissionTokenBalance={userMissionTokenBalance}
               ruleset={ruleset}
               subgraphData={subgraphData}
+              fundingGoal={fundingGoal}
             />
           </div>
         )}

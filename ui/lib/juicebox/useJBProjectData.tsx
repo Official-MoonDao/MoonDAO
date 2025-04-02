@@ -1,14 +1,18 @@
 //Juicebox V4
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
+import { ZERO_ADDRESS } from 'const/config'
+import { BigNumber } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 import useContract from '../thirdweb/hooks/useContract'
 import { projectQuery } from './subgraph'
+import useJBProjectTrendingPercentageIncrease from './useJBProjectTrendingPercentageIncrease'
 
 export default function useJBProjectData(
   projectId: number | undefined,
   jbControllerContract: any,
+  jbDirectoryContract: any,
   jbTokensContract: any,
   projectMetadata?: any,
   projectSubgraphData?: any
@@ -26,6 +30,13 @@ export default function useJBProjectData(
     reservedRate: '',
   })
   const [subgraphData, setSubgraphData] = useState<any>(projectSubgraphData)
+
+  const last7DaysPercent = useJBProjectTrendingPercentageIncrease(
+    BigNumber.from(subgraphData?.volume ?? 0),
+    BigNumber.from(subgraphData?.trendingVolume ?? 0)
+  )
+  const [primaryTerminalAddress, setPrimaryTerminalAddress] =
+    useState<string>(ZERO_ADDRESS)
 
   const tokenContract = useContract({
     chain: selectedChain,
@@ -60,7 +71,7 @@ export default function useJBProjectData(
     if (jbControllerContract && projectId) getProjectRuleset()
   }, [jbControllerContract, projectId, projectMetadata])
 
-  //Token
+  //Token Address
   useEffect(() => {
     async function getProjectToken() {
       const token: any = await readContract({
@@ -74,6 +85,7 @@ export default function useJBProjectData(
     if (jbTokensContract && projectId) getProjectToken()
   }, [projectId, jbTokensContract])
 
+  //Token Data
   useEffect(() => {
     async function getTokenData() {
       if (!tokenContract) return
@@ -128,10 +140,81 @@ export default function useJBProjectData(
     if (projectId) getSubgraphData()
   }, [projectId])
 
+  //Project Directory Data
+  useEffect(() => {
+    async function getProjectDirectoryData() {
+      // Retry mechanism
+      let retries = 3
+      let primaryTerminal: string = ZERO_ADDRESS
+
+      while (
+        retries > 0 &&
+        (primaryTerminal === ZERO_ADDRESS || !primaryTerminal)
+      ) {
+        try {
+          console.log(
+            `Attempt to get primary terminal for project ${projectId}...`
+          )
+
+          const result: any = await readContract({
+            contract: jbDirectoryContract,
+            method: 'primaryTerminalOf' as string,
+            params: [projectId, '0x000000000000000000000000000000000000EEEe'],
+          })
+
+          primaryTerminal = result
+          console.log(
+            `Primary terminal for project ${projectId}:`,
+            primaryTerminal
+          )
+
+          if (primaryTerminal !== ZERO_ADDRESS && primaryTerminal) {
+            setPrimaryTerminalAddress(primaryTerminal)
+            return // Successfully got a valid terminal address
+          } else {
+            console.warn(
+              `Retrieved zero or invalid address for project ${projectId}, retrying...`
+            )
+            retries--
+            if (retries > 0) {
+              // Wait a bit before retrying
+              await new Promise((resolve) => setTimeout(resolve, 1000))
+            }
+          }
+        } catch (error) {
+          console.error(
+            `Error getting primary terminal for project ${projectId}:`,
+            error
+          )
+          retries--
+          if (retries > 0) {
+            // Wait a bit before retrying
+            await new Promise((resolve) => setTimeout(resolve, 1000))
+          }
+        }
+      }
+
+      // If we've exhausted all retries and still don't have a valid address
+      if (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
+        console.error(
+          `Failed to get valid primary terminal for project ${projectId} after multiple attempts`
+        )
+      }
+
+      setPrimaryTerminalAddress(primaryTerminal)
+    }
+
+    if (jbDirectoryContract && projectId) getProjectDirectoryData()
+  }, [jbDirectoryContract, projectId, token?.tokenAddress])
+
   return {
     metadata,
     ruleset,
     token,
-    subgraphData,
+    subgraphData: {
+      ...subgraphData,
+      last7DaysPercent,
+    },
+    primaryTerminalAddress,
   }
 }

@@ -19,6 +19,8 @@ type StandardWideCardProps = {
   profile?: boolean
   footer?: any
   height?: string
+  showMore?: boolean
+  compact?: boolean
 }
 
 export default function StandardWideCard({
@@ -34,8 +36,10 @@ export default function StandardWideCard({
   stats,
   profile = false,
   footer,
+  showMore = false,
+  compact = false,
 }: StandardWideCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(showMore)
 
   const cardContent = (
     <div>
@@ -62,7 +66,8 @@ export default function StandardWideCard({
                 {(image || orgimage) && (
                   <div className="relative w-[200px] h-[200px] rounded-full overflow-hidden bg-gray-300 flex-shrink-0">
                     {image ? (
-                      image.startsWith('blob:') ? (
+                      typeof image !== 'string' ||
+                      image?.startsWith('blob:') ? (
                         <Image
                           className="w-full h-full object-cover"
                           src={image}
@@ -93,7 +98,7 @@ export default function StandardWideCard({
                   </div>
                 )}
 
-                <div className="w-full flex flex-col">
+                <div className="w-full flex flex-col text-left">
                   {/* Title and tagline section */}
                   <div className="flex flex-col gap-2">
                     <h2 className="font-GoodTimes text-2xl text-white">

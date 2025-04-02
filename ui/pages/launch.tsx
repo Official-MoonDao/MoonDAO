@@ -1,6 +1,7 @@
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
@@ -9,38 +10,38 @@ import {
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
   JBV4_CONTROLLER_ADDRESSES,
+  JBV4_DIRECTORY_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
+import { ethers } from 'ethers'
 import { GetStaticProps } from 'next'
 import Image from 'next/image'
-import { useRouter } from 'next/router'
 import React, { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { useShallowQueryRoute } from '@/lib/utils/hooks'
-import FAQ, { FAQProvider } from '@/components/launchpad/FAQ'
-import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
+import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
+import LaunchpadFAQs from '@/components/launchpad/LaunchpadFAQs'
 import CardStack from '@/components/layout/CardStack'
+import Footer from '@/components/layout/Footer'
 import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
-import Footer from '@/components/layout/Footer'
+import MissionWideCard from '@/components/mission/MissionWideCard'
 
 export default function Launch({ missions }: any) {
-  const router = useRouter()
-
   const [status, setStatus] = useState<
     'idle' | 'loggingIn' | 'apply' | 'create'
   >('idle')
@@ -58,9 +59,6 @@ export default function Launch({ missions }: any) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
 
-  const [missionApplyModalEnabled, setMissionApplyModalEnabled] =
-    useState(false)
-
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
     chain: selectedChain,
@@ -73,10 +71,10 @@ export default function Launch({ missions }: any) {
     abi: MissionCreatorABI as any,
   })
 
-  const hatsContract = useContract({
-    address: HATS_ADDRESS,
+  const missionTableContract = useContract({
+    address: MISSION_TABLE_ADDRESSES[chainSlug],
     chain: selectedChain,
-    abi: HatsABI as any,
+    abi: MissionTableABI as any,
   })
 
   const jbControllerContract = useContract({
@@ -85,14 +83,40 @@ export default function Launch({ missions }: any) {
     abi: JBV4ControllerABI as any,
   })
 
+  const jbDirectoryContract = useContract({
+    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
+    chain: selectedChain,
+    abi: JBV4DirectoryABI as any,
+  })
+
   const jbTokensContract = useContract({
     address: JBV4_TOKENS_ADDRESSES[chainSlug],
     chain: selectedChain,
     abi: JBV4TokensABI as any,
   })
 
+  const hatsContract = useContract({
+    address: HATS_ADDRESS,
+    chain: selectedChain,
+    abi: HatsABI as any,
+  })
+
   const userTeams = useTeamWearer(teamContract, selectedChain, address)
   const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
+
+  const {
+    token: featuredMissionToken,
+    subgraphData: featuredMissionSubgraphData,
+    fundingGoal: featuredMissionFundingGoal,
+    primaryTerminalAddress: featuredMissionPrimaryTerminalAddress,
+    ruleset: featuredMissionRuleset,
+  } = useMissionData(
+    missions?.[0],
+    missionTableContract,
+    jbControllerContract,
+    jbDirectoryContract,
+    jbTokensContract
+  )
 
   useEffect(() => {
     async function getUserTeamsAsManager() {
@@ -149,7 +173,7 @@ export default function Launch({ missions }: any) {
           <div
             id="hero-content"
             className="relative pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 md:h-[max(45vh,600px)] 2xl:h-[max(45vh,550px)] flex justify-between items-center overflow-hidden"
-            >
+          >
             <div className="relative 2xl:hidden">
               <video
                 id="video-background"
@@ -158,7 +182,7 @@ export default function Launch({ missions }: any) {
                 loop
                 muted
                 playsInline
-                >
+              >
                 <source src="/assets/moondao-video-hero.mp4" type="video/mp4" />
               </video>
               <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#010618] to-transparent opacity-80"></div>
@@ -171,15 +195,18 @@ export default function Launch({ missions }: any) {
                 loop
                 muted
                 playsInline
-                >
-                <source src="/assets/moondao-video-hero_wide.mp4" type="video/mp4" />
+              >
+                <source
+                  src="/assets/moondao-video-hero_wide.mp4"
+                  type="video/mp4"
+                />
               </video>
               <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#010618] to-transparent opacity-80"></div>
-            </div>            
+            </div>
             <div
               id="content-container"
               className="flex items-center overflow-hidden"
-              >
+            >
               <Image
                 id="hero-divider-bottom-right"
                 className="absolute right-[-2px] bottom-[-2px] z-[10] w-[50vw] md:w-[30vw]"
@@ -190,8 +217,8 @@ export default function Launch({ missions }: any) {
               />
               <div
                 id="logo-and-graphics-container"
-                className="absolute w-full h-full md:h-auto left-[0] md:pl-[5vw] 2xl:pl-[10vw] justify-end flex-col md:flex-row flex items-center md:justify-start z-[10]"
-                >
+                className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-end flex-col md:flex-row flex items-center md:justify-start z-[1]"
+              >
                 <div id="logo-container">
                   <Image
                     id="desktop-logo"
@@ -214,7 +241,10 @@ export default function Launch({ missions }: any) {
                   id="graphics-container"
                   className="md:h-full flex flex-col items-center lg:items-start md:items-left justify-center pb-[5vw] md:pb-0"
                 >
-                  <div id="desktop-title-container" className="hidden md:flex items-start justify-start">
+                  <div
+                    id="desktop-title-container"
+                    className="hidden md:flex items-start justify-start"
+                  >
                     <Image
                       id="desktop-title"
                       src="/assets/MoonDAOLaunchpad.svg"
@@ -270,11 +300,11 @@ export default function Launch({ missions }: any) {
       <section
         id="initial-callout-section"
         className="px-[5vw] md:px-[5vw] 2xl:px-[10vw] flex flex-col md:flex-row items-center text-center md:text-left justify-center md:justify-start pt-[10vw] md:pt-[2vw] lg:pt-[20px] pb-[10vw] lg:pb-[10px] md:pb-[2vw] gap-4 md:gap-12 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[40%] to-[#1B1C4B] to-[100%] md:to-[60%]"
-        >
+      >
         <p
           id="callout"
           className="text-white font-GoodTimes text-[5vw] md:text-[min(2vw,25px)] leading-[6vw]"
-          >
+        >
           {'Launch Your Space Mission With MoonDAO'}
         </p>
         <StandardButton
@@ -310,7 +340,30 @@ export default function Launch({ missions }: any) {
           id="featured-image-container"
           className="pb-[5vw] md:pb-0 pt-[5vw] md:pt-0 relative flex flex-col items-center md:flex-row gap-12"
         >
-          <div
+          <MissionWideCard
+            mission={
+              {
+                ...missions?.[0],
+                metadata: {
+                  ...missions?.[0].metadata,
+                  description: '',
+                },
+              } as any
+            }
+            token={featuredMissionToken}
+            ruleset={featuredMissionRuleset}
+            subgraphData={featuredMissionSubgraphData}
+            fundingGoal={featuredMissionFundingGoal}
+            teamContract={teamContract}
+            jbDirectoryContract={jbDirectoryContract}
+            primaryTerminalAddress={featuredMissionPrimaryTerminalAddress}
+            selectedChain={selectedChain}
+            contribute
+            showMore
+            compact
+            linkToMission
+          />
+          {/* <div
             id="featured-image-container"
             className="md:ml-0 relative w-[80vw] md:w-[min(40vw,400px)]"
           >
@@ -330,8 +383,8 @@ export default function Launch({ missions }: any) {
             <h2 className="text-white font-GoodTimes text-[4vw] md:text-[min(1.5vw,25px)] md:pb-[1vw]">
               {'Space Mice: Save generations of space research!'}
             </h2>
-            <p className="md:text-[min(1.2vw,16px)] font-bold">
-            The only study of its kind — About to be lost forever.
+            <p className="md:text-[1.2vw] font-bold">
+              The only study of its kind — About to be lost forever.
             </p>
             <p className="md:text-[min(1.2vw,16px)] pb-[2vw]">
               {`NASA-funded research into spaceflight's impact on reproduction has reached a funding crisis. These mice, descended from ISS-flown astronauts, are a one-of-a-kind biological archive. Without action, we may never know if mammals can truly thrive in space. Support this mission today!`}
@@ -339,7 +392,7 @@ export default function Launch({ missions }: any) {
             <StandardButton className="gradient-2 rounded-full md:text-[1.2vw]">
               {'Learn More'}
             </StandardButton>
-          </div>
+          </div> */}
         </div>
       </section>
 
@@ -390,7 +443,7 @@ export default function Launch({ missions }: any) {
         className="relative px-[5vw] 2xl:px-[10vw] pb-[4vw] flex flex-col gap-12 bg-gradient-to-t from-[#010618] to-[#1B1C4B]"
       >
         <Image
-          className="w-[50vw] hidden md:block absolute top-[-1px] right-0"
+          className="w-[50vw] max-w-[800px] hidden md:block absolute top-[-1px] right-0"
           src="/assets/launchpad/offwhite-divider-rl-inverted.svg"
           alt="Divider"
           width={500}
@@ -453,7 +506,7 @@ export default function Launch({ missions }: any) {
           </div>
         </div>
         <Image
-          className="absolute w-[70vw] max-w-[1500px] bottom-[-2px] left-[-2px]"
+          className="absolute w-[70vw] max-w-[800px] bottom-[-2px] left-[-2px]"
           src="/assets/launchpad/white-divider-lr.svg"
           alt="Divider"
           width={850}
@@ -464,7 +517,7 @@ export default function Launch({ missions }: any) {
       <section
         id="how-launchpad-works"
         className="relative px-[2vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
-        >
+      >
         <div className="w-full mt-8 flex flex-col gap-2 items-center">
           <h1 className="mt-8 text-[5vw] md:text-[min(3vw,25px)] font-GoodTimes">
             {'How Launchpad Works'}
@@ -497,8 +550,10 @@ export default function Launch({ missions }: any) {
               numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
             />
           </div>
-          <div className="w-full flex flex-col items-center justify-center gap-4">
-            <h3 className="font-GoodTimes text-[min(4vw,25px)] md:pb-[1vw] text-center mt-[5vw]">Your tools, your team, your mission</h3>
+          <div className="mt-24 w-full flex flex-col items-center justify-center gap-4">
+            <h3 className="font-GoodTimes text-[4vw] md:text-[1.5vw] md:pb-[1vw]">
+              Your tools, your team, your mission
+            </h3>
             <StandardButton
               className="gradient-2 rounded-full md:text-[2vw]"
               hoverEffect={false}
@@ -518,52 +573,83 @@ export default function Launch({ missions }: any) {
       </section>
 
       <section id="benefits-section" className="relative">
-        <div className="pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 justify-center relative flex flex-col items-center bg-gradient-to-b from-[#010618] to-[#1B1C4B]">
+        <div className="pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 justify-center relative flex flex-col items-center bg-gradient-to-b from-[#010618] from-[0%] md:from-[5%] to-[#1B1C4B] to-[100%] md:to-[60%]">
           <div className="w-full flex flex-col pt-[2vw] md:pt-[5vw] items-center">
             <h1 className="text-[5vw] md:text-[min(2vw,25px)] text-center pb-[5vw] md:pb-0 font-GoodTimes">
               {'Why use MoonDAO Launchpad?'}
             </h1>
           </div>
-          <div className="mt-[5vw] md:mt-[2vw] z-10 w-full md:w-[80%]">
-            <CardStack>
-              <LaunchpadBenefit
-                title="Space is Global & Borderless"
-                description="Space is Global & BorderlessTap into the power of a borderless, global crypto network with trillions of dollars in market cap that is available in seconds."
-                icon="/assets/icon-globe.svg"
-                align="left"
-                slideDirection="right"
-              />
-              <LaunchpadBenefit
-                title="Trustless & Transparent"
-                description="All transactions are transparent and onchain, ensuring that everyone can see the funds raised and used."
-                icon="/assets/icon-signature.svg"
-                align="left"
-                slideDirection="left"
-              />
-              <LaunchpadBenefit
-                title="Battle Tested"
-                description="Powered by Juicebox, a proven platform for decentralized fundraising with over 1,000+ projects and over $200,000,000 raised."
-                icon="/assets/icon-checkmark.svg"
-                align="left"
-                slideDirection="right"
-              />
-              <LaunchpadBenefit
-                title="Scalable & Flexible"
-                description="Adapt your fundraising strategy as your space mission evolves or utilize our quick launch guidelines and templates."
-                icon="/assets/icon-scalable.svg"
-                align="left"
-                slideDirection="left"
-              />
-              <LaunchpadBenefit
-                title="Power of the Network"
-                description="The Space Acceleration Network brings industry leading space companies onchain, alongside space enthusiasts and professionals from around the globe."
-                icon="/assets/icon-powerful.svg"
-                align="left"
-                slideDirection="right"
-              />
-            </CardStack>
-          </div>
+          <LaunchpadBenefit
+            title="Space is Global & Borderless"
+            description="Space is Global & BorderlessTap into the power of a borderless, global crypto network with trillions of dollars in market cap that is available in seconds."
+            icon="/assets/icon-globe.svg"
+            align="left"
+            slideDirection="left"
+          />
+          <Image
+            className="absolute bottom-0 left-0 -scale-x-100"
+            src="/assets/launchpad/blue-divider-rl.svg"
+            alt="Divider"
+            width={500}
+            height={500}
+          />
         </div>
+        <div
+          id="featured-project-section"
+          className="relative px-[5vw] 2xl:px-[10vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] from-[0%] md:from-[40%] to-[#0C0F28] to-[100%] md:to-[60%]"
+        >
+          <LaunchpadBenefit
+            title="Trustless & Transparent"
+            description="All transactions are transparent and onchain, ensuring that everyone can see the funds raised and used."
+            icon="/assets/icon-signature.svg"
+            align="right"
+            slideDirection="right"
+          />
+        </div>
+        <div className="pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 justify-center relative flex flex-col items-center bg-gradient-to-t from-[#010618] from-[0%] md:from-[5%] to-[#1B1C4B] to-[100%] md:to-[60%]">
+          <Image
+            className="absolute top-0 left-0"
+            src="/assets/launchpad/blue-divider-lr-inverted.svg"
+            alt="Divider"
+            width={500}
+            height={500}
+          />
+          <LaunchpadBenefit
+            title="Battle Tested"
+            description="Powered by Juicebox, a proven platform for decentralized fundraising with over 1,000+ projects and over $200,000,000 raised."
+            icon="/assets/icon-checkmark.svg"
+            align="left"
+            slideDirection="left"
+          />
+
+          <LaunchpadBenefit
+            title="Scalable & Flexible"
+            description="Adapt your fundraising strategy as your space mission evolves or utilize our quick launch guidelines and templates."
+            icon="/assets/icon-scalable.svg"
+            align="right"
+            slideDirection="right"
+          />
+          <Image
+            className="absolute bottom-0 right-0"
+            src="/assets/launchpad/blue-divider-rl.svg"
+            alt="Divider"
+            width={500}
+            height={500}
+          />
+        </div>
+        <div
+          id="featured-project-section"
+          className="relative px-[5vw] 2xl:px-[10vw] pb-[5vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] from-[0%] md:from-[40%] to-[#0C0F28] to-[100%] md:to-[60%]"
+        >
+          <LaunchpadBenefit
+            title="Power of the Network"
+            description="The Space Acceleration Network brings industry leading space companies onchain, alongside space enthusiasts and professionals from around the globe."
+            icon="/assets/icon-powerful.svg"
+            align="left"
+            slideDirection="left"
+          />
+        </div>
+
         <Image
           className="absolute bottom-0 right-0 w-[40vw] md:w-[25vw]"
           src="/assets/launchpad/gradient-divider-rl.png"
@@ -576,7 +662,7 @@ export default function Launch({ missions }: any) {
       <section
         id="final-callout-section"
         className="relative px-[5vw] 2xl:px-[10vw] py-[5vw] md:py-[2vw] flex flex-col start bg-gradient-to-bl from-[#6D3F79] to-[#435EEB] from-20% to-[80%]"
-        >
+      >
         <div className="flex flex-col md:flex-row items-center">
           <Image
             src="/assets/MoonDAO-Logo-White.svg"
@@ -609,7 +695,7 @@ export default function Launch({ missions }: any) {
         id="faq-section-content"
         className="bg-white text-black px-[5vw] 2xl:px-[10vw] w-full relative"
       >
-        <Image 
+        <Image
           src="/assets/launchpad/gradient-blue-divider-lr-inverted.svg"
           alt="divider"
           width={75}
@@ -617,7 +703,10 @@ export default function Launch({ missions }: any) {
           className="z-[1] w-[30vw] absolute top-[-2px] left-[-2px]"
         />
         <div id="faq-content" className="z-[10] relative py-[5vw]">
-          <div id="faq-title" className="flex flex-row items-center gap-[2vw] mb-[5vw] md:mb-[2vw]">
+          <div
+            id="faq-title"
+            className="flex flex-row items-center gap-[2vw] mb-[5vw] md:mb-[2vw]"
+          >
             <Image
               src="/assets/launchpad/question-mark.svg"
               alt="Question Mark"
@@ -627,56 +716,16 @@ export default function Launch({ missions }: any) {
             />
             <h3 className="text-[5vw] md:text-[min(3vw,25px)] font-GoodTimes">
               {'Frequently Asked Questions'}
-            </h3>            
-          </div>  
-          <FAQProvider defaultExpandedIndex={0}>
-            <FAQ
-              question="Who can use the Launchpad?"
-              answer="Teams in the Space Acceleration Network can create Missions directly and permissionlessly, but anyone with a space-related project can apply to create their mission with the Launchpad—whether it's a research initiative, satellite deployment, lunar lander payload, or even a human spaceflight mission—in order to start raising funds. Apply now to tell us more about your objectives, fundraising goals, existing network, and how we can help."
-            />
-            <FAQ
-              question="Why use blockchain for space crowdfunding?"
-              answer="Blockchain ensures transparency, security, and trust in fundraising as well as being open to a global audience in a borderless nature. Every transaction is recorded onchain, meaning full visibility for backers as to how funds are used, and offers unique opportunities for backers to continue interacting with the project, including through governance decision making via tokens, ongoing stakeholding, or even revenue share opportunities in some cases, all through transparent and auditable computer code."
-            />
-            <FAQ
-              question="Is this platform only for space startups?"
-              answer="The Launchpad is primarily designed for space-related ventures, but any high-tech, hard-science, or deep-tech project aligned with MoonDAO's mission to help create or advance a lunar settlement could potentially launch a campaign."
-            />
-            <FAQ
-              question="How much does it cost to launch a campaign?"
-              answer="There is no upfront cost to create a Mission, but standard Ethereum network (gas) fees apply when deploying smart contracts. Additionally, MoonDAO/Juicebox receive a small percentage (10% in total) of successfully raised funds to sustain the platform and support other space related projects within the community governed treasury. Likewise, 10% of the tokens created for a Mission will be reserved for the MoonDAO treasury to align long term interests, with a 1-year cliff and three years streaming, meaning that tokens cannot be immediately sold. Furthermore, any outlays from the MoonDAO treasury require a vote."
-            />
-            <FAQ
-              question="How does the cliff and streaming work?"
-              answer="Funds raised through the MoonDAO Launchpad are subject to a 1-year cliff, meaning they remain locked for the first year. After this period, they stream gradually over three years, ensuring sustainable, long-term funding. This applies to both the project's funds and MoonDAO's 10% reserve allocation, preventing immediate sell-offs and promoting ecosystem stability."
-            />
-            <FAQ
-              question="Should I create an erc-20 token for my campaign?"
-              answer="It depends on your project's goals. An ERC-20 token can provide liquidity, community ownership, and governance features, but it also introduces risks like speculation and regulatory concerns. Tokens allow for tradability on decentralized exchanges, enabling supporters to buy, sell, or hold them as part of the project's ecosystem. They can also incentivize engagement through governance rights or utility within the project. However, speculative trading can create volatility, potentially impacting long-term sustainability."
-            />
-            <FAQ
-              question="Do I need to manage liquidity for my token?"
-              answer="If you launch an ERC-20 token through the MoonDAO Launchpad, an initial liquidity pool will automatically be created. This pool sets aside an additional 10% of both the token and ETH reserves, ensuring some market liquidity. This means that up to 80% of the total raised funds can be utilized by the Mission, after the 10% allocated to MoonDAO's treasury as a fee and the 10% liquidity."
-            />
-            <FAQ
-              question="Can I fundraise in multiple cryptocurrencies?"
-              answer="Fundraising will be limited to the Ethereum Virtual Machine (EVM), but contributors can participate across Ethereum mainnet and Layer 2 networks, including Arbitrum, Base, and Polygon. This ensures broad accessibility while keeping transactions efficient and cost-effective while also tying into the existing Space Acceleration Network and MoonDAO infrastructure, and the wider EVM ecosystem."
-            />
-            <FAQ
-              question="Can contributors withdraw their funds if they change their minds?"
-              answer="By default, once funds are contributed, they belong to the campaign. However, creators can implement refund mechanisms if they choose such as if they fail to meet the fundraising goal. Additionally, some projects may opt for a revenue-sharing model (RevNet), where tokens represent a percentage of total funds and can be redeemed for the underlying ETH—particularly appealing for Missions or initiatives that could potentially generate a profit in the future or generate onchain revenue."
-            />
-            <FAQ
-              question="What are the tax and regulatory implications of fundraising with crypto?"
-              answer="Tax and regulatory requirements vary by jurisdiction, and funds raised through the Launchpad may be considered taxable income. Depending on local laws, you may need to report contributions, pay capital gains tax on held crypto, or comply with securities regulations if your token is classified as an investment. Some regions also require KYC/AML compliance for fundraising. Since regulations are constantly evolving, we strongly recommend consulting a crypto-savvy legal or tax professional to ensure compliance. MoonDAO does not provide legal or tax advice, and responsibility for compliance rests with campaign creators."
-            />
-          </FAQProvider>
-        </div>  
+            </h3>
+          </div>
+          <LaunchpadFAQs />
+        </div>
       </section>
-      <section id="footer-section"
-        className="bg-gradient-to-b from-[#010618] to-[#1B1C4B] flex items-center justify-center"
+      <section
+        id="footer-section"
+        className="bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
       >
-        <Footer darkBackground={false} centerContent={true} />
+        <Footer darkBackground={false} />
       </section>
     </>
   )

@@ -1,8 +1,10 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
+import useMissionData from '@/lib/mission/useMissionData'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import PaginationButtons from '../layout/PaginationButtons'
 import StandardButton from '../layout/StandardButton'
@@ -11,55 +13,59 @@ import MissionWideCard from '../mission/MissionWideCard'
 
 type TeamMissionProps = {
   mission: Mission
+  missionTableContract: any
   jbControllerContract: any
+  jbDirectoryContract: any
   jbTokensContract: any
   teamContract: any
   isManager: boolean
+  selectedChain: any
 }
 
 type TeamMissionsProps = {
   teamId: number
   isManager: boolean
+  selectedChain: any
   missionTableContract: any
   jbControllerContract: any
+  jbDirectoryContract: any
   jbTokensContract: any
   teamContract: any
 }
 
 export function TeamMission({
+  selectedChain,
   mission,
+  missionTableContract,
   jbControllerContract,
+  jbDirectoryContract,
   jbTokensContract,
   teamContract,
   isManager,
 }: TeamMissionProps) {
-  const { subgraphData, token, ruleset } = useJBProjectData(
-    mission?.projectId,
-    jbControllerContract,
-    jbTokensContract,
-    teamContract
-  )
-
-  // TODO : Calculate deadline date from duration of current ruleset
-  const deadlineDate = ruleset?.[0]?.duration
-    ? new Date(Date.now() + ruleset[0].duration * 1000).toLocaleDateString()
-    : 'UNLIMITED'
+  const { subgraphData, token, fundingGoal, ruleset, primaryTerminalAddress } =
+    useMissionData(
+      mission,
+      missionTableContract,
+      jbControllerContract,
+      jbDirectoryContract,
+      jbTokensContract,
+      teamContract
+    )
 
   return (
     <MissionWideCard
-      name={mission.metadata.name}
-      description={mission.metadata.description}
-      tagline={mission.metadata.tagline}
-      logoUri={mission.metadata.logoUri || ''}
-      deadline={deadlineDate}
+      mission={mission}
+      token={token}
+      subgraphData={subgraphData}
       fundingGoal={mission.fundingGoal}
-      tokenAddress={token?.tokenAddress}
-      tokenSymbol={token?.tokenSymbol}
-      volume={subgraphData?.volume}
-      paymentsCount={subgraphData?.paymentsCount}
+      ruleset={ruleset}
       contribute
-      projectId={mission.projectId}
       editable={isManager}
+      showMore={false}
+      linkToMission
+      selectedChain={selectedChain}
+      primaryTerminalAddress={primaryTerminalAddress}
     />
   )
 }
@@ -69,6 +75,7 @@ export default function TeamMissions({
   isManager,
   missionTableContract,
   jbControllerContract,
+  jbDirectoryContract,
   jbTokensContract,
   teamContract,
 }: TeamMissionsProps) {
@@ -179,7 +186,9 @@ export default function TeamMissions({
               <TeamMission
                 key={mission.id}
                 mission={mission}
+                missionTableContract={missionTableContract}
                 jbControllerContract={jbControllerContract}
+                jbDirectoryContract={jbDirectoryContract}
                 jbTokensContract={jbTokensContract}
                 teamContract={teamContract}
                 isManager={isManager}
