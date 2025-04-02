@@ -51,9 +51,7 @@ export default function MissionTokenExchangeRates({
   ruleset: any
   tokenSymbol: string
 }) {
-  const [currentCycle, setCurrentCycle] = useState(0)
-
-  const weight = ruleset?.[0].weight.toString() / 1e18
+  const currentCycle = ruleset?.[0].cycleNumber
 
   return (
     <div id="mission-token-exchange-rates">
