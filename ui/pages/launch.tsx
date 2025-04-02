@@ -30,6 +30,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import FAQ, { FAQProvider } from '@/components/launchpad/FAQ'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
+import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
 import CardStack from '@/components/layout/CardStack'
 import StandardButton from '@/components/layout/StandardButton'
@@ -147,25 +148,38 @@ export default function Launch({ missions }: any) {
         <div id="hero-content-container" className="">
           <div
             id="hero-content"
-            className="relative pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 md:h-[max(30vh,300px)] lg:h-[max(80vh,650px)] flex justify-between items-center overflow-hidden"
-          >
-            <div className="relative">
+            className="relative pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 md:h-[max(45vh,600px)] 2xl:h-[max(45vh,550px)] flex justify-between items-center overflow-hidden"
+            >
+            <div className="relative 2xl:hidden">
               <video
                 id="video-background"
-                className="min-w-[100vw] md:w-full object-cover md:h-[max(40vh,400px)] lg:h-[max(80vh,650px)] object-right"
+                className="min-w-[100vw] md:w-full object-cover md:h-[max(45vh,600px)] 2xl:h-[max(45vh,550px)]"
                 autoPlay
                 loop
                 muted
                 playsInline
-              >
+                >
                 <source src="/assets/moondao-video-hero.mp4" type="video/mp4" />
               </video>
               <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#010618] to-transparent opacity-80"></div>
             </div>
+            <div className="relative hidden 2xl:block">
+              <video
+                id="video-background"
+                className="min-w-[100vw] md:w-full object-cover md:h-[max(45vh,600px)] 2xl:h-[max(45vh,550px)]"
+                autoPlay
+                loop
+                muted
+                playsInline
+                >
+                <source src="/assets/moondao-video-hero_wide.mp4" type="video/mp4" />
+              </video>
+              <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#010618] to-transparent opacity-80"></div>
+            </div>            
             <div
               id="content-container"
               className="flex items-center overflow-hidden"
-            >
+              >
               <Image
                 id="hero-divider-bottom-right"
                 className="absolute right-[-2px] bottom-[-2px] z-[10] w-[50vw] md:w-[30vw]"
@@ -176,12 +190,12 @@ export default function Launch({ missions }: any) {
               />
               <div
                 id="logo-and-graphics-container"
-                className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-end flex-col md:flex-row flex items-center md:justify-start z-[10]"
-              >
+                className="absolute w-full h-full md:h-auto left-[0] md:pl-[5vw] 2xl:pl-[10vw] justify-end flex-col md:flex-row flex items-center md:justify-start z-[10]"
+                >
                 <div id="logo-container">
                   <Image
                     id="desktop-logo"
-                    className="hidden md:flex w-[30vw] h-[30vw] md:w-auto"
+                    className="hidden md:flex w-[min(30vw,350px)] h-[min(30vw,350px)] 2xl:ml-[-1.5vw]"
                     src="/assets/MoonDAO Animated Logo - Original.svg"
                     alt="Logo"
                     width={250}
@@ -198,16 +212,16 @@ export default function Launch({ missions }: any) {
                 </div>
                 <div
                   id="graphics-container"
-                  className="md:h-full flex flex-col items-center md:items-left justify-center pb-[5vw] md:pb-0"
+                  className="md:h-full flex flex-col items-center lg:items-start md:items-left justify-center pb-[5vw] md:pb-0"
                 >
-                  <div id="desktop-title-container" className="hidden md:flex">
+                  <div id="desktop-title-container" className="hidden md:flex items-start justify-start">
                     <Image
                       id="desktop-title"
                       src="/assets/MoonDAOLaunchpad.svg"
                       alt="MoonDAO Launchpad"
                       width={500}
                       height={150}
-                      className="w-[40vw]"
+                      className="w-[min(40vw,450px)]"
                     />
                   </div>
                   <div id="mobile-title-container" className="md:hidden">
@@ -226,7 +240,7 @@ export default function Launch({ missions }: any) {
                   >
                     <Image
                       id="desktop-tagline"
-                      className="w-[90vw] h-[17vw] md:w-[40vw] md:h-[6.86vw]"
+                      className="w-[90vw] h-auto md:w-[min(40vw,450px)]"
                       src="/assets/Animated-Icon-Tagline.svg"
                       alt="Org"
                       width={450}
@@ -235,7 +249,7 @@ export default function Launch({ missions }: any) {
                   </div>
                   <div
                     id="mobile-tagline-container"
-                    className="ml-[5vw] w-full md:hidden justify-center items-center"
+                    className="ml-[5vw] mb-[5vw] w-full md:hidden justify-center items-center"
                   >
                     <Image
                       id="mobile-tagline"
@@ -255,12 +269,12 @@ export default function Launch({ missions }: any) {
 
       <section
         id="initial-callout-section"
-        className="px-[5vw] md:px-[2vw] flex flex-col md:flex-row items-center justify-center pt-[10vw] md:pt-[2vw] pb-[10vw] md:pb-[2vw] gap-4 md:gap-12 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[40%] to-[#1B1C4B] to-[100%] md:to-[60%]"
-      >
+        className="px-[5vw] md:px-[5vw] 2xl:px-[10vw] flex flex-col md:flex-row items-center text-center md:text-left justify-center md:justify-start pt-[10vw] md:pt-[2vw] lg:pt-[20px] pb-[10vw] lg:pb-[10px] md:pb-[2vw] gap-4 md:gap-12 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[40%] to-[#1B1C4B] to-[100%] md:to-[60%]"
+        >
         <p
           id="callout"
-          className="text-white text-lg font-GoodTimes text-[5vw] md:text-[2vw] text-center leading-[6vw]"
-        >
+          className="text-white font-GoodTimes text-[5vw] md:text-[min(2vw,25px)] leading-[6vw]"
+          >
           {'Launch Your Space Mission With MoonDAO'}
         </p>
         <StandardButton
@@ -274,7 +288,7 @@ export default function Launch({ missions }: any) {
 
       <section
         id="featured-project-section"
-        className="relative px-[5vw] pb-[5vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
+        className="relative px-[5vw] 2xl:px-[10vw] pb-[5vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
       >
         <Image
           id="white-divider-bottom-right"
@@ -298,7 +312,7 @@ export default function Launch({ missions }: any) {
         >
           <div
             id="featured-image-container"
-            className="md:ml-0 relative w-[80vw] md:w-[max(40vw,450px)]"
+            className="md:ml-0 relative w-[80vw] md:w-[min(40vw,400px)]"
           >
             <Image
               id="featured-image"
@@ -311,15 +325,15 @@ export default function Launch({ missions }: any) {
           </div>
           <div
             id="featured-text-container"
-            className="w-full h-auto flex justify-center flex-col"
+            className="w-full h-auto flex justify-center flex-col w-[min(40vw,600px)]"
           >
-            <h2 className="text-white font-GoodTimes text-[4vw] md:text-[1.5vw] md:pb-[1vw]">
+            <h2 className="text-white font-GoodTimes text-[4vw] md:text-[min(1.5vw,25px)] md:pb-[1vw]">
               {'Space Mice: Save generations of space research!'}
             </h2>
-            <p className="md:text-[1.2vw] font-bold">
+            <p className="md:text-[min(1.2vw,16px)] font-bold">
             The only study of its kind — About to be lost forever.
             </p>
-            <p className="md:text-[1.2vw] pb-[2vw]">
+            <p className="md:text-[min(1.2vw,16px)] pb-[2vw]">
               {`NASA-funded research into spaceflight's impact on reproduction has reached a funding crisis. These mice, descended from ISS-flown astronauts, are a one-of-a-kind biological archive. Without action, we may never know if mammals can truly thrive in space. Support this mission today!`}
             </p>
             <StandardButton className="gradient-2 rounded-full md:text-[1.2vw]">
@@ -331,15 +345,15 @@ export default function Launch({ missions }: any) {
 
       <section
         id="launchpad-features-section"
-        className="relative px-[4vw] pt-[2vw] md:pt-[2vw] pb-[5vw] md:pb-[2vw] md:pb-[5vw] flex flex-col bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
+        className="relative px-[5vw] 2xl:px-[10vw] pt-[2vw] md:pt-[2vw] pb-[5vw] md:pb-[2vw] md:pb-[5vw] flex flex-col bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
       >
-        <div className="flex flex-col pb-[5vw] md:pb-[2vw] items-center">
-          <h2 className="mt-[5vw] md:mt-[2vw] font-GoodTimes text-[5vw] md:text-[2vw] text-center leading-[6vw]">
+        <div className="flex flex-col pb-[5vw] md:pb-[2vw] items-start">
+          <h2 className="mt-[5vw] md:mt-[2vw] font-GoodTimes text-[5vw] md:text-[min(2vw,25px)] text-center leading-[6vw]">
             {'Built for New Space Innovation'}
           </h2>
-          <p className="md:max-w-[500px] lg:max-w-[900px] text-center md:text-[1.2vw] pb-[2vw]">
+          <p className="md:max-w-[500px] lg:max-w-[650px] md:text-[min(1.2vw,16px)] pb-[2vw]">
             {
-              "Whether you're launching a nanosatellite, testing lunar ISRU tech, or sending humans to space, MoonDAO's Launch Pad provides the tools you need to turn your vision into reality while tapping into a global network of backers with funding that are passionate about space, as well as leading space companies and service providers that are already part of the Space Acceleration Network."
+              "Whether you're launching a nanosatellite, testing lunar ISRU tech, or sending humans to space, MoonDAO's Launchpad provides the tools you need to turn your vision into reality while tapping into a global network of backers with funding that are passionate about space, as well as leading space companies and service providers that are already part of the Space Acceleration Network."
             }
           </p>
           <StandardButton
@@ -351,21 +365,21 @@ export default function Launch({ missions }: any) {
         </div>
         <div className="w-full flex flex-col md:flex-row items-start justify-between">
           <FeatureIcon
-            title="Mission Crowdfunding"
-            description="Secure funding from a global community that believes in space acceleration."
+            title="Contribute Confidently"
+            description="If a mission doesn't reach at least 20% of its goal within 28 days, you automatically get your money back."
             icon="/assets/icon-crowdfunding.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#6C407D] to-[#5F4BA2]"
           />
           <FeatureIcon
-            title="Builders & Innovators"
-            description="From space robotics to lunar payloads, raise the capital you need to launch."
-            icon="/assets/icon-lightbulb.svg"
+            title="More Than A Donation"
+            description="Mission tokens give you a real stake in the journey, and allow you to help shape and govern the use of funds."
+            icon="/assets/icon-fasttrack.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#5F4BA2] to-[#5159CC]"
           />
           <FeatureIcon
-            title="Fast Track Launch"
-            description="Quick launch a token with set tokenomics and best practices to incentivize supporters."
-            icon="/assets/icon-fasttrack.svg"
+            title="Onchain Transparency"
+            description="100% transparent funding, managed by smart contracts, so your contribution goes exactly where it's supposed to."
+            icon="/assets/icon-lightbulb.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#5159CC] to-[#4660E7]"
           />
         </div>
@@ -373,7 +387,7 @@ export default function Launch({ missions }: any) {
 
       <section
         id="moondao-success-section"
-        className="relative px-[4vw] pb-[4vw] flex flex-col gap-12 bg-gradient-to-t from-[#010618] to-[#1B1C4B]"
+        className="relative px-[5vw] 2xl:px-[10vw] pb-[4vw] flex flex-col gap-12 bg-gradient-to-t from-[#010618] to-[#1B1C4B]"
       >
         <Image
           className="w-[50vw] hidden md:block absolute top-[-1px] right-0"
@@ -387,7 +401,7 @@ export default function Launch({ missions }: any) {
             <h2 className="text-[5vw] md:text-[2vw] font-GoodTimes">
               {'Success Stories'}
             </h2>
-            <p className="md:text-[1.2vw] pb-[2vw] pr-0 md:pr-[5vw]">
+            <p className="md:text-[min(1.2vw,16px)] pb-[2vw] pr-0 md:pr-[5vw]">
               {
                 "MoonDAO is no stranger to launching bold ideas. With over Ξ2,623 (+$8,000,000) crowdraised during our initial launch, we used those funds to send two people to space and support 60+ projects for over $300,000. We're proving that the future of space funding is decentralized and onchain."
               }
@@ -413,7 +427,7 @@ export default function Launch({ missions }: any) {
             </div>
             <div
               id="eiman-container"
-              className="mt-[-20vw] md:mt-0 z-10 relative flex w-full max-w-[650px] h-full ml-auto"
+              className="mt-[-20vw] md:mt-0 z-10 relative flex w-full max-w-[550px] h-full ml-auto"
             >
               <Image
                 className="relative rounded-full p-2 md:p-5 bg-white"
@@ -449,50 +463,42 @@ export default function Launch({ missions }: any) {
 
       <section
         id="how-launchpad-works"
-        className="relative px-[4vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
-      >
+        className="relative px-[2vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
+        >
         <div className="w-full mt-8 flex flex-col gap-2 items-center">
-          <h1 className="mt-8 text-[5vw] md:text-[3vw] font-GoodTimes">
+          <h1 className="mt-8 text-[5vw] md:text-[min(3vw,25px)] font-GoodTimes">
             {'How Launchpad Works'}
           </h1>
         </div>
 
         <div className="w-full md:max-w-[70vw] ">
-          <div className="absolute hidden md:block h-full max-h-[75%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw]">
+          <div className="absolute hidden md:block h-full max-h-[75%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw] pb-[5vw]">
             <VerticalProgressScrollBar sectionId="how-launchpad-works" />
           </div>
           <div className="w-full flex flex-col items-end md:items-start gap-4">
-            <FeatureIcon
-              title="Create Your Team"
-              description="Bring your organization onchain into the Space Acceleration Network to create a secure multi-sig wallet and the tools needed for fundraising, alongside a hiring portal and marketplace access to directly sell your products or services onchain."
+            <ExplainerIcon
+              title="Back A Mission"
+              description="Choose from cutting-edge space projects, from satellite launches to lunar lander payloads or even human spaceflight."
               icon={<p>1</p>}
               numberBackground="bg-gradient-to-br from-[#6C407D] to-[#5F4BA2]"
             />
-            <div className="md:mt-[-10%] w-full flex justify-end">
-              <FeatureIcon
-                title="Launch Your Mission"
-                description="Set up your fundraising campaign with transparent funding goals, payouts, and backer incentives."
+            <div className="w-full flex justify-end">
+              <ExplainerIcon
+                title="Get Mission Tokens"
+                description="Your support earns you governance rights, so you have a say in how funds are used, how the mission develops, and in some cases, share in the rewards and revenue."
                 icon={<p>2</p>}
                 numberBackground="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC]"
               />
             </div>
-            <FeatureIcon
-              title="Manage Your Treasury"
-              description="Receive funds in ETH, automate payouts, and adjust financial strategies as your mission scales."
+            <ExplainerIcon
+              title="Be Part Of Space History"
+              description="Help launch groundbreaking missions and accelerate humanity's space future."
               icon={<p>3</p>}
               numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
             />
-            <div className="md:mt-[-10%] w-full flex justify-end">
-              <FeatureIcon
-                title="Build A Spacefaring Community"
-                description="Engage supporters through governance, votes, NFTs, and token-based incentives."
-                icon={<p>4</p>}
-                numberBackground="bg-gradient-to-br from-[#4660E7] to-[#3B67FF]"
-              />
-            </div>
           </div>
-          <div className="mt-24 w-full flex flex-col items-center justify-center gap-4">
-            <h3 className="font-GoodTimes text-[4vw] md:text-[1.5vw] md:pb-[1vw]">Your tools, your team, your mission</h3>
+          <div className="w-full flex flex-col items-center justify-center gap-4">
+            <h3 className="font-GoodTimes text-[min(4vw,25px)] md:pb-[1vw] text-center mt-[5vw]">Your tools, your team, your mission</h3>
             <StandardButton
               className="gradient-2 rounded-full md:text-[2vw]"
               hoverEffect={false}
@@ -514,7 +520,7 @@ export default function Launch({ missions }: any) {
       <section id="benefits-section" className="relative">
         <div className="pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 justify-center relative flex flex-col items-center bg-gradient-to-b from-[#010618] to-[#1B1C4B]">
           <div className="w-full flex flex-col pt-[2vw] md:pt-[5vw] items-center">
-            <h1 className="text-[5vw] md:text-[3vw] text-center pb-[5vw] md:pb-0 font-GoodTimes">
+            <h1 className="text-[5vw] md:text-[min(2vw,25px)] text-center pb-[5vw] md:pb-0 font-GoodTimes">
               {'Why use MoonDAO Launchpad?'}
             </h1>
           </div>
@@ -569,23 +575,23 @@ export default function Launch({ missions }: any) {
 
       <section
         id="final-callout-section"
-        className="relative px-[5vw] py-[5vw] md:py-[2vw] flex flex-col start bg-gradient-to-bl from-[#6D3F79] to-[#435EEB] from-20% to-[80%]"
-      >
-        <div className="flex flex-col md:flex-row ">
+        className="relative px-[5vw] 2xl:px-[10vw] py-[5vw] md:py-[2vw] flex flex-col start bg-gradient-to-bl from-[#6D3F79] to-[#435EEB] from-20% to-[80%]"
+        >
+        <div className="flex flex-col md:flex-row items-center">
           <Image
             src="/assets/MoonDAO-Logo-White.svg"
             alt="MoonDAO Logo"
-            width={250}
-            height={250}
-            className="w-[30vw] md:w-[20vw]"
+            width={550}
+            height={550}
+            className="w-[60vw] md:w-[min(20vw,250px)] md:pb-0 pb-[5vw] self-center"
           />
-          <div className="flex flex-col justify-center md:ml-[2vw]">
+          <div className="flex flex-col justify-center pb-[5vw] md:pb-0 md:ml-[2vw]">
             <h3 className="text-white text-[5vw] md:text-[2vw] font-GoodTimes">
               {'Get Started Today'}
             </h3>
-            <p className="text-white md:text-[1.2vw] pb-[2vw]">
+            <p className="text-white  pb-[2vw]">
               {
-                'The next great space mission starts here. Join the decentralized space race and fund your mission with the MoonDAO Launch Pad. The Launch Pad is available permissionlessly to teams in the Space Acceleration Network.'
+                'The next great space mission starts here. Join the decentralized space race and fund your mission with the MoonDAO Launchpad. The Launchpad is available permissionlessly to teams in the Space Acceleration Network.'
               }
             </p>
             <StandardButton
@@ -601,7 +607,7 @@ export default function Launch({ missions }: any) {
 
       <section
         id="faq-section-content"
-        className="bg-white text-black px-[5vw] w-full relative"
+        className="bg-white text-black px-[5vw] 2xl:px-[10vw] w-full relative"
       >
         <Image 
           src="/assets/launchpad/gradient-blue-divider-lr-inverted.svg"
@@ -617,9 +623,9 @@ export default function Launch({ missions }: any) {
               alt="Question Mark"
               width={75}
               height={75}
-              className="w-[20vw] md:w-[10vw]"
+              className="w-[20vw] md:w-[min(10vw,100px)]"
             />
-            <h3 className="text-[5vw] md:text-[3vw] font-GoodTimes">
+            <h3 className="text-[5vw] md:text-[min(3vw,25px)] font-GoodTimes">
               {'Frequently Asked Questions'}
             </h3>            
           </div>  
@@ -642,7 +648,7 @@ export default function Launch({ missions }: any) {
             />
             <FAQ
               question="How does the cliff and streaming work?"
-              answer="Funds raised through the MoonDAO Launch Pad are subject to a 1-year cliff, meaning they remain locked for the first year. After this period, they stream gradually over three years, ensuring sustainable, long-term funding. This applies to both the project's funds and MoonDAO's 10% reserve allocation, preventing immediate sell-offs and promoting ecosystem stability."
+              answer="Funds raised through the MoonDAO Launchpad are subject to a 1-year cliff, meaning they remain locked for the first year. After this period, they stream gradually over three years, ensuring sustainable, long-term funding. This applies to both the project's funds and MoonDAO's 10% reserve allocation, preventing immediate sell-offs and promoting ecosystem stability."
             />
             <FAQ
               question="Should I create an erc-20 token for my campaign?"
@@ -668,7 +674,7 @@ export default function Launch({ missions }: any) {
         </div>  
       </section>
       <section id="footer-section"
-        className="bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
+        className="bg-gradient-to-b from-[#010618] to-[#1B1C4B] flex items-center justify-center"
       >
         <Footer darkBackground={false} centerContent={true} />
       </section>
