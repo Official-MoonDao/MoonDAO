@@ -35,7 +35,6 @@ import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
 import LaunchpadFAQs from '@/components/launchpad/LaunchpadFAQs'
 import CardStack from '@/components/layout/CardStack'
-import Footer from '@/components/layout/Footer'
 import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
@@ -720,12 +719,6 @@ export default function Launch({ missions }: any) {
           </div>
           <LaunchpadFAQs />
         </div>
-      </section>
-      <section
-        id="footer-section"
-        className="bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
-      >
-        <Footer darkBackground={false} />
       </section>
     </>
   )
