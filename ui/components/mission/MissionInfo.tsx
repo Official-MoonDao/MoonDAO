@@ -63,6 +63,7 @@ export default function MissionInfo({
   jbDirectoryContract,
   points,
   userMissionTokenBalance,
+  primaryTerminalAddress,
 }: any) {
   const [tab, setTab] = useState<MissionInfoTabType>('about')
   return (
@@ -206,7 +207,7 @@ export default function MissionInfo({
             token={token}
             subgraphData={subgraphData}
             ruleset={ruleset}
-            jbDirectoryContract={jbDirectoryContract}
+            primaryTerminalAddress={primaryTerminalAddress}
           />
         </div>
       </div>

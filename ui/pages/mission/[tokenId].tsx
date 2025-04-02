@@ -2,7 +2,6 @@ import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
-import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -10,7 +9,6 @@ import {
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
-  MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
@@ -310,6 +308,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   fundingGoal={fundingGoal}
                   token={token}
                   userMissionTokenBalance={userMissionTokenBalance}
+                  primaryTerminalAddress={primaryTerminalAddress}
                 />
               </div>
             </Frame>

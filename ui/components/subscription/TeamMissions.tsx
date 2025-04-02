@@ -71,6 +71,7 @@ export function TeamMission({
 }
 
 export default function TeamMissions({
+  selectedChain,
   teamId,
   isManager,
   missionTableContract,
@@ -185,6 +186,7 @@ export default function TeamMissions({
             .map((mission) => (
               <TeamMission
                 key={mission.id}
+                selectedChain={selectedChain}
                 mission={mission}
                 missionTableContract={missionTableContract}
                 jbControllerContract={jbControllerContract}

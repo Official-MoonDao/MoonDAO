@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 export default function Product({
@@ -32,29 +31,31 @@ export default function Product({
               IMAGE KIT
             </h3>
             <section className="flex flex-col items-center">
-              <Image
-                id="product-image"
-                className="mt-5 rounded-2xl block"
-                src={product.images[preview]?.src}
-                width={450}
-                height={450}
-                alt={`product-${preview}`}
-              />
+              {product?.images?.[preview] && (
+                <Image
+                  id="product-image"
+                  className="mt-5 rounded-2xl block"
+                  src={product.images[preview].src}
+                  width={450}
+                  height={450}
+                  alt={`product-${preview}`}
+                />
+              )}
               {/*Buttons to toggle products*/}
-              <div className="flex items-center gap-4 my-2">
-                <button
-                  className={`rounded-full bg-slate-800 px-2 text-white text-xl backdropBlur py-1 hover:text-orange-500 duration-150 transition-all ease-in-ease-out`}
-                  onClick={() =>
-                    preview > 0
-                      ? setPreview(preview - 1)
-                      : setPreview(product.images.length - 1)
-                  }
-                >
-                  {'<'}
-                </button>
-                <div className="flex items-center mb-2 relative bottom-1">
-                  {product?.images[0] &&
-                    product.images.map((image: any, i: number) => (
+              {product?.images?.length > 0 && (
+                <div className="flex items-center gap-4 my-2">
+                  <button
+                    className={`rounded-full bg-slate-800 px-2 text-white text-xl backdropBlur py-1 hover:text-orange-500 duration-150 transition-all ease-in-ease-out`}
+                    onClick={() =>
+                      preview > 0
+                        ? setPreview(preview - 1)
+                        : setPreview((product.images?.length || 1) - 1)
+                    }
+                  >
+                    {'<'}
+                  </button>
+                  <div className="flex items-center mb-2 relative bottom-1">
+                    {product?.images?.map((image: any, i: number) => (
                       <button
                         key={'pagination' + i}
                         className={`${
@@ -65,19 +66,20 @@ export default function Product({
                         .
                       </button>
                     ))}
+                  </div>
+                  <button
+                    className={`rounded-full bg-slate-800 px-2 text-white text-xl py-1 hover:text-orange-500 duration-150 transition-all ease-in-ease-out`}
+                    onClick={() => {
+                      if (!product?.images?.length) return
+                      preview < product.images.length - 1
+                        ? setPreview(preview + 1)
+                        : setPreview(0)
+                    }}
+                  >
+                    {'>'}
+                  </button>
                 </div>
-                <button
-                  className={`rounded-full bg-slate-800 px-2 text-white text-xl py-1 hover:text-orange-500 duration-150 transition-all ease-in-ease-out`}
-                  onClick={() => {
-                    if (!product?.images) return
-                    preview < product.images.length - 1
-                      ? setPreview(preview + 1)
-                      : setPreview(0)
-                  }}
-                >
-                  {'>'}
-                </button>
-              </div>
+              )}
             </section>
             {/*Final page button*/}
             <button
@@ -100,11 +102,11 @@ export default function Product({
           {label}
         </h2>
         <div className="p-2">
-          {product?.images[preview] && (
+          {product?.images?.[preview] && (
             <Image
               id="product-image"
               className={`rounded-2xl bg-gray-100 dark:bg-slate-800`}
-              src={product.images[preview]?.src}
+              src={product.images[preview].src}
               width={250}
               height={250}
               alt={`product-${preview}`}
@@ -113,20 +115,20 @@ export default function Product({
         </div>
 
         {/*Product pagination*/}
-        <div className="w-full flex justify-center items-center">
-          <button
-            className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 2xl:w-8 2xl:h-8 text-white text-xl backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out`}
-            onClick={() =>
-              preview > 0
-                ? setPreview(preview - 1)
-                : setPreview(product.images.length - 1)
-            }
-          >
-            {'<'}
-          </button>
-          <div className="flex items-center relative bottom-2">
-            {product?.images[0] &&
-              product.images.map((image: any, i: number) => (
+        {product?.images?.length > 0 && (
+          <div className="w-full flex justify-center items-center">
+            <button
+              className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 2xl:w-8 2xl:h-8 text-white text-xl backdropBlur hover:text-n3blue duration-[0.6s] ease-in-ease-out`}
+              onClick={() =>
+                preview > 0
+                  ? setPreview(preview - 1)
+                  : setPreview((product.images?.length || 1) - 1)
+              }
+            >
+              {'<'}
+            </button>
+            <div className="flex items-center relative bottom-2">
+              {product?.images?.map((image: any, i: number) => (
                 <button
                   key={'pagination' + i}
                   className={`${
@@ -137,19 +139,20 @@ export default function Product({
                   .
                 </button>
               ))}
+            </div>
+            <button
+              className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 2xl:w-8 2xl:h-8 text-white text-xl backdropBlur hover:text-moon-orange duration-[0.6s] ease-in-ease-out`}
+              onClick={() => {
+                if (!product?.images?.length) return
+                preview < product.images.length - 1
+                  ? setPreview(preview + 1)
+                  : setPreview(0)
+              }}
+            >
+              {'>'}
+            </button>
           </div>
-          <button
-            className={`rounded-full bg-slate-800 w-8 h-8 lg:w-7 lg:h-7 2xl:w-8 2xl:h-8 text-white text-xl backdropBlur hover:text-moon-orange duration-[0.6s] ease-in-ease-out`}
-            onClick={() => {
-              if (!product?.images) return
-              preview < product.images.length - 1
-                ? setPreview(preview + 1)
-                : setPreview(0)
-            }}
-          >
-            {'>'}
-          </button>
-        </div>
+        )}
       </div>
 
       {/*Plus, Minus, quantity, total*/}
@@ -175,7 +178,7 @@ export default function Product({
               <p className="text-sm">
                 {'Total:'}
                 <span className="ml-2 text-moon-orange">{`$${
-                  product?.variants
+                  product?.variants?.[0]?.price?.amount
                     ? (product.variants[0].price.amount * quantity).toFixed(2)
                     : 0
                 }`}</span>
