@@ -277,7 +277,7 @@ export default function MissionPayRedeem({
         params: [
           address,
           mission?.projectId,
-          tokenBalance,
+          tokenBalance * 1e18 || 0,
           '0x000000000000000000000000000000000000EEEe',
           0,
           address,
@@ -296,9 +296,18 @@ export default function MissionPayRedeem({
       router.reload()
     } catch (error) {
       console.error('Error redeeming tokens:', error)
-      toast.error('Failed to redeem tokens', {
-        style: toastStyle,
-      })
+      if (error.message.includes('Project funding deadline has not passed.')) {
+        toast.error(
+          'Mission funding deadline has not passed. Refunds are disabled.',
+          {
+            style: toastStyle,
+          }
+        )
+      } else {
+        toast.error('Failed to redeem tokens', {
+          style: toastStyle,
+        })
+      }
     }
   }, [account, primaryTerminalContract, address, mission?.projectId, router])
 

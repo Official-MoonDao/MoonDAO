@@ -14,7 +14,7 @@ export default function useMissionData(
   const [fundingGoal, setFundingGoal] = useState(0)
 
   const jbProjectData = useJBProjectData(
-    mission.projectId,
+    mission?.projectId,
     jbControllerContract,
     jbDirectoryContract,
     jbTokensContract,
@@ -38,7 +38,7 @@ export default function useMissionData(
     if (missionTableContract && mission?.id !== undefined) {
       getFundingData()
     }
-  }, [missionTableContract, mission.id])
+  }, [missionTableContract, mission?.id])
 
   return { ...jbProjectData, fundingGoal }
 }

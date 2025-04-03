@@ -57,12 +57,12 @@ export default function MissionWideCard({
     async function getTeamNFT() {
       const teamNFT = await getNFT({
         contract: teamContract,
-        tokenId: BigInt(mission.teamId),
+        tokenId: BigInt(mission?.teamId),
       })
       setTeamNFT(teamNFT)
     }
 
-    if (teamContract) getTeamNFT()
+    if (teamContract && mission?.teamId !== undefined) getTeamNFT()
   }, [teamContract, mission?.teamId])
 
   return (

@@ -29,6 +29,7 @@ import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
@@ -208,7 +209,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     />
                     <MissionStat
                       label="Goal"
-                      value={`${fundingGoal / 1e18} ETH`}
+                      value={`${truncateTokenValue(
+                        fundingGoal / 1e18,
+                        'ETH'
+                      )} ETH`}
                       icon={'/assets/launchpad/target.svg'}
                     />
                     <MissionStat

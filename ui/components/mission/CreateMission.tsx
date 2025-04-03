@@ -241,29 +241,6 @@ export default function CreateMission({
     setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
   }, [userTeamsAsManager])
 
-  // useEffect(() => {
-  //   async function getEthQuote() {
-  //     console.log(missionData?.fundingGoal)
-  //     const swapRoute = await pregenSwapRoute(
-  //       ethereum,
-  //       missionData?.fundingGoal || 0,
-  //       new Token(ethereum.id, DAI_ADDRESSES['ethereum'], 18),
-  //       nativeOnChain(ethereum.id)
-  //     )
-
-  //     setFundingGoalInETH(
-  //       (swapRoute?.route?.[0].rawQuote.toString() / 1e18).toFixed(8)
-  //     )
-  //   }
-
-  //   if (
-  //     missionData?.fundingGoal !== undefined &&
-  //     +missionData?.fundingGoal > 0
-  //   ) {
-  //     getEthQuote()
-  //   }
-  // }, [missionData?.fundingGoal])
-
   async function getFundingGoalInETH() {
     if (!missionData?.fundingGoal || missionData?.fundingGoal === 0)
       return setFundingGoalInETH(0)
@@ -338,7 +315,7 @@ export default function CreateMission({
         method: 'createMission' as string,
         params: [
           selectedTeamId,
-          address,
+          teamMultisig,
           missionMetadataIpfsHash,
           durationInSeconds,
           fundingGoalInETH,

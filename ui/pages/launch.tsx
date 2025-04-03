@@ -344,7 +344,7 @@ export default function Launch({ missions }: any) {
               {
                 ...missions?.[0],
                 metadata: {
-                  ...missions?.[0].metadata,
+                  ...missions?.[0]?.metadata,
                   description: '',
                 },
               } as any
