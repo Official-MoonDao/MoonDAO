@@ -578,15 +578,17 @@ export default function Launch({ missions }: any) {
               {'Why use MoonDAO Launchpad?'}
             </h1>
           </div>
-          <LaunchpadBenefit
-            title="Space is Global & Borderless"
-            description="Space is Global & BorderlessTap into the power of a borderless, global crypto network with trillions of dollars in market cap that is available in seconds."
-            icon="/assets/icon-globe.svg"
-            align="left"
-            slideDirection="left"
-          />
+          <div className="relative z-10">
+            <LaunchpadBenefit
+              title="Space is Global & Borderless"
+              description="Space is Global & BorderlessTap into the power of a borderless, global crypto network with trillions of dollars in market cap that is available in seconds."
+              icon="/assets/icon-globe.svg"
+              align="left"
+              slideDirection="left"
+            />
+          </div>
           <Image
-            className="absolute bottom-0 left-0 -scale-x-100"
+            className="absolute bottom-0 left-0 -scale-x-100 z-[1]"
             src="/assets/launchpad/blue-divider-rl.svg"
             alt="Divider"
             width={500}
@@ -597,39 +599,44 @@ export default function Launch({ missions }: any) {
           id="featured-project-section"
           className="relative px-[5vw] 2xl:px-[10vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] from-[0%] md:from-[40%] to-[#0C0F28] to-[100%] md:to-[60%]"
         >
-          <LaunchpadBenefit
-            title="Trustless & Transparent"
-            description="All transactions are transparent and onchain, ensuring that everyone can see the funds raised and used."
-            icon="/assets/icon-signature.svg"
-            align="right"
-            slideDirection="right"
-          />
+          <div className="relative z-10">
+            <LaunchpadBenefit
+              title="Trustless & Transparent"
+              description="All transactions are transparent and onchain, ensuring that everyone can see the funds raised and used."
+              icon="/assets/icon-signature.svg"
+              align="right"
+              slideDirection="right"
+            />
+          </div>
         </div>
         <div className="pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 justify-center relative flex flex-col items-center bg-gradient-to-t from-[#010618] from-[0%] md:from-[5%] to-[#1B1C4B] to-[100%] md:to-[60%]">
           <Image
-            className="absolute top-0 left-0"
+            className="absolute top-0 left-0 z-[1]"
             src="/assets/launchpad/blue-divider-lr-inverted.svg"
             alt="Divider"
             width={500}
             height={500}
           />
-          <LaunchpadBenefit
-            title="Battle Tested"
-            description="Powered by Juicebox, a proven platform for decentralized fundraising with over 1,000+ projects and over $200,000,000 raised."
-            icon="/assets/icon-checkmark.svg"
-            align="left"
-            slideDirection="left"
-          />
-
-          <LaunchpadBenefit
-            title="Scalable & Flexible"
-            description="Adapt your fundraising strategy as your space mission evolves or utilize our quick launch guidelines and templates."
-            icon="/assets/icon-scalable.svg"
-            align="right"
-            slideDirection="right"
-          />
+          <div className="relative z-10">
+            <LaunchpadBenefit
+              title="Battle Tested"
+              description="Powered by Juicebox, a proven platform for decentralized fundraising with over 1,000+ projects and over $200,000,000 raised."
+              icon="/assets/icon-checkmark.svg"
+              align="left"
+              slideDirection="left"
+            />
+          </div>
+          <div className="relative z-10">
+            <LaunchpadBenefit
+              title="Scalable & Flexible"
+              description="Adapt your fundraising strategy as your space mission evolves or utilize our quick launch guidelines and templates."
+              icon="/assets/icon-scalable.svg"
+              align="right"
+              slideDirection="right"
+            />
+          </div>
           <Image
-            className="absolute bottom-0 right-0"
+            className="absolute bottom-0 right-0 z-[1]"
             src="/assets/launchpad/blue-divider-rl.svg"
             alt="Divider"
             width={500}
@@ -640,17 +647,19 @@ export default function Launch({ missions }: any) {
           id="featured-project-section"
           className="relative px-[5vw] 2xl:px-[10vw] pb-[5vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] from-[0%] md:from-[40%] to-[#0C0F28] to-[100%] md:to-[60%]"
         >
-          <LaunchpadBenefit
-            title="Power of the Network"
-            description="The Space Acceleration Network brings industry leading space companies onchain, alongside space enthusiasts and professionals from around the globe."
-            icon="/assets/icon-powerful.svg"
-            align="left"
-            slideDirection="left"
-          />
+          <div className="relative z-10">
+            <LaunchpadBenefit
+              title="Power of the Network"
+              description="The Space Acceleration Network brings industry leading space companies onchain, alongside space enthusiasts and professionals from around the globe."
+              icon="/assets/icon-powerful.svg"
+              align="left"
+              slideDirection="left"
+            />
+          </div>
         </div>
 
         <Image
-          className="absolute bottom-0 right-0 w-[40vw] md:w-[25vw]"
+          className="absolute bottom-0 right-0 w-[40vw] md:w-[25vw] z-[1]"
           src="/assets/launchpad/gradient-divider-rl.png"
           alt="Divider"
           width={300}

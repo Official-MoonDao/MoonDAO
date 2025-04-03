@@ -152,21 +152,11 @@ export default function useJBProjectData(
         (primaryTerminal === ZERO_ADDRESS || !primaryTerminal)
       ) {
         try {
-          console.log(
-            `Attempt to get primary terminal for project ${projectId}...`
-          )
-
-          const result: any = await readContract({
+          const primaryTerminal: any = await readContract({
             contract: jbDirectoryContract,
             method: 'primaryTerminalOf' as string,
             params: [projectId, '0x000000000000000000000000000000000000EEEe'],
           })
-
-          primaryTerminal = result
-          console.log(
-            `Primary terminal for project ${projectId}:`,
-            primaryTerminal
-          )
 
           if (primaryTerminal !== ZERO_ADDRESS && primaryTerminal) {
             setPrimaryTerminalAddress(primaryTerminal)
@@ -175,22 +165,12 @@ export default function useJBProjectData(
             console.warn(
               `Retrieved zero or invalid address for project ${projectId}, retrying...`
             )
-            retries--
-            if (retries > 0) {
-              // Wait a bit before retrying
-              await new Promise((resolve) => setTimeout(resolve, 1000))
-            }
           }
         } catch (error) {
           console.error(
             `Error getting primary terminal for project ${projectId}:`,
             error
           )
-          retries--
-          if (retries > 0) {
-            // Wait a bit before retrying
-            await new Promise((resolve) => setTimeout(resolve, 1000))
-          }
         }
       }
 

@@ -158,9 +158,9 @@ export default function StandardWideCard({
             `}
     >
       {onClick ? (
-        <button onClick={onClick} className="w-full h-full block">
+        <div onClick={onClick} className="w-full h-full block">
           {cardContent}
-        </button>
+        </div>
       ) : link ? (
         <Link id="card-link" href={link} className="w-full h-full block">
           {cardContent}
