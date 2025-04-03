@@ -17,7 +17,6 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
-import { ethers } from 'ethers'
 import { GetStaticProps } from 'next'
 import Image from 'next/image'
 import React, { useContext, useEffect, useState } from 'react'
@@ -34,7 +33,6 @@ import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
 import LaunchpadFAQs from '@/components/launchpad/LaunchpadFAQs'
-import CardStack from '@/components/layout/CardStack'
 import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
@@ -311,7 +309,7 @@ export default function Launch({ missions }: any) {
       <section
         id="featured-project-section"
         className="relative px-[5vw] 2xl:px-[10vw] pb-[5vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
-        >
+      >
         <Image
           id="white-divider-bottom-right"
           className="absolute bottom-[-2px] right-[-2px] -scale-x-100 w-[20vw]"
@@ -331,7 +329,7 @@ export default function Launch({ missions }: any) {
         <div
           id="featured-image-container"
           className="pb-[5vw] md:pb-0 pt-[5vw] md:pt-0 relative flex flex-col justify-center items-center md:flex-row "
-          >
+        >
           <MissionWideCard
             mission={
               {
@@ -355,36 +353,6 @@ export default function Launch({ missions }: any) {
             compact
             linkToMission
           />
-          {/* <div
-            id="featured-image-container"
-            className="md:ml-0 relative w-[80vw] md:w-[min(40vw,400px)]"
-          >
-            <Image
-              id="featured-image"
-              className="z-10 w-full h-full bg-[#1B1C4B] p-2 md:p-5 rounded-full"
-              src="/assets/launchpad/space-mice.png"
-              alt="Astro"
-              width={300}
-              height={300}
-            />
-          </div>
-          <div
-            id="featured-text-container"
-            className="w-full h-auto flex justify-center flex-col w-[min(40vw,600px)]"
-          >
-            <h2 className="text-white font-GoodTimes text-[4vw] md:text-[min(1.5vw,25px)] md:pb-[1vw]">
-              {'Space Mice: Save generations of space research!'}
-            </h2>
-            <p className="md:text-[1.2vw] font-bold">
-              The only study of its kind — About to be lost forever.
-            </p>
-            <p className="md:text-[min(1.2vw,16px)] pb-[2vw]">
-              {`NASA-funded research into spaceflight's impact on reproduction has reached a funding crisis. These mice, descended from ISS-flown astronauts, are a one-of-a-kind biological archive. Without action, we may never know if mammals can truly thrive in space. Support this mission today!`}
-            </p>
-            <StandardButton className="gradient-2 rounded-full md:text-[1.2vw]">
-              {'Learn More'}
-            </StandardButton>
-          </div> */}
         </div>
       </section>
 
@@ -398,7 +366,7 @@ export default function Launch({ missions }: any) {
           </h2>
           <p className="md:max-w-[500px] lg:max-w-[650px] md:text-[min(1.2vw,16px)] pb-[2vw]">
             {
-              "Join a revolution in space funding. Unlike traditional fundraising, where contributions disappear into a black hole, we ensure your support is secure, transparent, and impactful."
+              'Join a revolution in space funding. Unlike traditional fundraising, where contributions disappear into a black hole, we ensure your support is secure, transparent, and impactful.'
             }
           </p>
           <StandardButton
@@ -517,17 +485,17 @@ export default function Launch({ missions }: any) {
         </div>
 
         <div className="w-full md:max-w-[70vw] ">
-          <div className="absolute hidden md:block h-full max-h-[75%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw] pb-[5vw]">
+          <div className="absolute hidden md:block h-full max-h-[60%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw] pb-[5vw]">
             <VerticalProgressScrollBar sectionId="how-launchpad-works" />
           </div>
-          <div className="w-full flex flex-col items-end md:items-start gap-4">
+          <div className="w-full flex flex-col items-end md:items-start">
             <ExplainerIcon
               title="Back A Mission"
               description="Choose from cutting-edge space projects, from satellite launches to lunar lander payloads or even human spaceflight."
               icon={<p>1</p>}
               numberBackground="bg-gradient-to-br from-[#6C407D] to-[#5F4BA2]"
             />
-            <div className="w-full flex justify-end">
+            <div className="relative md:-top-[50px] w-full flex justify-end">
               <ExplainerIcon
                 title="Get Mission Tokens"
                 description="Your support earns you governance rights, so you have a say in how funds are used, how the mission develops, and in some cases, share in the rewards and revenue."
@@ -535,12 +503,14 @@ export default function Launch({ missions }: any) {
                 numberBackground="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC]"
               />
             </div>
-            <ExplainerIcon
-              title="Be Part Of Space History"
-              description="Help launch groundbreaking missions and accelerate humanity's space future."
-              icon={<p>3</p>}
-              numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
-            />
+            <div className="relative md:-top-[100px] w-full">
+              <ExplainerIcon
+                title="Be Part Of Space History"
+                description="Help launch groundbreaking missions and accelerate humanity's space future."
+                icon={<p>3</p>}
+                numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
+              />
+            </div>
           </div>
           <div className="mt-24 w-full flex flex-col text-center items-center justify-center gap-4">
             <h3 className="font-GoodTimes text-[4vw] md:text-[1.5vw] md:pb-[1vw]">

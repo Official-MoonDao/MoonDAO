@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts'
 import { missionTokenWeights } from '@/lib/mission/missionConfig'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 
 export type MissionFundingMilestoneChartProps = {
   subgraphData: any
@@ -35,8 +36,6 @@ export default function MissionFundingMilestoneChart({
 
   const volume = subgraphData?.volume / 1e18 || 0
 
-  console.log(fundingGoal)
-
   const points = useMemo(() => {
     return [
       {
@@ -45,14 +44,21 @@ export default function MissionFundingMilestoneChart({
         milestone: 1,
       },
       {
-        target: (fundingGoal / 1e18) * 0.5,
+        target: truncateTokenValue((fundingGoal / 1e18) * 0.5, 'ETH'),
         weight: missionTokenWeights[1],
         milestone: 2,
       },
       {
-        target: fundingGoal / 1e18,
+        target: truncateTokenValue(fundingGoal / 1e18, 'ETH'),
         weight: missionTokenWeights[2],
         milestone: 3,
+      },
+      {
+        target: truncateTokenValue((fundingGoal / 1e18) * 1.5, 'ETH'),
+        label: 'UNLIMITED',
+        targetLabel: '∞',
+        weight: missionTokenWeights[2],
+        milestone: 4,
       },
     ]
   }, [fundingGoal])
@@ -234,10 +240,11 @@ export default function MissionFundingMilestoneChart({
               return (
                 <div className="bg-smoke-100 p-2 text-sm dark:bg-slate-600">
                   <div className="text-grey-400 dark:text-slate-200">
-                    Milestone {data.milestone}
+                    {data.label ? data.label : 'Milestone ' + data.milestone}
                   </div>
                   <div className="font-medium flex items-center gap-2">
-                    Target: {data.target} ETH
+                    Target:{' '}
+                    {data.targetLabel ? data.targetLabel : data.target + ' ETH'}
                     <Image
                       src={`/coins/ETH.svg`}
                       width={20}

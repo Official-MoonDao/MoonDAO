@@ -155,6 +155,11 @@ export default function StandardWideCard({
       className={`
                 card-container mb-4 min-w-[300px] flex lg:flex-col rounded-[20px] relative 
                 ${link ? 'cursor-pointer' : ''}
+                ${
+                  onClick
+                    ? 'cursor-pointer border-[1px] border-dark-cool hover:border-light-warm'
+                    : ''
+                }
             `}
     >
       {onClick ? (

@@ -23,7 +23,7 @@ export default function VerticalProgressScrollBar({
       // Start filling when top of progress bar reaches viewport middle
       if (sectionTop < viewportMid) {
         // Calculate progress based on distance from viewport middle
-        progress = ((viewportMid - sectionTop) / sectionHeight) * 100
+        progress = ((viewportMid - sectionTop) / sectionHeight) * 1.5 * 100
         progress = Math.max(0, Math.min(100, progress))
       } else if (sectionTop <= -sectionHeight) {
         progress = 100
