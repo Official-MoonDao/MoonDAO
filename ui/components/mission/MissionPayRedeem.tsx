@@ -180,6 +180,7 @@ export type MissionPayRedeemProps = {
   selectedChain: any
   mission: any
   token: any
+  fundingGoal: number
   subgraphData: any
   teamNFT: any
   ruleset: any
@@ -193,6 +194,7 @@ export default function MissionPayRedeem({
   selectedChain,
   mission,
   token,
+  fundingGoal,
   subgraphData,
   teamNFT,
   ruleset,
@@ -326,6 +328,7 @@ export default function MissionPayRedeem({
     }
     if (input > 0 && ruleset) {
       const output = input * (+ruleset?.[0].weight.toString() / 1e18)
+      console.log(mission)
       setOutput(output)
     }
     if (input > 0) {

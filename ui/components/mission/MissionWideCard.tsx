@@ -79,6 +79,7 @@ export default function MissionWideCard({
           modalEnabled={payModalEnabled}
           setModalEnabled={setPayModalEnabled}
           primaryTerminalAddress={primaryTerminalAddress}
+          fundingGoal={fundingGoal}
         />
       )}
       <StandardWideCard

@@ -44,7 +44,7 @@ export default function MissionFundingMilestoneChart({
         milestone: 1,
       },
       {
-        target: truncateTokenValue((fundingGoal / 1e18) * 0.5, 'ETH'),
+        target: truncateTokenValue((fundingGoal / 1e18) * 0.2, 'ETH'),
         weight: missionTokenWeights[1],
         milestone: 2,
       },
@@ -93,14 +93,14 @@ export default function MissionFundingMilestoneChart({
     return () => clearTimeout(timeoutId)
   }, [])
 
-  const progressPercent = (Math.min(volume, maxTarget) / maxTarget) * 100
+  const progressPercent = (Math.min(volume, +maxTarget) / +maxTarget) * 100
 
   useEffect(() => {
     if (progressBarRef.current && chartDimensions.width > 0) {
       gsap.set(progressBarRef.current, { width: 0 })
 
       const targetWidth =
-        (Math.min(volume, maxTarget) / maxTarget) * chartDimensions.width
+        (Math.min(volume, +maxTarget) / +maxTarget) * chartDimensions.width
 
       gsap.to(progressBarRef.current, {
         width: targetWidth,

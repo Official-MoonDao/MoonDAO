@@ -33,7 +33,7 @@ export default function useMissionData(
       const statement = `SELECT * FROM ${tableName} WHERE id = ${mission.id}`
       const res = await fetch(`/api/tableland/query?statement=${statement}`)
       const rows = await res.json()
-      setFundingGoal(rows[0].fundingGoal)
+      setFundingGoal(rows[0]?.fundingGoal)
     }
     if (missionTableContract && mission?.id !== undefined) {
       getFundingData()

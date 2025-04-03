@@ -561,6 +561,7 @@ export default function CreateMission({
                         setMissionData({ ...missionData, name: e.target.value })
                       }
                       mode="dark"
+                      maxLength={100}
                     />
                     <FormInput
                       id="mission-tagline"
@@ -574,6 +575,7 @@ export default function CreateMission({
                         })
                       }
                       mode="dark"
+                      maxLength={100}
                     />
 
                     <FormInput
@@ -588,6 +590,7 @@ export default function CreateMission({
                         })
                       }
                       mode="dark"
+                      maxLength={500}
                     />
                     <FormInput
                       id="mission-social"
@@ -600,6 +603,7 @@ export default function CreateMission({
                           socialLink: e.target.value,
                         })
                       }
+                      maxLength={500}
                       mode="dark"
                     />
                   </div>
@@ -678,6 +682,26 @@ export default function CreateMission({
                   stage={stage}
                   setStage={setStage}
                   action={() => {
+                    if (
+                      !missionData?.fundingGoal ||
+                      missionData.fundingGoal <= 0
+                    ) {
+                      return toast.error('Please enter a funding goal', {
+                        style: toastStyle,
+                      })
+                    }
+                    if (missionData.token.tradeable) {
+                      if (missionData.token.name.length === 0) {
+                        return toast.error('Please enter a token name', {
+                          style: toastStyle,
+                        })
+                      }
+                      if (missionData.token.symbol.length === 0) {
+                        return toast.error('Please enter a token symbol', {
+                          style: toastStyle,
+                        })
+                      }
+                    }
                     setStage((prev: number) => prev + 1)
                   }}
                 >

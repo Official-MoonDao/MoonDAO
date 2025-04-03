@@ -205,6 +205,7 @@ export default function MissionInfo({
             mission={mission}
             teamNFT={teamNFT}
             token={token}
+            fundingGoal={fundingGoal}
             subgraphData={subgraphData}
             ruleset={ruleset}
             primaryTerminalAddress={primaryTerminalAddress}
