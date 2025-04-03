@@ -294,7 +294,7 @@ export default function MissionPayRedeem({
         style: toastStyle,
       })
       router.reload()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error redeeming tokens:', error)
       if (error.message.includes('Project funding deadline has not passed.')) {
         toast.error(
