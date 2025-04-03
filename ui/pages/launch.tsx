@@ -270,7 +270,7 @@ export default function Launch({ missions }: any) {
                     <Image
                       id="desktop-tagline"
                       className="w-[90vw] h-auto md:w-[min(40vw,450px)]"
-                      src="/assets/Animated-Icon-Tagline.svg"
+                      src="/assets/Launchpad-Tagline-Desktop.svg"
                       alt="Org"
                       width={450}
                       height={450}
@@ -283,7 +283,7 @@ export default function Launch({ missions }: any) {
                     <Image
                       id="mobile-tagline"
                       className="w-[90vw] h-[17vw] md:w-[40vw] md:h-[6.86vw]"
-                      src="/assets/Tagline Animation Centered.svg"
+                      src="/assets/Tagline Animation - Mobile.svg"
                       alt="Org"
                       width={450}
                       height={450}
@@ -298,27 +298,20 @@ export default function Launch({ missions }: any) {
 
       <section
         id="initial-callout-section"
-        className="px-[5vw] md:px-[5vw] 2xl:px-[10vw] flex flex-col md:flex-row items-center text-center md:text-left justify-center md:justify-start pt-[10vw] md:pt-[2vw] lg:pt-[20px] pb-[10vw] lg:pb-[10px] md:pb-[2vw] gap-4 md:gap-12 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[40%] to-[#1B1C4B] to-[100%] md:to-[60%]"
+        className="px-[5vw] md:px-[5vw] 2xl:px-[10vw] flex flex-col md:flex-row items-center text-center justify-center pt-[10vw] md:pt-[2vw] lg:pt-[20px] pb-[10vw] lg:pb-[10px] md:pb-[2vw] gap-4 md:gap-12 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[40%] to-[#1B1C4B] to-[100%] md:to-[60%]"
       >
         <p
           id="callout"
           className="text-white font-GoodTimes text-[5vw] md:text-[min(2vw,25px)] leading-[6vw]"
         >
-          {'Launch Your Space Mission With MoonDAO'}
+          {'Fund the future. Be part of the journey.'}
         </p>
-        <StandardButton
-          className="gradient-2 rounded-full md:text-[1.2vw]"
-          hoverEffect={false}
-          onClick={handleCreateMission}
-        >
-          {'Launch Your Mission'}
-        </StandardButton>
       </section>
 
       <section
         id="featured-project-section"
         className="relative px-[5vw] 2xl:px-[10vw] pb-[5vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
-      >
+        >
         <Image
           id="white-divider-bottom-right"
           className="absolute bottom-[-2px] right-[-2px] -scale-x-100 w-[20vw]"
@@ -337,8 +330,8 @@ export default function Launch({ missions }: any) {
         />
         <div
           id="featured-image-container"
-          className="pb-[5vw] md:pb-0 pt-[5vw] md:pt-0 relative flex flex-col items-center md:flex-row gap-12"
-        >
+          className="pb-[5vw] md:pb-0 pt-[5vw] md:pt-0 relative flex flex-col justify-center items-center md:flex-row "
+          >
           <MissionWideCard
             mission={
               {
@@ -399,13 +392,13 @@ export default function Launch({ missions }: any) {
         id="launchpad-features-section"
         className="relative px-[5vw] 2xl:px-[10vw] pt-[2vw] md:pt-[2vw] pb-[5vw] md:pb-[2vw] md:pb-[5vw] flex flex-col bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
       >
-        <div className="flex flex-col pb-[5vw] md:pb-[2vw] items-start">
+        <div className="flex flex-col pb-[5vw] md:pb-[2vw] items-center">
           <h2 className="mt-[5vw] md:mt-[2vw] font-GoodTimes text-[5vw] md:text-[min(2vw,25px)] text-center leading-[6vw]">
             {'Built for New Space Innovation'}
           </h2>
           <p className="md:max-w-[500px] lg:max-w-[650px] md:text-[min(1.2vw,16px)] pb-[2vw]">
             {
-              "Whether you're launching a nanosatellite, testing lunar ISRU tech, or sending humans to space, MoonDAO's Launchpad provides the tools you need to turn your vision into reality while tapping into a global network of backers with funding that are passionate about space, as well as leading space companies and service providers that are already part of the Space Acceleration Network."
+              "Join a revolution in space funding. Unlike traditional fundraising, where contributions disappear into a black hole, we ensure your support is secure, transparent, and impactful."
             }
           </p>
           <StandardButton
@@ -418,19 +411,19 @@ export default function Launch({ missions }: any) {
         <div className="w-full flex flex-col md:flex-row items-start justify-between">
           <FeatureIcon
             title="Contribute Confidently"
-            description="If a mission doesn't reach at least 20% of its goal within 28 days, you automatically get your money back."
+            description="If a mission doesn't reach at least 20% of its goal within 28 days, you automatically get refunded."
             icon="/assets/icon-crowdfunding.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#6C407D] to-[#5F4BA2]"
           />
           <FeatureIcon
-            title="More Than A Donation"
-            description="Mission tokens give you a real stake in the journey, and allow you to help shape and govern the use of funds."
+            title="Coordinate Effectively"
+            description="Mission tokens give you a real stake in the journey, allowing you to help shape and govern the treasury."
             icon="/assets/icon-fasttrack.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#5F4BA2] to-[#5159CC]"
           />
           <FeatureIcon
-            title="Onchain Transparency"
-            description="100% transparent funding, managed by smart contracts, so your contribution goes exactly where it's supposed to."
+            title="Collaborate Transparently"
+            description="100% transparent funding, managed by smart contracts, so your contribution is secure."
             icon="/assets/icon-lightbulb.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#5159CC] to-[#4660E7]"
           />
@@ -455,7 +448,7 @@ export default function Launch({ missions }: any) {
             </h2>
             <p className="md:text-[min(1.2vw,16px)] pb-[2vw] pr-0 md:pr-[5vw]">
               {
-                "MoonDAO is no stranger to launching bold ideas. With over Ξ2,623 (+$8,000,000) crowdraised during our initial launch, we used those funds to send two people to space and support 60+ projects for over $300,000. We're proving that the future of space funding is decentralized and onchain."
+                "MoonDAO is no stranger to launching bold ideas. With over Ξ2,623 (+$8,000,000) crowdraised, we sent two people to space and supported 80+ projects with our funding model. We're proving that the future of space funding is decentralized and onchain."
               }
             </p>
             <StandardButton
@@ -518,8 +511,8 @@ export default function Launch({ missions }: any) {
         className="relative px-[2vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
       >
         <div className="w-full mt-8 flex flex-col gap-2 items-center">
-          <h1 className="mt-8 text-[5vw] md:text-[min(3vw,25px)] font-GoodTimes">
-            {'How Launchpad Works'}
+          <h1 className="mt-8 text-[5vw] md:text-[min(3vw,35px)] font-GoodTimes">
+            {'How It Works'}
           </h1>
         </div>
 
@@ -549,7 +542,7 @@ export default function Launch({ missions }: any) {
               numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
             />
           </div>
-          <div className="mt-24 w-full flex flex-col items-center justify-center gap-4">
+          <div className="mt-24 w-full flex flex-col text-center items-center justify-center gap-4">
             <h3 className="font-GoodTimes text-[4vw] md:text-[1.5vw] md:pb-[1vw]">
               Your tools, your team, your mission
             </h3>
@@ -581,7 +574,7 @@ export default function Launch({ missions }: any) {
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Space is Global & Borderless"
-              description="Space is Global & BorderlessTap into the power of a borderless, global crypto network with trillions of dollars in market cap that is available in seconds."
+              description="Move at the speed of the internet tapping into a global crypto network with trillions of dollars at your fingertips."
               icon="/assets/icon-globe.svg"
               align="left"
               slideDirection="left"
@@ -602,7 +595,7 @@ export default function Launch({ missions }: any) {
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Trustless & Transparent"
-              description="All transactions are transparent and onchain, ensuring that everyone can see the funds raised and used."
+              description="All transactions are onchain, ensuring that everyone can see how funds are spent."
               icon="/assets/icon-signature.svg"
               align="right"
               slideDirection="right"
@@ -620,7 +613,7 @@ export default function Launch({ missions }: any) {
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Battle Tested"
-              description="Powered by Juicebox, a proven platform for decentralized fundraising with over 1,000+ projects and over $200,000,000 raised."
+              description="Powered by Juicebox, a proven and audited platform with over 1,000+ projects and over $200,000,000+ raised."
               icon="/assets/icon-checkmark.svg"
               align="left"
               slideDirection="left"
@@ -629,7 +622,7 @@ export default function Launch({ missions }: any) {
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Scalable & Flexible"
-              description="Adapt your fundraising strategy as your space mission evolves or utilize our quick launch guidelines and templates."
+              description="Adapt your fundraising strategy as your mission evolves with our quick launch guidelines and templates."
               icon="/assets/icon-scalable.svg"
               align="right"
               slideDirection="right"
@@ -650,7 +643,7 @@ export default function Launch({ missions }: any) {
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Power of the Network"
-              description="The Space Acceleration Network brings industry leading space companies onchain, alongside space enthusiasts and professionals from around the globe."
+              description="The Space Acceleration Network brings leading space companies, enthusiasts, and professionals onchain from around the globe."
               icon="/assets/icon-powerful.svg"
               align="left"
               slideDirection="left"
