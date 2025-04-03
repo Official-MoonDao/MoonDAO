@@ -94,12 +94,12 @@ export default function LaunchpadBenefit({
         )}
         <div
           id="benefit-text"
-          className={`flex flex-col items-center ${
+          className={`flex flex-col items-center pb-[5vw] md:pb-0 ${
             align === 'left'
               ? 'md:items-start text-center md:text-left pl-[5vw] pr-[5vw] md:pl-[2vw] md:pr-0'
               : 'md:items-end text-center md:text-right pr-[5vw] pl-[5vw] md:pr-[2vw] md:pl-0'
           }`}
-        >
+          >
           <h3
             id="benefit-title"
             className="text-[4vw] text-[5vw] md:text-[2vw] font-bold font-GoodTimes "
@@ -108,7 +108,7 @@ export default function LaunchpadBenefit({
           </h3>
           <p
             id="benefit-description"
-            className="md:max-w-[35vw] text-[3vw] md:text-[1.2vw] text-gray-500"
+            className="md:max-w-[35vw] text-[3vw] md:text-[16px] text-gray-500"
           >
             {description}
           </p>
