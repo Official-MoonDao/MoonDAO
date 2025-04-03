@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { useRef } from 'react'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import ProgressBar from '../layout/ProgressBar'
 
 export default function MissionFundingProgressBar({
@@ -24,7 +25,7 @@ export default function MissionFundingProgressBar({
     >
       {compact && (
         <div className="text-left text-light-warm mb-1">
-          {volume} / {fundingGoal / 1e18} ETH
+          {volume} / {truncateTokenValue(fundingGoal / 1e18, 'ETH')} ETH
         </div>
       )}
 
