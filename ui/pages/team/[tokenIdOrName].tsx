@@ -16,6 +16,7 @@ import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import JobBoardTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -33,6 +34,7 @@ import {
   DAI_ADDRESSES,
   USDC_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
+  MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'

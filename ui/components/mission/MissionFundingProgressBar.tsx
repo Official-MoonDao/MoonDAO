@@ -50,7 +50,10 @@ export default function MissionFundingProgressBar({
           />
 
           <p className="text-[#425eeb] font-GoodTimes font-bold">
-            {`${(fundingGoal / 1e18) * 0.1} ETH secured`}
+            {`${truncateTokenValue(
+              (fundingGoal / 1e18) * 0.1,
+              'ETH'
+            )} ETH secured`}
           </p>
         </div>
       )}

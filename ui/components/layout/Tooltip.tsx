@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 export type TooltipProps = {
   text: string
   children: React.ReactNode
+  disabled?: boolean
 }
 
-export default function Tooltip({ text, children }: TooltipProps) {
+export default function Tooltip({ text, children, disabled }: TooltipProps) {
   const [isHovered, setIsHovered] = useState(false)
 
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -37,9 +38,9 @@ export default function Tooltip({ text, children }: TooltipProps) {
       <div
         id="tooltip-icon"
         ref={triggerRef}
-        className={`flex justify-center items-center cursor-pointer h-6 w-6 bg-white rounded-full font-GoodTimes text-black text-xl pl-[1.5px] ${
-          isHovered ? 'opacity-100' : 'opacity-50'
-        }`}
+        className={`flex justify-center items-center h-6 w-6 bg-white rounded-full font-GoodTimes text-black pl-[1.5px] ${
+          !disabled && isHovered ? 'opacity-100' : 'opacity-50'
+        } ${!disabled && 'cursor-pointer'}`}
         onMouseEnter={() => {
           setIsHovered(true)
         }}
@@ -50,7 +51,7 @@ export default function Tooltip({ text, children }: TooltipProps) {
         {children}
       </div>
 
-      {isHovered && (
+      {!disabled && isHovered && (
         <div
           id="tooltip"
           ref={tooltipRef}

@@ -258,7 +258,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         >
           <div
             id="page-container"
-            className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
+            className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1200px]"
           >
             {/* Pay & Redeem Section */}
             <Frame

@@ -1,6 +1,7 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
+import { missionTokenWeights } from '@/lib/mission/missionConfig'
 import MissionFundingMilestoneChart from './MissionFundingMilestoneChart'
 
 function FundingStage({
@@ -60,15 +61,15 @@ export default function MissionTokenInfo({
       {/* <Image/> */}
       <FundingStage
         stage={1}
-        title="Roll Out"
-        description={`During the roll out stage of unding you get ${stage1Weight.toLocaleString()} ${
+        title="Ignition"
+        description={`During the ignition stage, you get ${missionTokenWeights[0].toLocaleString()} ${
           token?.tokenSymbol
-        } per ETH contributed, and you can redeem your full amount of funding if the project doesn't raise the required minimum funds by the timeline.`}
+        } per ETH contributed. You can redeem your full amount if the project doesn't raise the required minimum funds within the timeframe.`}
       />
       <FundingStage
         stage={2}
-        title={'Fill up the tanks'}
-        description={`If the project raises beyond their minimum funding goal, then the project will be launched. At this point you'll receive ${stage2Weight.toLocaleString()} ${
+        title={'Ascent'}
+        description={`If the mission reaches its minimum funding threshold, the project has launched and is ascending toward its goal. At this point you'll receive ${missionTokenWeights[1].toLocaleString()} ${
           token?.tokenSymbol
         } per ETH contributed up to the total goal amount, or until ${new Date(
           Date.now() + stage2Duration
@@ -76,14 +77,14 @@ export default function MissionTokenInfo({
       />
       <FundingStage
         stage={3}
-        title={'Ignition'}
-        description={`Once the goal amount is reached, you can still continue to contribute until the deadline is over, but at the rate of ${stage3Weight.toLocaleString()} ${
+        title={'Orbit'}
+        description={`Once the goal amount is reached, you can still continue to contribute until the deadline is reached, but at the rate of ${missionTokenWeights[2].toLocaleString()} ${
           token?.tokenSymbol
         } per ETH contributed.`}
       />
       <div className="flex items-center gap-2">
-        <InformationCircleIcon className="w-16 h-16 text-moon-indigo" />
-        <p className="text-sm text-moon-indigo">{`Note: If no deadline is set, then the project owner can manually trigger the shut down of the project, going into effect 24 hours after the trigger is completed.`}</p>
+        <InformationCircleIcon className="w-16 h-16" />
+        <p className="text-sm">{`Note: If no deadline is set, then the project owner can manually trigger the shut down of the project, going into effect 24 hours after the trigger is completed.`}</p>
       </div>
 
       {/* Tokenomics */}
@@ -127,7 +128,7 @@ export default function MissionTokenInfo({
           height={20}
         />
         <Link
-          className="hover:underline"
+          className="underline text-blue-500"
           href={`https://${
             process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
               ? 'etherscan.io'
@@ -147,7 +148,7 @@ export default function MissionTokenInfo({
           height={20}
         />
         <Link
-          className="hover:underline"
+          className="underline text-blue-500"
           href={`https://${
             process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
               ? 'juicebox.money'

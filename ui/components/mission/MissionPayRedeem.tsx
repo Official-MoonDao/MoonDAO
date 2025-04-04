@@ -10,6 +10,8 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { ethereum } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+import useMissionTokenOutput from '@/lib/mission/useMissionTokenOutput'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
@@ -43,6 +45,7 @@ function MissionPayRedeemContent({
   redeem,
   setMissionPayModalEnabled,
   tokenBalance,
+  currentStage,
 }: any) {
   return (
     <div
@@ -146,31 +149,36 @@ function MissionPayRedeemContent({
           <div className="text-lg">
             <h3 className="opacity-60 text-sm">Current Supply</h3>
             <p>
-              {token?.tokenSupply.toString() / 1e18} {token?.tokenSymbol}
+              {Math.floor(token?.tokenSupply.toString() / 1e18)} $
+              {token?.tokenSymbol}
             </p>
           </div>
 
           <MissionTokenExchangeRates
-            ruleset={ruleset}
+            currentStage={currentStage}
             tokenSymbol={token?.tokenSymbol}
           />
         </div>
-        <div
-          id="mission-redeem-container"
-          className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
-        >
-          <div>
-            <h3 className="opacity-60 text-sm">Your Balance</h3>
-            <p className="text-2xl">{`${tokenBalance} ${token?.tokenSymbol}`}</p>
-          </div>
+        {tokenBalance > 0 && (
+          <div
+            id="mission-redeem-container"
+            className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
+          >
+            <div>
+              <h3 className="opacity-60 text-sm">Your Balance</h3>
+              <p className="text-2xl">{`${tokenBalance.toFixed(2)} $${
+                token?.tokenSymbol
+              }`}</p>
+            </div>
 
-          <PrivyWeb3Button
-            className="w-full rounded-full py-2"
-            label="Redeem"
-            action={redeem}
-            noPadding
-          />
-        </div>
+            <PrivyWeb3Button
+              className="w-full rounded-full py-2"
+              label="Redeem"
+              action={redeem}
+              noPadding
+            />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -214,6 +222,10 @@ export default function MissionPayRedeem({
   const [usdQuote, setUSDQuote] = useState<number | undefined>(0)
 
   const [agreedToCondition, setAgreedToCondition] = useState(false)
+
+  const currentStage = useMissionFundingStage(mission?.id)
+
+  useMissionTokenOutput(input, fundingGoal)
 
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
@@ -351,6 +363,7 @@ export default function MissionPayRedeem({
               setInput={setInput}
               setMissionPayModalEnabled={setMissionPayModalEnabled}
               tokenBalance={tokenBalance}
+              currentStage={currentStage}
             />
           </div>
           <div className="fixed bottom-0 left-0 w-full p-4 bg-darkest-cool rounded-t-2xl md:hidden z-[1000] flex flex-col gap-4">
@@ -461,7 +474,7 @@ export default function MissionPayRedeem({
               <ConditionCheckbox
                 label={
                   <p className="text-sm">
-                    {`I understand and accept this project's notice and the `}
+                    {`I acknowledge that this token is not a security, carries no profit expectation, and I accept all `}
                     <Link
                       href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
                       className="text-moon-blue"
@@ -470,7 +483,7 @@ export default function MissionPayRedeem({
                     >
                       risks
                     </Link>{' '}
-                    {`associated with the Juicebox protocol.`}
+                    {`associated with participation in the MoonDAO Launchpad.`}
                   </p>
                 }
                 agreedToCondition={agreedToCondition}

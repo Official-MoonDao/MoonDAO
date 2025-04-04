@@ -46,7 +46,91 @@ export default function MissionTimelineChart({
     createdAt,
   })
 
-  const defaultYDomain = useTimelineYDomain(points?.map((point) => point[view]))
+  const xDomain = useMemo(() => {
+    const endOfDay = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60) // Round to midnight
+    const startOfDay = endOfDay - +range * 24 * 60 * 60
+
+    // Find the min and max timestamps from points with volume
+    let minTime = startOfDay
+    let maxTime = endOfDay
+
+    if (points?.length) {
+      const pointsWithVolume = points.filter((p) => p.volume > 0)
+      if (pointsWithVolume.length) {
+        const timestamps = pointsWithVolume.map((p) => p.timestamp)
+        minTime = Math.min(minTime, ...timestamps)
+        maxTime = Math.max(maxTime, ...timestamps)
+      }
+    }
+
+    return [minTime, maxTime] as [number, number]
+  }, [range, points])
+
+  const xTicks = useTicks({
+    range: xDomain,
+    resolution: 7,
+    offset: 0.5,
+  })
+
+  // Process points to ensure all x-ticks have data points with y values defaulting to 0
+  const processedPoints = useMemo(() => {
+    if (!points?.length) return []
+
+    // Process the original points to ensure all values exist
+    const processedOriginalPoints = points.map((point) => ({
+      ...point,
+      volume: point.volume ?? 0,
+      balance: point.balance ?? 0,
+      trendingScore: point.trendingScore ?? 0,
+    }))
+
+    // Find points that have actual non-zero values for the current view
+    const nonZeroPoints = processedOriginalPoints.filter(
+      (point) => point[view] > 0
+    )
+
+    // Create a map of existing timestamps for quick lookup
+    const pointsMap = new Map()
+    processedOriginalPoints.forEach((point) => {
+      pointsMap.set(point.timestamp, point)
+    })
+
+    // Create base points for all ticks
+    const tickPoints = xTicks.map((tick) => {
+      if (pointsMap.has(tick)) {
+        return pointsMap.get(tick)
+      }
+
+      return {
+        timestamp: tick,
+        volume: 0,
+        balance: 0,
+        trendingScore: 0,
+      }
+    })
+
+    // Combine tick points with any non-zero points that might not align with ticks
+    const result = [...tickPoints]
+
+    // Add any non-zero points that aren't already in the result
+    nonZeroPoints.forEach((point) => {
+      // Check if this timestamp is already in our results
+      const existingPointIndex = result.findIndex(
+        (p) => p.timestamp === point.timestamp
+      )
+      if (existingPointIndex === -1) {
+        // If point isn't in results yet, add it
+        result.push(point)
+      }
+    })
+
+    // Sort by timestamp
+    return result.sort((a, b) => a.timestamp - b.timestamp)
+  }, [points, xTicks, view])
+
+  const defaultYDomain = useTimelineYDomain(
+    processedPoints?.map((point) => point[view])
+  )
 
   const { trendingProjects } = useJBTrendingProjects()
   const highTrendingScore = trendingProjects?.length
@@ -58,7 +142,8 @@ export default function MissionTimelineChart({
       0
     ) ?? 0
 
-  const yDomain: [number, number] =
+  // Original yDomain - rename to originalYDomain
+  const originalYDomain: [number, number] =
     view === 'trendingScore' && highTrendingScore
       ? [
           defaultYDomain[0],
@@ -66,19 +151,80 @@ export default function MissionTimelineChart({
         ]
       : defaultYDomain
 
-  const xDomain = useMemo(() => {
-    const endOfDay = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60) // Round to midnight
-    const startOfDay = endOfDay - +range * 24 * 60 * 60
-    return [startOfDay, endOfDay] as [number, number]
-  }, [range])
+  // Create custom y-ticks
+  const yTicks = useMemo(() => {
+    // Get the max value in the current view
+    const maxValue = Math.max(
+      ...processedPoints.map((point) => point[view]),
+      0.00001
+    )
 
-  const xTicks = useTicks({
-    range: xDomain,
-    resolution: 7,
-    offset: 0.5,
-  })
+    // Create ticks based on the order of magnitude
+    let tickCount = 5
+    let ticks = []
 
-  const yTicks = useTicks({ range: yDomain, resolution: 5, offset: 0.5 })
+    if (maxValue < 0.0001) {
+      // Very small values
+      const step = maxValue / tickCount
+      for (let i = 0; i <= tickCount; i++) {
+        ticks.push(step * i)
+      }
+    } else if (maxValue < 0.001) {
+      // Small values
+      for (let i = 0; i <= tickCount; i++) {
+        ticks.push((maxValue / tickCount) * i)
+      }
+    } else if (maxValue < 0.01) {
+      // Values in 0.001-0.01 range
+      for (let i = 0; i <= tickCount; i++) {
+        ticks.push(0.002 * i)
+      }
+    } else if (maxValue < 0.1) {
+      // Values in 0.01-0.1 range
+      for (let i = 0; i <= 5; i++) {
+        ticks.push(0.02 * i)
+      }
+    } else if (maxValue < 1) {
+      // Values in 0.1-1 range
+      for (let i = 0; i <= 5; i++) {
+        ticks.push(0.2 * i)
+      }
+    } else if (maxValue < 10) {
+      // Values in 1-10 range
+      for (let i = 0; i <= 5; i++) {
+        ticks.push(2 * i)
+      }
+    } else {
+      // Values above 10
+      const roundedMax = Math.ceil(maxValue / 10) * 10
+      const step = roundedMax / 5
+      for (let i = 0; i <= 5; i++) {
+        ticks.push(step * i)
+      }
+    }
+
+    return ticks
+  }, [processedPoints, view])
+
+  // Custom yDomain based on yTicks
+  const yDomain = useMemo(() => {
+    // For trending score, use the original domain
+    if (view === 'trendingScore' && highTrendingScore) {
+      return originalYDomain
+    }
+
+    // Otherwise use the domain based on our custom ticks
+    if (yTicks.length) {
+      return [0, yTicks[yTicks.length - 1]]
+    }
+
+    return [0, 0.1] // Fallback
+  }, [yTicks, view, originalYDomain, highTrendingScore])
+
+  const allZeroValues = useMemo(() => {
+    if (!processedPoints?.length) return true
+    return processedPoints.every((point) => point[view] === 0)
+  }, [processedPoints, view])
 
   const dateStringForBlockTime = (timestampSecs: number) =>
     moment(timestampSecs * 1000).format('M/DD')
@@ -94,146 +240,74 @@ export default function MissionTimelineChart({
           </span>
         </div>
       </div>
-      <ResponsiveContainer className="mt-4 w-full" height={height}>
-        <LineChart
-          margin={{
-            top: -1, // hacky way to hide top border of CartesianGrid
-            right: 0,
-            bottom: 0,
-            left: 1, // ensure y axis isn't cut off
-          }}
-          data={points}
-        >
-          <CartesianGrid
-            stroke={stroke}
-            strokeDasharray="1 2"
-            vertical={false}
-          />
-          <YAxis
-            stroke={stroke}
-            tickLine={false}
-            tickSize={0}
-            tick={(props) => {
-              if (view === 'trendingScore' || !points?.length) return <g></g>
-
-              const { value } = props.payload
-
-              let formattedValue
-              if (value < 0.0001) {
-                formattedValue = value.toFixed(6)
-              } else if (value < 0.001) {
-                formattedValue = value.toFixed(5)
-              } else if (value < 0.01) {
-                formattedValue = value.toFixed(4)
-              } else if (value < 0.1) {
-                formattedValue = value.toFixed(3)
-              } else if (value < 1) {
-                formattedValue = value.toFixed(2)
-              } else {
-                formattedValue = value.toFixed(value >= 10 ? 0 : 1)
-              }
-
-              // <rect> serves as a mask to prevent CartesianGrid lines overlapping tick text
-              return (
-                <g>
-                  <rect
-                    transform={`translate(${props.x},${props.y - 6})`}
-                    height={12}
-                    // Adjust width based on text length
-                    width={formattedValue.length * 8}
-                    fill={bg}
-                  />
-                  <text
-                    fontSize={fontSize}
-                    fill={color}
-                    transform={`translate(${props.x + 4},${props.y + 4})`}
-                  >
-                    {'ETH'}
-                    <Image
-                      src={`/coins/ETH.svg`}
-                      width={20}
-                      height={20}
-                      alt=""
-                    />
-                    {formattedValue}
-                  </text>
-                </g>
-              )
+      <div className="mt-4 w-full relative">
+        {allZeroValues && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+            <div className="text-white text-xl font-semibold font-GoodTimes">
+              No Activity Yet
+            </div>
+          </div>
+        )}
+        <ResponsiveContainer height={height}>
+          <LineChart
+            margin={{
+              top: 10, // hacky way to hide top border of CartesianGrid
+              right: 0,
+              bottom: 10,
+              left: 1, // ensure y axis isn't cut off
             }}
-            ticks={yTicks}
-            domain={yDomain}
-            interval={0}
-            mirror
-          />
-          <XAxis
-            stroke={stroke}
-            tick={(props) => (
-              <text
-                fontSize={fontSize}
-                fill={color}
-                transform={`translate(${props.x - 14},${props.y + 14})`}
-              >
-                {dateStringForBlockTime(props.payload.value)}
-              </text>
-            )}
-            ticks={xTicks}
-            domain={xDomain}
-            interval={0} // Ensures all ticks are visible
-            tickLine={false}
-            tickSize={0}
-            type="number"
-            dataKey="timestamp"
-            allowDataOverflow={true}
-          />
-          {view === 'trendingScore' && highTrendingScore && points?.length && (
-            <ReferenceLine
-              label={
-                <Label
-                  fill={color}
-                  style={{
-                    fontSize,
-                    fontWeight: 500,
-                  }}
-                  position="insideTopLeft"
-                  offset={8}
-                  value={`Current #1 trending`}
-                />
-              }
-              stroke={color}
-              y={highTrendingScore}
+            data={processedPoints}
+          >
+            <CartesianGrid
+              stroke={stroke}
+              strokeDasharray="1 2"
+              vertical={false}
             />
-          )}
-          <defs>
-            <linearGradient id="colorGradient" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="5%" stopColor="#425eeb" />
-              <stop offset="90%" stopColor="#6d3f79" />
-            </linearGradient>
-          </defs>
-          {points?.length && (
-            <Line
-              dot={false}
-              stroke="url(#colorGradient)"
-              strokeWidth={4}
-              type="monotone"
-              dataKey={view}
-              activeDot={{ r: 6, fill: '#6d3f79', stroke: undefined }}
-              animationDuration={750}
-            />
-          )}
-          <Tooltip
-            cursor={{ stroke: color }}
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null
+            <YAxis
+              stroke={stroke}
+              tickLine={false}
+              tickSize={0}
+              tick={(props) => {
+                if (view === 'trendingScore' || !processedPoints?.length)
+                  return <g></g>
 
-              const amount = payload[0].payload[view]
+                const { value } = props.payload
 
-              return (
-                <div className="bg-smoke-100 p-2 text-sm dark:bg-slate-600">
-                  <div className="text-grey-400 dark:text-slate-200">
-                    {dateStringForBlockTime(payload[0].payload.timestamp)}
-                  </div>
-                  {view !== 'trendingScore' && (
-                    <div className="font-medium">
+                let formattedValue
+                // Use a consistent format based on the magnitude of the value
+                if (value === 0) {
+                  formattedValue = '0'
+                } else if (value < 0.0001) {
+                  formattedValue = value.toExponential(2)
+                } else if (value < 0.001) {
+                  formattedValue = value.toFixed(6)
+                } else if (value < 0.01) {
+                  formattedValue = value.toFixed(4)
+                } else if (value < 0.1) {
+                  formattedValue = value.toFixed(3)
+                } else if (value < 1) {
+                  formattedValue = value.toFixed(2)
+                } else if (value < 10) {
+                  formattedValue = value.toFixed(1)
+                } else {
+                  formattedValue = value.toFixed(0)
+                }
+
+                // <rect> serves as a mask to prevent CartesianGrid lines overlapping tick text
+                return (
+                  <g>
+                    <rect
+                      transform={`translate(${props.x},${props.y - 6})`}
+                      height={12}
+                      // Adjust width based on text length
+                      width={formattedValue.length * 8}
+                      fill={bg}
+                    />
+                    <text
+                      fontSize={fontSize}
+                      fill={color}
+                      transform={`translate(${props.x + 4},${props.y + 4})`}
+                    >
                       {'ETH'}
                       <Image
                         src={`/coins/ETH.svg`}
@@ -241,16 +315,105 @@ export default function MissionTimelineChart({
                         height={20}
                         alt=""
                       />
-                      {amount.toFixed(amount > 10 ? 1 : amount > 1 ? 2 : 4)}
+                      {formattedValue}
+                    </text>
+                  </g>
+                )
+              }}
+              ticks={yTicks}
+              domain={yDomain}
+              interval={0}
+              mirror
+            />
+            <XAxis
+              stroke={stroke}
+              tick={(props) => (
+                <text
+                  fontSize={fontSize}
+                  fill={color}
+                  transform={`translate(${props.x - 14},${props.y + 14})`}
+                >
+                  {dateStringForBlockTime(props.payload.value)}
+                </text>
+              )}
+              ticks={xTicks}
+              domain={xDomain}
+              interval={0}
+              tickLine={false}
+              tickSize={0}
+              type="number"
+              dataKey="timestamp"
+              allowDataOverflow={false}
+            />
+            {view === 'trendingScore' &&
+              highTrendingScore &&
+              processedPoints?.length && (
+                <ReferenceLine
+                  label={
+                    <Label
+                      fill={color}
+                      style={{
+                        fontSize,
+                        fontWeight: 500,
+                      }}
+                      position="insideTopLeft"
+                      offset={8}
+                      value={`Current #1 trending`}
+                    />
+                  }
+                  stroke={color}
+                  y={highTrendingScore}
+                />
+              )}
+            <defs>
+              <linearGradient id="colorGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="5%" stopColor="#425eeb" />
+                <stop offset="90%" stopColor="#6d3f79" />
+              </linearGradient>
+            </defs>
+            {processedPoints?.length && (
+              <Line
+                dot={false}
+                stroke="url(#colorGradient)"
+                strokeWidth={4}
+                type="monotone"
+                dataKey={view}
+                activeDot={{ r: 6, fill: '#6d3f79', stroke: undefined }}
+                animationDuration={750}
+              />
+            )}
+            <Tooltip
+              cursor={{ stroke: color }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null
+
+                const amount = payload[0].payload[view]
+
+                return (
+                  <div className="bg-smoke-100 p-2 text-sm dark:bg-slate-600">
+                    <div className="text-grey-400 dark:text-slate-200">
+                      {dateStringForBlockTime(payload[0].payload.timestamp)}
                     </div>
-                  )}
-                </div>
-              )
-            }}
-            animationDuration={50}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+                    {view !== 'trendingScore' && (
+                      <div className="font-medium">
+                        {'ETH'}
+                        <Image
+                          src={`/coins/ETH.svg`}
+                          width={20}
+                          height={20}
+                          alt=""
+                        />
+                        {amount.toFixed(amount > 10 ? 1 : amount > 1 ? 2 : 4)}
+                      </div>
+                    )}
+                  </div>
+                )
+              }}
+              animationDuration={50}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 }
