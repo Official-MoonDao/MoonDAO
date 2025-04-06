@@ -306,10 +306,6 @@ export default function CreateMission({
         missionMetadataBlob
       )
 
-      const deadline = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 28 // 30 days in seconds
-
-      const durationInSeconds = deadline - Math.floor(Date.now() / 1000)
-
       const transaction = prepareContractCall({
         contract: missionCreatorContract,
         method: 'createMission' as string,
@@ -317,7 +313,6 @@ export default function CreateMission({
           selectedTeamId,
           teamMultisig,
           missionMetadataIpfsHash,
-          durationInSeconds,
           fundingGoalInETH,
           missionData.token.tradeable,
           missionData?.token?.name,
