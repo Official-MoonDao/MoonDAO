@@ -84,48 +84,48 @@ export default function MissionTimelineChart({
       trendingScore: point.trendingScore ?? 0,
     }))
 
-    // Find points that have actual non-zero values for the current view
-    const nonZeroPoints = processedOriginalPoints.filter(
-      (point) => point[view] > 0
-    )
+    // Group points by date (using moment to get date string without time)
+    const pointsByDate = new Map()
 
-    // Create a map of existing timestamps for quick lookup
-    const pointsMap = new Map()
+    // First group the actual data points by date
     processedOriginalPoints.forEach((point) => {
-      pointsMap.set(point.timestamp, point)
-    })
+      const dateKey = moment(point.timestamp * 1000).format('YYYY-MM-DD')
 
-    // Create base points for all ticks
-    const tickPoints = xTicks.map((tick) => {
-      if (pointsMap.has(tick)) {
-        return pointsMap.get(tick)
-      }
-
-      return {
-        timestamp: tick,
-        volume: 0,
-        balance: 0,
-        trendingScore: 0,
-      }
-    })
-
-    // Combine tick points with any non-zero points that might not align with ticks
-    const result = [...tickPoints]
-
-    // Add any non-zero points that aren't already in the result
-    nonZeroPoints.forEach((point) => {
-      // Check if this timestamp is already in our results
-      const existingPointIndex = result.findIndex(
-        (p) => p.timestamp === point.timestamp
-      )
-      if (existingPointIndex === -1) {
-        // If point isn't in results yet, add it
-        result.push(point)
+      // If we already have a point for this date, keep the one with higher values
+      if (pointsByDate.has(dateKey)) {
+        const existingPoint = pointsByDate.get(dateKey)
+        pointsByDate.set(dateKey, {
+          ...point,
+          // For each metric, use the higher value between existing and new point
+          volume: Math.max(existingPoint.volume, point.volume),
+          balance: Math.max(existingPoint.balance, point.balance),
+          trendingScore: Math.max(
+            existingPoint.trendingScore,
+            point.trendingScore
+          ),
+        })
+      } else {
+        pointsByDate.set(dateKey, point)
       }
     })
 
-    // Sort by timestamp
-    return result.sort((a, b) => a.timestamp - b.timestamp)
+    // Make sure all tick dates have entries (but don't overwrite existing data)
+    xTicks.forEach((tick) => {
+      const dateKey = moment(tick * 1000).format('YYYY-MM-DD')
+      if (!pointsByDate.has(dateKey)) {
+        pointsByDate.set(dateKey, {
+          timestamp: tick,
+          volume: 0,
+          balance: 0,
+          trendingScore: 0,
+        })
+      }
+    })
+
+    // Convert back to array and sort by timestamp
+    return Array.from(pointsByDate.values()).sort(
+      (a, b) => a.timestamp - b.timestamp
+    )
   }, [points, xTicks, view])
 
   const defaultYDomain = useTimelineYDomain(

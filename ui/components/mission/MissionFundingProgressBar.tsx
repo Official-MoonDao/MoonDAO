@@ -16,7 +16,7 @@ export default function MissionFundingProgressBar({
 
   const progress =
     volume && fundingGoal ? (volume / (fundingGoal / 1e18)) * 100 : 0
-  const goalAsPercentage = 10
+  const goalAsPercentage = 20
 
   return (
     <div
@@ -24,7 +24,7 @@ export default function MissionFundingProgressBar({
       ref={containerRef}
     >
       {compact && (
-        <div className="text-left text-light-warm mb-1">
+        <div className="text-left mb-1">
           {volume} / {truncateTokenValue(fundingGoal / 1e18, 'ETH')} ETH
         </div>
       )}
@@ -39,7 +39,7 @@ export default function MissionFundingProgressBar({
       {!compact && progress >= goalAsPercentage && (
         <div
           id="funding-goal-indicator-container"
-          className="absolute flex items-center gap-2 -bottom-12 left-[7%]"
+          className="absolute flex items-center gap-2 -bottom-12 left-[17%]"
         >
           <Image
             id="funding-goal-indicator"
@@ -51,7 +51,7 @@ export default function MissionFundingProgressBar({
 
           <p className="text-[#425eeb] font-GoodTimes font-bold">
             {`${truncateTokenValue(
-              (fundingGoal / 1e18) * 0.1,
+              (fundingGoal / 1e18) * 0.2,
               'ETH'
             )} ETH secured`}
           </p>

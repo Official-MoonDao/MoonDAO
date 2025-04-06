@@ -4,14 +4,17 @@ import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import {
+  prepareContractCall,
+  sendAndConfirmTransaction,
+  simulateTransaction,
+} from 'thirdweb'
 import { ethereum } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
-import useMissionTokenOutput from '@/lib/mission/useMissionTokenOutput'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
@@ -111,7 +114,7 @@ function MissionPayRedeemContent({
           <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
             <div className="flex flex-col">
               <h3 className="text-sm opacity-60">You receive</h3>
-              <p className="text-2xl font-bold">{output}</p>
+              <p className="text-2xl font-bold">{output.toFixed(2)}</p>
             </div>
             <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
               <Image
@@ -225,8 +228,6 @@ export default function MissionPayRedeem({
 
   const currentStage = useMissionFundingStage(mission?.id)
 
-  useMissionTokenOutput(input, fundingGoal)
-
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
     chain: selectedChain,
@@ -234,6 +235,27 @@ export default function MissionPayRedeem({
   })
 
   const tokenBalance = useWatchTokenBalance(selectedChain, token?.tokenAddress)
+
+  const getQuote = useCallback(async () => {
+    const transaction = prepareContractCall({
+      contract: primaryTerminalContract,
+      method: 'pay' as string,
+      params: [
+        mission?.projectId,
+        '0x000000000000000000000000000000000000EEEe',
+        input * 1e18,
+        address,
+        0,
+        message,
+        '0x00',
+      ],
+      value: BigInt(input * 1e18),
+    })
+    const q = await simulateTransaction({
+      transaction,
+    })
+    setOutput(q.toString() / 1e18)
+  }, [primaryTerminalContract, input])
 
   const buyMissionToken = useCallback(async () => {
     if (!account) return
@@ -247,7 +269,7 @@ export default function MissionPayRedeem({
           '0x000000000000000000000000000000000000EEEe',
           input * 1e18,
           address,
-          output,
+          Math.floor(output),
           message,
           '0x00',
         ],
@@ -338,15 +360,13 @@ export default function MissionPayRedeem({
       )
       setUSDQuote(route?.route[0]?.rawQuote.toString() / 1e18)
     }
-    if (input > 0 && ruleset) {
-      const output = input * (+ruleset?.[0].weight.toString() / 1e18)
-      console.log(mission)
-      setOutput(output)
-    }
     if (input > 0) {
+      getQuote()
+    }
+    if (input > 0 && missionPayModalEnabled) {
       getUSDQuote()
     }
-  }, [input, ruleset, DAI])
+  }, [input, ruleset, DAI, missionPayModalEnabled])
 
   return (
     <>
@@ -425,7 +445,9 @@ export default function MissionPayRedeem({
             <hr className="w-full" />
             <div className="w-full flex justify-between">
               <p>{'Receive'}</p>
-              <p>{`${output.toLocaleString()} ${token?.tokenSymbol}`}</p>
+              <p>{`${output.toFixed(2).toLocaleString()} ${
+                token?.tokenSymbol
+              }`}</p>
             </div>
 
             <div className="w-full flex items-center gap-2">
