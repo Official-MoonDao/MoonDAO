@@ -108,7 +108,7 @@ export default function LaunchpadBenefit({
           </h3>
           <p
             id="benefit-description"
-            className="md:max-w-[35vw] text-[3vw] md:text-[16px] text-gray-500"
+            className="md:max-w-[28vw] text-[3vw] md:text-[16px] 2xl:text-[18px]"
           >
             {description}
           </p>
