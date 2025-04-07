@@ -43,7 +43,11 @@ export default function FormInput({
             {label}
           </p>
         )}
-        {tooltip && <Tooltip text={tooltip}>?</Tooltip>}
+        {tooltip && (
+          <Tooltip text={tooltip} disabled={disabled}>
+            ?
+          </Tooltip>
+        )}
       </div>
       <input
         id={id}

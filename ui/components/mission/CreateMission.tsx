@@ -89,6 +89,7 @@ export type CreateMissionProps = {
   hatsContract: any
   teamContract: any
   setStatus: (status: 'idle' | 'loggingIn' | 'apply' | 'create') => void
+  userTeams: any
   userTeamsAsManager: any
 }
 
@@ -192,6 +193,7 @@ export default function CreateMission({
   hatsContract,
   teamContract,
   setStatus,
+  userTeams,
   userTeamsAsManager,
 }: CreateMissionProps) {
   const router = useRouter()
@@ -226,7 +228,6 @@ export default function CreateMission({
       tradeable: false,
     },
   })
-  const { USDT, DAI, NATIVE } = useUniswapTokens(ethereum)
 
   const [fundingGoalInETH, setFundingGoalInETH] = useState<number>()
   const [fundingGoalIsLoading, setFundingGoalIsLoading] = useState(false)
@@ -238,8 +239,9 @@ export default function CreateMission({
     useState(userTeamsAsManager?.[0] === undefined)
 
   useEffect(() => {
-    setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
-  }, [userTeamsAsManager])
+    if (userTeams)
+      setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
+  }, [userTeams, userTeamsAsManager])
 
   async function getFundingGoalInETH() {
     if (!missionData?.fundingGoal || missionData?.fundingGoal === 0)
@@ -304,12 +306,6 @@ export default function CreateMission({
         missionMetadataBlob
       )
 
-      const deadline = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 // 30 days in seconds
-
-      const durationInSeconds = deadline - Math.floor(Date.now() / 1000)
-
-      const fundingGoal = (missionData?.fundingGoal || 0) * 1e18
-
       const transaction = prepareContractCall({
         contract: missionCreatorContract,
         method: 'createMission' as string,
@@ -317,7 +313,6 @@ export default function CreateMission({
           selectedTeamId,
           teamMultisig,
           missionMetadataIpfsHash,
-          durationInSeconds,
           fundingGoalInETH,
           missionData.token.tradeable,
           missionData?.token?.name,
@@ -394,10 +389,10 @@ export default function CreateMission({
         ...missionData,
         socialLink:
           getAttribute(selectedTeamNFT?.metadata?.attributes, 'communications')
-            .value || '',
+            ?.value || '',
         infoUri:
           getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')
-            .value || '',
+            ?.value || '',
       })
     }
   }, [selectedTeamNFT])
@@ -456,7 +451,6 @@ export default function CreateMission({
                   id="mission-overview-stage"
                   stage={stage}
                   setStage={setStage}
-                  header="Mission Overview"
                   description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential backers and compel them to contribute.
 "
                   action={() => {
@@ -554,7 +548,7 @@ export default function CreateMission({
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <FormInput
                       id="mission-title"
-                      label="Mission Title"
+                      label="Mission Title *"
                       placeholder="Enter a title for your mission"
                       value={missionData.name}
                       onChange={(e: any) =>
@@ -609,7 +603,7 @@ export default function CreateMission({
                   </div>
                   <FileInput
                     id="mission-image"
-                    label="Mission Logo"
+                    label="Mission Logo *"
                     file={missionImage}
                     setFile={setMissionImage}
                     dimensions={[1024, 1024]}
@@ -633,7 +627,6 @@ export default function CreateMission({
                   id="mission-details-stage"
                   stage={stage}
                   setStage={setStage}
-                  header="Mission Details"
                   action={async () => {
                     if (missionData.description.length < 10) {
                       return toast.error('Please enter a mission description', {
@@ -705,6 +698,15 @@ export default function CreateMission({
                     setStage((prev: number) => prev + 1)
                   }}
                 >
+                  <div className="">
+                    <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
+                    <p className="my-2">
+                      {
+                        'When you launch a mission on the MoonDAO Launchpad, your fundraising structure follows a transparent, standardized model designed for long-term sustainability and success.'
+                      }
+                    </p>
+                    <MissionTokenomicsExplainer />
+                  </div>
                   <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <FormInput
                       label="Funding Goal"
@@ -736,6 +738,9 @@ export default function CreateMission({
                       }
                       onBlur={getFundingGoalInETH}
                     />
+                  </div>
+
+                  <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <FormYesNo
                       id="mission-token-toggle"
                       label="Create A Mission Token"
@@ -749,8 +754,9 @@ export default function CreateMission({
                       mode="dark"
                       tooltip="ERC-20 tokens are not created by default, but teams can choose to deploy one, if they would like a market tradeable token."
                     />
+
                     <div
-                      className={`w-full flex ${
+                      className={`w-full flex gap-4 ${
                         missionData?.token?.tradeable
                           ? 'opacity-100'
                           : 'opacity-30'
@@ -773,7 +779,7 @@ export default function CreateMission({
                         maxLength={32}
                         disabled={!missionData.token.tradeable}
                         mode="dark"
-                        tooltip="The name for your mission token (ex: Ethereum, Bitcoin, Mooney)."
+                        tooltip="The name for your mission token (ex: Ethereum, Bitcoin)."
                       />
                       <FormInput
                         id="mission-token-symbol"
@@ -785,25 +791,16 @@ export default function CreateMission({
                             ...missionData,
                             token: {
                               ...missionData.token,
-                              symbol: e.target.value,
+                              symbol: e.target.value.toUpperCase(),
                             },
                           })
                         }
                         maxLength={8}
                         disabled={!missionData.token.tradeable}
                         mode="dark"
-                        tooltip="The symbol for your mission token (ex: ETH, BTC, MOONEY)."
+                        tooltip="The symbol for your mission token (ex: ETH, BTC)."
                       />
                     </div>
-                  </div>
-                  <div className="font-sm">
-                    <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
-                    <p className="my-2">
-                      {
-                        'When you launch a mission on the MoonDAO Launchpad, your fundraising structure follows a transparent, standardized model designed for long-term sustainability and success.'
-                      }
-                    </p>
-                    <MissionTokenomicsExplainer />
                   </div>
                 </Stage>
               )}
@@ -812,7 +809,6 @@ export default function CreateMission({
                   id="mission-confirmation-stage"
                   stage={stage}
                   setStage={setStage}
-                  header="Mission Confirmation"
                   description="Please review your mission details"
                   customButton={
                     <PrivyWeb3Button
@@ -824,7 +820,8 @@ export default function CreateMission({
                         </div>
                       }
                       requiredChain={DEFAULT_CHAIN_V5}
-                      className="gradient-2 rounded-full px-4"
+                      className="gradient-2 rounded-full px-4 py-[7px]"
+                      noPadding
                       isDisabled={
                         !agreedToTerms ||
                         (missionData.token.tradeable &&
@@ -849,7 +846,7 @@ export default function CreateMission({
                     fundingGoal={missionData.fundingGoal || 0}
                     subgraphData={{}}
                     missionImage={missionImage}
-                    showMore
+                    compact
                   />
                   <MissionTokenomicsExplainer />
                   <ConditionCheckbox
@@ -892,7 +889,20 @@ export default function CreateMission({
                     <ConditionCheckbox
                       id="token-security-checkbox"
                       label={
-                        'I AGREE THAT THIS TOKEN IS NOT A SECURITY, ETC...'
+                        <p>
+                          I ACKNOWLEDGE THAT THIS TOKEN IS NOT A SECURITY,
+                          CARRIES NO PROFIT EXPECTATION, AND I ACCEPT ALL{' '}
+                          <Link
+                            className="text-blue-500 hover:underline"
+                            href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            RISKS
+                          </Link>{' '}
+                          ASSOCIATED WITH PARTICIPATION IN THE MOONDAO
+                          LAUNCHPAD.
+                        </p>
                       }
                       agreedToCondition={agreedToTokenNotSecurity}
                       setAgreedToCondition={setAgreedToTokenNotSecurity}

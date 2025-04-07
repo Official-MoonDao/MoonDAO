@@ -37,7 +37,11 @@ export default function FormDate({
             {label}
           </p>
         )}
-        {tooltip && <Tooltip text={tooltip}>?</Tooltip>}
+        {tooltip && (
+          <Tooltip text={tooltip} disabled={disabled}>
+            ?
+          </Tooltip>
+        )}
       </div>
       <input
         id={id}

@@ -1,30 +1,29 @@
-import { useState } from 'react'
 import { missionTokenWeights } from '@/lib/mission/missionConfig'
 
 function Rate({
   title,
   rate,
-  cycle,
-  currentCycle,
+  stage,
+  currentStage,
   tokenSymbol,
 }: {
   title: string
   rate: number
-  cycle: number
-  currentCycle: number
+  stage: number
+  currentStage: number
   tokenSymbol: string
 }) {
   return (
     <div
       className={`${
-        cycle === currentCycle
+        stage === currentStage
           ? 'bg-darkest-cool'
           : 'bg-darkest-cool/50 opacity-30'
       } flex items-center gap-2 rounded-full p-2`}
     >
       <div
         className={`w-8 h-8 rounded-full ${
-          cycle === currentCycle
+          stage === currentStage
             ? 'bg-moon-green'
             : 'bg-darkest-cool/50 border-grey-400 border-2'
         }`}
@@ -35,7 +34,7 @@ function Rate({
           {`1 ETH =`}
           {rate && tokenSymbol && (
             <span className="font-bold">
-              {rate.toLocaleString()} {tokenSymbol}
+              {rate.toLocaleString()} ${tokenSymbol}
             </span>
           )}
         </p>
@@ -45,35 +44,36 @@ function Rate({
 }
 
 export default function MissionTokenExchangeRates({
-  ruleset,
+  currentStage,
   tokenSymbol,
 }: {
-  ruleset: any
+  currentStage: number
   tokenSymbol: string
 }) {
-  const currentCycle = ruleset?.[0].cycleNumber - 1
+  // Default to stage 1 if currentStage is undefined
+  const stage = currentStage || 1
 
   return (
     <div id="mission-token-exchange-rates">
       <Rate
         title="Stage 1: Early Bird Rate"
         rate={missionTokenWeights[0]}
-        cycle={0}
-        currentCycle={currentCycle}
+        stage={1}
+        currentStage={stage}
         tokenSymbol={tokenSymbol}
       />
       <Rate
         title="Stage 2: Main Event Rate"
         rate={missionTokenWeights[1]}
-        cycle={1}
-        currentCycle={currentCycle}
+        stage={2}
+        currentStage={stage}
         tokenSymbol={tokenSymbol}
       />
       <Rate
         title="Stage 3: Closing Window Rate"
         rate={missionTokenWeights[2]}
-        cycle={2}
-        currentCycle={currentCycle}
+        stage={3}
+        currentStage={stage}
         tokenSymbol={tokenSymbol}
       />
     </div>

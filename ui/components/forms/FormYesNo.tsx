@@ -34,20 +34,13 @@ export default function FormYesNo({
             {label}
           </p>
         )}
-        {tooltip && <Tooltip text={tooltip}>?</Tooltip>}
+        {tooltip && (
+          <Tooltip text={tooltip} disabled={disabled}>
+            ?
+          </Tooltip>
+        )}
       </div>
       <div className="flex gap-4">
-        <StandardButton
-          styleOnly
-          onClick={() => onChange(false)}
-          disabled={disabled}
-          backgroundColor={value === false ? 'bg-[#4052B6]' : 'bg-[#000000]'}
-          borderRadius="rounded-full"
-          hoverEffect={false}
-          className={`w-24 ${className}`}
-        >
-          <span className="font-GoodTimes">No</span>
-        </StandardButton>
         <StandardButton
           styleOnly
           onClick={() => onChange(true)}
@@ -58,6 +51,17 @@ export default function FormYesNo({
           className={`w-24 ${className}`}
         >
           <span className="font-GoodTimes">Yes</span>
+        </StandardButton>
+        <StandardButton
+          styleOnly
+          onClick={() => onChange(false)}
+          disabled={disabled}
+          backgroundColor={value === false ? 'bg-[#4052B6]' : 'bg-[#000000]'}
+          borderRadius="rounded-full"
+          hoverEffect={false}
+          className={`w-24 ${className}`}
+        >
+          <span className="font-GoodTimes">No</span>
         </StandardButton>
       </div>
     </div>

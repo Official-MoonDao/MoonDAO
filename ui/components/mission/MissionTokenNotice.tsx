@@ -14,9 +14,10 @@ export default function MissionTokenNotice() {
           className={`w-6 h-6 ${expanded ? 'rotate-180' : ''}`}
         />
       </button>
+      {!expanded && <p>{`Please read this notice before continuing.`}</p>}
       <div
         className={`${
-          expanded ? 'max-h-[1000px]' : 'max-h-[30px]'
+          expanded ? 'block' : 'hidden'
         } overflow-hidden transition-all duration-300`}
       >
         <p>{`By contributing through the MoonDAO Launchpad, you acknowledge that MoonDAO is not responsible for the legality, security, or management of any mission, fundraising campaign, or token launch. Funds are fully controlled by the campaign creators via their team’s multisig wallet, and MoonDAO has no access to recover, return, or intervene in case of loss, fraud, or mismanagement.`}</p>

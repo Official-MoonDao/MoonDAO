@@ -158,6 +158,7 @@ export default function Launch({ missions }: any) {
         teamContract={teamContract}
         hatsContract={hatsContract}
         setStatus={setStatus}
+        userTeams={userTeams}
         userTeamsAsManager={userTeamsAsManager}
       />
     )

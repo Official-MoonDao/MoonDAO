@@ -99,7 +99,7 @@ export default function LaunchpadBenefit({
               ? 'md:items-start text-center md:text-left pl-[5vw] pr-[5vw] md:pl-[2vw] md:pr-0'
               : 'md:items-end text-center md:text-right pr-[5vw] pl-[5vw] md:pr-[2vw] md:pl-0'
           }`}
-          >
+        >
           <h3
             id="benefit-title"
             className="text-[4vw] text-[5vw] md:text-[2vw] font-bold font-GoodTimes "

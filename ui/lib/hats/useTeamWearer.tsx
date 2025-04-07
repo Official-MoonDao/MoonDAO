@@ -104,6 +104,8 @@ export function useTeamWearer(
           ).then((results) => results.filter((result) => result !== null))
 
           setWornMoondaoHats(moondaoHatsWithTeamId)
+        } else {
+          setWornMoondaoHats([])
         }
       } catch (err) {
         console.log(err)

@@ -104,7 +104,7 @@ export default function MissionWideCard({
               {token?.tradeable !== undefined && (
                 <MissionStat
                   icon="/assets/launchpad/token.svg"
-                  label="Mission Token"
+                  label="Token"
                   value={token?.tradeable ? 'Yes' : 'No'}
                 />
               )}

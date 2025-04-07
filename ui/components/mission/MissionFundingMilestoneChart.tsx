@@ -185,7 +185,8 @@ export default function MissionFundingMilestoneChart({
                 </g>
               )
             }}
-            domain={['auto', 'auto']}
+            domain={[0, 2000]}
+            ticks={[0, 500, 1000, 1500, 2000]}
             dataKey="weight"
           />
 

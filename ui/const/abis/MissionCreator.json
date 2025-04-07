@@ -68,12 +68,6 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "duration",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
         "name": "fundingGoal",
         "type": "uint256"
       }
@@ -105,7 +99,6 @@
       { "internalType": "uint256", "name": "teamId", "type": "uint256" },
       { "internalType": "address", "name": "to", "type": "address" },
       { "internalType": "string", "name": "projectUri", "type": "string" },
-      { "internalType": "uint32", "name": "duration", "type": "uint32" },
       { "internalType": "uint256", "name": "fundingGoal", "type": "uint256" },
       { "internalType": "bool", "name": "token", "type": "bool" },
       { "internalType": "string", "name": "tokenName", "type": "string" },
@@ -155,6 +148,27 @@
   },
   {
     "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "missionIdToFundingGoal",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "missionIdToMinFundingRequired",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "missionIdToMoonDAOVesting",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "name": "missionIdToPayHook",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
@@ -164,6 +178,20 @@
     "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "name": "missionIdToProjectId",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "missionIdToTeamVesting",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "missionIdToTerminal",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -278,6 +306,15 @@
     "name": "setMoonDAOTreasury",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "missionId", "type": "uint256" }
+    ],
+    "name": "stage",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
