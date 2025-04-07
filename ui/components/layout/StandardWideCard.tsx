@@ -153,7 +153,7 @@ export default function StandardWideCard({
     <span
       id="link-frame"
       className={`
-                card-container mb-4 min-w-[300px] flex lg:flex-col rounded-[20px] relative 
+                card-container w-full flex lg:flex-col rounded-[20px] relative 
                 ${link ? 'cursor-pointer' : ''}
                 ${
                   onClick
