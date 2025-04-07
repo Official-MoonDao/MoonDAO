@@ -33,6 +33,7 @@ import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
 import LaunchpadFAQs from '@/components/launchpad/LaunchpadFAQs'
+import Footer from '@/components/layout/Footer'
 import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
@@ -693,6 +694,9 @@ export default function Launch({ missions }: any) {
           <LaunchpadFAQs />
         </div>
       </section>
+      <div>
+        <Footer darkBackground={true} />
+      </div>
     </>
   )
 }
