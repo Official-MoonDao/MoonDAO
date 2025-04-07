@@ -17,7 +17,7 @@ export default function FeatureIcon({
 }: FeatureIconProps) {
   return (
     <div
-      className={`flex flex-col text-center w-full md:w-[27.5vw] h-auto items-center mb-[5vw] md:mb-[2vw]`}
+      className={`px-[1vw] flex flex-col text-center w-full md:w-[27.5vw] h-auto items-center mb-[5vw] md:mb-[2vw]`}
       >
       <div className={`${gradient || numberBackground} rounded-full m-[2vw]`}>
         {typeof icon === 'string' ? (
@@ -38,10 +38,10 @@ export default function FeatureIcon({
           </div>
         )}
       </div>
-      <h2 className="mt-[5vw] md:mt-[2vw] text-[5vw] md:text-[max(1.2vw,25px)] font-GoodTimes">
+      <h2 className="mt-[5vw] md:mt-[2vw] text-[4vw] md:text-[2vw] font-GoodTimes">
         {title}
       </h2>
-      <p className="md:text-[min(1.2vw,16px)]">
+      <p className="md:text-[min(1.2vw,16px)] 2xl:text-[18px]">
         {description}
       </p>
     </div>
