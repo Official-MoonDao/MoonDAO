@@ -843,7 +843,7 @@ export default function CreateMission({
                       } as any
                     }
                     token={missionData.token}
-                    fundingGoal={missionData.fundingGoal || 0}
+                    fundingGoal={fundingGoalInETH || 0}
                     subgraphData={{}}
                     missionImage={missionImage}
                     compact
