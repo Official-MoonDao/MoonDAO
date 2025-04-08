@@ -34,7 +34,6 @@ export default function MissionFundingMilestoneChart({
   const [chartDimensions, setChartDimensions] = useState({ width: 0, left: 0 })
 
   const volume = subgraphData?.volume / 1e18 || 0
-
   const points = useMemo(() => {
     return [
       {
@@ -65,6 +64,35 @@ export default function MissionFundingMilestoneChart({
   const minTarget = points?.[0].target
   const midTarget = points?.[1].target
   const maxTarget = points?.[2].target
+
+  // Helper function to generate the stepped line path for clipping
+  const getSteppedLinePath = (points, volume, maxTarget) => {
+    const maxChartTarget = Number(points[3].target)
+    const cappedVolume = Math.min(volume, maxChartTarget)
+    const progressWidth =
+      (cappedVolume / maxChartTarget) * chartDimensions.width
+
+    let path = ''
+    let currentX = 0
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const point = points[i]
+      const nextPoint = points[i + 1]
+      const pointX = (point.target / maxChartTarget) * chartDimensions.width
+      const nextX = (nextPoint.target / maxChartTarget) * chartDimensions.width
+
+      if (currentX <= progressWidth) {
+        // Calculate Y position based on the weight (inverse, since SVG y increases downward)
+        const y = height - (point.weight / 2000) * (height - 64) // Adjust based on your Y scale
+        path += `${path ? 'L' : ''}${pointX},${y} L${Math.min(
+          nextX,
+          progressWidth
+        )},${y} `
+        currentX = nextX
+      }
+    }
+    return path
+  }
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -125,10 +153,11 @@ export default function MissionFundingMilestoneChart({
           className="absolute bg-gradient-to-r from-[#020617] to-[#475CE2] z-0"
           style={{
             left: `${chartDimensions.left}px`,
-            top: '10px',
+            top: '-52px', // Changed to cover the entire chart area
             bottom: '54px',
             opacity: 0.8,
             pointerEvents: 'none',
+            clipPath: 'url(#progressStepClip)', // Apply the clip path
             // Width will be animated by GSAP using absolute pixel values
           }}
         />
@@ -148,6 +177,18 @@ export default function MissionFundingMilestoneChart({
           <defs>
             <clipPath id="progressClip">
               <rect x="0" y="0" width={`${progressPercent}%`} height="100%" />
+            </clipPath>
+            <clipPath id="progressClip">
+              <rect x="0" y="0" width={`${progressPercent}%`} height="100%" />
+            </clipPath>
+            <clipPath id="progressStepClip">
+              <path
+                d={`M0,${height} ${getSteppedLinePath(
+                  points,
+                  volume,
+                  maxTarget
+                )} V${height} Z`}
+              />
             </clipPath>
           </defs>
 
