@@ -34,6 +34,7 @@ export default function MissionFundingMilestoneChart({
   const [chartDimensions, setChartDimensions] = useState({ width: 0, left: 0 })
 
   const volume = subgraphData?.volume / 1e18 || 0
+
   const points = useMemo(() => {
     return [
       {
@@ -66,7 +67,7 @@ export default function MissionFundingMilestoneChart({
   const maxTarget = points?.[2].target
 
   // Helper function to generate the stepped line path for clipping
-  const getSteppedLinePath = (points, volume, maxTarget) => {
+  const getSteppedLinePath = (points: any, volume: number) => {
     const maxChartTarget = Number(points[3].target)
     const cappedVolume = Math.min(volume, maxChartTarget)
     const progressWidth =
@@ -126,8 +127,6 @@ export default function MissionFundingMilestoneChart({
     if (progressBarRef.current && chartDimensions.width > 0) {
       gsap.set(progressBarRef.current, { width: 0 })
 
-      // Calculate the progress width based on the volume relative to the max target
-      // Since the chart goes up to 150% of funding goal, we need to adjust the scale
       const maxChartTarget = Number(points[3].target) // 150% of funding goal
       const cappedVolume = Math.min(volume, maxChartTarget) // Cap at 150% of funding goal
       const targetWidth =
@@ -185,18 +184,13 @@ export default function MissionFundingMilestoneChart({
               <path
                 d={`M0,${height} ${getSteppedLinePath(
                   points,
-                  volume,
-                  maxTarget
+                  volume
                 )} V${height} Z`}
               />
             </clipPath>
           </defs>
 
-          <CartesianGrid
-            stroke={stroke}
-            strokeDasharray="1 2"
-            vertical={false}
-          />
+          <CartesianGrid stroke={stroke} strokeDasharray="1 2" />
 
           <YAxis
             label={{
@@ -248,7 +242,7 @@ export default function MissionFundingMilestoneChart({
                   fill={color}
                   transform={`translate(${props.x - 14},${props.y + 14})`}
                 >
-                  {`${props.payload.value} ETH`}
+                  {`${Number(props.payload.value).toFixed(3)}`}
                 </text>
               </g>
             )}
