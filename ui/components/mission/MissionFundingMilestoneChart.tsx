@@ -1,5 +1,4 @@
 import { gsap } from 'gsap'
-import Image from 'next/image'
 import { useMemo, useRef, useState, useEffect } from 'react'
 import {
   CartesianGrid,
@@ -10,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { missionTokenWeights } from '@/lib/mission/missionConfig'
+import { MISSION_TOKEN_WEIGHTS } from '@/lib/mission/missionConfig'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 
 export type MissionFundingMilestoneChartProps = {
@@ -40,24 +39,24 @@ export default function MissionFundingMilestoneChart({
     return [
       {
         target: 0,
-        weight: missionTokenWeights[0],
+        weight: MISSION_TOKEN_WEIGHTS[0],
         milestone: 1,
       },
       {
         target: truncateTokenValue((fundingGoal / 1e18) * 0.2, 'ETH'),
-        weight: missionTokenWeights[1],
+        weight: MISSION_TOKEN_WEIGHTS[1],
         milestone: 2,
       },
       {
         target: truncateTokenValue(fundingGoal / 1e18, 'ETH'),
-        weight: missionTokenWeights[2],
+        weight: MISSION_TOKEN_WEIGHTS[2],
         milestone: 3,
       },
       {
         target: truncateTokenValue((fundingGoal / 1e18) * 1.5, 'ETH'),
         label: 'UNLIMITED',
         targetLabel: '∞',
-        weight: missionTokenWeights[2],
+        weight: MISSION_TOKEN_WEIGHTS[2],
         milestone: 4,
       },
     ]
@@ -99,8 +98,12 @@ export default function MissionFundingMilestoneChart({
     if (progressBarRef.current && chartDimensions.width > 0) {
       gsap.set(progressBarRef.current, { width: 0 })
 
+      // Calculate the progress width based on the volume relative to the max target
+      // Since the chart goes up to 150% of funding goal, we need to adjust the scale
+      const maxChartTarget = Number(points[3].target) // 150% of funding goal
+      const cappedVolume = Math.min(volume, maxChartTarget) // Cap at 150% of funding goal
       const targetWidth =
-        (Math.min(volume, +maxTarget) / +maxTarget) * chartDimensions.width
+        (cappedVolume / maxChartTarget) * chartDimensions.width
 
       gsap.to(progressBarRef.current, {
         width: targetWidth,
@@ -110,7 +113,7 @@ export default function MissionFundingMilestoneChart({
         overwrite: true,
       })
     }
-  }, [volume, maxTarget, chartDimensions.width])
+  }, [volume, chartDimensions.width, points])
 
   return (
     <div className="relative">
@@ -246,12 +249,6 @@ export default function MissionFundingMilestoneChart({
                   <div className="font-medium flex items-center gap-2">
                     Target:{' '}
                     {data.targetLabel ? data.targetLabel : data.target + ' ETH'}
-                    <Image
-                      src={`/coins/ETH.svg`}
-                      width={20}
-                      height={20}
-                      alt=""
-                    />
                   </div>
                   <div className="font-medium">
                     Rate: {data.weight.toLocaleString()} tokens/ETH

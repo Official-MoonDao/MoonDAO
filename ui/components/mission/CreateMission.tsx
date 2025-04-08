@@ -98,17 +98,17 @@ const MISSION_DESCRIPTION_TEMPLATE = `
 
 ### Mission Overview
 *The text below is a template to help you craft a compelling mission. Please consider these as suggestions 
-for best practices for information to include, but customize it to your needs, eliminating what is not needed.*
+ for best practices for information to include, but customize it to your needs, eliminating what is not needed.*
 
 ### Introduce Your Mission
 *Contributors are more likely to support your mission if they connect with its purpose and trust the team 
-behind it. Consider including:*
+ behind it. Consider including:*
 - A concise summary of your mission and why it matters.
 - A brief introduction to your team and any relevant experience.
 - A compelling call to action explaining what supporters will help you achieve and what they get in return.
 
-*Think of this as your mission's elevator pitch—make it clear and engaging! If you don't capture their 
-attention in the first paragraph, they are unlikely to continue reading.*
+*Think of this as your mission's elevator pitch—make it clear and engaging! If you don't capture their   
+ attention in the first paragraph, they are unlikely to continue reading.*
 
 ### Mission Details (Optional but recommended)
 *Use this section to provide additional context, such as:*
@@ -119,7 +119,7 @@ attention in the first paragraph, they are unlikely to continue reading.*
 
 ### Funding & Rewards
 *What will supporters receive in return? Funding a mission is more engaging when contributors get something meaningful in return. Outline what 
-backers can expect:*
+ backers can expect:*
 - Governance Tokens – Enable participation in mission decisions.
 - Mission Patches & Digital Collectibles – Unique digital memorabilia tied to the mission.
 `
@@ -229,6 +229,24 @@ export default function CreateMission({
     },
   })
 
+  useEffect(() => {
+    if (selectedTeamNFT) {
+      setMissionData({
+        ...missionData,
+        infoUri:
+          getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')
+            ?.value || '',
+        socialLink:
+          getAttribute(
+            selectedTeamNFT?.metadata?.attributes,
+            'communications'
+          ) || '',
+      })
+    }
+  }, [selectedTeamNFT])
+
+  const [signingTx, setSigningTx] = useState(false)
+  const [createdMission, setCreatedMission] = useState(false)
   const [fundingGoalInETH, setFundingGoalInETH] = useState<number>()
   const [fundingGoalIsLoading, setFundingGoalIsLoading] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
@@ -321,14 +339,15 @@ export default function CreateMission({
         ],
       })
 
+      setSigningTx(true)
       const receipt = await sendAndConfirmTransaction({
         transaction,
         account,
       })
-
+      setSigningTx(false)
       // Define the event signature for the Transfer event
       const missionCreatedEventSignature = ethers.utils.id(
-        'MissionCreated(uint256,uint256,uint256,address,uint256,uint256)'
+        'MissionCreated(uint256,uint256,uint256,address,uint256)'
       )
       // Find the log that matches the Transfer event signature
       const missionCreatedLog = receipt.logs.find(
@@ -338,6 +357,8 @@ export default function CreateMission({
       const missionId = ethers.BigNumber.from(
         missionCreatedLog?.topics[1]
       ).toString()
+
+      setCreatedMission(true)
 
       if (receipt) {
         setTimeout(() => {
@@ -358,12 +379,15 @@ export default function CreateMission({
             },
           })
           clearMissionCache()
+
           setStatus('idle')
           router.push(`/mission/${missionId}`)
         }, 15000)
       }
     } catch (err) {
       console.error(err)
+      setSigningTx(false)
+      setCreatedMission(false)
     }
   }
 
@@ -437,7 +461,7 @@ export default function CreateMission({
                 </button>
                 <Steps
                   className="mb-4 w-full"
-                  steps={['Overview', 'Details', 'Goals', 'Confirm']}
+                  steps={['Overview', 'Goals', 'Details', 'Confirm']}
                   currStep={stage}
                   lastStep={stage - 1}
                   setStep={setStage}
@@ -624,6 +648,145 @@ export default function CreateMission({
               )}
               {stage === 1 && (
                 <Stage
+                  id="mission-goals-stage"
+                  stage={stage}
+                  setStage={setStage}
+                  action={() => {
+                    if (
+                      !missionData?.fundingGoal ||
+                      missionData.fundingGoal <= 0
+                    ) {
+                      return toast.error('Please enter a funding goal', {
+                        style: toastStyle,
+                      })
+                    }
+                    if (missionData.token.tradeable) {
+                      if (missionData.token.name.length === 0) {
+                        return toast.error('Please enter a token name', {
+                          style: toastStyle,
+                        })
+                      }
+                      if (missionData.token.symbol.length === 0) {
+                        return toast.error('Please enter a token symbol', {
+                          style: toastStyle,
+                        })
+                      }
+                    }
+                    setStage((prev: number) => prev + 1)
+                  }}
+                >
+                  <div className="">
+                    <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
+                    <p className="my-2">
+                      {
+                        'When you launch a mission on the MoonDAO Launchpad, your fundraising structure follows a transparent, standardized model designed for long-term sustainability and success.'
+                      }
+                    </p>
+                    <MissionTokenomicsExplainer />
+                  </div>
+                  <div className="mt-12 w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <FormInput
+                      label="Funding Goal (USD)"
+                      placeholder="Enter a funding goal in USD"
+                      value={missionData.fundingGoal}
+                      onChange={(e: any) =>
+                        setMissionData({
+                          ...missionData,
+                          fundingGoal: e.target.value,
+                        })
+                      }
+                      disabled={false}
+                      mode="dark"
+                      tooltip="How much would you like to raise? Set something ambitious but achievable. We will automatically convert the US Dollar amount into Ethereum, the native currency of the Launchpad."
+                      extra={
+                        <div className="w-full">
+                          <p className="opacity-60">
+                            {fundingGoalIsLoading ? (
+                              <div className="flex">
+                                <LoadingSpinner className="scale-75" />
+                              </div>
+                            ) : (
+                              `${(Number(fundingGoalInETH) / 1e18).toFixed(
+                                2
+                              )} ETH`
+                            )}
+                          </p>
+                        </div>
+                      }
+                      onBlur={getFundingGoalInETH}
+                    />
+                  </div>
+
+                  <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <FormYesNo
+                      id="mission-token-toggle"
+                      label="Create a Token"
+                      value={missionData.token.tradeable}
+                      onChange={(value: boolean) =>
+                        setMissionData({
+                          ...missionData,
+                          token: { ...missionData.token, tradeable: value },
+                        })
+                      }
+                      mode="dark"
+                      tooltip="ERC-20 tokens are not created by default, but teams can choose to deploy one, if they would like a market tradeable token."
+                    />
+
+                    <div
+                      className={`${
+                        !missionData.token.tradeable && 'opacity-60'
+                      }`}
+                    >
+                      <FormInput
+                        id="mission-token-name"
+                        label="Token Name"
+                        placeholder="Enter a token name"
+                        value={missionData.token.name}
+                        onChange={(e: any) =>
+                          setMissionData({
+                            ...missionData,
+                            token: {
+                              ...missionData.token,
+                              name: e.target.value,
+                            },
+                          })
+                        }
+                        maxLength={32}
+                        disabled={!missionData.token.tradeable}
+                        mode="dark"
+                        tooltip="The name for your mission token (e.g.: Ethereum, Bitcoin)."
+                      />
+                    </div>
+                    <div
+                      className={`${
+                        !missionData.token.tradeable && 'opacity-60'
+                      }`}
+                    >
+                      <FormInput
+                        id="mission-token-symbol"
+                        label="Token Symbol"
+                        placeholder="Enter a token symbol"
+                        value={missionData.token.symbol}
+                        onChange={(e: any) =>
+                          setMissionData({
+                            ...missionData,
+                            token: {
+                              ...missionData.token,
+                              symbol: e.target.value.toUpperCase(),
+                            },
+                          })
+                        }
+                        maxLength={8}
+                        disabled={!missionData.token.tradeable}
+                        mode="dark"
+                        tooltip="The symbol for your mission token (e.g.: ETH, BTC)."
+                      />
+                    </div>
+                  </div>
+                </Stage>
+              )}
+              {stage === 2 && (
+                <Stage
                   id="mission-details-stage"
                   stage={stage}
                   setStage={setStage}
@@ -669,141 +832,6 @@ export default function CreateMission({
                   </div>
                 </Stage>
               )}
-              {stage === 2 && (
-                <Stage
-                  id="mission-goals-stage"
-                  stage={stage}
-                  setStage={setStage}
-                  action={() => {
-                    if (
-                      !missionData?.fundingGoal ||
-                      missionData.fundingGoal <= 0
-                    ) {
-                      return toast.error('Please enter a funding goal', {
-                        style: toastStyle,
-                      })
-                    }
-                    if (missionData.token.tradeable) {
-                      if (missionData.token.name.length === 0) {
-                        return toast.error('Please enter a token name', {
-                          style: toastStyle,
-                        })
-                      }
-                      if (missionData.token.symbol.length === 0) {
-                        return toast.error('Please enter a token symbol', {
-                          style: toastStyle,
-                        })
-                      }
-                    }
-                    setStage((prev: number) => prev + 1)
-                  }}
-                >
-                  <div className="">
-                    <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
-                    <p className="my-2">
-                      {
-                        'When you launch a mission on the MoonDAO Launchpad, your fundraising structure follows a transparent, standardized model designed for long-term sustainability and success.'
-                      }
-                    </p>
-                    <MissionTokenomicsExplainer />
-                  </div>
-                  <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <FormInput
-                      label="Funding Goal"
-                      placeholder="Enter a funding goal in USD"
-                      value={missionData.fundingGoal}
-                      onChange={(e: any) =>
-                        setMissionData({
-                          ...missionData,
-                          fundingGoal: e.target.value,
-                        })
-                      }
-                      disabled={false}
-                      mode="dark"
-                      tooltip="The maximum amount of funding required for your mission to be successful."
-                      extra={
-                        <>
-                          <p className="opacity-60">
-                            {fundingGoalIsLoading ? (
-                              <div className="flex">
-                                <LoadingSpinner className="scale-75" />
-                              </div>
-                            ) : (
-                              `${(Number(fundingGoalInETH) / 1e18).toFixed(
-                                5
-                              )} ETH`
-                            )}
-                          </p>
-                        </>
-                      }
-                      onBlur={getFundingGoalInETH}
-                    />
-                  </div>
-
-                  <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <FormYesNo
-                      id="mission-token-toggle"
-                      label="Create A Mission Token"
-                      value={missionData.token.tradeable}
-                      onChange={(value: boolean) =>
-                        setMissionData({
-                          ...missionData,
-                          token: { ...missionData.token, tradeable: value },
-                        })
-                      }
-                      mode="dark"
-                      tooltip="ERC-20 tokens are not created by default, but teams can choose to deploy one, if they would like a market tradeable token."
-                    />
-
-                    <div
-                      className={`w-full flex gap-4 ${
-                        missionData?.token?.tradeable
-                          ? 'opacity-100'
-                          : 'opacity-30'
-                      }`}
-                    >
-                      <FormInput
-                        id="mission-token-name"
-                        label="Token Name"
-                        placeholder="Enter a token name"
-                        value={missionData.token.name}
-                        onChange={(e: any) =>
-                          setMissionData({
-                            ...missionData,
-                            token: {
-                              ...missionData.token,
-                              name: e.target.value,
-                            },
-                          })
-                        }
-                        maxLength={32}
-                        disabled={!missionData.token.tradeable}
-                        mode="dark"
-                        tooltip="The name for your mission token (ex: Ethereum, Bitcoin)."
-                      />
-                      <FormInput
-                        id="mission-token-symbol"
-                        label="Token Symbol"
-                        placeholder="Enter a token symbol"
-                        value={missionData.token.symbol}
-                        onChange={(e: any) =>
-                          setMissionData({
-                            ...missionData,
-                            token: {
-                              ...missionData.token,
-                              symbol: e.target.value.toUpperCase(),
-                            },
-                          })
-                        }
-                        maxLength={8}
-                        disabled={!missionData.token.tradeable}
-                        mode="dark"
-                        tooltip="The symbol for your mission token (ex: ETH, BTC)."
-                      />
-                    </div>
-                  </div>
-                </Stage>
-              )}
               {stage === 3 && (
                 <Stage
                   id="mission-confirmation-stage"
@@ -846,7 +874,8 @@ export default function CreateMission({
                     fundingGoal={fundingGoalInETH || 0}
                     subgraphData={{}}
                     missionImage={missionImage}
-                    compact
+                    showMore={true}
+                    showMoreButton={false}
                   />
                   <MissionTokenomicsExplainer />
                   <ConditionCheckbox
@@ -907,6 +936,15 @@ export default function CreateMission({
                       agreedToCondition={agreedToTokenNotSecurity}
                       setAgreedToCondition={setAgreedToTokenNotSecurity}
                     />
+                  )}
+                  {signingTx && (
+                    <p>{`Please sign the transaction in your wallet. After signing you will be redirected to your mission page. This might take a minute. If nothing happens please refresh your page.`}</p>
+                  )}
+                  {createdMission && (
+                    <div className="px-2 flex justify-center items-center gap-4">
+                      <LoadingSpinner />
+                      <p>{`You will be redirected to the Mission page once your payment has been processed. Expect to wait about 30 seconds.`}</p>
+                    </div>
                   )}
                 </Stage>
               )}

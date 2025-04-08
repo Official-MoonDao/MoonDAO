@@ -1,4 +1,7 @@
-import { missionTokenWeights } from '@/lib/mission/missionConfig'
+import {
+  MISSION_STAGE_NAMES,
+  MISSION_TOKEN_WEIGHTS,
+} from '@/lib/mission/missionConfig'
 
 function Rate({
   title,
@@ -56,22 +59,22 @@ export default function MissionTokenExchangeRates({
   return (
     <div id="mission-token-exchange-rates">
       <Rate
-        title="Stage 1: Early Bird Rate"
-        rate={missionTokenWeights[0]}
+        title={`Stage 1: ${MISSION_STAGE_NAMES?.[1] ?? ''}`}
+        rate={MISSION_TOKEN_WEIGHTS[0]}
         stage={1}
         currentStage={stage}
         tokenSymbol={tokenSymbol}
       />
       <Rate
-        title="Stage 2: Main Event Rate"
-        rate={missionTokenWeights[1]}
+        title={`Stage 2: ${MISSION_STAGE_NAMES?.[2] ?? ''}`}
+        rate={MISSION_TOKEN_WEIGHTS[1]}
         stage={2}
         currentStage={stage}
         tokenSymbol={tokenSymbol}
       />
       <Rate
-        title="Stage 3: Closing Window Rate"
-        rate={missionTokenWeights[2]}
+        title={`Stage 3: ${MISSION_STAGE_NAMES?.[3] ?? ''}`}
+        rate={MISSION_TOKEN_WEIGHTS[2]}
         stage={3}
         currentStage={stage}
         tokenSymbol={tokenSymbol}

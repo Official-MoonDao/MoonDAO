@@ -108,13 +108,15 @@ export default function Launch({ missions }: any) {
     fundingGoal: featuredMissionFundingGoal,
     primaryTerminalAddress: featuredMissionPrimaryTerminalAddress,
     ruleset: featuredMissionRuleset,
-  } = useMissionData(
-    missions?.[0],
+    stage: featuredMissionStage,
+  } = useMissionData({
+    mission: missions?.[0],
     missionTableContract,
+    missionCreatorContract,
     jbControllerContract,
     jbDirectoryContract,
-    jbTokensContract
-  )
+    jbTokensContract,
+  })
 
   useEffect(() => {
     async function getUserTeamsAsManager() {
@@ -172,7 +174,7 @@ export default function Launch({ missions }: any) {
           <div
             id="hero-content"
             className="relative md:pt-0 md:pb-0 h-[80vw] md:h-[max(45vh,600px)] 2xl:h-[max(45vh,550px)] flex justify-between items-center overflow-hidden"
-            >
+          >
             <div className="relative h-full w-full 2xl:hidden">
               <video
                 id="video-background-mobile"
@@ -181,11 +183,10 @@ export default function Launch({ missions }: any) {
                 loop
                 muted
                 playsInline
-                >
+              >
                 <source src="/assets/moondao-video-hero.mp4" type="video/mp4" />
-              </video>  
+              </video>
               <div className="absolute inset-0 bg-gradient-to-tr md:bg-gradient-to-r  from-[10%] from-[#010618] to-transparent"></div>
-              
             </div>
             <div className="relative hidden 2xl:block">
               <video
@@ -206,7 +207,7 @@ export default function Launch({ missions }: any) {
             <div
               id="content-container"
               className="flex items-center overflow-hidden"
-              >
+            >
               <Image
                 id="hero-divider-bottom-right"
                 className="absolute right-[-2px] bottom-[-2px] z-0 w-[50vw] md:w-[30vw]"
@@ -218,7 +219,7 @@ export default function Launch({ missions }: any) {
               <div
                 id="logo-and-graphics-container"
                 className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-center md:justify-start 2xl:justify-center z-[1]"
-                >
+              >
                 <div id="logo-container">
                   <Image
                     id="desktop-logo"
@@ -280,7 +281,7 @@ export default function Launch({ missions }: any) {
                   <div
                     id="mobile-tagline-container"
                     className="ml-[5vw] mb-[5vw] w-full md:hidden justify-center items-center"
-                    >
+                  >
                     <Image
                       id="mobile-tagline"
                       className="w-[min(100vw,450px)] sm:h-[min(17vw,450px)] md:w-[40vw] md:h-[6.86vw]"
@@ -300,7 +301,7 @@ export default function Launch({ missions }: any) {
       <section
         id="initial-callout-section"
         className="z-10 overflow-visible relative px-[5vw] flex flex-row items-center justify-center text-center pt-[5vw] md:pt-[2vw] lg:pt-[0px] pb-[2vw] lg:pb-[0px] md:pb-[2vw] gap-4 md:gap-4 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[20%] to-[#1B1C4B] to-[100%] md:to-[60%]"
-        >
+      >
         <div className="flex flex-row items-center gap-4">
           <Image
             id="spotlight-icon"
@@ -313,7 +314,7 @@ export default function Launch({ missions }: any) {
           <p
             id="callout"
             className="z-20 text-white font-GoodTimes text-[5vw] md:text-[max(2vw,35px)] leading-[6vw]"
-            >
+          >
             {'Mission Spotlight'}
           </p>
         </div>
@@ -351,7 +352,7 @@ export default function Launch({ missions }: any) {
         <div
           id="featured-missions-container"
           className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
-          >
+        >
           <MissionWideCard
             mission={
               {
@@ -362,6 +363,7 @@ export default function Launch({ missions }: any) {
                 },
               } as any
             }
+            stage={featuredMissionStage}
             token={featuredMissionToken}
             ruleset={featuredMissionRuleset}
             subgraphData={featuredMissionSubgraphData}
@@ -381,25 +383,25 @@ export default function Launch({ missions }: any) {
       <section
         id="launchpad-features-section"
         className="relative px-[5vw] 2xl:px-[10vw] pt-[2vw] md:pt-[2vw] pb-[5vw] md:pb-[2vw] md:pb-[5vw] flex flex-col bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
-        >
-        <div className="absolute top-0 left-0 hidden md:block"> 
-            <Image
-              className="w-[20vw] 2xl:w-[30vw]"
-              src="/assets/navy-blue-divider-tl.svg"
-              alt="Divider"
-              width={200}
-              height={200}
-            />
-        </div>  
-        <div className="absolute bottom-[-2px] left-0"> 
-            <Image
-              className="w-[30vw] md:w-[10vw] 2xl:w-[10vw] -scale-y-100"
-              src="/assets/navy-blue-divider-tl.svg"
-              alt="Divider"
-              width={200}
-              height={200}
-            />
-        </div>         
+      >
+        <div className="absolute top-0 left-0 hidden md:block">
+          <Image
+            className="w-[20vw] 2xl:w-[30vw]"
+            src="/assets/navy-blue-divider-tl.svg"
+            alt="Divider"
+            width={200}
+            height={200}
+          />
+        </div>
+        <div className="absolute bottom-[-2px] left-0">
+          <Image
+            className="w-[30vw] md:w-[10vw] 2xl:w-[10vw] -scale-y-100"
+            src="/assets/navy-blue-divider-tl.svg"
+            alt="Divider"
+            width={200}
+            height={200}
+          />
+        </div>
         <div className="flex flex-col pb-[5vw] md:pb-[2vw] items-center">
           <h2 className="mt-[5vw] pb-[2vw] md:mt-[5vw] font-GoodTimes text-[6vw] md:text-[max(2vw,25px)] 2xl:text-[35px] text-center leading-[7vw]">
             {'New Funding Tools for New Space'}
@@ -464,12 +466,12 @@ export default function Launch({ missions }: any) {
               id="video-container"
               className="z-10 relative w-full aspect-video mt-[2vw]"
             >
-              <iframe 
+              <iframe
                 className="absolute top-0 left-0 w-full h-full rounded-[20px]"
-                src="https://www.youtube.com/embed/mKEsUq1qxDs?si=2HQxnPsCMpT_Gpx9&amp;start=46&rel=0" 
-                title="YouTube video player" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                referrerPolicy="strict-origin-when-cross-origin" 
+                src="https://www.youtube.com/embed/mKEsUq1qxDs?si=2HQxnPsCMpT_Gpx9&amp;start=46&rel=0"
+                title="YouTube video player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
               />
             </div>
@@ -477,16 +479,16 @@ export default function Launch({ missions }: any) {
           <div
             id="astronauts-container"
             className="min-w-[30vw] h-auto z-10 md:z-0"
-            >
-              <div className="md:absolute z-20 top-0 right-0 md:w-[36vw]">
-                <Image
-                  id="astronauts"
-                  className="h-full w-full top-0 p-2 md:p-5"
-                  src="/assets/astronauts.png"
-                  alt="MoonDAO Astronauts, Dr.Eiman Jahangir and Coby"
-                  width={500}
-                  height={500}
-                />
+          >
+            <div className="md:absolute z-20 top-0 right-0 md:w-[36vw]">
+              <Image
+                id="astronauts"
+                className="h-full w-full top-0 p-2 md:p-5"
+                src="/assets/astronauts.png"
+                alt="MoonDAO Astronauts, Dr.Eiman Jahangir and Coby"
+                width={500}
+                height={500}
+              />
             </div>
           </div>
         </div>
@@ -502,8 +504,8 @@ export default function Launch({ missions }: any) {
       <section
         id="how-launchpad-works"
         className="relative px-[2vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
-        >
-        <div className="absolute top-0 right-0 hidden md:block"> 
+      >
+        <div className="absolute top-0 right-0 hidden md:block">
           <Image
             className="w-[10vw] 2xl:w-[10vw]"
             src="/assets/blue-divider-tr.svg"
@@ -511,7 +513,7 @@ export default function Launch({ missions }: any) {
             width={200}
             height={200}
           />
-        </div>   
+        </div>
         <div className="w-full mt-8 flex flex-col gap-2 items-center">
           <h1 className="mt-8 text-[5vw] md:text-[max(3vw,35px)] font-GoodTimes">
             {'Mission Trajectory'}
@@ -573,7 +575,7 @@ export default function Launch({ missions }: any) {
 
       <section id="benefits-section" className="relative">
         <div className="pt-[10vw] md:pt-0 pb-[5vw] md:pb-0 justify-center relative flex flex-col items-center bg-gradient-to-b from-[#010618] from-[0%] md:from-[5%] to-[#1B1C4B] to-[100%] md:to-[60%]">
-        <div className="absolute top-0 right-0 hidden md:block"> 
+          <div className="absolute top-0 right-0 hidden md:block">
             <Image
               className="w-[10vw] 2xl:w-[10vw]"
               src="/assets/white-divider-tr.svg"
@@ -581,7 +583,7 @@ export default function Launch({ missions }: any) {
               width={200}
               height={200}
             />
-        </div>   
+          </div>
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Global Access"
@@ -602,7 +604,7 @@ export default function Launch({ missions }: any) {
         <div
           id="featured-project-section"
           className="relative px-[5vw] 2xl:px-[10vw] overflow-hidden flex flex-col gap-12 bg-gradient-to-b from-[#010618] from-[0%] md:from-[40%] to-[#0C0F28] to-[100%] md:to-[60%]"
-          >
+        >
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Trustless"

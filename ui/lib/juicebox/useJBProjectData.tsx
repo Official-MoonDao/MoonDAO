@@ -9,14 +9,21 @@ import useContract from '../thirdweb/hooks/useContract'
 import { projectQuery } from './subgraph'
 import useJBProjectTrendingPercentageIncrease from './useJBProjectTrendingPercentageIncrease'
 
-export default function useJBProjectData(
-  projectId: number | undefined,
-  jbControllerContract: any,
-  jbDirectoryContract: any,
-  jbTokensContract: any,
-  projectMetadata?: any,
+export default function useJBProjectData({
+  projectId,
+  jbControllerContract,
+  jbDirectoryContract,
+  jbTokensContract,
+  projectMetadata,
+  projectSubgraphData,
+}: {
+  projectId: number | undefined
+  jbControllerContract: any
+  jbDirectoryContract: any
+  jbTokensContract: any
+  projectMetadata?: any
   projectSubgraphData?: any
-) {
+}) {
   const { selectedChain } = useContext(ChainContextV5)
 
   const [metadata, setMetadata] = useState<any>(projectMetadata)
@@ -66,7 +73,7 @@ export default function useJBProjectData(
       setRuleset(rs)
     }
 
-    if (jbControllerContract && !projectMetadata && projectId)
+    if (jbControllerContract && !projectMetadata && projectId !== undefined)
       getProjectMetadata()
     if (jbControllerContract && projectId) getProjectRuleset()
   }, [jbControllerContract, projectId, projectMetadata])
@@ -143,14 +150,9 @@ export default function useJBProjectData(
   //Project Directory Data
   useEffect(() => {
     async function getProjectDirectoryData() {
-      // Retry mechanism
-      let retries = 3
       let primaryTerminal: string = ZERO_ADDRESS
 
-      while (
-        retries > 0 &&
-        (primaryTerminal === ZERO_ADDRESS || !primaryTerminal)
-      ) {
+      while (primaryTerminal === ZERO_ADDRESS || !primaryTerminal) {
         try {
           const primaryTerminal: any = await readContract({
             contract: jbDirectoryContract,

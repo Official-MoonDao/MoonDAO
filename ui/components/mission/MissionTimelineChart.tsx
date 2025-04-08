@@ -17,7 +17,7 @@ import useJBTrendingProjects from '@/lib/juicebox/useJBTrendingProjects'
 import { useTicks } from '@/lib/juicebox/useTicks'
 import { useTimelineRange } from '@/lib/juicebox/useTimelineRange'
 import { useTimelineYDomain } from '@/lib/juicebox/useTimelineYDomain'
-import { wadToFloat } from '@/lib/utils/numbers'
+import { truncateTokenValue, wadToFloat } from '@/lib/utils/numbers'
 import { daysToMS } from '@/lib/utils/timestamp'
 import RangeSelector from '../layout/RangeSelector'
 
@@ -309,12 +309,6 @@ export default function MissionTimelineChart({
                       transform={`translate(${props.x + 4},${props.y + 4})`}
                     >
                       {'ETH'}
-                      <Image
-                        src={`/coins/ETH.svg`}
-                        width={20}
-                        height={20}
-                        alt=""
-                      />
                       {formattedValue}
                     </text>
                   </g>
@@ -396,14 +390,8 @@ export default function MissionTimelineChart({
                     </div>
                     {view !== 'trendingScore' && (
                       <div className="font-medium">
-                        {'ETH'}
-                        <Image
-                          src={`/coins/ETH.svg`}
-                          width={20}
-                          height={20}
-                          alt=""
-                        />
-                        {amount.toFixed(amount > 10 ? 1 : amount > 1 ? 2 : 4)}
+                        {truncateTokenValue(amount, 'ETH')}
+                        {' ETH'}
                       </div>
                     )}
                   </div>

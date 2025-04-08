@@ -64,6 +64,7 @@ export default function MissionInfo({
   points,
   userMissionTokenBalance,
   primaryTerminalAddress,
+  stage,
 }: any) {
   const [tab, setTab] = useState<MissionInfoTabType>('about')
   return (
@@ -103,25 +104,25 @@ export default function MissionInfo({
                 {teamNFT && (
                   <StandardWideCard
                     title={teamNFT?.metadata.name}
+                    link={`/team/${generatePrettyLink(
+                      teamNFT?.metadata?.name || ''
+                    )}`}
                     subheader={
                       <div className="flex flex-col gap-2">
                         <div
                           id="socials-container"
-                          className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
+                          className="p-1.5 mb-2 mr-2 md:mb-0 px-5 w-fit gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
                         >
-                          {mission?.metadata?.discord &&
-                            !mission?.metadata?.discord.includes(
-                              '/users/undefined'
-                            ) && (
-                              <Link
-                                className="flex gap-2"
-                                href={mission?.metadata?.discord}
-                                target="_blank"
-                                passHref
-                              >
-                                <DiscordIcon />
-                              </Link>
-                            )}
+                          {mission?.metadata?.discord && (
+                            <Link
+                              className="flex gap-2"
+                              href={mission?.metadata?.discord}
+                              target="_blank"
+                              passHref
+                            >
+                              <DiscordIcon />
+                            </Link>
+                          )}
                           {mission?.metadata?.twitter && (
                             <Link
                               className="flex gap-2"
@@ -145,9 +146,15 @@ export default function MissionInfo({
                         </div>
                       </div>
                     }
-                    fullParagraph={false}
-                    image={teamNFT?.metadata.image}
                     paragraph={
+                      <div className="flex flex-col gap-2">
+                        <p>{teamNFT?.metadata.description}</p>
+                      </div>
+                    }
+                    fullParagraph={true}
+                    showMore
+                    image={teamNFT?.metadata.image}
+                    footer={
                       <Link
                         href={`/team/${generatePrettyLink(
                           teamNFT?.metadata?.name || ''
@@ -201,6 +208,7 @@ export default function MissionInfo({
         )}
         <div className="w-full hidden xl:block">
           <MissionPayRedeem
+            stage={stage}
             selectedChain={selectedChain}
             mission={mission}
             teamNFT={teamNFT}

@@ -1,5 +1,3 @@
-import { PencilIcon } from '@heroicons/react/24/outline'
-import { BigNumber } from 'ethers'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -18,6 +16,7 @@ export type MissionWideCardProps = {
   subgraphData: any
   fundingGoal: number
   contribute?: boolean
+  stage?: number
   ruleset?: any
   missionImage?: File
   teamContract?: any
@@ -25,6 +24,7 @@ export type MissionWideCardProps = {
   jbDirectoryContract?: any
   editable?: boolean
   showMore?: boolean
+  showMoreButton?: boolean
   linkToMission?: boolean
   primaryTerminalAddress?: string
   compact?: boolean
@@ -35,15 +35,15 @@ export default function MissionWideCard({
   mission,
   token,
   ruleset,
+  stage,
   subgraphData,
   fundingGoal,
   missionImage,
   contribute,
   selectedChain,
   teamContract,
-  jbDirectoryContract,
-  editable,
   showMore,
+  showMoreButton = true,
   linkToMission,
   primaryTerminalAddress,
   compact,
@@ -69,6 +69,7 @@ export default function MissionWideCard({
     <>
       {contribute && payModalEnabled && primaryTerminalAddress && (
         <MissionPayRedeem
+          stage={stage}
           selectedChain={selectedChain}
           mission={mission}
           token={token}
@@ -157,6 +158,7 @@ export default function MissionWideCard({
                   fundingGoal={fundingGoal}
                   volume={subgraphData.volume / 1e18}
                   compact={compact}
+                  stage={stage}
                 />
               )}
             </div>
@@ -176,6 +178,7 @@ export default function MissionWideCard({
             : mission?.metadata?.logoUri
         }
         showMore={showMore}
+        showMoreButton={showMoreButton}
         onClick={() => {
           if (onClick) onClick()
           else if (linkToMission) router.push(`/mission/${mission.id}`)

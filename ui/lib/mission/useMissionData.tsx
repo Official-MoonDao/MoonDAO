@@ -2,25 +2,35 @@ import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import useJBProjectData from '../juicebox/useJBProjectData'
 
-export default function useMissionData(
-  mission: any,
-  missionTableContract: any,
-  jbControllerContract: any,
-  jbDirectoryContract: any,
-  jbTokensContract: any,
-  projectMetadata?: any,
-  projectSubgraphData?: any
-) {
-  const [fundingGoal, setFundingGoal] = useState(0)
+/*
+1: Stage 1
+2: Stage 2
+3: Stage 3
+4: Refund
+*/
+type MissionStage = 1 | 2 | 3 | 4
 
-  const jbProjectData = useJBProjectData(
-    mission?.projectId,
+export default function useMissionData({
+  mission,
+  missionTableContract,
+  missionCreatorContract,
+  jbControllerContract,
+  jbDirectoryContract,
+  jbTokensContract,
+  projectMetadata,
+  projectSubgraphData,
+}: any) {
+  const [fundingGoal, setFundingGoal] = useState(0)
+  const [stage, setStage] = useState<MissionStage>()
+
+  const jbProjectData = useJBProjectData({
+    projectId: mission?.projectId,
     jbControllerContract,
     jbDirectoryContract,
     jbTokensContract,
     projectMetadata,
-    projectSubgraphData
-  )
+    projectSubgraphData,
+  })
 
   useEffect(() => {
     async function getFundingData() {
@@ -40,5 +50,19 @@ export default function useMissionData(
     }
   }, [missionTableContract, mission?.id])
 
-  return { ...jbProjectData, fundingGoal }
+  useEffect(() => {
+    async function getStage() {
+      const stage: any = await readContract({
+        contract: missionCreatorContract,
+        method: 'stage' as string,
+        params: [mission.id],
+      })
+      setStage(+stage.toString() as MissionStage)
+    }
+    if (missionCreatorContract && mission?.id !== undefined) {
+      getStage()
+    }
+  }, [missionCreatorContract, mission?.id])
+
+  return { ...jbProjectData, fundingGoal, stage }
 }

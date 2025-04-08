@@ -20,6 +20,7 @@ type StandardWideCardProps = {
   footer?: any
   height?: string
   showMore?: boolean
+  showMoreButton?: boolean
   compact?: boolean
 }
 
@@ -37,6 +38,7 @@ export default function StandardWideCard({
   profile = false,
   footer,
   showMore = false,
+  showMoreButton = true,
   compact = false,
 }: StandardWideCardProps) {
   const [isExpanded, setIsExpanded] = useState(showMore)
@@ -132,7 +134,7 @@ export default function StandardWideCard({
           </span>
         </div>
       </span>
-      {fullParagraph && (
+      {fullParagraph && showMoreButton && (
         <div className="absolute bottom-[-20px] left-[5%] gradient-2 rounded-full">
           <StandardButton
             onClick={(e: React.MouseEvent) => {

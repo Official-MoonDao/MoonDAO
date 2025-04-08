@@ -509,7 +509,7 @@ export function PrivyConnectWallet({
             <Portal>
               <div
                 id="privy-connect-wallet-dropdown"
-                className="w-[260px] lg:w-[270px] fixed text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn p-2 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[3000] lg:max-h-[70%] overflow-y-scroll overflow-x-hidden"
+                className="w-[260px] lg:w-[270px] fixed text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn p-2 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[3000] lg:max-h-[70%] overflow-y-scroll"
                 style={dropdownPosition}
               >
                 {sendModalEnabled && (

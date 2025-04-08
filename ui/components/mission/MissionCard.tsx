@@ -44,13 +44,13 @@ export default function MissionCard({
 }: MissionCardProps) {
   const { metadata } = mission
 
-  const projectData = useJBProjectData(
-    mission?.projectId,
+  const projectData = useJBProjectData({
+    projectId: mission?.projectId,
     jbControllerContract,
     jbDirectoryContract,
     jbTokensContract,
-    metadata
-  )
+    projectMetadata: mission?.metadata,
+  })
 
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
