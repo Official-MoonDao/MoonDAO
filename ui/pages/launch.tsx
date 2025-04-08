@@ -216,7 +216,7 @@ export default function Launch({ missions }: any) {
               />
               <div
                 id="logo-and-graphics-container"
-                className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-center md:justify-start 2xl:justify-center z-[1]"
+                className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-center md:justify-center z-[1]"
                 >
                 <div id="logo-container">
                   <Image
@@ -400,10 +400,10 @@ export default function Launch({ missions }: any) {
             />
         </div>         
         <div className="flex flex-col pb-[5vw] md:pb-[2vw] items-center">
-          <h2 className="mt-[5vw] pb-[2vw] md:mt-[5vw] font-GoodTimes text-[6vw] md:text-[max(2vw,25px)] 2xl:text-[35px] text-center leading-[7vw]">
+          <h2 className="mt-[5vw] pb-[2vw] md:mt-[10vw] font-GoodTimes text-[6vw] md:text-[max(2vw,25px)] 2xl:text-[35px] text-center leading-[7vw] md:leading-[2vw]">
             {'New Funding Tools for New Space'}
           </h2>
-          <p className="text-center md:max-w-[500px] lg:max-w-[650px] 2xl:max-w-[800px] md:text-[min(1.2vw,16px)] 2xl:text-[18px] pb-[5vw]">
+          <p className="text-center md:max-w-[500px] lg:max-w-[650px] 2xl:max-w-[800px] md:text-[min(1.2vw,16px)] 2xl:text-[18px] pb-[5vw] md:pb-[2vw]">
             {
               'Join a revolution in space funding. Unlike traditional fundraising, where contributions disappear into a black hole, we ensure your support is secure, transparent, and impactful.'
             }
