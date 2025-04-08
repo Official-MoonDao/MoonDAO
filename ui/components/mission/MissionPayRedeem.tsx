@@ -1,5 +1,4 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
-import { nativeOnChain } from '@uniswap/smart-order-router'
 import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -11,17 +10,13 @@ import {
   sendAndConfirmTransaction,
   simulateTransaction,
 } from 'thirdweb'
-import { ethereum } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
-import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
-import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { CopyIcon } from '../assets'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -49,6 +44,7 @@ function MissionPayRedeemContent({
   setMissionPayModalEnabled,
   tokenBalance,
   currentStage,
+  stage,
 }: any) {
   return (
     <div
@@ -162,7 +158,7 @@ function MissionPayRedeemContent({
             tokenSymbol={token?.tokenSymbol}
           />
         </div>
-        {tokenBalance > 0 && (
+        {tokenBalance > 0 && stage === 4 && (
           <div
             id="mission-redeem-container"
             className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
@@ -194,6 +190,7 @@ export type MissionPayRedeemProps = {
   fundingGoal: number
   subgraphData: any
   teamNFT: any
+  stage: any
   ruleset: any
   onlyModal?: boolean
   modalEnabled?: boolean
@@ -208,6 +205,7 @@ export default function MissionPayRedeem({
   fundingGoal,
   subgraphData,
   teamNFT,
+  stage,
   ruleset,
   onlyModal = false,
   modalEnabled = false,
@@ -347,26 +345,11 @@ export default function MissionPayRedeem({
     }
   }, [account, primaryTerminalContract, address, mission?.projectId, router])
 
-  const { DAI } = useUniswapTokens(ethereum)
-
   useEffect(() => {
-    async function getUSDQuote() {
-      setUSDQuote(undefined)
-      const route = await pregenSwapRoute(
-        ethereum,
-        input,
-        nativeOnChain(ethereum.id),
-        DAI
-      )
-      setUSDQuote(route?.route[0]?.rawQuote.toString() / 1e18)
-    }
     if (input > 0) {
       getQuote()
     }
-    if (input > 0 && missionPayModalEnabled) {
-      getUSDQuote()
-    }
-  }, [input, ruleset, DAI, missionPayModalEnabled])
+  }, [input])
 
   return (
     <>
@@ -384,6 +367,7 @@ export default function MissionPayRedeem({
               setMissionPayModalEnabled={setMissionPayModalEnabled}
               tokenBalance={tokenBalance}
               currentStage={currentStage}
+              stage={stage}
             />
           </div>
           <div className="fixed bottom-0 left-0 w-full p-4 bg-darkest-cool rounded-t-2xl md:hidden z-[1000] flex flex-col gap-4">
@@ -433,13 +417,6 @@ export default function MissionPayRedeem({
                   />
                   {'ETH'}
                 </div>
-                {usdQuote !== undefined ? (
-                  <p className="opacity-60">{`(USD ~$${usdQuote.toLocaleString()})`}</p>
-                ) : (
-                  <div className="scale-[75%]">
-                    <LoadingSpinner />
-                  </div>
-                )}
               </div>
             </div>
             <hr className="w-full" />

@@ -42,6 +42,11 @@ export function getRelativeQuarter(offset: number = 0) {
   return { quarter, year }
 }
 
+export function daysUntilDate(date: Date) {
+  const now = new Date()
+  return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+}
+
 export function daysUntilDay(date: Date, day: string) {
   const targetDayIndex = DAYS_OF_WEEK.indexOf(day)
 

@@ -1,3 +1,6 @@
+import { gsap } from 'gsap'
+import { useEffect, useRef } from 'react'
+
 interface ProgressBarProps {
   progress: number // Value between 0 and 100
   height?: string
@@ -13,6 +16,18 @@ export default function ProgressBar({
   padding = '2px',
   compact = false,
 }: ProgressBarProps) {
+  const progressBarRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (progressBarRef.current) {
+      gsap.to(progressBarRef.current, {
+        width: `${Math.min(Math.max(progress, compact ? 0 : 10), 100)}%`,
+        duration: 2.5,
+        ease: 'power1.inOut',
+      })
+    }
+  }, [progress, compact])
+
   return (
     <div
       className="relative w-full rounded-full bg-gradient-to-l from-[#425eeb] to-[#6d3f79]"
@@ -23,18 +38,13 @@ export default function ProgressBar({
         style={{ margin: padding }}
       >
         <div
-          className="h-full  bg-gradient-to-l from-[#425eeb] to-[#6d3f79] transition-all duration-300 relative"
-          style={{
-            width: `${Math.min(Math.max(progress, compact ? 0 : 10), 100)}%`,
-          }}
+          ref={progressBarRef}
+          className="h-full bg-gradient-to-l from-[#425eeb] to-[#6d3f79] relative"
+          style={{ width: '0%' }} // Start at 0 and let GSAP animate it
         >
           {label && (
-            <div
-              className={`absolute inset-y-0 ${
-                progress < 20 ? 'left-full md:left-auto ml-1' : '-right-[10px]'
-              } flex items-center`}
-            >
-              <span className="text-[10%] text-white min-w-[50px]">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[75%] text-white min-w-[50px]">
                 {label}
               </span>
             </div>

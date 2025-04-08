@@ -140,6 +140,12 @@ export default function TeamDetailPage({
     chain: selectedChain,
   })
 
+  const missionCreatorContract = useContract({
+    address: MISSION_CREATOR_ADDRESSES[chainSlug],
+    abi: MissionCreatorABI,
+    chain: selectedChain,
+  })
+
   const jbControllerContract = useContract({
     address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
     abi: JBV4ControllerABI,
@@ -523,6 +529,7 @@ export default function TeamDetailPage({
             isManager={isManager}
             teamId={tokenId}
             missionTableContract={missionTableContract}
+            missionCreatorContract={missionCreatorContract}
             jbControllerContract={jbControllerContract}
             jbDirectoryContract={jbDirectoryContract}
             jbTokensContract={jbTokensContract}

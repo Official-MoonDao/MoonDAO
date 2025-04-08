@@ -12,6 +12,7 @@ import MissionWideCard from '../mission/MissionWideCard'
 type TeamMissionProps = {
   mission: Mission
   missionTableContract: any
+  missionCreatorContract: any
   jbControllerContract: any
   jbDirectoryContract: any
   jbTokensContract: any
@@ -25,6 +26,7 @@ type TeamMissionsProps = {
   isManager: boolean
   selectedChain: any
   missionTableContract: any
+  missionCreatorContract: any
   jbControllerContract: any
   jbDirectoryContract: any
   jbTokensContract: any
@@ -35,6 +37,7 @@ export function TeamMission({
   selectedChain,
   mission,
   missionTableContract,
+  missionCreatorContract,
   jbControllerContract,
   jbDirectoryContract,
   jbTokensContract,
@@ -42,14 +45,15 @@ export function TeamMission({
   isManager,
 }: TeamMissionProps) {
   const { subgraphData, token, fundingGoal, ruleset, primaryTerminalAddress } =
-    useMissionData(
+    useMissionData({
       mission,
       missionTableContract,
+      missionCreatorContract,
       jbControllerContract,
       jbDirectoryContract,
       jbTokensContract,
-      teamContract
-    )
+      teamContract,
+    })
 
   return (
     <MissionWideCard
@@ -73,6 +77,7 @@ export default function TeamMissions({
   teamId,
   isManager,
   missionTableContract,
+  missionCreatorContract,
   jbControllerContract,
   jbDirectoryContract,
   jbTokensContract,
@@ -187,6 +192,7 @@ export default function TeamMissions({
                 selectedChain={selectedChain}
                 mission={mission}
                 missionTableContract={missionTableContract}
+                missionCreatorContract={missionCreatorContract}
                 jbControllerContract={jbControllerContract}
                 jbDirectoryContract={jbDirectoryContract}
                 jbTokensContract={jbTokensContract}

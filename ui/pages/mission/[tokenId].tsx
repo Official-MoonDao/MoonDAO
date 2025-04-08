@@ -2,6 +2,7 @@ import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
+import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -9,6 +10,7 @@ import {
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
+  MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
@@ -29,6 +31,7 @@ import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
+import { daysUntilDate } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -60,7 +63,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     chain: selectedChain,
   })
 
-  const jbV4ControllerContract = useContract({
+  const jbControllerContract = useContract({
     address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
     abi: JBV4ControllerABI as any,
     chain: selectedChain,
@@ -84,14 +87,27 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     chain: selectedChain,
   })
 
-  const { ruleset, token, subgraphData, fundingGoal, primaryTerminalAddress } =
-    useMissionData(
-      mission,
-      missionTableContract,
-      jbV4ControllerContract,
-      jbDirectoryContract,
-      jbTokensContract
-    )
+  const missionCreatorContract = useContract({
+    address: MISSION_CREATOR_ADDRESSES[chainSlug],
+    abi: MissionCreatorABI as any,
+    chain: selectedChain,
+  })
+
+  const {
+    ruleset,
+    token,
+    subgraphData,
+    fundingGoal,
+    primaryTerminalAddress,
+    stage,
+  } = useMissionData({
+    mission,
+    missionTableContract,
+    missionCreatorContract,
+    jbControllerContract,
+    jbDirectoryContract,
+    jbTokensContract,
+  })
 
   const { points } = useJBProjectTimeline(
     selectedChain,
@@ -186,25 +202,15 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     ) : (
                       <></>
                     )}
-                    <div id="profile-container">
-                      {mission?.metadata?.description ? (
-                        <p
-                          id="profile-description-container"
-                          className="w-full pr-12"
-                        >
-                          {mission?.metadata?.tagline || ''}
-                        </p>
-                      ) : (
-                        <></>
-                      )}
-                    </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <MissionStat
                       label="Deadline"
-                      value={`${new Date(
-                        Date.now() + ruleset?.[0]?.duration * 1000
-                      ).toLocaleDateString()}`}
+                      value={`${daysUntilDate(
+                        new Date(
+                          ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000
+                        )
+                      )} days`}
                       icon={'/assets/launchpad/clock.svg'}
                     />
                     <MissionStat
@@ -216,15 +222,31 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       icon={'/assets/launchpad/target.svg'}
                     />
                     <MissionStat
-                      label="Mission Token"
-                      value={`${token.tokenSymbol} (${token.tokenName})`}
+                      label="Volume"
+                      value={`${truncateTokenValue(
+                        subgraphData?.volume / 1e18,
+                        'ETH'
+                      )} ETH`}
                       icon={'/assets/launchpad/token.svg'}
                     />
                   </div>
-                  <div className="w-full">
+                  <div id="profile-container">
+                    {mission?.metadata?.tagline ? (
+                      <p
+                        id="profile-description-container"
+                        className="w-full pr-12 font-GoodTimes text-lg"
+                      >
+                        {mission?.metadata?.tagline || ''}
+                      </p>
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+                  <div className="mt-4 w-full">
                     <MissionFundingProgressBar
                       fundingGoal={fundingGoal}
                       volume={subgraphData?.volume / 1e18}
+                      stage={stage ?? 0}
                     />
                   </div>
                 </div>
@@ -284,6 +306,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     fundingGoal={fundingGoal}
                     subgraphData={subgraphData}
                     ruleset={ruleset}
+                    stage={stage}
                     primaryTerminalAddress={primaryTerminalAddress}
                   />
                 ) : (
@@ -305,6 +328,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}
+                  stage={stage}
                   teamNFT={teamNFT}
                   ruleset={ruleset}
                   jbDirectoryContract={jbDirectoryContract}

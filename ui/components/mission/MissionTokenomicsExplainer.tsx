@@ -4,7 +4,10 @@ import SubPoint from '../layout/SubPoint'
 export default function MissionTokenomicsExplainer() {
   return (
     <div>
-      <Point point="Goal & Timeline: Missions have 28 days, one lunar cycle, to raise at least 20% of the Funding Goal; otherwise, all contributions are automatically refunded to supporters." />
+      <Point
+        point="Goal & Timeline: Missions have 28 days, one lunar cycle, to raise at least 20% of the Funding Goal; otherwise, all contributions are refunded to supporters.
+"
+      />
       <Point
         point="ETH Price Fluctuations: The value of ETH may fluctuate during the mission campaign, meaning the actual funds raised could be higher or lower than initially anticipated. Teams should account for potential volatility.
 "

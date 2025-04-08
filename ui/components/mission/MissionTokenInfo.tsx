@@ -1,7 +1,10 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
-import { missionTokenWeights } from '@/lib/mission/missionConfig'
+import {
+  MISSION_STAGE_NAMES,
+  MISSION_TOKEN_WEIGHTS,
+} from '@/lib/mission/missionConfig'
 import MissionFundingMilestoneChart from './MissionFundingMilestoneChart'
 
 function FundingStage({
@@ -61,15 +64,15 @@ export default function MissionTokenInfo({
       {/* <Image/> */}
       <FundingStage
         stage={1}
-        title="Ignition"
-        description={`During the ignition stage, you get ${missionTokenWeights[0].toLocaleString()} ${
+        title={MISSION_STAGE_NAMES?.[1] ?? ''}
+        description={`During the ignition stage, you get ${MISSION_TOKEN_WEIGHTS[0].toLocaleString()} ${
           token?.tokenSymbol
         } per ETH contributed. You can redeem your full amount if the project doesn't raise the required minimum funds within the timeframe.`}
       />
       <FundingStage
         stage={2}
-        title={'Ascent'}
-        description={`If the mission reaches its minimum funding threshold, the project has launched and is ascending toward its goal. At this point you'll receive ${missionTokenWeights[1].toLocaleString()} ${
+        title={MISSION_STAGE_NAMES?.[2] ?? ''}
+        description={`If the mission reaches its minimum funding threshold, the project has launched and is ascending toward its goal. At this point you'll receive ${MISSION_TOKEN_WEIGHTS[1].toLocaleString()} ${
           token?.tokenSymbol
         } per ETH contributed up to the total goal amount, or until ${new Date(
           Date.now() + stage2Duration
@@ -77,8 +80,8 @@ export default function MissionTokenInfo({
       />
       <FundingStage
         stage={3}
-        title={'Orbit'}
-        description={`Once the goal amount is reached, you can still continue to contribute until the deadline is reached, but at the rate of ${missionTokenWeights[2].toLocaleString()} ${
+        title={MISSION_STAGE_NAMES?.[3] ?? ''}
+        description={`Once the goal amount is reached, you can still continue to contribute until the deadline is reached, but at the rate of ${MISSION_TOKEN_WEIGHTS[2].toLocaleString()} ${
           token?.tokenSymbol
         } per ETH contributed.`}
       />

@@ -5,11 +5,11 @@ import SubPoint from '../layout/SubPoint'
 export default function MissionTokenNotice() {
   const [expanded, setExpanded] = useState(false)
   return (
-    <div className="relative p-4 bg-moon-indigo rounded-xl w-full">
-      <button
-        className="absolute right-4 top-4 flex items-center gap-2"
-        onClick={() => setExpanded(!expanded)}
-      >
+    <div
+      className="relative p-4 bg-moon-indigo rounded-xl w-full cursor-pointer"
+      onClick={() => setExpanded(!expanded)}
+    >
+      <button className="absolute right-4 top-4 flex items-center gap-2">
         <ChevronDownIcon
           className={`w-6 h-6 ${expanded ? 'rotate-180' : ''}`}
         />
