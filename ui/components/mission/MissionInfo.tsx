@@ -152,7 +152,8 @@ export default function MissionInfo({
                       </div>
                     }
                     fullParagraph={true}
-                    showMore
+                    showMore={false}
+                    showMoreButton={false}
                     image={teamNFT?.metadata.image}
                     footer={
                       <Link
