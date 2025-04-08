@@ -87,7 +87,7 @@ export default function FAQ({
           )}
         </button>
         <h3 
-          className="md:text-[min(1.5vw,18px)] cursor-pointer" 
+          className="md:text-[max(1.5vw,18px)] cursor-pointer" 
           onClick={toggleFAQ}
         >
           {question}
@@ -98,7 +98,7 @@ export default function FAQ({
           isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <p className="h-full pt-2 pb-5">
+        <p className="h-full pt-2 pb-5 text-[max(1.5vw,100px)] 2xl:text-[18px]">
           {answer}
         </p>
       </div>

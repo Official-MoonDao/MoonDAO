@@ -217,7 +217,7 @@ export default function Launch({ missions }: any) {
               />
               <div
                 id="logo-and-graphics-container"
-                className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-center md:justify-start 2xl:justify-center z-[1]"
+                className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-center md:justify-center z-[1]"
                 >
                 <div id="logo-container">
                   <Image
@@ -400,11 +400,11 @@ export default function Launch({ missions }: any) {
               height={200}
             />
         </div>         
-        <div className="flex flex-col pb-[5vw] md:pb-[2vw] items-center">
-          <h2 className="mt-[5vw] pb-[2vw] md:mt-[5vw] font-GoodTimes text-[6vw] md:text-[max(2vw,25px)] 2xl:text-[35px] text-center leading-[7vw]">
+        <div className="flex flex-col pb-[5vw] md:pb-[2vw] md:items-center">
+          <h2 className="mt-[5vw] pb-[2vw] md:pb-0 md:mt-[5vw] font-GoodTimes text-[6vw] md:text-[max(2vw,25px)] 2xl:text-[35px] md:text-center leading-[7vw]">
             {'New Funding Tools for New Space'}
           </h2>
-          <p className="text-center md:max-w-[500px] lg:max-w-[650px] 2xl:max-w-[800px] md:text-[min(1.2vw,16px)] 2xl:text-[18px] pb-[5vw]">
+          <p className="md:text-center md:max-w-[500px] lg:max-w-[650px] 2xl:max-w-[800px] md:text-[max(1.2vw,16px)] 2xl:text-[18px] pb-[5vw] md:pb-[2vw]">
             {
               'Join a revolution in space funding. Unlike traditional fundraising, where contributions disappear into a black hole, we ensure your support is secure, transparent, and impactful.'
             }
@@ -454,7 +454,7 @@ export default function Launch({ missions }: any) {
             <h2 className="text-[5vw] md:text-[2vw] font-GoodTimes">
               {'Success Stories'}
             </h2>
-            <p className="md:text-[min(1.2vw,16px)] 2xl:text-[18px] pr-0 md:pr-[5vw] pb-[2vw] md:pb-0">
+            <p className="md:text-[max(1.2vw,16px)] 2xl:text-[18px] pr-0 md:pr-[5vw] pb-[2vw] md:pb-0">
               {
                 "MoonDAO is no stranger to launching bold ideas. With over Ξ2,623 (+$8,000,000) crowdraised, we sent two people to space and supported 80+ projects with our funding model. We're proving that the future of space funding is decentralized and onchain."
               }
@@ -501,7 +501,7 @@ export default function Launch({ missions }: any) {
 
       <section
         id="how-launchpad-works"
-        className="relative px-[2vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
+        className="relative px-[5vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
         >
         <div className="absolute top-0 right-0 hidden md:block"> 
           <Image
@@ -675,7 +675,7 @@ export default function Launch({ missions }: any) {
         id="final-callout-section"
         className="relative px-[5vw] 2xl:px-[10vw] py-[5vw] md:py-[2vw] flex flex-col start bg-gradient-to-bl from-[#6D3F79] to-[#435EEB] from-20% to-[80%]"
       >
-        <div className="flex flex-col md:flex-row items-center">
+        <div className="flex flex-col md:flex-row items-center justify-center">
           <Image
             src="/assets/MoonDAO-Logo-White.svg"
             alt="MoonDAO Logo"
@@ -687,7 +687,7 @@ export default function Launch({ missions }: any) {
             <h3 className="text-white text-[5vw] md:text-[2vw] font-GoodTimes">
               {'Get Started Today'}
             </h3>
-            <p className="text-white pb-[2vw] text-[min(1.2vw,16px)] 2xl:text-[18px]">
+            <p className="text-white pb-[2vw] text-[max(1.2vw,16px)] 2xl:text-[18px] md:max-w-[500px]">
               {
                 'The next great space mission starts here. Join the decentralized space race and fund your mission with the MoonDAO Launchpad. The Launchpad is available permissionlessly to teams in the Space Acceleration Network.'
               }
@@ -733,7 +733,7 @@ export default function Launch({ missions }: any) {
           <LaunchpadFAQs />
         </div>
       </section>
-      <div>
+      <div className="bg-[#020617]">
         <Footer darkBackground={true} />
       </div>
     </>

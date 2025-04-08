@@ -37,7 +37,7 @@ export default function FAQs({
               )}
             </button>
             <h3
-              className="md:text-[1.5vw] cursor-pointer"
+              className="md:text-[max(1.5vw,20px)] 2xl:text-[22px] cursor-pointer"
               onClick={() => toggleFAQ(i)}
             >
               {question}
@@ -48,7 +48,7 @@ export default function FAQs({
               faqExpanded[i] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
-            <p className="md:text-[1.2vw] h-full pt-2 pb-5">{answer}</p>
+            <p className="md:text-[max(1.2vw,16px)] 2xl:text-[18px] h-full pt-2 pb-5">{answer}</p>
           </div>
           <hr className="mt-4 w-full border-t border-gray-300" />
         </div>
