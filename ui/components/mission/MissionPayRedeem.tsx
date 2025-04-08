@@ -1,4 +1,5 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
+import { useFundWallet } from '@privy-io/react-auth'
 import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -13,8 +14,11 @@ import {
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
+import viemChains from '@/lib/viem/viemChains'
 import { CopyIcon } from '../assets'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
@@ -212,6 +216,7 @@ export default function MissionPayRedeem({
   setModalEnabled,
   primaryTerminalAddress,
 }: MissionPayRedeemProps) {
+  const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const account = useActiveAccount()
@@ -220,8 +225,11 @@ export default function MissionPayRedeem({
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState('')
 
+  const nativeBalance = useNativeBalance()
+
   const [usdQuote, setUSDQuote] = useState<number | undefined>(0)
 
+  const { fundWallet } = useFundWallet()
   const [agreedToCondition, setAgreedToCondition] = useState(false)
 
   const currentStage = useMissionFundingStage(mission?.id)
@@ -256,8 +264,13 @@ export default function MissionPayRedeem({
   }, [primaryTerminalContract, input])
 
   const buyMissionToken = useCallback(async () => {
-    if (!account) return
-
+    if (!account || !address) return
+    if (input > +nativeBalance) {
+      return fundWallet(address, {
+        amount: (input - +nativeBalance).toString(),
+        chain: viemChains[chainSlug],
+      })
+    }
     try {
       const transaction = prepareContractCall({
         contract: primaryTerminalContract,
