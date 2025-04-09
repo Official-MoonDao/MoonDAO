@@ -4,6 +4,7 @@ import { RequestBudget } from '@nance/nance-sdk'
 import ProjectsABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
+  DEFAULT_CHAIN_V5,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
@@ -33,6 +34,7 @@ import Head from '@/components/layout/Head'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import ProjectsDropdown from '@/components/project/ProjectsDropdown'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import EditorMarkdownUpload from './EditorMarkdownUpload'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
@@ -267,26 +269,12 @@ export default function FinalReportEditor({
             {/* Submit buttons */}
             <div className="flex justify-end space-x-5">
               {/* SUBMIT */}
-              <button
-                type="submit"
-                className={classNames(
-                  buttonsDisabled && 'tooltip',
-                  'px-5 py-3 gradient-2 border border-transparent font-RobotoMono rounded-[20px] rounded-tl-[10px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
-                )}
-                onClick={() => {}}
-                disabled={buttonsDisabled || !projectTableContract}
-                data-tip={
-                  !selectedProject
-                    ? 'Please select a project.'
-                    : !isManager
-                    ? 'You are not a manager.'
-                    : signingStatus === 'loading'
-                    ? 'Signing...'
-                    : 'You need to connect wallet first.'
-                }
-              >
-                {signingStatus === 'loading' ? 'Signing...' : 'Submit'}
-              </button>
+              <PrivyWeb3Button
+                requiredChain={DEFAULT_CHAIN_V5}
+                className="rounded-[20px] rounded-tl-[10px] px-5 py-3 gradient-2 border border-transparent font-RobotoMono duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40"
+                label={signingStatus === 'loading' ? 'Signing...' : 'Submit'}
+                action={onSubmit}
+              />
             </div>
           </div>
         </form>
