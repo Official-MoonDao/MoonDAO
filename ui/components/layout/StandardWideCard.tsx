@@ -155,12 +155,8 @@ export default function StandardWideCard({
     <span
       id="link-frame"
       className={`
-                card-container w-full flex lg:flex-col rounded-[20px] relative 
-                ${link ? 'cursor-pointer' : ''}
-                ${
-                  onClick
-                    ? 'cursor-pointer border-[1px] border-dark-cool hover:border-light-warm'
-                    : ''
+                card-container w-full flex lg:flex-col rounded-[20px] relative  p-2 ${
+                  link || onClick ? 'hover-gradient-2 cursor-pointer' : ''
                 }
             `}
     >

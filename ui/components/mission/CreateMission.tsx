@@ -28,7 +28,6 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
@@ -324,20 +323,39 @@ export default function CreateMission({
         missionMetadataBlob
       )
 
-      const transaction = prepareContractCall({
-        contract: missionCreatorContract,
-        method: 'createMission' as string,
-        params: [
-          selectedTeamId,
-          teamMultisig,
-          missionMetadataIpfsHash,
-          fundingGoalInETH,
-          missionData.token.tradeable,
-          missionData?.token?.name,
-          missionData?.token?.symbol,
-          'MoonDAO Mission',
-        ],
-      })
+      let transaction
+      if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet') {
+        transaction = prepareContractCall({
+          contract: missionCreatorContract,
+          method: 'createMission' as string,
+          params: [
+            selectedTeamId,
+            teamMultisig,
+            missionMetadataIpfsHash,
+            fundingGoalInETH,
+            missionData.token.tradeable,
+            missionData?.token?.name,
+            missionData?.token?.symbol,
+            'MoonDAO Mission',
+          ],
+        })
+      } else {
+        transaction = prepareContractCall({
+          contract: missionCreatorContract,
+          method: 'createMission' as string,
+          params: [
+            selectedTeamId,
+            teamMultisig,
+            missionMetadataIpfsHash,
+            fundingGoalInETH,
+            Math.floor(new Date().getTime() / 1000) + 24 * 60 * 60, // Expires in 1 day
+            missionData.token.tradeable,
+            missionData?.token?.name,
+            missionData?.token?.symbol,
+            'MoonDAO Mission',
+          ],
+        })
+      }
 
       setSigningTx(true)
       const receipt = await sendAndConfirmTransaction({
@@ -381,8 +399,9 @@ export default function CreateMission({
           clearMissionCache()
 
           setStatus('idle')
+          setCreatedMission(false)
           router.push(`/mission/${missionId}`)
-        }, 15000)
+        }, 30000)
       }
     } catch (err) {
       console.error(err)
@@ -853,7 +872,9 @@ export default function CreateMission({
                       isDisabled={
                         !agreedToTerms ||
                         (missionData.token.tradeable &&
-                          !agreedToTokenNotSecurity)
+                          !agreedToTokenNotSecurity) ||
+                        signingTx ||
+                        createdMission
                       }
                       action={createMission}
                     />

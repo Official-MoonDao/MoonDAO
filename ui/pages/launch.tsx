@@ -4,6 +4,7 @@ import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import MissionCreatorSepABI from 'const/abis/MissionCreatorSep.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -66,7 +67,10 @@ export default function Launch({ missions }: any) {
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
     chain: selectedChain,
-    abi: MissionCreatorABI as any,
+    abi:
+      chainSlug === 'sepolia'
+        ? (MissionCreatorSepABI as any)
+        : (MissionCreatorABI as any),
   })
 
   const missionTableContract = useContract({
@@ -219,7 +223,7 @@ export default function Launch({ missions }: any) {
               <div
                 id="logo-and-graphics-container"
                 className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-center md:justify-center z-[1]"
-                >
+              >
                 <div id="logo-container">
                   <Image
                     id="desktop-logo"
@@ -383,25 +387,25 @@ export default function Launch({ missions }: any) {
       <section
         id="launchpad-features-section"
         className="relative px-[5vw] 2xl:px-[10vw] pt-[2vw] md:pt-[2vw] pb-[5vw] md:pb-[2vw] md:pb-[5vw] flex flex-col bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
-        >
-        <div className="absolute top-0 left-0 hidden md:block"> 
-            <Image
-              className="w-[20vw] 2xl:w-[30vw]"
-              src="/assets/navy-blue-divider-tl.svg"
-              alt="Divider"
-              width={200}
-              height={200}
-            />
-        </div>  
-        <div className="absolute bottom-[-2px] left-0"> 
-            <Image
-              className="w-[30vw] md:w-[10vw] 2xl:w-[10vw] -scale-y-100"
-              src="/assets/navy-blue-divider-tl.svg"
-              alt="Divider"
-              width={200}
-              height={200}
-            />
-        </div>         
+      >
+        <div className="absolute top-0 left-0 hidden md:block">
+          <Image
+            className="w-[20vw] 2xl:w-[30vw]"
+            src="/assets/navy-blue-divider-tl.svg"
+            alt="Divider"
+            width={200}
+            height={200}
+          />
+        </div>
+        <div className="absolute bottom-[-2px] left-0">
+          <Image
+            className="w-[30vw] md:w-[10vw] 2xl:w-[10vw] -scale-y-100"
+            src="/assets/navy-blue-divider-tl.svg"
+            alt="Divider"
+            width={200}
+            height={200}
+          />
+        </div>
         <div className="flex flex-col pb-[5vw] md:pb-[2vw] md:items-center">
           <h2 className="mt-[5vw] pb-[2vw] md:pb-0 md:mt-[5vw] font-GoodTimes text-[6vw] md:text-[max(2vw,25px)] 2xl:text-[35px] md:text-center leading-[7vw]">
             {'New Funding Tools for New Space'}
@@ -504,8 +508,8 @@ export default function Launch({ missions }: any) {
       <section
         id="how-launchpad-works"
         className="relative px-[5vw] pb-24 flex flex-col items-center gap-12 bg-gradient-to-b from-[#FFFFFF] to-[#F1F1F1] text-black"
-        >
-        <div className="absolute top-0 right-0 hidden md:block"> 
+      >
+        <div className="absolute top-0 right-0 hidden md:block">
           <Image
             className="w-[10vw] 2xl:w-[10vw]"
             src="/assets/blue-divider-tr.svg"
@@ -521,7 +525,7 @@ export default function Launch({ missions }: any) {
         </div>
 
         <div className="w-full md:max-w-[70vw] ">
-          <div className="absolute hidden md:block h-full max-h-[60%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw] pb-[0vw]">
+          <div className="absolute hidden md:block h-full max-h-[50%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw] pb-[0vw]">
             <VerticalProgressScrollBar sectionId="how-launchpad-works" />
           </div>
           <div className="w-full flex flex-col items-end md:items-start">
@@ -532,7 +536,7 @@ export default function Launch({ missions }: any) {
               icon={<p>1</p>}
               numberBackground="bg-gradient-to-br from-[#6C407D] to-[#5F4BA2]"
             />
-            <div className="relative md:-top-[50px] w-full flex justify-end">
+            <div className="relative md:-top-[270px] w-full flex justify-end">
               <ExplainerIcon
                 title="Ascent"
                 subtext="1,000 Tokens <br/>per 1 ETH (2x)"
@@ -541,7 +545,7 @@ export default function Launch({ missions }: any) {
                 numberBackground="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC]"
               />
             </div>
-            <div className="relative md:-top-[100px] w-full">
+            <div className="relative md:-top-[550px] w-full">
               <ExplainerIcon
                 title="Orbit"
                 subtext="500 Tokens <br/>per 1 ETH (1x)"
@@ -551,7 +555,7 @@ export default function Launch({ missions }: any) {
               />
             </div>
           </div>
-          <div className=" w-full flex flex-col text-center items-center justify-center gap-4">
+          <div className="w-full flex flex-col text-center items-center justify-center gap-4 md:mt-[-400px]">
             <h3 className="font-GoodTimes text-[4vw] md:text-[max(1.5vw,25px)] md:pb-[1vw]">
               Your tools, your team, your mission
             </h3>

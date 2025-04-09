@@ -177,9 +177,6 @@ export default function MissionFundingMilestoneChart({
             <clipPath id="progressClip">
               <rect x="0" y="0" width={`${progressPercent}%`} height="100%" />
             </clipPath>
-            <clipPath id="progressClip">
-              <rect x="0" y="0" width={`${progressPercent}%`} height="100%" />
-            </clipPath>
             <clipPath id="progressStepClip">
               <path
                 d={`M0,${height} ${getSteppedLinePath(
@@ -188,6 +185,10 @@ export default function MissionFundingMilestoneChart({
                 )} V${height} Z`}
               />
             </clipPath>
+            <linearGradient id="colorGradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="5%" stopColor="#425eeb" />
+              <stop offset="90%" stopColor="#6d3f79" />
+            </linearGradient>
           </defs>
 
           <CartesianGrid stroke={stroke} strokeDasharray="1 2" />
@@ -255,12 +256,6 @@ export default function MissionFundingMilestoneChart({
             allowDecimals={false}
           />
 
-          <defs>
-            <linearGradient id="colorGradient" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="5%" stopColor="#425eeb" />
-              <stop offset="90%" stopColor="#6d3f79" />
-            </linearGradient>
-          </defs>
           <Line
             dot={true}
             stroke="url(#colorGradient)"

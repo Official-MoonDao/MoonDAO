@@ -122,7 +122,7 @@ export default function MissionWideCard({
                   <MissionStat
                     icon="/assets/launchpad/token.svg"
                     label="Token"
-                    value={`$${token?.tokenSymbol} (${token?.tokenName})`}
+                    value={`$${token?.tokenSymbol}`}
                   />
                 </Link>
               )}
@@ -132,27 +132,8 @@ export default function MissionWideCard({
                   value={'Ξ ' + subgraphData.volume / 1e18}
                 />
               )}
-              {subgraphData?.paymentsCount !== undefined && (
-                <MissionStat
-                  label="PAYMENTS"
-                  value={subgraphData.paymentsCount}
-                />
-              )}
-              {contribute && mission.projectId && (
-                <StandardButton
-                  className="gradient-2 rounded-full"
-                  hoverEffect={false}
-                  onClick={(e: any) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    setPayModalEnabled(true)
-                  }}
-                >
-                  Contribute
-                </StandardButton>
-              )}
             </div>
-            <div className="mt-4 max-w-full">
+            <div className="mt-4 w-4/5">
               {subgraphData?.volume && fundingGoal && (
                 <MissionFundingProgressBar
                   fundingGoal={fundingGoal}
@@ -162,6 +143,19 @@ export default function MissionWideCard({
                 />
               )}
             </div>
+            {contribute && mission.projectId && (
+              <StandardButton
+                className="mt-4 gradient-2 rounded-full"
+                hoverEffect={false}
+                onClick={(e: any) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setPayModalEnabled(true)
+                }}
+              >
+                Contribute
+              </StandardButton>
+            )}
           </div>
         }
         paragraph={

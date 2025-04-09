@@ -34,7 +34,7 @@ function Rate({
       <div>
         <h3 className="opacity-60">{title}</h3>
         <p>
-          {`1 ETH =`}
+          {`1 ETH = `}
           {rate && tokenSymbol && (
             <span className="font-bold">
               {rate.toLocaleString()} ${tokenSymbol}

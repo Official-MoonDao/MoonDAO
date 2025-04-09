@@ -44,7 +44,7 @@ export default function ProgressBar({
         >
           {label && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[75%] text-white min-w-[50px]">
+              <span className="text-[75%] text-white min-w-[25px] whitespace-nowrap">
                 {label}
               </span>
             </div>
