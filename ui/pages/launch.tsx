@@ -40,6 +40,8 @@ import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrol
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
 
+const FEATURED_MISSION_INDEX = 0
+
 export default function Launch({ missions }: any) {
   const [status, setStatus] = useState<
     'idle' | 'loggingIn' | 'apply' | 'create'
@@ -114,7 +116,7 @@ export default function Launch({ missions }: any) {
     ruleset: featuredMissionRuleset,
     stage: featuredMissionStage,
   } = useMissionData({
-    mission: missions?.[1],
+    mission: missions?.[FEATURED_MISSION_INDEX],
     missionTableContract,
     missionCreatorContract,
     jbControllerContract,
@@ -360,9 +362,9 @@ export default function Launch({ missions }: any) {
           <MissionWideCard
             mission={
               {
-                ...missions?.[1],
+                ...missions?.[FEATURED_MISSION_INDEX],
                 metadata: {
-                  ...missions?.[1]?.metadata,
+                  ...missions?.[FEATURED_MISSION_INDEX]?.metadata,
                   description: '',
                 },
               } as any
