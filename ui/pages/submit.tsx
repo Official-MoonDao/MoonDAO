@@ -13,6 +13,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { getRelativeQuarter } from '@/lib/utils/dates'
 import ContributionEditor from '../components/contribution/ContributionEditor'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
@@ -22,9 +23,9 @@ import ProposalEditor from '../components/nance/ProposalEditor'
 import FinalReportEditor from '@/components/nance/FinalReportEditor'
 
 export default function SubmissionPage({
-  projectsWithoutReport,
+  projectsFromLastQuarter,
 }: {
-  projectsWithoutReport: Project[] | undefined
+  projectsFromLastQuarter: Project[] | undefined
 }) {
   const [{ tag }, setQuery] = useQueryParams({ tag: StringParam })
 
@@ -243,7 +244,7 @@ export default function SubmissionPage({
                       </p>
                     </div>
                     <FinalReportEditor
-                      projectsWithoutReport={projectsWithoutReport}
+                      projectsFromLastQuarter={projectsFromLastQuarter}
                     />
                   </Tab.Panel>
                 </Tab.Panels>
@@ -272,12 +273,14 @@ export async function getStaticProps() {
     method: 'getTableName',
   })
 
-  const statement = `SELECT * FROM ${projectTableName} WHERE finalReportIPFS IS ""`
-  const projects = await queryTable(chain, statement)
+  const { quarter, year } = getRelativeQuarter(-1)
+
+  const statement = `SELECT * FROM ${projectTableName} WHERE quarter = ${quarter} AND year = ${year}`
+  const projectsFromLastQuarter = await queryTable(chain, statement)
 
   return {
     props: {
-      projectsWithoutReport: projects,
+      projectsFromLastQuarter,
     },
     revalidate: 60,
   }
