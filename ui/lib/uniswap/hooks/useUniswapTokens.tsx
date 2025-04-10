@@ -1,6 +1,6 @@
 import { Token } from '@uniswap/sdk-core'
 import { nativeOnChain } from '@uniswap/smart-order-router'
-import { DAI_ADDRESSES, MOONEY_ADDRESSES } from 'const/config'
+import { DAI_ADDRESSES, MOONEY_ADDRESSES, USDT_ADDRESSES } from 'const/config'
 import { useMemo } from 'react'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
@@ -18,5 +18,9 @@ export function useUniswapTokens(selectedChain: any) {
     return new Token(selectedChain.id, DAI_ADDRESSES[chainSlug], 18)
   }, [selectedChain, chainSlug])
 
-  return { NATIVE, MOONEY, DAI }
+  const USDT = useMemo(() => {
+    return new Token(selectedChain.id, USDT_ADDRESSES[chainSlug], 6)
+  }, [selectedChain, chainSlug])
+
+  return { NATIVE, MOONEY, DAI, USDT }
 }

@@ -253,6 +253,7 @@ a {
 
 /* New Design Classes*/
 /*Gradients*/
+
 .text-gradient {
   background: linear-gradient(220deg, #2d121a 5%, #080c20 30%, #182254 100%);
   -webkit-background-clip: text;
@@ -264,6 +265,19 @@ a {
 }
 
 .gradient-2 {
+  background: linear-gradient(90deg, #425eeb 5%, #6d3f79 90%);
+}
+
+/* Base class */
+.hover-gradient-2 {
+  /* Start with a solid background or transparent */
+  background: transparent;
+  /* Put transition on the base class, not just the hover state */
+  transition: background 0.5s ease-in-out;
+}
+
+/* Hover state */
+.hover-gradient-2:hover {
   background: linear-gradient(90deg, #425eeb 5%, #6d3f79 90%);
 }
 
