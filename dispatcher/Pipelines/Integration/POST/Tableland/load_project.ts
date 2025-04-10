@@ -198,9 +198,9 @@ async function loadProjectData() {
                 continue;
             }
             await projectTeamCreatorContract.call("createProjectTeam", [
-                adminHatMetadataIpfs.value,
-                managerHatMetadataIpfs.value,
-                memberHatMetadataIpfs.value,
+                adminHatMetadataIpfs,
+                managerHatMetadataIpfs,
+                memberHatMetadataIpfs,
                 proposal.title,
                 "", // description
                 "", // image
