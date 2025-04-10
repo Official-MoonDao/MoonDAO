@@ -35,7 +35,7 @@ export default function Product({
               <Image
                 id="product-image"
                 className="mt-5 rounded-2xl block"
-                src={product.images[preview]?.src}
+                src={product?.images[preview]?.src}
                 width={450}
                 height={450}
                 alt={`product-${preview}`}
@@ -47,7 +47,7 @@ export default function Product({
                   onClick={() =>
                     preview > 0
                       ? setPreview(preview - 1)
-                      : setPreview(product.images.length - 1)
+                      : setPreview(product?.images.length - 1)
                   }
                 >
                   {'<'}
