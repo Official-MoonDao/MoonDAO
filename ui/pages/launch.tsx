@@ -114,7 +114,7 @@ export default function Launch({ missions }: any) {
     ruleset: featuredMissionRuleset,
     stage: featuredMissionStage,
   } = useMissionData({
-    mission: missions?.[0],
+    mission: missions?.[1],
     missionTableContract,
     missionCreatorContract,
     jbControllerContract,
@@ -360,9 +360,9 @@ export default function Launch({ missions }: any) {
           <MissionWideCard
             mission={
               {
-                ...missions?.[0],
+                ...missions?.[1],
                 metadata: {
-                  ...missions?.[0]?.metadata,
+                  ...missions?.[1]?.metadata,
                   description: '',
                 },
               } as any

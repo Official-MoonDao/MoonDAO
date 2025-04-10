@@ -268,17 +268,23 @@ a {
   background: linear-gradient(90deg, #425eeb 5%, #6d3f79 90%);
 }
 
-/* Base class */
-.hover-gradient-2 {
-  /* Start with a solid background or transparent */
-  background: transparent;
-  /* Put transition on the base class, not just the hover state */
-  transition: background 0.5s ease-in-out;
+/* Add a pseudo-element for smoother gradient transition */
+.hover-gradient-2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #425eeb 5%, #6d3f79 90%);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  border-radius: 25px;
+  z-index: -1;
 }
 
-/* Hover state */
-.hover-gradient-2:hover {
-  background: linear-gradient(90deg, #425eeb 5%, #6d3f79 90%);
+.hover-gradient-2:hover::before {
+  opacity: 1;
 }
 
 .gradient-3 {
