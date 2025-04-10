@@ -328,7 +328,7 @@ export default function MissionPayRedeem({
           '0x000000000000000000000000000000000000EEEe',
           0,
           address,
-          '0x0',
+          '',
         ],
       })
 
