@@ -313,6 +313,8 @@ export default function MissionPayRedeem({
     output,
     message,
     router,
+    nativeBalance,
+    chainSlug,
   ])
 
   const redeemMissionToken = useCallback(async () => {
@@ -356,7 +358,14 @@ export default function MissionPayRedeem({
         })
       }
     }
-  }, [account, primaryTerminalContract, address, mission?.projectId, router])
+  }, [
+    account,
+    primaryTerminalContract,
+    address,
+    mission?.projectId,
+    router,
+    tokenBalance,
+  ])
 
   useEffect(() => {
     if (input > 0) {
