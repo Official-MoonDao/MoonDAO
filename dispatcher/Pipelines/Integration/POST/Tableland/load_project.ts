@@ -22,7 +22,6 @@ const TABLELAND_ENDPOINT = `https://${
 }tableland.network/api/v1/query`;
 const chain = TEST ? Sepolia : Arbitrum;
 const privateKey = process.env.OPERATOR_PRIVATE_KEY;
-console.log(privateKey);
 const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
     secretKey: process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY,
 });
