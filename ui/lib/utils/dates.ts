@@ -61,15 +61,15 @@ export function daysUntilDay(date: Date, day: string) {
 }
 
 export function isRewardsCycle(date: Date) {
-  const currentQuarter = getRelativeQuarter(0)
+  const lastQuarter = getRelativeQuarter(-1)
   const endOfQuarter = new Date(
-    currentQuarter.year,
-    currentQuarter.quarter * 3,
+    lastQuarter.year,
+    lastQuarter.quarter * 3,
     0
   )
   const nextQuarterStart = new Date(
-    currentQuarter.year,
-    currentQuarter.quarter * 3,
+    lastQuarter.year,
+    lastQuarter.quarter * 3,
     1
   )
 

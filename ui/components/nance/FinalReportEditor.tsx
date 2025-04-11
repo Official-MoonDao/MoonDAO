@@ -4,6 +4,7 @@ import { RequestBudget } from '@nance/nance-sdk'
 import ProjectsABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
+  DEFAULT_CHAIN_V5,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
@@ -26,19 +27,19 @@ import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
 import Head from '@/components/layout/Head'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import ProjectsDropdown from '@/components/project/ProjectsDropdown'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import EditorMarkdownUpload from './EditorMarkdownUpload'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 type FinalReportEditorProps = {
-  projectsWithoutReport: Project[] | undefined
+  projectsFromLastQuarter: Project[] | undefined
 }
 
 let getMarkdown: GetMarkdown
@@ -57,7 +58,7 @@ const NanceEditor = dynamic(
 )
 
 export default function FinalReportEditor({
-  projectsWithoutReport,
+  projectsFromLastQuarter,
 }: FinalReportEditorProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -88,14 +89,14 @@ export default function FinalReportEditor({
   const [loadedProposal, setLoadedProposal] = useState<any>(undefined)
 
   useEffect(() => {
-    if (projectsWithoutReport) {
+    if (projectsFromLastQuarter) {
       setLoadedProposal(
-        projectsWithoutReport.find((p: any) => p.MDP === Number(proposalId))
+        projectsFromLastQuarter?.find((p: any) => p.MDP === Number(proposalId))
           ? data?.data
           : undefined
       )
     }
-  }, [projectsWithoutReport, data, proposalId])
+  }, [projectsFromLastQuarter, data, proposalId])
 
   const reportTitle = loadedProposal?.title
     ? loadedProposal?.title + ' Final Report'
@@ -136,12 +137,14 @@ export default function FinalReportEditor({
   }, [selectedProject, address, projectContract])
 
   useEffect(() => {
-    if (projectsWithoutReport) {
+    if (projectsFromLastQuarter) {
       setSelectedProject(
-        projectsWithoutReport.find((p) => p.MDP === loadedProposal?.proposalId)
+        projectsFromLastQuarter.find(
+          (p) => p.MDP === loadedProposal?.proposalId
+        )
       )
     }
-  }, [projectsWithoutReport, loadedProposal])
+  }, [projectsFromLastQuarter, loadedProposal])
 
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
@@ -241,7 +244,7 @@ export default function FinalReportEditor({
             />
             <div className="flex flex-col gap-2">
               <ProjectsDropdown
-                projects={projectsWithoutReport}
+                projects={projectsFromLastQuarter}
                 setProposalId={setProposalId}
                 selectedProject={selectedProject}
                 setSelectedProject={setSelectedProject}
@@ -267,26 +270,13 @@ export default function FinalReportEditor({
             {/* Submit buttons */}
             <div className="flex justify-end space-x-5">
               {/* SUBMIT */}
-              <button
-                type="submit"
-                className={classNames(
-                  buttonsDisabled && 'tooltip',
-                  'px-5 py-3 gradient-2 border border-transparent font-RobotoMono rounded-[20px] rounded-tl-[10px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
-                )}
-                onClick={() => {}}
-                disabled={buttonsDisabled || !projectTableContract}
-                data-tip={
-                  !selectedProject
-                    ? 'Please select a project.'
-                    : !isManager
-                    ? 'You are not a manager.'
-                    : signingStatus === 'loading'
-                    ? 'Signing...'
-                    : 'You need to connect wallet first.'
-                }
-              >
-                {signingStatus === 'loading' ? 'Signing...' : 'Submit'}
-              </button>
+              <PrivyWeb3Button
+                requiredChain={DEFAULT_CHAIN_V5}
+                className="rounded-[20px] rounded-tl-[10px] px-5 py-3 gradient-2 border border-transparent font-RobotoMono duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40"
+                label={signingStatus === 'loading' ? 'Signing...' : 'Submit'}
+                action={onSubmit}
+                isDisabled={buttonsDisabled}
+              />
             </div>
           </div>
         </form>
