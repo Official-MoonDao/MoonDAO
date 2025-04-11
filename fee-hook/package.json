@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@layerzerolabs/lz-evm-messagelib-v2": "^3.0.84",
+    "solidity-bytes-utils": "^0.8.3"
+  }
+}
