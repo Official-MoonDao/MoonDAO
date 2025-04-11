@@ -8,7 +8,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
-import {StateView} from "v4-periphery/src/lens/StateView.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
@@ -38,10 +37,9 @@ contract FeeHook is BaseHook, OApp  {
     bytes32[] public transferredPoolIds;
 
     IPositionManager posm;
-    // FIXME increase this
-    uint256 public MIN_WITHDRAW = 0.000001 ether;
+    uint256 public MIN_WITHDRAW = 0.01 ether;
     uint256 destinationChainId;
-    uint16 destinationEid; // LayerZero endpoint ID for the destination chain
+    uint16 destinationEid;
     address public vMooneyAddress;
 
 
@@ -119,7 +117,7 @@ contract FeeHook is BaseHook, OApp  {
                 uint128 messageFee = 3_000_000_000_000_000; // 3e15 wei
                                    //9_999_999_999_999_999
                 uint128 GAS_LIMIT = 500000;
-                uint128 VALUE = uint128(address(this).balance); // 1e15 wei
+                uint128 VALUE = uint128(address(this).balance);
                 bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, VALUE - messageFee);
 
                 // ZOMG
