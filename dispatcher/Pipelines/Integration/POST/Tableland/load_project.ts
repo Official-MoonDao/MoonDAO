@@ -22,6 +22,7 @@ const TABLELAND_ENDPOINT = `https://${
 }tableland.network/api/v1/query`;
 const chain = TEST ? Sepolia : Arbitrum;
 const privateKey = process.env.OPERATOR_PRIVATE_KEY;
+console.log(privateKey);
 const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
     secretKey: process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY,
 });
@@ -189,6 +190,19 @@ async function loadProjectData() {
                 getHatMetadataIPFS("Manager"),
                 getHatMetadataIPFS("Member"),
             ]);
+            if (
+                adminHatMetadataIpfs.status !== "fulfilled" ||
+                managerHatMetadataIpfs.status !== "fulfilled" ||
+                memberHatMetadataIpfs.status !== "fulfilled"
+            ) {
+                console.error(
+                    "Failed to pin hat metadata IPFS:",
+                    adminHatMetadataIpfs,
+                    managerHatMetadataIpfs,
+                    memberHatMetadataIpfs
+                );
+                continue;
+            }
             // allow keyboard input to confirm the proposal, otherwise skip
             const conf = prompt(
                 `Create project for proposal ${proposal.proposalId} ${proposal.title}? (y/n)`
@@ -211,8 +225,8 @@ async function loadProjectData() {
                 "https://moondao.com/proposal/" + proposal.proposalId,
                 upfrontPayment,
                 proposal.authorAddress || "", // leadAddress,
-                members || [], // members
-                signers || [], // signers,
+                members.length > 0 ? members : [proposal.authorAddress], // members
+                signers.length > 0 ? signers : [proposal.authorAddress], // signers,
             ]);
         }
 
