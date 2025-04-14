@@ -2,6 +2,7 @@
 
 ## Design
 
+- Loosely based on [Uniswap v4 Hooks template](https://github.com/uniswapfoundation/v4-template).
 - Fee Hook uses [uniswap v4 hooks](https://docs.uniswap.org/contracts/v4/concepts/hooks) to automatically collect liquidity fees and distribute them to vMOONEY holders.
 - Pools are registered with the _beforeAddLiquidity callback.
 - After swaps, fees are automatically withdrawn once a threshold is hit.
@@ -37,5 +38,4 @@ PRIVATE_KEY=<PK> ETHERSCAN_API_KEY=$SEP forge script script/Pool.s.sol --rpc-url
 
 # Execute Swap, on source chain and destination chain
 PRIVATE_KEY=<PK> ETHERSCAN_API_KEY=$SEP forge script script/Swap.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify
-
 ```
