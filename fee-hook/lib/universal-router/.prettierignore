@@ -1,9 +1,0 @@
-lib
-typechain
-cache
-artifacts
-broadcast
-out
-openzeppelin-contracts
-permit2
-solmate
