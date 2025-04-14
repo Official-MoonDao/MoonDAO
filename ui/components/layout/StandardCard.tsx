@@ -9,6 +9,7 @@ import StandardButton from '../layout/StandardButton'
 import CollapsibleContainer from './CollapsibleContainer'
 
 type StandardCardProps = {
+  id?: string
   icon?: string
   iconAlt?: string
   header?: string
@@ -32,6 +33,7 @@ type StandardCardProps = {
 }
 
 export default function StandardCard({
+  id,
   icon,
   header,
   title,
@@ -56,7 +58,7 @@ export default function StandardCard({
 
   const cardContent = (
     <span
-      id="card-container"
+      id={id}
       className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full max-w-[300px] md:max-w-[500px]`}
     >
       {/* Ensure the card content takes full height */}

@@ -30,12 +30,12 @@ describe('<CreateMission />', () => {
   })
 
   it('Should render the component', () => {
-    cy.get('#launch-mission-description').should('exist')
+    cy.contains('Launch A Mission').should('exist')
   })
 
   it('Should progress through stages', () => {
     // STAGE 0 - Mission Overview
-    cy.get('#mission-overview-stage').should('exist')
+    cy.get('#mission-overview-stage').should('be.visible')
 
     // Fill in mission details
     cy.get('#mission-title').type('Test Mission')
@@ -47,24 +47,15 @@ describe('<CreateMission />', () => {
     cy.get('#mission-image').attachFile('images/Original.png')
 
     // Move to next stage
-    cy.get('#continue-button').click()
+    cy.get('#continue-button').click({ force: true })
 
-    // STAGE 1 - Mission Details
-    cy.get('#mission-details-stage').should('exist')
+    // STAGE 1 - Mission Goals
+    cy.get('#mission-goals-stage').should('be.visible')
 
-    // Check if editor exists and type description
-    cy.get('#mission-description-editor').should('exist')
+    // Set funding goal
+    cy.get('input[placeholder="Enter a funding goal in USD"]').type('1000')
 
-    // Move to next stage
-    cy.get('#continue-button').click()
-
-    // STAGE 2 - Mission Goals
-    cy.get('#fundraising-deadline-toggle').within(() => {
-      cy.contains('Yes').click()
-    })
-    cy.get('#funding-goal-toggle').within(() => {
-      cy.contains('Yes').click()
-    })
+    // Configure token
     cy.get('#mission-token-toggle').within(() => {
       cy.contains('Yes').click()
     })
@@ -76,8 +67,18 @@ describe('<CreateMission />', () => {
     // Move to next stage
     cy.get('#continue-button').click()
 
+    // STAGE 2 - Mission Details
+    cy.get('#mission-details-stage').should('be.visible')
+
+    // Check if editor exists and type description
+    cy.get('#mission-description-editor').should('exist')
+    cy.get('#mission-description-editor').type('Test Description')
+
+    // Move to next stage
+    cy.get('#continue-button').click()
+
     // STAGE 3 - Confirmation
-    cy.get('#mission-confirmation-stage').should('exist')
+    cy.get('#mission-confirmation-stage').should('be.visible')
 
     // Accept terms
     cy.get('#terms-checkbox').check()
@@ -94,11 +95,14 @@ describe('<CreateMission />', () => {
     cy.get('#mission-image').attachFile('images/Original.png')
     cy.get('#continue-button').click()
 
+    // Verify we're on the goals stage
+    cy.get('#mission-goals-stage').should('be.visible')
+
     // Go back
-    cy.get('#back-button').click()
+    cy.get('#back-button').should('be.visible').click()
 
     // Check if we're back at first stage
-    cy.get('#mission-overview-stage').should('exist')
+    cy.get('#mission-overview-stage').should('be.visible')
 
     // Check if data is preserved
     cy.get('#mission-title').should('have.value', 'Test Mission')

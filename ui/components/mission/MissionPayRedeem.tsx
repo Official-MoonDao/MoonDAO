@@ -4,12 +4,13 @@ import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
   sendAndConfirmTransaction,
   simulateTransaction,
+  ZERO_ADDRESS,
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -200,6 +201,7 @@ export type MissionPayRedeemProps = {
   modalEnabled?: boolean
   setModalEnabled?: (enabled: boolean) => void
   primaryTerminalAddress: string
+  forwardClient?: any
 }
 
 export default function MissionPayRedeem({
@@ -215,6 +217,7 @@ export default function MissionPayRedeem({
   modalEnabled = false,
   setModalEnabled,
   primaryTerminalAddress,
+  forwardClient,
 }: MissionPayRedeemProps) {
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
@@ -227,8 +230,6 @@ export default function MissionPayRedeem({
 
   const nativeBalance = useNativeBalance()
 
-  const [usdQuote, setUSDQuote] = useState<number | undefined>(0)
-
   const { fundWallet } = useFundWallet()
   const [agreedToCondition, setAgreedToCondition] = useState(false)
 
@@ -238,39 +239,61 @@ export default function MissionPayRedeem({
     address: primaryTerminalAddress,
     chain: selectedChain,
     abi: JBMultiTerminalABI as any,
+    forwardClient,
   })
 
   const tokenBalance = useWatchTokenBalance(selectedChain, token?.tokenAddress)
 
   const getQuote = useCallback(async () => {
-    const transaction = prepareContractCall({
-      contract: primaryTerminalContract,
-      method: 'pay' as string,
-      params: [
-        mission?.projectId,
-        '0x000000000000000000000000000000000000EEEe',
-        input * 1e18,
-        address,
-        0,
-        message,
-        '0x00',
-      ],
-      value: BigInt(input * 1e18),
-    })
-    const q = await simulateTransaction({
-      transaction,
-    })
-    setOutput(q.toString() / 1e18)
-  }, [primaryTerminalContract, input])
+    if (!address) return
+    if (!primaryTerminalContract) {
+      console.error('Primary terminal contract not initialized')
+      return
+    }
+
+    try {
+      const transaction = prepareContractCall({
+        contract: primaryTerminalContract,
+        method: 'pay' as string,
+        params: [
+          mission?.projectId,
+          '0x000000000000000000000000000000000000EEEe',
+          input * 1e18,
+          address || ZERO_ADDRESS,
+          0,
+          message,
+          '0x00',
+        ],
+        value: BigInt(input * 1e18),
+      })
+
+      const q = await simulateTransaction({
+        transaction,
+      })
+      setOutput(q.toString() / 1e18)
+    } catch (error) {
+      console.error('Error getting quote:', error)
+      setOutput(0)
+    }
+  }, [primaryTerminalContract, input, address, mission?.projectId, message])
 
   const buyMissionToken = useCallback(async () => {
-    if (!account || !address) return
+    if (!account || !address) {
+      console.error('No account or address available')
+      return
+    }
+    if (!primaryTerminalContract) {
+      console.error('Primary terminal contract not initialized')
+      return
+    }
+
     if (input > +nativeBalance) {
       return fundWallet(address, {
         amount: (input - +nativeBalance).toString(),
         chain: viemChains[chainSlug],
       })
     }
+
     try {
       const transaction = prepareContractCall({
         contract: primaryTerminalContract,
@@ -318,7 +341,15 @@ export default function MissionPayRedeem({
   ])
 
   const redeemMissionToken = useCallback(async () => {
-    if (!account) return
+    if (!account || !address) {
+      console.error('No account or address available')
+      return
+    }
+    if (!primaryTerminalContract) {
+      console.error('Primary terminal contract not initialized')
+      return
+    }
+
     try {
       const transaction = prepareContractCall({
         contract: primaryTerminalContract,
@@ -428,7 +459,7 @@ export default function MissionPayRedeem({
             </div>
 
             <div className="w-full flex justify-between">
-              <p>{'Total Amont'}</p>
+              <p>{'Total Amount'}</p>
               <div className="flex flex-col lg:flex-row gap-2 items-end lg:items-center">
                 <div className="flex gap-2 items-center">
                   <input

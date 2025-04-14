@@ -68,27 +68,25 @@ export default function MissionWideCard({
   return (
     <>
       {contribute && payModalEnabled && primaryTerminalAddress && (
-        <MissionPayRedeem
-          stage={stage}
-          selectedChain={selectedChain}
-          mission={mission}
-          token={token}
-          subgraphData={subgraphData}
-          ruleset={ruleset}
-          teamNFT={teamNFT}
-          onlyModal
-          modalEnabled={payModalEnabled}
-          setModalEnabled={setPayModalEnabled}
-          primaryTerminalAddress={primaryTerminalAddress}
-          fundingGoal={fundingGoal}
-        />
+        <div id="pay-modal">
+          <MissionPayRedeem
+            stage={stage}
+            selectedChain={selectedChain}
+            mission={mission}
+            token={token}
+            subgraphData={subgraphData}
+            ruleset={ruleset}
+            teamNFT={teamNFT}
+            onlyModal
+            modalEnabled={payModalEnabled}
+            setModalEnabled={setPayModalEnabled}
+            primaryTerminalAddress={primaryTerminalAddress}
+            fundingGoal={fundingGoal}
+          />
+        </div>
       )}
       <StandardWideCard
-        title={
-          <div className="flex items-start justify-between gap-4">
-            {mission?.metadata?.name}
-          </div>
-        }
+        title={mission?.metadata?.name}
         subheader={mission?.metadata?.tagline}
         stats={
           <div className="w-full">

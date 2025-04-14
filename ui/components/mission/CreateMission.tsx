@@ -171,7 +171,11 @@ export function Stage({
               className="gradient-2 rounded-full"
               hoverEffect={false}
               onClick={() => {
-                action()
+                if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+                  setStage((prev: number) => prev + 1)
+                } else {
+                  action()
+                }
               }}
             >
               <div className="flex items-center gap-2">

@@ -230,12 +230,14 @@ export default function MissionTimelineChart({
     moment(timestampSecs * 1000).format('M/DD')
 
   return (
-    <div>
+    <div id="mission-timeline-chart">
       <div className="mt-8 w-full flex items-center justify-between gap-8">
-        <RangeSelector range={range} setRange={setRange} />
+        <div id="range-selector">
+          <RangeSelector range={range} setRange={setRange} />
+        </div>
         <div className="flex items-center gap-2">
           <CalendarDateRangeIcon className="w-5 h-5" />
-          <span className="text-sm">
+          <span className="text-sm" id="creation-date">
             {`Created ${new Date(createdAt * 1000).toLocaleDateString()}`}
           </span>
         </div>
@@ -243,12 +245,15 @@ export default function MissionTimelineChart({
       <div className="mt-4 w-full relative">
         {allZeroValues && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-            <div className="text-white text-xl font-semibold font-GoodTimes">
+            <div
+              className="text-white text-xl font-semibold font-GoodTimes"
+              id="no-activity-message"
+            >
               No Activity Yet
             </div>
           </div>
         )}
-        <ResponsiveContainer height={height}>
+        <ResponsiveContainer height={height} id="chart-container">
           <LineChart
             margin={{
               top: 10, // hacky way to hide top border of CartesianGrid
