@@ -5,8 +5,6 @@ import "forge-std/console.sol";
 import "forge-std/Script.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
-//import {Commands} from "@uniswap/universal-router/contracts/libraries/Commands.sol";
-import { Commands } from "@uniswap/universal-router/contracts/libraries/Commands.sol";
 import {PoolManager} from "v4-core/src/PoolManager.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {FakeERC20} from "../src/FakeERC20.sol";
@@ -60,7 +58,6 @@ contract CounterScript is Script, DeployPermit2 {
 
     function setUp() public {
         vm.deal(msg.sender, 100_000_000 ether);
-        // mint some eth to the deployer
     }
 
     function run() public {
@@ -73,17 +70,12 @@ contract CounterScript is Script, DeployPermit2 {
         console.log("Fake token address: ", address(fakeToken));
         console.log("Fake token supply: ", fakeToken.totalSupply());
         fakeTokenAddress = address(fakeToken);
-        //vm.broadcast();
         vm.deal(deployerAddress, 100_000_000_000 ether);
-        //manager = deployPoolManager();
-        //poolManagerAddress = address(manager);
         poolManagerAddress = 0x000000000004444c5dc75cB358380D2e3dE08A90;
         manager = IPoolManager(poolManagerAddress);
         vm.deal(address(manager), 100_000_000 ether);
 
         // Additional helpers for interacting with the pool
-        //posm = deployPosm(manager);
-        //posmAddress = address(posm);
         posmAddress = 0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e;
         routerAddress = payable(0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af);
         router = UniversalRouter(routerAddress);
