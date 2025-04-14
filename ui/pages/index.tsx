@@ -7,9 +7,9 @@ import Callout2 from '../components/home/Callout2'
 import Callout3 from '../components/home/Callout3'
 import Feature from '../components/home/Feature'
 import Hero from '../components/home/Hero'
-import PartnerSection from '../components/home/PartnerSection'
 import SpeakerSection from '../components/home/SpeakerSection'
 import Video from '../components/home/Video'
+import FeaturedSection from '../components/home/FeaturedSection'
 import Container from '../components/layout/Container'
 import Footer from '../components/layout/Footer'
 import WebsiteHead from '../components/layout/Head'
@@ -48,7 +48,7 @@ export default function Home({ linkSource }: any) {
         <Feature />
         <SpeakerSection />
         <Callout3 />
-        <PartnerSection />
+        <FeaturedSection />
         <PageEnder />
         <Footer darkBackground={true} />
       </div>
