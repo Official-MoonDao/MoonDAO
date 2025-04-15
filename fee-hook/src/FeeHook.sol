@@ -15,12 +15,10 @@ import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BalanceDelta } from "v4-core/src/types/BalanceDelta.sol";
 import { OApp, Origin, MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 
-
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
     function totalSupply() external view returns (uint256);
 }
-
 
 contract FeeHook is BaseHook, OApp  {
 
@@ -31,18 +29,15 @@ contract FeeHook is BaseHook, OApp  {
     mapping(address => uint256) public totalWithdrawnPerUser;
     uint256 public totalWithdrawn;
     uint256 public totalReceived;
-    mapping(PoolId => uint256) public uncollectedFees;
-    mapping(PoolId => uint256) public TOKEN_ID;
-    bytes32[] public poolIds;
-    bytes32[] public transferredPoolIds;
-
+    bytes32[] public poolIds; // Pools owned by this contract at any point
+    bytes32[] public transferredPoolIds; // Pools transferred to other addresses
+    mapping(PoolId => uint256) public uncollectedFees; // Uncollected fees for each LP position
+    mapping(PoolId => uint256) public TOKEN_ID; // Token ID for the NFT representing each LP position
     IPositionManager posm;
     uint256 public MIN_WITHDRAW = 0.01 ether;
     uint256 destinationChainId;
-    uint16 destinationEid;
+    uint16 destinationEid; // LayerZero endpoint ID
     address public vMooneyAddress;
-
-
 
     constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _lzEndpoint, uint256 _destinationChainId, uint16 _destinationEid, address _vMooneyAddress) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) {
         posm = _posm;
@@ -70,9 +65,6 @@ contract FeeHook is BaseHook, OApp  {
         });
     }
 
-    // -----------------------------------------------
-    // NOTE: see IHooks.sol for function documentation
-    // -----------------------------------------------
     function sendCrossChain(
         bytes memory payload,
         bytes memory options,
@@ -94,33 +86,34 @@ contract FeeHook is BaseHook, OApp  {
         override
         returns (bytes4, int128)
     {
-        uint256 feeAmount = 0;
         PoolId poolId = key.toId();
         if (_params.zeroForOne && _params.amountSpecified < 0) {
-            feeAmount = uint256(-_params.amountSpecified) * uint256(key.fee) / 1e6;
+            uint256 feeAmount = uint256(-_params.amountSpecified) * uint256(key.fee) / 1e6;
             uncollectedFees[poolId] += feeAmount;
         }
+        // Only withraw fees if the amount is above a certain threshold to save on gas
         if (uncollectedFees[poolId] >= MIN_WITHDRAW) {
+            // 1. Collect fees.
             bytes memory actions = abi.encodePacked(uint8(Actions.DECREASE_LIQUIDITY), uint8(Actions.TAKE_PAIR));
             bytes[] memory params = new bytes[](2);
             uint256 tokenId = TOKEN_ID[poolId];
             params[0] = abi.encode(tokenId, 0, 0, 0, bytes(""));
             params[1] = abi.encode(key.currency0, key.currency1, address(this));
-
             posm.modifyLiquiditiesWithoutUnlock(
                 actions, params
             );
 
+            // 2. Transfer fees to this contract on the destination chain.
             if (block.chainid != destinationChainId) {
                 bytes memory payload = abi.encode();
                 // FIXME tune this value, could push it lower
-                uint128 messageFee = 3_000_000_000_000_000; // 3e15 wei
-                                   //9_999_999_999_999_999
+                uint128 messageFee = 3_000_000_000_000_000;
                 uint128 GAS_LIMIT = 500000;
                 uint128 VALUE = uint128(address(this).balance);
                 bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, VALUE - messageFee);
-
-                // ZOMG
+                // Note that external payable functions cannot be called directly
+                // within a contract, so we have to instantiate a new instance
+                // of the FeeHook contract to call the sendCrossChain function.
                 FeeHook(payable(address(this))).sendCrossChain{value: VALUE}(
                     payload,
                     options,
@@ -148,6 +141,8 @@ contract FeeHook is BaseHook, OApp  {
         return BaseHook.beforeAddLiquidity.selector;
     }
 
+    // Allows the owner to transfer an LP position to another address
+    // in case any manual intervention is needed.
     function transferPosition(
         address to,
         bytes32 poolId) external onlyOwner
@@ -168,11 +163,10 @@ contract FeeHook is BaseHook, OApp  {
         require(totalSupply > 0, "No vMooney supply");
         uint256 userBalance = IERC20(vMooneyAddress).balanceOf(msg.sender);
         uint256 userProportion = userBalance * 1e18 / totalSupply; // Multiply by 1e18 to preserve precision
-        //uint256 contractETHBalance = address(this).balance;
         uint256 allocated = (userProportion * totalReceived) / 1e18; // Divide by 1e18 to normalize
+        require(allocated > 0, "Nothing to withdraw");
         uint256 withdrawnByUser = totalWithdrawnPerUser[msg.sender];
         uint256 withdrawable = allocated - withdrawnByUser;
-        require(allocated > 0, "Nothing to withdraw");
         require(withdrawable > 0, "Nothing to withdraw");
 
         totalWithdrawnPerUser[msg.sender] += withdrawable;
