@@ -1,4 +1,5 @@
-import { BigNumber, ethers } from 'ethers'
+import { BigNumber, BigNumberish, ethers } from 'ethers'
+import { formatUnits } from 'ethers/lib/utils'
 
 export function stringToNumber(string: any, decimals: any) {
   return Number(string).toFixed(decimals)
@@ -65,4 +66,15 @@ export function transformNumber(
     }
   }
   return 0
+}
+
+export const fromWad = (wadValue?: BigNumberish) => {
+  const result = formatUnits(wadValue ?? '0')
+  return result.substring(result.length - 2) === '.0'
+    ? result.substring(0, result.length - 2)
+    : result
+}
+
+export const wadToFloat = (wadValue?: BigNumberish) => {
+  return parseFloat(fromWad(wadValue))
 }
