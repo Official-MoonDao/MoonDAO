@@ -67,6 +67,7 @@ export default function MissionInfo({
   stage,
 }: any) {
   const [tab, setTab] = useState<MissionInfoTabType>('about')
+  console.log(mission?.metadata)
   return (
     <div>
       <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">

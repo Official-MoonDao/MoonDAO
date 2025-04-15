@@ -21,7 +21,10 @@ export default function ProgressBar({
   useEffect(() => {
     if (progressBarRef.current) {
       gsap.to(progressBarRef.current, {
-        width: `${Math.min(Math.max(progress, 10), 100)}%`,
+        width: `${Math.min(
+          Math.max(progress, window.innerWidth < 768 ? 15 : 10),
+          100
+        )}%`,
         duration: 2.5,
         ease: 'power1.inOut',
       })

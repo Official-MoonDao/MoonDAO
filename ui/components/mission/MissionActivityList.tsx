@@ -77,7 +77,7 @@ export default function MissionActivityList({
 }
 
 function RichNote({ note }: { note: string }) {
-  return <div>{note}</div>
+  return <div className="text-sm break-words">{note}</div>
 }
 
 function translateEventDataToPresenter(

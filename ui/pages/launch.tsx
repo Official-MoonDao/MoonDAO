@@ -571,7 +571,7 @@ export default function Launch({ missions }: any) {
         </div>
 
         <Image
-          className="absolute bottom-[-1px] left-0 -scale-x-100"
+          className="absolute bottom-[-1px] -left-[1px] -scale-x-100"
           src="/assets/launchpad/blue-divider-rl.svg"
           alt="Divider"
           width={250}

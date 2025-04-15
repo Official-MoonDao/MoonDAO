@@ -431,12 +431,14 @@ export default function MissionPayRedeem({
             >
               Pay
             </StandardButton>
-            <PrivyWeb3Button
-              label="Redeem"
-              className="w-full gradient-2 rounded-full py-2"
-              action={redeemMissionToken}
-              noPadding
-            />
+            {stage === 4 && (
+              <PrivyWeb3Button
+                label="Redeem"
+                className="w-full gradient-2 rounded-full py-2"
+                action={redeemMissionToken}
+                noPadding
+              />
+            )}
           </div>
         </>
       )}

@@ -820,6 +820,7 @@ export default function CreateMission({
                       })
                     }
                     const html = await marked(missionData.description)
+                    console.log(html)
                     setMissionData({ ...missionData, description: html })
                     setStage((prev: number) => prev + 1)
                   }}
