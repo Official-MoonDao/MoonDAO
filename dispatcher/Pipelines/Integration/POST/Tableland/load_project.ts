@@ -195,7 +195,7 @@ async function loadProjectData() {
                 memberHatMetadataIpfs.status !== "fulfilled"
             ) {
                 console.error(
-                    "Failed to pin hat metadata IPFS:",
+                    "Failed to pin hat metadata IPFS: ",
                     adminHatMetadataIpfs,
                     managerHatMetadataIpfs,
                     memberHatMetadataIpfs
