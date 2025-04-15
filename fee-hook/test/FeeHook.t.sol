@@ -133,8 +133,6 @@ contract FeeHookTest is Test {
         // burn the position
         burn(poolKey, tokenId, deployerAddress);
         uint256 balanceAfter2 = address(deployerAddress).balance;
-
-
     }
 
     function burn(PoolKey memory poolKey, uint256 tokenId, address recipient) internal {
