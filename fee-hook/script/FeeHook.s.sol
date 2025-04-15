@@ -63,17 +63,7 @@ contract FeeHookScript is Script, Constants {
             DESTINATION_CHAIN_ID = 11155111;
             DESTINATION_EID = 40161;
             eid = 40161;
-        } else if (block.chainid == 1301) { // unichain sepolia
-            lzEndpoint = 0xb8815f3f882614048CbE201a67eF9c6F10fe5035;
-            poolManagerAddress = 0x00B036B58a818B1BC34d502D3fE730Db729e62AC;
-            posmAddress = 0xf969Aee60879C54bAAed9F3eD26147Db216Fd664;
-            // FIXME this address doesn't point to anything
-            vMooneyAddress = 0xA4F6A4B135b9AF7909442A7a3bF7797b61e609b1;
-            DESTINATION_CHAIN_ID = 11155111;
-            DESTINATION_EID = 40161;
         }
-        // sep feehook: 0x59aF01D17982d2B4b9448ECa29503bE0Ab158aC0
-        // arb-sep feehook: 0x75069b3C10D594EFa063f3A21F08Fa5282BE8Ac0
 
         // Mine a salt that will produce a hook address with the correct flags
         bytes memory constructorArgs = abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress);
@@ -82,8 +72,12 @@ contract FeeHookScript is Script, Constants {
 
         // Deploy the hook using CREATE2
         //vm.broadcast();
-        FeeHook counter = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress);
-        require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
+        FeeHook feehook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress);
+        // Set to a low value for testing
+        if (block.chainid == 421614 || block.chainid == 11155111) {
+            feehook.setMinWithdraw(0.00001 ether);
+        }
+        require(address(feehook) == hookAddress, "CounterScript: hook address mismatch");
         vm.stopBroadcast();
     }
 }

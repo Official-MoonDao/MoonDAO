@@ -24,9 +24,9 @@ contract Config {
         } else if (chainId == 42161) { //arbitrum
         } else if (chainId == 8453) { //base
         } else if (chainId == 421614) { //arb-sep
-            hookAddress = 0x049AA55919fCbfa37d1A220dCFF16b5fA9f60844;
+            hookAddress = 0x6531E627daBa69b17E1d389422ef105e67Ce4844;
         } else if (chainId == 11155111) { //sep
-            hookAddress = 0x45A0AA93f6972AA137086002527B2ECc1D1b8844;
+            hookAddress = 0xCF8E903Aa838703Df61184dccA3495Bc7C92C844;
         }
 
         return hookAddress;
@@ -42,9 +42,9 @@ contract Config {
         } else if (chainId == 42161) { //arbitrum
         } else if (chainId == 8453) { //base
         } else if (chainId == 421614) { //arb-sep
-            tokenAddress = 0xcA9b92A7F9FDabC52CBAED5e81F096490D20deDe;
+            tokenAddress = 0xbB5647641fa176bcD0C57333182706C11aa2cb5f;
         } else if (chainId == 11155111) { //sep
-            tokenAddress = 0x9B228F540f7245D7efd911043cC0315198CdDaf2;
+            tokenAddress = 0x9863bbDd0Aa146eE59642D7FD37E0829E8837c1f;
         }
 
         return tokenAddress;
