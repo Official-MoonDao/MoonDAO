@@ -123,15 +123,7 @@ const MISSION_DESCRIPTION_TEMPLATE = `
 - Mission Patches & Digital Collectibles – Unique digital memorabilia tied to the mission.
 `
 
-const ADDITIONAL_POINTS = [
-  'Mission Ownership : The mission is fully controlled by your team wallet.',
-  'Funding Cycles : Runs in 28-day cycles, locked by default for stability.',
-  'Payouts : Unlimited withdrawals, with 10% allocated to MoonDAO to support the ecosystem.',
-  'Mission Tokens : Each mission generates its own token, with 10% reserved for MoonDAO.',
-  'ERC-20 Option : ERC-20 tokens are not created by default, but teams can choose to deploy one.',
-]
-
-export function Stage({
+export function CreateMissionStage({
   id,
   stage,
   setStage,
@@ -494,7 +486,7 @@ export default function CreateMission({
                 <TeamRequirementModal setEnabled={() => {}} />
               )}
               {stage === 0 && (
-                <Stage
+                <CreateMissionStage
                   id="mission-overview-stage"
                   stage={stage}
                   setStage={setStage}
@@ -667,10 +659,10 @@ export default function CreateMission({
                       />
                     )}
                   </div>
-                </Stage>
+                </CreateMissionStage>
               )}
               {stage === 1 && (
-                <Stage
+                <CreateMissionStage
                   id="mission-goals-stage"
                   stage={stage}
                   setStage={setStage}
@@ -806,10 +798,10 @@ export default function CreateMission({
                       />
                     </div>
                   </div>
-                </Stage>
+                </CreateMissionStage>
               )}
               {stage === 2 && (
-                <Stage
+                <CreateMissionStage
                   id="mission-details-stage"
                   stage={stage}
                   setStage={setStage}
@@ -854,10 +846,10 @@ export default function CreateMission({
                       }}
                     />
                   </div>
-                </Stage>
+                </CreateMissionStage>
               )}
               {stage === 3 && (
-                <Stage
+                <CreateMissionStage
                   id="mission-confirmation-stage"
                   stage={stage}
                   setStage={setStage}
@@ -972,7 +964,7 @@ export default function CreateMission({
                       <p>{`You will be redirected to the Mission page once your payment has been processed. Expect to wait about 30 seconds.`}</p>
                     </div>
                   )}
-                </Stage>
+                </CreateMissionStage>
               )}
             </div>
           </div>

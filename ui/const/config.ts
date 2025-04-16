@@ -231,6 +231,8 @@ export const JBV4_DIRECTORY_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0x0bC9F153DEe4d3D474ce0903775b9b2AAae9AA41',
 }
+export const JB_NATIVE_TOKEN_ADDRESS =
+  '0x000000000000000000000000000000000000EEEe'
 
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
 //Citizens & Teams Arbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/42

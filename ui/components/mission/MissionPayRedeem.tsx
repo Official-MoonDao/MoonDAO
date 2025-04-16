@@ -1,6 +1,7 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { useFundWallet } from '@privy-io/react-auth'
 import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
+import { JB_NATIVE_TOKEN_ADDRESS } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -257,7 +258,7 @@ export default function MissionPayRedeem({
         method: 'pay' as string,
         params: [
           mission?.projectId,
-          '0x000000000000000000000000000000000000EEEe',
+          JB_NATIVE_TOKEN_ADDRESS,
           input * 1e18,
           address || ZERO_ADDRESS,
           0,
@@ -300,7 +301,7 @@ export default function MissionPayRedeem({
         method: 'pay' as string,
         params: [
           mission?.projectId,
-          '0x000000000000000000000000000000000000EEEe',
+          JB_NATIVE_TOKEN_ADDRESS,
           input * 1e18,
           address,
           Math.floor(output),
