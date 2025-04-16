@@ -15,6 +15,7 @@ import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BalanceDelta } from "v4-core/src/types/BalanceDelta.sol";
+import {CurrencyLibrary} from "v4-core/src/types/Currency.sol";
 import { OApp, Origin, MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 
 interface IERC20 {
@@ -104,6 +105,10 @@ contract FeeHook is BaseHook, OApp  {
             posm.modifyLiquiditiesWithoutUnlock(
                 actions, params
             );
+            // Burn non-native tokens
+            if (CurrencyLibrary.balanceOfSelf(key.currency1) > 0) {
+                CurrencyLibrary.transfer(key.currency1, address(0), CurrencyLibrary.balanceOfSelf(key.currency1));
+            }
 
             // 2. Transfer fees to this contract on the destination chain.
             if (block.chainid != destinationChainId) {

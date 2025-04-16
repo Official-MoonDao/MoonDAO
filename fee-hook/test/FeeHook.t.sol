@@ -101,6 +101,9 @@ contract FeeHookTest is Test {
         IERC20(Currency.unwrap(currency)).approve(address(permit2), type(uint256).max);
         // 2. Then, the caller must approve POSM as a spender of permit2
         permit2.approve(Currency.unwrap(currency), address(posm), type(uint160).max, type(uint48).max);
+        permit2.approve(Currency.unwrap(currency), address(router), type(uint160).max, type(uint48).max);
+
+        // temporary
     }
 
     function testLifecycle(address hookAddress) internal {
@@ -118,6 +121,7 @@ contract FeeHookTest is Test {
         mintLiquidity(poolKey, tickLower, tickUpper, hookAddress);
 
         // swap some tokens
+        swapReverse(poolKey);
         swap(poolKey);
 
         uint256 balanceBefore = address(deployerAddress).balance;
@@ -190,5 +194,34 @@ contract FeeHookTest is Test {
 
        uint256 deadline = block.timestamp + 20;
        router.execute{value: amountSpecified}(commands, inputs, deadline);
+    }
+
+    // trade eth for tokens
+    function swapReverse(PoolKey memory poolKey) internal {
+       uint128 amountSpecified = 1 ether;
+       bytes memory commands = abi.encodePacked(uint8(V4_SWAP));
+       bytes memory actions = abi.encodePacked(
+          uint8(Actions.SWAP_EXACT_IN_SINGLE),
+          uint8(Actions.SETTLE_ALL),
+          uint8(Actions.TAKE_ALL)
+       );
+       bytes[] memory params = new bytes[](3);
+       params[0] = abi.encode(
+           IV4Router.ExactInputSingleParams({
+               poolKey: poolKey,
+               zeroForOne: false,
+               amountIn: amountSpecified,
+               amountOutMinimum: 0,
+               hookData: bytes("")
+           })
+       );
+       params[1] = abi.encode(poolKey.currency1, amountSpecified);
+       params[2] = abi.encode(poolKey.currency0, 0);
+       bytes[] memory inputs = new bytes[](1);
+
+       inputs[0] = abi.encode(actions, params);
+
+       uint256 deadline = block.timestamp + 20;
+       router.execute(commands, inputs, deadline);
     }
 }
