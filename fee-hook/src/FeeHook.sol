@@ -156,6 +156,14 @@ contract FeeHook is BaseHook, OApp  {
 
 
     function withdrawFees() external {
+        uint256 withdrawable = getWithdrawableAmount();
+        require(withdrawable > 0, "Nothing to withdraw");
+        totalWithdrawnPerUser[msg.sender] += withdrawable;
+        totalWithdrawn += withdrawable;
+        transferETH(msg.sender, withdrawable);
+    }
+
+    function getWithdrawableAmount() public view returns (uint256) {
         if (block.chainid != destinationChainId) {
             revert("Not on destination chain. Cannot withdraw fees");
         }
@@ -164,14 +172,9 @@ contract FeeHook is BaseHook, OApp  {
         uint256 userBalance = IERC20(vMooneyAddress).balanceOf(msg.sender);
         uint256 userProportion = userBalance * 1e18 / totalSupply; // Multiply by 1e18 to preserve precision
         uint256 allocated = (userProportion * totalReceived) / 1e18; // Divide by 1e18 to normalize
-        require(allocated > 0, "Nothing to withdraw");
         uint256 withdrawnByUser = totalWithdrawnPerUser[msg.sender];
         uint256 withdrawable = allocated - withdrawnByUser;
-        require(withdrawable > 0, "Nothing to withdraw");
-
-        totalWithdrawnPerUser[msg.sender] += withdrawable;
-        totalWithdrawn += withdrawable;
-        transferETH(msg.sender, withdrawable);
+        return withdrawable;
     }
 
     function transferETH(address to, uint256 amount) internal {
