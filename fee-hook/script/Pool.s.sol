@@ -70,7 +70,7 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
             token1Amount
         );
 
-        // slippage limits
+        // Add a small slippage limits to avoid issues with rounding.
         uint256 amount0Max = token0Amount + 1 wei;
         uint256 amount1Max = token1Amount + 1 wei;
 
