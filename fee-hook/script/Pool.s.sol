@@ -42,22 +42,10 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
     /////////////////////////////////////
 
     function run() external {
-        address posmAddress;
-        if(block.chainid == 1) { //mainnet
-            posmAddress = 0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e;
-        } else if (block.chainid == 42161) { //arbitrum
-            posmAddress = 0xd88F38F930b7952f2DB2432Cb002E7abbF3dD869;
-        } else if (block.chainid == 8453) { //base
-            posmAddress = 0x7C5f5A4bBd8fD63184577525326123B519429bDc;
-        } else if (block.chainid == 421614) { //arb-sep
-            posmAddress = 0xAc631556d3d4019C95769033B5E719dD77124BAc;
-        } else if (block.chainid == 11155111) { //sep
-            posmAddress = 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4;
-        }
-        /// @dev populated with default anvil addresses
+        address posmAddress = POSITION_MANAGERS[block.chainid];
         posm = PositionManager(payable(address(posmAddress)));
-        IHooks hookContract = getHook();
-        token1 = getToken();
+        IHooks hookContract = IHooks(FEE_HOOK_ADDRESSES[block.chainid]);
+        token1 = IERC20(TEST_TOKEN_ADDRESSES[block.chainid]);
         currency1 = getCurrency1();
 
         PoolKey memory pool = PoolKey({

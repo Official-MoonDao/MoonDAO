@@ -33,10 +33,10 @@ contract SwapScript is Script, Constants, Config {
     function run() external {
         PoolKey memory poolKey = PoolKey({
             currency0: currency0,
-            currency1: getCurrency1(),
+            currency1: Currency.wrap(TEST_TOKEN_ADDRESSES[block.chainid]),
             fee: lpFee,
             tickSpacing: tickSpacing,
-            hooks: getHook()
+            hooks: IHooks(FEE_HOOK_ADDRESSES[block.chainid])
         });
         address routerAddress;
         if(block.chainid == 1) { //mainnet

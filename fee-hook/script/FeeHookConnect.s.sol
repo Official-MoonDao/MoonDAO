@@ -12,36 +12,27 @@ contract MyScript is Script, Config {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        uint32 eid;
 
         address payable arbAddress = payable(0x0000000000000000000000000000000000000000);
         address payable baseAddress = payable(0x0000000000000000000000000000000000000000);
-        address payable hookAddress = payable(getHookAddress(block.chainid));
+        address payable hookAddress = payable(HOOK_ADDRESSES[block.chainid]);
+        FeeHook feeHook = FeeHook(hookAddress);
         if(block.chainid == 1) { //mainnet
-            eid = 30101;
-        } else if (block.chainid == 42161) { //arbitrum
-            uint32 baseEid = 30184;
-            FeeHook feeHook = FeeHook(hookAddress);
+        } else if (block.chainid == ARBITRUM) { //arbitrum
+            uint32 baseEid = LZ_EIDS[BASE];
             feeHook.setPeer(baseEid, addressToBytes32(baseAddress));
-            eid = 30110;
-        } else if (block.chainid == 8453) { //base
-            uint32 arbEid = 30110;
-            FeeHook feeHook = FeeHook(hookAddress);
+        } else if (block.chainid == BASE) { //base
+            uint32 arbEid = LZ_EIDS[ARBITRUM];
             feeHook.setPeer(arbEid, addressToBytes32(arbAddress));
-            eid = 30184;
-        } else if (block.chainid == 421614) { //arb-sep
-            eid = 40231;
+        } else if (block.chainid == ARB_SEP) { //arb-sep
             // testing arb-sep -> sep
-            uint32 sepEid = 40161;
-            FeeHook feeHook = FeeHook(hookAddress);
-            address sepAddress = getHookAddress(11155111);
+            uint32 sepEid = LZ_EIDS[SEP];
+            address sepAddress = HOOK_ADDRESSES[SEP];
             feeHook.setPeer(sepEid, addressToBytes32(sepAddress));
-        } else if (block.chainid == 11155111) { //sep
-            eid = 40161;
+        } else if (block.chainid == SEP) { //sep
             // sep -> arb-sep
-            uint32 arbSepEid = 40231;
-            FeeHook feeHook = FeeHook(hookAddress);
-            address arbSepAddress = getHookAddress(421614);
+            uint32 arbSepEid = LZ_EIDS[ARB_SEP];
+            address arbSepAddress = HOOK_ADDRESSES[ARB_SEP];
             feeHook.setPeer(arbSepEid, addressToBytes32(arbSepAddress));
         }
 
