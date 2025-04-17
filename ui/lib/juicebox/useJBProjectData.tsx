@@ -1,6 +1,6 @@
 //Juicebox V4
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
-import { ZERO_ADDRESS } from 'const/config'
+import { JB_NATIVE_TOKEN_ADDRESS, ZERO_ADDRESS } from 'const/config'
 import { BigNumber } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
@@ -157,7 +157,7 @@ export default function useJBProjectData({
           const primaryTerminal: any = await readContract({
             contract: jbDirectoryContract,
             method: 'primaryTerminalOf' as string,
-            params: [projectId, '0x000000000000000000000000000000000000EEEe'],
+            params: [projectId, JB_NATIVE_TOKEN_ADDRESS],
           })
 
           if (primaryTerminal !== ZERO_ADDRESS && primaryTerminal) {

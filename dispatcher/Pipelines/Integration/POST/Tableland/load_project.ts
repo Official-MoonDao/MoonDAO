@@ -189,6 +189,19 @@ async function loadProjectData() {
                 getHatMetadataIPFS("Manager"),
                 getHatMetadataIPFS("Member"),
             ]);
+            if (
+                adminHatMetadataIpfs.status !== "fulfilled" ||
+                managerHatMetadataIpfs.status !== "fulfilled" ||
+                memberHatMetadataIpfs.status !== "fulfilled"
+            ) {
+                console.error(
+                    "Failed to pin hat metadata IPFS: ",
+                    adminHatMetadataIpfs,
+                    managerHatMetadataIpfs,
+                    memberHatMetadataIpfs
+                );
+                continue;
+            }
             // allow keyboard input to confirm the proposal, otherwise skip
             const conf = prompt(
                 `Create project for proposal ${proposal.proposalId} ${proposal.title}? (y/n)`
@@ -211,8 +224,8 @@ async function loadProjectData() {
                 "https://moondao.com/proposal/" + proposal.proposalId,
                 upfrontPayment,
                 proposal.authorAddress || "", // leadAddress,
-                members || [], // members
-                signers || [], // signers,
+                members.length > 0 ? members : [proposal.authorAddress], // members
+                signers.length > 0 ? signers : [proposal.authorAddress], // signers,
             ]);
         }
 

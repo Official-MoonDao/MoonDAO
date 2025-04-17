@@ -73,14 +73,14 @@ export function isRewardsCycle(date: Date) {
     1
   )
 
-  const sevenDaysIntoNextQuarter = new Date(nextQuarterStart)
-  sevenDaysIntoNextQuarter.setDate(sevenDaysIntoNextQuarter.getDate() + 7)
+  const fourteenDaysIntoNextQuarter = new Date(nextQuarterStart)
+  fourteenDaysIntoNextQuarter.setDate(fourteenDaysIntoNextQuarter.getDate() + 14)
 
-  const firstTuesdayAfterSevenDays = new Date(sevenDaysIntoNextQuarter)
-  const daysUntilTuesday = daysUntilDay(sevenDaysIntoNextQuarter, 'Tuesday')
-  firstTuesdayAfterSevenDays.setDate(
-    firstTuesdayAfterSevenDays.getDate() + daysUntilTuesday
+  const firstTuesdayAfterFourteenDays = new Date(fourteenDaysIntoNextQuarter)
+  const daysUntilTuesday = daysUntilDay(fourteenDaysIntoNextQuarter, 'Tuesday')
+  firstTuesdayAfterFourteenDays.setDate(
+    firstTuesdayAfterFourteenDays.getDate() + daysUntilTuesday
   )
 
-  return date >= endOfQuarter && date <= firstTuesdayAfterSevenDays
+  return date >= endOfQuarter && date <= firstTuesdayAfterFourteenDays
 }
