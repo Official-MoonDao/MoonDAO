@@ -12,6 +12,7 @@ const MobileSidebar = ({
   lightMode,
   sidebarOpen,
   setSidebarOpen,
+  isFullscreen,
 }: any) => {
   /*A useEffect used because the Dialog Headless UI component doesn't naturally recognize Dark Mode classes */
   useEffect(() => {
@@ -34,7 +35,7 @@ const MobileSidebar = ({
     <Transition.Root show={sidebarOpen} as={Fragment}>
       <Dialog
         as="div"
-        className="relative z-40 md:hidden"
+        className={`relative z-40 ${isFullscreen ? '' : 'md:hidden'}`}
         onClose={setSidebarOpen}
       >
         <Transition.Child

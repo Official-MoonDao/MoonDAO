@@ -9,6 +9,7 @@ import StandardButton from '../layout/StandardButton'
 import CollapsibleContainer from './CollapsibleContainer'
 
 type StandardCardProps = {
+  id?: string
   icon?: string
   iconAlt?: string
   header?: string
@@ -32,6 +33,7 @@ type StandardCardProps = {
 }
 
 export default function StandardCard({
+  id,
   icon,
   header,
   title,
@@ -56,7 +58,7 @@ export default function StandardCard({
 
   const cardContent = (
     <span
-      id="card-container"
+      id={id}
       className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full max-w-[300px] md:max-w-[500px]`}
     >
       {/* Ensure the card content takes full height */}
@@ -93,13 +95,25 @@ export default function StandardCard({
             {image && (
               <div id="team-citizen-image-container" className="z-40">
                 <Frame noPadding marginBottom="0px" className="aspect-square">
-                  <MediaRenderer
-                    className="w-full h-full object-cover"
-                    client={client}
-                    src={image}
-                    width="100%"
-                    height="100%"
-                  />
+                  {image.startsWith('blob:') ? (
+                    // For local blob URLs (like from URL.createObjectURL)
+                    <Image
+                      className="w-full h-full object-cover"
+                      src={image}
+                      alt="Card image"
+                      width={500}
+                      height={500}
+                    />
+                  ) : (
+                    // For IPFS/remote URLs
+                    <MediaRenderer
+                      className="w-full h-full object-cover"
+                      client={client}
+                      src={image}
+                      width="100%"
+                      height="100%"
+                    />
+                  )}
                 </Frame>
               </div>
             )}
@@ -174,13 +188,19 @@ export default function StandardCard({
                     {paragraph}
                   </CollapsibleContainer>
                 ) : (
-                  <div className="flex opacity-[70%] min-h-[100px] break-words">
-                    {paragraph &&
-                    !fullParagraph &&
-                    typeof paragraph === 'string' &&
-                    paragraph.length > 100
-                      ? `${paragraph.slice(0, 100)}...`
-                      : paragraph}
+                  <div
+                    className={`flex opacity-[70%] ${
+                      paragraph ? 'min-h-[100px]' : 'min-h-[20px]'
+                    }`}
+                  >
+                    <div className="flex opacity-[70%] min-h-[100px] break-words">
+                      {paragraph &&
+                      !fullParagraph &&
+                      typeof paragraph === 'string' &&
+                      paragraph.length > 100
+                        ? `${paragraph.slice(0, 100)}...`
+                        : paragraph}
+                    </div>
                   </div>
                 )}
                 {footer && footer}

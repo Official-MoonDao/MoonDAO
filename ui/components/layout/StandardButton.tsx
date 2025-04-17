@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 type StandardButtonProps = {
+  id?: string
   className?: string
   children?: React.ReactNode
   onClick?: any
@@ -18,6 +19,7 @@ type StandardButtonProps = {
 }
 
 export default function StandardButton({
+  id,
   className = '',
   children = 'ReactNode',
   onClick = () => {},
@@ -35,6 +37,7 @@ export default function StandardButton({
 }: StandardButtonProps) {
   const buttonContent = (
     <button
+      id={id}
       className={`
         standardbutton transition-all duration-200       
         ${backgroundColor} 
