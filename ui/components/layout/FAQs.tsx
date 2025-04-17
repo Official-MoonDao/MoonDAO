@@ -27,7 +27,7 @@ export default function FAQs({
           <div className="flex gap-4 mt-[5vw] md:mt-[2vw] items-center">
             <button
               type="button"
-              className="flex items-center justify-center gap-2 gradient-2 rounded-full h-9 w-9"
+              className="flex items-center justify-center gap-2 gradient-2 rounded-full h-9 w-9 aspect-square"
               onClick={() => toggleFAQ(i)}
             >
               {faqExpanded[i] ? (
@@ -48,7 +48,9 @@ export default function FAQs({
               faqExpanded[i] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
-            <p className="md:text-[max(1.2vw,16px)] 2xl:text-[18px] h-full pt-2 pb-5">{answer}</p>
+            <p className="md:text-[max(1.2vw,16px)] 2xl:text-[18px] h-full pt-2 pb-5">
+              {answer}
+            </p>
           </div>
           <hr className="mt-4 w-full border-t border-gray-300" />
         </div>
