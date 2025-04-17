@@ -23,12 +23,12 @@ describe('<FeatureIcon />', () => {
       <FeatureIcon
         title="Test Feature"
         description="Test Description"
-        icon={<div id="custom-icon">Custom Icon</div>}
+        icon={<div id="feature-icon-custom">Custom Icon</div>}
       />
     )
 
     cy.get('#feature-icon-custom').should('exist')
-    cy.get('#custom-icon').should('contain', 'Custom Icon')
+    cy.get('#feature-icon-custom').should('contain', 'Custom Icon')
     cy.get('#feature-icon-image').should('not.exist')
   })
 

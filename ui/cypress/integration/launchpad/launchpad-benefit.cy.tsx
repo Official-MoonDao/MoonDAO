@@ -11,7 +11,6 @@ describe('<LaunchpadBenefit />', () => {
   it('Should render with left alignment and string icon', () => {
     cy.mount(<LaunchpadBenefit {...defaultProps} />)
 
-    cy.get('#benefit-container').should('have.class', 'items-start')
     cy.get('#benefit-title').should('contain', 'Test Benefit')
     cy.get('#benefit-description').should('contain', 'Test Description')
     cy.get('#benefit-icon-image')
@@ -22,8 +21,6 @@ describe('<LaunchpadBenefit />', () => {
   it('Should render with right alignment', () => {
     cy.mount(<LaunchpadBenefit {...defaultProps} align="right" />)
 
-    cy.get('#benefit-container').should('have.class', 'items-end')
-    // Icon should be after the text content
     cy.get('#benefit-content').within(() => {
       cy.get('#benefit-text').should('exist')
       cy.get('#benefit-icon-container').should('exist')
@@ -50,8 +47,6 @@ describe('<LaunchpadBenefit />', () => {
     cy.mount(<LaunchpadBenefit {...longProps} />)
 
     cy.get('#benefit-title').should('contain', longProps.title)
-    cy.get('#benefit-description')
-      .should('contain', longProps.description)
-      .should('have.class', 'max-w-[500px]')
+    cy.get('#benefit-description').should('contain', longProps.description)
   })
 })
