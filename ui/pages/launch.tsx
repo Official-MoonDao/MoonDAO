@@ -752,63 +752,70 @@ export default function Launch({ missions }: any) {
 }
 
 export const getStaticProps: GetStaticProps = async () => {
-  const chain = sepolia
-  const chainSlug = getChainSlug(chain)
+  try {
+    const chain = sepolia
+    const chainSlug = getChainSlug(chain)
 
-  const missionTableContract = getContract({
-    client: serverClient,
-    address: MISSION_TABLE_ADDRESSES[chainSlug],
-    abi: MissionTableABI as any,
-    chain: chain,
-  })
-
-  const missionTableName = await readContract({
-    contract: missionTableContract,
-    method: 'getTableName' as string,
-    params: [],
-  })
-
-  const statement = `SELECT * FROM ${missionTableName} LIMIT 10`
-
-  const missionRows = await queryTable(chain, statement)
-
-  const filteredMissionRows = missionRows.filter((mission) => {
-    return !blockedMissions.includes(mission.id)
-  })
-
-  const jbV4ControllerContract = getContract({
-    client: serverClient,
-    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
-    abi: JBV4ControllerABI as any,
-    chain: chain,
-  })
-
-  const missions = await Promise.all(
-    filteredMissionRows.map(async (missionRow) => {
-      const metadataURI = await readContract({
-        contract: jbV4ControllerContract,
-        method: 'uriOf' as string,
-        params: [missionRow.projectId],
-      })
-
-      const metadataRes = await fetch(
-        `https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`
-      )
-      const metadata = await metadataRes.json()
-
-      return {
-        id: missionRow.id,
-        teamId: missionRow.teamId,
-        projectId: missionRow.projectId,
-        metadata: metadata,
-      }
+    const missionTableContract = getContract({
+      client: serverClient,
+      address: MISSION_TABLE_ADDRESSES[chainSlug],
+      abi: MissionTableABI as any,
+      chain: chain,
     })
-  )
 
-  return {
-    props: {
-      missions,
-    },
-    revalidate: 60,
+    const missionTableName = await readContract({
+      contract: missionTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
+
+    const statement = `SELECT * FROM ${missionTableName} LIMIT 10`
+
+    const missionRows = await queryTable(chain, statement)
+
+    const filteredMissionRows = missionRows.filter((mission) => {
+      return !blockedMissions.includes(mission.id)
+    })
+
+    const jbV4ControllerContract = getContract({
+      client: serverClient,
+      address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+      abi: JBV4ControllerABI as any,
+      chain: chain,
+    })
+
+    const missions = await Promise.all(
+      filteredMissionRows.map(async (missionRow) => {
+        const metadataURI = await readContract({
+          contract: jbV4ControllerContract,
+          method: 'uriOf' as string,
+          params: [missionRow.projectId],
+        })
+
+        const metadataRes = await fetch(
+          `https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`
+        )
+        const metadata = await metadataRes.json()
+
+        return {
+          id: missionRow.id,
+          teamId: missionRow.teamId,
+          projectId: missionRow.projectId,
+          metadata: metadata,
+        }
+      })
+    )
+
+    return {
+      props: {
+        missions,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      props: { missions: [] },
+    }
   }
 }
