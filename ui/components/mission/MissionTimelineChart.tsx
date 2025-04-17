@@ -18,7 +18,6 @@ import { useTicks } from '@/lib/juicebox/useTicks'
 import { useTimelineRange } from '@/lib/juicebox/useTimelineRange'
 import { useTimelineYDomain } from '@/lib/juicebox/useTimelineYDomain'
 import { truncateTokenValue, wadToFloat } from '@/lib/utils/numbers'
-import { daysToMS } from '@/lib/utils/timestamp'
 import RangeSelector from '../layout/RangeSelector'
 
 export type MissionTimelineChartProps = {
