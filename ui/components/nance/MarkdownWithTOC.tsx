@@ -14,7 +14,7 @@ import {
 
 export default function MarkdownWithTOC({ body }: { body: string }) {
   return (
-    <div className="md:bg-dark-cool rounded-[20px]">
+    <div className="md:bg-dark-cool rounded-[10px]">
       <article className="w-full prose-full prose-lg prose-indigo break-words text-gray-500 p-10">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
@@ -39,12 +39,12 @@ export default function MarkdownWithTOC({ body }: { body: string }) {
             h5: ({ node, ...props }) => <h5 className="group font-GoodTimes" {...props} />,
             h6: ({ node, ...props }) => <h6 className="group font-GoodTimes" {...props} />,
             table: ({ node, ...props }) => (
-              <div className="overflow-x-auto">
-                <table className="text-center border-b" {...props} />
+              <div className="mb-5">
+                <table className="text-center w-full bg-gradient-to-b from-black to-[#030517]" {...props} />
               </div>
             ),
-            th: ({ node, ...props }) => <th className="whitespace-nowrap border-r border-gray-200 last:border-r-0" {...props} />,
-            td: ({ node, ...props }) => <td className="whitespace-nowrap border-r border-gray-200 last:border-r-0" {...props} />,
+            th: ({ node, ...props }) => <th className="whitespace-normal border-[5px] border-[#0b0c21] text-white py-[10px] px-[20px] max-w-[100%] bg-transparent" {...props} />,
+            td: ({ node, ...props }) => <td className="whitespace-normal border-[5px] border-[#0b0c21] text-white py-[10px] px-[20px] max-w-[100%] bg-transparent" {...props} />,
             p: ({ node, ...props }) => <p className="text-white" {...props} />, 
             li: ({ node, ...props }) => (
               <li className="list-disc list-inside text-white" {...props} />
