@@ -1,0 +1,419 @@
+import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
+import JBV4TokenABI from 'const/abis/JBV4Token.json'
+import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
+import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import MissionTableABI from 'const/abis/MissionTable.json'
+import TeamABI from 'const/abis/Team.json'
+import {
+  DEFAULT_CHAIN_V5,
+  JBV4_CONTROLLER_ADDRESSES,
+  JBV4_DIRECTORY_ADDRESSES,
+  JBV4_TOKENS_ADDRESSES,
+  MISSION_CREATOR_ADDRESSES,
+  MISSION_TABLE_ADDRESSES,
+  TEAM_ADDRESSES,
+} from 'const/config'
+import { blockedMissions } from 'const/whitelist'
+import { GetServerSideProps } from 'next'
+import Image from 'next/image'
+import { useContext, useEffect, useState } from 'react'
+import { getContract, readContract } from 'thirdweb'
+import { sepolia } from 'thirdweb/chains'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
+import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
+import useMissionData from '@/lib/mission/useMissionData'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client, { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useRead from '@/lib/thirdweb/hooks/useRead'
+import { daysUntilDate } from '@/lib/utils/dates'
+import { truncateTokenValue } from '@/lib/utils/numbers'
+import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import Frame from '@/components/layout/Frame'
+import Head from '@/components/layout/Head'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import { Mission } from '@/components/mission/MissionCard'
+import MissionFundingProgressBar from '@/components/mission/MissionFundingProgressBar'
+import MissionInfo from '@/components/mission/MissionInfo'
+import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
+import MissionStat from '@/components/mission/MissionStat'
+
+type ProjectProfileProps = {
+  tokenId: string
+  mission: Mission
+}
+
+export default function MissionProfile({ mission }: ProjectProfileProps) {
+  const account = useActiveAccount()
+
+  // const { selectedChain } = useContext(ChainContextV5)
+  const selectedChain = sepolia
+  const chainSlug = getChainSlug(selectedChain)
+
+  const [teamNFT, setTeamNFT] = useState<any>()
+
+  const teamContract = useContract({
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+    chain: selectedChain,
+  })
+
+  const jbControllerContract = useContract({
+    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+    abi: JBV4ControllerABI as any,
+    chain: selectedChain,
+  })
+
+  const jbTokensContract = useContract({
+    address: JBV4_TOKENS_ADDRESSES[chainSlug],
+    abi: JBV4TokensABI as any,
+    chain: selectedChain,
+  })
+
+  const jbDirectoryContract = useContract({
+    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
+    abi: JBV4DirectoryABI as any,
+    chain: selectedChain,
+  })
+
+  const missionTableContract = useContract({
+    address: MISSION_TABLE_ADDRESSES[chainSlug],
+    abi: MissionTableABI as any,
+    chain: selectedChain,
+  })
+
+  const missionCreatorContract = useContract({
+    address: MISSION_CREATOR_ADDRESSES[chainSlug],
+    abi: MissionCreatorABI as any,
+    chain: selectedChain,
+  })
+
+  const {
+    ruleset,
+    token,
+    subgraphData,
+    fundingGoal,
+    primaryTerminalAddress,
+    stage,
+  } = useMissionData({
+    mission,
+    missionTableContract,
+    missionCreatorContract,
+    jbControllerContract,
+    jbDirectoryContract,
+    jbTokensContract,
+  })
+
+  const { points } = useJBProjectTimeline(
+    selectedChain,
+    mission?.projectId,
+    subgraphData?.createdAt
+  )
+
+  const missionTokenContract = useContract({
+    address: token.tokenAddress,
+    abi: JBV4TokenABI as any,
+    chain: selectedChain,
+  })
+
+  const {
+    data: userMissionTokenBalance,
+    isLoading: userMissionTokenBalanceLoading,
+  } = useRead({
+    contract: missionTokenContract,
+    method: 'balanceOf',
+    params: [account?.address],
+  })
+
+  useEffect(() => {
+    async function getTeamNFT() {
+      const teamNFT = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(mission.teamId),
+        includeOwner: true,
+      })
+      setTeamNFT(teamNFT)
+    }
+    if (teamContract ?? mission.teamId) {
+      getTeamNFT()
+    }
+  }, [teamContract, mission.teamId])
+
+  useChainDefault()
+
+  //Profile Header Section
+  const ProfileHeader = (
+    <div id="citizenheader-container">
+      <div className="z-50 rounded-tl-[20px] overflow-hidden">
+        <div id="frame-content-container" className="w-full">
+          <div
+            id="frame-content"
+            className="w-full flex flex-col lg:flex-row items-start justify-between"
+          >
+            <div
+              id="profile-description-section"
+              className="flex w-full flex-col lg:flex-row items-start lg:items-center"
+            >
+              {mission?.metadata?.logoUri ? (
+                <div
+                  id="mission-image-container"
+                  className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
+                >
+                  <MediaRenderer
+                    client={client}
+                    src={mission?.metadata?.logoUri}
+                    className="rounded-full"
+                    height={'300'}
+                    width={'300'}
+                  />
+                  <div
+                    id="star-asset-container"
+                    className="absolute bottom-0 lg:right-0"
+                  >
+                    <Image
+                      src="/../.././assets/icon-star.svg"
+                      alt=""
+                      width={80}
+                      height={80}
+                    ></Image>
+                  </div>
+                </div>
+              ) : (
+                <></>
+              )}
+              <div id="mission-name-container">
+                <div
+                  id="mission-name"
+                  className="flex mb-2 w-full flex-col justify-center gap-2 lg:ml-5"
+                >
+                  <div
+                    id="mission-name-container"
+                    className="mt-5 lg:mt-0 flex flex-col flex-col-reverse w-full items-start justify-start"
+                  >
+                    {mission ? (
+                      <h1 className="max-w-[450px] text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
+                        {mission?.metadata?.name}
+                      </h1>
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <MissionStat
+                      label="Deadline"
+                      value={`${daysUntilDate(
+                        new Date(
+                          ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000
+                        )
+                      )} days`}
+                      icon={'/assets/launchpad/clock.svg'}
+                    />
+                    <MissionStat
+                      label="Goal"
+                      value={`${truncateTokenValue(
+                        fundingGoal / 1e18,
+                        'ETH'
+                      )} ETH`}
+                      icon={'/assets/launchpad/target.svg'}
+                    />
+                    <MissionStat
+                      label="Volume"
+                      value={`${truncateTokenValue(
+                        subgraphData?.volume / 1e18,
+                        'ETH'
+                      )} ETH`}
+                      icon={'/assets/launchpad/token.svg'}
+                    />
+                  </div>
+                  <div id="profile-container">
+                    {mission?.metadata?.tagline ? (
+                      <p
+                        id="profile-description-container"
+                        className="w-full pr-12 font-GoodTimes text-lg"
+                      >
+                        {mission?.metadata?.tagline || ''}
+                      </p>
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+                  <div className="mt-4 w-full">
+                    <MissionFundingProgressBar
+                      fundingGoal={fundingGoal}
+                      volume={subgraphData?.volume / 1e18}
+                      stage={stage ?? 0}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <JuiceProviders
+      projectId={mission?.projectId}
+      selectedChain={selectedChain}
+    >
+      <Container>
+        <Head
+          title={mission?.metadata?.name}
+          description={mission?.metadata?.description}
+        />
+        <ContentLayout
+          header={''}
+          headerSize="max(20px, 3vw)"
+          description={ProfileHeader}
+          mainPadding
+          mode="compact"
+          popOverEffect={false}
+          isProfile
+          preFooter={<NoticeFooter darkBackground={true} />}
+        >
+          <div
+            id="page-container"
+            className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1200px]"
+          >
+            {/* Pay & Redeem Section */}
+            <Frame
+              noPadding
+              bottomLeft="0px"
+              bottomRight="0px"
+              topRight="0px"
+              topLeft="0px"
+              className="xl:hidden"
+            >
+              <div
+                id="mission-pay-redeem-container"
+                className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+              >
+                {primaryTerminalAddress &&
+                primaryTerminalAddress !==
+                  '0x0000000000000000000000000000000000000000' ? (
+                  <MissionPayRedeem
+                    selectedChain={selectedChain}
+                    mission={mission}
+                    teamNFT={teamNFT}
+                    token={token}
+                    fundingGoal={fundingGoal}
+                    subgraphData={subgraphData}
+                    ruleset={ruleset}
+                    stage={stage}
+                    primaryTerminalAddress={primaryTerminalAddress}
+                  />
+                ) : (
+                  <div className="p-4 text-center">
+                    <p>Loading payment terminal...</p>
+                  </div>
+                )}
+              </div>
+            </Frame>
+            {/* Project Overview */}
+            <Frame
+              noPadding
+              bottomLeft="0px"
+              bottomRight="0px"
+              topRight="0px"
+              topLeft="0px"
+            >
+              <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 px-12 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+                <MissionInfo
+                  selectedChain={selectedChain}
+                  mission={mission}
+                  stage={stage}
+                  teamNFT={teamNFT}
+                  ruleset={ruleset}
+                  jbDirectoryContract={jbDirectoryContract}
+                  points={points}
+                  subgraphData={subgraphData}
+                  fundingGoal={fundingGoal}
+                  token={token}
+                  userMissionTokenBalance={userMissionTokenBalance}
+                  primaryTerminalAddress={primaryTerminalAddress}
+                />
+              </div>
+            </Frame>
+          </div>
+        </ContentLayout>
+      </Container>
+    </JuiceProviders>
+  )
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+  const tokenId: any = params?.tokenId
+
+  const chain = sepolia
+  const chainSlug = getChainSlug(chain)
+
+  if (tokenId === undefined) {
+    return {
+      notFound: true,
+    }
+  }
+
+  const missionTableContract = getContract({
+    client: serverClient,
+    address: MISSION_TABLE_ADDRESSES[chainSlug],
+    abi: MissionTableABI as any,
+    chain: chain,
+  })
+
+  const missionTableName = await readContract({
+    contract: missionTableContract,
+    method: 'getTableName' as string,
+    params: [],
+  })
+
+  const statement = `SELECT * FROM ${missionTableName} WHERE id = ${tokenId}`
+
+  const missionRows = await queryTable(chain, statement)
+  const missionRow = missionRows?.[0]
+
+  if (!missionRow || blockedMissions.includes(Number(tokenId))) {
+    return {
+      notFound: true,
+    }
+  }
+
+  const jbV4ControllerContract = getContract({
+    client: serverClient,
+    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+    abi: JBV4ControllerABI as any,
+    chain: chain,
+  })
+
+  const metadataURI = await readContract({
+    contract: jbV4ControllerContract,
+    method: 'uriOf' as string,
+    params: [missionRow.projectId],
+  })
+
+  const metadataRes = await fetch(
+    `https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`
+  )
+  const metadata = await metadataRes.json()
+
+  const mission = {
+    id: missionRow.id,
+    teamId: missionRow.teamId,
+    projectId: missionRow.projectId,
+    metadata: metadata,
+  }
+
+  return {
+    props: {
+      mission,
+    },
+  }
+}

@@ -69,6 +69,7 @@ export default function Card({
 
   return (
     <StandardCard
+      id="card-container"
       icon={type === 'team' ? '/assets/icon-org.svg' : icon}
       paragraph={enhancedParagraph}
       link={link}

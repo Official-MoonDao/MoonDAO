@@ -87,7 +87,7 @@ function MissionPayRedeemContent({
         <div className="relative flex flex-col gap-4">
           <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl rounded-tr-2xl">
             <div className="flex flex-col">
-              <h3 className="text-sm opacity-60">You pay</h3>
+              <h3 className="text-sm opacity-60">You contribute</h3>
               <input
                 type="number"
                 className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -142,7 +142,7 @@ function MissionPayRedeemContent({
           onClick={() => setMissionPayModalEnabled(true)}
           hoverEffect={false}
         >
-          Pay
+          Contribute
         </StandardButton>
       </div>
       {/* Token stats and redeem container */}
@@ -164,7 +164,7 @@ function MissionPayRedeemContent({
             tokenSymbol={token?.tokenSymbol}
           />
         </div>
-        {tokenBalance > 0 && stage === 4 && (
+        {tokenBalance > 0 && stage === 3 && (
           <div
             id="mission-redeem-container"
             className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
@@ -285,6 +285,13 @@ export default function MissionPayRedeem({
     }
     if (!primaryTerminalContract) {
       console.error('Primary terminal contract not initialized')
+      return
+    }
+
+    if (!input || input === 0) {
+      toast.error('Please enter a valid amount', {
+        style: toastStyle,
+      })
       return
     }
 
@@ -430,9 +437,9 @@ export default function MissionPayRedeem({
               onClick={() => setMissionPayModalEnabled(true)}
               hoverEffect={false}
             >
-              Pay
+              Contribute
             </StandardButton>
-            {stage === 4 && (
+            {stage === 3 && (
               <PrivyWeb3Button
                 label="Redeem"
                 className="w-full gradient-2 rounded-full py-2"
@@ -520,6 +527,7 @@ export default function MissionPayRedeem({
                 placeholder="Attach an on-chain message to this payment"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                maxLength={100}
               />
             </div>
 
@@ -555,12 +563,13 @@ export default function MissionPayRedeem({
                     ? setModalEnabled(false)
                     : setMissionPayModalEnabled(false)
                 }}
+                hoverEffect={false}
               >
                 Cancel
               </StandardButton>
               <PrivyWeb3Button
                 className="w-1/2 bg-moon-indigo rounded-xl"
-                label={`Pay ${input} ETH`}
+                label={`Contribute ${input} ETH`}
                 action={buyMissionToken}
                 isDisabled={!agreedToCondition}
               />

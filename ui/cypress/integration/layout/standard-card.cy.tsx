@@ -6,6 +6,7 @@ describe('<StandardCard />', () => {
     cy.mountNextRouter('/')
     cy.mount(
       <StandardCard
+        id="card-container"
         icon="/assets/test-icon.svg"
         header="Test Header"
         paragraph="Test paragraph"
@@ -20,7 +21,13 @@ describe('<StandardCard />', () => {
 
   it('renders organization image when provided', () => {
     cy.mountNextRouter('/')
-    cy.mount(<StandardCard orgimage="/test-org-image.jpg" header="Org Card" />)
+    cy.mount(
+      <StandardCard
+        id="card-container"
+        orgimage="/test-org-image.jpg"
+        header="Org Card"
+      />
+    )
 
     cy.get('#featured-image').should('be.visible')
     cy.get('#featured-image')
@@ -32,6 +39,7 @@ describe('<StandardCard />', () => {
     cy.mountNextRouter('/')
     cy.mount(
       <StandardCard
+        id="card-container"
         header="Link Test"
         headerLink="/test-link"
         headerLinkLabel="Click Here"
@@ -44,7 +52,13 @@ describe('<StandardCard />', () => {
   it('shows hovertext on desktop', () => {
     cy.mountNextRouter('/')
     cy.viewport('macbook-15')
-    cy.mount(<StandardCard header="Hover Test" hovertext="Test hovertext" />)
+    cy.mount(
+      <StandardCard
+        id="card-container"
+        header="Hover Test"
+        hovertext="Test hovertext"
+      />
+    )
 
     cy.get('#hovertext')
       .should('have.class', 'hidden')
@@ -56,7 +70,13 @@ describe('<StandardCard />', () => {
   it('shows mobile button instead of hovertext on mobile', () => {
     cy.mountNextRouter('/')
     cy.viewport('iphone-x')
-    cy.mount(<StandardCard header="Mobile Test" hovertext="Test hovertext" />)
+    cy.mount(
+      <StandardCard
+        id="card-container"
+        header="Mobile Test"
+        hovertext="Test hovertext"
+      />
+    )
 
     cy.get('#mobile-button-container').should('be.visible')
     cy.get('#hovertext').should('have.class', 'hidden')
@@ -64,7 +84,9 @@ describe('<StandardCard />', () => {
 
   it('renders link when provided', () => {
     cy.mountNextRouter('/')
-    cy.mount(<StandardCard header="Link Test" link="/test-link" />)
+    cy.mount(
+      <StandardCard id="card-container" header="Link Test" link="/test-link" />
+    )
 
     cy.get('#card-link').should('have.attr', 'href', '/test-link')
   })
@@ -72,7 +94,13 @@ describe('<StandardCard />', () => {
   it('handles onClick when provided', () => {
     const onClickSpy = cy.spy().as('onClickSpy')
     cy.mountNextRouter('/')
-    cy.mount(<StandardCard header="Click Test" onClick={onClickSpy} />)
+    cy.mount(
+      <StandardCard
+        id="card-container"
+        header="Click Test"
+        onClick={onClickSpy}
+      />
+    )
 
     cy.get('button').click()
     cy.get('@onClickSpy').should('have.been.called')

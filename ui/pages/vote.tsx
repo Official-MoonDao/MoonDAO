@@ -18,6 +18,7 @@ import Frame from '@/components/layout/Frame'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
+import StandardButtonPlus from '@/components/layout/StandardButtonPlus'
 
 const links = [
   {
@@ -95,12 +96,12 @@ export default function SpaceIndex() {
         </u>{' '}
         for more details on the project system and governance processes.
       </p>
-      <StandardButton link="/submit" className="mt-4 gradient-2 rounded-full">
-        <div className="flex items-center gap-2">
-          <PlusCircleIcon className="w-6 h-6" />
-          Create a Proposal
-        </div>
-      </StandardButton>
+      <StandardButtonPlus
+        link="/submit"
+        className="mt-4 gradient-2 rounded-full"
+      >
+        Create a Proposal
+      </StandardButtonPlus>
     </div>
   )
 

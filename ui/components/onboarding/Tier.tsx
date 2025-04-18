@@ -53,7 +53,7 @@ export default function Tier({
             }
           }}
         >
-          <div className="w-full h-full flex flex-col lg:flex-row ">
+          <div className="w-full h-full flex flex-col md:flex-row ">
             <div className="pt-5 md:pt-0 flex items-center rounded-[2vmax] rounded-tl-[20px] overflow-hidden">
               <Image
                 src={
