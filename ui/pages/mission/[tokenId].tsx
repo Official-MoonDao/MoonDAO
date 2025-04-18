@@ -19,6 +19,7 @@ import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
+import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
@@ -52,7 +53,8 @@ type ProjectProfileProps = {
 export default function MissionProfile({ mission }: ProjectProfileProps) {
   const account = useActiveAccount()
 
-  const { selectedChain } = useContext(ChainContextV5)
+  // const { selectedChain } = useContext(ChainContextV5)
+  const selectedChain = sepolia
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>()
@@ -351,7 +353,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenId: any = params?.tokenId
 
-  const chain = DEFAULT_CHAIN_V5
+  const chain = sepolia
   const chainSlug = getChainSlug(chain)
 
   if (tokenId === undefined) {

@@ -13,6 +13,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
+import { sepolia } from 'thirdweb/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -35,7 +36,8 @@ type MissionsProps = {
 }
 
 export default function Missions({ missions }: MissionsProps) {
-  const { selectedChain } = useContext(ChainContextV5)
+  // const { selectedChain } = useContext(ChainContextV5)
+  const selectedChain = sepolia
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -240,7 +242,7 @@ export default function Missions({ missions }: MissionsProps) {
 
 export const getStaticProps: GetStaticProps = async () => {
   try {
-    const chain = DEFAULT_CHAIN_V5
+    const chain = sepolia
     const chainSlug = getChainSlug(chain)
 
     const missionTableContract = getContract({
