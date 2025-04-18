@@ -57,7 +57,6 @@ export default function useMissionData({
         method: 'stage' as string,
         params: [mission.id],
       })
-      console.log('stage', stage)
       setStage(+stage.toString() as MissionStage)
     }
     if (missionCreatorContract && mission?.id !== undefined) {
