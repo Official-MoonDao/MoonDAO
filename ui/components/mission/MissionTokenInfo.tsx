@@ -48,14 +48,6 @@ export default function MissionTokenInfo({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Funding Dynamics / Stages */}
-      <h1 className="mt-4 text-2xl font-bold">Funding Dynamics</h1>
-      <p>The token funding for this project works in stages.</p>
-      <div className="flex items-center gap-2">
-        <InformationCircleIcon className="w-16 h-16" />
-        <p className="text-sm">{`Note: If no deadline is set, then the project owner can manually trigger the shut down of the project, going into effect 24 hours after the trigger is completed.`}</p>
-      </div>
-
       {/* Tokenomics */}
       <h1 className="mt-4 text-2xl font-bold">Tokenomics</h1>
       <p>
