@@ -917,15 +917,6 @@ export default function CreateMission({
                           rel="noreferrer"
                         >
                           PRIVACY POLICY
-                        </Link>{' '}
-                        AND{' '}
-                        <Link
-                          className="text-blue-500 hover:underline"
-                          href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          RISKS
                         </Link>
                       </p>
                     }
