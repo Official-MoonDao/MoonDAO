@@ -4,8 +4,10 @@ import {
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
+import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { DiscordIcon, TwitterIcon } from '../assets'
 import StandardWideCard from '../layout/StandardWideCard'
 import MissionActivityList from './MissionActivityList'
@@ -66,8 +68,24 @@ export default function MissionInfo({
   primaryTerminalAddress,
   stage,
 }: any) {
+  const router = useRouter()
+  const shallowQueryRoute = useShallowQueryRoute()
+
   const [tab, setTab] = useState<MissionInfoTabType>('about')
-  console.log(mission?.metadata)
+
+  useEffect(() => {
+    if (router.query.tab) {
+      setTab(router.query.tab as MissionInfoTabType)
+    }
+  }, [router])
+
+  useEffect(() => {
+    shallowQueryRoute({
+      tokenId: mission?.id,
+      tab: tab,
+    })
+  }, [tab])
+
   return (
     <div>
       <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
