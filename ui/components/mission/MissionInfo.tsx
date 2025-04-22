@@ -71,7 +71,9 @@ export default function MissionInfo({
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
 
-  const [tab, setTab] = useState<MissionInfoTabType>('about')
+  const [tab, setTab] = useState<MissionInfoTabType>(
+    (router.query.tab as MissionInfoTabType) || 'about'
+  )
 
   useEffect(() => {
     if (router.query.tab) {
@@ -216,14 +218,7 @@ export default function MissionInfo({
               title="Mission Tokenomics"
               icon="/assets/icon-star-blue.svg"
             />
-            <MissionTokenInfo
-              mission={mission}
-              token={token}
-              userMissionTokenBalance={userMissionTokenBalance}
-              ruleset={ruleset}
-              subgraphData={subgraphData}
-              fundingGoal={fundingGoal}
-            />
+            <MissionTokenInfo mission={mission} token={token} />
           </div>
         )}
         <div className="w-full hidden xl:block">
