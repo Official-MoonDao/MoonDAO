@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
 import "forge-std/Script.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
@@ -54,7 +53,6 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
             hooks: hookContract
         });
         PoolId poolId = poolKey.toId();
-        console.logBytes32(PoolId.unwrap(poolId));
         bytes memory hookData = new bytes(0);
 
         // --------------------------------- //
@@ -88,7 +86,6 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
 
         // if the pool is an ETH pair, native tokens are to be transferred
         uint256 valueToPass = poolKey.currency0.isAddressZero() ? amount0Max : 0;
-        console.log('valueToPass', valueToPass);
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
