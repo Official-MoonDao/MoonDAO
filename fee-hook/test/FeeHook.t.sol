@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "forge-std/console.sol";
 import "forge-std/Test.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
@@ -11,6 +10,7 @@ import {Actions} from "v4-periphery/src/libraries/Actions.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import {PoolId} from "v4-core/src/types/PoolId.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
+import {ActionConstants} from "v4-periphery/src/libraries/ActionConstants.sol";
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
 import {Constants} from "v4-core/src/../test/utils/Constants.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
@@ -48,6 +48,8 @@ contract FeeHookTest is Test {
     address user1 = address(0x1);
     address zero = address(0x0);
     address deployerAddress = address(0x2);
+    uint256 DEPLOYER_FUNDS =100_000_000_000 ether;
+    uint256 DEPLOYER_TOKEN_BALANCE = 100_000;
 
     function setUp() public {
         // v4 mainnet addresses
@@ -61,10 +63,10 @@ contract FeeHookTest is Test {
         router = UniversalRouter(routerAddress);
         vm.deal(address(manager), 100_000_000 ether);
         vm.deal(address(posm), 100_000_000 ether);
-        vm.deal(deployerAddress, 100_000_000_000 ether);
+        vm.deal(deployerAddress, DEPLOYER_FUNDS);
 
         vm.startBroadcast(deployerAddress);
-        FakeERC20 fakeToken = new FakeERC20(100_000, "Fake Token", "FAKE");
+        FakeERC20 fakeToken = new FakeERC20(DEPLOYER_TOKEN_BALANCE, "Fake Token", "FAKE");
         fakeTokenAddress = address(fakeToken);
         vm.stopBroadcast();
     }
@@ -131,8 +133,9 @@ contract FeeHookTest is Test {
 
         uint256 tokenBalanceAfter = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(zero);
 
-        // Check that tokens are burnt, with some tolerance for rounding errors
-        assertApproxEqAbs(tokenBalanceAfter - tokenBalanceBefore, SWAP_AMOUNT * FEE / FEE_DENOMINATOR, 1);
+        // check that tokens are burnt, with some tolerance for rounding errors
+        uint256 burntAmount = tokenBalanceAfter - tokenBalanceBefore;
+        assertApproxEqAbs(burntAmount, SWAP_AMOUNT * FEE / FEE_DENOMINATOR, 1);
 
 
         uint256 balanceBefore = address(deployerAddress).balance;
@@ -142,6 +145,15 @@ contract FeeHookTest is Test {
         uint256 balanceAfter = address(deployerAddress).balance;
         assertEq(balanceAfter - balanceBefore, withdrawableAmount);
 
+
+        uint256 withdrawableAmountAfter = feeHook.getWithdrawableAmount();
+        assertEq(withdrawableAmountAfter, 0);
+
+        vm.expectRevert("Nothing to withdraw");
+        feeHook.withdrawFees();
+
+
+        // transfer the position back to the deployer to allow closing the position
         feeHook.transferPosition(
             deployerAddress,
             PoolId.unwrap(poolKey.toId())
@@ -149,19 +161,21 @@ contract FeeHookTest is Test {
         uint256 tokenId = feeHook.TOKEN_ID(poolKey.toId());
 
         // burn the position
-        burn(poolKey, tokenId, deployerAddress);
-        uint256 balanceAfter2 = address(deployerAddress).balance;
-        console.log('balanceAfter2', balanceAfter2);
+        burn(poolKey, tokenId);
+        uint256 deployerTokenBalanceAfter = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(deployerAddress);
+        uint256 balanceAfterBurn = address(deployerAddress).balance;
+        assertApproxEqAbs(balanceAfterBurn, DEPLOYER_FUNDS, 8);
+        assertApproxEqAbs(deployerTokenBalanceAfter, DEPLOYER_TOKEN_BALANCE * 1e18 - burntAmount, 4);
     }
 
-    function burn(PoolKey memory poolKey, uint256 tokenId, address recipient) internal {
+    function burn(PoolKey memory poolKey, uint256 tokenId) internal {
         bytes memory actions = abi.encodePacked(uint8(Actions.BURN_POSITION), uint8(Actions.TAKE_PAIR));
         bytes[] memory params = new bytes[](2);
-        params[0] = abi.encode(tokenId, 0, 0, "");
-        params[1] = abi.encode(poolKey.currency0, poolKey.currency1, recipient);
+        params[0] = abi.encode(tokenId, 69420, 69420, "");
+        params[1] = abi.encode(poolKey.currency0, poolKey.currency1, ActionConstants.MSG_SENDER);
         posm.modifyLiquidities(
             abi.encode(actions, params),
-            block.timestamp + 60
+            block.timestamp + 20
         );
     }
 
