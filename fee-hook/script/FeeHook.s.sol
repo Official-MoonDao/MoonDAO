@@ -11,7 +11,7 @@ import {FeeHook} from "../src/FeeHook.sol";
 import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
 
 /// @notice Mines the address and deploys the Counter.sol Hook contract
-contract FeeHookScript is Script, Constants {
+contract FeeHookScript is Script, Constants, Config {
     function setUp() public {}
 
     function run() public {
@@ -23,46 +23,25 @@ contract FeeHookScript is Script, Constants {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
-        address lzEndpoint;
-        address poolManagerAddress;
-        address posmAddress;
+        address lzEndpoint = LZ_ENDPOINTS[block.chainid];
+        address poolManagerAddress = POOL_MANAGERS[block.chainid];
+        address posmAddress = POOL_MANAGERS[block.chainid];
         address vMooneyAddress = 0xB255c74F8576f18357cE6184DA033c6d93C71899;
-        uint16 eid;
         // Sepolia for testnets, arbitrum for mainnet
         uint256 DESTINATION_CHAIN_ID = 42161;
         uint16 DESTINATION_EID = 30110;
         // Addresses from https://docs.uniswap.org/contracts/v4/deployments
         if(block.chainid == 1) { //mainnet
-            lzEndpoint = 0x1a44076050125825900e736c501f859c50fE728c;
-            poolManagerAddress = 0x000000000004444c5dc75cB358380D2e3dE08A90;
-            posmAddress = 0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e;
-            eid = 30101;
         } else if (block.chainid == 42161) { //arbitrum
-            lzEndpoint = 0x1a44076050125825900e736c501f859c50fE728c;
-            poolManagerAddress = 0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32;
-            posmAddress = 0xd88F38F930b7952f2DB2432Cb002E7abbF3dD869;
-            eid = 30110;
         } else if (block.chainid == 8453) { //base
-            lzEndpoint = 0x1a44076050125825900e736c501f859c50fE728c;
-            poolManagerAddress = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
-            posmAddress = 0x7C5f5A4bBd8fD63184577525326123B519429bDc;
-            eid = 30184;
         } else if (block.chainid == 421614) { //arb-sep
-            lzEndpoint = 0x6EDCE65403992e310A62460808c4b910D972f10f;
-            poolManagerAddress = 0xFB3e0C6F74eB1a21CC1Da29aeC80D2Dfe6C9a317;
-            posmAddress = 0xAc631556d3d4019C95769033B5E719dD77124BAc;
             vMooneyAddress = 0xA4F6A4B135b9AF7909442A7a3bF7797b61e609b1;
             DESTINATION_CHAIN_ID = 11155111;
             DESTINATION_EID = 40161;
-            eid = 40231;
         } else if (block.chainid == 11155111) { //sep
-            lzEndpoint = 0x6EDCE65403992e310A62460808c4b910D972f10f;
-            poolManagerAddress = 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543;
-            posmAddress = 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4;
             vMooneyAddress = 0xA4F6A4B135b9AF7909442A7a3bF7797b61e609b1;
             DESTINATION_CHAIN_ID = 11155111;
             DESTINATION_EID = 40161;
-            eid = 40161;
         }
 
         // Mine a salt that will produce a hook address with the correct flags

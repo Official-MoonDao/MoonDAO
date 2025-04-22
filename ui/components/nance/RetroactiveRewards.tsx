@@ -120,6 +120,7 @@ export function RetroactiveRewards({
 
   //Check if its the rewards cycle
   useEffect(() => {
+    setActive(isRewardsCycle(new Date()))
     const interval = setInterval(() => {
       setActive(isRewardsCycle(new Date()))
     }, 30000)

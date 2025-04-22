@@ -24,6 +24,18 @@ export default function useProposalJSON(proposalMarkdown: string) {
       }
     })
 
+    if (!parsedSections.abstract) {
+      return setProposalJSON({
+        abstract: removeMarkdownFormatting(
+          proposalMarkdown.substring(0, 1000).trim() + '...'
+        ),
+        background: '',
+        solution: '',
+        impact: '',
+        team: '',
+      })
+    }
+
     setProposalJSON(parsedSections)
   }, [proposalMarkdown])
 

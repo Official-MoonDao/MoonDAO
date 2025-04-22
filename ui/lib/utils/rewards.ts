@@ -19,7 +19,7 @@ export function getBudget(tokens: any, year: number, quarter: number) {
     usdBudget = usdValue * 0.05
     ethBudget = ethValue * 0.05
     //FIXME undo hardcoded values
-    ethBudget = 295.7818 * 0.05
+    ethBudget = 309.9667 * 0.05
     usdBudget = ethBudget * ethPrice
     const MOONEY_INITIAL_BUDGET = 15_000_000
     const MOONEY_DECAY_RATE = 0.95
@@ -36,6 +36,21 @@ export function getBudget(tokens: any, year: number, quarter: number) {
   }
 }
 
+function normalizeJsonString(jsonString: string) {
+    const nonEmptyJsonString = jsonString || '{}'
+    console.log('nonEmptyJsonString', nonEmptyJsonString)
+    // replace fancy double quotes with regular double quotes
+    // and add leading double quotes if needed
+    return JSON.parse(nonEmptyJsonString.replace(
+        /[\u201C\u201D]/g,
+        '"').replace(
+      /(\b0x[a-fA-F0-9]{40}\b):/g,
+      '"$1":'
+    ));
+}
+
+
+
 export function getPayouts(
   projectIdToEstimatedPercentage: any,
   projects: any,
@@ -50,7 +65,7 @@ export function getPayouts(
   const projectsAndCommunityCircle = projects.concat([
     {
       id: -1,
-      upfrontPayments: {},
+      upfrontPayments: '{}',
       rewardDistribution: JSON.stringify(communityCircle),
     },
   ])
@@ -60,16 +75,9 @@ export function getPayouts(
       projectId == -1
         ? COMMUNITY_CIRCLE_PERCENTAGE
         : projectIdToEstimatedPercentage[projectId]
-    const rewardDistributionString = project.rewardDistribution || '{}'
-    const fixedRewardDistribution = rewardDistributionString.replace(
-      /(\b0x[a-fA-F0-9]{40}\b):/g,
-      '"$1":'
-    )
-    const upfrontPayments: { [key: string]: number } = project.upfrontPayments
+    const contributors: { [key: string]: number } = normalizeJsonString(project.rewardDistribution)
+    const upfrontPayments: { [key: string]: number } = normalizeJsonString(project.upfrontPayments)
 
-    const contributors: { [key: string]: number } = JSON.parse(
-      fixedRewardDistribution
-    )
     for (const [contributerAddress, contributorPercentage] of Object.entries(
       contributors
     )) {
