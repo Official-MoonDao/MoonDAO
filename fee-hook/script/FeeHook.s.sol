@@ -7,6 +7,7 @@ import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 
 import {Constants} from "./base/Constants.sol";
+import {Config} from "./base/Config.sol";
 import {FeeHook} from "../src/FeeHook.sol";
 import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
 
