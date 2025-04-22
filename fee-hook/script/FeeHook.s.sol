@@ -51,7 +51,6 @@ contract FeeHookScript is Script, Constants, Config {
             HookMiner.find(CREATE2_DEPLOYER, flags, type(FeeHook).creationCode, constructorArgs);
 
         // Deploy the hook using CREATE2
-        //vm.broadcast();
         FeeHook feehook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress);
         // Set to a low value for testing
         if (block.chainid == 421614 || block.chainid == 11155111) {
