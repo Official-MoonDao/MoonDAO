@@ -26,7 +26,9 @@ import {IWETH9} from "v4-periphery/src/interfaces/external/IWETH9.sol";
 
 contract FeeHookTest is Test {
     using StateLibrary for IPoolManager;
+    // 1%
     uint24 constant FEE = 10000;
+    uint24 constant FEE_DENOMINATOR = 1_000_000;
     uint256 constant V4_SWAP = 0x10;
 
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
@@ -39,10 +41,12 @@ contract FeeHookTest is Test {
     address lzEndpoint = 0x1a44076050125825900e736c501f859c50fE728c;
     uint256 DESTINATION_CHAIN_ID = 1;
     uint16 DESTINATION_EID = 30101;
+    uint128 SWAP_AMOUNT = 1 ether;
     address fakeTokenAddress;
     FeeHook feeHook;
 
     address user1 = address(0x1);
+    address zero = address(0x0);
     address deployerAddress = address(0x2);
 
     function setUp() public {
@@ -120,13 +124,23 @@ contract FeeHookTest is Test {
         int24 tickUpper = TickMath.maxUsableTick(tickSpacing);
         mintLiquidity(poolKey, tickLower, tickUpper, hookAddress);
 
+        uint256 tokenBalanceBefore = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(zero);
         // swap some tokens
         swapReverse(poolKey);
         swap(poolKey);
 
+        uint256 tokenBalanceAfter = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(zero);
+
+        // Check that tokens are burnt, with some tolerance for rounding errors
+        assertApproxEqAbs(tokenBalanceAfter - tokenBalanceBefore, SWAP_AMOUNT * FEE / FEE_DENOMINATOR, 1);
+
+
         uint256 balanceBefore = address(deployerAddress).balance;
+        uint256 withdrawableAmount = feeHook.getWithdrawableAmount();
+        assertEq(withdrawableAmount, SWAP_AMOUNT * FEE / FEE_DENOMINATOR);
         feeHook.withdrawFees();
         uint256 balanceAfter = address(deployerAddress).balance;
+        assertEq(balanceAfter - balanceBefore, withdrawableAmount);
 
         feeHook.transferPosition(
             deployerAddress,
@@ -137,6 +151,7 @@ contract FeeHookTest is Test {
         // burn the position
         burn(poolKey, tokenId, deployerAddress);
         uint256 balanceAfter2 = address(deployerAddress).balance;
+        console.log('balanceAfter2', balanceAfter2);
     }
 
     function burn(PoolKey memory poolKey, uint256 tokenId, address recipient) internal {
@@ -151,9 +166,6 @@ contract FeeHookTest is Test {
     }
 
     function mintLiquidity(PoolKey memory poolKey, int24 tickLower, int24 tickUpper, address hookAddress) internal returns (uint256){
-        IPoolManager.ModifyLiquidityParams memory liqParams =
-            IPoolManager.ModifyLiquidityParams(tickLower, tickUpper, 100 ether, 0);
-
         bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));
         bytes[] memory params = new bytes[](2);
         uint256 valueToPass = 100 ether;
@@ -169,7 +181,6 @@ contract FeeHookTest is Test {
 
     // trade eth for tokens
     function swap(PoolKey memory poolKey) internal {
-       uint128 amountSpecified = 1 ether;
        bytes memory commands = abi.encodePacked(uint8(V4_SWAP));
        bytes memory actions = abi.encodePacked(
           uint8(Actions.SWAP_EXACT_IN_SINGLE),
@@ -181,24 +192,23 @@ contract FeeHookTest is Test {
            IV4Router.ExactInputSingleParams({
                poolKey: poolKey,
                zeroForOne: true,
-               amountIn: amountSpecified,
+               amountIn: SWAP_AMOUNT,
                amountOutMinimum: 0,
                hookData: bytes("")
            })
        );
-       params[1] = abi.encode(poolKey.currency0, amountSpecified);
+       params[1] = abi.encode(poolKey.currency0, SWAP_AMOUNT);
        params[2] = abi.encode(poolKey.currency1, 0);
        bytes[] memory inputs = new bytes[](1);
 
        inputs[0] = abi.encode(actions, params);
 
        uint256 deadline = block.timestamp + 20;
-       router.execute{value: amountSpecified}(commands, inputs, deadline);
+       router.execute{value: SWAP_AMOUNT}(commands, inputs, deadline);
     }
 
     // trade eth for tokens
     function swapReverse(PoolKey memory poolKey) internal {
-       uint128 amountSpecified = 1 ether;
        bytes memory commands = abi.encodePacked(uint8(V4_SWAP));
        bytes memory actions = abi.encodePacked(
           uint8(Actions.SWAP_EXACT_IN_SINGLE),
@@ -210,12 +220,12 @@ contract FeeHookTest is Test {
            IV4Router.ExactInputSingleParams({
                poolKey: poolKey,
                zeroForOne: false,
-               amountIn: amountSpecified,
+               amountIn: SWAP_AMOUNT,
                amountOutMinimum: 0,
                hookData: bytes("")
            })
        );
-       params[1] = abi.encode(poolKey.currency1, amountSpecified);
+       params[1] = abi.encode(poolKey.currency1, SWAP_AMOUNT);
        params[2] = abi.encode(poolKey.currency0, 0);
        bytes[] memory inputs = new bytes[](1);
 
