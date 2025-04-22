@@ -1,51 +1,13 @@
-import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
-import {
-  MISSION_STAGE_NAMES,
-  MISSION_TOKEN_WEIGHTS,
-} from '@/lib/mission/missionConfig'
-import MissionFundingMilestoneChart from './MissionFundingMilestoneChart'
-
-function FundingStage({
-  stage,
-  title,
-  description,
-}: {
-  stage: number
-  title: string
-  description: string
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <h2 className="font-GoodTimes text-xl lg:text-2xl text-moon-indigo">
-          {`Stage ${stage} : `}
-          <span className="text-white">{title}</span>
-        </h2>
-      </div>
-      <p>{description}</p>
-    </div>
-  )
-}
 
 export default function MissionTokenInfo({
   mission,
   token,
-  ruleset,
-  subgraphData,
-  fundingGoal,
 }: {
   mission: any
-  userMissionTokenBalance: string
   token: any
-  ruleset: any
-  subgraphData: any
-  fundingGoal: number
 }) {
-  //TODO : Add real stage weights and durations
-  const weight = ruleset?.[0].weight.toString() / 1e18
-
   return (
     <div className="flex flex-col gap-4">
       {/* Tokenomics */}
@@ -81,26 +43,28 @@ export default function MissionTokenInfo({
       {/* Auditing Resources */}
       <h1 className="mt-4 text-2xl font-bold">Auditing Resources</h1>
 
-      <div className="flex items-center gap-2">
-        <Image
-          src="/assets/launchpad/star-icon-indigo.svg"
-          alt="Star Icon"
-          width={20}
-          height={20}
-        />
-        <Link
-          className="underline text-blue-500"
-          href={`https://${
-            process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-              ? 'etherscan.io'
-              : 'sepolia.etherscan.io'
-          }/address/${token.tokenAddress}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {'Etherscan'}
-        </Link>
-      </div>
+      {token?.tokenSymbol && (
+        <div className="flex items-center gap-2">
+          <Image
+            src="/assets/launchpad/star-icon-indigo.svg"
+            alt="Star Icon"
+            width={20}
+            height={20}
+          />
+          <Link
+            className="underline text-blue-500"
+            href={`https://${
+              process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+                ? 'etherscan.io'
+                : 'sepolia.etherscan.io'
+            }/address/${token.tokenAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {'Etherscan'}
+          </Link>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <Image
           src="/assets/launchpad/star-icon-indigo.svg"
