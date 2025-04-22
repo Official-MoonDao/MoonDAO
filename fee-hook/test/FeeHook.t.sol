@@ -11,7 +11,8 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 import {PoolId} from "v4-core/src/types/PoolId.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {ActionConstants} from "v4-periphery/src/libraries/ActionConstants.sol";
-import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
+//import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
+import {MockJBERC20} from "../src/MockJBERC20.sol";
 import {Constants} from "v4-core/src/../test/utils/Constants.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
@@ -98,8 +99,8 @@ contract FeeHookTest is Test {
         return feeHook;
     }
 
-    function deployToken(address recipient) internal returns (MockERC20 token1) {
-        token1 = new MockERC20("Mock", "MOCK", 18);
+    function deployToken(address recipient) internal returns (MockJBERC20 token1) {
+        token1 = new MockJBERC20("Mock", "MOCK", 18);
         token1.mint(recipient, 100_000 ether);
         Currency currency = Currency.wrap(address(token1));
         // Because POSM uses permit2, we must execute 2 permits/approvals.
@@ -113,7 +114,7 @@ contract FeeHookTest is Test {
     }
 
     function testLifecycle(address hookAddress) internal {
-        MockERC20 token1 = deployToken(deployerAddress);
+        MockJBERC20 token1 = deployToken(deployerAddress);
 
         // initialize the pool
         int24 tickSpacing = 60;
