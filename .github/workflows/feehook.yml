@@ -27,8 +27,8 @@ jobs:
 
       - name: Run apply_patch.sh
         run: |
-          chmod +x ./fee-hook/apply_path.sh
-          ./fee-hook/apply_path.sh
+          chmod +x ./fee-hook/apply_patch.sh
+          ./fee-hook/apply_patch.sh
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
