@@ -3,43 +3,42 @@ name: test
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - '**.md'
+    paths-ignore: ['**.md']
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '**.md'
+    paths-ignore: ['**.md']
 
 env:
   FOUNDRY_PROFILE: ci
 
 jobs:
   check:
-    strategy:
-      fail-fast: true
-
-    name: Foundry project
     runs-on: ubuntu-latest
+
     steps:
-      - name: Restore submodule cache
+      #########################################################
+      # 1. Pull the cached Git object DB (root + submodules)  #
+      #########################################################
+      - name: Restore Git cache
         uses: actions/cache@v3
         with:
-          path: .git/modules
-          key: ${{ runner.os }}-gitmodules-${{ hashFiles('.gitmodules') }}
+          path: .git                      # includes .git/modules/*
+          # bump the key when .gitmodules changes so the cache busts cleanly
+          key: ${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-gitmodules-
+            ${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}-
+            ${{ runner.os }}-git-
 
-      - uses: actions/checkout@v3
+      #########################################################
+      # 2. Normal checkout, but *don't* scrub the workspace   #
+      #    (we just restored it!)                            #
+      #########################################################
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 1  # optional but makes things faster
+          clean: false          # skip `git clean -ffdx` so cache survives :contentReference[oaicite:0]{index=0}
 
-      - name: Save submodule cache
-        uses: actions/cache@v3
-        with:
-          path: .git/modules
-          key: ${{ runner.os }}-gitmodules-${{ hashFiles('.gitmodules') }}
-
+      # …everything else stays exactly the same …
       - name: Run apply_patch.sh
         run: |
           chmod +x ./fee-hook/apply_patch.sh
@@ -51,8 +50,7 @@ jobs:
           version: nightly
 
       - name: Run Local Chain with Anvil
-        run: |
-          anvil --fork-url https://1.rpc.thirdweb.com/${{ secrets.ANVIL_THIRDWEB_CLIENT_ID }} &
+        run: anvil --fork-url https://1.rpc.thirdweb.com/${{ secrets.ANVIL_THIRDWEB_CLIENT_ID }} &
         id: local-chain
 
       - name: Install npm dependencies
