@@ -25,6 +25,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Run apply_patch.sh
+        run: |
+          chmod +x ./fee-hook/apply_path.sh
+          ./fee-hook/apply_path.sh
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:

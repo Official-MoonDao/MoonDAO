@@ -47,7 +47,7 @@ contract FeeHookTest is Test {
     FeeHook feeHook;
 
     address user1 = address(0x1);
-    address zero = address(0x0);
+    address dead = address(0x000000000000000000000000000000000000dEaD);
     address deployerAddress = address(0x2);
     uint256 DEPLOYER_FUNDS =100_000_000_000 ether;
     uint256 DEPLOYER_TOKEN_BALANCE = 100_000;
@@ -101,7 +101,7 @@ contract FeeHookTest is Test {
 
     function deployToken(address recipient) internal returns (MockJBERC20 token1) {
         token1 = new MockJBERC20("Mock", "MOCK", 18);
-        token1.mint(recipient, 100_000 ether);
+        token1.mintTo(recipient, 100_000 ether);
         Currency currency = Currency.wrap(address(token1));
         // Because POSM uses permit2, we must execute 2 permits/approvals.
         // 1. First, the caller must approve permit2 on the token.
@@ -127,12 +127,12 @@ contract FeeHookTest is Test {
         int24 tickUpper = TickMath.maxUsableTick(tickSpacing);
         mintLiquidity(poolKey, tickLower, tickUpper, hookAddress);
 
-        uint256 tokenBalanceBefore = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(zero);
+        uint256 tokenBalanceBefore = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(dead);
         // swap some tokens
         swapReverse(poolKey);
         swap(poolKey);
 
-        uint256 tokenBalanceAfter = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(zero);
+        uint256 tokenBalanceAfter = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(dead);
 
         // check that tokens are burnt, with some tolerance for rounding errors
         uint256 burntAmount = tokenBalanceAfter - tokenBalanceBefore;

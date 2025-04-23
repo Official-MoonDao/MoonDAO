@@ -104,9 +104,9 @@ contract FeeHook is BaseHook, OApp  {
             posm.modifyLiquiditiesWithoutUnlock(
                 actions, params
             );
-            // Burn non-native tokens
+            // Burn non-native tokens by sending them to the dEaD address
             if (CurrencyLibrary.balanceOfSelf(key.currency1) > 0) {
-                CurrencyLibrary.transfer(key.currency1, address(0), CurrencyLibrary.balanceOfSelf(key.currency1));
+                CurrencyLibrary.transfer(key.currency1, address(0x000000000000000000000000000000000000dEaD), CurrencyLibrary.balanceOfSelf(key.currency1));
             }
 
             // 2. Transfer fees to this contract on the destination chain.
