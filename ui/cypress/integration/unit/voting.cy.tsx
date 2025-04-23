@@ -1,4 +1,4 @@
-import { runIterativeNormalization } from '../../../lib/utils/voting'
+import { runIterativeNormalization } from '../../../lib/utils/rewards'
 
 describe('runIterativeNormalization', () => {
   it('should normalize distributions correctly', () => {
