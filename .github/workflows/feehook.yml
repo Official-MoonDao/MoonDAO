@@ -16,28 +16,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      #########################################################
-      # 1. Pull the cached Git object DB (root + submodules)  #
-      #########################################################
       - name: Restore Git cache
         uses: actions/cache@v3
         with:
-          path: .git                      # includes .git/modules/*
-          # bump the key when .gitmodules changes so the cache busts cleanly
+          path: .git
           key: ${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}
           restore-keys: |
             ${{ runner.os }}-git-
 
-      #########################################################
-      # 2. Normal checkout, but *don't* scrub the workspace   #
-      #    (we just restored it!)                            #
-      #########################################################
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          clean: false          # skip `git clean -ffdx` so cache survives :contentReference[oaicite:0]{index=0}
+          clean: false
 
-      # …everything else stays exactly the same …
       - name: Run apply_patch.sh
         run: |
           chmod +x ./fee-hook/apply_patch.sh
