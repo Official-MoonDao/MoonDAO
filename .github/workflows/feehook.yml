@@ -1,4 +1,4 @@
-name: test
+name: FeeHook
 
 on:
   push:
@@ -24,9 +24,8 @@ jobs:
         with:
           path: .git                      # includes .git/modules/*
           # bump the key when .gitmodules changes so the cache busts cleanly
-          key: ${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}-${{ github.sha }}
+          key: ${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}
           restore-keys: |
-            ${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}-
             ${{ runner.os }}-git-
 
       #########################################################
