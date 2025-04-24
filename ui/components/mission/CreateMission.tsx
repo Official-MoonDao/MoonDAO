@@ -676,12 +676,12 @@ export default function CreateMission({
                       })
                     }
                     if (missionData.token.tradeable) {
-                      if (missionData.token.name.length === 0) {
+                      if (missionData.token.name.trim().length === 0) {
                         return toast.error('Please enter a token name', {
                           style: toastStyle,
                         })
                       }
-                      if (missionData.token.symbol.length === 0) {
+                      if (missionData.token.symbol.trim().length === 0) {
                         return toast.error('Please enter a token symbol', {
                           style: toastStyle,
                         })

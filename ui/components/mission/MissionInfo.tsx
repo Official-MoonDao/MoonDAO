@@ -62,7 +62,8 @@ export default function MissionInfo({
   token,
   fundingGoal,
   ruleset,
-  jbDirectoryContract,
+  jbTokensContract,
+  jbControllerContract,
   points,
   userMissionTokenBalance,
   primaryTerminalAddress,
@@ -232,6 +233,8 @@ export default function MissionInfo({
             subgraphData={subgraphData}
             ruleset={ruleset}
             primaryTerminalAddress={primaryTerminalAddress}
+            jbTokensContract={jbTokensContract}
+            jbControllerContract={jbControllerContract}
           />
         </div>
       </div>

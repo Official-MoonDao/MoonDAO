@@ -16,9 +16,11 @@ import {
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
 import { CopyIcon } from '../assets'
@@ -26,6 +28,7 @@ import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import MissionDeployTokenModal from './MissionDeployTokenModal'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
 import MissionTokenNotice from './MissionTokenNotice'
 
@@ -51,6 +54,8 @@ function MissionPayRedeemContent({
   tokenBalance,
   currentStage,
   stage,
+  tokenCredit,
+  claimTokenCredit,
 }: any) {
   return (
     <div
@@ -85,7 +90,11 @@ function MissionPayRedeemContent({
         </div>
         {/* You pay */}
         <div className="relative flex flex-col gap-4">
-          <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl rounded-tr-2xl">
+          <div
+            className={`p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl rounded-tr-2xl ${
+              token?.tokenSymbol ? '' : 'rounded-bl-2xl rounded-br-2xl'
+            }`}
+          >
             <div className="flex flex-col">
               <h3 className="text-sm opacity-60">You contribute</h3>
               <input
@@ -106,36 +115,40 @@ function MissionPayRedeemContent({
               {'ETH'}
             </div>
           </div>
-          <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
-            <ArrowDownIcon
-              className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
-              color={'#121C42'}
-            />
-          </div>
+          {token?.tokenSymbol && (
+            <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
+              <ArrowDownIcon
+                className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
+                color={'#121C42'}
+              />
+            </div>
+          )}
           {/* You receive */}
-          <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
-            <div className="flex flex-col">
-              <h3 className="text-sm opacity-60">You receive</h3>
-              <p className="text-2xl font-bold">{output.toFixed(2)}</p>
+          {token?.tokenSymbol && (
+            <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
+              <div className="flex flex-col">
+                <h3 className="text-sm opacity-60">You receive</h3>
+                <p className="text-2xl font-bold">{output.toFixed(2)}</p>
+              </div>
+              <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+                <Image
+                  src="/assets/icon-star.svg"
+                  alt="ETH"
+                  width={20}
+                  height={20}
+                  className="bg-orange-500 rounded-full p-1w-5 h-5"
+                />
+                <Image
+                  src="/coins/ETH.svg"
+                  alt="ETH"
+                  width={20}
+                  height={20}
+                  className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
+                />
+                {token?.tokenSymbol}
+              </div>
             </div>
-            <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
-              <Image
-                src="/assets/icon-star.svg"
-                alt="ETH"
-                width={20}
-                height={20}
-                className="bg-orange-500 rounded-full p-1w-5 h-5"
-              />
-              <Image
-                src="/coins/ETH.svg"
-                alt="ETH"
-                width={20}
-                height={20}
-                className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
-              />
-              {token?.tokenSymbol}
-            </div>
-          </div>
+          )}
         </div>
         <StandardButton
           className="rounded-full gradient-2 rounded-full w-full py-1"
@@ -144,26 +157,37 @@ function MissionPayRedeemContent({
         >
           Contribute
         </StandardButton>
+        {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
+          <StandardButton
+            className="rounded-full gradient-2 rounded-full w-full py-1"
+            onClick={claimTokenCredit}
+            hoverEffect={false}
+          >
+            Claim {tokenCredit.toString() / 1e18} ${token?.tokenSymbol}
+          </StandardButton>
+        )}
       </div>
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-col justify-between gap-4">
-        <div
-          id="mission-token-stats"
-          className="px-2 pt-1 bg-darkest-cool rounded-2xl"
-        >
-          <div className="text-lg">
-            <h3 className="opacity-60 text-sm">Current Supply</h3>
-            <p>
-              {Math.floor(token?.tokenSupply.toString() / 1e18)} $
-              {token?.tokenSymbol}
-            </p>
-          </div>
+        {token?.tokenSupply > 0 && (
+          <div
+            id="mission-token-stats"
+            className="px-2 pt-1 bg-darkest-cool rounded-2xl"
+          >
+            <div className="text-lg">
+              <h3 className="opacity-60 text-sm">Current Supply</h3>
+              <p>
+                {Math.floor(token?.tokenSupply.toString() / 1e18)} $
+                {token?.tokenSymbol}
+              </p>
+            </div>
 
-          <MissionTokenExchangeRates
-            currentStage={currentStage}
-            tokenSymbol={token?.tokenSymbol}
-          />
-        </div>
+            <MissionTokenExchangeRates
+              currentStage={currentStage}
+              tokenSymbol={token?.tokenSymbol}
+            />
+          </div>
+        )}
         {tokenBalance > 0 && stage === 3 && (
           <div
             id="mission-redeem-container"
@@ -202,6 +226,8 @@ export type MissionPayRedeemProps = {
   modalEnabled?: boolean
   setModalEnabled?: (enabled: boolean) => void
   primaryTerminalAddress: string
+  jbControllerContract?: any
+  jbTokensContract?: any
   forwardClient?: any
 }
 
@@ -218,18 +244,25 @@ export default function MissionPayRedeem({
   modalEnabled = false,
   setModalEnabled,
   primaryTerminalAddress,
+  jbControllerContract,
+  jbTokensContract,
   forwardClient,
 }: MissionPayRedeemProps) {
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
+
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
+  const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
+
   const account = useActiveAccount()
   const address = account?.address
+
   const [input, setInput] = useState(0)
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState('')
 
-  const nativeBalance = useNativeBalance()
+  const [isTeamSigner, setIsTeamSigner] = useState(false)
+  const { safe, queueSafeTx, lastSafeTxExecuted } = useSafe(teamNFT?.owner)
 
   const { fundWallet } = useFundWallet()
   const [agreedToCondition, setAgreedToCondition] = useState(false)
@@ -243,7 +276,22 @@ export default function MissionPayRedeem({
     forwardClient,
   })
 
+  const nativeBalance = useNativeBalance()
   const tokenBalance = useWatchTokenBalance(selectedChain, token?.tokenAddress)
+  const { data: tokenCredit } = useRead({
+    contract: jbTokensContract,
+    method: 'creditBalanceOf' as string,
+    params: [address, mission?.projectId],
+  })
+
+  //check if the connected wallet is a signer of the team's multisig
+  useEffect(() => {
+    const isSigner = async () => {
+      const isSigner = await safe?.isOwner(address || '')
+      setIsTeamSigner(isSigner || false)
+    }
+    if (safe && address) isSigner()
+  }, [safe, address])
 
   const getQuote = useCallback(async () => {
     if (!address) return
@@ -348,6 +396,7 @@ export default function MissionPayRedeem({
     chainSlug,
   ])
 
+  //Redeem (stage 3 refund) all mission tokens for the connected wallet
   const redeemMissionToken = useCallback(async () => {
     if (!account || !address) {
       console.error('No account or address available')
@@ -406,6 +455,37 @@ export default function MissionPayRedeem({
     tokenBalance,
   ])
 
+  //Claim all token credit for the connected wallet
+  const claimTokenCredit = useCallback(async () => {
+    if (!account || !address) {
+      console.error('No account or address available')
+      return
+    }
+
+    try {
+      const transaction = prepareContractCall({
+        contract: jbControllerContract,
+        method: 'claimTokensFor' as string,
+        params: [address, mission?.projectId, tokenCredit, address],
+      })
+
+      const receipt = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+
+      toast.success('Token credit claimed successfully', {
+        style: toastStyle,
+      })
+      router.reload()
+    } catch (error) {
+      console.error('Error claiming token credit:', error)
+      toast.error('Failed to claim token credit', {
+        style: toastStyle,
+      })
+    }
+  }, [account, address, jbTokensContract, mission?.projectId])
+
   useEffect(() => {
     if (input > 0) {
       getQuote()
@@ -416,7 +496,29 @@ export default function MissionPayRedeem({
     <>
       {!onlyModal && (
         <>
-          <div className="hidden md:block">
+          {deployTokenModalEnabled && isTeamSigner && (
+            <MissionDeployTokenModal
+              setEnabled={setDeployTokenModalEnabled}
+              isTeamSigner={isTeamSigner}
+              queueSafeTx={queueSafeTx}
+              mission={mission}
+              chainSlug={chainSlug}
+              teamMutlisigAddress={teamNFT?.owner}
+              lastSafeTxExecuted={lastSafeTxExecuted}
+            />
+          )}
+          {!token?.tokenSymbol && isTeamSigner && (
+            <div className="p-8 md:p-0 flex md:block justify-center">
+              <StandardButton
+                className="gradient-2 rounded-full w-full max-w-[300px]"
+                hoverEffect={false}
+                onClick={() => setDeployTokenModalEnabled(true)}
+              >
+                Deploy Token
+              </StandardButton>
+            </div>
+          )}
+          <div className="hidden mt-2 md:block">
             <MissionPayRedeemContent
               token={token}
               ruleset={ruleset}
@@ -427,6 +529,8 @@ export default function MissionPayRedeem({
               setInput={setInput}
               setMissionPayModalEnabled={setMissionPayModalEnabled}
               tokenBalance={tokenBalance}
+              tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
+              claimTokenCredit={claimTokenCredit}
               currentStage={currentStage}
               stage={stage}
             />
@@ -439,6 +543,16 @@ export default function MissionPayRedeem({
             >
               Contribute
             </StandardButton>
+            {token?.tokenSymbol &&
+              tokenCredit &&
+              +tokenCredit.toString() > 0 && (
+                <PrivyWeb3Button
+                  label={`Claim ${tokenCredit} $${token?.tokenSymbol}`}
+                  className="w-full gradient-2 rounded-full py-2"
+                  action={claimTokenCredit}
+                  noPadding
+                />
+              )}
             {stage === 3 && (
               <PrivyWeb3Button
                 label="Redeem"
@@ -454,7 +568,7 @@ export default function MissionPayRedeem({
         <Modal id="mission-pay-modal" setEnabled={setMissionPayModalEnabled}>
           <div className="mt-12 w-screen h-full rounded-[2vmax] max-w-[500px] flex flex-col gap-4 items-start justify-start p-5 bg-gradient-to-b from-dark-cool to-darkest-cool">
             <div className="w-full flex gap-4 items-start justify-between">
-              <h3 className="text- font-GoodTimes">{`Pay ${teamNFT?.metadata?.name}`}</h3>
+              <h3 className="text- font-GoodTimes">{`Contribute to ${teamNFT?.metadata?.name}`}</h3>
               <button
                 type="button"
                 className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -483,12 +597,14 @@ export default function MissionPayRedeem({
               </div>
             </div>
             <hr className="w-full" />
-            <div className="w-full flex justify-between">
-              <p>{'Receive'}</p>
-              <p>{`${output.toFixed(2).toLocaleString()} ${
-                token?.tokenSymbol
-              }`}</p>
-            </div>
+            {token?.tokenSymbol && (
+              <div className="w-full flex justify-between">
+                <p>{'Receive'}</p>
+                <p>{`${output.toFixed(2).toLocaleString()} ${
+                  token?.tokenSymbol
+                }`}</p>
+              </div>
+            )}
 
             <div className="w-full flex items-center gap-2">
               <p>{`NFTs, tokens and rewards will be sent to:`}</p>
@@ -537,7 +653,7 @@ export default function MissionPayRedeem({
               <ConditionCheckbox
                 label={
                   <p className="text-sm">
-                    {`I acknowledge that this token is not a security, carries no profit expectation, and I accept all `}
+                    {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
                     <Link
                       href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
                       className="text-moon-blue"

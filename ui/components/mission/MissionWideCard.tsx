@@ -132,14 +132,12 @@ export default function MissionWideCard({
               )}
             </div>
             <div className="mt-4 w-4/5">
-              {subgraphData?.volume && fundingGoal && (
-                <MissionFundingProgressBar
-                  fundingGoal={fundingGoal}
-                  volume={subgraphData.volume / 1e18}
-                  compact={compact}
-                  stage={stage}
-                />
-              )}
+              <MissionFundingProgressBar
+                fundingGoal={fundingGoal || 0}
+                volume={subgraphData?.volume / 1e18 || 0}
+                compact={compact}
+                stage={stage}
+              />
             </div>
             {contribute && mission.projectId && (
               <StandardButton

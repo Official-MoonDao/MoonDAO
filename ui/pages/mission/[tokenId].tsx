@@ -310,6 +310,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     ruleset={ruleset}
                     stage={stage}
                     primaryTerminalAddress={primaryTerminalAddress}
+                    jbControllerContract={jbControllerContract}
+                    jbTokensContract={jbTokensContract}
                   />
                 ) : (
                   <div className="p-4 text-center">
@@ -334,6 +336,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   teamNFT={teamNFT}
                   ruleset={ruleset}
                   jbDirectoryContract={jbDirectoryContract}
+                  jbTokensContract={jbTokensContract}
+                  jbControllerContract={jbControllerContract}
                   points={points}
                   subgraphData={subgraphData}
                   fundingGoal={fundingGoal}
