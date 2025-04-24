@@ -135,28 +135,7 @@ export default function Missions({ missions }: MissionsProps) {
               <div
                 id="filter-container"
                 className="max-w-[350px] border-b-5 border-black"
-              >
-                {/* <Frame noPadding>
-                  <div className="flex flex-wrap text-sm bg-filter">
-                    <Tab
-                      tab="active"
-                      currentTab={tab}
-                      setTab={handleTabChange}
-                      icon="/../.././assets/icon-org.svg"
-                    >
-                      Active
-                    </Tab>
-                    <Tab
-                      tab="inactive"
-                      currentTab={tab}
-                      setTab={handleTabChange}
-                      icon="/../.././assets/icon-passport.svg"
-                    >
-                      Past
-                    </Tab>
-                  </div>
-                </Frame> */}
-              </div>
+              ></div>
             </div>
           </div>
 

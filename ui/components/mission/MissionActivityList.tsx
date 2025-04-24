@@ -5,15 +5,12 @@ import useOmnichainSubgraphProjectEvents from '@/lib/juicebox/useOmnichainSubgra
 import { tokenSymbolText } from '@/lib/utils/strings'
 import Selector from '../layout/Selector'
 import MissionActivityEvent from './MissionActivityEvent'
-import MissionActivityModal from './MissionActivityModal'
 
 export default function MissionActivityList({
   selectedChain,
   tokenSymbol,
   projectId,
 }: any) {
-  const [missionActivityModalEnabled, setMissionActivityModalEnabled] =
-    useState(false)
   const [filter, setFilter] = useState<'all' | 'payEvent' | 'mintTokensEvent'>(
     'all'
   )
@@ -69,9 +66,6 @@ export default function MissionActivityList({
           Load more
         </button>
       </div>
-      {missionActivityModalEnabled && (
-        <MissionActivityModal setEnabled={setMissionActivityModalEnabled} />
-      )}
     </div>
   )
 }
