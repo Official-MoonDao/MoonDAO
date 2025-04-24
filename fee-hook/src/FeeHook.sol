@@ -2,6 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {BaseHook} from "v4-periphery/src/utils/BaseHook.sol";
+import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
+import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
+import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -22,11 +25,11 @@ interface IERC20 {
     function totalSupply() external view returns (uint256);
 }
 
-contract FeeHook is BaseHook, OApp  {
-
+contract FeeHook is BaseHook, OApp, FunctionsClient, ConfirmedOwner {
     using PoolIdLibrary for PoolKey;
     using OptionsBuilder for bytes;
     using StateLibrary for IPoolManager;
+    using FunctionsRequest for FunctionsRequest.Request;
 
     mapping(address => uint256) public totalWithdrawnPerUser;
     uint256 public totalWithdrawn;
@@ -41,7 +44,7 @@ contract FeeHook is BaseHook, OApp  {
     uint16 destinationEid; // LayerZero endpoint ID
     address public vMooneyAddress;
 
-    constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _lzEndpoint, uint256 _destinationChainId, uint16 _destinationEid, address _vMooneyAddress) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) {
+    constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _lzEndpoint, uint256 _destinationChainId, uint16 _destinationEid, address _vMooneyAddress, address _router) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) ConfirmedOwner(owner) FunctionsClient(_router) {
         posm = _posm;
         destinationChainId = _destinationChainId;
         destinationEid = _destinationEid;
@@ -174,6 +177,54 @@ contract FeeHook is BaseHook, OApp  {
         totalWithdrawnPerUser[msg.sender] += withdrawable;
         totalWithdrawn += withdrawable;
         transferETH(msg.sender, withdrawable);
+    }
+
+    /**
+    * @notice Sends an HTTP request for character information
+    * @param subscriptionId The ID for the Chainlink subscription
+    * @param args The arguments to pass to the HTTP request
+    * @return requestId The ID of the request
+    */
+    function sendRequest(
+        uint64 subscriptionId,
+        string[] calldata args
+    ) external onlyOwner returns (bytes32 requestId) {
+        FunctionsRequest.Request memory req;
+        req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
+        if (args.length > 0) req.setArgs(args); // Set the arguments for the request
+
+        // Send the request and store the request ID
+        s_lastRequestId = _sendRequest(
+            req.encodeCBOR(),
+            subscriptionId,
+            gasLimit,
+            donID
+        );
+
+        return s_lastRequestId;
+    }
+
+    /**
+     * @notice Callback function for fulfilling a request
+     * @param requestId The ID of the request to fulfill
+     * @param response The HTTP response data
+     * @param err Any errors from the Functions request
+     */
+    function fulfillRequest(
+        bytes32 requestId,
+        bytes memory response,
+        bytes memory err
+    ) internal override {
+        if (s_lastRequestId != requestId) {
+            revert UnexpectedRequestID(requestId); // Check if request IDs match
+        }
+        // Update the contract's state variables with the response and any errors
+        s_lastResponse = response;
+        character = string(response);
+        s_lastError = err;
+
+        // Emit an event to log the response
+        emit Response(requestId, character, s_lastResponse, s_lastError);
     }
 
     function getWithdrawableAmount() public view returns (uint256) {

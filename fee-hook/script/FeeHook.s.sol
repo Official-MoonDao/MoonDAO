@@ -25,6 +25,7 @@ contract FeeHookScript is Script, Constants, Config {
         address deployerAddress = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
         address lzEndpoint = LZ_ENDPOINTS[block.chainid];
+        address chainlinkRouter = CHAINLINK_ROUTERS[block.chainid];
         address poolManagerAddress = POOL_MANAGERS[block.chainid];
         address posmAddress = POOL_MANAGERS[block.chainid];
         address vMooneyAddress = 0xB255c74F8576f18357cE6184DA033c6d93C71899;
@@ -46,12 +47,12 @@ contract FeeHookScript is Script, Constants, Config {
         }
 
         // Mine a salt that will produce a hook address with the correct flags
-        bytes memory constructorArgs = abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress);
+        bytes memory constructorArgs = abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress, chainlinkRouter);
         (address hookAddress, bytes32 salt) =
             HookMiner.find(CREATE2_DEPLOYER, flags, type(FeeHook).creationCode, constructorArgs);
 
         // Deploy the hook using CREATE2
-        FeeHook feehook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress);
+        FeeHook feehook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress, chainlinkRouter);
         // Set to a low value for testing
         if (block.chainid == 421614 || block.chainid == 11155111) {
             feehook.setMinWithdraw(0.00001 ether);
