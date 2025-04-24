@@ -22,7 +22,7 @@ export default function ProgressBar({
     if (progressBarRef.current) {
       gsap.to(progressBarRef.current, {
         width: `${Math.min(
-          Math.max(progress, window.innerWidth < 768 ? 15 : 10),
+          Math.max(progress, window.innerWidth < 768 ? 15 : 7),
           100
         )}%`,
         duration: 2.5,
@@ -47,7 +47,7 @@ export default function ProgressBar({
         >
           {label && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[75%] text-white min-w-[25px] whitespace-nowrap">
+              <span className="text-[75%] text-white min-w-[10px] whitespace-nowrap">
                 {label}
               </span>
             </div>
