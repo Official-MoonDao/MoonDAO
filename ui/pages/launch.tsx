@@ -530,7 +530,7 @@ export default function Launch({ missions }: any) {
         </div>
 
         <div className="w-full md:max-w-[70vw] ">
-          <div className="absolute hidden md:block h-full max-h-[50%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw] pb-[0vw]">
+          <div className="absolute hidden md:block h-full max-h-[50%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw]">
             <VerticalProgressScrollBar sectionId="how-launchpad-works" />
           </div>
           <div className="w-full flex flex-col items-end md:items-start">
@@ -560,12 +560,13 @@ export default function Launch({ missions }: any) {
               />
             </div>
           </div>
-          <div className="w-full flex flex-col text-center items-center justify-center gap-4 md:mt-[-400px]">
+          <div className="w-full flex flex-col text-center items-center justify-center gap-4 md:mt-[-475px]">
             <h3 className="hidden md:block font-GoodTimes text-[4vw] md:text-[max(1.5vw,25px)] md:pb-[1vw]">
               Your tools, your team, your mission
             </h3>
             <p className="hidden md:block text-[max(1.2vw,16px)] 2xl:text-[18px] max-w-[500px]">
-              Join a growing global movement where your contributions help fund real space innovation and fuel a decentralized space economy.
+              Join a growing global movement where your contributions help fund
+              real space innovation and fuel a decentralized space economy.
             </p>
             <StandardButton
               className="gradient-2 rounded-full md:text-[min(1.2vw,25px)]"
