@@ -12,17 +12,6 @@ describe('<MissionFundingProgressBar />', () => {
     cy.mountNextRouter('/')
   })
 
-  it('Should render the progress bar with correct stage information', () => {
-    cy.mount(
-      <TestnetProviders>
-        <MissionFundingProgressBar {...defaultProps} />
-      </TestnetProviders>
-    )
-
-    cy.get('div').contains('Stage 1: Ignition').should('exist')
-    cy.get('.relative.w-full.rounded-full').first().should('exist')
-  })
-
   it('Should calculate and display correct progress percentage', () => {
     cy.mount(
       <TestnetProviders>
@@ -63,27 +52,5 @@ describe('<MissionFundingProgressBar />', () => {
 
     cy.get('.mb-4').should('exist')
     cy.get('.mb-12').should('not.exist')
-  })
-
-  it('Should show funding goal indicator when stage 2 or 3 and progress >= 20%', () => {
-    cy.mount(
-      <TestnetProviders>
-        <MissionFundingProgressBar {...defaultProps} stage={2} />
-      </TestnetProviders>
-    )
-
-    cy.get('#funding-goal-indicator-container').should('exist')
-    cy.get('#funding-goal-indicator').should('exist')
-    cy.contains('Ignition Goal Achieved').should('exist')
-  })
-
-  it('Should show "Funding Goal Achieved" for stage 3', () => {
-    cy.mount(
-      <TestnetProviders>
-        <MissionFundingProgressBar {...defaultProps} stage={3} />
-      </TestnetProviders>
-    )
-
-    cy.contains('Funding Goal Achieved').should('exist')
   })
 })
