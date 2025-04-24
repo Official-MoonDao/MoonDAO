@@ -525,7 +525,7 @@ export default function Launch({ missions }: any) {
         </div>
         <div className="w-full mt-8 flex flex-col gap-2 items-center">
           <h1 className="mt-8 text-[5vw] md:text-[max(3vw,35px)] font-GoodTimes">
-            {'Mission Trajectory'}
+            {'Mission Countdown'}
           </h1>
         </div>
 
@@ -535,35 +535,38 @@ export default function Launch({ missions }: any) {
           </div>
           <div className="w-full flex flex-col items-end md:items-start">
             <ExplainerIcon
-              title="Ignition"
-              subtext="2,000 Tokens <br/>per 1 ETH (4x)"
-              description="If the mission doesn't reach 20% of its goal in 28 days, all contributions are refunded—maximizing reward while minimizing risk."
-              icon={<p>1</p>}
+              title="Explore"
+              subtext=""
+              description="Discover missions from Teams within the Space Acceleration Network — a global network of builders, scientists, and dreamers working to accelerate our multiplanetary future."
+              icon={<p>3</p>}
               numberBackground="bg-gradient-to-br from-[#6C407D] to-[#5F4BA2]"
             />
             <div className="relative md:-top-[270px] w-full flex justify-end">
               <ExplainerIcon
-                title="Ascent"
-                subtext="1,000 Tokens <br/>per 1 ETH (2x)"
-                description="With minimum funding secured, the mission has launched and is ascending toward its goal. Contributors now join with confidence, knowing the mission will proceed."
+                title="Support"
+                subtext=""
+                description="Contribute in ETH directly to missions you believe in. Your funds go straight to the Team's multisig wallet via secure smart contracts. In return, you’ll receive mission tokens — a symbol of your support and a gateway to future utility and participation."
                 icon={<p>2</p>}
                 numberBackground="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC]"
               />
             </div>
             <div className="relative md:-top-[550px] w-full">
               <ExplainerIcon
-                title="Orbit"
-                subtext="500 Tokens <br/>per 1 ETH (1x)"
-                description="With full funding achieved, rewards adjust to reflect lower risk. Contributions now fuel expansion, stretch goals, and long-term impact."
-                icon={<p>3</p>}
+                title="Accelerate"
+                subtext=""
+                description="Every contribution fuels real progress — from hardware to human spaceflight, research to education. This isn’t charity, it’s collaboration. You're not just backing a mission — you're joining one."
+                icon={<p>1</p>}
                 numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
               />
             </div>
           </div>
           <div className="w-full flex flex-col text-center items-center justify-center gap-4 md:mt-[-400px]">
-            <h3 className="font-GoodTimes text-[4vw] md:text-[max(1.5vw,25px)] md:pb-[1vw]">
+            <h3 className="hidden md:block font-GoodTimes text-[4vw] md:text-[max(1.5vw,25px)] md:pb-[1vw]">
               Your tools, your team, your mission
             </h3>
+            <p className="hidden md:block text-[max(1.2vw,16px)] 2xl:text-[18px] max-w-[500px]">
+              Join a growing global movement where your contributions help fund real space innovation and fuel a decentralized space economy.
+            </p>
             <StandardButton
               className="gradient-2 rounded-full md:text-[min(1.2vw,25px)]"
               hoverEffect={false}
