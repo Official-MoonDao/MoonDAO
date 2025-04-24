@@ -35,7 +35,7 @@ export default function FeatureIcon({
         ) : (
           <div className="flex flex-col items-center justify-center w-[40vw] h-[40vw] md:w-[25vw] md:h-[25vw] lg:w-[15vw] lg:h-[15vw] m-[2vw] rounded-full">
             <div className="text-[max(1.5vw,18px)] md:text-[1vw] font-GoodTimes text-white uppercase">
-              STAGE
+              T-Minus
             </div>
             <div className="text-[15vw] md:text-[5vw] font-GoodTimes text-white mt-[-3vw] md:mt-[-1vw]">
               {icon} 
