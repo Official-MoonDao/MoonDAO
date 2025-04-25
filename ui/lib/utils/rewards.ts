@@ -412,7 +412,7 @@ export function getPayouts(
         if (!mooney || mooney === 0) {
             return '0x0'
         }
-        return utils.parseUnits(mooney.toString(), 18).toHexString()
+        return `"${utils.parseUnits(mooney.toString(), 18).toHexString()}"`
     })
     .join(',')
 
