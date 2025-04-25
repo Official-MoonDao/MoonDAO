@@ -39,9 +39,10 @@ contract FeeHookTest is Test {
     UniversalRouter router;
     IAllowanceTransfer permit2;
     address posmAddress;
-    // M
+    // Mainnet
     address lzEndpoint = 0x1a44076050125825900e736c501f859c50fE728c;
     address chainlinkRouter = 0x65Dcc24F8ff9e51F10DCc7Ed1e4e2A61e6E14bd6;
+    bytes32 donID = 0x66756e2d657468657265756d2d6d61696e6e65742d3100000000000000000000;
     uint256 DESTINATION_CHAIN_ID = 1;
     uint16 DESTINATION_EID = 30101;
     uint128 SWAP_AMOUNT = 1 ether;
@@ -53,6 +54,8 @@ contract FeeHookTest is Test {
     address deployerAddress = address(0x2);
     uint256 DEPLOYER_FUNDS =100_000_000_000 ether;
     uint256 DEPLOYER_TOKEN_BALANCE = 100_000;
+
+
 
     function setUp() public {
         // v4 mainnet addresses
@@ -94,9 +97,9 @@ contract FeeHookTest is Test {
 
         // Mine a salt that will produce a hook address with the correct permissions
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter));
+            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter, donID));
 
-        feeHook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter);
+        feeHook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter, donID);
         require(address(feeHook) == hookAddress, "FeeHookTest: hook address mismatch");
         return feeHook;
     }

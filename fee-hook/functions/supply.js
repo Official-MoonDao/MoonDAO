@@ -1,62 +1,45 @@
-function uint256ToBytes(uint256) {
-  const bytes = new Array(32).fill(0); // 32 bytes for uint256
-  let value = BigInt(uint256);
-  for (let i = 31; i >= 0; i--) {
-    bytes[i] = Number(value & 0xffn);
-    value >>= 8n;
-  }
-  return bytes;
-}
 const tokens = [
+  { chain: "mainnet", address: "0xCc71C80d803381FD6Ee984FAff408f8501DB1740" },
   {
-    rpc: secrets.ETH_RPC,
-    address: "0xCc71C80d803381FD6Ee984FAff408f8501DB1740",
-  },
-  {
-    rpc: secrets.ARB_RPC,
+    chain: "arbitrum-mainnet",
     address: "0xB255c74F8576f18357cE6184DA033c6d93C71899",
   },
   {
-    rpc: secrets.POLY_RPC,
+    chain: "polygon-mainnet",
     address: "0xe2d1BFef0A642B717d294711356b468ccE68BEa6",
   },
   {
-    rpc: secrets.BASE_RPC,
+    chain: "base-mainnet",
     address: "0x7f8f1B45c3FD6Be4F467520Fc1Cf030d5CaBAcF5",
   },
 ];
-async function getRequests(data) {
-  const requests = tokens.map((token, index) => {
-    return Functions.makeHttpRequest({
-      url: token.rpc,
+const u256ToBytes = (n) =>
+  Array.from({ length: 32 }, (_, i) =>
+    Number((n >> (8n * BigInt(31 - i))) & 0xffn)
+  );
+const buildCalls = (addr, usr) =>
+  [
+    "0x18160ddd", // totalSupply()
+    `0x70a08231${usr.slice(2).padStart(64, "0")}`, // balanceOf(usr)
+  ].map((data, id) => ({
+    jsonrpc: "2.0",
+    id,
+    method: "eth_call",
+    params: [{ to: addr, data }, "latest"],
+  }));
+const responses = await Promise.all(
+  tokens.map((t) =>
+    Functions.makeHttpRequest({
+      url: `https://${t.chain}.infura.io/v3/357d367444db45688746488a06064e7c`,
       method: "POST",
-      data: {
-        id: index,
-        jsonrpc: "2.0",
-        method: "eth_call",
-        params: [
-          {
-            to: token.address,
-            // The signature of 'totalSupply'
-            data: data,
-          },
-          "latest",
-        ],
-      },
-    });
-  });
-  const responses = await Promise.all(requests);
-  const results = responses.map((response) => {
-    //return parseInt(response.data.result, 16) ?? 0;
-    console.log(response);
-    return parseInt(0, 16) ?? 0;
-  });
-  const sum = results.reduce((a, b) => a + b, 0);
-  return uint256ToBytes(sum);
-}
-const supplyBytes = await getRequests("0x18160ddd"); // totalSupply
-const balanceBytes = await getRequests(
-  "0x70a08231000000000000000000000000" + args[0].slice(2)
-); // balanceOf(address)
-const packed = [...supplyBytes, ...balanceBytes]; // 64 bytes total, aka uint8[64]
-return packed;
+      data: buildCalls(t.address, args[0]),
+    })
+  )
+);
+const [totalSupplySum, balanceSum] = [0, 1].map((callIdx) =>
+  responses.reduce((sum, r) => sum + BigInt(r.data[callIdx].result || 0n), 0n)
+);
+return new Uint8Array([
+  ...u256ToBytes(totalSupplySum),
+  ...u256ToBytes(balanceSum),
+]);

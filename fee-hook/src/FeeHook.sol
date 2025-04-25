@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 import {BaseHook} from "v4-periphery/src/utils/BaseHook.sol";
 import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
-import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
 import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
@@ -25,11 +24,27 @@ interface IERC20 {
     function totalSupply() external view returns (uint256);
 }
 
-contract FeeHook is BaseHook, OApp, FunctionsClient, ConfirmedOwner {
+contract FeeHook is BaseHook, OApp, FunctionsClient{
     using PoolIdLibrary for PoolKey;
     using OptionsBuilder for bytes;
     using StateLibrary for IPoolManager;
     using FunctionsRequest for FunctionsRequest.Request;
+
+    // State variables to store the last request ID, response, and error
+    bytes32 public s_lastRequestId;
+    bytes public s_lastResponse;
+    bytes public s_lastError;
+    string public character;
+    uint32 gasLimit = 300000;
+    bytes32 donID; // DON ID for Chainlink Functions
+    // Event to log responses
+    event Response(
+        bytes32 indexed requestId,
+        string character,
+        bytes response,
+        bytes err
+    );
+    error UnexpectedRequestID(bytes32 requestId);
 
     mapping(address => uint256) public totalWithdrawnPerUser;
     uint256 public totalWithdrawn;
@@ -43,12 +58,59 @@ contract FeeHook is BaseHook, OApp, FunctionsClient, ConfirmedOwner {
     uint256 destinationChainId;
     uint16 destinationEid; // LayerZero endpoint ID
     address public vMooneyAddress;
+    string source =
+        "const tokens = ["
+        "{ chain: 'mainnet', address: '0xCc71C80d803381FD6Ee984FAff408f8501DB1740' },"
+        "{"
+        "chain: 'arbitrum-mainnet',"
+        "address: '0xB255c74F8576f18357cE6184DA033c6d93C71899',"
+        "},"
+        "{"
+        "chain: 'polygon-mainnet',"
+        "address: '0xe2d1BFef0A642B717d294711356b468ccE68BEa6',"
+        "},"
+        "{"
+        "chain: 'base-mainnet',"
+        "address: '0x7f8f1B45c3FD6Be4F467520Fc1Cf030d5CaBAcF5',"
+        "},"
+        "];"
+        "const u256ToBytes = (n) =>"
+        "Array.from({ length: 32 }, (_, i) =>"
+        "Number((n >> (8n * BigInt(31 - i))) & 0xffn)"
+        ");"
+        "const buildCalls = (addr, usr) =>"
+        "["
+        "'0x18160ddd', // totalSupply()"
+        "`0x70a08231${usr.slice(2).padStart(64, '0')}`, // balanceOf(usr)"
+        "].map((data, id) => ({"
+        "jsonrpc: '2.0',"
+        "id,"
+        "method: 'eth_call',"
+        "params: [{ to: addr, data }, 'latest'],"
+        "}));"
+        "const responses = await Promise.all("
+        "tokens.map((t) =>"
+        "Functions.makeHttpRequest({"
+        "url: `https://${t.chain}.infura.io/v3/357d367444db45688746488a06064e7c`,"
+        "method: 'POST',"
+        "data: buildCalls(t.address, args[0]),"
+        "})"
+        ")"
+        ");"
+        "const [totalSupplySum, balanceSum] = [0, 1].map((callIdx) =>"
+        "responses.reduce((sum, r) => sum + BigInt(r.data[callIdx].result || 0n), 0n)"
+        ");"
+        "return new Uint8Array(["
+        "...u256ToBytes(totalSupplySum),"
+        "...u256ToBytes(balanceSum),"
+        "]);";
 
-    constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _lzEndpoint, uint256 _destinationChainId, uint16 _destinationEid, address _vMooneyAddress, address _router) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) ConfirmedOwner(owner) FunctionsClient(_router) {
+    constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _lzEndpoint, uint256 _destinationChainId, uint16 _destinationEid, address _vMooneyAddress, address _router, bytes32 _donID) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) FunctionsClient(_router) {
         posm = _posm;
         destinationChainId = _destinationChainId;
         destinationEid = _destinationEid;
         vMooneyAddress = _vMooneyAddress;
+        donID = _donID;
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {

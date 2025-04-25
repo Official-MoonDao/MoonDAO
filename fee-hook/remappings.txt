@@ -8,6 +8,7 @@ v4-periphery/=lib/v4-periphery/
 @layerzerolabs/oapp-evm/=lib/devtools/packages/oapp-evm/
 @layerzerolabs/lz-evm-protocol-v2/=lib/layerzero-v2/packages/layerzero-v2/evm/protocol
 solidity-bytes-utils/=node_modules/solidity-bytes-utils/
+@chainlink/=node_modules/@chainlink/
 @layerzerolabs/lz-evm-messagelib-v2/=node_modules/@layerzerolabs/lz-evm-messagelib-v2/
 @uniswap/v4-core/=lib/v4-core/
 @uniswap/v4-periphery/=lib/v4-periphery/
