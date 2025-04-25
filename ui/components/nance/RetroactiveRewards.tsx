@@ -211,7 +211,25 @@ export function RetroactiveRewards({
     (project) => project.rewardDistribution !== undefined
   )
   // Map from address to percentage of commnity rewards
-  const communityCircle = {}
+  const communityCircle = {
+    '0x08e424b69851b7b210ba3e5e4233ca6fcc1adedb': 10.51,
+    '0x2eb09037de144d7bdf2af06130def727a239f8cd': 9.77,
+    '0xf2befa4b9489c1ef75e069d16a6f829f71b4b988': 8.16,
+    '0x06e9ee59f76cbaefd12715c7b95f89d4f0b0a67d': 7.54,
+    '0x79d0b453dd5d694da4685fbb94798335d5f77760': 7.05,
+    '0x36acd775b51ff1eca097f9a630ab9b98ceefb435': 6.92,
+    '0xfef6b7199e69b9bcd3bebb28543e78e68b29696e': 6.8,
+    '0x0bfc29af6c23cadd46149d0b94dffaf163aa0b1b': 6.06,
+    '0x2d2f4f747e1a56da59cec9be3ac7c373e5701ba6': 5.81,
+    '0x08ce673d72a6cd8c4673f0fb6cae7701434f5c8f': 5.56,
+    '0xf85dbc31d0c7bd46eb9ec684a64d97e41ab04ce3': 5.19,
+    '0x661030571ecf75938254577008ad859fc40007fa': 4.45,
+    '0xa829cfd0a0ba3ef42561b9276147c25382aeb801': 3.46,
+    '0x9a1741b58bd99ebbc4e9742bd081b887dfc95f53': 3.46,
+    '0x8f8c0cc482a24124123ccb95600781fcefeb09f8': 3.34,
+    '0xf17858889d5a7e9002ed2bf808c6cffafe8d6014': 3.09,
+    '0x62af51d895f72cb8117a3a6099879b683a13919b': 2.84,
+  }
   const communityCirclePopulated = Object.keys(communityCircle).length > 0
   const readyToRunVoting =
     allProjectsHaveCitizenDistribution &&
@@ -263,6 +281,7 @@ export function RetroactiveRewards({
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
+    vMooneyPayoutCSV,
     vMooneyAddresses,
     vMooneyAmounts,
   } = getPayouts(
@@ -272,6 +291,10 @@ export function RetroactiveRewards({
     ethBudget,
     mooneyBudget
   )
+  console.log('eth rewards')
+  console.log(ethPayoutCSV)
+  console.log('vmooney rewards')
+  console.log(vMooneyPayoutCSV)
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(

@@ -77,5 +77,6 @@ export function isRewardsCycle(date: Date) {
     firstTuesdayAfterFourteenDays.getDate() + daysUntilTuesday
   )
 
-  return date >= endOfQuarter && date <= firstTuesdayAfterFourteenDays
+  return true
+  //return date >= endOfQuarter && date <= firstTuesdayAfterFourteenDays
 }

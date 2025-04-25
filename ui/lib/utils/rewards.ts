@@ -402,6 +402,9 @@ export function getPayouts(
   const ethPayoutCSV = Object.entries(addressToEthPayout)
     .map(([address, eth]) => `${address},${eth}`)
     .join('\n')
+  const vMooneyPayoutCSV = Object.entries(addressToMooneyPayout)
+    .map(([address, mooney]) => `${address},${mooney}`)
+    .join('\n')
   const vMooneyAddresses = Object.keys(addressToMooneyPayout).join(',')
   const vMooneyAmounts = Object.values(addressToMooneyPayout)
     .map((mooney) => `"0x${(mooney * 10 ** 18).toString(16)}"`)
@@ -411,6 +414,7 @@ export function getPayouts(
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
+    vMooneyPayoutCSV,
     vMooneyAddresses,
     vMooneyAmounts,
   }
