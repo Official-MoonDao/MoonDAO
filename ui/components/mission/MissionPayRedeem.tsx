@@ -98,6 +98,7 @@ function MissionPayRedeemContent({
             <div className="flex flex-col">
               <h3 className="text-sm opacity-60">You contribute</h3>
               <input
+                id="payment-input"
                 type="number"
                 className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={input}
@@ -128,7 +129,9 @@ function MissionPayRedeemContent({
             <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
               <div className="flex flex-col">
                 <h3 className="text-sm opacity-60">You receive</h3>
-                <p className="text-2xl font-bold">{output.toFixed(2)}</p>
+                <p id="token-output" className="text-2xl font-bold">
+                  {output.toFixed(2)}
+                </p>
               </div>
               <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
                 <Image
@@ -151,6 +154,7 @@ function MissionPayRedeemContent({
           )}
         </div>
         <StandardButton
+          id="open-contribute-modal"
           className="rounded-full gradient-2 rounded-full w-full py-1"
           onClick={() => setMissionPayModalEnabled(true)}
           hoverEffect={false}
@@ -159,6 +163,7 @@ function MissionPayRedeemContent({
         </StandardButton>
         {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
           <StandardButton
+            id="claim-button"
             className="rounded-full gradient-2 rounded-full w-full py-1"
             onClick={claimTokenCredit}
             hoverEffect={false}
@@ -201,6 +206,7 @@ function MissionPayRedeemContent({
             </div>
 
             <PrivyWeb3Button
+              id="redeem-button"
               className="w-full rounded-full py-2"
               label="Redeem"
               action={redeem}
@@ -510,6 +516,7 @@ export default function MissionPayRedeem({
           {!token?.tokenSymbol && isTeamSigner && (
             <div className="p-8 md:p-0 flex md:block justify-center">
               <StandardButton
+                id="deploy-token-button"
                 className="gradient-2 rounded-full w-full max-w-[300px]"
                 hoverEffect={false}
                 onClick={() => setDeployTokenModalEnabled(true)}
@@ -555,8 +562,9 @@ export default function MissionPayRedeem({
               )}
             {stage === 3 && (
               <PrivyWeb3Button
-                label="Redeem"
+                id="redeem-button"
                 className="w-full gradient-2 rounded-full py-2"
+                label="Redeem"
                 action={redeemMissionToken}
                 noPadding
               />
@@ -587,6 +595,7 @@ export default function MissionPayRedeem({
               <div className="flex flex-col lg:flex-row gap-2 items-end lg:items-center">
                 <div className="flex gap-2 items-center">
                   <input
+                    id="payment-input"
                     type="number"
                     className="text-right bg-transparent border-none outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     value={input}
@@ -600,7 +609,7 @@ export default function MissionPayRedeem({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p>{`${output.toFixed(2).toLocaleString()} ${
+                <p id="token-output">{`${output.toFixed(2).toLocaleString()} ${
                   token?.tokenSymbol
                 }`}</p>
               </div>
@@ -638,6 +647,7 @@ export default function MissionPayRedeem({
             <div className="w-full flex flex-col gap-4 justify-between">
               <p>{`Message (optional)`}</p>
               <input
+                id="payment-message-input"
                 type="text"
                 className="w-full bg-darkest-cool border-moon-indigo border-[1px] rounded-xl p-2"
                 placeholder="Attach an on-chain message to this payment"
@@ -684,6 +694,7 @@ export default function MissionPayRedeem({
                 Cancel
               </StandardButton>
               <PrivyWeb3Button
+                id="contribute-button"
                 className="w-1/2 bg-moon-indigo rounded-xl"
                 label={`Contribute ${input} ETH`}
                 action={buyMissionToken}

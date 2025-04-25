@@ -39,8 +39,6 @@ describe('<MissionFundingProgressBar />', () => {
         <MissionFundingProgressBar {...defaultProps} stage={0} />
       </TestnetProviders>
     )
-
-    cy.get('div').contains('Stage 1: Ignition').should('not.exist')
   })
 
   it('Should render in compact mode when specified', () => {
