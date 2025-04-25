@@ -29,8 +29,11 @@ import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
-import { getBudget, getPayouts } from '@/lib/utils/rewards'
-import { computeRewardPercentages } from '@/lib/utils/voting'
+import {
+  getBudget,
+  getPayouts,
+  computeRewardPercentages,
+} from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
