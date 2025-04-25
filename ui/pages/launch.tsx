@@ -423,6 +423,7 @@ export default function Launch({ missions }: any) {
           <StandardButton
             className="md:text-[1.2vw] gradient-2 rounded-full"
             onClick={handleCreateMission}
+            hoverEffect={false}
           >
             {'Launch Your Mission'}
           </StandardButton>
@@ -711,6 +712,7 @@ export default function Launch({ missions }: any) {
               className="md:text-[1.2vw] bg-[#FFFFFF] rounded-full w-[60vw] md:w-[20vw]"
               textColor="text-black"
               onClick={handleCreateMission}
+              hoverEffect={false}
             >
               {'Launch Your Mission'}
             </StandardButton>
