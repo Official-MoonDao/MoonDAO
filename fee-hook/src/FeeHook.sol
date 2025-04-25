@@ -7,6 +7,7 @@ import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/l
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
 import { ILayerZeroEndpointV2, MessagingParams } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
@@ -29,20 +30,20 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     using OptionsBuilder for bytes;
     using StateLibrary for IPoolManager;
     using FunctionsRequest for FunctionsRequest.Request;
+    using Strings for uint256;
+
 
     // State variables to store the last request ID, response, and error
     bytes32 public s_lastRequestId;
-    bytes public s_lastResponse;
-    bytes public s_lastError;
-    string public character;
+    mapping(bytes32 => address) public s_requestIdToSender;
     uint32 gasLimit = 300000;
     bytes32 donID; // DON ID for Chainlink Functions
     // Event to log responses
     event Response(
         bytes32 indexed requestId,
-        string character,
-        bytes response,
-        bytes err
+        uint256 totalSupply,
+        uint256 userBalance,
+        address user
     );
     error UnexpectedRequestID(bytes32 requestId);
 
@@ -79,15 +80,14 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         "Number((n >> (8n * BigInt(31 - i))) & 0xffn)"
         ");"
         "const buildCalls = (addr, usr) =>"
-        "["
-        "'0x18160ddd', // totalSupply()"
-        "`0x70a08231${usr.slice(2).padStart(64, '0')}`, // balanceOf(usr)"
-        "].map((data, id) => ({"
+        "['0x18160ddd', `0x70a08231${usr.slice(2).padStart(64, '0')}`].map("
+        "(data, id) => ({"
         "jsonrpc: '2.0',"
         "id,"
         "method: 'eth_call',"
         "params: [{ to: addr, data }, 'latest'],"
-        "}));"
+        "})"
+        ");"
         "const responses = await Promise.all("
         "tokens.map((t) =>"
         "Functions.makeHttpRequest({"
@@ -233,27 +233,21 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     }
 
 
-    function withdrawFees() external {
-        uint256 withdrawable = getWithdrawableAmount();
-        require(withdrawable > 0, "Nothing to withdraw");
-        totalWithdrawnPerUser[msg.sender] += withdrawable;
-        totalWithdrawn += withdrawable;
-        transferETH(msg.sender, withdrawable);
-    }
-
     /**
     * @notice Sends an HTTP request for character information
     * @param subscriptionId The ID for the Chainlink subscription
     * @param args The arguments to pass to the HTTP request
     * @return requestId The ID of the request
     */
-    function sendRequest(
+    function withdrawFees(
         uint64 subscriptionId,
-        string[] calldata args
-    ) external onlyOwner returns (bytes32 requestId) {
+    ) external returns (bytes32 requestId) {
         FunctionsRequest.Request memory req;
         req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
-        if (args.length > 0) req.setArgs(args); // Set the arguments for the request
+        string addressString = string(abi.encodePacked("0x", uint256(uint160(msg.sender)).toHexString(20)));
+        string[] memory args = new string[](1);
+        args[0] = addressString; // Set the address argument
+        req.setArgs(args); // Set the arguments for the request
 
         // Send the request and store the request ID
         s_lastRequestId = _sendRequest(
@@ -262,6 +256,7 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
             gasLimit,
             donID
         );
+        s_requestIdToSender[s_lastRequestId] = msg.sender;
 
         return s_lastRequestId;
     }
@@ -281,26 +276,19 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
             revert UnexpectedRequestID(requestId); // Check if request IDs match
         }
         // Update the contract's state variables with the response and any errors
-        s_lastResponse = response;
-        character = string(response);
-        s_lastError = err;
-
-        // Emit an event to log the response
-        emit Response(requestId, character, s_lastResponse, s_lastError);
-    }
-
-    function getWithdrawableAmount() public view returns (uint256) {
-        if (block.chainid != destinationChainId) {
-            revert("Not on destination chain. Cannot withdraw fees");
-        }
-        uint256 totalSupply = IERC20(vMooneyAddress).totalSupply();
-        require(totalSupply > 0, "No vMooney supply");
-        uint256 userBalance = IERC20(vMooneyAddress).balanceOf(msg.sender);
+        (uint256 totalSupply, uint256 userBalance) = abi.decode(response, (uint256, uint256));
         uint256 userProportion = userBalance * 1e18 / totalSupply; // Multiply by 1e18 to preserve precision
         uint256 allocated = (userProportion * totalReceived) / 1e18; // Divide by 1e18 to normalize
-        uint256 withdrawnByUser = totalWithdrawnPerUser[msg.sender];
+        address withdrawAddress = s_requestIdToSender[requestId];
+        uint256 withdrawnByUser = totalWithdrawnPerUser[withdrawAddress];
         uint256 withdrawable = allocated - withdrawnByUser;
-        return withdrawable;
+        require(withdrawable > 0, "Nothing to withdraw");
+        totalWithdrawnPerUser[withdrawAddress] += withdrawable;
+        totalWithdrawn += withdrawable;
+        transferETH(withdrawAddress, withdrawable);
+
+        // Emit an event to log the response
+        emit Response(requestId, totalSupply, userBalance);
     }
 
     function transferETH(address to, uint256 amount) internal {

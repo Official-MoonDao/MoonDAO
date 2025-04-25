@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
+import {FunctionsRouter} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsRouter.sol";
 
 import {Constants} from "./base/Constants.sol";
 import {Config} from "./base/Config.sol";
@@ -58,6 +59,9 @@ contract FeeHookScript is Script, Constants, Config {
         if (block.chainid == 421614 || block.chainid == 11155111) {
             feehook.setMinWithdraw(0.00001 ether);
         }
+        //FunctionsRouter chainlinkRouterContract = FunctionsRouter(chainlinkRouter);
+        //chainlinkRouterContract.addConsumer(CHAINLINK_SUBS[block.chainid], address(feehook));
+
         require(address(feehook) == hookAddress, "CounterScript: hook address mismatch");
         vm.stopBroadcast();
     }
