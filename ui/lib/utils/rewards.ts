@@ -400,8 +400,8 @@ export function getPayouts(
   for (const [address, mooneyPayout] of Object.entries(addressToMooneyPayout)) {
     addressToPayoutProportion[address] = mooneyPayout / mooneyBudget
   }
-  const ethPayoutCSV = Object.entries(addressToEthPayout)
-    .map(([address, eth]) => `${address},${eth}`)
+  const ethPayoutCSV = 'token_type,token_address,receiver,amount,id\n' + Object.entries(addressToEthPayout)
+    .map(([address, eth]) => `native,,${address},${eth},`)
     .join('\n')
   const vMooneyPayoutCSV = Object.entries(addressToMooneyPayout)
     .map(([address, mooney]) => `${address},${mooney}`)
