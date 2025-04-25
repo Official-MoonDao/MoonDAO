@@ -20,7 +20,7 @@ const u256ToBytes = (n) =>
 const buildCalls = (addr, usr) =>
   [
     "0x18160ddd", // totalSupply()
-    `0x70a08231${usr.slice(2).padStart(64, "0")}`, // balanceOf(address)
+    `0x70a08231${usr.slice(2).padStart(64, "0")}`, // balanceOf(usr)
   ].map((data, id) => ({
     jsonrpc: "2.0",
     id,
