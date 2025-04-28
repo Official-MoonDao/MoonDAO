@@ -341,14 +341,18 @@ export default function MissionPayRedeem({
       console.error('Primary terminal contract not initialized')
       return
     }
-
-    if (!input || input === 0) {
+    if (!agreedToCondition) {
+      toast.error('Please agree to the terms', {
+        style: toastStyle,
+      })
+      return
+    }
+    if (input < 0) {
       toast.error('Please enter a valid amount', {
         style: toastStyle,
       })
       return
     }
-
     if (input > +nativeBalance) {
       return fundWallet(address, {
         amount: (input - +nativeBalance).toString(),
@@ -413,6 +417,13 @@ export default function MissionPayRedeem({
       return
     }
 
+    if (tokenBalance < 0) {
+      toast.error('You have no tokens to redeem', {
+        style: toastStyle,
+      })
+      return
+    }
+
     try {
       const transaction = prepareContractCall({
         contract: primaryTerminalContract,
@@ -465,6 +476,13 @@ export default function MissionPayRedeem({
   const claimTokenCredit = useCallback(async () => {
     if (!account || !address) {
       console.error('No account or address available')
+      return
+    }
+
+    if (tokenCredit < 0) {
+      toast.error('You have no token credit to claim', {
+        style: toastStyle,
+      })
       return
     }
 

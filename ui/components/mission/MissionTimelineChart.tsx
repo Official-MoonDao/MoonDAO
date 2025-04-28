@@ -1,6 +1,5 @@
 import { CalendarDateRangeIcon } from '@heroicons/react/24/outline'
 import moment from 'moment'
-import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
@@ -141,7 +140,6 @@ export default function MissionTimelineChart({
       0
     ) ?? 0
 
-  // Original yDomain - rename to originalYDomain
   const originalYDomain: [number, number] =
     view === 'trendingScore' && highTrendingScore
       ? [
@@ -150,7 +148,6 @@ export default function MissionTimelineChart({
         ]
       : defaultYDomain
 
-  // Create custom y-ticks
   const yTicks = useMemo(() => {
     // Get the max value in the current view
     const maxValue = Math.max(
@@ -205,7 +202,6 @@ export default function MissionTimelineChart({
     return ticks
   }, [processedPoints, view])
 
-  // Custom yDomain based on yTicks
   const yDomain = useMemo(() => {
     // For trending score, use the original domain
     if (view === 'trendingScore' && highTrendingScore) {
@@ -217,7 +213,7 @@ export default function MissionTimelineChart({
       return [0, yTicks[yTicks.length - 1]]
     }
 
-    return [0, 0.1] // Fallback
+    return [0, 0.1]
   }, [yTicks, view, originalYDomain, highTrendingScore])
 
   const allZeroValues = useMemo(() => {
@@ -297,13 +293,11 @@ export default function MissionTimelineChart({
                   formattedValue = value.toFixed(0)
                 }
 
-                // <rect> serves as a mask to prevent CartesianGrid lines overlapping tick text
                 return (
                   <g>
                     <rect
                       transform={`translate(${props.x},${props.y - 6})`}
                       height={12}
-                      // Adjust width based on text length
                       width={formattedValue.length * 8}
                       fill={bg}
                     />

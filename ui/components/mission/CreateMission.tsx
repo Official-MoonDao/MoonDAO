@@ -45,7 +45,7 @@ import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionTokenomicsExplainer from './MissionTokenomicsExplainer'
 import MissionWideCard from './MissionWideCard'
-import TeamRequirementModal from './TeamRequiredModal'
+import TeamRequirementModal from './TeamRequirementModal'
 
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
