@@ -263,6 +263,7 @@ export function RetroactiveRewards({
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
+    vMooneyPayoutCSV,
     vMooneyAddresses,
     vMooneyAmounts,
   } = getPayouts(

@@ -1,4 +1,5 @@
 import { Solve } from '@bygdle/javascript-lp-solver'
+import { utils } from "ethers";
 import _ from 'lodash'
 import { Distribution } from '@/components/nance/RetroactiveRewards'
 
@@ -399,18 +400,27 @@ export function getPayouts(
   for (const [address, mooneyPayout] of Object.entries(addressToMooneyPayout)) {
     addressToPayoutProportion[address] = mooneyPayout / mooneyBudget
   }
-  const ethPayoutCSV = Object.entries(addressToEthPayout)
-    .map(([address, eth]) => `${address},${eth}`)
+  const ethPayoutCSV = 'token_type,token_address,receiver,amount,id\n' + Object.entries(addressToEthPayout)
+    .map(([address, eth]) => `native,,${address},${eth},`)
+    .join('\n')
+  const vMooneyPayoutCSV = Object.entries(addressToMooneyPayout)
+    .map(([address, mooney]) => `${address},${mooney}`)
     .join('\n')
   const vMooneyAddresses = Object.keys(addressToMooneyPayout).join(',')
   const vMooneyAmounts = Object.values(addressToMooneyPayout)
-    .map((mooney) => `"0x${(mooney * 10 ** 18).toString(16)}"`)
+    .map((mooney) => {
+        if (!mooney || mooney === 0) {
+            return '0x0'
+        }
+        return `"${utils.parseUnits(mooney.toString(), 18).toHexString()}"`
+    })
     .join(',')
 
   return {
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
+    vMooneyPayoutCSV,
     vMooneyAddresses,
     vMooneyAmounts,
   }
