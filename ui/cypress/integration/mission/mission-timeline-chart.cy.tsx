@@ -18,6 +18,7 @@ describe('MissionTimelineChart', () => {
 
   const defaultProps = {
     points: mockPoints,
+    isLoadingPoints: false,
     height: 400,
     createdAt: Math.floor(Date.now() / 1000) - 86400 * 7, // 7 days ago
   }
