@@ -65,6 +65,7 @@ export default function MissionInfo({
   jbTokensContract,
   jbControllerContract,
   points,
+  isLoadingPoints,
   userMissionTokenBalance,
   primaryTerminalAddress,
   stage,
@@ -203,6 +204,7 @@ export default function MissionInfo({
             />
             <MissionTimelineChart
               points={points}
+              isLoadingPoints={isLoadingPoints}
               height={500}
               createdAt={subgraphData?.createdAt}
             />

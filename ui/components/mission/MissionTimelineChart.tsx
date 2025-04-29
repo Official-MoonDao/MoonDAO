@@ -17,10 +17,12 @@ import { useTicks } from '@/lib/juicebox/useTicks'
 import { useTimelineRange } from '@/lib/juicebox/useTimelineRange'
 import { useTimelineYDomain } from '@/lib/juicebox/useTimelineYDomain'
 import { truncateTokenValue, wadToFloat } from '@/lib/utils/numbers'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 import RangeSelector from '../layout/RangeSelector'
 
 export type MissionTimelineChartProps = {
   points: any[]
+  isLoadingPoints: boolean
   height: number
   createdAt: number
 }
@@ -29,6 +31,7 @@ const now = Date.now().valueOf()
 
 export default function MissionTimelineChart({
   points,
+  isLoadingPoints,
   height,
   createdAt,
 }: MissionTimelineChartProps) {
@@ -72,7 +75,7 @@ export default function MissionTimelineChart({
 
   // Process points to ensure all x-ticks have data points with y values defaulting to 0
   const processedPoints = useMemo(() => {
-    if (!points?.length) return []
+    if (!points?.length || isLoadingPoints) return []
 
     // Process the original points to ensure all values exist
     const processedOriginalPoints = points.map((point) => ({
@@ -238,13 +241,23 @@ export default function MissionTimelineChart({
         </div>
       </div>
       <div className="mt-4 w-full relative">
-        {allZeroValues && (
+        {!isLoadingPoints && points && allZeroValues && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
             <div
               className="text-white text-xl font-semibold font-GoodTimes"
               id="no-activity-message"
             >
               No Activity Yet
+            </div>
+          </div>
+        )}
+        {isLoadingPoints && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+            <div
+              className="text-white text-xl font-semibold font-GoodTimes"
+              id="no-activity-message"
+            >
+              <LoadingSpinner />
             </div>
           </div>
         )}

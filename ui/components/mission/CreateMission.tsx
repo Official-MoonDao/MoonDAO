@@ -96,18 +96,15 @@ const MISSION_DESCRIPTION_TEMPLATE = `
 *Please delete all italicized instructions*
 
 ### Mission Overview
-*The text below is a template to help you craft a compelling mission. Please consider these as suggestions 
- for best practices for information to include, but customize it to your needs, eliminating what is not needed.*
+*The text below is a template to help you craft a compelling mission. Please consider these as suggestions for best practices for information to include, but customize it to your needs, eliminating what is not needed.*
 
 ### Introduce Your Mission
-*Contributors are more likely to support your mission if they connect with its purpose and trust the team 
- behind it. Consider including:*
+*Contributors are more likely to support your mission if they connect with its purpose and trust the team behind it. Consider including:*
 - A concise summary of your mission and why it matters.
 - A brief introduction to your team and any relevant experience.
 - A compelling call to action explaining what supporters will help you achieve and what they get in return.
 
-*Think of this as your mission's elevator pitch—make it clear and engaging! If you don't capture their   
- attention in the first paragraph, they are unlikely to continue reading.*
+*Think of this as your mission's elevator pitch—make it clear and engaging! If you don't capture their attention in the first paragraph, they are unlikely to continue reading.*
 
 ### Mission Details (Optional but recommended)
 *Use this section to provide additional context, such as:*
@@ -117,8 +114,7 @@ const MISSION_DESCRIPTION_TEMPLATE = `
 *If you were reading this for the first time, would you be excited to contribute?*
 
 ### Funding & Rewards
-*What will supporters receive in return? Funding a mission is more engaging when contributors get something meaningful in return. Outline what 
- backers can expect:*
+*What will supporters receive in return? Funding a mission is more engaging when contributors get something meaningful in return. Outline what backers can expect:*
 - Governance Tokens – Enable participation in mission decisions.
 - Mission Patches & Digital Collectibles – Unique digital memorabilia tied to the mission.
 `

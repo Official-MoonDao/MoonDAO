@@ -111,7 +111,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     jbTokensContract,
   })
 
-  const { points } = useJBProjectTimeline(
+  const { points, isLoading: isLoadingPoints } = useJBProjectTimeline(
     selectedChain,
     mission?.projectId,
     subgraphData?.createdAt
@@ -339,6 +339,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   jbTokensContract={jbTokensContract}
                   jbControllerContract={jbControllerContract}
                   points={points}
+                  isLoadingPoints={isLoadingPoints}
                   subgraphData={subgraphData}
                   fundingGoal={fundingGoal}
                   token={token}

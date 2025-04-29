@@ -201,7 +201,7 @@ export default function TeamMissions({
               />
             ))}
       </div>
-      <div className="mt-4">
+      <div className="mt-8">
         {missions?.length > 1 && (
           <PaginationButtons
             handlePageChange={handlePageChange}

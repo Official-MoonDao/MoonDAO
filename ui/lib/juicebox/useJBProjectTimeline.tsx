@@ -15,9 +15,7 @@ export default function useJBProjectTimeline(
   projectId: number,
   projectCreatedAt: number
 ) {
-  const [subgraphTimelinePoints, setSubgraphTimelinePoints] = useState<any[]>(
-    []
-  )
+  const [subgraphTimelinePoints, setSubgraphTimelinePoints] = useState<any[]>()
   const [isLoading, setIsLoading] = useState(false)
 
   const [blockData, setBlockData] = useState<{
@@ -57,6 +55,8 @@ export default function useJBProjectTimeline(
   }, [blockData])
 
   const points = useMemo(() => {
+    if (!subgraphTimelinePoints) return []
+
     const queryResult = subgraphTimelinePoints
 
     const points: any[] = []
@@ -75,6 +75,8 @@ export default function useJBProjectTimeline(
         volume: wadToFloat(volume),
       })
     }
+
+    setIsLoading(false)
 
     return points
   }, [timestamps, subgraphTimelinePoints])
@@ -96,8 +98,12 @@ export default function useJBProjectTimeline(
           dater.getDate(new Date(startMS).toISOString()),
           dater.getDate(new Date(now).toISOString()),
         ])
-
-        setBlockData({ startBlock, endBlock })
+        if (
+          startBlock !== blockData?.startBlock ||
+          endBlock !== blockData?.endBlock
+        ) {
+          setBlockData({ startBlock, endBlock })
+        }
       } catch (error) {
         console.error('Error fetching block data:', error)
       } finally {
@@ -116,6 +122,7 @@ export default function useJBProjectTimeline(
 
   useEffect(() => {
     async function getTimelinePoints() {
+      if (!subgraphTimelinePoints) setIsLoading(true)
       if (projectId === undefined || !blocks) return
       try {
         const query = projectTimelineQuery(projectId?.toString(), blocks)

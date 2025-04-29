@@ -17,6 +17,7 @@ export default function ProgressBar({
   compact = false,
 }: ProgressBarProps) {
   const progressBarRef = useRef<HTMLDivElement>(null)
+  const labelRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     if (progressBarRef.current) {
@@ -25,6 +26,14 @@ export default function ProgressBar({
           Math.max(progress, window.innerWidth < 768 ? 15 : 7),
           100
         )}%`,
+        duration: 2.5,
+        ease: 'power1.inOut',
+      })
+    }
+
+    if (labelRef.current) {
+      gsap.to(labelRef.current, {
+        opacity: 1,
         duration: 2.5,
         ease: 'power1.inOut',
       })
@@ -47,7 +56,10 @@ export default function ProgressBar({
         >
           {label && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[75%] text-white min-w-[10px] whitespace-nowrap">
+              <span
+                ref={labelRef}
+                className="text-[75%] text-white min-w-[10px] whitespace-nowrap opacity-0"
+              >
                 {label}
               </span>
             </div>
