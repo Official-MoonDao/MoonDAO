@@ -290,7 +290,6 @@ export function computeRewardPercentages(
   ]
   return runQuadraticVoting(allDistributions, addressToQuadraticVotingPower)
 }
-
 export function getBudget(tokens: any, year: number, quarter: number) {
   const numQuartersPastQ4Y2022 = (year - 2023) * 4 + quarter
   let ethBudget = 0
