@@ -244,7 +244,6 @@ export function RetroactiveRewards({
   const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
     year,
-    stakedEth,
     quarter
   )
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)

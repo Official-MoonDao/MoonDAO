@@ -305,18 +305,16 @@ export function getBudget(tokens: any, year: number, quarter: number) {
     ethPrice = ethToken.usd / ethToken.balance
     for (const token of tokens) {
       if (token.symbol !== 'MOONEY') {
-          if (token.symbol == "stETH"){
-              usdValue += token.balance * ethPrice
-          } else {
-        usdValue += token.usd
-          }
+        if (token.symbol == "stETH"){
+          usdValue += token.balance * ethPrice
+        } else {
+          usdValue += token.usd
+        }
       }
     }
     const ethValue = usdValue / ethPrice
     usdBudget = usdValue * 0.05
     ethBudget = ethValue * 0.05
-    //FIXME undo hardcoded values
-    ethBudget = 309.9667 * 0.05
     usdBudget = ethBudget * ethPrice
     const MOONEY_INITIAL_BUDGET = 15_000_000
     const MOONEY_DECAY_RATE = 0.95
