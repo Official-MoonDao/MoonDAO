@@ -21,20 +21,14 @@ export const authOptions: NextAuthOptions = {
         accessToken: { label: 'Access Token', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.accessToken) {
-          return null
-        }
+        if (!credentials?.accessToken) return null
 
         try {
           const auth = await verifyPrivyAuth(credentials.accessToken)
 
-          if (!auth) {
-            return null
-          }
+          if (!auth) return null
 
-          if (auth.appId !== process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
-            return null
-          }
+          if (auth.appId !== process.env.NEXT_PUBLIC_PRIVY_APP_ID) return null
 
           return {
             id: auth.userId,
