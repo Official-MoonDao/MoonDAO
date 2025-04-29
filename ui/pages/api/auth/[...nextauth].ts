@@ -26,14 +26,16 @@ export const authOptions: NextAuthOptions = {
         try {
           const auth = await verifyPrivyAuth(credentials.accessToken)
 
-          if (auth && auth.appId === process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
-            return {
-              id: auth.userId,
-              accessToken: credentials.accessToken,
-            }
+          if (!auth) return null
+
+          if (auth.appId !== process.env.NEXT_PUBLIC_PRIVY_APP_ID) return null
+
+          return {
+            id: auth.userId,
+            accessToken: credentials.accessToken,
           }
-          return null
-        } catch {
+        } catch (error) {
+          console.error('Auth error:', error)
           return null
         }
       },
@@ -41,6 +43,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
     async session({ session, token }) {
