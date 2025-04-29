@@ -21,19 +21,27 @@ export const authOptions: NextAuthOptions = {
         accessToken: { label: 'Access Token', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.accessToken) return null
+        if (!credentials?.accessToken) {
+          return null
+        }
 
         try {
           const auth = await verifyPrivyAuth(credentials.accessToken)
 
-          if (auth && auth.appId === process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
-            return {
-              id: auth.userId,
-              accessToken: credentials.accessToken,
-            }
+          if (!auth) {
+            return null
           }
-          return null
-        } catch {
+
+          if (auth.appId !== process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
+            return null
+          }
+
+          return {
+            id: auth.userId,
+            accessToken: credentials.accessToken,
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
           return null
         }
       },
@@ -41,6 +49,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
     async session({ session, token }) {
