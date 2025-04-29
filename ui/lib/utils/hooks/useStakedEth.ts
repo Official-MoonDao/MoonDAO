@@ -40,7 +40,7 @@ export default function useStakedEth() {
 
             // 0. Grab deposit events from the contract
             const events = await ethersContract.queryFilter(filter, initialStakeBlockNumber, initialStakeBlockNumber);
-            const pubKeys = events.map(e => e.args.publicKey);
+            const pubKeys = events.map(e => e?.args?.publicKey);
 
             // 1. Check if any deposits have been withdrawn
             const roots = pubKeys.map(pk => keccak256(pk));
