@@ -202,11 +202,21 @@ async function loadProjectData() {
             if (proposal?.actions?.[0]?.payload?.projectTeam) {
                 members = proposal.actions[0].payload.projectTeam.map((member) => member.votingAddress);
             }else{
+                const projectLeadLine = proposal.body
+                    .split("\n")
+                    .reverse()
+                    .find((line) => line.includes("Project Lead") || line.includes("Team Rocketeer"));
+                const [leads, leadsUsernames] = getAddresses(projectLeadLine);
                 const initialTeamLine = proposal.body
                     .split("\n")
                     .reverse()
                     .find((line) => line.includes("Initial Team"));
                 [members, membersUsernames] = getAddresses(initialTeamLine);
+                // Only allow the first lead to be the lead for smart contract purposes
+                if (leads.length > 1) {
+                    members = [...members, ...leads.slice(1)];
+                    membersUsernames = [...membersUsernames, ...leadsUsernames.slice(1)];
+                }
             }
             var signers = [];
             var signersUsernames = [];
@@ -287,7 +297,7 @@ async function loadProjectData() {
             }
             // allow keyboard input to confirm the proposal, otherwise skip
             const conf = prompt(
-                `Create project for proposal ${proposal.proposalId} ${proposal.title} with members [${members}], (${membersUsernames}) and signers [${signers}], (${signersUsernames})? (y/n)`
+                `Create project for proposal ${proposal.proposalId} ${proposal.title}?\nlead ${proposal.authorAddress}\n\nmembers [${members}]\n (${membersUsernames})\n\nsigners [${signers}]\n (${signersUsernames})\n (y/n)`
             );
             if (conf !== "y") {
                 console.log("Skipping proposal MDP:", proposal.proposalId, " ", proposal.title);
