@@ -290,6 +290,7 @@ export function computeRewardPercentages(
   ]
   return runQuadraticVoting(allDistributions, addressToQuadraticVotingPower)
 }
+
 export function getBudget(tokens: any, year: number, quarter: number) {
   const numQuartersPastQ4Y2022 = (year - 2023) * 4 + quarter
   let ethBudget = 0
@@ -301,12 +302,16 @@ export function getBudget(tokens: any, year: number, quarter: number) {
     (token: any) => token.symbol === 'ETH' && token.balance > 0
   )
   if (tokens && ethToken) {
+    ethPrice = ethToken.usd / ethToken.balance
     for (const token of tokens) {
       if (token.symbol !== 'MOONEY') {
+          if (token.symbol == "stETH"){
+              usdValue += token.balance * ethPrice
+          } else {
         usdValue += token.usd
+          }
       }
     }
-    ethPrice = ethToken.usd / ethToken.balance
     const ethValue = usdValue / ethPrice
     usdBudget = usdValue * 0.05
     ethBudget = ethValue * 0.05
