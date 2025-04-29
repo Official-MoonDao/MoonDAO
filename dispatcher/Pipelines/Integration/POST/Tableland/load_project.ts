@@ -94,8 +94,12 @@ const discordToEthAddress = {
   ".zeroindex": "0x87D7276B0068ffcBA8C02781AA16484e935Bde27"
 }
 
-function getAddresses(input: string){
-    const rawMatches = input.match(/@[a-zA-Z0-9_.]+/g) || [];
+function getAddresses(proposalBody: string, patterns: string[]){
+    const matchedLine = proposalBody
+        .split("\n")
+        .reverse()
+        .find((line) => patterns.map(pattern => line.includes(pattern)).some(Boolean));
+    const rawMatches = matchedLine.match(/@[a-zA-Z0-9_.]+/g) || [];
     const usernames = rawMatches.map(u => u.slice(1));
     const addresses = usernames.map(username => {
         const address = discordToEthAddress[username];
@@ -198,24 +202,15 @@ async function loadProjectData() {
             }
             var members = [];
             var membersUsernames = [];
-            const usernameRegex = /@([^:\s]+)/g;
             if (proposal?.actions?.[0]?.payload?.projectTeam) {
                 members = proposal.actions[0].payload.projectTeam.map((member) => member.votingAddress);
             }else{
-                const projectLeadLine = proposal.body
-                    .split("\n")
-                    .reverse()
-                    .find((line) => line.includes("Project Lead") || line.includes("Team Rocketeer"));
-                const [leads, leadsUsernames] = getAddresses(projectLeadLine);
-                const initialTeamLine = proposal.body
-                    .split("\n")
-                    .reverse()
-                    .find((line) => line.includes("Initial Team"));
-                [members, membersUsernames] = getAddresses(initialTeamLine);
+                const [leads, leadsUsernames] = getAddresses(proposal.body, ["Project Lead", "Team Rocketeer"]);
+                [members, membersUsernames] = getAddresses(proposal.body, ["Initial Team"]);
                 // Only allow the first lead to be the lead for smart contract purposes
                 if (leads.length > 1) {
-                    members = [...members, ...leads.slice(1)];
-                    membersUsernames = [...membersUsernames, ...leadsUsernames.slice(1)];
+                    members = [...leads.slice(1), ...members];
+                    membersUsernames = [...leadsUsernames.slice(1), ...membersUsernames];
                 }
             }
             var signers = [];
@@ -223,11 +218,7 @@ async function loadProjectData() {
             if (proposal?.actions?.[0]?.payload?.multisigTeam){
                 signers = proposal.actions[0].payload.multisigTeam.map((member) => member.address);
             }else{
-                const multisigLine = proposal.body
-                    .split("\n")
-                    .reverse()
-                    .find((line) => line.includes("Multi-sig Signers"));
-                [signers, signersUsernames] = getAddresses(multisigLine);
+                [signers, signersUsernames] = getAddresses(proposal.body, ["Multi-sig Signers"]);
             }
 
 
