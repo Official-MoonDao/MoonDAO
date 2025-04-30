@@ -18,14 +18,15 @@ const u256ToBytes = (n) =>
     Number((n >> (8n * BigInt(31 - i))) & 0xffn)
   );
 const buildCalls = (addr, usr) =>
-  ["0x18160ddd", `0x70a08231${usr.slice(2).padStart(64, "0")}`].map(
-    (data, id) => ({
-      jsonrpc: "2.0",
-      id,
-      method: "eth_call",
-      params: [{ to: addr, data }, "latest"],
-    })
-  );
+  [
+    "0x18160ddd" /*totalSupply*/,
+    `0x70a08231${usr.slice(2).padStart(64, "0")}` /*balanceOf(address)*/,
+  ].map((data, id) => ({
+    jsonrpc: "2.0",
+    id,
+    method: "eth_call",
+    params: [{ to: addr, data }, "latest"],
+  }));
 const responses = await Promise.all(
   tokens.map((t) =>
     Functions.makeHttpRequest({
