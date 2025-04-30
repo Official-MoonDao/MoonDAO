@@ -347,6 +347,7 @@ export default function MissionPayRedeem({
       })
       return
     }
+
     if (input < 0) {
       toast.error('Please enter a valid amount', {
         style: toastStyle,
@@ -405,6 +406,7 @@ export default function MissionPayRedeem({
     router,
     nativeBalance,
     chainSlug,
+    agreedToCondition,
   ])
 
   //Redeem (stage 3 refund) all mission tokens for the connected wallet
