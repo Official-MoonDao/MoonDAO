@@ -11,7 +11,6 @@ import React from 'react'
 import { Bar } from 'react-chartjs-2'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 
-// Register the necessary components for Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 function generateQuarterlyDates(numQuarters = 10) {
@@ -20,7 +19,6 @@ function generateQuarterlyDates(numQuarters = 10) {
 
   const now = new Date()
 
-  // Start from 9 quarters ago
   for (let i = -numQuarters; i <= 0; i++) {
     const { quarter, year } = getRelativeQuarter(i)
 
