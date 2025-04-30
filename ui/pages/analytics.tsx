@@ -26,7 +26,6 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
       )}
     </div>
   )
-  console.log('vMooneyData', vMooneyData)
 
   return (
     <section id="jobs-container" className="overflow-hidden">
