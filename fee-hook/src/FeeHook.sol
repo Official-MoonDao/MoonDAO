@@ -10,20 +10,15 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
-import { ILayerZeroEndpointV2, MessagingParams } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import {ILayerZeroEndpointV2, MessagingParams} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
-import {BalanceDelta } from "v4-core/src/types/BalanceDelta.sol";
+import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {CurrencyLibrary} from "v4-core/src/types/Currency.sol";
-import { OApp, Origin, MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
-
-interface IERC20 {
-    function balanceOf(address account) external view returns (uint256);
-    function totalSupply() external view returns (uint256);
-}
+import {OApp, Origin, MessagingFee} from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 
 contract FeeHook is BaseHook, OApp, FunctionsClient{
     using PoolIdLibrary for PoolKey;
@@ -33,9 +28,22 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     using Strings for uint256;
 
 
-    // State variables to store the last request ID, response, and error
-    bytes32 public s_lastRequestId;
-    mapping(bytes32 => address) public s_requestIdToSender;
+    mapping(address => uint256) public totalWithdrawnPerUser;
+    uint256 public totalWithdrawn;
+    uint256 public totalReceived;
+    bytes32[] public poolIds; // Pools created with this hook
+    bytes32[] public transferredPoolIds; // Pools transferred to other addresses
+    mapping(PoolId => uint256) public uncollectedFees; // Uncollected fees for each LP position
+    mapping(PoolId => uint256) public poolIdToTokenId; // Token ID for the NFT representing each LP position
+    IPositionManager posm;
+    uint256 public minWithdraw = 0.01 ether;
+    uint256 destinationChainId;
+    uint16 destinationEid; // LayerZero endpoint ID
+    address public vMooneyAddress;
+
+    // Chainlink
+    bytes32 public lastRequestId;
+    mapping(bytes32 => address) public requestIdToSender;
     uint32 gasLimit = 300000;
     bytes32 donID; // DON ID for Chainlink Functions
     // Event to log responses
@@ -46,19 +54,6 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         address user
     );
     error UnexpectedRequestID(bytes32 requestId);
-
-    mapping(address => uint256) public totalWithdrawnPerUser;
-    uint256 public totalWithdrawn;
-    uint256 public totalReceived;
-    bytes32[] public poolIds; // Pools owned by this contract at any point
-    bytes32[] public transferredPoolIds; // Pools transferred to other addresses
-    mapping(PoolId => uint256) public uncollectedFees; // Uncollected fees for each LP position
-    mapping(PoolId => uint256) public TOKEN_ID; // Token ID for the NFT representing each LP position
-    IPositionManager posm;
-    uint256 public MIN_WITHDRAW = 0.01 ether;
-    uint256 destinationChainId;
-    uint16 destinationEid; // LayerZero endpoint ID
-    address public vMooneyAddress;
     string source =
         "const tokens = ["
         "{ chain: 'mainnet', address: '0xCc71C80d803381FD6Ee984FAff408f8501DB1740' },"
@@ -159,11 +154,11 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
             uncollectedFees[poolId] += feeAmount;
         }
         // Only withraw fees if the amount is above a certain threshold to save on gas
-        if (uncollectedFees[poolId] >= MIN_WITHDRAW) {
+        if (uncollectedFees[poolId] >= minWithdraw) {
             // 1. Collect fees.
             bytes memory actions = abi.encodePacked(uint8(Actions.DECREASE_LIQUIDITY), uint8(Actions.TAKE_PAIR));
             bytes[] memory params = new bytes[](2);
-            uint256 tokenId = TOKEN_ID[poolId];
+            uint256 tokenId = poolIdToTokenId[poolId];
             params[0] = abi.encode(tokenId, 0, 0, 0, bytes(""));
             params[1] = abi.encode(key.currency0, key.currency1, address(this));
             posm.modifyLiquiditiesWithoutUnlock(
@@ -212,8 +207,8 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         bytes calldata
     ) internal override returns (bytes4) {
         PoolId poolId = key.toId();
-        if (TOKEN_ID[poolId] == 0) {
-            TOKEN_ID[poolId] = posm.nextTokenId() - 1;
+        if (poolIdToTokenId[poolId] == 0) {
+            poolIdToTokenId[poolId] = posm.nextTokenId() - 1;
             poolIds.push(PoolId.unwrap(poolId));
         }
         return BaseHook.beforeAddLiquidity.selector;
@@ -226,12 +221,15 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         bytes32 poolId) external onlyOwner
     {
         PoolId id = PoolId.wrap(poolId);
-        uint256 tokenId = TOKEN_ID[id];
+        uint256 tokenId = poolIdToTokenId[id];
         require(tokenId != 0, "Token ID not found");
         transferredPoolIds.push(poolId);
         PositionManager(payable(address(posm))).safeTransferFrom(address(this), to, tokenId, "");
     }
 
+    function updateSource(string memory _source) external onlyOwner {
+        source = _source;
+    }
 
     /**
     * @notice Sends an HTTP request for character information
@@ -250,15 +248,15 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         req.setArgs(args); // Set the arguments for the request
 
         // Send the request and store the request ID
-        s_lastRequestId = _sendRequest(
+        lastRequestId = _sendRequest(
             req.encodeCBOR(),
             subscriptionId,
             gasLimit,
             donID
         );
-        s_requestIdToSender[s_lastRequestId] = msg.sender;
+        requestIdToSender[lastRequestId] = msg.sender;
 
-        return s_lastRequestId;
+        return lastRequestId;
     }
 
     /**
@@ -272,14 +270,14 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         bytes memory response,
         bytes memory err
     ) internal override {
-        if (s_lastRequestId != requestId) {
+        if (lastRequestId != requestId) {
             revert UnexpectedRequestID(requestId); // Check if request IDs match
         }
         // Update the contract's state variables with the response and any errors
         (uint256 totalSupply, uint256 userBalance) = abi.decode(response, (uint256, uint256));
         uint256 userProportion = userBalance * 1e18 / totalSupply; // Multiply by 1e18 to preserve precision
         uint256 allocated = (userProportion * totalReceived) / 1e18; // Divide by 1e18 to normalize
-        address withdrawAddress = s_requestIdToSender[requestId];
+        address withdrawAddress = requestIdToSender[requestId];
         uint256 withdrawnByUser = totalWithdrawnPerUser[withdrawAddress];
         uint256 withdrawable = allocated - withdrawnByUser;
         require(withdrawable > 0, "Nothing to withdraw");
@@ -297,7 +295,7 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     }
 
     function setMinWithdraw(uint256 _minWithdraw) external onlyOwner {
-        MIN_WITHDRAW = _minWithdraw;
+        minWithdraw = _minWithdraw;
     }
 
     function setvMooneyAddress(address _vMooneyAddress) external onlyOwner {
