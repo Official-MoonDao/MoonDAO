@@ -13,7 +13,7 @@ contract Config {
     mapping(uint256 => address) public POOL_MANAGERS;
     mapping(uint256 => address) public POSITION_MANAGERS;
     mapping(uint256 => address) public VMOONEY_ADDRESSES;
-    mapping(uint256 => address) public HOOK_ADDRESSES;
+    mapping(uint256 => address) public FEE_HOOK_ADDRESSES;
     mapping(uint256 => address) public TEST_TOKEN_ADDRESSES;
     mapping(uint256 => uint32) public LZ_EIDS;
 

@@ -15,7 +15,7 @@ contract MyScript is Script, Config {
 
         address payable arbAddress = payable(0x0000000000000000000000000000000000000000);
         address payable baseAddress = payable(0x0000000000000000000000000000000000000000);
-        address payable hookAddress = payable(HOOK_ADDRESSES[block.chainid]);
+        address payable hookAddress = payable(FEE_HOOK_ADDRESSES[block.chainid]);
         FeeHook feeHook = FeeHook(hookAddress);
         if(block.chainid == 1) { //mainnet
         } else if (block.chainid == ARBITRUM) { //arbitrum
@@ -27,12 +27,12 @@ contract MyScript is Script, Config {
         } else if (block.chainid == ARB_SEP) { //arb-sep
             // testing arb-sep -> sep
             uint32 sepEid = LZ_EIDS[SEP];
-            address sepAddress = HOOK_ADDRESSES[SEP];
+            address sepAddress = FEE_HOOK_ADDRESSES[SEP];
             feeHook.setPeer(sepEid, addressToBytes32(sepAddress));
         } else if (block.chainid == SEP) { //sep
             // sep -> arb-sep
             uint32 arbSepEid = LZ_EIDS[ARB_SEP];
-            address arbSepAddress = HOOK_ADDRESSES[ARB_SEP];
+            address arbSepAddress = FEE_HOOK_ADDRESSES[ARB_SEP];
             feeHook.setPeer(arbSepEid, addressToBytes32(arbSepAddress));
         }
 

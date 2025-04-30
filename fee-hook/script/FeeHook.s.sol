@@ -7,6 +7,7 @@ import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 
 import {Constants} from "./base/Constants.sol";
+import {Config} from "./base/Config.sol";
 import {FeeHook} from "../src/FeeHook.sol";
 import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
 
@@ -50,8 +51,12 @@ contract FeeHookScript is Script, Constants, Config {
             HookMiner.find(CREATE2_DEPLOYER, flags, type(FeeHook).creationCode, constructorArgs);
 
         // Deploy the hook using CREATE2
-        FeeHook counter = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress);
-        require(address(counter) == hookAddress, "CounterScript: hook address mismatch");
+        FeeHook feehook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress);
+        // Set to a low value for testing
+        if (block.chainid == 421614 || block.chainid == 11155111) {
+            feehook.setMinWithdraw(0.00001 ether);
+        }
+        require(address(feehook) == hookAddress, "CounterScript: hook address mismatch");
         vm.stopBroadcast();
     }
 }

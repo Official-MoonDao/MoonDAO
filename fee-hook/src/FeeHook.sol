@@ -7,12 +7,14 @@ import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
+import { ILayerZeroEndpointV2, MessagingParams } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BalanceDelta } from "v4-core/src/types/BalanceDelta.sol";
+import {CurrencyLibrary} from "v4-core/src/types/Currency.sol";
 import { OApp, Origin, MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 
 interface IERC20 {
@@ -81,7 +83,7 @@ contract FeeHook is BaseHook, OApp  {
     }
 
 
-    function _afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata _params, BalanceDelta _delta, bytes calldata)
+    function _afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata _params, BalanceDelta, bytes calldata)
         internal
         override
         returns (bytes4, int128)
@@ -102,22 +104,33 @@ contract FeeHook is BaseHook, OApp  {
             posm.modifyLiquiditiesWithoutUnlock(
                 actions, params
             );
+            // Burn non-native tokens by sending them to the dEaD address
+            if (CurrencyLibrary.balanceOfSelf(key.currency1) > 0) {
+                CurrencyLibrary.transfer(key.currency1, address(0x000000000000000000000000000000000000dEaD), CurrencyLibrary.balanceOfSelf(key.currency1));
+            }
 
             // 2. Transfer fees to this contract on the destination chain.
             if (block.chainid != destinationChainId) {
                 bytes memory payload = abi.encode();
-                // FIXME tune this value, could push it lower
-                uint128 messageFee = 3_000_000_000_000_000;
+                // Determined empirically
+                uint128 balance = uint128(address(this).balance);
                 uint128 GAS_LIMIT = 500000;
-                uint128 VALUE = uint128(address(this).balance);
-                bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, VALUE - messageFee);
+                // Give an estimate slightly under what we expect
+                uint128 messageFeeEstimate = 500_000_000_000_000;
+                bytes memory optionsEstimate = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, balance - messageFeeEstimate);
+                uint128 messageFee = uint128(ILayerZeroEndpointV2(endpoint).quote(
+                    MessagingParams(destinationEid, peers[destinationEid][0], payload, optionsEstimate, false),
+                    address(this)
+                ).nativeFee);
+                // Correct the message fee with the difference between the estimate and the quote
+                bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, balance - messageFeeEstimate + balance - messageFee);
                 // Note that external payable functions cannot be called directly
                 // within a contract, so we have to instantiate a new instance
                 // of the FeeHook contract to call the sendCrossChain function.
-                FeeHook(payable(address(this))).sendCrossChain{value: VALUE}(
+                FeeHook(payable(address(this))).sendCrossChain{value: balance}(
                     payload,
                     options,
-                    VALUE,
+                    balance,
                     address(this)
                 );
             }
@@ -199,11 +212,11 @@ contract FeeHook is BaseHook, OApp  {
     }
 
     function _lzReceive(
-        Origin calldata _origin,
-        bytes32 _guid,
-        bytes calldata payload,
-        address,  // Executor address as specified by the OApp.
-        bytes calldata  // Any extra data or options to trigger on receipt.
+        Origin calldata,
+        bytes32,
+        bytes calldata,
+        address,
+        bytes calldata
     ) internal override {
         totalReceived += msg.value;
     }

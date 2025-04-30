@@ -40,3 +40,6 @@
 [submodule "fee-hook/lib/devtools"]
 	path = fee-hook/lib/devtools
 	url = https://github.com/LayerZero-Labs/devtools
+[submodule "fee-hook/lib/nana-core"]
+	path = fee-hook/lib/nana-core
+	url = https://github.com/Bananapus/nana-core

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
 import "forge-std/Script.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
@@ -26,7 +25,6 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
     // --- pool configuration --- //
     // fees paid by swappers that accrue to liquidity providers
     PositionManager posm;
-    Currency currency1;
     IERC20 token1;
     // starting price of the pool, in sqrtPriceX96
     // FIXME set price reasonably
@@ -46,17 +44,15 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
         posm = PositionManager(payable(address(posmAddress)));
         IHooks hookContract = IHooks(FEE_HOOK_ADDRESSES[block.chainid]);
         token1 = IERC20(TEST_TOKEN_ADDRESSES[block.chainid]);
-        currency1 = getCurrency1();
 
-        PoolKey memory pool = PoolKey({
-            currency0: currency0,
-            currency1: currency1,
+        PoolKey memory poolKey = PoolKey({
+            currency0: CurrencyLibrary.ADDRESS_ZERO,
+            currency1: Currency.wrap(TEST_TOKEN_ADDRESSES[block.chainid]),
             fee: lpFee,
             tickSpacing: tickSpacing,
             hooks: hookContract
         });
-        PoolId poolId = pool.toId();
-        console.logBytes32(PoolId.unwrap(poolId));
+        PoolId poolId = poolKey.toId();
         bytes memory hookData = new bytes(0);
 
         // --------------------------------- //
@@ -75,13 +71,13 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
         uint256 amount1Max = token1Amount + 1 wei;
 
         (bytes memory actions, bytes[] memory mintParams) =
-            _mintLiquidityParams(pool, tickLower, tickUpper, liquidity, amount0Max, amount1Max, address(hookContract), hookData);
+            _mintLiquidityParams(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, address(hookContract), hookData);
 
         // multicall parameters
         bytes[] memory params = new bytes[](2);
 
         // initialize pool
-        params[0] = abi.encodeWithSelector(posm.initializePool.selector, pool, startingPrice, hookData);
+        params[0] = abi.encodeWithSelector(posm.initializePool.selector, poolKey, startingPrice, hookData);
 
         // mint liquidity
         params[1] = abi.encodeWithSelector(
@@ -89,8 +85,7 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
         );
 
         // if the pool is an ETH pair, native tokens are to be transferred
-        uint256 valueToPass = currency0.isAddressZero() ? amount0Max : 0;
-        console.log('valueToPass', valueToPass);
+        uint256 valueToPass = poolKey.currency0.isAddressZero() ? amount0Max : 0;
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
@@ -122,9 +117,7 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
     }
 
     function tokenApprovals() public {
-        if (!currency1.isAddressZero()) {
-            token1.approve(address(PERMIT2), type(uint256).max);
-            PERMIT2.approve(address(token1), address(posm), type(uint160).max, type(uint48).max);
-        }
+        token1.approve(address(PERMIT2), type(uint256).max);
+        PERMIT2.approve(address(token1), address(posm), type(uint160).max, type(uint48).max);
     }
 }
