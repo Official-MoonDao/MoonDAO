@@ -594,7 +594,7 @@ export default function MissionPayRedeem({
         <Modal id="mission-pay-modal" setEnabled={setMissionPayModalEnabled}>
           <div className="mt-12 w-screen h-full rounded-[2vmax] max-w-[500px] flex flex-col gap-4 items-start justify-start p-5 bg-gradient-to-b from-dark-cool to-darkest-cool">
             <div className="w-full flex gap-4 items-start justify-between">
-              <h3 className="text- font-GoodTimes">{`Contribute to ${teamNFT?.metadata?.name}`}</h3>
+              <h3 className="text- font-GoodTimes">{`Contribute to ${mission?.metadata?.name}`}</h3>
               <button
                 type="button"
                 className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"

@@ -100,6 +100,12 @@ export default function MissionWideCard({
                     : 0
                 } ETH`}
               />
+              {subgraphData?.volume !== undefined && (
+                <MissionStat
+                  label="VOLUME"
+                  value={'Ξ ' + subgraphData.volume / 1e18}
+                />
+              )}
               {token?.tradeable !== undefined && (
                 <MissionStat
                   icon="/assets/launchpad/token.svg"
@@ -107,7 +113,7 @@ export default function MissionWideCard({
                   value={token?.tradeable ? 'Yes' : 'No'}
                 />
               )}
-              {token?.tokenAddress && (
+              {token?.tokenAddress && token?.tokenSymbol && (
                 <Link
                   href={`https://${
                     process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
@@ -123,12 +129,6 @@ export default function MissionWideCard({
                     value={`$${token?.tokenSymbol}`}
                   />
                 </Link>
-              )}
-              {subgraphData?.volume !== undefined && (
-                <MissionStat
-                  label="VOLUME"
-                  value={'Ξ ' + subgraphData.volume / 1e18}
-                />
               )}
             </div>
             <div className="mt-4 w-4/5">

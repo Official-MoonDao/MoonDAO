@@ -68,6 +68,7 @@ export function TeamMission({
       linkToMission
       selectedChain={selectedChain}
       primaryTerminalAddress={primaryTerminalAddress}
+      teamContract={teamContract}
     />
   )
 }

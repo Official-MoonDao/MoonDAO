@@ -402,7 +402,7 @@ export default function Launch({ missions }: any) {
             height={200}
           />
         </div>
-        <div className="absolute bottom-[-2px] left-0">
+        <div className="absolute bottom-[-0.5px] left-0">
           <Image
             className="w-[30vw] md:w-[10vw] 2xl:w-[10vw] -scale-y-100"
             src="/assets/navy-blue-divider-tl.svg"
