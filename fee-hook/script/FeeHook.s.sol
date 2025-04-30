@@ -28,7 +28,7 @@ contract FeeHookScript is Script, Constants, Config {
         address lzEndpoint = LZ_ENDPOINTS[block.chainid];
         address chainlinkRouter = CHAINLINK_ROUTERS[block.chainid];
         address poolManagerAddress = POOL_MANAGERS[block.chainid];
-        address posmAddress = POOL_MANAGERS[block.chainid];
+        address posmAddress = POSITION_MANAGERS[block.chainid];
         bytes32 donID = CHAINLINK_DONS[block.chainid];
         uint64 subscriptionId = CHAINLINK_SUBS[block.chainid];
         address vMooneyAddress = 0xB255c74F8576f18357cE6184DA033c6d93C71899;

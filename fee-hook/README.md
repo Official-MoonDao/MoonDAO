@@ -39,5 +39,6 @@ PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/Pool.s.sol --rpc-url 
 # Execute Swap, on source chain and destination chain
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/Swap.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir
 
-# Withdraw
+# Withdraw fees
+PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/WithdrawFees.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir
 ```

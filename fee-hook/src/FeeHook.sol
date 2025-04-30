@@ -42,7 +42,6 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     address public vMooneyAddress;
 
     // Chainlink
-    bytes32 public lastRequestId;
     mapping(bytes32 => address) public requestIdToSender;
     uint32 gasLimit = 300000;
     uint64 subscriptionId; // Chainlink subscription ID
@@ -52,9 +51,9 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         bytes32 indexed requestId,
         uint256 totalSupply,
         uint256 userBalance,
-        address user
+        address user,
+        uint256 withdrawAmount
     );
-    error UnexpectedRequestID(bytes32 requestId);
     string source =
         "const tokens = ["
         "{ chain: 'mainnet', address: '0xCc71C80d803381FD6Ee984FAff408f8501DB1740' },"
@@ -255,21 +254,21 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         }
         FunctionsRequest.Request memory req;
         req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
-        string memory addressString = string(abi.encodePacked("0x", uint256(uint160(msg.sender)).toHexString(20)));
+        string memory addressString = uint256(uint160(msg.sender)).toHexString(20);
         string[] memory args = new string[](1);
         args[0] = addressString; // Set the address argument
         req.setArgs(args); // Set the arguments for the request
 
         // Send the request and store the request ID
-        lastRequestId = _sendRequest(
+        requestId = _sendRequest(
             req.encodeCBOR(),
             subscriptionId,
             gasLimit,
             donID
         );
-        requestIdToSender[lastRequestId] = msg.sender;
+        requestIdToSender[requestId] = msg.sender;
 
-        return lastRequestId;
+        return requestId;
     }
 
     /**
@@ -283,23 +282,27 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         bytes memory response,
         bytes memory err
     ) internal override {
-        if (lastRequestId != requestId) {
-            revert UnexpectedRequestID(requestId); // Check if request IDs match
+        if (err.length > 0) {
+            revert(string(err));  // bubble up the actual error
         }
         // Update the contract's state variables with the response and any errors
         (uint256 totalSupply, uint256 userBalance) = abi.decode(response, (uint256, uint256));
+        require(totalSupply > 0, "Total supply is zero");
+        require(userBalance > 0, "User balance is zero");
         uint256 userProportion = userBalance * 1e18 / totalSupply; // Multiply by 1e18 to preserve precision
         uint256 allocated = (userProportion * totalReceived) / 1e18; // Divide by 1e18 to normalize
         address withdrawAddress = requestIdToSender[requestId];
+        require(withdrawAddress != address(0), "Unknown requestId");
         uint256 withdrawnByUser = totalWithdrawnPerUser[withdrawAddress];
-        uint256 withdrawable = allocated - withdrawnByUser;
-        require(withdrawable > 0, "Nothing to withdraw");
-        totalWithdrawnPerUser[withdrawAddress] += withdrawable;
-        totalWithdrawn += withdrawable;
-        transferETH(withdrawAddress, withdrawable);
+        uint256 withdrawAmount = allocated - withdrawnByUser;
+        require(withdrawAmount > 0, "Nothing to withdraw");
+        totalWithdrawnPerUser[withdrawAddress] += withdrawAmount;
+        totalWithdrawn += withdrawAmount;
+        transferETH(withdrawAddress, withdrawAmount);
+        delete requestIdToSender[requestId];
 
         // Emit an event to log the response
-        emit Withdraw(requestId, totalSupply, userBalance, withdrawAddress);
+        emit Withdraw(requestId, totalSupply, userBalance, withdrawAddress, withdrawAmount);
     }
 
     function transferETH(address to, uint256 amount) internal {

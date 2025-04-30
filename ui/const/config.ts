@@ -156,6 +156,10 @@ export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   sepolia: '0xe77ede9B472E9AE450a1AcD4A90dcd3fb2e50cD0',
 }
 
+export const FEE_HOOK_ADDRESSES: Index = {
+    sepolia: '0x730051F4cffB74a4AD00ba74C18c148942528844'
+}
+
 export const REVNET_ADDRESSES: Index = {
   sepolia: '0x25bc5d5a708c2e426ef3a5196cc18de6b2d5a3d1',
 }
