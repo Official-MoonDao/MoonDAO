@@ -13,7 +13,7 @@ export default function MissionTokenInfo({
       {/* Tokenomics */}
       <h1 className="mt-4 text-2xl font-bold">Tokenomics</h1>
       <p>
-        {`50% of the total tokens will go to the contributor when funding the project. The other 50% are locked for at least one year and allocated as follows:`}
+        {`50% of the total tokens will go to the contributor when funding the project, and the other 50% are locked for at least one year, allocated as follows:`}
       </p>
       <Image
         src="/assets/launchpad/mission-tokenomics-distribution.svg"
@@ -23,13 +23,13 @@ export default function MissionTokenInfo({
       />
       <p>{`If funding is completed successfully, the locked tokens are treated as follows: `}</p>
       {[
-        '10% of the token is locked indefinitely on an AMM.',
-        "10% of the token is locked for one year and vested for three years, to be held by MoonDAO's Treasury.",
-        '30% of the token is locked for one year, and vested for three years, to be held by the Project Team to distribute how they see fit.',
+        '10% of the token is locked indefinitely on an Automated Market Maker (AMM).',
+        "10% of the token is locked for one year, and vested for three years, to be held by MoonDAO's Treasury.",
+        '30% of the token is locked for one year, and vested for three years, to be held by the Mission Team to distribute how they see fit.',
       ].map((item: string, index: number) => (
         <p key={index} className="ml-1">{`● ${item}`}</p>
       ))}
-      <p>{`If the project does not graduate (their minimum goal was not met), then redemptions are turned on and people can get their full contribution back.`}</p>
+      <p>{`If the project does not launch (their funding goal was not met), then contributors can get their full contribution back. Contributors can also refund their contribution prior to reaching the funding goal.`}</p>
 
       {/* Locked Token Vesting Schedule */}
       <h1 className="mt-4 text-2xl font-bold">Locked Token Vesting Schedule</h1>
