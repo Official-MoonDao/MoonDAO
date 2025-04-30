@@ -36,8 +36,6 @@ contract MyScript is Script, Config {
             feeHook.setPeer(arbSepEid, addressToBytes32(arbSepAddress));
         }
 
-
-
         vm.stopBroadcast();
     }
 }
