@@ -9,31 +9,34 @@ import {
 } from 'chart.js'
 import React from 'react'
 import { Bar } from 'react-chartjs-2'
+import { getRelativeQuarter } from '@/lib/utils/dates'
 
-// Register the necessary components for Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
-const xDates = [
-  'Sat Dec 31 2022 19:00:00 GMT-0600 (Central Standard Time)',
-  'Fri Mar 31 2023 19:00:00 GMT-0500 (Central Daylight Time)',
-  'Fri Jun 30 2023 19:00:00 GMT-0500 (Central Daylight Time)',
-  'Sat Sep 30 2023 19:00:00 GMT-0500 (Central Daylight Time)',
-  'Sun Dec 31 2023 19:00:00 GMT-0600 (Central Standard Time)',
-  'Sun Mar 31 2024 19:00:00 GMT-0500 (Central Daylight Time)',
-  'Sun Jun 30 2024 19:00:00 GMT-0500 (Central Daylight Time)',
-  'Mon Sep 30 2024 19:00:00 GMT-0500 (Central Daylight Time)',
-]
+function generateQuarterlyDates(numQuarters = 10) {
+  const dates = []
+  const labels = []
 
-const xLabels = [
-  '2022Q4',
-  '2023Q1',
-  '2023Q2',
-  '2023Q3',
-  '2023Q4',
-  '2024Q1',
-  '2024Q2',
-  '2024Q3',
-]
+  const now = new Date()
+
+  for (let i = -numQuarters; i <= 0; i++) {
+    const { quarter, year } = getRelativeQuarter(i)
+
+    // Create date for end of quarter
+    const quarterEndDate = new Date(year, quarter * 3, 0, 19, 0, 0)
+
+    // Only include if quarter end date is less than or equal to now
+    if (quarterEndDate <= now) {
+      dates.push(quarterEndDate.toString())
+      labels.push(`${year}Q${quarter}`)
+    }
+  }
+
+  return { dates, labels }
+}
+
+// Generate rolling dates and labels
+const { dates: xDates, labels: xLabels } = generateQuarterlyDates()
 
 function sumValuesBeforeDate(dates: any, values: any, targetDate: any) {
   // dates is a list of unsorted dates

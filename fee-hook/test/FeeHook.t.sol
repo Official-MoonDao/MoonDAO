@@ -11,7 +11,6 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 import {PoolId} from "v4-core/src/types/PoolId.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {ActionConstants} from "v4-periphery/src/libraries/ActionConstants.sol";
-//import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
 import {MockJBERC20} from "../src/MockJBERC20.sol";
 import {Constants} from "v4-core/src/../test/utils/Constants.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
@@ -114,8 +113,6 @@ contract FeeHookTest is Test {
         // 2. Then, the caller must approve POSM as a spender of permit2
         permit2.approve(Currency.unwrap(currency), address(posm), type(uint160).max, type(uint48).max);
         permit2.approve(Currency.unwrap(currency), address(router), type(uint160).max, type(uint48).max);
-
-        // temporary
     }
 
     function testLifecycle(address hookAddress) internal {
@@ -227,7 +224,7 @@ contract FeeHookTest is Test {
        router.execute{value: SWAP_AMOUNT}(commands, inputs, deadline);
     }
 
-    // trade eth for tokens
+    // trade tokens for eth
     function swapReverse(PoolKey memory poolKey) internal {
        bytes memory commands = abi.encodePacked(uint8(V4_SWAP));
        bytes memory actions = abi.encodePacked(

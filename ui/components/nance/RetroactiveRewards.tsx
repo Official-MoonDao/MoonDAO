@@ -10,6 +10,7 @@ import {
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
 } from 'const/config'
+import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import _ from 'lodash'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -232,11 +233,13 @@ export function RetroactiveRewards({
   const { tokens: arbitrumTokens } = useAssets(ARBITRUM_ASSETS_URL)
   const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
   const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
+  const { stakedEth, error } = useStakedEth()
 
   const tokens = mainnetTokens
     .concat(arbitrumTokens)
     .concat(polygonTokens)
     .concat(baseTokens)
+    .concat([{ symbol: 'stETH', balance: stakedEth }])
 
   const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
