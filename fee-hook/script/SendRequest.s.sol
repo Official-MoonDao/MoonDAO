@@ -14,9 +14,7 @@ contract MyScript is Script, Config {
         FeeHook feeHook = FeeHook(hookAddress);
         string[] memory args = new string[](1);
         // Any address which holds vMOONEY
-        address testAddress = "0x08B3e694caA2F1fcF8eF71095CED1326f3454B89";
-        args[0] = testAddress;
-        bytes32 requestId = feeHook.sendRequest(CHAINLINK_SUBS[block.chainid], args);
+        bytes32 requestId = feeHook.withdrawFees();
 
         vm.stopBroadcast();
     }

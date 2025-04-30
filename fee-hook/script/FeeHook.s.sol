@@ -30,33 +30,30 @@ contract FeeHookScript is Script, Constants, Config {
         address poolManagerAddress = POOL_MANAGERS[block.chainid];
         address posmAddress = POOL_MANAGERS[block.chainid];
         bytes32 donID = CHAINLINK_DONS[block.chainid];
+        uint64 subscriptionId = CHAINLINK_SUBS[block.chainid];
         address vMooneyAddress = 0xB255c74F8576f18357cE6184DA033c6d93C71899;
         // Sepolia for testnets, arbitrum for mainnet
-        uint256 DESTINATION_CHAIN_ID = 42161;
-        uint16 DESTINATION_EID = 30110;
+        uint256 DESTINATION_CHAIN_ID = ARBITRUM;
+        uint16 DESTINATION_EID = uint16(LZ_EIDS[ARBITRUM]);
         // Addresses from https://docs.uniswap.org/contracts/v4/deployments
         if(block.chainid == 1) { //mainnet
-        } else if (block.chainid == 42161) { //arbitrum
-        } else if (block.chainid == 8453) { //base
-        } else if (block.chainid == 421614) { //arb-sep
+        } else if (block.chainid == ARBITRUM) { //arbitrum
+        } else if (block.chainid == BASE) { //base
+        } else if (block.chainid == ARB_SEP || block.chainid == SEP) { // test nets
             vMooneyAddress = 0xA4F6A4B135b9AF7909442A7a3bF7797b61e609b1;
-            DESTINATION_CHAIN_ID = 11155111;
-            DESTINATION_EID = 40161;
-        } else if (block.chainid == 11155111) { //sep
-            vMooneyAddress = 0xA4F6A4B135b9AF7909442A7a3bF7797b61e609b1;
-            DESTINATION_CHAIN_ID = 11155111;
-            DESTINATION_EID = 40161;
+            DESTINATION_CHAIN_ID = SEP;
+            DESTINATION_EID = uint16(LZ_EIDS[SEP]);
         }
 
         // Mine a salt that will produce a hook address with the correct flags
-        bytes memory constructorArgs = abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress, chainlinkRouter, donID);
+        bytes memory constructorArgs = abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress, chainlinkRouter, donID, subscriptionId);
         (address hookAddress, bytes32 salt) =
             HookMiner.find(CREATE2_DEPLOYER, flags, type(FeeHook).creationCode, constructorArgs);
 
         // Deploy the hook using CREATE2
-        FeeHook feehook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress, chainlinkRouter, donID);
+        FeeHook feehook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, vMooneyAddress, chainlinkRouter, donID, subscriptionId);
         // Set to a low value for testing
-        if (block.chainid == 421614 || block.chainid == 11155111) {
+        if (block.chainid == ARB_SEP || block.chainid == SEP) {
             feehook.setMinWithdraw(0.00001 ether);
         }
         //FunctionsRouter chainlinkRouterContract = FunctionsRouter(chainlinkRouter);

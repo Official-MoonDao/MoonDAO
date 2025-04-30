@@ -45,9 +45,10 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     bytes32 public lastRequestId;
     mapping(bytes32 => address) public requestIdToSender;
     uint32 gasLimit = 300000;
+    uint64 subscriptionId; // Chainlink subscription ID
     bytes32 donID; // DON ID for Chainlink Functions
     // Event to log responses
-    event Response(
+    event Withdraw(
         bytes32 indexed requestId,
         uint256 totalSupply,
         uint256 userBalance,
@@ -100,12 +101,13 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         "...u256ToBytes(balanceSum),"
         "]);";
 
-    constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _lzEndpoint, uint256 _destinationChainId, uint16 _destinationEid, address _vMooneyAddress, address _router, bytes32 _donID) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) FunctionsClient(_router) {
+    constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _lzEndpoint, uint256 _destinationChainId, uint16 _destinationEid, address _vMooneyAddress, address _router, bytes32 _donID, uint64 _subscriptionId) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) FunctionsClient(_router) {
         posm = _posm;
         destinationChainId = _destinationChainId;
         destinationEid = _destinationEid;
         vMooneyAddress = _vMooneyAddress;
         donID = _donID;
+        subscriptionId = _subscriptionId;
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
@@ -125,6 +127,22 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
             afterAddLiquidityReturnDelta: false,
             afterRemoveLiquidityReturnDelta: false
         });
+    }
+
+    function setMinWithdraw(uint256 _minWithdraw) external onlyOwner {
+        minWithdraw = _minWithdraw;
+    }
+
+    function setvMooneyAddress(address _vMooneyAddress) external onlyOwner {
+        vMooneyAddress = _vMooneyAddress;
+    }
+
+    function setSource(string memory _source) external onlyOwner {
+        source = _source;
+    }
+
+    function setSubscriptionId(uint64 _subscriptionId) external onlyOwner {
+        subscriptionId = _subscriptionId;
     }
 
     function sendCrossChain(
@@ -227,22 +245,17 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         PositionManager(payable(address(posm))).safeTransferFrom(address(this), to, tokenId, "");
     }
 
-    function updateSource(string memory _source) external onlyOwner {
-        source = _source;
-    }
-
     /**
     * @notice Sends an HTTP request for character information
-    * @param subscriptionId The ID for the Chainlink subscription
-    * @param args The arguments to pass to the HTTP request
     * @return requestId The ID of the request
     */
-    function withdrawFees(
-        uint64 subscriptionId,
-    ) external returns (bytes32 requestId) {
+    function withdrawFees() external returns (bytes32 requestId) {
+        if (block.chainid != destinationChainId) {
+            revert("Withdraw: not on destination chain");
+        }
         FunctionsRequest.Request memory req;
         req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
-        string addressString = string(abi.encodePacked("0x", uint256(uint160(msg.sender)).toHexString(20)));
+        string memory addressString = string(abi.encodePacked("0x", uint256(uint160(msg.sender)).toHexString(20)));
         string[] memory args = new string[](1);
         args[0] = addressString; // Set the address argument
         req.setArgs(args); // Set the arguments for the request
@@ -286,20 +299,12 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         transferETH(withdrawAddress, withdrawable);
 
         // Emit an event to log the response
-        emit Response(requestId, totalSupply, userBalance);
+        emit Withdraw(requestId, totalSupply, userBalance, withdrawAddress);
     }
 
     function transferETH(address to, uint256 amount) internal {
         (bool success, ) = to.call{value: amount}("");
         require(success, "ETH transfer failed");
-    }
-
-    function setMinWithdraw(uint256 _minWithdraw) external onlyOwner {
-        minWithdraw = _minWithdraw;
-    }
-
-    function setvMooneyAddress(address _vMooneyAddress) external onlyOwner {
-        vMooneyAddress = _vMooneyAddress;
     }
 
     receive() external payable {
