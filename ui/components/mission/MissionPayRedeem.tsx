@@ -374,6 +374,7 @@ export default function MissionPayRedeem({
           '0x00',
         ],
         value: BigInt(input * 1e18),
+        gas: BigInt(500000),
       })
 
       const receipt = await sendAndConfirmTransaction({
@@ -437,6 +438,7 @@ export default function MissionPayRedeem({
           address,
           '',
         ],
+        gas: BigInt(500000),
       })
 
       const receipt = await sendAndConfirmTransaction({
@@ -491,6 +493,7 @@ export default function MissionPayRedeem({
         contract: jbControllerContract,
         method: 'claimTokensFor' as string,
         params: [address, mission?.projectId, tokenCredit, address],
+        gas: BigInt(500000),
       })
 
       const receipt = await sendAndConfirmTransaction({
