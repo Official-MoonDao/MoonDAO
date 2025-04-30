@@ -708,7 +708,7 @@ export default function CreateMission({
                       }
                       disabled={false}
                       mode="dark"
-                      tooltip="How much would you like to raise? Set something ambitious but achievable. We will automatically convert the US Dollar amount into Ethereum, the native currency of the Launchpad."
+                      tooltip="How much would you like to raise? Set something ambitious but achievable while accounting for the 20% set aside of the total raise. We will automatically convert the US Dollar amount into Ethereum, the native currency of the Launchpad."
                       extra={
                         <div className="w-full">
                           <p className="opacity-60">
