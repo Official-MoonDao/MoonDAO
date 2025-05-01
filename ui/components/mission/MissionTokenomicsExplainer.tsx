@@ -5,7 +5,7 @@ export default function MissionTokenomicsExplainer() {
   return (
     <div>
       <Point
-        point="Goal & Timeline: Missions have 28 days, one lunar cycle, to raise their Funding Goal; otherwise, the Mission will not proceed and all contributions can be refunded. Contributors can also withdraw support and get refunded at any time prior to reaching the funding goal.
+        point="Goal & Timeline: Missions have 28 days, or one lunar cycle, to raise their Funding Goal; otherwise, the Mission will not proceed and all contributions will be refunded.
 "
       />
       <Point

@@ -29,7 +29,7 @@ export default function MissionTokenInfo({
       ].map((item: string, index: number) => (
         <p key={index} className="ml-1">{`● ${item}`}</p>
       ))}
-      <p>{`If the project does not launch (their funding goal was not met), then contributors can get their full contribution back. Contributors can also refund their contribution prior to reaching the funding goal.`}</p>
+      <p>{`If the project does not launch (their funding goal was not met), then contributors can get their full contribution back.`}</p>
 
       {/* Locked Token Vesting Schedule */}
       <h1 className="mt-4 text-2xl font-bold">Locked Token Vesting Schedule</h1>

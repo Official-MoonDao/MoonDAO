@@ -431,7 +431,7 @@ export default function Launch({ missions }: any) {
         <div className="w-full flex flex-col md:flex-row items-start justify-between">
           <FeatureIcon
             title="Contribute Confidently"
-            description="Get refunded if a project fails to reach its funding goal or at any time before reaching the goal."
+            description="Get refunded if a project does not reach its funding goal by the end of the 28 day cycle."
             icon="/assets/icon-crowdfunding.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#6C407D] to-[#5F4BA2]"
           />
