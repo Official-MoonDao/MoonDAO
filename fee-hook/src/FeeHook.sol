@@ -245,7 +245,7 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     }
 
     /**
-    * @notice Sends an HTTP request for character information
+    * @notice Sends a request to withdraw fees, to be fulfilled by chainlink's decentralized oracle network
     * @return requestId The ID of the request
     */
     function withdrawFees() external returns (bytes32 requestId) {
@@ -272,7 +272,7 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     }
 
     /**
-     * @notice Callback function for fulfilling a request
+     * @notice Callback function for fulfilling a request to withdrawFees
      * @param requestId The ID of the request to fulfill
      * @param response The HTTP response data
      * @param err Any errors from the Functions request

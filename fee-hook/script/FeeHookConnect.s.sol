@@ -13,8 +13,8 @@ contract MyScript is Script, Config {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        address payable arbAddress = payable(0x0000000000000000000000000000000000000000);
-        address payable baseAddress = payable(0x0000000000000000000000000000000000000000);
+        address payable arbAddress = payable(FEE_HOOK_ADDRESSES[ARBITRUM]);
+        address payable baseAddress = payable(FEE_HOOK_ADDRESSES[BASE]);
         address payable hookAddress = payable(FEE_HOOK_ADDRESSES[block.chainid]);
         FeeHook feeHook = FeeHook(hookAddress);
         if(block.chainid == 1) { //mainnet

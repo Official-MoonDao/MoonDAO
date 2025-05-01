@@ -13,11 +13,8 @@ contract MyScript is Script, Config {
         address payable hookAddress = payable(FEE_HOOK_ADDRESSES[block.chainid]);
         FeeHook feeHook = FeeHook(hookAddress);
         string[] memory args = new string[](1);
-        // Any address which holds vMOONEY
         bytes32 requestId = feeHook.withdrawFees();
 
         vm.stopBroadcast();
     }
 }
-
-

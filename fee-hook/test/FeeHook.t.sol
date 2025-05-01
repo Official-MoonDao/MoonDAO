@@ -54,8 +54,6 @@ contract FeeHookTest is Test {
     uint256 DEPLOYER_FUNDS =100_000_000_000 ether;
     uint256 DEPLOYER_TOKEN_BALANCE = 100_000;
 
-
-
     function setUp() public {
         // v4 mainnet addresses
         poolManagerAddress = 0x000000000004444c5dc75cB358380D2e3dE08A90;

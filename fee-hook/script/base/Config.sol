@@ -20,8 +20,15 @@ contract Config {
     mapping(uint256 => address) public CHAINLINK_ROUTERS;
     mapping(uint256 => bytes32) public CHAINLINK_DONS;
     mapping(uint256 => uint64) public CHAINLINK_SUBS;
+    mapping(uint256 => uint24) public LP_FEE;
 
     constructor() {
+        LP_FEE[SEP] = 500000;
+        LP_FEE[ARB_SEP] = 500000;
+        LP_FEE[MAINNET] = 10000;
+        LP_FEE[ARBITRUM] = 10000;
+        LP_FEE[BASE] = 10000;
+
         CHAINLINK_SUBS[ARB_SEP] = 362;
         CHAINLINK_SUBS[SEP] = 4653;
 
