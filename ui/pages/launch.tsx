@@ -411,7 +411,7 @@ export default function Launch({ missions }: any) {
         </div>
         <div className="flex flex-col pb-[5vw] md:pb-[2vw] md:items-center">
           <h2 className="mt-[5vw] pb-[2vw] md:pb-0 md:mt-[5vw] font-GoodTimes text-[6vw] md:text-[max(2vw,25px)] 2xl:text-[35px] md:text-center leading-[7vw]">
-            {'New Funding Tools for New Space'}
+            {'New Space Needs New Funding Tools'}
           </h2>
           <p className="md:text-center md:max-w-[500px] lg:max-w-[650px] 2xl:max-w-[800px] md:text-[max(1.2vw,16px)] 2xl:text-[18px] pb-[5vw] md:pb-[2vw]">
             {
@@ -428,20 +428,20 @@ export default function Launch({ missions }: any) {
         </div>
         <div className="w-full flex flex-col md:flex-row items-start justify-between">
           <FeatureIcon
-            title="Contribute Confidently"
-            description="If a mission doesn't reach at least 20% of its goal within 28 days, you automatically get refunded."
+            title="Contribute"
+            description="Fund with your debit card, even if you've never used crypto. Get refunded if a mission fails to reach its funding goal."
             icon="/assets/icon-crowdfunding.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#6C407D] to-[#5F4BA2]"
           />
           <FeatureIcon
-            title="Coordinate Effectively"
-            description="Mission tokens give you a stake in the journey, allowing you to help shape and govern the treasury."
+            title="Coordinate"
+            description="Contributions earn mission tokens that give you a stake in the journey, allowing you to help shape and govern the outcome."
             icon="/assets/icon-fasttrack.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#5F4BA2] to-[#5159CC]"
           />
           <FeatureIcon
-            title="Collaborate Transparently"
-            description="100% transparent funding, managed by smart contracts, so your contribution is secure."
+            title="Validate"
+            description="Secured by code, not promises. 100% transparent use of funds onchain, allowing contributors to trace how funds were spent."
             icon="/assets/icon-lightbulb.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#5159CC] to-[#4660E7]"
           />
@@ -493,7 +493,7 @@ export default function Launch({ missions }: any) {
                 id="astronauts"
                 className="h-full w-full top-0 p-2 md:p-5"
                 src="/assets/astronauts.png"
-                alt="MoonDAO Astronauts, Dr.Eiman Jahangir and Coby"
+                alt="MoonDAO Astronauts, Dr.Eiman Jahangir and Coby Cotton of Dude Perfect"
                 width={500}
                 height={500}
               />
@@ -544,7 +544,7 @@ export default function Launch({ missions }: any) {
               <ExplainerIcon
                 title="Support"
                 subtext=""
-                description="Contribute in ETH directly to missions you believe in. Your funds go straight to the Team's multisig wallet via secure smart contracts. In return, you’ll receive mission tokens — a symbol of your support and a gateway to future utility and participation."
+                description="Contribute in ETH or via your debit card to missions you believe in. The funds go straight to the Team's multisig wallet via secure smart contracts. In return, you’ll receive mission tokens — a symbol of your support and a gateway to future utility and participation."
                 icon={<p>2</p>}
                 numberBackground="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC]"
               />
@@ -553,7 +553,7 @@ export default function Launch({ missions }: any) {
               <ExplainerIcon
                 title="Accelerate"
                 subtext=""
-                description="Every contribution fuels real progress — from hardware to human spaceflight, research to education. This isn’t charity, it’s collaboration. You're not just backing a mission — you're joining one."
+                description="Contribution fuel real progress — from hardware to human spaceflight, research to education. You're not just backing a mission — you're joining one."
                 icon={<p>1</p>}
                 numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
               />
@@ -564,8 +564,8 @@ export default function Launch({ missions }: any) {
               Your tools, your team, your mission
             </h3>
             <p className="hidden md:block text-[max(1.2vw,16px)] 2xl:text-[18px] max-w-[500px]">
-              Join a growing global movement where your contributions help fund
-              real space innovation and fuel a decentralized space economy.
+            Move at the speed of the Internet. Teams using these tools have 
+            raised millions of dollars from all over the world in mere days.
             </p>
             <StandardButton
               className="gradient-2 rounded-full md:text-[min(1.2vw,25px)]"
@@ -600,7 +600,7 @@ export default function Launch({ missions }: any) {
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Global Access"
-              description="Move at the speed of the internet tapping into a global crypto network with trillions of dollars at your fingertips."
+              description="Move at the speed of the Internet tapping into a global crypto network with trillions of dollars at your fingertips."
               icon="/assets/icon-globe.svg"
               align="left"
               slideDirection="left"
