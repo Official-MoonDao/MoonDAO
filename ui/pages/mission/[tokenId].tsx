@@ -217,40 +217,43 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <></>
                     )}
                   </div>
-                  
+
                   <div className="w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
                     {/* Purple raised amount tag */}
                     <div className="mb-4">
                       <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-center">
-                        <Image 
-                          src="/assets/icon-raised-tokens.svg" 
-                          alt="Raised" 
-                          width={24} 
+                        <Image
+                          src="/assets/icon-raised-tokens.svg"
+                          alt="Raised"
+                          width={24}
                           height={24}
-                          className="mr-2" 
+                          className="mr-2"
                         />
                         <span className="mr-2">
-                          {truncateTokenValue(subgraphData?.volume / 1e18, 'ETH')}
+                          {truncateTokenValue(
+                            subgraphData?.volume / 1e18,
+                            'ETH'
+                          )}
                         </span>
                         <span className="text-sm md:text-base">ETH RAISED</span>
                       </div>
                     </div>
-                    
-                    <div className="mb-3 w-full">
+
+                    <div className="w-full">
                       <MissionFundingProgressBar
                         fundingGoal={fundingGoal}
                         volume={subgraphData?.volume / 1e18}
                         stage={stage ?? 0}
                       />
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-4 justify-between">
                       <div className="flex items-center">
-                        <Image 
-                          src="/assets/launchpad/target.svg" 
-                          alt="Goal" 
-                          width={24} 
-                          height={24} 
+                        <Image
+                          src="/assets/launchpad/target.svg"
+                          alt="Goal"
+                          width={24}
+                          height={24}
                         />
                         <div className="ml-2">
                           <p className="text-gray-400 text-sm">GOAL:</p>
@@ -259,32 +262,34 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center">
-                        <Image 
-                          src="/assets/launchpad/clock.svg" 
-                          alt="Deadline" 
-                          width={24} 
-                          height={24} 
+                        <Image
+                          src="/assets/launchpad/clock.svg"
+                          alt="Deadline"
+                          width={24}
+                          height={24}
                         />
                         <div className="ml-2">
                           <p className="text-gray-400 text-sm">DEADLINE:</p>
                           <p className="text-white font-GoodTimes">
                             {daysUntilDate(
                               new Date(
-                                ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000
+                                ruleset?.[0]?.start * 1000 +
+                                  28 * 24 * 60 * 60 * 1000
                               )
-                            )} DAYS
+                            )}{' '}
+                            DAYS
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center">
-                        <Image 
-                          src="/assets/icon-backers.svg" 
-                          alt="Backers" 
-                          width={24} 
-                          height={24} 
+                        <Image
+                          src="/assets/icon-backers.svg"
+                          alt="Backers"
+                          width={24}
+                          height={24}
                         />
                         <div className="ml-2">
                           <p className="text-gray-400 text-sm">BACKERS:</p>
