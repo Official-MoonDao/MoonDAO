@@ -239,10 +239,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     />
                     <MissionStat
                       label="Goal"
-                      value={`${truncateTokenValue(
-                        fundingGoal / 1e18,
-                        'ETH'
-                      )} ETH`}
+                      value={`${+(fundingGoal / 1e18).toFixed(3)} ETH`}
                       icon={'/assets/launchpad/target.svg'}
                     />
                   </div>
@@ -287,7 +284,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         <div className="ml-2">
                           <p className="text-gray-400 text-sm">GOAL:</p>
                           <p className="text-white font-GoodTimes">
-                            {truncateTokenValue(fundingGoal / 1e18, 'ETH')} ETH
+                            {+(fundingGoal / 1e18).toFixed(3)} ETH
                           </p>
                         </div>
                       </div>
