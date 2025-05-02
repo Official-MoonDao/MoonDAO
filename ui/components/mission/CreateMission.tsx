@@ -891,7 +891,7 @@ export default function CreateMission({
                       } as any
                     }
                     token={missionData.token}
-                    fundingGoal={fundingGoalInETH || 0}
+                    fundingGoal={fundingGoalInETH * 1e18 || 0}
                     subgraphData={{}}
                     missionImage={missionLogoUri}
                     showMore={true}

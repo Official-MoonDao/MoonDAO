@@ -57,6 +57,8 @@ function MissionPayRedeemContent({
   tokenCredit,
   claimTokenCredit,
 }: any) {
+  const isRefundable = stage === 3 && subgraphData?.volume > 0
+
   return (
     <div
       id="mission-pay-redeem-container"
@@ -92,78 +94,82 @@ function MissionPayRedeemContent({
           </PayRedeemStat>
         </div>
         {/* You pay */}
-        <div className="relative flex flex-col gap-4">
-          <div
-            className={`p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl rounded-tr-2xl ${
-              token?.tokenSymbol ? '' : 'rounded-bl-2xl rounded-br-2xl'
-            }`}
-          >
-            <div className="flex flex-col">
-              <h3 className="text-sm opacity-60">You contribute</h3>
-              <input
-                id="payment-input"
-                type="number"
-                className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
-              <Image
-                src="/coins/ETH.svg"
-                alt="ETH"
-                width={20}
-                height={20}
-                className="w-12 h-5 bg-light-cool rounded-full"
-              />
-              {'ETH'}
-            </div>
-          </div>
-          {token?.tokenSymbol && (
-            <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
-              <ArrowDownIcon
-                className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
-                color={'#121C42'}
-              />
-            </div>
-          )}
-          {/* You receive */}
-          {token?.tokenSymbol && (
-            <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
+        {!isRefundable && (
+          <div className="relative flex flex-col gap-4">
+            <div
+              className={`p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl rounded-tr-2xl ${
+                token?.tokenSymbol ? '' : 'rounded-bl-2xl rounded-br-2xl'
+              }`}
+            >
               <div className="flex flex-col">
-                <h3 className="text-sm opacity-60">You receive</h3>
-                <p id="token-output" className="text-2xl font-bold">
-                  {output.toFixed(2)}
-                </p>
-              </div>
-              <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
-                <Image
-                  src="/assets/icon-star.svg"
-                  alt="ETH"
-                  width={20}
-                  height={20}
-                  className="bg-orange-500 rounded-full p-1w-5 h-5"
+                <h3 className="text-sm opacity-60">You contribute</h3>
+                <input
+                  id="payment-input"
+                  type="number"
+                  className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
                 />
+              </div>
+              <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
                 <Image
                   src="/coins/ETH.svg"
                   alt="ETH"
                   width={20}
                   height={20}
-                  className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
+                  className="w-12 h-5 bg-light-cool rounded-full"
                 />
-                {token?.tokenSymbol}
+                {'ETH'}
               </div>
             </div>
-          )}
-        </div>
-        <StandardButton
-          id="open-contribute-modal"
-          className="rounded-full gradient-2 rounded-full w-full py-1"
-          onClick={() => setMissionPayModalEnabled(true)}
-          hoverEffect={false}
-        >
-          Contribute
-        </StandardButton>
+            {token?.tokenSymbol && (
+              <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                <ArrowDownIcon
+                  className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
+                  color={'#121C42'}
+                />
+              </div>
+            )}
+            {/* You receive */}
+            {token?.tokenSymbol && (
+              <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
+                <div className="flex flex-col">
+                  <h3 className="text-sm opacity-60">You receive</h3>
+                  <p id="token-output" className="text-2xl font-bold">
+                    {output.toFixed(2)}
+                  </p>
+                </div>
+                <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+                  <Image
+                    src="/assets/icon-star.svg"
+                    alt="ETH"
+                    width={20}
+                    height={20}
+                    className="bg-orange-500 rounded-full p-1w-5 h-5"
+                  />
+                  <Image
+                    src="/coins/ETH.svg"
+                    alt="ETH"
+                    width={20}
+                    height={20}
+                    className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
+                  />
+                  {token?.tokenSymbol}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {!isRefundable && (
+          <StandardButton
+            id="open-contribute-modal"
+            className="rounded-full gradient-2 rounded-full w-full py-1"
+            onClick={() => setMissionPayModalEnabled(true)}
+            hoverEffect={false}
+          >
+            Contribute
+          </StandardButton>
+        )}
         {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
           <StandardButton
             id="claim-button"
@@ -177,7 +183,7 @@ function MissionPayRedeemContent({
       </div>
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-col justify-between gap-4">
-        {token?.tokenSupply > 0 && (
+        {token?.tokenSupply > 0 && !isRefundable && (
           <div
             id="mission-token-stats"
             className="px-2 pt-1 bg-darkest-cool rounded-2xl"
@@ -196,7 +202,7 @@ function MissionPayRedeemContent({
             />
           </div>
         )}
-        {tokenBalance > 0 && stage === 3 && (
+        {tokenBalance > 0 && isRefundable && (
           <div
             id="mission-redeem-container"
             className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
@@ -215,6 +221,10 @@ function MissionPayRedeemContent({
               action={redeem}
               noPadding
             />
+            <p className="mt-2 text-sm opacity-60">
+              This mission did not reach its funding goal. You can redeem your
+              tokens for ETH.
+            </p>
           </div>
         )}
       </div>
@@ -519,7 +529,7 @@ export default function MissionPayRedeem({
         style: toastStyle,
       })
     }
-  }, [account, address, jbTokensContract, mission?.projectId])
+  }, [account, address, jbTokensContract, mission?.projectId, tokenCredit])
 
   useEffect(() => {
     if (parseFloat(input) > 0) {
