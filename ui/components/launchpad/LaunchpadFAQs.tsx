@@ -5,13 +5,18 @@ const FAQS = [
   {
     question: 'Who can use the Launchpad?',
     answer: (
-      <p>
-        {`Teams in the `}
+      <>
+        Teams in the{' '}
         <Link href="/join" className="text-blue-500 underline">
           Space Acceleration Network
         </Link>{' '}
-        {` can create Missions directly and permissionlessly, but anyone with a space-related project can apply to create their mission with the Launchpad—whether it's a research initiative, satellite deployment, lunar lander payload, or even a human spaceflight mission—in order to start raising funds. Apply now to tell us more about your objectives, fundraising goals, existing network, and how we can help.",`}
-      </p>
+        can create Missions directly and permissionlessly, but anyone with a
+        space-related project can apply to create their mission with the
+        Launchpad—whether it's a research initiative, satellite deployment,
+        lunar lander payload, or even a human spaceflight mission—in order to
+        start raising funds. Apply now to tell us more about your objectives,
+        fundraising goals, existing network, and how we can help.
+      </>
     ),
   },
   {
@@ -53,7 +58,7 @@ const FAQS = [
     question:
       'Can contributors withdraw their funds if they change their minds?',
     answer:
-      'By default, if the team doesn’t reach its funding goal by the deadline, contributors are refunded. If the fundraiser is successful, the team will be responsible for determining what to do with the treasury, including their policy on refunds if the mission cannot move forward.',
+      "By default, if the team doesn't reach its funding goal by the deadline, contributors are refunded. If the fundraiser is successful, the team will be responsible for determining what to do with the treasury, including their policy on refunds if the mission cannot move forward.",
   },
   {
     question:
