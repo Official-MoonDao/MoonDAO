@@ -205,33 +205,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <></>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <MissionStat
-                      label="Deadline"
-                      value={`${daysUntilDate(
-                        new Date(
-                          ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000
-                        )
-                      )} days`}
-                      icon={'/assets/launchpad/clock.svg'}
-                    />
-                    <MissionStat
-                      label="Goal"
-                      value={`${truncateTokenValue(
-                        fundingGoal / 1e18,
-                        'ETH'
-                      )} ETH`}
-                      icon={'/assets/launchpad/target.svg'}
-                    />
-                    <MissionStat
-                      label="Volume"
-                      value={`${truncateTokenValue(
-                        subgraphData?.volume / 1e18,
-                        'ETH'
-                      )} ETH`}
-                      icon={'/assets/launchpad/token.svg'}
-                    />
-                  </div>
                   <div id="profile-container">
                     {mission?.metadata?.tagline ? (
                       <p
@@ -244,6 +217,34 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <></>
                     )}
                   </div>
+                  <div className="flex flex-wrap gap-2">
+                    <MissionStat
+                      label="Deadline"
+                      value={`${daysUntilDate(
+                        new Date(
+                          ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000
+                        )
+                      )} days`}
+                      icon={'/assets/launchpad/clock.svg'}
+                    />
+                    <MissionStat
+                      label="Total Raised"
+                      value={`${truncateTokenValue(
+                        subgraphData?.volume / 1e18,
+                        'ETH'
+                      )} ETH`}
+                      icon={'/assets/launchpad/token.svg'}
+                    />
+                    <MissionStat
+                      label="Goal"
+                      value={`${truncateTokenValue(
+                        fundingGoal / 1e18,
+                        'ETH'
+                      )} ETH`}
+                      icon={'/assets/launchpad/target.svg'}
+                    />
+                  </div>
+
                   <div className="mt-4 w-full">
                     <MissionFundingProgressBar
                       fundingGoal={fundingGoal}
@@ -269,6 +270,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         <Head
           title={mission?.metadata?.name}
           description={mission?.metadata?.description}
+          image={mission?.metadata?.logoUri}
         />
         <ContentLayout
           header={''}

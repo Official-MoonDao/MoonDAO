@@ -18,13 +18,14 @@ export type MissionWideCardProps = {
   contribute?: boolean
   stage?: number
   ruleset?: any
-  missionImage?: File
+  missionImage?: File | string
   teamContract?: any
   selectedChain?: any
   jbDirectoryContract?: any
   editable?: boolean
   showMore?: boolean
   showMoreButton?: boolean
+  learnMore?: boolean
   linkToMission?: boolean
   primaryTerminalAddress?: string
   compact?: boolean
@@ -44,6 +45,7 @@ export default function MissionWideCard({
   teamContract,
   showMore,
   showMoreButton = true,
+  learnMore,
   linkToMission,
   primaryTerminalAddress,
   compact,
@@ -90,7 +92,7 @@ export default function MissionWideCard({
         subheader={mission?.metadata?.tagline}
         stats={
           <div className="w-full">
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 justify-between">
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 justify-between">
               <MissionStat
                 icon="/assets/target.png"
                 label="Goal"
@@ -102,7 +104,7 @@ export default function MissionWideCard({
               />
               {subgraphData?.volume !== undefined && (
                 <MissionStat
-                  label="VOLUME"
+                  label="Total Raised"
                   value={'Ξ ' + subgraphData.volume / 1e18}
                 />
               )}
@@ -152,6 +154,19 @@ export default function MissionWideCard({
                 Contribute
               </StandardButton>
             )}
+            {learnMore && (
+              <StandardButton
+                className="mt-4 gradient-2 rounded-full"
+                hoverEffect={false}
+                onClick={(e: any) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  router.push(`/mission/${mission.id}`)
+                }}
+              >
+                Learn More
+              </StandardButton>
+            )}
           </div>
         }
         paragraph={
@@ -164,7 +179,9 @@ export default function MissionWideCard({
         }
         image={
           missionImage
-            ? URL.createObjectURL(missionImage)
+            ? typeof missionImage === 'string'
+              ? missionImage
+              : URL.createObjectURL(missionImage)
             : mission?.metadata?.logoUri
         }
         showMore={showMore}

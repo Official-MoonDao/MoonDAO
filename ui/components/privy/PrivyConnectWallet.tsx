@@ -69,6 +69,24 @@ const selectedNativeToken: any = {
   polygon: 'MATIC',
 }
 
+const PATHS_WITH_NO_SIGNIN_REDIRECT = [
+  '/submit',
+  '/withdraw',
+  '/projects',
+  '/proposal/[proposal]',
+  '/lock',
+  '/join',
+  '/get-mooney',
+  '/bridge',
+  '/citizen',
+  '/citizen/[tokenId]',
+  '/team',
+  '/team/[tokenId]',
+  '/launch',
+  '/mission',
+  '/mission/[tokenId]',
+]
+
 function SendModal({
   account,
   selectedChain,
@@ -256,14 +274,7 @@ export function PrivyConnectWallet({
       //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
       if (
         !wasAlreadyAuthenticated &&
-        router.pathname !== '/submit' &&
-        router.pathname !== '/withdraw' &&
-        router.pathname !== '/projects' &&
-        router.pathname !== '/lock' &&
-        router.pathname !== '/bridge' &&
-        router.pathname !== '/citizen' &&
-        router.pathname !== '/team' &&
-        router.pathname !== '/launch'
+        !PATHS_WITH_NO_SIGNIN_REDIRECT.includes(router.pathname)
       ) {
         let citizen
         try {

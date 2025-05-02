@@ -69,7 +69,7 @@ export default function MissionCard({
     return (
       <div id="missions-stats" className="flex gap-4">
         <MissionStat
-          label="VOLUME"
+          label="Total Raised"
           value={'Ξ' + projectData?.subgraphData?.volume / 1e18}
         />
         <MissionStat

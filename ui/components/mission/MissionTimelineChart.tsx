@@ -319,7 +319,6 @@ export default function MissionTimelineChart({
                       fill={color}
                       transform={`translate(${props.x + 4},${props.y + 4})`}
                     >
-                      {'ETH'}
                       {formattedValue}
                     </text>
                   </g>

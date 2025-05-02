@@ -54,7 +54,7 @@ export default function FormInput({
           id={id}
           type={type}
           placeholder={placeholder}
-          className={`w-full p-2 px-4 ${
+          className={`w-full p-2 px-2 ${
             mode === 'dark'
               ? 'bg-gradient-to-r from-[#000000] to-[#040617] placeholder:opacity-50'
               : 'bg-[#0f152f]'

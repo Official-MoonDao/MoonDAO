@@ -1,10 +1,18 @@
+import Link from 'next/link'
 import FAQs from '../layout/FAQs'
 
 const FAQS = [
   {
     question: 'Who can use the Launchpad?',
-    answer:
-      "Teams in the Space Acceleration Network can create Missions directly and permissionlessly, but anyone with a space-related project can apply to create their mission with the Launchpad—whether it's a research initiative, satellite deployment, lunar lander payload, or even a human spaceflight mission—in order to start raising funds. Apply now to tell us more about your objectives, fundraising goals, existing network, and how we can help.",
+    answer: (
+      <p>
+        {`Teams in the `}
+        <Link href="/join" className="text-blue-500 underline">
+          Space Acceleration Network
+        </Link>{' '}
+        {` can create Missions directly and permissionlessly, but anyone with a space-related project can apply to create their mission with the Launchpad—whether it's a research initiative, satellite deployment, lunar lander payload, or even a human spaceflight mission—in order to start raising funds. Apply now to tell us more about your objectives, fundraising goals, existing network, and how we can help.",`}
+      </p>
+    ),
   },
   {
     question: 'Why use blockchain for space crowdfunding?',
@@ -45,7 +53,7 @@ const FAQS = [
     question:
       'Can contributors withdraw their funds if they change their minds?',
     answer:
-      'By default, once funds are contributed, they belong to the campaign. However, creators can implement refund mechanisms if they choose such as if they fail to meet the fundraising goal. Additionally, some projects may opt for a revenue-sharing model (RevNet), where tokens represent a percentage of total funds and can be redeemed for the underlying ETH—particularly appealing for Missions or initiatives that could potentially generate a profit in the future or generate onchain revenue.',
+      'By default, if the team doesn’t reach its funding goal by the deadline, contributors are refunded. If the fundraiser is successful, the team will be responsible for determining what to do with the treasury, including their policy on refunds if the mission cannot move forward.',
   },
   {
     question:
