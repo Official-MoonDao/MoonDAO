@@ -17,7 +17,7 @@ import {
 import { blockedMissions } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -148,6 +148,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   useChainDefault()
 
+  const duration = useMemo(() => {
+    return daysUntilDate(
+      new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
+    )
+  }, [ruleset])
+
   //Profile Header Section
   const ProfileHeader = (
     <div id="citizenheader-container">
@@ -220,11 +226,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   <div className="flex flex-wrap gap-2">
                     <MissionStat
                       label="Deadline"
-                      value={`${daysUntilDate(
-                        new Date(
-                          ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000
-                        )
-                      )} days`}
+                      value={`${duration > 0 ? `${duration} days` : 'Expired'}`}
                       icon={'/assets/launchpad/clock.svg'}
                     />
                     <MissionStat
