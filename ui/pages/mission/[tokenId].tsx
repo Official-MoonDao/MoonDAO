@@ -197,7 +197,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               <div id="mission-name-container">
                 <div
                   id="mission-name"
-                  className="flex mb-2 w-full flex-col justify-center gap-2 lg:ml-5"
+                  className="flex w-full flex-col justify-center lg:ml-5"
                 >
                   <div
                     id="mission-name-container"
@@ -215,7 +215,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     {mission?.metadata?.tagline ? (
                       <p
                         id="profile-description-container"
-                        className="w-full pr-12 font-GoodTimes text-lg"
+                        className="w-full pr-12 text-gray-300 pb-5"
                       >
                         {mission?.metadata?.tagline || ''}
                       </p>
@@ -247,12 +247,87 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     />
                   </div>
 
-                  <div className="mt-4 w-full">
-                    <MissionFundingProgressBar
-                      fundingGoal={fundingGoal}
-                      volume={subgraphData?.volume / 1e18}
-                      stage={stage ?? 0}
-                    />
+                  <div className="w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
+                    {/* Purple raised amount tag */}
+                    <div className="mb-4">
+                      <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-center">
+                        <Image
+                          src="/assets/icon-raised-tokens.svg"
+                          alt="Raised"
+                          width={24}
+                          height={24}
+                          className="mr-2"
+                        />
+                        <span className="mr-2">
+                          {truncateTokenValue(
+                            subgraphData?.volume / 1e18,
+                            'ETH'
+                          )}
+                        </span>
+                        <span className="text-sm md:text-base">ETH RAISED</span>
+                      </div>
+                    </div>
+
+                    <div className="w-full">
+                      <MissionFundingProgressBar
+                        fundingGoal={fundingGoal}
+                        volume={subgraphData?.volume / 1e18}
+                        stage={stage ?? 0}
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 justify-between">
+                      <div className="flex items-center">
+                        <Image
+                          src="/assets/launchpad/target.svg"
+                          alt="Goal"
+                          width={24}
+                          height={24}
+                        />
+                        <div className="ml-2">
+                          <p className="text-gray-400 text-sm">GOAL:</p>
+                          <p className="text-white font-GoodTimes">
+                            {truncateTokenValue(fundingGoal / 1e18, 'ETH')} ETH
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <Image
+                          src="/assets/launchpad/clock.svg"
+                          alt="Deadline"
+                          width={24}
+                          height={24}
+                        />
+                        <div className="ml-2">
+                          <p className="text-gray-400 text-sm">DEADLINE:</p>
+                          <p className="text-white font-GoodTimes">
+                            {daysUntilDate(
+                              new Date(
+                                ruleset?.[0]?.start * 1000 +
+                                  28 * 24 * 60 * 60 * 1000
+                              )
+                            )}{' '}
+                            DAYS
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <Image
+                          src="/assets/icon-backers.svg"
+                          alt="Backers"
+                          width={24}
+                          height={24}
+                        />
+                        <div className="ml-2">
+                          <p className="text-gray-400 text-sm">BACKERS:</p>
+                          <p className="text-white font-GoodTimes">
+                            {subgraphData?.backers || 0}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
