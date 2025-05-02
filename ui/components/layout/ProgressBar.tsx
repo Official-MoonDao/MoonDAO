@@ -39,7 +39,7 @@ export default function ProgressBar({
 
   return (
     <div
-      className="relative w-full rounded-full bg-gradient-to-l from-[#425eeb] to-[#6d3f79]"
+      className="relative w-full rounded-full"
       style={{ height: `calc(${height} + ${padding} * 2)` }}
     >
       <div

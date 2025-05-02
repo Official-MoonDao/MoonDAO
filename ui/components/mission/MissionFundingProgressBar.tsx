@@ -21,7 +21,7 @@ export default function MissionFundingProgressBar({
   if (stage === 3) return null
 
   return (
-    <div className={`relative ${compact ? 'mb-4' : 'mb-12'} max-w-[800px]`}>
+    <div className={`relative mb-4 max-w-[800px]`}>
       <ProgressBar
         height={compact ? '20px' : '25px'}
         progress={stageProgress}
