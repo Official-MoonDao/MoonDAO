@@ -544,7 +544,7 @@ export default function Launch({ missions }: any) {
               <ExplainerIcon
                 title="Support"
                 subtext=""
-                description="Contribute in ETH or via your debit card to missions you believe in. The funds go straight to the Team's multisig wallet via secure smart contracts. In return, you’ll receive mission tokens — a symbol of your support and a gateway to future utility and participation."
+                description="Contribute in ETH (yes, even with a debit card) to missions you believe in. Funds go to the Team's multisig, and you receive mission tokens in return, a gateway to future utility and participation."
                 icon={<p>2</p>}
                 numberBackground="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC]"
               />
@@ -553,7 +553,7 @@ export default function Launch({ missions }: any) {
               <ExplainerIcon
                 title="Accelerate"
                 subtext=""
-                description="Contribution fuel real progress — from hardware to human spaceflight, research to education. You're not just backing a mission — you're joining one."
+                description="Contributions fuel real progress — from hardware to human spaceflight, research to education. You're not just backing a mission — you're joining one."
                 icon={<p>1</p>}
                 numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
               />
@@ -600,7 +600,7 @@ export default function Launch({ missions }: any) {
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Global Access"
-              description="Move at the speed of the Internet tapping into a global crypto network with trillions of dollars at your fingertips."
+              description="Tap into a global crypto network with trillions of dollars at your fingertips."
               icon="/assets/icon-globe.svg"
               align="left"
               slideDirection="left"
