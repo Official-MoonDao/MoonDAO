@@ -60,14 +60,17 @@ function MissionPayRedeemContent({
   return (
     <div
       id="mission-pay-redeem-container"
-      className="w-full flex flex-row flex-col md:flex-row xl:flex-col gap-4 xl:max-w-[300px]"
+      className="w-full flex flex-row flex-col md:flex-row xl:flex-col gap-4 xl:max-w-[300px] items-center"
     >
       <div
         id="mission-pay-container"
-        className="p-2 max-w-[300px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
+        className="p-2 max-w-[500px] md:max-w-[300px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
       >
         <div id="mission-pay-header" className="flex justify-between gap-2">
-          <PayRedeemStat label="Payments" value={subgraphData?.paymentsCount} />
+          <PayRedeemStat
+            label="Contributions"
+            value={subgraphData?.paymentsCount}
+          />
           <PayRedeemStat
             label="Total Raised"
             value={subgraphData?.volume / 1e18}
@@ -102,7 +105,7 @@ function MissionPayRedeemContent({
                 type="number"
                 className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={input}
-                onChange={(e) => setInput(+e.target.value)}
+                onChange={(e) => setInput(e.target.value)}
               />
             </div>
             <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
@@ -263,7 +266,7 @@ export default function MissionPayRedeem({
   const account = useActiveAccount()
   const address = account?.address
 
-  const [input, setInput] = useState(0)
+  const [input, setInput] = useState('0')
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState('')
 
@@ -307,19 +310,20 @@ export default function MissionPayRedeem({
     }
 
     try {
+      const inputValue = parseFloat(input) || 0
       const transaction = prepareContractCall({
         contract: primaryTerminalContract,
         method: 'pay' as string,
         params: [
           mission?.projectId,
           JB_NATIVE_TOKEN_ADDRESS,
-          input * 1e18,
+          inputValue * 1e18,
           address || ZERO_ADDRESS,
           0,
           message,
           '0x00',
         ],
-        value: BigInt(input * 1e18),
+        value: BigInt(inputValue * 1e18),
       })
 
       const q = await simulateTransaction({
@@ -348,15 +352,17 @@ export default function MissionPayRedeem({
       return
     }
 
-    if (input < 0) {
+    const inputValue = parseFloat(input) || 0
+    console.log(inputValue)
+    if (inputValue <= 0) {
       toast.error('Please enter a valid amount', {
         style: toastStyle,
       })
       return
     }
-    if (input > +nativeBalance) {
+    if (inputValue > +nativeBalance) {
       return fundWallet(address, {
-        amount: (input - +nativeBalance).toString(),
+        amount: (inputValue - +nativeBalance).toString(),
         chain: viemChains[chainSlug],
       })
     }
@@ -368,13 +374,13 @@ export default function MissionPayRedeem({
         params: [
           mission?.projectId,
           JB_NATIVE_TOKEN_ADDRESS,
-          input * 1e18,
+          inputValue * 1e18,
           address,
           Math.floor(output),
           message,
           '0x00',
         ],
-        value: BigInt(input * 1e18),
+        value: BigInt(inputValue * 1e18),
         gas: BigInt(500000),
       })
 
@@ -483,7 +489,7 @@ export default function MissionPayRedeem({
       return
     }
 
-    if (tokenCredit < 0) {
+    if (tokenCredit <= 0) {
       toast.error('You have no token credit to claim', {
         style: toastStyle,
       })
@@ -516,7 +522,7 @@ export default function MissionPayRedeem({
   }, [account, address, jbTokensContract, mission?.projectId])
 
   useEffect(() => {
-    if (input > 0) {
+    if (parseFloat(input) > 0) {
       getQuote()
     }
   }, [input])
@@ -548,7 +554,7 @@ export default function MissionPayRedeem({
               </StandardButton>
             </div>
           )}
-          <div className="hidden mt-2 md:block">
+          <div className="mt-2">
             <MissionPayRedeemContent
               token={token}
               ruleset={ruleset}
@@ -564,34 +570,6 @@ export default function MissionPayRedeem({
               currentStage={currentStage}
               stage={stage}
             />
-          </div>
-          <div className="fixed bottom-0 left-0 w-full p-4 bg-darkest-cool rounded-t-2xl md:hidden z-[1000] flex flex-col gap-4">
-            <StandardButton
-              className="w-full gradient-2 rounded-full text-lg"
-              onClick={() => setMissionPayModalEnabled(true)}
-              hoverEffect={false}
-            >
-              Contribute
-            </StandardButton>
-            {token?.tokenSymbol &&
-              tokenCredit &&
-              +tokenCredit.toString() > 0 && (
-                <PrivyWeb3Button
-                  label={`Claim ${tokenCredit} $${token?.tokenSymbol}`}
-                  className="w-full gradient-2 rounded-full py-2"
-                  action={claimTokenCredit}
-                  noPadding
-                />
-              )}
-            {stage === 3 && (
-              <PrivyWeb3Button
-                id="redeem-button"
-                className="w-full gradient-2 rounded-full py-2"
-                label="Redeem"
-                action={redeemMissionToken}
-                noPadding
-              />
-            )}
           </div>
         </>
       )}
@@ -620,9 +598,9 @@ export default function MissionPayRedeem({
                   <input
                     id="payment-input"
                     type="number"
-                    className="text-right bg-transparent border-none outline-none font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="text-right bg-transparent w-[75px] rounded-md px-2 outline-none font-bold border-[1px] border-moon-indigo [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     value={input}
-                    onChange={(e) => setInput(+e.target.value)}
+                    onChange={(e) => setInput(e.target.value)}
                   />
                   {'ETH'}
                 </div>
@@ -721,7 +699,9 @@ export default function MissionPayRedeem({
                 className="w-1/2 bg-moon-indigo rounded-xl"
                 label={`Contribute ${input} ETH`}
                 action={buyMissionToken}
-                isDisabled={!agreedToCondition}
+                isDisabled={
+                  !agreedToCondition || !input || parseFloat(input) <= 0
+                }
               />
             </div>
           </div>

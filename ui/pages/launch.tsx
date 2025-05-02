@@ -378,10 +378,8 @@ export default function Launch({ missions }: any) {
             subgraphData={featuredMissionSubgraphData}
             fundingGoal={featuredMissionFundingGoal}
             teamContract={teamContract}
-            jbDirectoryContract={jbDirectoryContract}
-            primaryTerminalAddress={featuredMissionPrimaryTerminalAddress}
             selectedChain={selectedChain}
-            contribute
+            learnMore
             showMore
             compact
             linkToMission
@@ -572,6 +570,7 @@ export default function Launch({ missions }: any) {
             <StandardButton
               className="gradient-2 rounded-full md:text-[min(1.2vw,25px)]"
               hoverEffect={false}
+              onClick={handleCreateMission}
             >
               {'Launch Your Mission'}
             </StandardButton>
@@ -750,8 +749,8 @@ export default function Launch({ missions }: any) {
           <LaunchpadFAQs />
         </div>
       </section>
-      <div className="bg-[#020617]">
-        <Footer darkBackground={true} />
+      <div className="bg-[#020617] w-full flex justify-center">
+        <Footer darkBackground={true} centerContent />
       </div>
     </>
   )

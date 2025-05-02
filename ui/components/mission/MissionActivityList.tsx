@@ -47,7 +47,7 @@ export default function MissionActivityList({
           }}
           options={[
             { label: 'All', value: 'all' },
-            { label: 'Payments', value: 'payEvent' },
+            { label: 'Contributions', value: 'payEvent' },
             { label: 'Tokens', value: 'mintTokensEvent' },
           ]}
         />
