@@ -5,8 +5,8 @@ export default function FAQs({
   faqs,
 }: {
   faqs: {
-    question: string
-    answer: string
+    question: any
+    answer: any
   }[]
 }) {
   const [faqExpanded, setFaqExpanded] = useState<boolean[]>(
