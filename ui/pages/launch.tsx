@@ -10,7 +10,6 @@ import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
-  IPFS_GATEWAY,
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
@@ -26,7 +25,7 @@ import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { getIPFSFile, getIPFSGateway } from '@/lib/ipfs/gateway'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
