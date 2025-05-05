@@ -92,7 +92,7 @@ export default function MissionInfo({
 
   return (
     <div>
-      <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
+      <div id="mission-info-tabs" className="mt-4 flex justify-around md:justify-start gap-[5vw] w-full md:w-3/4">
         <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
         <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
         <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
@@ -112,7 +112,7 @@ export default function MissionInfo({
                   __html: mission?.metadata?.description || '',
                 }}
               />
-              <div className="mt-8 flex gap-2 text-light-cool max-w-none">
+              <div className="mt-8 flex md:gap-2 text-light-cool max-w-none">
                 <Image
                   src="/assets/icon-star-blue.svg"
                   alt="Star Icon"

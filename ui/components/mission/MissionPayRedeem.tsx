@@ -62,11 +62,11 @@ function MissionPayRedeemContent({
   return (
     <div
       id="mission-pay-redeem-container"
-      className="w-full flex flex-row flex-col md:flex-row xl:flex-col gap-4 xl:max-w-[300px] items-center"
+      className="w-full flex flex-row flex-col md:flex-row xl:flex-col gap-4 xl:max-w-[300px] p-5 md:p-0 items-start md:items-center"
     >
       <div
         id="mission-pay-container"
-        className="p-2 max-w-[500px] md:max-w-[300px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
+        className="p-5 md:p-2 max-w-[500px] md:max-w-[300px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
       >
         <div id="mission-pay-header" className="flex justify-between gap-2">
           <PayRedeemStat
