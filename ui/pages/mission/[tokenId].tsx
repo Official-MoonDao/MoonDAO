@@ -60,6 +60,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>()
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
 
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
@@ -148,6 +149,34 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     }
   }, [teamContract, mission.teamId])
 
+  useEffect(() => {
+    if (!ruleset?.[0]?.start) return;
+    
+    const deadlineDate = new Date(ruleset[0].start * 1000 + 28 * 24 * 60 * 60 * 1000);
+    
+    const updateCountdown = () => {
+      const now = new Date();
+      const difference = deadlineDate.getTime() - now.getTime();
+      
+      if (difference <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+      
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+      
+      setCountdown({ days, hours, minutes, seconds });
+    };
+    
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    
+    return () => clearInterval(interval);
+  }, [ruleset]);
+
   useChainDefault()
 
   const duration = useMemo(() => {
@@ -159,7 +188,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   //Profile Header Section
   const ProfileHeader = (
     <div id="citizenheader-container">
-      <div className="z-50 rounded-tl-[20px] overflow-hidden">
+      <div className="z-50 rounded-tl-[20px]">
         <div id="frame-content-container" className="w-full">
           <div
             id="frame-content"
@@ -172,7 +201,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               {mission?.metadata?.logoUri ? (
                 <div
                   id="mission-image-container"
-                  className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
+                  className="relative w-full max-w-[350px] h-full md:min-w-[230px] md:min-h-[230px] md:max-w-[300px] md:max-h-[300px]"
                 >
                   <MediaRenderer
                     client={client}
@@ -225,30 +254,11 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <></>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <MissionStat
-                      label="Deadline"
-                      value={`${duration > 0 ? `${duration} days` : 'Expired'}`}
-                      icon={'/assets/launchpad/clock.svg'}
-                    />
-                    <MissionStat
-                      label="Total Raised"
-                      value={`${truncateTokenValue(
-                        subgraphData?.volume / 1e18,
-                        'ETH'
-                      )} ETH`}
-                      icon={'/assets/launchpad/token.svg'}
-                    />
-                    <MissionStat
-                      label="Goal"
-                      value={`${+(fundingGoal / 1e18).toFixed(3)} ETH`}
-                      icon={'/assets/launchpad/target.svg'}
-                    />
-                  </div>
 
-                  <div className="w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
+
+                  <div className="w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl ">
                     {/* Purple raised amount tag */}
-                    <div className="mb-4">
+                    <div className="mb-4 flex items-center justify-between">
                       <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-center">
                         <Image
                           src="/assets/icon-raised-tokens.svg"
@@ -263,7 +273,21 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             'ETH'
                           )}
                         </span>
-                        <span className="text-sm md:text-base">ETH RAISED</span>
+                        <span className="text-sm min-w-[130px] md:text-base">ETH RAISED</span>
+                      </div>
+                      
+                      <div className="hidden sm:flex items-center ml-4">
+                        <Image
+                          src="/assets/icon-backers.svg"
+                          alt="Backers"
+                          width={24}
+                          height={24}
+                        />
+                        <div className="ml-2 min-w-[100px]">
+                          <p className="text-white font-GoodTimes">
+                            {subgraphData?.backers || 0} 
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -275,7 +299,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       />
                     </div>
 
-                    <div className="flex flex-wrap gap-4 justify-between">
+                    <div className="flex flex-wrap gap-4 justify-start">
                       <div className="flex items-center">
                         <Image
                           src="/assets/launchpad/target.svg"
@@ -283,11 +307,11 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           width={24}
                           height={24}
                         />
-                        <div className="ml-2">
-                          <p className="text-gray-400 text-sm">GOAL:</p>
-                          <p className="text-white font-GoodTimes">
-                            {+(fundingGoal / 1e18).toFixed(3)} ETH
+                        <div className="ml-2 min-w-[120px]">
+                          <p className="text-white">
+                            <span className="font-GoodTimes">{+(fundingGoal / 1e18).toFixed(3)} ETH GOAL</span>
                           </p>
+                          <p className="text-gray-400 text-sm">(~$2,000,000 USD)</p>
                         </div>
                       </div>
 
@@ -298,31 +322,32 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           width={24}
                           height={24}
                         />
-                        <div className="ml-2">
-                          <p className="text-gray-400 text-sm">DEADLINE:</p>
-                          <p className="text-white font-GoodTimes">
-                            {daysUntilDate(
-                              new Date(
-                                ruleset?.[0]?.start * 1000 +
-                                  28 * 24 * 60 * 60 * 1000
-                              )
-                            )}{' '}
-                            DAYS
+                        <div className="ml-2 min-w-[190px]">
+                          <p className="text-gray-400 text-sm">DEADLINE</p>
+                          <p className="text-white font-GoodTimes flex items-baseline">
+                            <span>{countdown.days}</span>
+                            <span className="text-gray-400 text-xs font-lato ml-0.5 mr-2">D</span>
+                            <span>{countdown.hours}</span>
+                            <span className="text-gray-400 text-xs font-lato ml-0.5 mr-2">H</span>
+                            <span>{countdown.minutes}</span>
+                            <span className="text-gray-400 text-xs font-lato ml-0.5 mr-2">M</span>
+                            <span>{countdown.seconds}</span>
+                            <span className="text-gray-400 text-xs font-lato ml-0.5">S</span>
                           </p>
                         </div>
                       </div>
-
-                      <div className="flex items-center">
+                      
+                      <div className="sm:hidden flex items-center w-full mt-1">
                         <Image
                           src="/assets/icon-backers.svg"
                           alt="Backers"
                           width={24}
                           height={24}
                         />
-                        <div className="ml-2">
-                          <p className="text-gray-400 text-sm">BACKERS:</p>
+                        <div className="ml-2 min-w-[100px]">
+                          <p className="text-gray-400 text-sm">BACKERS</p>
                           <p className="text-white font-GoodTimes">
-                            {subgraphData?.backers || 0}
+                            {subgraphData?.backers || 0} 
                           </p>
                         </div>
                       </div>
@@ -406,7 +431,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               topRight="0px"
               topLeft="0px"
             >
-              <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 px-12 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+              <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:px-12 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}
