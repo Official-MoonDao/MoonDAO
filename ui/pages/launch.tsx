@@ -10,6 +10,7 @@ import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
+  IPFS_GATEWAY,
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
@@ -25,6 +26,7 @@ import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { getIPFSFile, getIPFSGateway } from '@/lib/ipfs/gateway'
 import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -44,6 +46,7 @@ import MissionWideCard from '@/components/mission/MissionWideCard'
 const FEATURED_MISSION_INDEX = 0
 
 export default function Launch({ missions }: any) {
+  console.log(missions)
   const [status, setStatus] = useState<
     'idle' | 'loggingIn' | 'apply' | 'create'
   >('idle')
@@ -492,7 +495,7 @@ export default function Launch({ missions }: any) {
               <Image
                 id="astronauts"
                 className="h-full w-full top-0 p-2 md:p-5"
-                src="/assets/astronauts.png"
+                src="/assets/launchpad/astronauts-v2.png"
                 alt="MoonDAO Astronauts, Dr.Eiman Jahangir and Coby Cotton of Dude Perfect"
                 width={500}
                 height={500}
@@ -564,8 +567,8 @@ export default function Launch({ missions }: any) {
               Your tools, your team, your mission
             </h3>
             <p className="hidden md:block text-[max(1.2vw,16px)] 2xl:text-[18px] max-w-[500px]">
-            Move at the speed of the Internet. Teams using these tools have 
-            raised millions of dollars from all over the world in mere days.
+              Move at the speed of the Internet. Teams using these tools have
+              raised millions of dollars from all over the world in mere days.
             </p>
             <StandardButton
               className="gradient-2 rounded-full md:text-[min(1.2vw,25px)]"
@@ -791,22 +794,27 @@ export const getStaticProps: GetStaticProps = async () => {
 
     const missions = await Promise.all(
       filteredMissionRows.map(async (missionRow) => {
-        const metadataURI = await readContract({
-          contract: jbV4ControllerContract,
-          method: 'uriOf' as string,
-          params: [missionRow.projectId],
-        })
+        try {
+          const metadataURI = await readContract({
+            contract: jbV4ControllerContract,
+            method: 'uriOf' as string,
+            params: [missionRow.projectId],
+          })
 
-        const metadataRes = await fetch(
-          `https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`
-        )
-        const metadata = await metadataRes.json()
-
-        return {
-          id: missionRow.id,
-          teamId: missionRow.teamId,
-          projectId: missionRow.projectId,
-          metadata: metadata,
+          const metadataRes = await fetch(getIPFSGateway(metadataURI))
+          const metadata = await metadataRes.json()
+          return {
+            id: missionRow.id,
+            teamId: missionRow.teamId,
+            projectId: missionRow.projectId,
+            metadata: metadata,
+          }
+        } catch (error) {
+          return {
+            id: missionRow.id,
+            teamId: missionRow.teamId,
+            projectId: missionRow.projectId,
+          }
         }
       })
     )

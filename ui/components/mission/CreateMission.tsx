@@ -5,7 +5,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/20/solid'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
-import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { DEFAULT_CHAIN_V5, IPFS_GATEWAY } from 'const/config'
 import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
 import { marked } from 'marked'
@@ -633,13 +633,10 @@ export default function CreateMission({
                       const { cid: missionLogoIpfsHash } = await pinBlobOrFile(
                         renamedMissionImage
                       )
-                      setMissionLogoUri(
-                        `https://ipfs.io/ipfs/${missionLogoIpfsHash}`
-                      )
+                      setMissionLogoUri(`${IPFS_GATEWAY}${missionLogoIpfsHash}`)
                     }}
                     dimensions={[1024, 1024]}
                   />
-                  {console.log(missionLogoUri)}
                   <div>
                     {missionLogoUri && (
                       <Image

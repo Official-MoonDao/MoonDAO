@@ -7,6 +7,7 @@ import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
+  IPFS_GATEWAY,
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
@@ -22,6 +23,7 @@ import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useMissionData from '@/lib/mission/useMissionData'
@@ -174,7 +176,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 >
                   <MediaRenderer
                     client={client}
-                    src={mission?.metadata?.logoUri}
+                    src={getIPFSGateway(mission?.metadata?.logoUri)}
                     className="rounded-full"
                     height={'300'}
                     width={'300'}
@@ -480,9 +482,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     params: [missionRow.projectId],
   })
 
-  const metadataRes = await fetch(
-    `https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`
-  )
+  const ipfsHash = metadataURI.startsWith('ipfs://')
+    ? metadataURI.replace('ipfs://', '')
+    : metadataURI
+
+  const metadataRes = await fetch(`${IPFS_GATEWAY}${ipfsHash}`)
   const metadata = await metadataRes.json()
 
   const mission = {

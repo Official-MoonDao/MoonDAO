@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import StandardCard from '../layout/StandardCard'
@@ -96,7 +97,7 @@ export default function MissionCard({
         </Link>
       }
       paragraph={metadata?.tagline}
-      image={metadata?.logoUri}
+      image={getIPFSGateway(metadata?.logoUri)}
       footer={<MissionFooter />}
     />
   )

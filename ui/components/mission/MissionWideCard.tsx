@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '../layout/StandardButton'
 import StandardWideCard from '../layout/StandardWideCard'
@@ -182,7 +183,7 @@ export default function MissionWideCard({
             ? typeof missionImage === 'string'
               ? missionImage
               : URL.createObjectURL(missionImage)
-            : mission?.metadata?.logoUri
+            : getIPFSGateway(mission?.metadata?.logoUri)
         }
         showMore={showMore}
         showMoreButton={showMoreButton}

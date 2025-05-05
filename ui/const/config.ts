@@ -360,6 +360,8 @@ export const CHAIN_TOKEN_NAMES: Index = {
   sepolia: 'ETH',
 }
 
+export const IPFS_GATEWAY = 'https://gray-main-toad-36.mypinata.cloud/ipfs/'
+
 export const ARBITRUM_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/42161/safes/0xAF26a002d716508b7e375f1f620338442F5470c0/balances/usd?trusted=true'
 export const POLYGON_ASSETS_URL =
