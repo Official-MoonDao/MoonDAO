@@ -33,7 +33,8 @@ contract PoolDeployer {
     PositionManager public posm;
     IERC20 public token;
     // FIXME don't hardcode
-    address public hookAddress = address(0x3AA84C1124d83be2BdD5ab193E3F0A84946A8844);
+    //address public hookAddress = address(0x3AA84C1124d83be2BdD5ab193E3F0A84946A8844);
+    address public hookAddress;
 
     // the startingPrice is expressed as sqrtPriceX96: floor(sqrt(token / token0) * 2^96)
     // use 1000:1 as starting price based on jb price of 0.001 per token
@@ -42,13 +43,15 @@ contract PoolDeployer {
 
     // set tickLower and tickUpper to give liquidity at all prices
 
-    constructor() {
-        POSITION_MANAGERS[MAINNET] = 0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e;
-        POSITION_MANAGERS[ARBITRUM] = 0xd88F38F930b7952f2DB2432Cb002E7abbF3dD869;
-        POSITION_MANAGERS[BASE] = 0x7C5f5A4bBd8fD63184577525326123B519429bDc;
-        POSITION_MANAGERS[ARB_SEP] = 0xAc631556d3d4019C95769033B5E719dD77124BAc;
-        POSITION_MANAGERS[SEP] = 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4;
-        posm = PositionManager(payable(POSITION_MANAGERS[block.chainid]));
+    constructor(address _hookAddress, address _positionManager) {
+        hookAddress = _hookAddress;
+        //POSITION_MANAGERS[MAINNET] = 0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e;
+        //POSITION_MANAGERS[ARBITRUM] = 0xd88F38F930b7952f2DB2432Cb002E7abbF3dD869;
+        //POSITION_MANAGERS[BASE] = 0x7C5f5A4bBd8fD63184577525326123B519429bDc;
+        //POSITION_MANAGERS[ARB_SEP] = 0xAc631556d3d4019C95769033B5E719dD77124BAc;
+        //POSITION_MANAGERS[SEP] = 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4;
+        //posm = PositionManager(payable(POSITION_MANAGERS[block.chainid]));
+        posm = PositionManager(payable(_positionManager));
     }
 
     // Allow contract to receive ETH
