@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 /// @notice Shared configuration between scripts
-contract Config {
+contract Config is Script {
     uint256 MAINNET = 1;
     uint256 ARBITRUM = 42161;
     uint256 BASE = 8453;
@@ -23,12 +23,14 @@ contract Config {
     mapping(uint256 => uint24) public LP_FEE;
 
     constructor() {
+        string memory rawJson = vm.readFile("config.json");
         LP_FEE[SEP] = 500000;
         LP_FEE[ARB_SEP] = 500000;
         LP_FEE[MAINNET] = 10000;
         LP_FEE[ARBITRUM] = 10000;
         LP_FEE[BASE] = 10000;
 
+        // FIXME make subscriptions for each chain
         CHAINLINK_SUBS[ARB_SEP] = 362;
         CHAINLINK_SUBS[SEP] = 4653;
 
