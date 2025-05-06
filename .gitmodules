@@ -79,3 +79,9 @@
 [submodule "subscription-contracts/lib/permit2"]
 	path = subscription-contracts/lib/permit2
 	url = https://github.com/uniswap/permit2
+[submodule "subscription-contracts/lib/v4-core"]
+	path = subscription-contracts/lib/v4-core
+	url = https://github.com/Uniswap/v4-core
+[submodule "subscription-contracts/lib/v4-periphery"]
+	path = subscription-contracts/lib/v4-periphery
+	url = https://github.com/Uniswap/v4-periphery
