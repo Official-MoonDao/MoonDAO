@@ -14,6 +14,7 @@ import {
   ZERO_ADDRESS,
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import useSafe from '@/lib/safe/useSafe'
@@ -27,6 +28,7 @@ import { CopyIcon } from '../assets'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
+import AcceptedPaymentMethods from '../privy/AcceptedPaymentMethods'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionDeployTokenModal from './MissionDeployTokenModal'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
@@ -59,14 +61,58 @@ function MissionPayRedeemContent({
 }: any) {
   const isRefundable = stage === 3 && subgraphData?.volume > 0
 
+  const [usdInput, setUsdInput] = useState('')
+  const {
+    data: ethUsdPrice,
+    isLoading: isLoadingEthUsdPrice,
+    refresh: getEthUsdPrice,
+  } = useETHPrice(1, 'ETH_TO_USD')
+
+  // When ETH input changes, update USD input
+  const handleEthInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setInput(value)
+    if (value === '') {
+      setUsdInput('')
+      return
+    }
+    if (ethUsdPrice && !isNaN(Number(value))) {
+      setUsdInput((Number(value) * ethUsdPrice).toFixed(2))
+    } else {
+      setUsdInput('')
+    }
+  }
+
+  // When USD input changes, update ETH input
+  const handleUsdInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setUsdInput(value)
+    if (value === '') {
+      setInput('')
+      return
+    }
+    if (ethUsdPrice && !isNaN(Number(value))) {
+      setInput((Number(value) / ethUsdPrice).toFixed(6))
+    } else {
+      setInput('')
+    }
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      getEthUsdPrice()
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <div
       id="mission-pay-redeem-container"
-      className="w-full flex flex-row flex-col md:flex-row xl:flex-col gap-4 xl:max-w-[300px] items-center"
+      className="w-full flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center md:items-start"
     >
       <div
         id="mission-pay-container"
-        className="p-2 max-w-[500px] md:max-w-[300px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
+        className="p-2 max-w-[500px] md:max-w-[425px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
       >
         <div id="mission-pay-header" className="flex justify-between gap-2">
           <PayRedeemStat
@@ -96,40 +142,69 @@ function MissionPayRedeemContent({
         {/* You pay */}
         {!isRefundable && (
           <div className="relative flex flex-col gap-4">
-            <div
-              className={`p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl rounded-tr-2xl ${
-                token?.tokenSymbol ? '' : 'rounded-bl-2xl rounded-br-2xl'
-              }`}
-            >
-              <div className="flex flex-col">
-                <h3 className="text-sm opacity-60">You contribute</h3>
-                <input
-                  id="payment-input"
-                  type="number"
-                  className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                />
+            <div className="relative flex gap-2">
+              <div
+                className={`p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl ${
+                  token?.tokenSymbol ? '' : 'rounded-bl-2xl'
+                }`}
+              >
+                <div className="flex flex-col">
+                  <h3 className="text-sm opacity-60">You contribute</h3>
+                  <input
+                    id="payment-input"
+                    type="number"
+                    className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={usdInput}
+                    onChange={handleUsdInputChange}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+                  <Image
+                    src="/assets/usd.svg"
+                    alt="USD"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5"
+                  />
+                  {'USD'}
+                </div>
               </div>
-              <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
-                <Image
-                  src="/coins/ETH.svg"
-                  alt="ETH"
-                  width={20}
-                  height={20}
-                  className="w-12 h-5 bg-light-cool rounded-full"
-                />
-                {'ETH'}
+              <div
+                className={`p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tr-2xl ${
+                  token?.tokenSymbol ? '' : 'rounded-br-2xl'
+                }`}
+              >
+                <div className="flex flex-col">
+                  <input
+                    id="payment-input"
+                    type="number"
+                    className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={input}
+                    onChange={handleEthInputChange}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+                  <Image
+                    src="/coins/ETH.svg"
+                    alt="ETH"
+                    width={20}
+                    height={20}
+                    className="w-12 h-5 bg-light-cool rounded-full"
+                  />
+                  {'ETH'}
+                </div>
               </div>
+              {token?.tokenSymbol && (
+                <div className="absolute -bottom-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                  <ArrowDownIcon
+                    className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
+                    color={'#121C42'}
+                  />
+                </div>
+              )}
             </div>
-            {token?.tokenSymbol && (
-              <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
-                <ArrowDownIcon
-                  className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
-                  color={'#121C42'}
-                />
-              </div>
-            )}
             {/* You receive */}
             {token?.tokenSymbol && (
               <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
@@ -161,14 +236,22 @@ function MissionPayRedeemContent({
           </div>
         )}
         {!isRefundable && (
-          <StandardButton
-            id="open-contribute-modal"
-            className="rounded-full gradient-2 rounded-full w-full py-1"
-            onClick={() => setMissionPayModalEnabled(true)}
-            hoverEffect={false}
-          >
-            Contribute
-          </StandardButton>
+          <>
+            <StandardButton
+              id="open-contribute-modal"
+              className="rounded-full gradient-2 rounded-full w-full py-1"
+              onClick={() => setMissionPayModalEnabled(true)}
+              hoverEffect={false}
+            >
+              Contribute
+            </StandardButton>
+            <AcceptedPaymentMethods />
+            <p className="text-sm text-center">
+              {'Want to contribute by wire transfer?'}
+              <br />
+              {'Email us at info@moondao.com'}
+            </p>
+          </>
         )}
         {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
           <StandardButton
@@ -276,7 +359,7 @@ export default function MissionPayRedeem({
   const account = useActiveAccount()
   const address = account?.address
 
-  const [input, setInput] = useState('0')
+  const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState('')
 

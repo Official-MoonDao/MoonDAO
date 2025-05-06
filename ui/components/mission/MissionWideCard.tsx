@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import { daysUntilDate } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '../layout/StandardButton'
 import StandardWideCard from '../layout/StandardWideCard'
@@ -56,6 +57,12 @@ export default function MissionWideCard({
   const [payModalEnabled, setPayModalEnabled] = useState(false)
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
+  const duration = useMemo(() => {
+    return daysUntilDate(
+      new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
+    )
+  }, [ruleset])
+
   useEffect(() => {
     async function getTeamNFT() {
       const teamNFT = await getNFT({
@@ -94,19 +101,18 @@ export default function MissionWideCard({
         stats={
           <div className="w-full">
             <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 justify-between">
-              <MissionStat
-                icon="/assets/target.png"
-                label="Goal"
-                value={`${
-                  fundingGoal
-                    ? truncateTokenValue(fundingGoal / 1e18, 'ETH')
-                    : 0
-                } ETH`}
-              />
+              {duration && (
+                <MissionStat
+                  label="Deadline"
+                  value={`${duration > 0 ? `${duration} days` : 'Expired'}`}
+                  icon={'/assets/launchpad/clock.svg'}
+                />
+              )}
               {subgraphData?.volume !== undefined && (
                 <MissionStat
                   label="Total Raised"
                   value={'Ξ ' + subgraphData.volume / 1e18}
+                  icon={'/assets/launchpad/token.svg'}
                 />
               )}
               {token?.tradeable !== undefined && (
@@ -116,23 +122,15 @@ export default function MissionWideCard({
                   value={token?.tradeable ? 'Yes' : 'No'}
                 />
               )}
-              {token?.tokenAddress && token?.tokenSymbol && (
-                <Link
-                  href={`https://${
-                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-                      ? 'arbiscan.io'
-                      : 'sepolia.etherscan.io'
-                  }/token/${token?.tokenAddress}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MissionStat
-                    icon="/assets/launchpad/token.svg"
-                    label="Token"
-                    value={`$${token?.tokenSymbol}`}
-                  />
-                </Link>
-              )}
+              <MissionStat
+                icon="/assets/target.png"
+                label="Goal"
+                value={`${
+                  fundingGoal
+                    ? truncateTokenValue(fundingGoal / 1e18, 'ETH')
+                    : 0
+                } ETH`}
+              />
             </div>
             <div className="mt-4 w-4/5">
               <MissionFundingProgressBar
