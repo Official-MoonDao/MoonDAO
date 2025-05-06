@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "forge-std/Script.sol";
+import "forge-std/StdJson.sol";
+
 /// @notice Shared configuration between scripts
 contract Config is Script {
+    using stdJson for string;
+
     uint256 MAINNET = 1;
     uint256 ARBITRUM = 42161;
     uint256 BASE = 8453;
@@ -23,7 +28,14 @@ contract Config is Script {
     mapping(uint256 => uint24) public LP_FEE;
 
     constructor() {
-        string memory rawJson = vm.readFile("config.json");
+        // vMOONEY doesn't exist on arbitrum-sepolia
+        VMOONEY_ADDRESSES[ARBITRUM] = vm.readFile("../contracts/deployments/arbitrum.json").readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[BASE] = vm.readFile("../contracts/deployments/base.json").readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[MAINNET] = vm.readFile("../contracts/deployments/ethereum.json").readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[POLYGON] = vm.readFile("../contracts/deployments/polygon.json").readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[SEP] = vm.readFile("../contracts/deployments/sepolia.json").readAddress(".vMOONEYToken");
+
+
         LP_FEE[SEP] = 500000;
         LP_FEE[ARB_SEP] = 500000;
         LP_FEE[MAINNET] = 10000;

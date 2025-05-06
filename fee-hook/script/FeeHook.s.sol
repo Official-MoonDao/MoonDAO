@@ -31,16 +31,11 @@ contract FeeHookScript is Script, Constants, Config {
         address posmAddress = POSITION_MANAGERS[block.chainid];
         bytes32 donID = CHAINLINK_DONS[block.chainid];
         uint64 subscriptionId = CHAINLINK_SUBS[block.chainid];
-        address vMooneyAddress = 0xB255c74F8576f18357cE6184DA033c6d93C71899;
+        address vMooneyAddress = VMOONEY_ADDRESSES[block.chainid];
         // Sepolia for testnets, arbitrum for mainnet
         uint256 DESTINATION_CHAIN_ID = ARBITRUM;
         uint16 DESTINATION_EID = uint16(LZ_EIDS[ARBITRUM]);
-        // Addresses from https://docs.uniswap.org/contracts/v4/deployments
-        if(block.chainid == 1) { //mainnet
-        } else if (block.chainid == ARBITRUM) { //arbitrum
-        } else if (block.chainid == BASE) { //base
-        } else if (block.chainid == ARB_SEP || block.chainid == SEP) { // test nets
-            vMooneyAddress = 0xA4F6A4B135b9AF7909442A7a3bF7797b61e609b1;
+        if (block.chainid == ARB_SEP || block.chainid == SEP) { // test nets
             DESTINATION_CHAIN_ID = SEP;
             DESTINATION_EID = uint16(LZ_EIDS[SEP]);
         }
