@@ -46,11 +46,6 @@ jobs:
           anvil --fork-url https://11155111.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} &
         id: local-chain
 
-      - name: Install forge dependencies
-        run: |
-          cd subscription-contracts && bash install.sh
-        id: install-forge-dependencies
-
       - name: Install npm dependencies
         run: |
           cd subscription-contracts && npm install --legacy-peer-deps
