@@ -1,5 +1,6 @@
 import { PrivyProvider } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { FlagProvider } from 'const/flags'
 import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
 import { Chain as ChainV5 } from 'thirdweb/chains'
@@ -59,7 +60,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
                 <CitizenProvider selectedChain={selectedChainV5}>
                   <NextQueryParamProvider>
                     <Layout lightMode={lightMode} setLightMode={setLightMode}>
-                      <Component {...pageProps} />
+                      <FlagProvider>
+                        <Component {...pageProps} />
+                      </FlagProvider>
                     </Layout>
                   </NextQueryParamProvider>
                 </CitizenProvider>

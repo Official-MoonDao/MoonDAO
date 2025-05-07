@@ -62,48 +62,46 @@ function MissionPayRedeemContent({
   const isRefundable = stage === 3 && subgraphData?.volume > 0
 
   const [usdInput, setUsdInput] = useState('')
-  const {
-    data: ethUsdPrice,
-    isLoading: isLoadingEthUsdPrice,
-    refresh: getEthUsdPrice,
-  } = useETHPrice(1, 'ETH_TO_USD')
+  const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
+    1,
+    'ETH_TO_USD'
+  )
 
   // When ETH input changes, update USD input
-  const handleEthInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setInput(value)
-    if (value === '') {
-      setUsdInput('')
-      return
-    }
-    if (ethUsdPrice && !isNaN(Number(value))) {
-      setUsdInput((Number(value) * ethUsdPrice).toFixed(2))
-    } else {
-      setUsdInput('')
-    }
-  }
+  const handleEthInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value
+      setInput(value)
+      if (value === '') {
+        setUsdInput('')
+        return
+      }
+      if (ethUsdPrice && !isNaN(Number(value))) {
+        setUsdInput((Number(value) * ethUsdPrice).toFixed(2))
+      } else {
+        setUsdInput('')
+      }
+    },
+    [ethUsdPrice]
+  )
 
   // When USD input changes, update ETH input
-  const handleUsdInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setUsdInput(value)
-    if (value === '') {
-      setInput('')
-      return
-    }
-    if (ethUsdPrice && !isNaN(Number(value))) {
-      setInput((Number(value) / ethUsdPrice).toFixed(6))
-    } else {
-      setInput('')
-    }
-  }
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      getEthUsdPrice()
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [])
+  const handleUsdInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value
+      setUsdInput(value)
+      if (value === '') {
+        setInput('')
+        return
+      }
+      if (ethUsdPrice && !isNaN(Number(value))) {
+        setInput((Number(value) / ethUsdPrice).toFixed(6))
+      } else {
+        setInput('')
+      }
+    },
+    [ethUsdPrice]
+  )
 
   return (
     <div
@@ -144,14 +142,14 @@ function MissionPayRedeemContent({
           <div className="relative flex flex-col gap-4">
             <div className="relative flex gap-2">
               <div
-                className={`p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl ${
+                className={`p-4 pb-12 flex flex-col gap-2 items-start justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl ${
                   token?.tokenSymbol ? '' : 'rounded-bl-2xl'
                 }`}
               >
                 <div className="flex flex-col">
                   <h3 className="text-sm opacity-60">You contribute</h3>
                   <input
-                    id="payment-input"
+                    id="usd-contribution-input"
                     type="number"
                     className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     value={usdInput}
@@ -159,7 +157,7 @@ function MissionPayRedeemContent({
                     placeholder="0"
                   />
                 </div>
-                <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+                <div className="flex gap-2 items-center bg-[#111C42] rounded-full w-fit">
                   <Image
                     src="/assets/usd.svg"
                     alt="USD"
@@ -171,13 +169,13 @@ function MissionPayRedeemContent({
                 </div>
               </div>
               <div
-                className={`p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tr-2xl ${
+                className={`p-4 pb-12 flex flex-col gap-2 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tr-2xl ${
                   token?.tokenSymbol ? '' : 'rounded-br-2xl'
                 }`}
               >
-                <div className="flex flex-col">
+                <div className="mt-5 flex flex-col">
                   <input
-                    id="payment-input"
+                    id="eth-contribution-input"
                     type="number"
                     className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     value={input}
@@ -185,13 +183,13 @@ function MissionPayRedeemContent({
                     placeholder="0"
                   />
                 </div>
-                <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+                <div className="flex gap-2 items-center bg-[#111C42] rounded-full w-fit">
                   <Image
                     src="/coins/ETH.svg"
                     alt="ETH"
                     width={20}
                     height={20}
-                    className="w-12 h-5 bg-light-cool rounded-full"
+                    className="w-5 h-5 bg-light-cool rounded-full"
                   />
                   {'ETH'}
                 </div>

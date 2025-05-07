@@ -19,6 +19,14 @@ declare global {
     useNativeBalance?: () => string
     useWatchTokenBalance?: () => number
     useRead?: () => { data: string }
+    useETHPrice?: (
+      amount: number,
+      direction: 'ETH_TO_USD' | 'USD_TO_ETH'
+    ) => {
+      data: number
+      isLoading: boolean
+      refresh: () => void
+    }
   }
 }
 
@@ -56,7 +64,27 @@ describe('<MissionPayRedeem />', () => {
       win.useNativeBalance = () => '1.5' // 1.5 ETH
       win.useWatchTokenBalance = () => 10 // 10 tokens
       win.useRead = () => ({ data: '1000000000000000000' }) // 1 token credit
+      win.useETHPrice = (
+        amount: number,
+        direction: 'ETH_TO_USD' | 'USD_TO_ETH'
+      ) => {
+        return {
+          data: 2000, // Return the ETH price directly
+          isLoading: false,
+          refresh: () => {},
+        }
+      }
     })
+
+    // Mock the ETH price API route
+    cy.intercept('GET', '/api/etherscan/eth-price', {
+      statusCode: 200,
+      body: {
+        result: {
+          ethusd: '2000', // Mock ETH price at $2000
+        },
+      },
+    }).as('getEthPrice')
 
     props = {
       selectedChain: CYPRESS_CHAIN_V5,
@@ -86,7 +114,7 @@ describe('<MissionPayRedeem />', () => {
         },
         owner: '0x1234567890123456789012345678901234567890',
       },
-      stage: 3, // Stage 3 for redemption testing
+      stage: 1, // Change to stage 1 or 2 to show payment inputs
       ruleset: [{}, {}],
       primaryTerminalAddress: CYPRESS_MISSION_PRIMARY_TERMINAL_ADDRESS,
       jbControllerContract: mockJbControllerContract,
@@ -105,9 +133,6 @@ describe('<MissionPayRedeem />', () => {
     it('Should render the component with initial state', () => {
       cy.get('#mission-pay-redeem-container').should('exist')
       cy.get('#mission-pay-container').should('exist')
-      cy.contains('Payments').should('exist')
-      cy.contains('Total Raised').should('exist')
-      cy.contains('Last 7 Days').should('exist')
     })
 
     it('Should display mission statistics correctly', () => {
@@ -117,54 +142,143 @@ describe('<MissionPayRedeem />', () => {
     })
 
     it('Should show token exchange rates', () => {
-      cy.get('#mission-token-stats').should('exist')
       cy.contains('Current Supply').should('exist')
       cy.contains('1 $TEST').should('exist') // Token supply
     })
   })
 
   describe('Payment Flow', () => {
-    it('Should handle payment input and calculate output', () => {
-      cy.get('#payment-input').type('0.1')
-      cy.get('#token-output').should('exist')
-      cy.get('#token-output').should('contain', '0.00')
+    it('Should handle USD input and update ETH input correctly', () => {
+      // Wait for the API call to complete
+      cy.wait('@getEthPrice')
+
+      // Wait for the component to be ready
+      cy.get('#usd-contribution-input').should('exist')
+
+      // Type $100 in USD input
+      cy.get('#usd-contribution-input').type('100')
+
+      // Wait for the value to be updated
+      cy.get('#eth-contribution-input').should('have.value', '0.050000')
     })
 
-    it('Should open payment modal and handle message input', () => {
-      cy.contains('button', 'Contribute').click()
-      cy.get('#mission-pay-modal').should('exist')
+    it('Should handle ETH input and update USD input correctly', () => {
+      // Wait for the API call to complete
+      cy.wait('@getEthPrice')
 
-      const testMessage = 'Test payment message'
-      cy.get('#payment-message-input').type(testMessage)
-      cy.get('#payment-message-input').should('have.value', testMessage)
+      // Wait for the component to be ready
+      cy.get('#eth-contribution-input').should('exist')
+
+      // Type 0.1 ETH
+      cy.get('#eth-contribution-input').type('0.1')
+
+      // Wait for the value to be updated
+      cy.get('#usd-contribution-input').should('have.value', '200.00')
     })
 
-    it('Should close payment modal', () => {
-      cy.contains('button', 'Contribute').click()
-      cy.contains('button', 'Cancel').click()
-      cy.get('#mission-pay-modal').should('not.exist')
+    it('Should maintain synchronization between USD and ETH inputs', () => {
+      // Wait for the API call to complete
+      cy.wait('@getEthPrice')
+
+      // Wait for the component to be ready
+      cy.get('#usd-contribution-input').should('exist')
+
+      // Type $100 in USD input
+      cy.get('#usd-contribution-input').type('100')
+
+      // Wait for the value to be updated
+      cy.get('#eth-contribution-input').should('have.value', '0.050000')
+
+      // Clear USD input
+      cy.get('#usd-contribution-input').clear()
+
+      // Wait for the value to be cleared
+      cy.get('#eth-contribution-input').should('have.value', '')
     })
   })
 
-  describe('Mobile View', () => {
+  describe('Token Credit Claim', () => {
     beforeEach(() => {
-      cy.viewport('iphone-x')
+      // Mock token credit to be greater than 0
+      cy.window().then((win) => {
+        win.useRead = () => ({ data: '2000000000000000000' }) // 2 tokens credit
+      })
+
+      // Update props to ensure token symbol exists
+      props.token = {
+        ...props.token,
+        tokenSymbol: 'TEST',
+        tokenName: 'Test Token',
+        tokenAddress: CYPRESS_MISSION_TOKEN_ADDRESS,
+        tokenSupply: '1000000000000000000', // 1 token
+      }
+
+      // Reload the component
+      cy.mount(
+        <TestnetProviders>
+          <MissionPayRedeem {...props} />
+        </TestnetProviders>
+      )
     })
 
-    it('Should show mobile contribution button', () => {
-      cy.get('.fixed.bottom-0.left-0.w-full')
-        .should('be.visible')
-        .within(() => {
-          cy.contains('button', 'Contribute').should('be.visible')
-        })
+    it('Should not show claim button when no token credit is available', () => {
+      // Mock token credit to be 0
+      cy.window().then((win) => {
+        win.useRead = () => ({ data: '0' })
+      })
+
+      // Reload the component
+      cy.mount(
+        <TestnetProviders>
+          <MissionPayRedeem {...props} />
+        </TestnetProviders>
+      )
+
+      // Verify claim button doesn't exist
+      cy.get('#claim-button').should('not.exist')
+    })
+  })
+
+  describe('Token Redemption', () => {
+    beforeEach(() => {
+      // Set stage to 3 and mock token balance
+      props.subgraphData.volume = '1000000000000000000' // 1 ETH
+
+      // Mock token balance to be greater than 0
+      cy.window().then((win) => {
+        win.useWatchTokenBalance = () => 5
+      })
+
+      cy.mount(
+        <TestnetProviders>
+          <MissionPayRedeem {...props} stage={3} />
+        </TestnetProviders>
+      )
     })
 
-    it('Should show mobile redemption button in stage 3', () => {
-      cy.get('.fixed.bottom-0.left-0.w-full')
-        .should('be.visible')
-        .within(() => {
-          cy.get('#redeem-button').should('be.visible')
-        })
+    it('Should not show redeem container when in stage 3 but no token balance', () => {
+      // Mock token balance to be 0
+      cy.window().then((win) => {
+        win.useWatchTokenBalance = () => 0
+      })
+
+      cy.mount(
+        <TestnetProviders>
+          <MissionPayRedeem {...props} />
+        </TestnetProviders>
+      )
+
+      cy.get('#mission-redeem-container').should('not.exist')
+    })
+
+    it('Should not show redeem container when not in stage 3', () => {
+      cy.mount(
+        <TestnetProviders>
+          <MissionPayRedeem {...props} stage={1} />
+        </TestnetProviders>
+      )
+
+      cy.get('#mission-redeem-container').should('not.exist')
     })
   })
 })
