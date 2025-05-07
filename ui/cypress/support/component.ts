@@ -53,3 +53,48 @@ Cypress.Commands.add('mountNextRouter', (pathname: string) => {
   const push = cy.stub()
   cy.stub(NextRouter, 'useRouter').returns({ pathname, push })
 })
+
+// Add browser polyfills
+if (typeof window === 'undefined') {
+  global.window = {} as any
+}
+
+if (typeof document === 'undefined') {
+  global.document = {} as any
+}
+
+// Mock browser-specific APIs
+if (typeof window.crypto === 'undefined') {
+  window.crypto = {
+    getRandomValues: (array: any) => array,
+  } as any
+}
+
+// Add Browser polyfill
+const globalAny = global as any
+if (typeof globalAny.Browser === 'undefined') {
+  globalAny.Browser = {
+    detect: () => ({
+      name: 'chrome',
+      version: '100.0.0',
+      os: 'darwin',
+    }),
+    T: () => ({
+      // Mock the T function that Uniswap router expects
+      compress: () => new Uint8Array(),
+      decompress: () => new Uint8Array(),
+    }),
+  }
+}
+
+// Mock other browser-specific objects
+if (typeof globalAny.navigator === 'undefined') {
+  globalAny.navigator = {
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36',
+    platform: 'MacIntel',
+    language: 'en-US',
+  }
+}
+
+// Add any other necessary polyfills or mocks here

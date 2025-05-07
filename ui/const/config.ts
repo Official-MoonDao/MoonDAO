@@ -211,12 +211,12 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x9Be480cf34d46fA7d4F7d7b8A5A9a3171cc3341b',
+  sepolia: '0x71401c03ca50B08871A14e4eFD5FC4E6c0a46b31',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x24621EF4f0795075D475C8e90fF3FaAfD2475ec9',
+  sepolia: '0x0823Bb6c35EdA0a55A9F3e8358A64cc554963AD5',
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
@@ -360,6 +360,8 @@ export const CHAIN_TOKEN_NAMES: Index = {
   arbitrum: 'ETH',
   sepolia: 'ETH',
 }
+
+export const IPFS_GATEWAY = 'https://gray-main-toad-36.mypinata.cloud/ipfs/'
 
 export const ARBITRUM_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/42161/safes/0xAF26a002d716508b7e375f1f620338442F5470c0/balances/usd?trusted=true'

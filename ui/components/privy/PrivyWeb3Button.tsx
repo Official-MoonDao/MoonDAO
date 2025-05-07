@@ -2,6 +2,7 @@ import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 /*
 Button States:
@@ -159,7 +160,13 @@ export function PrivyWeb3Button({
           isDisabled={isDisabled || isLoading}
           noPadding={noPadding}
         >
-          {isLoading ? 'Loading...' : label}
+          {isLoading ? (
+            <div className="w-full">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            label
+          )}
         </Button>
       )}
     </>

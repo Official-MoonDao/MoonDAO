@@ -5,7 +5,8 @@ import { fitImage } from '@/lib/utils/images'
 
 type FileInputProps = {
   id?: string
-  file: File | undefined
+  file?: File | undefined
+  uri?: string
   label?: string
   setFile: Function
   noBlankImages?: boolean
@@ -16,12 +17,15 @@ export default function FileInput({
   id,
   label,
   file,
+  uri,
   setFile,
   noBlankImages,
   dimensions,
 }: FileInputProps) {
   //get file name
-  const [fileName, setFileName] = useState(file?.name || 'No file chosen')
+  const [fileName, setFileName] = useState(
+    uri ? uri : file?.name || 'No file chosen'
+  )
   return (
     <div id={id} className="relative flex flex-col gap-2 max-w-[250px]">
       {label && <p className={`text-sm font-GoodTimes opacity-50`}>{label}</p>}
@@ -69,7 +73,7 @@ export default function FileInput({
         </svg>
         <span>Choose File</span>
       </label>
-      <span id="file-chosen" className="ml-3 text-gray-600">
+      <span id="file-chosen" className=" text-gray-600 break-words">
         {fileName}
       </span>
     </div>
