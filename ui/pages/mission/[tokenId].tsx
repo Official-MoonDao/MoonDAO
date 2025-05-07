@@ -284,7 +284,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           height={24}
                         />
                         <div className="ml-2">
-                          <p className="text-gray-400 text-sm">GOAL:</p>
+                          <p className="text-gray-400 text-sm">GOAL</p>
                           <p className="text-white font-GoodTimes">
                             {+(fundingGoal / 1e18).toFixed(3)} ETH
                           </p>
@@ -299,7 +299,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           height={24}
                         />
                         <div className="ml-2">
-                          <p className="text-gray-400 text-sm">DEADLINE:</p>
+                          <p className="text-gray-400 text-sm">DEADLINE</p>
                           <p className="text-white font-GoodTimes">
                             {daysUntilDate(
                               new Date(
@@ -320,7 +320,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           height={24}
                         />
                         <div className="ml-2">
-                          <p className="text-gray-400 text-sm">BACKERS:</p>
+                          <p className="text-gray-400 text-sm">BACKERS</p>
                           <p className="text-white font-GoodTimes">
                             {subgraphData?.backers || 0}
                           </p>
