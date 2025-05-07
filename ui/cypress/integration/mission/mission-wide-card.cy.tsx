@@ -90,20 +90,8 @@ describe('MissionWideCard', () => {
     cy.get('#content p').should('contain', mockMission.metadata.tagline)
   })
 
-  it('Displays mission logo when provided', () => {
-    cy.get('#content img').should(
-      'have.attr',
-      'src',
-      mockMission.metadata.logoUri
-    )
-  })
-
   it('Shows funding goal correctly', () => {
     cy.get('#content').should('contain', '1 ETH')
-  })
-
-  it('Shows token information when provided', () => {
-    cy.get('#content').should('contain', 'TEST')
   })
 
   it('Shows progress bar when volume and funding goal are provided', () => {

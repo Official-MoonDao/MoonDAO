@@ -53,7 +53,7 @@ describe('<CreateMission />', () => {
     cy.get('#mission-goals-stage').should('be.visible')
 
     // Set funding goal
-    cy.get('input[placeholder="Enter a funding goal in USD"]').type('1000')
+    cy.get('input[placeholder="Enter a goal in USD"]').type('1000')
 
     // Configure token
     cy.get('#mission-token-toggle').within(() => {

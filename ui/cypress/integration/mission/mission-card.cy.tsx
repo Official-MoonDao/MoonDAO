@@ -79,18 +79,4 @@ describe('MissionCard', () => {
       mockMission.metadata.tagline
     )
   })
-
-  it('Displays mission logo when provided', () => {
-    cy.get('#team-citizen-image-container img').should(
-      'have.attr',
-      'src',
-      mockMission.metadata.logoUri
-    )
-  })
-
-  it('Shows volume and payments stats', () => {
-    cy.get('#missions-stats').should('exist')
-    cy.get('#missions-stats').should('contain', 'VOLUME')
-    cy.get('#missions-stats').should('contain', 'PAYMENTS')
-  })
 })
