@@ -13,11 +13,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const now = Date.now()
     if (priceCache && now - priceCache.timestamp < CACHE_DURATION) {
-      console.log('Using cached ETH price data')
       return res.status(200).json(priceCache.data)
     }
 
-    console.log('Fetching fresh ETH price data')
     const ethPrice = await fetch(
       `https://api.etherscan.io/api?module=stats&action=ethprice&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
     )

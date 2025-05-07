@@ -7,6 +7,5 @@ export function getIPFSGateway(ipfsString: string) {
     : ipfsString.startsWith('https://')
     ? ipfsString.split('/ipfs/')[1]
     : ipfsString
-  console.log(`${IPFS_GATEWAY}${hash}`)
   return `${IPFS_GATEWAY}${hash}`
 }

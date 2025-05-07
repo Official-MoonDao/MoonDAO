@@ -45,7 +45,6 @@ import MissionWideCard from '@/components/mission/MissionWideCard'
 const FEATURED_MISSION_INDEX = 0
 
 export default function Launch({ missions }: any) {
-  console.log(missions)
   const [status, setStatus] = useState<
     'idle' | 'loggingIn' | 'apply' | 'create'
   >('idle')
