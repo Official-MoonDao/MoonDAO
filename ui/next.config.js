@@ -28,6 +28,7 @@ module.exports = nextTranslate({
       'cdn.discordapp.com',
       'cdn.stamp.fyi',
       'ipfs.io',
+      'gray-main-toad-36.mypinata.cloud',
     ],
   },
   output: 'standalone',
