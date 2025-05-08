@@ -1,8 +1,8 @@
 import "forge-std/Script.sol";
 import "../src/VMooneyFaucet.sol";
-import "../../fee-hook/script/base/Config.sol";
+import "base/Config.sol";
 
-contract VMooneyFaucet is Script, Config {
+contract VMooneyFaucetScript is Script, Config {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);

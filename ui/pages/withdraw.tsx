@@ -1,10 +1,14 @@
 import ERC20 from 'const/abis/ERC20.json'
 import VotingEscrow from 'const/abis/VotingEscrow.json'
+import VMooneyFaucetAbi from 'const/abis/VMooneyFaucet.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
+import { createLock } from '../lib/tokens/ve-token'
+import { dateOut } from '../lib/utils/dates'
 import {
   MOONEY_ADDRESSES,
   VMOONEY_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
+  VMOONEY_FAUCET_ADDRESSES,
   MOONEY_DECIMALS,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
@@ -48,6 +52,11 @@ export default function Withdraw() {
     abi: VotingEscrowDepositor.abi,
     chain: selectedChain,
   })
+  const vMooneyFaucetContract = useContract({
+    address: VMOONEY_FAUCET_ADDRESSES[chainSlug],
+    abi: VMooneyFaucetAbi,
+    chain: selectedChain,
+  })
   const vMooneyContract = useContract({
     address: VMOONEY_ADDRESSES[chainSlug],
     abi: VotingEscrow,
@@ -73,6 +82,16 @@ export default function Withdraw() {
     method: 'allowance' as string,
     params: [address, VMOONEY_ADDRESSES[chainSlug]],
   })
+  const { data: mooneyBalance } = useRead({
+    contract: mooneyContract,
+    method: 'balanceOf' as string,
+    params: [address],
+  })
+  const { data: vMooneyBalance } = useRead({
+    contract: vMooneyContract,
+    method: 'balanceOf' as string,
+    params: [address],
+  })
   const [hasLock, setHasLock] = useState<boolean>()
   useEffect(() => {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
@@ -94,6 +113,29 @@ export default function Withdraw() {
 
   const handleWithdraw = async () => {
     try {
+      if (true) {
+        if (true) {
+          //if (Number(vMooneyBalance) === 0) {
+          //if (Number(mooneyBalance) === 0) {
+          const dripTx = prepareContractCall({
+            contract: vMooneyFaucetContract,
+            method: 'drip' as string,
+            params: [],
+          })
+          const dripReceipt = await sendAndConfirmTransaction({
+            transaction: dripTx,
+            account,
+          })
+        }
+        await createLock({
+          account,
+          votingEscrowContract: vMooneyContract,
+          amount: mooneyBalance,
+          unlockTime: ethers.BigNumber.from(
+            dateOut(new Date(), { days: 1461 })
+          ),
+        })
+      }
       const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance)
       const withdrawableBigNum = BigNumber.from(withdrawable.toString())
       if (!account) throw new Error('No account found')
