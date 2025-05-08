@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "../../lib/forge-std/src/Script.sol";
-import "forge-std/StdJson.sol";
 
 /// @notice Shared configuration between scripts
 contract Config is Script {
