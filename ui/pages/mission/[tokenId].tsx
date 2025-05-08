@@ -225,26 +225,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <></>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <MissionStat
-                      label="Deadline"
-                      value={`${duration > 0 ? `${duration} days` : 'Expired'}`}
-                      icon={'/assets/launchpad/clock.svg'}
-                    />
-                    <MissionStat
-                      label="Total Raised"
-                      value={`${truncateTokenValue(
-                        subgraphData?.volume / 1e18,
-                        'ETH'
-                      )} ETH`}
-                      icon={'/assets/launchpad/token.svg'}
-                    />
-                    <MissionStat
-                      label="Goal"
-                      value={`${+(fundingGoal / 1e18).toFixed(3)} ETH`}
-                      icon={'/assets/launchpad/target.svg'}
-                    />
-                  </div>
 
                   <div className="w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
                     {/* Purple raised amount tag */}
