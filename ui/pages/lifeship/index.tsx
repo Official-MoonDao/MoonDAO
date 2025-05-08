@@ -178,11 +178,18 @@ export default function Lifeship({ products = [] }: any) {
 }
 
 export async function getStaticProps() {
-  const products = await getKits()
+  try {
+    const products = await getKits()
 
-  return {
-    props: {
-      products: products || {},
-    },
+    return {
+      props: {
+        products: products || {},
+      },
+    }
+  } catch (error) {
+    console.error('Problem fetching lifeship products', error)
+    return {
+      props: { products: [] },
+    }
   }
 }

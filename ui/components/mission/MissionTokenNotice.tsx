@@ -29,12 +29,9 @@ export default function MissionTokenNotice() {
           {`When you make a contribution to a Launchpad project, or otherwise purchase or acquire any Launchpad tokens, whether directly, via an exchange, or otherwise, you represent, warrant and agree as follows:`}
         </p>
         <SubPoint point="You agree that, even if profit does arise from your contribution or from the acquisition of tokens, you nevertheless have absolutely no expectation of profit from any contribution or acquisition of Tokens, and you further agree that any statements made by you or others stating otherwise are superseded by this Agreement;" />
-
         <SubPoint point="For the avoidance of doubt, you agree that any and all statements made by you or the MoonDAO Community outside of this Agreement, especially with regard to profit, are fully superseded by this Agreement;" />
-
         <SubPoint point="You have an adequate understanding of the functionality and characteristics of Launchpad Tokens and the differences between these and other currencies;" />
         <br />
-
         <p>
           {
             'By proceeding, you accept all associated risks, including regulatory uncertainty, market volatility, and potential legal liabilities. Contributors should conduct their own due diligence before participating.'

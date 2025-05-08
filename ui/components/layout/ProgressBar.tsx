@@ -17,14 +17,20 @@ export default function ProgressBar({
   compact = false,
 }: ProgressBarProps) {
   const progressBarRef = useRef<HTMLDivElement>(null)
+  const labelRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     if (progressBarRef.current) {
       gsap.to(progressBarRef.current, {
-        width: `${Math.min(
-          Math.max(progress, window.innerWidth < 768 ? 15 : 10),
-          100
-        )}%`,
+        width: `${Math.min(progress, 100)}%`,
+        duration: 2.5,
+        ease: 'power1.inOut',
+      })
+    }
+
+    if (labelRef.current) {
+      gsap.to(labelRef.current, {
+        opacity: 1,
         duration: 2.5,
         ease: 'power1.inOut',
       })
@@ -33,7 +39,7 @@ export default function ProgressBar({
 
   return (
     <div
-      className="relative w-full rounded-full bg-gradient-to-l from-[#425eeb] to-[#6d3f79]"
+      className="relative w-full rounded-full"
       style={{ height: `calc(${height} + ${padding} * 2)` }}
     >
       <div
@@ -44,15 +50,17 @@ export default function ProgressBar({
           ref={progressBarRef}
           className="h-full bg-gradient-to-l from-[#425eeb] to-[#6d3f79] relative"
           style={{ width: '0%' }} // Start at 0 and let GSAP animate it
-        >
-          {label && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[75%] text-white min-w-[25px] whitespace-nowrap">
-                {label}
-              </span>
-            </div>
-          )}
-        </div>
+        />
+        {label && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span
+              ref={labelRef}
+              className="text-[75%] text-white min-w-[10px] whitespace-nowrap opacity-0"
+            >
+              {label}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )

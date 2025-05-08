@@ -253,6 +253,7 @@ a {
 
 /* New Design Classes*/
 /*Gradients*/
+
 .text-gradient {
   background: linear-gradient(220deg, #2d121a 5%, #080c20 30%, #182254 100%);
   -webkit-background-clip: text;
@@ -265,6 +266,25 @@ a {
 
 .gradient-2 {
   background: linear-gradient(90deg, #425eeb 5%, #6d3f79 90%);
+}
+
+/* Add a pseudo-element for smoother gradient transition */
+.hover-gradient-2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #425eeb 5%, #6d3f79 90%);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  border-radius: 25px;
+  z-index: -1;
+}
+
+.hover-gradient-2:hover::before {
+  opacity: 1;
 }
 
 .gradient-3 {
