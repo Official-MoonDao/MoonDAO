@@ -2,7 +2,7 @@ import ERC20 from 'const/abis/ERC20.json'
 import VotingEscrow from 'const/abis/VotingEscrow.json'
 import VMooneyFaucetAbi from 'const/abis/VMooneyFaucet.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
-import { createLock } from '../lib/tokens/ve-token'
+import { createLock, increaseLock } from '../lib/tokens/ve-token'
 import { dateOut } from '../lib/utils/dates'
 import {
   MOONEY_ADDRESSES,
@@ -54,7 +54,7 @@ export default function Withdraw() {
   })
   const vMooneyFaucetContract = useContract({
     address: VMOONEY_FAUCET_ADDRESSES[chainSlug],
-    abi: VMooneyFaucetAbi,
+    abi: VMooneyFaucetAbi.abi,
     chain: selectedChain,
   })
   const vMooneyContract = useContract({
@@ -113,10 +113,11 @@ export default function Withdraw() {
 
   const handleWithdraw = async () => {
     try {
-      if (true) {
-        if (true) {
-          //if (Number(vMooneyBalance) === 0) {
-          //if (Number(mooneyBalance) === 0) {
+      const fourYearsOut = ethers.BigNumber.from(
+        dateOut(new Date(), { days: 1461 })
+      )
+      if (Number(vMooneyBalance) === 0) {
+        if (Number(mooneyBalance) === 0) {
           const dripTx = prepareContractCall({
             contract: vMooneyFaucetContract,
             method: 'drip' as string,
@@ -130,10 +131,16 @@ export default function Withdraw() {
         await createLock({
           account,
           votingEscrowContract: vMooneyContract,
-          amount: mooneyBalance,
-          unlockTime: ethers.BigNumber.from(
-            dateOut(new Date(), { days: 1461 })
-          ),
+          amount: ethers.utils.parseUnits('1', MOONEY_DECIMALS),
+          unlockTime: fourYearsOut,
+        })
+      }
+      if (hasLessThan45Months) {
+        await increaseLock({
+          account,
+          votingEscrowContract: vMooneyContract,
+          currentTime: VMOONEYLock && VMOONEYLock[1],
+          newTime: fourYearsOut,
         })
       }
       const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance)
@@ -210,24 +217,14 @@ export default function Withdraw() {
                   usd=""
                 />
               </section>
-              {address && hasLock && hasMoreThan45Months ? (
-                <StandardButton
-                  className="gradient-2 rounded-full"
-                  onClick={handleWithdraw}
-                  disabled={Number(withdrawable) === 0}
-                  data-tip="You dont have any vMOONEY to withdraw"
-                >
-                  Withdraw Rewards
-                </StandardButton>
-              ) : (
-                <PrivyWeb3Button
-                  v5
-                  requiredChain={DEFAULT_CHAIN_V5}
-                  label={hasLock ? 'Extend Lock' : 'Lock MOONEY'}
-                  className="gradient-2 rounded-full"
-                  action={() => router.push('/lock')}
-                />
-              )}
+              <StandardButton
+                className="gradient-2 rounded-full"
+                onClick={handleWithdraw}
+                //disabled={Number(withdrawable) === 0}
+                data-tip="You dont have any vMOONEY to withdraw"
+              >
+                Withdraw Rewards
+              </StandardButton>
             </div>
           </ContentLayout>
         </Container>
