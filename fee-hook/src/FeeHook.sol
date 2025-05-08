@@ -27,7 +27,6 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     using FunctionsRequest for FunctionsRequest.Request;
     using Strings for uint256;
 
-
     mapping(address => uint256) public totalWithdrawnPerUser;
     uint256 public totalWithdrawn;
     uint256 public totalReceived;

@@ -12,7 +12,7 @@ import {Config} from "./base/Config.sol";
 import {FeeHook} from "../src/FeeHook.sol";
 import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
 
-/// @notice Mines the address and deploys the Counter.sol Hook contract
+/// @notice Mines the address and deploys the FeeHook.sol Hook contract
 contract FeeHookScript is Script, Constants, Config {
     function setUp() public {}
 
@@ -50,12 +50,11 @@ contract FeeHookScript is Script, Constants, Config {
         // Set to a low value for testing
         if (block.chainid == ARB_SEP || block.chainid == SEP) {
             feehook.setMinWithdraw(0.00001 ether);
-        } else {
-            FunctionsRouter chainlinkRouterContract = FunctionsRouter(chainlinkRouter);
-            chainlinkRouterContract.addConsumer(CHAINLINK_SUBS[block.chainid], address(feehook));
         }
+        FunctionsRouter chainlinkRouterContract = FunctionsRouter(chainlinkRouter);
+        chainlinkRouterContract.addConsumer(CHAINLINK_SUBS[block.chainid], address(feehook));
 
-        require(address(feehook) == hookAddress, "CounterScript: hook address mismatch");
+        require(address(feehook) == hookAddress, "Fee hook address mismatch");
         vm.stopBroadcast();
     }
 }
