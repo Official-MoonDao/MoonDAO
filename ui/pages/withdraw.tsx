@@ -197,7 +197,7 @@ export default function Withdraw() {
             header={'Withdraw Rewards'}
             headerSize="max(20px, 3vw)"
             description={
-              "Withdraw vMOONEY rewards. To complete your withdrawal, ensure you have an existing vMOONEY lock. You'll need to sign two transactions: one for approval and one to execute the withdrawal."
+              "Withdraw your vMOONEY rewards. You'll need to sign two transactions: one to approve and one to withdraw. If you don't have vMOONEY yet, you'll get 1 MOONEY and create your vMOONEY lock first."
             }
             preFooter={<NoticeFooter />}
             mainPadding
@@ -220,7 +220,7 @@ export default function Withdraw() {
               <StandardButton
                 className="gradient-2 rounded-full"
                 onClick={handleWithdraw}
-                //disabled={Number(withdrawable) === 0}
+                disabled={Number(withdrawable) === 0}
                 data-tip="You dont have any vMOONEY to withdraw"
               >
                 Withdraw Rewards
