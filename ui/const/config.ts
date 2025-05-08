@@ -13,7 +13,7 @@ interface DeploymentConfig {
   vMooneySweepstakesZeroG: string
   Marketplace?: string
   MarketplaceFeeSplit?: string
-  VotingEscrowDepositor?: string
+  VotingEscrowDepositor: string
 }
 
 type Index = { [key: string]: string }

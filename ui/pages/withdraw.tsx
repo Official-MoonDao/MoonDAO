@@ -1,9 +1,7 @@
 import ERC20 from 'const/abis/ERC20.json'
-import VotingEscrow from 'const/abis/VotingEscrow.json'
 import VMooneyFaucetAbi from 'const/abis/VMooneyFaucet.json'
+import VotingEscrow from 'const/abis/VotingEscrow.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
-import { createLock, increaseLock } from '../lib/tokens/ve-token'
-import { dateOut } from '../lib/utils/dates'
 import {
   MOONEY_ADDRESSES,
   VMOONEY_ADDRESSES,
@@ -12,13 +10,15 @@ import {
   MOONEY_DECIMALS,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
-import { BigNumber } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 import { useRouter } from 'next/router'
 import React, { useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
+import { createLock, increaseLock } from '../lib/tokens/ve-token'
+import { dateOut } from '../lib/utils/dates'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -113,9 +113,8 @@ export default function Withdraw() {
 
   const handleWithdraw = async () => {
     try {
-      const fourYearsOut = ethers.BigNumber.from(
-        dateOut(new Date(), { days: 1461 })
-      )
+      if (!account) throw new Error('No account found')
+      const fourYearsOut = BigNumber.from(dateOut(new Date(), { days: 1461 }))
       if (Number(vMooneyBalance) === 0) {
         if (Number(mooneyBalance) === 0) {
           const dripTx = prepareContractCall({
@@ -131,21 +130,21 @@ export default function Withdraw() {
         await createLock({
           account,
           votingEscrowContract: vMooneyContract,
-          amount: ethers.utils.parseUnits('1', MOONEY_DECIMALS),
-          unlockTime: fourYearsOut,
+          amount: utils.parseUnits('1', MOONEY_DECIMALS),
+          time: fourYearsOut,
         })
       }
-      if (hasLessThan45Months) {
+      if (!hasMoreThan45Months) {
         await increaseLock({
           account,
           votingEscrowContract: vMooneyContract,
           currentTime: VMOONEYLock && VMOONEYLock[1],
+          newAmount: utils.parseUnits('0', MOONEY_DECIMALS), // increase time, not amount
           newTime: fourYearsOut,
         })
       }
       const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance)
       const withdrawableBigNum = BigNumber.from(withdrawable.toString())
-      if (!account) throw new Error('No account found')
       if (mooneyAllowanceLoading) throw new Error('Loading...')
       if (
         mooneyAllowanceBigNum &&
