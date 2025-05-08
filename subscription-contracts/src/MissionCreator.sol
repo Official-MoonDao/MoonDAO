@@ -195,7 +195,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
             splits: new JBSplit[](3) // Initialize as dynamic array
         });
         splitGroups[0].splits[0] = JBSplit({
-            percent: 76_923_076, // works out to 7.5% after 2.5% jb fee.
+            percent: 25_641_025, // works out to 7.5% after 2.5% jb fee.
             projectId: 0, // Not used.
             preferAddToBalance: false, // Not used, since projectId is 0.
             beneficiary: moonDAOTreasuryPayable, // MoonDAO treasury
@@ -203,7 +203,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
             hook: IJBSplitHook(address(0)) // Not used.
         });
         splitGroups[0].splits[1] = JBSplit({
-            percent: 102_564_102, // works out to 10% after 2.5% jb fee.
+            percent: 51_282_051, // works out to 5% after 2.5% jb fee.
             projectId: 0, // Not used.
             preferAddToBalance: false, // Not used, since projectId is 0.
             beneficiary: payable(address(poolDeployer)), // MoonDAO treasury
@@ -211,7 +211,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
             hook: IJBSplitHook(address(0)) // Not used.
         });
         splitGroups[0].splits[2] = JBSplit({
-            percent: 820_512_820, // works out to 80% after 2.5% jb fee.
+            percent: 923_076_923, // works out to 90% after 2.5% jb fee.
             projectId: 0, // Not used.
             preferAddToBalance: false, // Not used, since projectId is 0.
             beneficiary: toPayable, // Team multisig
