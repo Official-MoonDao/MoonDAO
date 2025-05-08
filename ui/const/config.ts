@@ -153,11 +153,11 @@ export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   'arbitrum-sepolia': '0x9f0496702Df4889C17b7c6Ef88c74ee0dF14998e',
 }
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
-    abitrum: arbitrumConfig.VotingEscrowDepositor,
-    sepolia: sepoliaConfig.VotingEscrowDepositor,
+  arbitrum: arbitrumConfig.VotingEscrowDepositor,
+  sepolia: sepoliaConfig.VotingEscrowDepositor,
 }
 export const VMOONEY_FAUCET_ADDRESSES: Index = {
-    arbitrum: '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
+  arbitrum: '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
 }
 
 export const REVNET_ADDRESSES: Index = {

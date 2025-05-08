@@ -4,15 +4,9 @@ import "base/Config.sol";
 
 contract VMooneyFaucetScript is Script, Config {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-        // Deploy the VMooneyFaucet contract
+        vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
         VMooneyFaucet faucet = new VMooneyFaucet(MOONEY_ADDRESSES[block.chainid], VMOONEY_ADDRESSES[block.chainid], VOTING_ESCROW_DEPOSITOR_ADDRESSES[block.chainid]);
-
-        // end the broadcast
         vm.stopBroadcast();
-
-
     }
 }
 
