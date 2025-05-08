@@ -24,7 +24,7 @@ import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {IWETH9} from "v4-periphery/src/interfaces/external/IWETH9.sol";
 
-contract FeeHookTest is Test {
+contract FeeHookTest is Test, Config, Constants {
     using StateLibrary for IPoolManager;
     // 1%
     uint24 constant FEE = 10000;
@@ -36,14 +36,14 @@ contract FeeHookTest is Test {
     address poolManagerAddress;
     IPositionManager posm;
     UniversalRouter router;
-    IAllowanceTransfer permit2;
     address posmAddress;
     // Mainnet
-    address lzEndpoint = 0x1a44076050125825900e736c501f859c50fE728c;
-    address chainlinkRouter = 0x65Dcc24F8ff9e51F10DCc7Ed1e4e2A61e6E14bd6;
-    bytes32 donID = 0x66756e2d657468657265756d2d6d61696e6e65742d3100000000000000000000;
-    uint256 DESTINATION_CHAIN_ID = 1;
-    uint16 DESTINATION_EID = 30101;
+    uint256 constant CHAIN = MAINNET;
+    address lzEndpoint = LZ_ENDPOINTS[block.chainid];
+    address chainlinkRouter = CHAINLINK_ROUTERS[block.chainid];
+    bytes32 donID = CHAINLINK_DONS[block.chainid];
+    uint256 DESTINATION_CHAIN_ID = block.chainid;
+    uint16 DESTINATION_EID = LZ_EIDS[block.chainid];
     uint128 SWAP_AMOUNT = 1 ether;
     address fakeTokenAddress;
     FeeHook feeHook;
@@ -56,13 +56,11 @@ contract FeeHookTest is Test {
 
     function setUp() public {
         // v4 mainnet addresses
-        poolManagerAddress = 0x000000000004444c5dc75cB358380D2e3dE08A90;
+        poolManagerAddress = POOL_MANAGERS[block.chainid];
         manager = IPoolManager(poolManagerAddress);
-        address permit2Address = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
-        permit2 = IAllowanceTransfer(permit2Address);
-        posmAddress = 0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e;
+        posmAddress = POSITION_MANAGERS[block.chainid];
         posm = IPositionManager(posmAddress);
-        address payable routerAddress = payable(0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af);
+        address payable routerAddress = payable(V4_ROUTERS[block.chainid]);
         router = UniversalRouter(routerAddress);
         vm.deal(address(manager), 100_000_000 ether);
         vm.deal(address(posm), 100_000_000 ether);
@@ -94,7 +92,7 @@ contract FeeHookTest is Test {
 
         // Mine a salt that will produce a hook address with the correct permissions
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter, donID));
+            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, CHAINLINK_ROUTERS[block.chainid], donID));
 
         feeHook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter, donID);
         require(address(feeHook) == hookAddress, "FeeHookTest: hook address mismatch");
@@ -107,10 +105,10 @@ contract FeeHookTest is Test {
         Currency currency = Currency.wrap(address(token1));
         // Because POSM uses permit2, we must execute 2 permits/approvals.
         // 1. First, the caller must approve permit2 on the token.
-        IERC20(Currency.unwrap(currency)).approve(address(permit2), type(uint256).max);
+        IERC20(Currency.unwrap(currency)).approve(address(PERMIT2), type(uint256).max);
         // 2. Then, the caller must approve POSM as a spender of permit2
-        permit2.approve(Currency.unwrap(currency), address(posm), type(uint160).max, type(uint48).max);
-        permit2.approve(Currency.unwrap(currency), address(router), type(uint160).max, type(uint48).max);
+        PERMIT2.approve(Currency.unwrap(currency), address(posm), type(uint160).max, type(uint48).max);
+        PERMIT2.approve(Currency.unwrap(currency), address(router), type(uint160).max, type(uint48).max);
     }
 
     function testLifecycle(address hookAddress) internal {

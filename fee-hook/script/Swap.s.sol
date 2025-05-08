@@ -20,16 +20,7 @@ contract SwapScript is Script, Constants, Config {
     uint160 public constant MIN_PRICE_LIMIT = TickMath.MIN_SQRT_PRICE + 1;
     uint160 public constant MAX_PRICE_LIMIT = TickMath.MAX_SQRT_PRICE - 1;
 
-    /////////////////////////////////////
-    // --- Parameters to Configure --- //
-    /////////////////////////////////////
-
-    // PoolSwapTest Contract address, default to the anvil address
     uint256 constant V4_SWAP = 0x10;
-    PoolSwapTest swapRouter = PoolSwapTest(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9);
-
-    // --- pool configuration --- //
-    // fees paid by swappers that accrue to liquidity providers
 
     function run() external {
         PoolKey memory poolKey = PoolKey({
@@ -40,18 +31,7 @@ contract SwapScript is Script, Constants, Config {
             hooks: IHooks(FEE_HOOK_ADDRESSES[block.chainid])
         });
         address routerAddress;
-        if(block.chainid == 1) { //mainnet
-            routerAddress = 0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af;
-        } else if (block.chainid == 42161) { //arbitrum
-            routerAddress = 0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3;
-        } else if (block.chainid == 8453) { //base
-            routerAddress = 0x6fF5693b99212Da76ad316178A184AB56D299b43;
-        } else if (block.chainid == 421614) { //arb-sep
-            routerAddress = 0xeFd1D4bD4cf1e86Da286BB4CB1B8BcED9C10BA47;
-        } else if (block.chainid == 11155111) { //sep
-            routerAddress = 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b;
-        }
-        UniversalRouter router = UniversalRouter(payable(routerAddress));
+        UniversalRouter router = UniversalRouter(payable(V4_ROUTERS[block.chainid]));
 
         uint128 amountSpecified = 1e16;
         bytes memory commands = abi.encodePacked(uint8(V4_SWAP));

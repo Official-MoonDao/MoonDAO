@@ -50,9 +50,10 @@ contract FeeHookScript is Script, Constants, Config {
         // Set to a low value for testing
         if (block.chainid == ARB_SEP || block.chainid == SEP) {
             feehook.setMinWithdraw(0.00001 ether);
+        } else {
+            FunctionsRouter chainlinkRouterContract = FunctionsRouter(chainlinkRouter);
+            chainlinkRouterContract.addConsumer(CHAINLINK_SUBS[block.chainid], address(feehook));
         }
-        //FunctionsRouter chainlinkRouterContract = FunctionsRouter(chainlinkRouter);
-        //chainlinkRouterContract.addConsumer(CHAINLINK_SUBS[block.chainid], address(feehook));
 
         require(address(feehook) == hookAddress, "CounterScript: hook address mismatch");
         vm.stopBroadcast();

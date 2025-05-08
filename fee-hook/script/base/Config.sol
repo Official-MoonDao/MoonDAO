@@ -18,6 +18,7 @@ contract Config is Script {
     mapping(uint256 => address) public LZ_ENDPOINTS;
     mapping(uint256 => address) public POOL_MANAGERS;
     mapping(uint256 => address) public POSITION_MANAGERS;
+    mapping(uint256 => address) public V4_ROUTERS;
     mapping(uint256 => address) public VMOONEY_ADDRESSES;
     mapping(uint256 => address) public FEE_HOOK_ADDRESSES;
     mapping(uint256 => address) public TEST_TOKEN_ADDRESSES;
@@ -28,12 +29,20 @@ contract Config is Script {
     mapping(uint256 => uint24) public LP_FEE;
 
     constructor() {
+        string memory ethJson = vm.readFile("../contracts/deployments/ethereum.json");
+        string memory arbJson = vm.readFile("../contracts/deployments/arbitrum.json");
+        string memory baseJson = vm.readFile("../contracts/deployments/base.json");
+        string memory sepJson = vm.readFile("../contracts/deployments/sepolia.json");
+        string memory polygonJson = vm.readFile("../contracts/deployments/polygon.json");
+        string memory arbSepJson = vm.readFile("../contracts/deployments/arbitrum-sepolia.json");
+
+
         // vMOONEY doesn't exist on arbitrum-sepolia
-        VMOONEY_ADDRESSES[ARBITRUM] = vm.readFile("../contracts/deployments/arbitrum.json").readAddress(".vMOONEYToken");
-        VMOONEY_ADDRESSES[BASE] = vm.readFile("../contracts/deployments/base.json").readAddress(".vMOONEYToken");
-        VMOONEY_ADDRESSES[MAINNET] = vm.readFile("../contracts/deployments/ethereum.json").readAddress(".vMOONEYToken");
-        VMOONEY_ADDRESSES[POLYGON] = vm.readFile("../contracts/deployments/polygon.json").readAddress(".vMOONEYToken");
-        VMOONEY_ADDRESSES[SEP] = vm.readFile("../contracts/deployments/sepolia.json").readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[ARBITRUM] = arbJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[BASE] = baseJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[MAINNET] = ethJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[POLYGON] = polygonJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[SEP] = sepJson.readAddress(".vMOONEYToken");
 
 
         LP_FEE[SEP] = 500000;
@@ -77,6 +86,12 @@ contract Config is Script {
         POSITION_MANAGERS[BASE] = 0x7C5f5A4bBd8fD63184577525326123B519429bDc;
         POSITION_MANAGERS[ARB_SEP] = 0xAc631556d3d4019C95769033B5E719dD77124BAc;
         POSITION_MANAGERS[SEP] = 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4;
+
+        V4_ROUTERS[MAINNET] = 0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af;
+        V4_ROUTERS[ARBITRUM] = 0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3;
+        V4_ROUTERS[BASE] = 0x6fF5693b99212Da76ad316178A184AB56D299b43;
+        V4_ROUTERS[ARB_SEP] = 0xeFd1D4bD4cf1e86Da286BB4CB1B8BcED9C10BA47;
+        V4_ROUTERS[SEP] = 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b;
 
         FEE_HOOK_ADDRESSES[ARB_SEP] = 0x07Aa57d11f104C9Cf0706aE6E5232f98a517C844;
         FEE_HOOK_ADDRESSES[SEP] = 0x730051F4cffB74a4AD00ba74C18c148942528844;
