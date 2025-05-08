@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import "../src/MissionCreator.sol";
 import "../src/tables/MissionTable.sol";
-import "../../subscription-contracts/script/base/Config.sol";
+import "base/Config.sol";
 
 contract MyScript is Script, Config {
     function run() external {
