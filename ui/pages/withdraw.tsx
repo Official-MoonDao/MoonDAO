@@ -1,12 +1,10 @@
 import ERC20 from 'const/abis/ERC20.json'
-import FeeHook from 'const/abis/FeeHook.json'
 import VotingEscrow from 'const/abis/VotingEscrow.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
 import {
   MOONEY_ADDRESSES,
   VMOONEY_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
-  FEE_HOOK_ADDRESSES,
   MOONEY_DECIMALS,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
@@ -50,14 +48,6 @@ export default function Withdraw() {
     abi: VotingEscrowDepositor.abi,
     chain: selectedChain,
   })
-
-  const feeHookContract = useContract({
-    address: FEE_HOOK_ADDRESSES[chainSlug],
-    abi: FeeHook.abi,
-    chain: selectedChain,
-  })
-  console.log('FeeHOOK abi', FeeHook.abi)
-  console.log('FeeHOOK address', FEE_HOOK_ADDRESSES[chainSlug])
   const vMooneyContract = useContract({
     address: VMOONEY_ADDRESSES[chainSlug],
     abi: VotingEscrow,
@@ -102,7 +92,7 @@ export default function Withdraw() {
       )
   }, [VMOONEYLock, VMOONEYLockLoading, address, fortyFiveMonths])
 
-  const handleWithdrawRewards = async () => {
+  const handleWithdraw = async () => {
     try {
       const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance)
       const withdrawableBigNum = BigNumber.from(withdrawable.toString())
@@ -132,34 +122,6 @@ export default function Withdraw() {
       })
       if (withdrawReceipt) {
         toast.success('Withdrawal successful!', {
-          style: toastStyle,
-        })
-        setTimeout(() => {
-          router.reload()
-        }, 5000)
-      }
-    } catch (error) {
-      console.error('Error withdrawing:', error)
-      toast.error('Error withdrawing. Please try again.', {
-        style: toastStyle,
-      })
-    }
-  }
-
-  const handleWithdrawFees = async () => {
-    try {
-      if (!account) throw new Error('No account found')
-      const withdrawTx = prepareContractCall({
-        contract: feeHookContract,
-        method: 'withdrawFees' as string,
-        params: [],
-      })
-      const withdrawReceipt = await sendAndConfirmTransaction({
-        transaction: withdrawTx,
-        account,
-      })
-      if (withdrawReceipt) {
-        toast.success('Withdrawal submitted!', {
           style: toastStyle,
         })
         setTimeout(() => {
@@ -209,7 +171,7 @@ export default function Withdraw() {
               {address && hasLock && hasMoreThan45Months ? (
                 <StandardButton
                   className="gradient-2 rounded-full"
-                  onClick={handleWithdrawRewards}
+                  onClick={handleWithdraw}
                   disabled={Number(withdrawable) === 0}
                   data-tip="You dont have any vMOONEY to withdraw"
                 >
@@ -224,12 +186,6 @@ export default function Withdraw() {
                   action={() => router.push('/lock')}
                 />
               )}
-              <StandardButton
-                className="gradient-2 rounded-full mt-4"
-                onClick={handleWithdrawFees}
-              >
-                Withdraw Fees
-              </StandardButton>
             </div>
           </ContentLayout>
         </Container>
