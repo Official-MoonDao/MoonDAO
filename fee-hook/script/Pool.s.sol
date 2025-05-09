@@ -35,8 +35,8 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
     uint256 public token1Amount = 1e18;
 
     // range of the position
-    int24 tickLower = -600; // must be a multiple of tickSpacing
-    int24 tickUpper = 600;
+    int24 tickLower = TickMath.minUsableTick(tickSpacing);
+    int24 tickUpper = TickMath.maxUsableTick(tickSpacing);
     /////////////////////////////////////
 
     function run() external {
