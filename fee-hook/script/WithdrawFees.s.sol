@@ -5,7 +5,8 @@ import "forge-std/Script.sol";
 import "../src/FeeHook.sol";
 import {Config} from "./base/Config.sol";
 
-contract MyScript is Script, Config {
+// For testing withdraw fees without needing a UI
+contract WithdrawFees is Script, Config {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
