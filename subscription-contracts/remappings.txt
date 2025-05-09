@@ -10,6 +10,7 @@ hats-protocol/=lib/hats-protocol/src/
 erc721a-upgradeable/=lib/erc721a-upgradeable/
 @layerzerolabs/=node_modules/@layerzerolabs/
 @layerzerolabs/oapp-evm/=node_modules/@layerzerolabs/oapp-evm/
+std/=lib/forge-std/src/
 solidity-bytes-utils/=node_modules/solidity-bytes-utils/
 solady/=lib/solady/src/
 @nana-core=lib/nana-core/src/
