@@ -36,7 +36,7 @@ import MissionTokenNotice from './MissionTokenNotice'
 
 function PayRedeemStat({ label, value, children }: any) {
   return (
-    <div className="font-GoodTimes w-full flex-1 flex flex-col">
+    <div className="font-GoodTimes w-1/3 flex flex-col">
       <h3 className="opacity-60 text-[60%]">{label}</h3>
       <p>{value}</p>
       {children}
@@ -110,9 +110,9 @@ function MissionPayRedeemContent({
     >
       <div
         id="mission-pay-container"
-        className="w-full p-2 max-w-[500px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
+        className="p-2 max-w-[500px] md:max-w-[425px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
       >
-        <div id="mission-pay-header" className="w-full flex justify-between">
+        <div id="mission-pay-header" className="flex justify-between gap-2">
           <PayRedeemStat
             label="Contributions"
             value={subgraphData?.paymentsCount}
@@ -283,7 +283,7 @@ function MissionPayRedeemContent({
             />
           </div>
         )}
-        {tokenBalance > 0 && (
+        {tokenBalance > 0 && isRefundable && (
           <div
             id="mission-redeem-container"
             className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
@@ -294,21 +294,18 @@ function MissionPayRedeemContent({
                 token?.tokenSymbol
               }`}</p>
             </div>
-            {isRefundable && (
-              <>
-                <PrivyWeb3Button
-                  id="redeem-button"
-                  className="w-full rounded-full py-2"
-                  label="Redeem"
-                  action={redeem}
-                  noPadding
-                />
-                <p className="mt-2 text-sm opacity-60">
-                  This mission did not reach its funding goal. You can redeem
-                  your tokens for ETH.
-                </p>
-              </>
-            )}
+
+            <PrivyWeb3Button
+              id="redeem-button"
+              className="w-full rounded-full py-2"
+              label="Redeem"
+              action={redeem}
+              noPadding
+            />
+            <p className="mt-2 text-sm opacity-60">
+              This mission did not reach its funding goal. You can redeem your
+              tokens for ETH.
+            </p>
           </div>
         )}
       </div>
@@ -413,7 +410,7 @@ export default function MissionPayRedeem({
           JB_NATIVE_TOKEN_ADDRESS,
           inputValue * 1e18,
           address || ZERO_ADDRESS,
-          output * 1e18,
+          0,
           message,
           '0x00',
         ],
@@ -470,7 +467,7 @@ export default function MissionPayRedeem({
           JB_NATIVE_TOKEN_ADDRESS,
           inputValue * 1e18,
           address,
-          output * 1e18,
+          Math.floor(output),
           message,
           '0x00',
         ],
@@ -534,9 +531,9 @@ export default function MissionPayRedeem({
         params: [
           address,
           mission?.projectId,
-          tokenBalance * 1e18,
+          tokenBalance * 1e18 || 0,
           '0x000000000000000000000000000000000000EEEe',
-          tokenBalance * 1e18,
+          0,
           address,
           '',
         ],
