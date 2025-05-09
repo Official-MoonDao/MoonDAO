@@ -1,23 +1,54 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "forge-std/Script.sol";
+import "forge-std/StdJson.sol";
+
 /// @notice Shared configuration between scripts
-contract Config {
+contract Config is Script {
+    using stdJson for string;
     uint256 MAINNET = 1;
     uint256 ARBITRUM = 42161;
     uint256 BASE = 8453;
     uint256 ARB_SEP = 421614;
     uint256 SEP = 11155111;
+    uint256 POLYGON = 137;
 
     mapping(uint256 => address) public LZ_ENDPOINTS;
     mapping(uint256 => address) public POOL_MANAGERS;
     mapping(uint256 => address) public POSITION_MANAGERS;
     mapping(uint256 => address) public VMOONEY_ADDRESSES;
+    mapping(uint256 => address) public MOONEY_ADDRESSES;
+    mapping(uint256 => address) public VOTING_ESCROW_DEPOSITOR_ADDRESSES;
     mapping(uint256 => address) public FEE_HOOK_ADDRESSES;
     mapping(uint256 => address) public TEST_TOKEN_ADDRESSES;
     mapping(uint256 => uint32) public LZ_EIDS;
 
     constructor() {
+        string memory ethJson = vm.readFile("../contracts/deployments/ethereum.json");
+        string memory arbJson = vm.readFile("../contracts/deployments/arbitrum.json");
+        string memory baseJson = vm.readFile("../contracts/deployments/base.json");
+        string memory sepJson = vm.readFile("../contracts/deployments/sepolia.json");
+        string memory polygonJson = vm.readFile("../contracts/deployments/polygon.json");
+        string memory arbSepJson = vm.readFile("../contracts/deployments/arbitrum-sepolia.json");
+
+
+        // vMOONEY doesn't exist on arbitrum-sepolia
+        VMOONEY_ADDRESSES[ARBITRUM] = arbJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[BASE] = baseJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[MAINNET] = ethJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[POLYGON] = polygonJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[SEP] = sepJson.readAddress(".vMOONEYToken");
+
+        MOONEY_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MOONEYToken");
+        MOONEY_ADDRESSES[BASE] = baseJson.readAddress(".MOONEYToken");
+        MOONEY_ADDRESSES[MAINNET] = ethJson.readAddress(".MOONEYToken");
+        MOONEY_ADDRESSES[POLYGON] = polygonJson.readAddress(".MOONEYToken");
+        MOONEY_ADDRESSES[SEP] = sepJson.readAddress(".MOONEYToken");
+
+        VOTING_ESCROW_DEPOSITOR_ADDRESSES[ARBITRUM] = arbJson.readAddress(".VotingEscrowDepositor");
+        VOTING_ESCROW_DEPOSITOR_ADDRESSES[SEP] = sepJson.readAddress(".VotingEscrowDepositor");
+
         LZ_ENDPOINTS[MAINNET] = 0x1a44076050125825900e736c501f859c50fE728c;
         LZ_ENDPOINTS[ARBITRUM] = 0x1a44076050125825900e736c501f859c50fE728c;
         LZ_ENDPOINTS[BASE] = 0x1a44076050125825900e736c501f859c50fE728c;
