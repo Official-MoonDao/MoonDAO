@@ -58,9 +58,11 @@ export default function MissionWideCard({
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
   const duration = useMemo(() => {
-    return daysUntilDate(
-      new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
-    )
+    return ruleset?.[0]?.duration
+      ? daysUntilDate(
+          new Date(ruleset?.[0]?.start * 1000 + ruleset?.[0]?.duration * 1000)
+        )
+      : undefined
   }, [ruleset])
 
   useEffect(() => {
