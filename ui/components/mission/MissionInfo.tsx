@@ -1,13 +1,15 @@
 import {
+  ChatBubbleLeftIcon,
   GlobeAltIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { getAttribute } from '@/lib/utils/nft'
 import { DiscordIcon, TwitterIcon } from '../assets'
 import StandardWideCard from '../layout/StandardWideCard'
 import MissionActivityList from './MissionActivityList'
@@ -77,6 +79,18 @@ export default function MissionInfo({
     (router.query.tab as MissionInfoTabType) || 'about'
   )
 
+  const teamSocials = useMemo(() => {
+    return {
+      communications: getAttribute(
+        teamNFT?.metadata?.attributes,
+        'communications'
+      )?.value,
+      twitter: getAttribute(teamNFT?.metadata?.attributes, 'twitter')?.value,
+      website: getAttribute(teamNFT?.metadata?.attributes, 'website')?.value,
+      discord: getAttribute(teamNFT?.metadata?.attributes, 'discord')?.value,
+    }
+  }, [teamNFT?.metadata?.attributes])
+
   useEffect(() => {
     if (router.query.tab) {
       setTab(router.query.tab as MissionInfoTabType)
@@ -92,10 +106,48 @@ export default function MissionInfo({
 
   return (
     <div>
-      <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
-        <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
-        <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
-        <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
+      <div className="flex flex-col md:flex-row gap-8 md:gap-2 justify-between max-w-[1000px]">
+        <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
+          <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
+          <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
+          <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-gray-400">{'CONNECT WITH THE TEAM'}</p>
+          <div className="flex gap-2 justify-end">
+            {teamSocials.communications && (
+              <Link
+                className="flex gap-2"
+                href={teamSocials.communications}
+                target="_blank"
+                passHref
+              >
+                <ChatBubbleLeftIcon height={25} width={25} />
+              </Link>
+            )}
+            {teamSocials.twitter && (
+              <Link
+                className="flex gap-2"
+                href={teamSocials.twitter}
+                target="_blank"
+                passHref
+              >
+                <TwitterIcon />
+              </Link>
+            )}
+            {teamSocials.website && (
+              <Link
+                className="flex gap-2"
+                href={teamSocials.website}
+                target="_blank"
+                passHref
+              >
+                <GlobeAltIcon height={25} width={25} />
+              </Link>
+            )}
+          </div>
+        </div>
       </div>
 
       <div id="mission-info-content" className="mt-8 w-full flex gap-4">
