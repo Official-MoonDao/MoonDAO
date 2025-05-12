@@ -14,9 +14,7 @@ export default function MissionFundingProgressBar({
 }) {
   const goalAsPercentage = 20
   const stageProgress =
-    volume && fundingGoal
-      ? Math.round((volume / (fundingGoal / 1e18)) * 100)
-      : 0
+    volume && fundingGoal ? (volume / (fundingGoal / 1e18)) * 100 : 0
 
   if (stage === 3) return null
 
@@ -25,11 +23,15 @@ export default function MissionFundingProgressBar({
       <ProgressBar
         height={compact ? '20px' : '25px'}
         progress={stageProgress}
-        label={`${stageProgress}%`}
+        label={`${
+          stageProgress < 1
+            ? stageProgress.toFixed(2)
+            : Math.round(stageProgress)
+        }%`}
         compact={compact}
       />
 
-      {!compact && stageProgress >= goalAsPercentage && stage === 2 && (
+      {/* {!compact && stageProgress >= goalAsPercentage && stage === 2 && (
         <div
           id="funding-goal-indicator-container"
           className="absolute flex items-center gap-2 -bottom-12 left-[17%]"
@@ -46,7 +48,7 @@ export default function MissionFundingProgressBar({
             {`Min Funding Goal Achieved`}
           </p>
         </div>
-      )}
+      )} */}
     </div>
   )
 }
