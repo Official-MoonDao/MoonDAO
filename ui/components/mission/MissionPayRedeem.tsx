@@ -283,34 +283,35 @@ function MissionPayRedeemContent({
             />
           </div>
         )}
-        {tokenBalance > 0 && (
-          <div
-            id="mission-redeem-container"
-            className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
-          >
+
+        <div
+          id="mission-redeem-container"
+          className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
+        >
+          {tokenBalance > 0 && (
             <div>
               <h3 className="opacity-60 text-sm">Your Balance</h3>
               <p className="text-2xl">{`${tokenBalance.toFixed(2)} $${
                 token?.tokenSymbol
               }`}</p>
             </div>
-            {isRefundable && (
-              <>
-                <PrivyWeb3Button
-                  id="redeem-button"
-                  className="w-full rounded-full py-2"
-                  label="Redeem"
-                  action={redeem}
-                  noPadding
-                />
-                <p className="mt-2 text-sm opacity-60">
-                  This mission did not reach its funding goal. You can redeem
-                  your tokens for ETH.
-                </p>
-              </>
-            )}
-          </div>
-        )}
+          )}
+          {isRefundable && (
+            <>
+              <PrivyWeb3Button
+                id="redeem-button"
+                className="w-full rounded-full py-2"
+                label="Redeem"
+                action={redeem}
+                noPadding
+              />
+              <p className="mt-2 text-sm opacity-60">
+                This mission did not reach its funding goal. You can redeem your
+                tokens for ETH.
+              </p>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -380,7 +381,10 @@ export default function MissionPayRedeem({
   })
 
   const nativeBalance = useNativeBalance()
-  const tokenBalance = useWatchTokenBalance(selectedChain, token?.tokenAddress)
+  const tokenBalance = useWatchTokenBalance(
+    selectedChain,
+    token?.tokenAddress || JB_NATIVE_TOKEN_ADDRESS
+  )
   const { data: tokenCredit } = useRead({
     contract: jbTokensContract,
     method: 'creditBalanceOf' as string,
@@ -534,9 +538,9 @@ export default function MissionPayRedeem({
         params: [
           address,
           mission?.projectId,
-          tokenBalance * 1e18,
-          '0x000000000000000000000000000000000000EEEe',
-          tokenBalance * 1e18,
+          tokenBalance * 1e18 || tokenCredit.toString(),
+          JB_NATIVE_TOKEN_ADDRESS,
+          tokenBalance * 1e18 || tokenCredit.toString(),
           address,
           '',
         ],
@@ -636,7 +640,7 @@ export default function MissionPayRedeem({
               lastSafeTxExecuted={lastSafeTxExecuted}
             />
           )}
-          {!token?.tokenSymbol && isTeamSigner && (
+          {!token?.tokenSymbol && isTeamSigner && stage !== 3 && (
             <div className="p-8 md:p-0 flex md:block justify-center">
               <StandardButton
                 id="deploy-token-button"
@@ -756,6 +760,7 @@ export default function MissionPayRedeem({
 
             <div>
               <ConditionCheckbox
+                id="contribution-terms-checkbox"
                 label={
                   <p className="text-sm">
                     {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}

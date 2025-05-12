@@ -300,9 +300,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           height={24}
                         />
                         <div className="ml-2">
-                          <p className="text-gray-400 text-sm">BACKERS</p>
+                          <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
                           <p className="text-white font-GoodTimes">
-                            {subgraphData?.backers || 0}
+                            {subgraphData?.paymentsCount || 0}
                           </p>
                         </div>
                       </div>
