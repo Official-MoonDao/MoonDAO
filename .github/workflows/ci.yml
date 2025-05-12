@@ -45,6 +45,10 @@ jobs:
       S3_UPLOAD_REGION: ${{secrets.S3_UPLOAD_REGION}}
       IRON_SESSION: ${{secrets.IRON_SESSION}}
       TABLELAND_PRIVATE_KEY: ${{secrets.TABLELAND_PRIVATE_KEY}}
+      UPSTASH_REDIS_URL: ${{secrets.UPSTASH_REDIS_URL}}
+      UPSTASH_REDIS_TOKEN: ${{secrets.UPSTASH_REDIS_TOKEN}}
+      NEXTAUTH_SECRET: ${{secrets.NEXTAUTH_SECRET}}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
