@@ -28,7 +28,7 @@ jobs:
             .git
             node_modules
             lib
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}-key
           restore-keys: |
             ${{ runner.os }}-npm-
 

@@ -20,7 +20,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .git
-          key: ${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}
+          key: ${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}-key
           restore-keys: |
             ${{ runner.os }}-git-
 
