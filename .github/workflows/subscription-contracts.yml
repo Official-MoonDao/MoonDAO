@@ -57,9 +57,14 @@ jobs:
           cd subscription-contracts && forge build --sizes --via-ir --optimize --optimizer-runs 200
         id: build
 
-      - name: Run Forge tests
+      - name: Run Coverage
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
-        run: |
-          cd subscription-contracts && forge test --via-ir --optimize --optimizer-runs 200 --fork-url http://localhost:8545 -vvvv
-        id: test
+        run: forge coverage --report lcov --output-path coverage/lcov.info --via-ir --optimize --optimizer-runs 200 --fork-url http://localhost:8545 -vvvv
+
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.COVERAGE_GITHUB_TOKEN }}
+          file: coverage/lcov.info
