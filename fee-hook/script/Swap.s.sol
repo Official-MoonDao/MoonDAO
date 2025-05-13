@@ -26,7 +26,7 @@ contract SwapScript is Script, Constants, Config {
         PoolKey memory poolKey = PoolKey({
             currency0: CurrencyLibrary.ADDRESS_ZERO,
             currency1: Currency.wrap(TEST_TOKEN_ADDRESSES[block.chainid]),
-            fee: lpFee,
+            fee: LP_FEE[block.chainid],
             tickSpacing: tickSpacing,
             hooks: IHooks(FEE_HOOK_ADDRESSES[block.chainid])
         });
