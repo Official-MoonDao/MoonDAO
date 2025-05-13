@@ -55,11 +55,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install dependencies for Chrome
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libgtk-3-0 libxss1 libasound2 libdrm2 libgbm1
-
       # Run cypress E2E tests
       - name: Run Cypress E2E Testing
         uses: cypress-io/github-action@v4.1.0
@@ -70,6 +65,7 @@ jobs:
           start: yarn start
           wait-on: "http://localhost:3000"
           browser: chrome
+          install-browser: true
 
       #Run cypress component tests
       - name: Run Cypress Component Testing
@@ -81,6 +77,7 @@ jobs:
           wait-on: "http://localhost:3001"
           component: true
           browser: chrome
+          install-browser: true
 
       # Save screenshots on fail
       - name: Upload Cypress Screenshots
