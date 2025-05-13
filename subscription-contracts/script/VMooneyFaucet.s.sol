@@ -1,4 +1,3 @@
-import "forge-std/Script.sol";
 import "../src/VMooneyFaucet.sol";
 import "base/Config.sol";
 
