@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
-import "forge-std/Test.sol";
 import {Vesting} from "../src/Vesting.sol";
 import {PoolDeployer} from "../src/PoolDeployer.sol";
 import "@nana-core/interfaces/IJBRulesetApprovalHook.sol";

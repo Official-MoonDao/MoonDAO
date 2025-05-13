@@ -1,4 +1,3 @@
-forge-std/=lib/forge-std/src/
 @thirdweb-dev/=lib/contracts/
 hats-forge-std/=lib/hats-protocol/lib/forge-std/src/
 @hats/=lib/hats-protocol/src/
