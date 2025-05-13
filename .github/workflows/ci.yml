@@ -56,7 +56,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install dependencies for Chrome
-        run: sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libgtk-3-0 libxss1 libasound2 libdrm2 libgbm1
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libgtk-3-0 libxss1 libasound2 libdrm2 libgbm1
 
       # Run cypress E2E tests
       - name: Run Cypress E2E Testing
