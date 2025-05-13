@@ -34,6 +34,8 @@ contract MissionCreator is Ownable, IERC721Receiver {
     MoonDAOTeam public moonDAOTeam;
     MissionTable public missionTable;
     address public moonDAOTreasury;
+    address feeHookAddress;
+    address positionManagerAddress;
     mapping(uint256 => uint256) public missionIdToProjectId;
     mapping(uint256 => address) public missionIdToPayHook;
     mapping(uint256 => address) public missionIdToTeamVesting;
@@ -44,7 +46,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
 
     event MissionCreated(uint256 indexed id, uint256 indexed teamId, uint256 indexed projectId, address tokenAddress, uint256 fundingGoal);
 
-    constructor(address _jbController, address _jbMultiTerminal, address _jbProjects, address _jbTerminalStore, address _jbRulesets, address _moonDAOTeam, address _missionTable, address _moonDAOTreasury) Ownable(msg.sender) {
+    constructor(address _jbController, address _jbMultiTerminal, address _jbProjects, address _jbTerminalStore, address _jbRulesets, address _moonDAOTeam, address _missionTable, address _moonDAOTreasury, address _feeHookAddress, address _positionManagerAddress) Ownable(msg.sender) {
         jbController = IJBController(_jbController);
         jbProjects = IJBProjects(_jbProjects);
         jbMultiTerminalAddress = _jbMultiTerminal;
@@ -53,6 +55,8 @@ contract MissionCreator is Ownable, IERC721Receiver {
         moonDAOTeam = MoonDAOTeam(_moonDAOTeam);
         missionTable = MissionTable(_missionTable);
         moonDAOTreasury = payable(_moonDAOTreasury);
+        feeHookAddress = _feeHookAddress;
+        positionManagerAddress = _positionManagerAddress;
     }
 
     function setJBController(address _jbController) external onlyOwner {
@@ -90,7 +94,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         IJBTerminal terminal = IJBTerminal(jbMultiTerminalAddress);
         Vesting moonDAOVesting = new Vesting(moonDAOTreasuryPayable);
         Vesting teamVesting = new Vesting(toPayable);
-        PoolDeployer poolDeployer = new PoolDeployer();
+        PoolDeployer poolDeployer = new PoolDeployer(feeHookAddress, positionManagerAddress);
 
 
         if (block.chainid != 11155111) {
