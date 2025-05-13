@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "hats-forge-std/Script.sol";
-import "hats-forge-std/Test.sol";
-import "hats-forge-std/StdJson.sol";
+import "std/Script.sol";
+import "std/Test.sol";
+import "std/StdJson.sol";
 
 /// @notice Shared configuration between scripts
 contract Config is Script {
