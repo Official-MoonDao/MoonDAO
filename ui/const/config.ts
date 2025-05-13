@@ -13,6 +13,7 @@ interface DeploymentConfig {
   vMooneySweepstakesZeroG: string
   Marketplace?: string
   MarketplaceFeeSplit?: string
+  VotingEscrowDepositor: string
 }
 
 type Index = { [key: string]: string }
@@ -152,8 +153,11 @@ export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   'arbitrum-sepolia': '0x9f0496702Df4889C17b7c6Ef88c74ee0dF14998e',
 }
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
-  arbitrum: '0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0',
-  sepolia: '0xe77ede9B472E9AE450a1AcD4A90dcd3fb2e50cD0',
+  arbitrum: arbitrumConfig.VotingEscrowDepositor,
+  sepolia: sepoliaConfig.VotingEscrowDepositor,
+}
+export const VMOONEY_FAUCET_ADDRESSES: Index = {
+  arbitrum: '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
 }
 
 export const REVNET_ADDRESSES: Index = {
