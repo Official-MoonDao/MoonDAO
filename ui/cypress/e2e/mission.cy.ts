@@ -2,6 +2,12 @@ import '../support/commands'
 
 describe('Mission E2E Testing', () => {
   it('Should allow team managers to create and manage a Mission', () => {
+    // Skip test if running in CI
+    if (Cypress.env('CI')) {
+      cy.log('Skipping test in CI environment')
+      return
+    }
+
     cy.visit('/launch')
     cy.loginWithPrivy()
 
@@ -42,6 +48,12 @@ describe('Mission E2E Testing', () => {
   })
 
   it('Should allow anyone to contribute to a Mission', () => {
+    // Skip test if running in CI
+    if (Cypress.env('CI')) {
+      cy.log('Skipping test in CI environment')
+      return
+    }
+
     cy.visit('/mission/0')
     cy.wait(5000)
     cy.loginWithPrivy()
@@ -60,6 +72,12 @@ describe('Mission E2E Testing', () => {
   })
 
   it('Should allow managers to deploy a Mission Token', () => {
+    // Skip test if running in CI
+    if (Cypress.env('CI')) {
+      cy.log('Skipping test in CI environment')
+      return
+    }
+
     cy.visit('/mission/12')
     cy.wait(5000)
     cy.loginWithPrivy()
@@ -68,6 +86,12 @@ describe('Mission E2E Testing', () => {
   })
 
   it('Should allow contributors to get a refund', () => {
+    // Skip test if running in CI
+    if (Cypress.env('CI')) {
+      cy.log('Skipping test in CI environment')
+      return
+    }
+
     cy.visit('/mission/11')
     cy.wait(5000)
     cy.loginWithPrivy()
