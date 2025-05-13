@@ -26,8 +26,9 @@ jobs:
         with:
           path: |
             .git
-            node_modules
-            lib
+            subscription-contracts/node_modules
+            subscription-contracts/lib
+            subscription-contracts/out
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
