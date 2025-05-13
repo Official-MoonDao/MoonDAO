@@ -18,6 +18,7 @@ import {
 import { blockedMissions } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
@@ -27,6 +28,7 @@ import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useMissionData from '@/lib/mission/useMissionData'
+import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -181,17 +183,20 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     height={'300'}
                     width={'300'}
                   />
-                  <div
-                    id="star-asset-container"
-                    className="absolute bottom-0 lg:right-0"
-                  >
-                    <Image
-                      src="/../.././assets/icon-star.svg"
-                      alt=""
-                      width={80}
-                      height={80}
-                    ></Image>
-                  </div>
+                  {teamNFT?.metadata?.image && (
+                    <div
+                      id="team-nft-container"
+                      className="absolute bottom-0 lg:right-0"
+                    >
+                      <MediaRenderer
+                        client={client}
+                        src={teamNFT?.metadata?.image}
+                        className="rounded-full"
+                        height={'100'}
+                        width={'100'}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <></>
@@ -225,6 +230,28 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <></>
                     )}
                   </div>
+
+                  {ruleset && teamNFT?.metadata?.name && (
+                    <div className="flex items-center gap-2">
+                      <p className="opacity-60">
+                        {`Created on ${new Date(
+                          ruleset?.[0]?.start * 1000
+                        ).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })} by: `}
+                      </p>
+                      <Link
+                        href={`/team/${generatePrettyLink(
+                          teamNFT?.metadata?.name
+                        )}`}
+                        className="font-GoodTimes text-white underline"
+                      >
+                        {teamNFT?.metadata?.name}
+                      </Link>
+                    </div>
+                  )}
 
                   <div className="w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
                     {/* Purple raised amount tag */}

@@ -9,6 +9,7 @@ import "std/StdJson.sol";
 contract Config is Script {
     using stdJson for string;
 
+
     uint256 MAINNET = 1;
     uint256 ARBITRUM = 42161;
     uint256 BASE = 8453;
@@ -21,6 +22,8 @@ contract Config is Script {
     mapping(uint256 => address) public POSITION_MANAGERS;
     mapping(uint256 => address) public V4_ROUTERS;
     mapping(uint256 => address) public VMOONEY_ADDRESSES;
+    mapping(uint256 => address) public MOONEY_ADDRESSES;
+    mapping(uint256 => address) public VOTING_ESCROW_DEPOSITOR_ADDRESSES;
     mapping(uint256 => address) public FEE_HOOK_ADDRESSES;
     mapping(uint256 => address) public TEST_TOKEN_ADDRESSES;
     mapping(uint256 => uint32) public LZ_EIDS;
@@ -73,6 +76,15 @@ contract Config is Script {
         CHAINLINK_DONS[POLYGON] = 0x66756e2d706f6c79676f6e2d6d61696e6e65742d310000000000000000000000;
         CHAINLINK_DONS[ARB_SEP] = 0x66756e2d617262697472756d2d7365706f6c69612d3100000000000000000000;
         CHAINLINK_DONS[SEP] = 0x66756e2d657468657265756d2d7365706f6c69612d3100000000000000000000;
+
+        MOONEY_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MOONEYToken");
+        MOONEY_ADDRESSES[BASE] = baseJson.readAddress(".MOONEYToken");
+        MOONEY_ADDRESSES[MAINNET] = ethJson.readAddress(".MOONEYToken");
+        MOONEY_ADDRESSES[POLYGON] = polygonJson.readAddress(".MOONEYToken");
+        MOONEY_ADDRESSES[SEP] = sepJson.readAddress(".MOONEYToken");
+
+        VOTING_ESCROW_DEPOSITOR_ADDRESSES[ARBITRUM] = arbJson.readAddress(".VotingEscrowDepositor");
+        VOTING_ESCROW_DEPOSITOR_ADDRESSES[SEP] = sepJson.readAddress(".VotingEscrowDepositor");
 
         LZ_ENDPOINTS[MAINNET] = 0x1a44076050125825900e736c501f859c50fE728c;
         LZ_ENDPOINTS[ARBITRUM] = 0x1a44076050125825900e736c501f859c50fE728c;

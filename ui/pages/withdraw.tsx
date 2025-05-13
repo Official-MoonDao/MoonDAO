@@ -1,20 +1,24 @@
 import ERC20 from 'const/abis/ERC20.json'
+import VMooneyFaucetAbi from 'const/abis/VMooneyFaucet.json'
 import VotingEscrow from 'const/abis/VotingEscrow.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
 import {
   MOONEY_ADDRESSES,
   VMOONEY_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
+  VMOONEY_FAUCET_ADDRESSES,
   MOONEY_DECIMALS,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
-import { BigNumber } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 import { useRouter } from 'next/router'
 import React, { useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
+import { createLock, increaseLock } from '../lib/tokens/ve-token'
+import { dateOut } from '../lib/utils/dates'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -48,6 +52,11 @@ export default function Withdraw() {
     abi: VotingEscrowDepositor.abi,
     chain: selectedChain,
   })
+  const vMooneyFaucetContract = useContract({
+    address: VMOONEY_FAUCET_ADDRESSES[chainSlug],
+    abi: VMooneyFaucetAbi.abi,
+    chain: selectedChain,
+  })
   const vMooneyContract = useContract({
     address: VMOONEY_ADDRESSES[chainSlug],
     abi: VotingEscrow,
@@ -73,30 +82,69 @@ export default function Withdraw() {
     method: 'allowance' as string,
     params: [address, VMOONEY_ADDRESSES[chainSlug]],
   })
+  const { data: mooneyBalance } = useRead({
+    contract: mooneyContract,
+    method: 'balanceOf' as string,
+    params: [address],
+  })
+  const { data: vMooneyBalance } = useRead({
+    contract: vMooneyContract,
+    method: 'balanceOf' as string,
+    params: [address],
+  })
   const [hasLock, setHasLock] = useState<boolean>()
   useEffect(() => {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
   }, [VMOONEYLock, VMOONEYLockLoading, address])
 
-  // 3.75 years ~ 45 months
-  const [hasMoreThan45Months, setHasMoreThan45Months] = useState<boolean>(false)
-  const fortyFiveMonths = 45 * 30 * 24 * 60 * 60 * 1000
+  // 3 years ~ 36 months
+  const [hasMoreThan36Months, setHasMoreThan36Months] = useState<boolean>(false)
+  const thirtySixMonths = 36 * 30 * 24 * 60 * 60 * 1000
   useEffect(() => {
     !VMOONEYLockLoading &&
-      setHasMoreThan45Months(
+      setHasMoreThan36Months(
         VMOONEYLock &&
           VMOONEYLock[1] != 0 &&
-          BigNumber.from(+new Date() + fortyFiveMonths).lte(
+          BigNumber.from(+new Date() + thirtySixMonths).lte(
             VMOONEYLock?.[1].toString() * 1000
           )
       )
-  }, [VMOONEYLock, VMOONEYLockLoading, address, fortyFiveMonths])
+  }, [VMOONEYLock, VMOONEYLockLoading, address, thirtySixMonths])
 
   const handleWithdraw = async () => {
     try {
+      if (!account) throw new Error('No account found')
+      const fourYearsOut = BigNumber.from(dateOut(new Date(), { days: 1461 }))
+      if (Number(vMooneyBalance) === 0) {
+        if (Number(mooneyBalance) === 0) {
+          const dripTx = prepareContractCall({
+            contract: vMooneyFaucetContract,
+            method: 'drip' as string,
+            params: [],
+          })
+          const dripReceipt = await sendAndConfirmTransaction({
+            transaction: dripTx,
+            account,
+          })
+        }
+        await createLock({
+          account,
+          votingEscrowContract: vMooneyContract,
+          amount: utils.parseUnits('1', MOONEY_DECIMALS),
+          time: fourYearsOut,
+        })
+      }
+      if (!hasMoreThan36Months) {
+        await increaseLock({
+          account,
+          votingEscrowContract: vMooneyContract,
+          currentTime: VMOONEYLock && VMOONEYLock[1],
+          newAmount: utils.parseUnits('0', MOONEY_DECIMALS), // increase time, not amount
+          newTime: fourYearsOut,
+        })
+      }
       const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance)
       const withdrawableBigNum = BigNumber.from(withdrawable.toString())
-      if (!account) throw new Error('No account found')
       if (mooneyAllowanceLoading) throw new Error('Loading...')
       if (
         mooneyAllowanceBigNum &&
@@ -148,7 +196,7 @@ export default function Withdraw() {
             header={'Withdraw Rewards'}
             headerSize="max(20px, 3vw)"
             description={
-              "Withdraw vMOONEY rewards. To complete your withdrawal, ensure you have an existing vMOONEY lock. You'll need to sign two transactions: one for approval and one to execute the withdrawal."
+              "Withdraw your vMOONEY rewards. You'll need to sign two transactions: one to approve and one to withdraw. If you don't have vMOONEY yet, you'll get 1 MOONEY and create your vMOONEY lock first."
             }
             preFooter={<NoticeFooter />}
             mainPadding
@@ -168,24 +216,14 @@ export default function Withdraw() {
                   usd=""
                 />
               </section>
-              {address && hasLock && hasMoreThan45Months ? (
-                <StandardButton
-                  className="gradient-2 rounded-full"
-                  onClick={handleWithdraw}
-                  disabled={Number(withdrawable) === 0}
-                  data-tip="You dont have any vMOONEY to withdraw"
-                >
-                  Withdraw Rewards
-                </StandardButton>
-              ) : (
-                <PrivyWeb3Button
-                  v5
-                  requiredChain={DEFAULT_CHAIN_V5}
-                  label={hasLock ? 'Extend Lock' : 'Lock MOONEY'}
-                  className="gradient-2 rounded-full"
-                  action={() => router.push('/lock')}
-                />
-              )}
+              <StandardButton
+                className="gradient-2 rounded-full"
+                onClick={handleWithdraw}
+                disabled={Number(withdrawable) === 0}
+                data-tip="You dont have any vMOONEY to withdraw"
+              >
+                Withdraw Rewards
+              </StandardButton>
             </div>
           </ContentLayout>
         </Container>
