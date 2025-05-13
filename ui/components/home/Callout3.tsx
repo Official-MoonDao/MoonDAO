@@ -5,70 +5,63 @@ const indexCardData = [
   {
     icon: '/assets/icon-astronaut.svg',
     iconAlt: 'Astronaut',
-    header: 'Sending Members To Space',
+    header: 'Human Spaceflight',
     link: '/sweepstakes',
-    hovertext: 'Meet Our Astronauts',
+    hovertext: 'Meet the Astronauts',
     paragraph: (
       <>
-        Sent the first crowdraised astronaut to space, through a democratically
-        governed onchain vote, and randomly chose a second member of the
-        community via an onchain sweepstakes.
+        Sent the first crowdraised astronaut to space, selected via onchain voting, and a second everyday person randomly via onchain sweepstakes.
       </>
     ),
   },
   {
     icon: '/assets/icon-ethereum.svg',
     iconAlt: 'Ethereum',
-    header: 'Funding Open Space R&D',
+    header: 'Fund Space R&D',
     link: '/propose',
-    hovertext: 'Submit Your Idea',
+    hovertext: 'Submit An Idea',
     paragraph: (
       <>
-        Allocated $300,000+ to over 60 projects and space R&D through community
-        governance, like open source time standards for PNT on the Moon
-        (shortlisted by DARPA for a grant).
+        Allocated $600,000+ to over 75 projects via community
+        governance.
       </>
     ),
   },
   {
     icon: '/assets/icon-plane.svg',
     iconAlt: 'Plane',
-    header: 'Astronaut Training Program',
+    header: 'Space Training',
     link: '/zero-gravity',
-    hovertext: 'Train With Us',
+    hovertext: 'Train for Space',
     paragraph: (
       <>
-        Training future space travelers with innovative programs, like
-        chartering an entire zero gravity flight alongside three NASA
-        astronauts, Charlie Duke, Nicole Stott, and Doug Hurley.
+        Training future space travelers with zero gravity flights and other innovative missions.
       </>
     ),
   },
   {
     icon: '/assets/icon-dao.svg',
     iconAlt: 'DAO',
-    header: 'Space Acceleration Network',
+    header: 'Bringing Industry Onchain',
     link: '/join',
     hovertext: 'Join the Network',
     paragraph: (
       <>
-        The Space Acceleration Network is a startup society that connects space
-        visionaries and organizations with the funding, tools, and support
-        needed to turn bold ideas into reality.
+        The Space Acceleration Network connects individuals and organizations with the funding, tools, and support
+        to turn bold ideas into reality.
       </>
     ),
   },
   {
     icon: '/assets/icon-lander.svg',
     iconAlt: 'Lander',
-    header: 'First Moon Mission Launched',
+    header: 'Moon Mission Landing',
     link: 'https://docs.moondao.com/Governance/Constitution',
     hovertext: 'Read the Constitution',
     paragraph: (
       <>
-        Established a constitution for self-governance, which was launched to
-        the surface of the Moon in early-2025 as part of a LifeShip capsule
-        containing a private wallet and lunar bounty.
+        Established a constitution for self-governance, which landed on
+        the surface of the Moon in early-2025.
       </>
     ),
   },
@@ -80,8 +73,7 @@ const indexCardData = [
     hovertext: 'See Our Analytics',
     paragraph: (
       <>
-        We believe in being open, including open source, transparency, and
-        decentralization. As a DAO, we utilize blockchain technologies offering
+        As a DAO, we utilize blockchain technologies offering
         full transparency and accountability.
       </>
     ),
@@ -96,7 +88,7 @@ export default function Callout3() {
     >
       <div id="background-elements" className="overflow-visible"></div>
       <h2 className="header text-center font-GoodTimes pb-5">
-        What MoonDAO Does
+        At A Glance
       </h2>
       <div
         id="cards-container"
