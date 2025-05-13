@@ -323,7 +323,7 @@ export default function CreateMission({
             teamMultisig,
             missionMetadataIpfsHash,
             fundingGoalInETH * 1e18,
-            Math.floor(new Date().getTime() / 1000) + 300000 * 24 * 60 * 60, // Expires in 300000 days
+            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60, // Expires in 300000 days
             missionData.token.tradeable,
             missionData?.token?.name,
             missionData?.token?.symbol,

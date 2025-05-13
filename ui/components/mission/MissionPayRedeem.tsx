@@ -306,8 +306,8 @@ function MissionPayRedeemContent({
                 noPadding
               />
               <p className="mt-2 text-sm opacity-60">
-                This mission did not reach its funding goal. You can redeem your
-                tokens for ETH.
+                This mission did not reach its funding goal. You can claim your
+                refund here.
               </p>
             </>
           )}

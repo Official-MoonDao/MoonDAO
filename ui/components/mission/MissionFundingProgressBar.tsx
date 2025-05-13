@@ -30,25 +30,6 @@ export default function MissionFundingProgressBar({
         }%`}
         compact={compact}
       />
-
-      {/* {!compact && stageProgress >= goalAsPercentage && stage === 2 && (
-        <div
-          id="funding-goal-indicator-container"
-          className="absolute flex items-center gap-2 -bottom-12 left-[17%]"
-        >
-          <Image
-            id="funding-goal-indicator"
-            src="/assets/launchpad/funding-goal-indicator.svg"
-            alt="min funding goal indicator"
-            width={30}
-            height={30}
-          />
-
-          <p className="text-[#425eeb] font-GoodTimes font-bold">
-            {`Min Funding Goal Achieved`}
-          </p>
-        </div>
-      )} */}
     </div>
   )
 }
