@@ -60,7 +60,7 @@ jobs:
       - name: Run Coverage
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
-        run: forge coverage --report lcov --out coverage/lcov.info --via-ir --optimize --optimizer-runs 200 --fork-url http://localhost:8545 -vvvv
+        run: cd subscription-contracts && forge coverage --report lcov --out coverage/lcov.info --via-ir --optimize --optimizer-runs 200 --fork-url http://localhost:8545 -vvvv
 
 
       - name: Upload coverage to Coveralls
