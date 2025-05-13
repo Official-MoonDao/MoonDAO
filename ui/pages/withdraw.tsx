@@ -97,19 +97,19 @@ export default function Withdraw() {
     !VMOONEYLockLoading && setHasLock(VMOONEYLock && VMOONEYLock[0] != 0)
   }, [VMOONEYLock, VMOONEYLockLoading, address])
 
-  // 3.75 years ~ 45 months
-  const [hasMoreThan45Months, setHasMoreThan45Months] = useState<boolean>(false)
-  const fortyFiveMonths = 45 * 30 * 24 * 60 * 60 * 1000
+  // 3 years ~ 36 months
+  const [hasMoreThan36Months, setHasMoreThan36Months] = useState<boolean>(false)
+  const thirtySixMonths = 36 * 30 * 24 * 60 * 60 * 1000
   useEffect(() => {
     !VMOONEYLockLoading &&
-      setHasMoreThan45Months(
+      setHasMoreThan36Months(
         VMOONEYLock &&
           VMOONEYLock[1] != 0 &&
-          BigNumber.from(+new Date() + fortyFiveMonths).lte(
+          BigNumber.from(+new Date() + thirtySixMonths).lte(
             VMOONEYLock?.[1].toString() * 1000
           )
       )
-  }, [VMOONEYLock, VMOONEYLockLoading, address, fortyFiveMonths])
+  }, [VMOONEYLock, VMOONEYLockLoading, address, thirtySixMonths])
 
   const handleWithdraw = async () => {
     try {
@@ -134,7 +134,7 @@ export default function Withdraw() {
           time: fourYearsOut,
         })
       }
-      if (!hasMoreThan45Months) {
+      if (!hasMoreThan36Months) {
         await increaseLock({
           account,
           votingEscrowContract: vMooneyContract,
