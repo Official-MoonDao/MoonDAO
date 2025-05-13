@@ -43,6 +43,9 @@
 [submodule "fee-hook/lib/nana-core"]
 	path = fee-hook/lib/nana-core
 	url = https://github.com/Bananapus/nana-core
+[submodule "fee-hook/lib/hats-protocol"]
+	path = fee-hook/lib/hats-protocol
+	url = https://github.com/Hats-Protocol/hats-protocol
 [submodule "subscription-contracts/lib/forge-std"]
 	path = subscription-contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
