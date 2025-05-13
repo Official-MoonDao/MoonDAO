@@ -2,7 +2,8 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
-import {Config} from "./base/Config.sol";
+import {Config} from "../script/base/Config.sol";
+import {Constants} from "../script/base/Constants.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
@@ -13,7 +14,7 @@ import {PoolId} from "v4-core/src/types/PoolId.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {ActionConstants} from "v4-periphery/src/libraries/ActionConstants.sol";
 import {MockJBERC20} from "../src/MockJBERC20.sol";
-import {Constants} from "v4-core/src/../test/utils/Constants.sol";
+import {Constants as UniswapConstants} from "v4-core/src/../test/utils/Constants.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import { UniversalRouter } from "@uniswap/universal-router/contracts/UniversalRouter.sol";
@@ -32,19 +33,18 @@ contract FeeHookTest is Test, Config, Constants {
     uint24 constant FEE_DENOMINATOR = 1_000_000;
     uint256 constant V4_SWAP = 0x10;
 
-    address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
     IPoolManager manager;
     address poolManagerAddress;
     IPositionManager posm;
     UniversalRouter router;
     address posmAddress;
     // Mainnet
-    uint256 constant CHAIN = MAINNET;
+    uint256 CHAIN = MAINNET;
     address lzEndpoint = LZ_ENDPOINTS[block.chainid];
     address chainlinkRouter = CHAINLINK_ROUTERS[block.chainid];
     bytes32 donID = CHAINLINK_DONS[block.chainid];
     uint256 DESTINATION_CHAIN_ID = block.chainid;
-    uint16 DESTINATION_EID = LZ_EIDS[block.chainid];
+    uint16 DESTINATION_EID = uint16(LZ_EIDS[ARBITRUM]);
     uint128 SWAP_AMOUNT = 1 ether;
     address fakeTokenAddress;
     FeeHook feeHook;
@@ -93,9 +93,9 @@ contract FeeHookTest is Test, Config, Constants {
 
         // Mine a salt that will produce a hook address with the correct permissions
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, CHAINLINK_ROUTERS[block.chainid], donID));
+            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, CHAINLINK_ROUTERS[block.chainid], donID, CHAINLINK_SUBS[block.chainid]));
 
-        feeHook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter, donID);
+        feeHook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter, donID, CHAINLINK_SUBS[block.chainid]);
         require(address(feeHook) == hookAddress, "FeeHookTest: hook address mismatch");
         return feeHook;
     }
@@ -119,7 +119,7 @@ contract FeeHookTest is Test, Config, Constants {
         int24 tickSpacing = 60;
         PoolKey memory poolKey =
             PoolKey(CurrencyLibrary.ADDRESS_ZERO, Currency.wrap(address(token1)), FEE, tickSpacing, IHooks(hookAddress));
-        manager.initialize(poolKey, Constants.SQRT_PRICE_1_1);
+        manager.initialize(poolKey, UniswapConstants.SQRT_PRICE_1_1);
 
         // add full range liquidity to the pool
         int24 tickLower = TickMath.minUsableTick(tickSpacing);
@@ -139,15 +139,10 @@ contract FeeHookTest is Test, Config, Constants {
 
 
         uint256 balanceBefore = address(deployerAddress).balance;
-        uint256 withdrawableAmount = feeHook.getWithdrawableAmount();
-        assertEq(withdrawableAmount, SWAP_AMOUNT * FEE / FEE_DENOMINATOR);
+        uint256 withdrawableAmount = SWAP_AMOUNT * FEE / FEE_DENOMINATOR;
         feeHook.withdrawFees();
         uint256 balanceAfter = address(deployerAddress).balance;
         assertEq(balanceAfter - balanceBefore, withdrawableAmount);
-
-
-        uint256 withdrawableAmountAfter = feeHook.getWithdrawableAmount();
-        assertEq(withdrawableAmountAfter, 0);
 
         vm.expectRevert("Nothing to withdraw");
         feeHook.withdrawFees();
@@ -158,7 +153,7 @@ contract FeeHookTest is Test, Config, Constants {
             deployerAddress,
             PoolId.unwrap(poolKey.toId())
         );
-        uint256 tokenId = feeHook.TOKEN_ID(poolKey.toId());
+        uint256 tokenId = feeHook.poolIdToTokenId(poolKey.toId());
 
         // burn the position
         burn(poolKey, tokenId);
