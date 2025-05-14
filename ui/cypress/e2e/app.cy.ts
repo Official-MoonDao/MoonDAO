@@ -56,6 +56,62 @@ describe('Main E2E Testing', () => {
       cy.visit('/zero-g')
     })
   })
+
+  describe('MoonDAO App | About', () => {
+    it('should load the about page', () => {
+      cy.visit('/about')
+    })
+
+    it('should have iframe that takes up full window dimensions', () => {
+      cy.visit('/about')
+
+      // Get the viewport dimensions
+      cy.window().then((win) => {
+        const viewportWidth = win.innerWidth
+        const viewportHeight = win.innerHeight
+
+        // Check iframe dimensions match viewport
+        cy.get('iframe')
+          .should('be.visible')
+          .and(($iframe) => {
+            const iframeWidth = $iframe[0].getBoundingClientRect().width
+            const iframeHeight = $iframe[0].getBoundingClientRect().height
+
+            // Allow for small rounding differences (1px tolerance)
+            expect(Math.abs(iframeWidth - viewportWidth)).to.be.lessThan(2)
+            expect(Math.abs(iframeHeight - viewportHeight)).to.be.lessThan(2)
+          })
+      })
+    })
+  })
+
+  describe('MoonDAO App | News', () => {
+    it('should load the news page', () => {
+      cy.visit('/news')
+    })
+
+    it('should have iframe that takes up full window dimensions', () => {
+      cy.visit('/news')
+
+      // Get the viewport dimensions
+      cy.window().then((win) => {
+        const viewportWidth = win.innerWidth
+        const viewportHeight = win.innerHeight
+
+        // Check iframe dimensions match viewport
+        cy.get('iframe')
+          .should('be.visible')
+          .and(($iframe) => {
+            const iframeWidth = $iframe[0].getBoundingClientRect().width
+            const iframeHeight = $iframe[0].getBoundingClientRect().height
+
+            // Allow for small rounding differences (1px tolerance)
+            expect(Math.abs(iframeWidth - viewportWidth)).to.be.lessThan(2)
+            expect(Math.abs(iframeHeight - viewportHeight)).to.be.lessThan(2)
+          })
+      })
+    })
+  })
 })
 
 export {}
