@@ -39,7 +39,7 @@ export default function NetworkMap({
   const descriptionSection = (
     <div className="pt-2">
       <div className="mb-4">
-        Explore the network map and discover moon landings!
+        Explore an interactive map of Citizens in the Space Acceleration Network to make connections locally and globally.
       </div>
       <div className="flex gap-4">
         <Frame className="w-full max-w-[350px]" noPadding>
