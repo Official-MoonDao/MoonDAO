@@ -16,3 +16,4 @@ solady/=lib/solady/src/
 @uniswap/=lib/
 v4-core/=lib/v4-core/
 v4-periphery/=lib/v4-periphery/
+base/=../fee-hook/script/base/
