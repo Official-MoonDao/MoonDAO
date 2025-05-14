@@ -1,5 +1,5 @@
-forge-std/=lib/forge-std/src/
 @thirdweb-dev/=lib/contracts/
+std/=lib/hats-protocol/lib/forge-std/src/
 @hats/=lib/hats-protocol/src/
 hats-protocol/=lib/hats-protocol/src/
 @hats-module/=lib/hats-module/src/
@@ -9,6 +9,7 @@ hats-protocol/=lib/hats-protocol/src/
 erc721a-upgradeable/=lib/erc721a-upgradeable/
 @layerzerolabs/=node_modules/@layerzerolabs/
 @layerzerolabs/oapp-evm/=node_modules/@layerzerolabs/oapp-evm/
+std/=lib/forge-std/src/
 solidity-bytes-utils/=node_modules/solidity-bytes-utils/
 solady/=lib/solady/src/
 @nana-core=lib/nana-core/src/

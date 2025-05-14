@@ -35,8 +35,8 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
     uint256 public token1Amount = 1e18;
 
     // range of the position
-    int24 tickLower = -600; // must be a multiple of tickSpacing
-    int24 tickUpper = 600;
+    int24 tickLower = TickMath.minUsableTick(tickSpacing);
+    int24 tickUpper = TickMath.maxUsableTick(tickSpacing);
     /////////////////////////////////////
 
     function run() external {
@@ -48,7 +48,7 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
         PoolKey memory poolKey = PoolKey({
             currency0: CurrencyLibrary.ADDRESS_ZERO,
             currency1: Currency.wrap(TEST_TOKEN_ADDRESSES[block.chainid]),
-            fee: lpFee,
+            fee: LP_FEE[block.chainid],
             tickSpacing: tickSpacing,
             hooks: hookContract
         });
