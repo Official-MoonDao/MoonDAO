@@ -89,7 +89,7 @@ export const USDT_ADDRESSES: Index = {
   'base-sepolia-testnet': '0x4DBD49a3aE90Aa5F13091ccD29A896cbb5B171EB',
 }
 
-export const MOONEY_DECIMALS = 10 ** 18
+export const MOONEY_DECIMALS = 18
 
 export const VMOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.vMOONEYToken,

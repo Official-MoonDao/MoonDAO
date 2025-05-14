@@ -114,7 +114,10 @@ export default function Withdraw() {
   const handleWithdraw = async () => {
     try {
       if (!account) throw new Error('No account found')
-      const fourYearsOut = BigNumber.from(dateOut(new Date(), { days: 1461 }))
+      const millisecondsPerSecond = 1000
+      const fourYearsOut = BigNumber.from(
+        +dateOut(new Date(), { days: 1461 })
+      ).div(millisecondsPerSecond)
       if (Number(vMooneyBalance) === 0) {
         if (Number(mooneyBalance) === 0) {
           const dripTx = prepareContractCall({
@@ -211,7 +214,7 @@ export default function Withdraw() {
                 <Asset
                   name="vMOONEY"
                   amount={String(
-                    (Number(withdrawable) / MOONEY_DECIMALS).toFixed(2)
+                    (Number(withdrawable) / 10 ** MOONEY_DECIMALS).toFixed(2)
                   )}
                   usd=""
                 />
