@@ -215,12 +215,12 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xdA53970Ba11835DC841527E21d039B6b9B12D47A',
   sepolia: '0x71401c03ca50B08871A14e4eFD5FC4E6c0a46b31',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x7f8f57a30b55018FE98627eC40884A812916E04e',
   sepolia: '0x0823Bb6c35EdA0a55A9F3e8358A64cc554963AD5',
 }
 
