@@ -106,7 +106,7 @@ export default function MissionInfo({
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row gap-8 md:gap-2 justify-between max-w-[1000px]">
+      <div className="px-[1vw] flex flex-col md:flex-row gap-8 md:gap-2 justify-between max-w-[1000px]">
         <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
           <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
