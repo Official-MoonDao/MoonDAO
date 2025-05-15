@@ -195,7 +195,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
             splits: new JBSplit[](3) // Initialize as dynamic array
         });
         splitGroups[0].splits[0] = JBSplit({
-            percent: 25_641_025, // works out to 7.5% after 2.5% jb fee.
+            percent: 25_641_025, // works out to 2.5% after 2.5% jb fee.
             projectId: 0, // Not used.
             preferAddToBalance: false, // Not used, since projectId is 0.
             beneficiary: moonDAOTreasuryPayable, // MoonDAO treasury
