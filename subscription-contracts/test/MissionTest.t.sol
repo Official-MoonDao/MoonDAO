@@ -108,6 +108,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -148,6 +149,7 @@ contract MissionTest is Test, Config {
            "",
            0,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -186,6 +188,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -220,6 +223,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -256,6 +260,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -293,6 +298,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -345,6 +351,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -431,6 +438,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -477,6 +485,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -524,6 +533,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -594,6 +604,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -645,6 +656,7 @@ contract MissionTest is Test, Config {
            "",
            10_000_000_000_000_000_000,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
@@ -685,6 +697,107 @@ contract MissionTest is Test, Config {
         assertApproxEqRel(address(poolDeployer).balance, terminalBalance / 10, 0.0000001e18);
         poolDeployer.createAndAddLiquidity();
     }
+
+    function testCreateTeamProjectRefundPeriod() public {
+        vm.startPrank(user1);
+        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
+        uint256 missionId = missionCreator.createMission(
+           0,
+           teamAddress,
+           "",
+           10_000_000_000_000_000_000,
+           block.timestamp + 28 days,
+           28 days,
+           true,
+           "TEST TOKEN",
+           "TEST",
+           "This is a test project"
+        );
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+        uint256 balance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        assertEq(balance, 0);
+
+        uint256 payAmount = 1_000_000_000_000_000_000;
+        terminal.pay{value: payAmount}(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            user1,
+            0,
+            "",
+            new bytes(0)
+        );
+        uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        assertEq(balanceAfter1, payAmount);
+        uint256 user1TokensAfter = jbTokens.totalBalanceOf(user1, projectId);
+        assertEq(user1TokensAfter, 1_000 * 1e18);
+        vm.stopPrank();
+
+        vm.prank(user2);
+        terminal.pay{value: payAmount/2}(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            user2,
+            0,
+            "",
+            new bytes(0)
+        );
+        uint256 user2TokensAfter = jbTokens.totalBalanceOf(user2, projectId);
+        assertEq(user2TokensAfter, 500 * 1e18);
+
+        uint256 user1BalanceBefore = address(user1).balance;
+        uint256 user2BalanceBefore = address(user2).balance;
+        skip(28 days);
+        assertEq(missionCreator.stage(missionId), 3);
+
+
+        vm.prank(user1);
+        uint256 user1CashOutAmount = IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            user1,
+            projectId,
+            user1TokensAfter,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            payable(user1),
+            bytes(""));
+        uint256 user1BalanceAfter = address(user1).balance;
+        assertEq(user1CashOutAmount, payAmount);
+        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
+        assertEq(jbTokens.totalBalanceOf(zero, projectId), 0);
+
+        skip(29 days);
+        vm.prank(user2);
+        vm.expectRevert();
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            user2,
+            projectId,
+            user2TokensAfter,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            payable(user2),
+            bytes(""));
+
+
+        uint256 treasuryBalanceBefore = address(TREASURY).balance;
+        uint256 teamBalanceBefore = address(teamAddress).balance;
+        uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            terminalBalance,
+            uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            0
+        );
+
+        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 75/ 1000, 0.0000001e18);
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *80 / 100, 0.0000001e18);
+
+    }
+
 
     function testSetJBController() public {
         vm.prank(user1);
