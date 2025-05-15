@@ -28,9 +28,9 @@ jobs:
             .git
             node_modules
             lib
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          key: key-${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-npm-
+            key-${{ runner.os }}-npm-
 
       - uses: actions/checkout@v3
         with:

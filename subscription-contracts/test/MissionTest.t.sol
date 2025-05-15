@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
-import "forge-std/Test.sol";
 import {Vesting} from "../src/Vesting.sol";
 import {PoolDeployer} from "../src/PoolDeployer.sol";
 import "@nana-core/interfaces/IJBRulesetApprovalHook.sol";
@@ -28,8 +26,9 @@ import {IJBTokens} from "@nana-core/interfaces/IJBTokens.sol";
 import {JBConstants} from "@nana-core/libraries/JBConstants.sol";
 import {IJBController} from "@nana-core/interfaces/IJBController.sol";
 import {IJBTerminalStore} from "@nana-core/interfaces/IJBTerminalStore.sol";
+import "base/Config.sol";
 
-contract MissionTest is Test {
+contract MissionTest is Test, Config {
 
     address zero = address(0);
     address user1 = address(0x1);
@@ -93,7 +92,7 @@ contract MissionTest is Test {
         jbTokens = IJBTokens(0xA59e9F424901fB9DBD8913a9A32A081F9425bf36);
         jbController = IJBController(jbControllerAddress);
 
-        missionCreator = new MissionCreator(jbControllerAddress, jbMultiTerminalAddress, jbProjectsAddress, jbTerminalStoreAddress, jbRulesetsAddress, address(moonDAOTeam), zero, TREASURY);
+        missionCreator = new MissionCreator(jbControllerAddress, jbMultiTerminalAddress, jbProjectsAddress, jbTerminalStoreAddress, jbRulesetsAddress, address(moonDAOTeam), zero, TREASURY, FEE_HOOK_ADDRESSES[block.chainid], POSITION_MANAGERS[block.chainid]);
         missionTable = new MissionTable("TestMissionTable", address(missionCreator));
         missionCreator.setMissionTable(address(missionTable));
 

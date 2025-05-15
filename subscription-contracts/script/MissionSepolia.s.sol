@@ -1,10 +1,10 @@
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
 import "../src/MissionCreator.sol";
 import "../src/tables/MissionTable.sol";
+import "base/Config.sol";
 
-contract MyScript is Script {
+contract MyScript is Script, Config {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
@@ -20,7 +20,7 @@ contract MyScript is Script {
 
         MissionTable missionTable = new MissionTable("MissionTable", address(0));
 
-        MissionCreator missionCreator = new MissionCreator(JB_CONTROLLER, JB_MULTI_TERMINAL, JB_PROJECTS, JB_TERMINAL_STORE, JB_RULESETS, MOON_DAO_TEAM, MISSION_TABLE, MOON_DAO_TREASURY);
+        MissionCreator missionCreator = new MissionCreator(JB_CONTROLLER, JB_MULTI_TERMINAL, JB_PROJECTS, JB_TERMINAL_STORE, JB_RULESETS, MOON_DAO_TEAM, MISSION_TABLE, MOON_DAO_TREASURY, FEE_HOOK_ADDRESSES[block.chainid], POSITION_MANAGERS[block.chainid]);
 
         missionTable.setMissionCreator(address(missionCreator));
         missionCreator.setMissionTable(address(missionTable));
