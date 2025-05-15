@@ -83,7 +83,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         missionTable = MissionTable(_missionTable);
     }
 
-    function createMission(uint256 teamId, address to, string calldata projectUri, uint256 fundingGoal, uint256 deadline, bool token, string calldata tokenName, string calldata tokenSymbol, string calldata memo) external returns (uint256) {
+    function createMission(uint256 teamId, address to, string calldata projectUri, uint256 fundingGoal, uint256 deadline, uint256 refundPeriod, bool token, string calldata tokenName, string calldata tokenSymbol, string calldata memo) external returns (uint256) {
 
         if(msg.sender != owner()) {
             require(moonDAOTeam.isManager(teamId, msg.sender), "Only a manager of the team or owner of the contract can create a mission.");
@@ -100,8 +100,8 @@ contract MissionCreator is Ownable, IERC721Receiver {
         if (block.chainid != 11155111) {
             deadline = block.timestamp + 28 days;
         }
-        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, jbTerminalStoreAddress, jbRulesetsAddress, to);
-        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, jbTerminalStoreAddress, address(terminal));
+        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
+        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal));
         // Ruleset 0 is funding/refunds
         // Ruleset 0 has a cashout hook that will only allow refunds if the deadline has passed and the funding goal has not been met.
         // Ruleset 0 has an approval hook that will automatically move to ruleset 1 if the funding goal is met and if the deadline has passed.
