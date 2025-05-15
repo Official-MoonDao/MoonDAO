@@ -16,6 +16,10 @@ export default function useSafe(safeAddress: string) {
 
   const [safe, setSafe] = useState<Safe>()
   const safeApiKit = useSafeApiKit()
+  const [lastSafeTxHash, setLastSafeTxHash] = useState<string | null>(null)
+  const [lastSafeTxExecuted, setLastSafeTxExecuted] = useState<boolean | null>(
+    null
+  )
 
   async function queueSafeTx(
     safeTransactionData: SafeTransactionData | SafeTransactionDataPartial
@@ -42,8 +46,24 @@ export default function useSafe(safeAddress: string) {
         senderAddress: wallets?.[selectedWallet]?.address,
         senderSignature: signature.data,
       })
+
+      setLastSafeTxHash(safeTxHash)
+      return safeTxHash
     } catch (err) {
       console.log(err)
+      throw err
+    }
+  }
+
+  async function monitorTransactionExecution(safeTxHash: string) {
+    if (!safeApiKit) return null
+
+    try {
+      const tx = await safeApiKit.getTransaction(safeTxHash)
+      return tx.isExecuted
+    } catch (err) {
+      console.error('Error monitoring transaction:', err)
+      return null
     }
   }
 
@@ -68,5 +88,19 @@ export default function useSafe(safeAddress: string) {
     getSafe()
   }, [wallets, selectedWallet, safeAddress])
 
-  return { safe, queueSafeTx }
+  useEffect(() => {
+    if (!lastSafeTxHash) return
+
+    const checkExecution = async () => {
+      const isExecuted = await monitorTransactionExecution(lastSafeTxHash)
+      if (isExecuted) {
+        setLastSafeTxExecuted(isExecuted)
+      }
+    }
+
+    const interval = setInterval(checkExecution, 5000) // Check every 5 seconds
+    return () => clearInterval(interval)
+  }, [lastSafeTxHash])
+
+  return { safe, queueSafeTx, lastSafeTxExecuted }
 }

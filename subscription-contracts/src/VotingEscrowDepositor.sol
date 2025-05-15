@@ -13,14 +13,14 @@ interface IVotingEscrowInterface {
     function deposit_for(address _addr, uint256 _value) external;
 }
 
-contract VotingEscrowDepositor  is Ownable{
+contract VotingEscrowDepositor is Ownable{
     IERC20Interface public token;
     IVotingEscrowInterface public escrowToken;
     // map from address to amount availabe to withdraw
     mapping(address => uint256) public availableToWithdraw;
     address[] public withdrawAddresses;
 
-    constructor(address _tokenAddress, address _escrowTokenAddress){
+    constructor(address _tokenAddress, address _escrowTokenAddress) Ownable(msg.sender) {
         token = IERC20Interface(_tokenAddress);
         escrowToken = IVotingEscrowInterface(_escrowTokenAddress);
     }

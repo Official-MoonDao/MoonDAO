@@ -34,6 +34,8 @@ contract MissionCreator is Ownable, IERC721Receiver {
     MoonDAOTeam public moonDAOTeam;
     MissionTable public missionTable;
     address public moonDAOTreasury;
+    address feeHookAddress;
+    address positionManagerAddress;
     mapping(uint256 => uint256) public missionIdToProjectId;
     mapping(uint256 => address) public missionIdToPayHook;
     mapping(uint256 => address) public missionIdToTeamVesting;
@@ -44,7 +46,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
 
     event MissionCreated(uint256 indexed id, uint256 indexed teamId, uint256 indexed projectId, address tokenAddress, uint256 fundingGoal);
 
-    constructor(address _jbController, address _jbMultiTerminal, address _jbProjects, address _jbTerminalStore, address _jbRulesets, address _moonDAOTeam, address _missionTable, address _moonDAOTreasury) Ownable(msg.sender) {
+    constructor(address _jbController, address _jbMultiTerminal, address _jbProjects, address _jbTerminalStore, address _jbRulesets, address _moonDAOTeam, address _missionTable, address _moonDAOTreasury, address _feeHookAddress, address _positionManagerAddress) Ownable(msg.sender) {
         jbController = IJBController(_jbController);
         jbProjects = IJBProjects(_jbProjects);
         jbMultiTerminalAddress = _jbMultiTerminal;
@@ -53,6 +55,8 @@ contract MissionCreator is Ownable, IERC721Receiver {
         moonDAOTeam = MoonDAOTeam(_moonDAOTeam);
         missionTable = MissionTable(_missionTable);
         moonDAOTreasury = payable(_moonDAOTreasury);
+        feeHookAddress = _feeHookAddress;
+        positionManagerAddress = _positionManagerAddress;
     }
 
     function setJBController(address _jbController) external onlyOwner {
@@ -79,7 +83,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         missionTable = MissionTable(_missionTable);
     }
 
-    function createMission(uint256 teamId, address to, string calldata projectUri, uint256 fundingGoal, uint256 deadline, bool token, string calldata tokenName, string calldata tokenSymbol, string calldata memo) external returns (uint256) {
+    function createMission(uint256 teamId, address to, string calldata projectUri, uint256 fundingGoal, uint256 deadline, uint256 refundPeriod, bool token, string calldata tokenName, string calldata tokenSymbol, string calldata memo) external returns (uint256) {
 
         if(msg.sender != owner()) {
             require(moonDAOTeam.isManager(teamId, msg.sender), "Only a manager of the team or owner of the contract can create a mission.");
@@ -90,14 +94,14 @@ contract MissionCreator is Ownable, IERC721Receiver {
         IJBTerminal terminal = IJBTerminal(jbMultiTerminalAddress);
         Vesting moonDAOVesting = new Vesting(moonDAOTreasuryPayable);
         Vesting teamVesting = new Vesting(toPayable);
-        PoolDeployer poolDeployer = new PoolDeployer();
+        PoolDeployer poolDeployer = new PoolDeployer(feeHookAddress, positionManagerAddress);
 
 
         if (block.chainid != 11155111) {
             deadline = block.timestamp + 28 days;
         }
-        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, jbTerminalStoreAddress, jbRulesetsAddress, to);
-        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, jbTerminalStoreAddress, address(terminal));
+        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
+        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal));
         // Ruleset 0 is funding/refunds
         // Ruleset 0 has a cashout hook that will only allow refunds if the deadline has passed and the funding goal has not been met.
         // Ruleset 0 has an approval hook that will automatically move to ruleset 1 if the funding goal is met and if the deadline has passed.

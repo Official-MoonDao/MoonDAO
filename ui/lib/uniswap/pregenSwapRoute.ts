@@ -12,7 +12,8 @@ export async function pregenSwapRoute(
   selectedChain: any,
   swapAmnt: number | string,
   tokenIn: any,
-  tokenOut: any
+  tokenOut: any,
+  decimals: number = 18
 ) {
   try {
     const provider = ethers5Adapter.provider.toEthers({
@@ -30,11 +31,10 @@ export async function pregenSwapRoute(
       type: SwapType.UNIVERSAL_ROUTER,
     }
 
+    const amount = ethers.utils.parseUnits(String(swapAmnt), decimals)
+
     const route = await router.route(
-      CurrencyAmount.fromRawAmount(
-        tokenIn,
-        ethers.utils.parseEther(String(swapAmnt)).toString()
-      ),
+      CurrencyAmount.fromRawAmount(tokenIn, amount.toString()),
       tokenOut,
       TradeType.EXACT_INPUT,
       options
