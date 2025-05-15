@@ -642,9 +642,9 @@ contract MissionTest is Test, Config {
 
         PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
         // JB splits have 7 decimals of precision, so check up to 6 decimals
-        assertApproxEqRel(address(poolDeployer).balance, terminalBalance / 10, 0.0000001e18);
-        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 75/ 1000, 0.0000001e18);
-        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *80 / 100, 0.0000001e18);
+        assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5/ 100, 0.0000001e18);
+        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
     }
 
     function testCreateTeamProjectAMM() public {
@@ -694,7 +694,7 @@ contract MissionTest is Test, Config {
         uint256 tokensPoolDeployer = jbTokens.totalBalanceOf(address(poolDeployer), projectId);
         assertEq(tokensPoolDeployer, 1_000 * 1e18);
         // JB splits have 7 decimals of precision, so check up to 6 decimals
-        assertApproxEqRel(address(poolDeployer).balance, terminalBalance / 10, 0.0000001e18);
+        assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5 / 100, 0.0000001e18);
         poolDeployer.createAndAddLiquidity();
     }
 
@@ -794,8 +794,8 @@ contract MissionTest is Test, Config {
             0
         );
 
-        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 75/ 1000, 0.0000001e18);
-        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *80 / 100, 0.0000001e18);
+        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
 
     }
 
