@@ -420,6 +420,7 @@ export default function Launch({ missions }: any) {
             }
           </p>
           <StandardButton
+            id="launch-mission-button-1"
             className="md:text-[1.2vw] gradient-2 rounded-full"
             onClick={handleCreateMission}
             hoverEffect={false}
@@ -569,6 +570,7 @@ export default function Launch({ missions }: any) {
               raised millions of dollars from all over the world in mere days.
             </p>
             <StandardButton
+              id="launch-mission-button-2"
               className="gradient-2 rounded-full md:text-[min(1.2vw,25px)]"
               hoverEffect={false}
               onClick={handleCreateMission}
@@ -709,6 +711,7 @@ export default function Launch({ missions }: any) {
               }
             </p>
             <StandardButton
+              id="launch-mission-button-3"
               className="md:text-[1.2vw] bg-[#FFFFFF] rounded-full w-[60vw] md:w-[20vw]"
               textColor="text-black"
               onClick={handleCreateMission}
