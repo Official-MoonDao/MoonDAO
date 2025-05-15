@@ -81,7 +81,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         if (block.timestamp < deadline) {
             revert("Project funding deadline has not passed. Refunds are disabled.");
         }
-        if (block.timestamp > deadline + refundPeriod) {
+        if (block.timestamp >= deadline + refundPeriod) {
             revert("Refund period has passed. Refunds are disabled.");
         }
         // Refund amount = currentFunds * (userTokenCount / currentTokenSupply)

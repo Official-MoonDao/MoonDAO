@@ -769,7 +769,8 @@ contract MissionTest is Test, Config {
         assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
         assertEq(jbTokens.totalBalanceOf(zero, projectId), 0);
 
-        skip(29 days);
+        skip(28 days);
+        // Refund period has passed
         vm.prank(user2);
         vm.expectRevert();
         IJBMultiTerminal(address(terminal)).cashOutTokensOf(
