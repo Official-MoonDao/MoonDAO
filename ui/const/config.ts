@@ -14,6 +14,7 @@ interface DeploymentConfig {
   Marketplace?: string
   MarketplaceFeeSplit?: string
   VotingEscrowDepositor: string
+  MoonDAOTeam: string
 }
 
 type Index = { [key: string]: string }
@@ -185,8 +186,8 @@ export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
 }
 
 export const TEAM_ADDRESSES: Index = {
-  arbitrum: '0xAB2C354eC32880C143e87418f80ACc06334Ff55F',
-  sepolia: '0x21d2C4bEBd1AEb830277F8548Ae30F505551f961',
+  arbitrum: arbitrumConfig.MoonDAOTeam,
+  sepolia: sepoliaConfig.MoonDAOTeam,
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
@@ -214,12 +215,12 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xdA53970Ba11835DC841527E21d039B6b9B12D47A',
   sepolia: '0x71401c03ca50B08871A14e4eFD5FC4E6c0a46b31',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x7f8f57a30b55018FE98627eC40884A812916E04e',
   sepolia: '0x0823Bb6c35EdA0a55A9F3e8358A64cc554963AD5',
 }
 

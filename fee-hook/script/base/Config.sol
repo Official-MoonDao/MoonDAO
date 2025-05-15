@@ -9,7 +9,6 @@ import "std/StdJson.sol";
 contract Config is Script {
     using stdJson for string;
 
-
     uint256 MAINNET = 1;
     uint256 ARBITRUM = 42161;
     uint256 BASE = 8453;
@@ -31,6 +30,9 @@ contract Config is Script {
     mapping(uint256 => bytes32) public CHAINLINK_DONS;
     mapping(uint256 => uint64) public CHAINLINK_SUBS;
     mapping(uint256 => uint24) public LP_FEE;
+    mapping(uint256 => address) public MOONDAO_TEAM_ADDRESSES;
+    mapping(uint256 => address) public MOONDAO_TREASURY_ADDRESSES;
+
 
     constructor() {
         string memory ethJson = vm.readFile("../contracts/deployments/ethereum.json");
@@ -39,6 +41,12 @@ contract Config is Script {
         string memory sepJson = vm.readFile("../contracts/deployments/sepolia.json");
         string memory polygonJson = vm.readFile("../contracts/deployments/polygon.json");
         string memory arbSepJson = vm.readFile("../contracts/deployments/arbitrum-sepolia.json");
+
+        MOONDAO_TREASURY_ADDRESSES[ARBITRUM] = 0xAF26a002d716508b7e375f1f620338442F5470c0;
+        MOONDAO_TREASURY_ADDRESSES[SEP] = 0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b;
+
+        MOONDAO_TEAM_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MoonDAOTeam");
+        MOONDAO_TEAM_ADDRESSES[SEP] = sepJson.readAddress(".MoonDAOTeam");
 
         // vMOONEY doesn't exist on arbitrum-sepolia
         VMOONEY_ADDRESSES[ARBITRUM] = arbJson.readAddress(".vMOONEYToken");
