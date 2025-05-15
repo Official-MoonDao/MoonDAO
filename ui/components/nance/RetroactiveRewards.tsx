@@ -66,7 +66,7 @@ export type RetroactiveRewardsProps = {
   refreshRewards: () => void
 }
 
-function RewardAsset({
+export function RewardAsset({
   name,
   value,
   usdValue,

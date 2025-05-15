@@ -234,6 +234,11 @@ module.exports = nextTranslate({
         permanent: true,
       },
       {
+        source: '/withdraw',
+        destination: '/submit?tag=contribution',
+        permanent: true,
+      },
+      {
         source: '/citizens',
         destination: '/network?tab=citizens',
         permanent: true,

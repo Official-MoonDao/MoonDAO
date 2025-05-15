@@ -21,6 +21,8 @@ import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
 import ProposalEditor from '../components/nance/ProposalEditor'
 import FinalReportEditor from '@/components/nance/FinalReportEditor'
+import { RewardAsset } from '@/components/nance/RetroactiveRewards'
+import WithdrawVMooney from '@/components/tokens/WithdrawVMooney'
 
 export default function SubmissionPage({
   projectsFromLastQuarter,
@@ -197,26 +199,36 @@ export default function SubmissionPage({
                     </NanceProvider>
                   </Tab.Panel>
                   <Tab.Panel>
-                    <div className="mb-8 flex flex-col items-center">
-                      <p className="text-gray-300 max-w-[600px]">
-                        What have you done to accelerate the impact of MoonDAO's
-                        mission? Submit your non-project work and
-                        accomplishments, even if not tied directly to MoonDAO,
-                        to earn ETH financial rewards and vMOONEY voting power.
-                        If it helps advance our mission and build a
-                        multiplanetary future, it counts! Please refer to{' '}
-                        <a
-                          href="https://docs.moondao.com/Reference/Nested-Docs/Community-Rewards"
-                          className="text-blue-400 hover:text-blue-300 underline"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          our documentation
-                        </a>{' '}
-                        for more details.
-                      </p>
+                    <div className="">
+                      <div className="mb-8 flex flex-col xl:flex-row items-center xl:items-start gap-4">
+                        <p className="text-gray-300 max-w-[600px]">
+                          What have you done to accelerate the impact of
+                          MoonDAO's mission? Submit your non-project work and
+                          accomplishments, even if not tied directly to MoonDAO,
+                          to earn ETH financial rewards and vMOONEY voting
+                          power. If it helps advance our mission and build a
+                          multiplanetary future, it counts! Please refer to{' '}
+                          <a
+                            href="https://docs.moondao.com/Reference/Nested-Docs/Community-Rewards"
+                            className="text-blue-400 hover:text-blue-300 underline"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            our documentation
+                          </a>{' '}
+                          for more details.
+                        </p>
+                      </div>
                     </div>
-                    <ContributionEditor />
+                    <div className="flex flex-col xl:flex-row items-center xl:items-start gap-4">
+                      <div className="xl:hidden mb-12">
+                        <WithdrawVMooney />
+                      </div>
+                      <ContributionEditor />
+                      <div className="hidden xl:block">
+                        <WithdrawVMooney />
+                      </div>
+                    </div>
                   </Tab.Panel>
                   <Tab.Panel>
                     <div className="mb-8 flex flex-col items-center">

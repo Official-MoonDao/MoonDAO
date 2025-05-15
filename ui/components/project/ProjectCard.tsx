@@ -36,7 +36,7 @@ const ProjectCardContent = memo(
         className="p-4 pb-10 flex flex-col gap-2 relative bg-dark-cool w-full h-full rounded-2xl flex-1 border-b-2 border-[#020617]"
       >
         <div className="flex justify-between">
-          <div className="w-full flex flex-col xl:flex-row gap-2 xl:items-center justify-between">
+          <div className="w-full flex flex-col gap-2 justify-between">
             <Link href={`/project/${project?.id}`} passHref>
               <h1 className="font-GoodTimes">{project?.name || ''}</h1>
             </Link>

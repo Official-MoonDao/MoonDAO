@@ -17,7 +17,7 @@ const Asset = ({ name, amount, usd, address, loading }: AssetProps) => {
 
   return (
     <div
-      className={`inner-container-background font-RobotoMono mt-5 flex w-[336px] flex-col items-center py-1  sm:w-[400px] xl:mt-6 2xl:w-full 2xl:flex-row 2xl:justify-between 2xl:px-3 2xl:py-2  ${
+      className={`inner-container-background font-RobotoMono mt-5 flex w-[336px] flex-col items-start p-1  sm:w-[400px] xl:mt-6 2xl:w-full 2xl:flex-row 2xl:justify-between 2xl:px-3 2xl:py-2 ${
         loading && 'loading-component'
       }`}
     >
