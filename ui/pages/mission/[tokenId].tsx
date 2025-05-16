@@ -329,9 +329,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           height={24}
                         />
                         <div className="ml-2">
-                          <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
+                          <p className="text-gray-400 text-sm">BACKERS</p>
                           <p className="text-white font-GoodTimes">
-                            {subgraphData?.paymentsCount || 0}
+                            {subgraphData?.backers || 0}
                           </p>
                         </div>
                       </div>
@@ -353,6 +353,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     >
       <Container
         containerwidth={true}
+        is_fullwidth={true}
         >
         <Head
           title={mission?.metadata?.name} 
@@ -411,6 +412,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               bottomRight="0px"
               topRight="0px"
               topLeft="0px"
+              className="overflow-auto"
             >
               <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] lg:w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
                 <MissionInfo

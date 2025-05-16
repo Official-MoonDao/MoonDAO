@@ -52,7 +52,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const isFullscreen =
     router.pathname === '/launch' ||
     router.pathname === '/about' ||
-    router.pathname === '/news'
+    router.pathname === '/news' ||
+    router.pathname === '/mission/[tokenId]' 
 
   const layout = (
     <div
