@@ -23,15 +23,21 @@ function FooterTokenLink({ href, label }: FooterTokenLinkProps) {
   )
 }
 
-export default function Footer({ darkBackground = false, centerContent = false }: FooterProps) {
+export default function Footer({
+  darkBackground = false,
+  centerContent = false,
+}: FooterProps) {
   return (
     <div
       id="footer-container"
-      className={`flex flex-col items-center pt-5 max-w-[1200px] ${
+      className={`flex flex-col items-center pt-5 max-w-[1000px] ${
         darkBackground ? 'w-full h-full' : 'pb-10'
       } ${centerContent ? 'text-center' : ''}`}
     >
-      <div id="disclaimer-container" className={`p-5 ${centerContent ? 'flex justify-center' : ''}`}>
+      <div
+        id="disclaimer-container"
+        className={`p-5 ${centerContent ? 'flex justify-center' : ''}`}
+      >
         <span className="break-words">
           <div className={`inline-block ${centerContent ? 'text-center' : ''}`}>
             <span className="opacity-[60%]">

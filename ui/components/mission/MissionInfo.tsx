@@ -3,10 +3,11 @@ import {
   GlobeAltIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline'
+import gsap from 'gsap'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { getAttribute } from '@/lib/utils/nft'
@@ -75,6 +76,8 @@ export default function MissionInfo({
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
 
+  const payRedeemRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [tab, setTab] = useState<MissionInfoTabType>(
     (router.query.tab as MissionInfoTabType) || 'about'
   )
@@ -104,9 +107,92 @@ export default function MissionInfo({
     })
   }, [tab])
 
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      window.innerWidth < 1280 ||
+      !payRedeemRef.current
+    )
+      return
+
+    let ctx: gsap.Context
+    let originalStyle: Partial<CSSStyleDeclaration> = {}
+
+    import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
+      gsap.registerPlugin(ScrollTrigger)
+
+      ctx = gsap.context(() => {
+        const el = payRedeemRef.current!
+
+        // Save original computed styles
+        const computed = window.getComputedStyle(el)
+        originalStyle = {
+          position: computed.position,
+          top: computed.top,
+          right: computed.right,
+          width: computed.width,
+          zIndex: computed.zIndex,
+        }
+
+        // Main scroll trigger for fixed positioning
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top bottom',
+          end: 'bottom center',
+          onEnter: () => {
+            gsap.to(el, {
+              position: 'fixed',
+              top: '450px',
+              right: '10vw',
+              width: '300px',
+              zIndex: 50,
+              opacity: 1,
+              duration: 0.3,
+              ease: 'power2.out',
+            })
+          },
+          onLeaveBack: () => {
+            gsap.to(el, {
+              ...originalStyle,
+              opacity: 1,
+              duration: 0.3,
+              ease: 'power2.out',
+            })
+          },
+          onUpdate: (self) => {
+            const windowHeight = window.innerHeight
+            const scrollTop =
+              window.pageYOffset || document.documentElement.scrollTop
+            const documentHeight = document.documentElement.scrollHeight
+
+            // If we're within 500px of the bottom of the page
+            if (documentHeight - (scrollTop + windowHeight) < 500) {
+              gsap.set(el, {
+                position: 'absolute',
+                top: documentHeight - 500 - el.offsetHeight,
+                right: '10vw',
+                width: '300px',
+              })
+            } else if (self.direction > 0) {
+              // Scrolling down
+              gsap.set(el, {
+                position: 'fixed',
+                top: '450px',
+                right: '10vw',
+                width: '300px',
+              })
+            }
+          },
+        })
+      })
+    })
+
+    return () => ctx?.revert()
+  }, [])
+
   return (
-    <div>
-      <div className="px-[1vw] flex flex-col md:flex-row gap-8 md:gap-2 justify-between max-w-[1000px]">
+    <div ref={containerRef}>
+      <div className="px-[1vw] flex flex-col md:flex-row gap-8 md:gap-2 justify-between max-w-[920px]">
         <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
           <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
@@ -150,7 +236,7 @@ export default function MissionInfo({
         </div>
       </div>
 
-      <div id="mission-info-content" className="mt-8 w-full flex gap-4">
+      <div id="mission-info-content" className="mt-8 xl:w-3/4 flex gap-4">
         {tab === 'about' && (
           <div className="flex gap-4 w-full">
             <div className="w-full">
@@ -277,7 +363,7 @@ export default function MissionInfo({
           </div>
         )}
         <div className="hidden xl:block">
-          <div className=" w-full">
+          <div className="w-full" ref={payRedeemRef}>
             <MissionPayRedeem
               stage={stage}
               selectedChain={selectedChain}

@@ -31,6 +31,7 @@ import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import LockPresets from '../components/thirdweb/LockPresets'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
+import WithdrawVMooney from '@/components/tokens/WithdrawVMooney'
 import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrowABI from '../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
@@ -217,8 +218,9 @@ export default function Lock() {
         mainPadding
         preFooter={<NoticeFooter />}
       >
-        <main className="animate-fadeIn font-RobotoMono">
+        <main className="animate-fadeIn font-Lato">
           <Head title="Voting Power" />
+          <WithdrawVMooney />
           <div className="mt-3 w-full">
             <LockData
               hasLock={hasLock}
