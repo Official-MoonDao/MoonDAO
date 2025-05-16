@@ -68,3 +68,9 @@ jobs:
         run: |
           cd subscription-contracts && forge coverage --via-ir --fork-url 127.0.0.1:8545 --match-path test/MissionTest.t.sol -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov && genhtml lcov.info -o coverage --ignore-errors inconsistent
         id: test
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: Official-MoonDao/MoonDAO
