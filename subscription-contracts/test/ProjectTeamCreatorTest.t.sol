@@ -66,7 +66,7 @@ contract CreatorTest is Test {
         address[] memory members = new address[](2);
         members[0] = user2;
         members[1] = user3;
-        (uint256 tokenId, uint256 childHatId) = creator.createProjectTeam(4,2024, 169, "IPFS_HASH", "LINK", "UPFRONT", user1, members, members);
+        (uint256 tokenId, uint256 childHatId) = creator.createProjectTeam(uri, uri, uri, "title","description", "image", 4,2024, 169, "IPFS_HASH", "LINK", "UPFRONT", user1, members, members);
     }
 
     function testMint() public {
