@@ -36,6 +36,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Run apply_patch.sh
+        run: |
+          chmod +x ./subscription-contracts/apply_patch.sh
+          ./subscription-contracts/apply_patch.sh
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
@@ -61,5 +66,5 @@ jobs:
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: |
-          cd subscription-contracts && forge test --via-ir --optimize --optimizer-runs 200 --fork-url http://localhost:8545 -vvvv
+          cd subscription-contracts && forge coverage --via-ir --fork-url 127.0.0.1:8545 --match-path test/MissionTest.t.sol -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov && genhtml lcov.info -o coverage --ignore-errors inconsistent
         id: test
