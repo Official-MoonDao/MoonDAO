@@ -113,7 +113,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
                 return 1; // Stage 1
             }
         } else {
-            return 2; // Stage 3
+            return 2; // Stage 2
         }
     }
 }

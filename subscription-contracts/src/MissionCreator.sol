@@ -34,7 +34,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
     MoonDAOTeam public moonDAOTeam;
     MissionTable public missionTable;
     address public moonDAOTreasury;
-    address feeHookAddress;
+    address public feeHookAddress;
     address positionManagerAddress;
     mapping(uint256 => uint256) public missionIdToProjectId;
     mapping(uint256 => address) public missionIdToPayHook;
@@ -83,6 +83,10 @@ contract MissionCreator is Ownable, IERC721Receiver {
         missionTable = MissionTable(_missionTable);
     }
 
+    function setFeeHookAddress(address _feeHookAddress) external onlyOwner {
+        feeHookAddress = _feeHookAddress;
+    }
+
     function createMission(uint256 teamId, address to, string calldata projectUri, uint256 fundingGoal, uint256 deadline, uint256 refundPeriod, bool token, string calldata tokenName, string calldata tokenSymbol, string calldata memo) external returns (uint256) {
 
         if(msg.sender != owner()) {
@@ -94,7 +98,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         IJBTerminal terminal = IJBTerminal(jbMultiTerminalAddress);
         Vesting moonDAOVesting = new Vesting(moonDAOTreasuryPayable);
         Vesting teamVesting = new Vesting(toPayable);
-        PoolDeployer poolDeployer = new PoolDeployer(feeHookAddress, positionManagerAddress);
+        PoolDeployer poolDeployer = new PoolDeployer(feeHookAddress, positionManagerAddress, owner());
 
 
         if (block.chainid != 11155111) {
