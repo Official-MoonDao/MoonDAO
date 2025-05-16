@@ -26,8 +26,9 @@ jobs:
         with:
           path: |
             .git
-            node_modules
-            lib
+            subscription-contracts/node_modules
+            subscription-contracts/lib
+            subscription-contracts/out
           key: key-${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             key-${{ runner.os }}-npm-
@@ -66,7 +67,7 @@ jobs:
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: |
-          cd subscription-contracts && forge coverage --via-ir --fork-url 127.0.0.1:8545 --match-path test/MissionTest.t.sol -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov && genhtml lcov.info -o coverage --ignore-errors inconsistent
+          cd subscription-contracts && forge coverage --via-ir --fork-url 127.0.0.1:8545 --match-path test/MissionTest.t.sol -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov
         id: test
 
       - name: Upload coverage reports to Codecov
@@ -74,3 +75,4 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: Official-MoonDao/MoonDAO
+        id: upload-coverage
