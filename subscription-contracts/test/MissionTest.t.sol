@@ -703,5 +703,9 @@ contract MissionTest is Test, Config {
         missionCreator.setMissionTable(address(missionTable));
     }
 
+    function testSetJBProjects() public {
+        vm.prank(user1);
+        missionCreator.setJBProjects(address(jbProjectsAddress));
+    }
 }
 
