@@ -69,6 +69,7 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import SafeModal from '@/components/safe/SafeModal'
 import Action from '@/components/subscription/Action'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -431,6 +432,7 @@ export default function TeamDetailPage({
             : imageIpfsLink.split('ipfs://')[1]
         }`}
       />
+
       {teamSubscriptionModalEnabled && (
         <SubscriptionModal
           selectedChain={selectedChain}
