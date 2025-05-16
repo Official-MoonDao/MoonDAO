@@ -121,6 +121,7 @@
     "@types/react-dom": "^18.2.7",
     "@types/react-google-recaptcha": "^2.1.9",
     "@types/shopify-buy": "^2.17.1",
+    "@types/sinon": "^17.0.4",
     "@types/three": "^0.156.0",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.0",

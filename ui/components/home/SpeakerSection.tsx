@@ -18,7 +18,7 @@ export default function SpeakerSection() {
             id="section-header"
             className="header font-GoodTimes text-center text-dark-cool"
           >
-            MoonDAO Speakers
+            Past Speakers
           </h2>
           <div
             id="speaker-container"

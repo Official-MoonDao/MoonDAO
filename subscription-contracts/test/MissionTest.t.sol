@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
-import "forge-std/Test.sol";
 import {Vesting} from "../src/Vesting.sol";
 import {PoolDeployer} from "../src/PoolDeployer.sol";
 import "@nana-core/interfaces/IJBRulesetApprovalHook.sol";
@@ -28,8 +26,9 @@ import {IJBTokens} from "@nana-core/interfaces/IJBTokens.sol";
 import {JBConstants} from "@nana-core/libraries/JBConstants.sol";
 import {IJBController} from "@nana-core/interfaces/IJBController.sol";
 import {IJBTerminalStore} from "@nana-core/interfaces/IJBTerminalStore.sol";
+import "base/Config.sol";
 
-contract MissionTest is Test {
+contract MissionTest is Test, Config {
 
     address zero = address(0);
     address user1 = address(0x1);
@@ -93,27 +92,49 @@ contract MissionTest is Test {
         jbTokens = IJBTokens(0xA59e9F424901fB9DBD8913a9A32A081F9425bf36);
         jbController = IJBController(jbControllerAddress);
 
-        missionCreator = new MissionCreator(jbControllerAddress, jbMultiTerminalAddress, jbProjectsAddress, jbTerminalStoreAddress, jbRulesetsAddress, address(moonDAOTeam), zero, TREASURY);
+        missionCreator = new MissionCreator(jbControllerAddress, jbMultiTerminalAddress, jbProjectsAddress, jbTerminalStoreAddress, jbRulesetsAddress, address(moonDAOTeam), zero, TREASURY, FEE_HOOK_ADDRESSES[block.chainid], POSITION_MANAGERS[block.chainid]);
         missionTable = new MissionTable("TestMissionTable", address(missionCreator));
         missionCreator.setMissionTable(address(missionTable));
 
         vm.stopPrank();
     }
 
-    function testCreateTeamProject() public {
+    function _createTeam() internal {
         vm.startPrank(user1);
         moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
+        vm.stopPrank();
+    }
+
+    function _createMission(uint256 goal) internal returns (uint256) {
+        vm.startPrank(user1);
         uint256 missionId = missionCreator.createMission(
            0,
            teamAddress,
            "",
-           10_000_000_000_000_000_000,
+           goal,
            block.timestamp + 28 days,
+           28 days,
            true,
            "TEST TOKEN",
            "TEST",
            "This is a test project"
         );
+        vm.stopPrank();
+        return missionId;
+    }
+
+    function _createMission() internal returns (uint256) {
+        _createMission(10_000_000_000_000_000_000);
+    }
+
+    function _createTeamAndMission() internal returns (uint256) {
+        _createTeam();
+        return _createMission();
+    }
+
+    function testCreateTeamProject() public {
+        uint256 missionId = _createTeamAndMission();
+        vm.startPrank(user1);
         assertEq(missionCreator.stage(missionId), 1);
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
@@ -141,19 +162,9 @@ contract MissionTest is Test {
     }
 
     function testCreateTeamProjectZeroGoal() public {
+        _createTeam();
+        uint256 missionId = _createMission(0);
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           0,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -179,19 +190,8 @@ contract MissionTest is Test {
     }
 
     function testCreateTeamProjectReachesDeadline() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           user1,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -213,19 +213,8 @@ contract MissionTest is Test {
     }
 
     function testCreateTeamProjectHugePayment() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -249,19 +238,8 @@ contract MissionTest is Test {
     }
 
     function testCreateTeamProjectFundingTurnedOff() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
@@ -286,19 +264,8 @@ contract MissionTest is Test {
     }
 
     function testCreateTeamProjectCashout() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -338,19 +305,8 @@ contract MissionTest is Test {
     }
 
     function testCreateTeamProjectCashoutMultipleContributors() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -424,19 +380,8 @@ contract MissionTest is Test {
 
 
     function testCreateTeamProjectCashoutEarly() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -470,19 +415,8 @@ contract MissionTest is Test {
     }
 
     function testCreateTeamProjectCashoutCashoutAfterMinFundingMet() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -517,19 +451,8 @@ contract MissionTest is Test {
     }
 
     function testCreateTeamProjectVestTokens() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -587,19 +510,8 @@ contract MissionTest is Test {
     }
 
     function testCreateTeamProjectPayouts() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -632,25 +544,14 @@ contract MissionTest is Test {
 
         PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
         // JB splits have 7 decimals of precision, so check up to 6 decimals
-        assertApproxEqRel(address(poolDeployer).balance, terminalBalance / 10, 0.0000001e18);
-        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 75/ 1000, 0.0000001e18);
-        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *80 / 100, 0.0000001e18);
+        assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5/ 100, 0.0000001e18);
+        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
     }
 
     function testCreateTeamProjectAMM() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -683,9 +584,99 @@ contract MissionTest is Test {
         uint256 tokensPoolDeployer = jbTokens.totalBalanceOf(address(poolDeployer), projectId);
         assertEq(tokensPoolDeployer, 1_000 * 1e18);
         // JB splits have 7 decimals of precision, so check up to 6 decimals
-        assertApproxEqRel(address(poolDeployer).balance, terminalBalance / 10, 0.0000001e18);
+        assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5 / 100, 0.0000001e18);
         poolDeployer.createAndAddLiquidity();
     }
+
+    function testCreateTeamProjectRefundPeriod() public {
+        uint256 missionId = _createTeamAndMission();
+        vm.startPrank(user1);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+        uint256 balance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        assertEq(balance, 0);
+
+        uint256 payAmount = 1_000_000_000_000_000_000;
+        terminal.pay{value: payAmount}(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            user1,
+            0,
+            "",
+            new bytes(0)
+        );
+        uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        assertEq(balanceAfter1, payAmount);
+        uint256 user1TokensAfter = jbTokens.totalBalanceOf(user1, projectId);
+        assertEq(user1TokensAfter, 1_000 * 1e18);
+        vm.stopPrank();
+
+        vm.prank(user2);
+        terminal.pay{value: payAmount/2}(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            user2,
+            0,
+            "",
+            new bytes(0)
+        );
+        uint256 user2TokensAfter = jbTokens.totalBalanceOf(user2, projectId);
+        assertEq(user2TokensAfter, 500 * 1e18);
+
+        uint256 user1BalanceBefore = address(user1).balance;
+        uint256 user2BalanceBefore = address(user2).balance;
+        skip(28 days);
+        assertEq(missionCreator.stage(missionId), 3);
+
+
+        vm.prank(user1);
+        uint256 user1CashOutAmount = IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            user1,
+            projectId,
+            user1TokensAfter,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            payable(user1),
+            bytes(""));
+        uint256 user1BalanceAfter = address(user1).balance;
+        assertEq(user1CashOutAmount, payAmount);
+        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
+        assertEq(jbTokens.totalBalanceOf(zero, projectId), 0);
+
+        skip(28 days);
+        // Refund period has passed
+        vm.prank(user2);
+        vm.expectRevert();
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            user2,
+            projectId,
+            user2TokensAfter,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            payable(user2),
+            bytes(""));
+
+
+        uint256 treasuryBalanceBefore = address(TREASURY).balance;
+        uint256 teamBalanceBefore = address(teamAddress).balance;
+        uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            terminalBalance,
+            uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            0
+        );
+
+        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
+
+    }
+
 
     function testSetJBController() public {
         vm.prank(user1);

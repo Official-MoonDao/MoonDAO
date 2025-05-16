@@ -13,6 +13,8 @@ interface DeploymentConfig {
   vMooneySweepstakesZeroG: string
   Marketplace?: string
   MarketplaceFeeSplit?: string
+  VotingEscrowDepositor: string
+  MoonDAOTeam: string
 }
 
 type Index = { [key: string]: string }
@@ -88,7 +90,7 @@ export const USDT_ADDRESSES: Index = {
   'base-sepolia-testnet': '0x4DBD49a3aE90Aa5F13091ccD29A896cbb5B171EB',
 }
 
-export const MOONEY_DECIMALS = 10 ** 18
+export const MOONEY_DECIMALS = 18
 
 export const VMOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.vMOONEYToken,
@@ -152,8 +154,11 @@ export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   'arbitrum-sepolia': '0x9f0496702Df4889C17b7c6Ef88c74ee0dF14998e',
 }
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
-  arbitrum: '0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0',
-  sepolia: '0xe77ede9B472E9AE450a1AcD4A90dcd3fb2e50cD0',
+  arbitrum: arbitrumConfig.VotingEscrowDepositor,
+  sepolia: sepoliaConfig.VotingEscrowDepositor,
+}
+export const VMOONEY_FAUCET_ADDRESSES: Index = {
+  arbitrum: '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
 }
 
 export const REVNET_ADDRESSES: Index = {
@@ -181,8 +186,8 @@ export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
 }
 
 export const TEAM_ADDRESSES: Index = {
-  arbitrum: '0xAB2C354eC32880C143e87418f80ACc06334Ff55F',
-  sepolia: '0x21d2C4bEBd1AEb830277F8548Ae30F505551f961',
+  arbitrum: arbitrumConfig.MoonDAOTeam,
+  sepolia: sepoliaConfig.MoonDAOTeam,
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
@@ -210,12 +215,12 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xdA53970Ba11835DC841527E21d039B6b9B12D47A',
   sepolia: '0x71401c03ca50B08871A14e4eFD5FC4E6c0a46b31',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x7f8f57a30b55018FE98627eC40884A812916E04e',
   sepolia: '0x0823Bb6c35EdA0a55A9F3e8358A64cc554963AD5',
 }
 
