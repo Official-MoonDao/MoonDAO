@@ -839,31 +839,57 @@ contract MissionTest is Test, Config {
     function testSetJBController() public {
         vm.prank(user1);
         missionCreator.setJBController(address(0));
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
+        missionCreator.setJBController(address(0));
     }
 
     function testSetJBMultiTerminal() public {
         vm.prank(user1);
+        missionCreator.setJBMultiTerminal(address(0));
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
         missionCreator.setJBMultiTerminal(address(0));
     }
 
     function testSetMoonDAOTreasury() public {
         vm.prank(user1);
         missionCreator.setMoonDAOTreasury(address(0));
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
+        missionCreator.setMoonDAOTreasury(address(0));
     }
 
     function testSetMoonDAOTeam() public {
         vm.prank(user1);
+        missionCreator.setMoonDAOTeam(address(moonDAOTeam));
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
         missionCreator.setMoonDAOTeam(address(moonDAOTeam));
     }
 
     function testSetMissionTable() public {
         vm.prank(user1);
         missionCreator.setMissionTable(address(missionTable));
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
+        missionCreator.setMissionTable(address(missionTable));
     }
 
     function testSetJBProjects() public {
         vm.prank(user1);
         missionCreator.setJBProjects(address(jbProjectsAddress));
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
+        missionCreator.setJBProjects(address(jbProjectsAddress));
+    }
+
+    function testSetFeeHookAddress() public {
+        vm.prank(user1);
+        missionCreator.setFeeHookAddress(address(0));
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
+        missionCreator.setFeeHookAddress(address(0));
     }
 }
 
