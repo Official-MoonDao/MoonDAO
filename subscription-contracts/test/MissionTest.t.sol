@@ -99,14 +99,19 @@ contract MissionTest is Test, Config {
         vm.stopPrank();
     }
 
-    function testCreateTeamProject() public {
+    function _createTeam() internal {
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
+        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "view", "formId", new address[](0));
+        vm.stopPrank();
+    }
+
+    function _createMission(uint256 goal) internal returns (uint256) {
+        vm.startPrank(user1);
         uint256 missionId = missionCreator.createMission(
            0,
            teamAddress,
            "",
-           10_000_000_000_000_000_000,
+           goal,
            block.timestamp + 28 days,
            28 days,
            true,
@@ -114,6 +119,22 @@ contract MissionTest is Test, Config {
            "TEST",
            "This is a test project"
         );
+        vm.stopPrank();
+        return missionId;
+    }
+
+    function _createMission() internal returns (uint256) {
+        _createMission(10_000_000_000_000_000_000);
+    }
+
+    function _createTeamAndMission() internal returns (uint256) {
+        _createTeam();
+        return _createMission();
+    }
+
+    function testCreateTeamProject() public {
+        uint256 missionId = _createTeamAndMission();
+        vm.startPrank(user1);
         assertEq(missionCreator.stage(missionId), 1);
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
@@ -141,20 +162,9 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectZeroGoal() public {
+        _createTeam();
+        uint256 missionId = _createMission(0);
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           0,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -180,20 +190,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectReachesDeadline() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           user1,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -215,20 +213,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectHugePayment() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -252,20 +238,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectFundingTurnedOff() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
         LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
@@ -290,20 +264,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectCashout() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -343,20 +305,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectCashoutMultipleContributors() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -430,20 +380,8 @@ contract MissionTest is Test, Config {
 
 
     function testCreateTeamProjectCashoutEarly() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -477,20 +415,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectCashoutCashoutAfterMinFundingMet() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -525,20 +451,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectVestTokens() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -596,20 +510,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectPayouts() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -648,20 +550,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectAMM() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
@@ -699,20 +589,8 @@ contract MissionTest is Test, Config {
     }
 
     function testCreateTeamProjectRefundPeriod() public {
+        uint256 missionId = _createTeamAndMission();
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
-        uint256 missionId = missionCreator.createMission(
-           0,
-           teamAddress,
-           "",
-           10_000_000_000_000_000_000,
-           block.timestamp + 28 days,
-           28 days,
-           true,
-           "TEST TOKEN",
-           "TEST",
-           "This is a test project"
-        );
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
