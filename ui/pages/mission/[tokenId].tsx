@@ -39,7 +39,7 @@ import useRead from '@/lib/thirdweb/hooks/useRead'
 import { daysUntilDate } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
+import ContentLayout from '@/components/layout/ContentLayoutMission'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
@@ -160,58 +160,60 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   //Profile Header Section
   const ProfileHeader = (
-    <div id="citizenheader-container">
-      <div className="z-50 rounded-tl-[20px] overflow-hidden">
+    <div id="citizenheader-container" className="w-[100vw]">
+      <div className="z-50 w-full">
         <div id="frame-content-container" className="w-full">
           <div
             id="frame-content"
-            className="w-full flex flex-col lg:flex-row items-start justify-between"
+            className="w-full sm:px-[5vw] flex flex-col lg:flex-row items-start xl:px-0 xl:w-[1200px]"
           >
             <div
               id="profile-description-section"
               className="flex w-full flex-col lg:flex-row items-start lg:items-center"
             >
               {mission?.metadata?.logoUri ? (
+                <div className="pr-0 md:pr-[2vw] pb-[5vw] md:pb-[2vw]">
                 <div
                   id="mission-image-container"
-                  className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
-                >
+                  className="pl-[0vw] sm:pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
+                  >
                   <MediaRenderer
                     client={client}
                     src={getIPFSGateway(mission?.metadata?.logoUri)}
-                    className="rounded-full"
-                    height={'300'}
-                    width={'300'}
+                    className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
+                    height={'576'}
+                    width={'576'}
                   />
                   {teamNFT?.metadata?.image && (
                     <div
                       id="team-nft-container"
-                      className="absolute bottom-0 lg:right-0"
+                      className="absolute bottom-0 lg:right-0 mb-[-5vw] md:mb-[-2vw] mr-[-5vw] md:mr-[-2vw]"
                     >
                       <MediaRenderer
                         client={client}
                         src={teamNFT?.metadata?.image}
-                        className="rounded-full"
-                        height={'100'}
-                        width={'100'}
+                        className="top-[2vw] rounded-full ml-[5vw] sm:ml-0"
+                        height={'150'}
+                        width={'150'}
                       />
                     </div>
                   )}
                 </div>
+                </div>
               ) : (
                 <></>
               )}
-              <div id="mission-name-container">
+              <div className="flex items-start justify-start w-full sm:w-auto">
                 <div
                   id="mission-name"
-                  className="flex w-full flex-col justify-center lg:ml-5"
+                  className="flex px-[5vw] sm:px-0 w-full flex-col justify-center lg:ml-5 max-w-[650px]"
                 >
                   <div
                     id="mission-name-container"
-                    className="mt-5 lg:mt-0 flex flex-col flex-col-reverse w-full items-start justify-start"
+                    className="mt-5 lg:mt-0 flex flex-col w-full items-start justify-start"
                   >
                     {mission ? (
-                      <h1 className="max-w-[450px] text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
+                      <h1 className="max-w-[450px] text-black opacity-[80%] lg:block font-GoodTimes header dark:text-white text-3xl">
                         {mission?.metadata?.name}
                       </h1>
                     ) : (
@@ -253,7 +255,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     </div>
                   )}
 
-                  <div className="w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
+                  <div className="max-w-[500px] w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
                     {/* Purple raised amount tag */}
                     <div className="mb-4">
                       <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-center">
@@ -349,9 +351,11 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       projectId={mission?.projectId}
       selectedChain={selectedChain}
     >
-      <Container>
+      <Container
+        containerwidth={true}
+        >
         <Head
-          title={mission?.metadata?.name}
+          title={mission?.metadata?.name} 
           description={mission?.metadata?.description}
           image={mission?.metadata?.logoUri}
         />
@@ -367,21 +371,16 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         >
           <div
             id="page-container"
-            className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1200px]"
-          >
-            {/* Pay & Redeem Section */}
-            <Frame
-              noPadding
-              bottomLeft="0px"
-              bottomRight="0px"
-              topRight="0px"
-              topLeft="0px"
-              className="xl:hidden"
+            className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
             >
+            {/* Pay & Redeem Section */}
+            <div
+              className="xl:hidden w-full px-[5vw] md:px-[5vw]"
+              >
               <div
                 id="mission-pay-redeem-container"
-                className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
-              >
+                className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax]"
+                >
                 {primaryTerminalAddress &&
                 primaryTerminalAddress !==
                   '0x0000000000000000000000000000000000000000' ? (
@@ -404,7 +403,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   </div>
                 )}
               </div>
-            </Frame>
+            </div>
             {/* Project Overview */}
             <Frame
               noPadding
@@ -413,7 +412,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               topRight="0px"
               topLeft="0px"
             >
-              <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 px-12 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] lg:w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}

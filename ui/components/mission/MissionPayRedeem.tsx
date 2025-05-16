@@ -106,7 +106,7 @@ function MissionPayRedeemContent({
   return (
     <div
       id="mission-pay-redeem-container"
-      className="w-full flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center md:items-start"
+      className="max-w-[500px] md:min-w-[430px] flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center md:items-start w-full"
     >
       <div
         id="mission-pay-container"

@@ -47,7 +47,7 @@ function MissionInfoTab({
 
 function MissionInfoHeader({ title, icon }: { title: string; icon: string }) {
   return (
-    <div className="flex gap-2 text-light-cool">
+    <div className="flex w-full gap-2 text-light-cool">
       <Image src={icon} alt="Star Icon" width={30} height={30} />
       <h1 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
         {title}
@@ -106,7 +106,7 @@ export default function MissionInfo({
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row gap-8 md:gap-2 justify-between max-w-[1000px]">
+      <div className="px-[1vw] flex flex-col md:flex-row gap-8 md:gap-2 justify-between max-w-[1000px]">
         <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
           <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
@@ -153,13 +153,13 @@ export default function MissionInfo({
       <div id="mission-info-content" className="mt-8 w-full flex gap-4">
         {tab === 'about' && (
           <div className="flex gap-4 w-full">
-            <div>
+            <div className="w-full">
               <MissionInfoHeader
                 title="About the Mission"
                 icon="/assets/icon-star-blue.svg"
               />
               <div
-                className="mt-4 prose prose-invert w-full"
+                className="mt-4 prose prose-invert w-full max-w-none"
                 dangerouslySetInnerHTML={{
                   __html: mission?.metadata?.description || '',
                 }}
@@ -276,20 +276,22 @@ export default function MissionInfo({
             <MissionTokenInfo mission={mission} token={token} />
           </div>
         )}
-        <div className="w-full hidden xl:block">
-          <MissionPayRedeem
-            stage={stage}
-            selectedChain={selectedChain}
-            mission={mission}
-            teamNFT={teamNFT}
-            token={token}
-            fundingGoal={fundingGoal}
-            subgraphData={subgraphData}
-            ruleset={ruleset}
-            primaryTerminalAddress={primaryTerminalAddress}
-            jbTokensContract={jbTokensContract}
-            jbControllerContract={jbControllerContract}
-          />
+        <div className="hidden xl:block">
+          <div className=" w-full">
+            <MissionPayRedeem
+              stage={stage}
+              selectedChain={selectedChain}
+              mission={mission}
+              teamNFT={teamNFT}
+              token={token}
+              fundingGoal={fundingGoal}
+              subgraphData={subgraphData}
+              ruleset={ruleset}
+              primaryTerminalAddress={primaryTerminalAddress}
+              jbTokensContract={jbTokensContract}
+              jbControllerContract={jbControllerContract}
+            />
+          </div>
         </div>
       </div>
     </div>
