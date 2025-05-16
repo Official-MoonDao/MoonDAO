@@ -265,6 +265,11 @@ module.exports = nextTranslate({
           'https://discord.com/channels/914720248140279868/917498630510878821',
         permanent: true,
       },
+      {
+        source: '/withdraw',
+        destination: '/lock',
+        permanent: true,
+      },
     ]
   },
   webpack: (config, { isServer }) => {
