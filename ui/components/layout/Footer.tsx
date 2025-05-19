@@ -30,7 +30,7 @@ export default function Footer({
   return (
     <div
       id="footer-container"
-      className={`flex flex-col items-center pt-5 max-w-[1000px] ${
+      className={`flex flex-col items-center pt-5 max-w-[1200px] ${
         darkBackground ? 'w-full h-full' : 'pb-10'
       } ${centerContent ? 'text-center' : ''}`}
     >

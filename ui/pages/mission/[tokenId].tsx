@@ -407,6 +407,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               bottomRight="0px"
               topRight="0px"
               topLeft="0px"
+              className="overflow-auto"
             >
               <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
                 <MissionInfo
