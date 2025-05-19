@@ -110,7 +110,7 @@ export default function MissionInfo({
   useEffect(() => {
     if (
       typeof window === 'undefined' ||
-      window.innerWidth < 1280 ||
+      window.innerWidth < 800 ||
       !payRedeemRef.current
     )
       return
@@ -118,74 +118,80 @@ export default function MissionInfo({
     let ctx: gsap.Context
     let originalStyle: Partial<CSSStyleDeclaration> = {}
 
-    import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
-      gsap.registerPlugin(ScrollTrigger)
+    async function payRedeemScrollTrigger() {
+      import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
+        gsap.registerPlugin(ScrollTrigger)
 
-      ctx = gsap.context(() => {
-        const el = payRedeemRef.current!
+        ctx = gsap.context(() => {
+          const el = payRedeemRef.current!
 
-        // Save original computed styles
-        const computed = window.getComputedStyle(el)
-        originalStyle = {
-          position: computed.position,
-          top: computed.top,
-          right: computed.right,
-          width: computed.width,
-          zIndex: computed.zIndex,
-        }
+          // Save original computed styles
+          const computed = window.getComputedStyle(el)
+          originalStyle = {
+            position: computed.position,
+            top: computed.top,
+            right: computed.right,
+            width: computed.width,
+            zIndex: computed.zIndex,
+          }
 
-        // Main scroll trigger for fixed positioning
-        ScrollTrigger.create({
-          trigger: el,
-          start: 'top bottom',
-          end: 'bottom center',
-          onEnter: () => {
-            gsap.to(el, {
-              position: 'fixed',
-              top: '450px',
-              right: '10vw',
-              width: '300px',
-              zIndex: 50,
-              opacity: 1,
-              duration: 0.3,
-              ease: 'power2.out',
-            })
-          },
-          onLeaveBack: () => {
-            gsap.to(el, {
-              ...originalStyle,
-              opacity: 1,
-              duration: 0.3,
-              ease: 'power2.out',
-            })
-          },
-          onUpdate: (self) => {
-            const windowHeight = window.innerHeight
-            const scrollTop =
-              window.pageYOffset || document.documentElement.scrollTop
-            const documentHeight = document.documentElement.scrollHeight
-
-            // If we're within 500px of the bottom of the page
-            if (documentHeight - (scrollTop + windowHeight) < 500) {
-              gsap.set(el, {
-                position: 'absolute',
-                top: documentHeight - 500 - el.offsetHeight,
-                right: '10vw',
-                width: '300px',
-              })
-            } else if (self.direction > 0) {
-              // Scrolling down
-              gsap.set(el, {
+          // Main scroll trigger for fixed positioning
+          ScrollTrigger.create({
+            trigger: el,
+            start: 'top bottom',
+            end: 'bottom center',
+            onEnter: () => {
+              gsap.to(el, {
                 position: 'fixed',
                 top: '450px',
                 right: '10vw',
                 width: '300px',
+                zIndex: 50,
+                opacity: 1,
+                duration: 0.3,
+                ease: 'power2.out',
               })
-            }
-          },
+            },
+            onLeaveBack: () => {
+              gsap.to(el, {
+                ...originalStyle,
+                opacity: 1,
+                duration: 0.3,
+                ease: 'power2.out',
+              })
+            },
+            onUpdate: (self) => {
+              const windowHeight = window.innerHeight
+              const scrollTop =
+                window.pageYOffset || document.documentElement.scrollTop
+              const documentHeight = document.documentElement.scrollHeight
+
+              // If we're within 500px of the bottom of the page
+              if (documentHeight - (scrollTop + windowHeight) < 500) {
+                gsap.set(el, {
+                  position: 'absolute',
+                  top: documentHeight - 500 - el.offsetHeight,
+                  right: '10vw',
+                  width: '300px',
+                })
+              } else if (self.direction > 0) {
+                // Scrolling down
+                gsap.set(el, {
+                  position: 'fixed',
+                  top: '450px',
+                  right: '10vw',
+                  width: '300px',
+                })
+              }
+            },
+          })
         })
       })
-    })
+    }
+
+    payRedeemScrollTrigger()
+
+    document.addEventListener('resize', payRedeemScrollTrigger)
 
     return () => ctx?.revert()
   }, [])
