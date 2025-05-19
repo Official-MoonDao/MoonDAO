@@ -12,11 +12,11 @@ function Rate({
   return (
     <div
       className={`${
-        active ? 'bg-darkest-cool' : 'bg-darkest-cool/50 opacity-30'
-      } flex items-center gap-2 rounded-full py-2`}
+        active ? '' : ' opacity-30'
+      } flex items-center gap-2 rounded-full`}
     >
       <div>
-        <h3 className="opacity-60">{title}</h3>
+        <h3 className="opacity-60 text-sm">{title}</h3>
         <p>
           {`1 ETH = `}
           {rate && tokenSymbol && (

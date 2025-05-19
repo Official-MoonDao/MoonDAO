@@ -106,13 +106,13 @@ function MissionPayRedeemContent({
   return (
     <div
       id="mission-pay-redeem-container"
-      className="max-w-[500px] md:min-w-[430px] flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center md:items-start w-full"
+      className=" md:min-w-[430px] flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center xl:items-start w-full"
     >
       <div
         id="mission-pay-container"
-        className="w-full p-2 max-w-[500px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
+        className="w-full p-2 xl:p-5 md:max-w-[500px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
       >
-        <div id="mission-pay-header" className="w-full flex justify-between">
+        <div id="mission-pay-header" className="hidden w-full flex justify-between">
           <PayRedeemStat
             label="Contributions"
             value={subgraphData?.paymentsCount}
@@ -243,12 +243,14 @@ function MissionPayRedeemContent({
             >
               Contribute
             </StandardButton>
-            <AcceptedPaymentMethods />
-            <p className="text-sm text-center">
-              {'Want to contribute by wire transfer?'}
-              <br />
-              {'Email us at info@moondao.com'}
-            </p>
+            <div className="md:hidden xl:block">
+              <AcceptedPaymentMethods />
+              <p className="xl:text-sm text-center md:text-left xl:text-center">
+                {'Want to contribute by wire transfer?'}
+                <br />
+                {'Email us at info@moondao.com'}
+              </p>
+            </div>
           </>
         )}
         {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
@@ -263,24 +265,38 @@ function MissionPayRedeemContent({
         )}
       </div>
       {/* Token stats and redeem container */}
-      <div className="xl:pt-4 flex flex-col justify-between gap-4">
+      <div className="xl:pt-4 flex flex-col justify-between gap-4 w-full">
         {token?.tokenSupply > 0 && !isRefundable && (
           <div
             id="mission-token-stats"
-            className="px-2 pt-1 bg-darkest-cool rounded-2xl"
+            className="w-full px-2 rounded-2xl"
           >
-            <div className="text-lg">
-              <h3 className="opacity-60 text-sm">Current Supply</h3>
-              <p>
-                {Math.floor(token?.tokenSupply.toString() / 1e18)} $
-                {token?.tokenSymbol}
+            <div className="p-5 pt-0 flex gap-5 items-start justify-center md:justify-start xl:justify-center">
+              <div className="text-lg">
+                <h3 className="opacity-60 text-sm">Current Supply</h3>
+                <p>
+                  {Math.floor(token?.tokenSupply.toString() / 1e18)} $
+                  {token?.tokenSymbol}
+                </p>
+              </div>
+              <div className="">
+                <MissionTokenExchangeRates
+                  currentStage={currentStage}
+                  tokenSymbol={token?.tokenSymbol}
+                />
+              </div>
+            </div>  
+            <div className=" hidden md:block xl:hidden">
+              <div className="text-sm opacity-60 pb-2">
+                {'Accepted Payment Methods'}
+              </div>
+              <AcceptedPaymentMethods />
+              <p className="xl:text-sm text-left xl:text-center">
+                {'Want to contribute by wire transfer?'}
+                <br />
+                {'Email us at info@moondao.com'}
               </p>
             </div>
-
-            <MissionTokenExchangeRates
-              currentStage={currentStage}
-              tokenSymbol={token?.tokenSymbol}
-            />
           </div>
         )}
 

@@ -372,10 +372,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
             {/* Pay & Redeem Section */}
-            <div className="xl:hidden w-full px-[5vw] md:px-[5vw]">
+            <div className="xl:hidden w-full px-[5vw]">
               <div
                 id="mission-pay-redeem-container"
-                className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax]"
+                className="flex justify-center mt-[5vw] md:mt-0 xl:mt-[2vw] p-[2vw] w-full xl:rounded-tl-[2vmax] rounded-[2vmax] xl:pr-0 overflow-hidden xl:rounded-bl-[5vmax] bg-darkest-cool"
               >
                 {primaryTerminalAddress &&
                 primaryTerminalAddress !==
@@ -409,7 +409,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               topLeft="0px"
               className="overflow-auto"
             >
-              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
+              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] md:min-w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}
