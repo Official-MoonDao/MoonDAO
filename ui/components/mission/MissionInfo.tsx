@@ -167,17 +167,17 @@ export default function MissionInfo({
   }, [tab])
 
   return (
-    <div>
-      <div className="px-[1vw] flex flex-col md:flex-row gap-8 md:gap-2 justify-between max-w-[1000px]">
-        <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
+    <div className="w-full">
+      <div className="w-full pl-[2vw] flex flex-col md:flex-row gap-10 md:gap-2 justify-between max-w-[1200px]">
+        <div id="mission-info-tabs" className="flex px-10 sm:px-4 md:px-0 justify-between sm:justify-start mt-4 flex gap-10 md:gap-20 w-full">
           <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center md:justify-end gap-2 w-full">
           <p className="text-sm text-gray-400">{'CONNECT WITH THE TEAM'}</p>
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-start justify-end">
             {teamSocials.communications && (
               <Link
                 className="flex gap-2"

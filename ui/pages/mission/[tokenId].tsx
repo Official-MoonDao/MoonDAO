@@ -42,7 +42,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionFundingProgressBar from '@/components/mission/MissionFundingProgressBar'
 import MissionInfo from '@/components/mission/MissionInfo'
@@ -365,7 +365,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           mode="compact"
           popOverEffect={false}
           isProfile
-          preFooter={<NoticeFooter darkBackground={true} />}
+          preFooter={<ExpandedFooter darkBackground={true} />}
         >
           <div
             id="page-container"
@@ -401,15 +401,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               </div>
             </div>
             {/* Project Overview */}
-            <Frame
-              noPadding
-              bottomLeft="0px"
-              bottomRight="0px"
-              topRight="0px"
-              topLeft="0px"
-              className="overflow-auto"
-            >
-              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] md:min-w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
+            <div className="px-[5vw] w-full flex items-center justify-center">
+              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] xl:min-w-[1200px] xl:bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}
@@ -428,7 +421,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   primaryTerminalAddress={primaryTerminalAddress}
                 />
               </div>
-            </Frame>
+            </div>
           </div>
         </ContentLayout>
       </Container>
