@@ -8,17 +8,15 @@ import {
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
   VMOONEY_FAUCET_ADDRESSES,
   MOONEY_DECIMALS,
-  DEFAULT_CHAIN_V5,
 } from 'const/config'
 import { BigNumber, utils } from 'ethers'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
-import { createLock, increaseLock } from '../lib/tokens/ve-token'
-import { dateOut } from '../lib/utils/dates'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -26,17 +24,13 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { approveToken } from '@/lib/tokens/approve'
+import { createLock, increaseLock } from '@/lib/tokens/ve-token'
+import { dateOut } from '@/lib/utils/dates'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
-import Container from '../components/layout/Container'
-import ContentLayout from '../components/layout/ContentLayout'
-import WebsiteHead from '../components/layout/Head'
-import StandardButton from '../components/layout/StandardButton'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-import NetworkSelector from '@/components/thirdweb/NetworkSelector'
+import StandardButton from '@/components/layout/StandardButton'
 
-export default function Withdraw() {
+export default function WithdrawVMooney() {
   useChainDefault()
   const router = useRouter()
 
@@ -188,49 +182,37 @@ export default function Withdraw() {
   }
 
   return (
-    <>
-      <WebsiteHead
-        title={'Withdraw'}
-        description={'Withdraw vMOONEY rewards.'}
-      />
-      <section className="w-[calc(100vw-20px)]">
-        <Container>
-          <ContentLayout
-            header={'Withdraw Rewards'}
-            headerSize="max(20px, 3vw)"
-            description={
-              "Withdraw your vMOONEY rewards. You'll need to sign two transactions: one to approve and one to withdraw. If you don't have vMOONEY yet, you'll get 1 MOONEY and create your vMOONEY lock first."
-            }
-            preFooter={<NoticeFooter />}
-            mainPadding
-            isProfile
-            mode="compact"
-            popOverEffect={false}
-          >
-            <div className="mt-3 w-full">
-              <section
-                className={`py-4 mt-8 flex flex-col ${isMobile ? '' : 'w-1/3'}`}
-              >
-                <Asset
-                  name="vMOONEY"
-                  amount={String(
-                    (Number(withdrawable) / 10 ** MOONEY_DECIMALS).toFixed(2)
-                  )}
-                  usd=""
-                />
-              </section>
-              <StandardButton
-                className="gradient-2 rounded-full"
-                onClick={handleWithdraw}
-                disabled={Number(withdrawable) === 0}
-                data-tip="You dont have any vMOONEY to withdraw"
-              >
-                Withdraw Rewards
-              </StandardButton>
-            </div>
-          </ContentLayout>
-        </Container>
-      </section>
-    </>
+    <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col gap-4 bg-dark-cool p-4">
+        <div className="flex gap-2">
+          <Image
+            src="/assets/vmooney-shield.svg"
+            alt="vMOONEY"
+            width={24}
+            height={24}
+          />
+          <p className="text-light-warm brightness-150 font-bold">vMOONEY</p>
+        </div>
+        <p className="text-2xl">
+          {String(
+            (Number(withdrawable) / 10 ** MOONEY_DECIMALS).toLocaleString()
+          )}
+        </p>
+        <StandardButton
+          className="gradient-2 rounded-full"
+          onClick={handleWithdraw}
+          disabled={Number(withdrawable) === 0}
+          data-tip="You dont have any vMOONEY to withdraw"
+        >
+          Withdraw Rewards
+        </StandardButton>
+      </div>
+
+      <div className="flex flex-col gap-4 bg-dark-cool p-4 max-w-[700px]">
+        <h1 className="text-2xl font-GoodTimes">You have unclaimed rewards!</h1>
+        <p>{`Click the 'Withdraw Rewards' button to claim your vMOONEY rewards and increase your voting impact! You'll be prompted to create or increase the duration of your lock to 4 years. Expect to sign 2-4 transactions.`}</p>
+        <p>{`Increase your stake amount or duration at any time on this page for greater impact!`}</p>
+      </div>
+    </div>
   )
 }

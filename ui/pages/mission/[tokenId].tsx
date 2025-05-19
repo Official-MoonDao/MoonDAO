@@ -173,32 +173,32 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             >
               {mission?.metadata?.logoUri ? (
                 <div className="pr-0 md:pr-[2vw] pb-[5vw] md:pb-[2vw]">
-                <div
-                  id="mission-image-container"
-                  className="pl-[0vw] sm:pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
+                  <div
+                    id="mission-image-container"
+                    className="pl-[0vw] sm:pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                   >
-                  <MediaRenderer
-                    client={client}
-                    src={getIPFSGateway(mission?.metadata?.logoUri)}
-                    className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
-                    height={'576'}
-                    width={'576'}
-                  />
-                  {teamNFT?.metadata?.image && (
-                    <div
-                      id="team-nft-container"
-                      className="absolute bottom-0 lg:right-0 mb-[-5vw] md:mb-[-2vw] mr-[-5vw] md:mr-[-2vw]"
-                    >
-                      <MediaRenderer
-                        client={client}
-                        src={teamNFT?.metadata?.image}
-                        className="top-[2vw] rounded-full ml-[5vw] sm:ml-0"
-                        height={'150'}
-                        width={'150'}
-                      />
-                    </div>
-                  )}
-                </div>
+                    <MediaRenderer
+                      client={client}
+                      src={getIPFSGateway(mission?.metadata?.logoUri)}
+                      className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
+                      height={'576'}
+                      width={'576'}
+                    />
+                    {teamNFT?.metadata?.image && (
+                      <div
+                        id="team-nft-container"
+                        className="absolute bottom-0 lg:right-0 mb-[-5vw] md:mb-[-2vw] mr-[-5vw] md:mr-[-2vw]"
+                      >
+                        <MediaRenderer
+                          client={client}
+                          src={teamNFT?.metadata?.image}
+                          className="top-[2vw] rounded-full ml-[5vw] sm:ml-0"
+                          height={'150'}
+                          width={'150'}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <></>
@@ -351,11 +351,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       projectId={mission?.projectId}
       selectedChain={selectedChain}
     >
-      <Container
-        containerwidth={true}
-        >
+      <Container containerwidth={true}>
         <Head
-          title={mission?.metadata?.name} 
+          title={mission?.metadata?.name}
           description={mission?.metadata?.description}
           image={mission?.metadata?.logoUri}
         />
@@ -372,15 +370,13 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           <div
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
-            >
+          >
             {/* Pay & Redeem Section */}
-            <div
-              className="xl:hidden w-full px-[5vw] md:px-[5vw]"
-              >
+            <div className="xl:hidden w-full px-[5vw] md:px-[5vw]">
               <div
                 id="mission-pay-redeem-container"
                 className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax]"
-                >
+              >
                 {primaryTerminalAddress &&
                 primaryTerminalAddress !==
                   '0x0000000000000000000000000000000000000000' ? (
@@ -411,8 +407,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               bottomRight="0px"
               topRight="0px"
               topLeft="0px"
+              className="overflow-auto"
             >
-              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] lg:w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
+              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}
