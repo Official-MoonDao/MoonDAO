@@ -9,6 +9,7 @@ import {Actions} from "v4-periphery/src/libraries/Actions.sol";
 import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IAllowanceTransfer {
     function approve(
@@ -19,7 +20,7 @@ interface IAllowanceTransfer {
     ) external;
 }
 
-contract PoolDeployer {
+contract PoolDeployer is Ownable {
     using CurrencyLibrary for Currency;
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     mapping(uint256 => address) public POSITION_MANAGERS;
@@ -39,7 +40,7 @@ contract PoolDeployer {
 
     // set tickLower and tickUpper to give liquidity at all prices
 
-    constructor(address _hookAddress, address _positionManager) {
+    constructor(address _hookAddress, address _positionManager, address owner) Ownable(owner) {
         hookAddress = _hookAddress;
         posm = PositionManager(payable(_positionManager));
     }
@@ -52,7 +53,7 @@ contract PoolDeployer {
         token = IERC20(_token);
     }
 
-    function setHookAddress(address _hookAddress) external {
+    function setHookAddress(address _hookAddress) external onlyOwner {
         hookAddress = _hookAddress;
     }
 
