@@ -16,6 +16,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { getCitizenSubgraphData } from '@/lib/citizen/citizen-subgraph'
 import { useAssets } from '@/lib/dashboard/hooks'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
@@ -31,6 +32,7 @@ import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import Frame from '@/components/layout/Frame'
+import CitizensChart from '@/components/subscription/CitizensChart'
 
 function truncateText(text: string, maxLength: number) {
   if (text?.length <= maxLength) return text
@@ -106,6 +108,7 @@ export default function Home({
   newestCitizens,
   newestListings,
   newestJobs,
+  citizenSubgraphData,
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -149,6 +152,12 @@ export default function Home({
     <Container>
       <div className="flex flex-col gap-4 mt-24">
         {/* Top Row: Balances, Budget, Proposals, and Listings */}
+        <CitizensChart
+          transfers={citizenSubgraphData.transfers}
+          isLoading={false}
+          height={300}
+          createdAt={citizenSubgraphData.createdAt}
+        />
         <div className="grid grid-cols-4 gap-4">
           {/* Balances Section */}
           <Frame
@@ -183,7 +192,7 @@ export default function Home({
                   label="Rewards"
                   value={
                     withdrawable
-                      ? Math.round(Number(withdrawable / 1e18)).toLocaleString()
+                      ? Math.round(+withdrawable / 1e18).toLocaleString()
                       : 0
                   }
                 />
@@ -390,12 +399,15 @@ export async function getStaticProps() {
     `SELECT * FROM ${jobTableName} ORDER BY id DESC LIMIT 10`
   )
 
+  const citizenSubgraphData = await getCitizenSubgraphData()
+
   return {
     props: {
       newestNewsletters,
       newestCitizens,
       newestListings,
       newestJobs,
+      citizenSubgraphData,
     },
     revalidate: 60,
   }

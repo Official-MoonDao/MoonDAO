@@ -1,6 +1,8 @@
 import { useRouter } from 'next/router'
 import { useContext, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import Callout1 from '../components/home/Callout1'
 import Callout2 from '../components/home/Callout2'
@@ -14,6 +16,7 @@ import Container from '../components/layout/Container'
 import Footer from '../components/layout/Footer'
 import WebsiteHead from '../components/layout/Head'
 import PageEnder from '../components/layout/PreFooter'
+import StandardButton from '@/components/layout/StandardButton'
 
 export default function Home({ linkSource }: any) {
   const router = useRouter()
@@ -50,6 +53,14 @@ export default function Home({ linkSource }: any) {
         <Callout3 />
         <PartnerSection />
         <PageEnder />
+        <StandardButton
+          onClick={() => {
+            sendDiscordMessage('networkNotifications', 'TEST NOTIFICATION')
+            toast.success('TEST NOTIFICATION')
+          }}
+        >
+          {'TEST NOTIFICATION'}
+        </StandardButton>
         <Footer darkBackground={true} />
       </div>
     </Container>
