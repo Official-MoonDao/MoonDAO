@@ -4,7 +4,7 @@ import StandardButton from '../layout/StandardButton'
 import SafeModal from '../safe/SafeModal'
 
 type TeamTreasuryProps = {
-  safeData: any
+  safeData?: any
   multisigAddress: string
   multisigMooneyBalance: any
   multisigNativeBalance: any
@@ -75,14 +75,16 @@ export default function TeamTreasury({
             >
               {'Treasury'}
             </StandardButton>
-            <StandardButton
-              className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
-              onClick={() => {
-                setSafeModalEnabled(true)
-              }}
-            >
-              {'Manage'}
-            </StandardButton>
+            {safeData && (
+              <StandardButton
+                className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
+                onClick={() => {
+                  setSafeModalEnabled(true)
+                }}
+              >
+                {'Manage'}
+              </StandardButton>
+            )}
           </div>
         </div>
         <div className="mt-4 flex items-center gap-4"></div>
