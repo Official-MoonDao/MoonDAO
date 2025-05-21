@@ -37,6 +37,10 @@ export interface PendingTransaction {
   signatures: string | null
   isExecuted: boolean
   isSuccessful: boolean | null
+  dataDecoded: {
+    method: string
+    args: any[]
+  } | null
 }
 
 export default function useSafe(safeAddress: string) {
@@ -107,17 +111,24 @@ export default function useSafe(safeAddress: string) {
     }
   }
 
-  async function addSigner(newSigner: string) {
+  async function addSigner(newSigner: string, newThreshold?: number) {
     if (!safe) throw new Error('Safe not initialized')
+
+    // If newThreshold is provided, validate it
+    if (newThreshold !== undefined) {
+      if (newThreshold < 1 || newThreshold > owners.length + 1) {
+        throw new Error('Invalid threshold value')
+      }
+    }
 
     const safeTransactionData: SafeTransactionData = {
       to: safeAddress,
       value: '0',
       data: safe
         .getContractManager()
-        .safeContract.interface.encodeFunctionData('addOwnerWithThreshold', [
+        .safeContract.encode('addOwnerWithThreshold', [
           newSigner,
-          threshold,
+          newThreshold ?? threshold,
         ]),
       operation: 0,
       safeTxGas: '1000000',
@@ -134,13 +145,32 @@ export default function useSafe(safeAddress: string) {
   async function removeSigner(signerToRemove: string) {
     if (!safe) throw new Error('Safe not initialized')
 
+    // Get current owners to find the previous owner
+    const currentOwners = await safe.getOwners()
+    const signerIndex = currentOwners.findIndex(
+      (owner) => owner.toLowerCase() === signerToRemove.toLowerCase()
+    )
+    if (signerIndex === -1) {
+      throw new Error('Signer not found in owners list')
+    }
+    // In the Safe contract, owners are stored in a linked list
+    // The prevOwner needs to be the address that points to the owner we want to remove
+    // If we're removing the first owner, the prevOwner should be SENTINEL_OWNERS (0x1)
+    // Otherwise, it should be the owner that comes before in the array
+    const prevOwner =
+      signerIndex === 0
+        ? '0x0000000000000000000000000000000000000001' // SENTINEL_OWNERS
+        : currentOwners[signerIndex - 1]
+
     const newThreshold = Math.max(1, threshold - 1)
+
     const safeTransactionData: SafeTransactionData = {
       to: safeAddress,
       value: '0',
       data: safe
         .getContractManager()
-        .safeContract.interface.encodeFunctionData('removeOwner', [
+        .safeContract.encode('removeOwner', [
+          prevOwner,
           signerToRemove,
           newThreshold,
         ]),
@@ -167,9 +197,7 @@ export default function useSafe(safeAddress: string) {
       value: '0',
       data: safe
         .getContractManager()
-        .safeContract.interface.encodeFunctionData('changeThreshold', [
-          newThreshold,
-        ]),
+        .safeContract.encode('changeThreshold', [newThreshold]),
       operation: 0,
       safeTxGas: '1000000',
       baseGas: '0',
@@ -188,30 +216,150 @@ export default function useSafe(safeAddress: string) {
     const safeTx = await safeApiKit?.getTransaction(safeTxHash)
     if (!safeTx) throw new Error('Transaction not found')
 
-    const safeTransactionData: SafeTransactionData = {
-      to: safeTx.to,
-      value: safeTx.value,
-      data: safeTx.data,
-      operation: safeTx.operation,
-      safeTxGas: safeTx.safeTxGas,
-      baseGas: safeTx.baseGas,
-      gasPrice: safeTx.gasPrice,
-      gasToken: safeTx.gasToken,
-      refundReceiver: safeTx.refundReceiver,
-      nonce: safeTx.nonce,
+    // Get current threshold directly from Safe instance
+    const currentThreshold = await safe.getThreshold()
+
+    if (safeTx.confirmations.length < currentThreshold) {
+      throw new Error(
+        `Not enough confirmations. Need ${currentThreshold}, have ${safeTx.confirmations.length}`
+      )
     }
 
-    const safeTx2 = await safe.createTransaction({ safeTransactionData })
-    const signature = await safe.signTransactionHash(safeTxHash)
-
-    if (!signature) throw new Error('Failed to sign transaction')
+    // Get current gas price
+    const provider = await wallets?.[selectedWallet]?.getEthersProvider()
+    if (!provider) throw new Error('No provider available')
+    const gasPrice = await provider.getGasPrice()
 
     const options: TransactionOptions = {
-      gasLimit: '1000000',
+      gasLimit: '2000000',
+      maxFeePerGas: gasPrice.mul(2).toString(),
+      maxPriorityFeePerGas: gasPrice.toString(),
     }
 
-    const executeTx = await safe.executeTransaction(safeTx2, options)
-    return executeTx
+    try {
+      // Execute the existing transaction directly
+      const executeTx = await safe.executeTransaction(safeTx, options)
+      console.log('Transaction executed:', executeTx)
+
+      // Get the transaction hash from the execution response
+      const txHash = executeTx.hash
+
+      if (!txHash) {
+        throw new Error('No transaction hash returned from execution')
+      }
+
+      const receipt = await provider.waitForTransaction(txHash)
+
+      if (receipt.status === 0) {
+        throw new Error('Transaction failed')
+      }
+
+      let isExecuted = false
+      let attempts = 0
+      const maxAttempts = 60
+
+      while (!isExecuted && attempts < maxAttempts) {
+        const tx = await safeApiKit?.getTransaction(safeTxHash)
+        console.log('Transaction status:', tx)
+
+        if (tx?.isExecuted) {
+          console.log('Transaction confirmed as executed')
+          isExecuted = true
+          await refreshSafeState()
+          break
+        }
+
+        if (receipt.status === 1) {
+          console.log(
+            'Transaction receipt indicates success, waiting for Safe API to update...'
+          )
+          await new Promise((resolve) => setTimeout(resolve, 10000))
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, 2000))
+        }
+        attempts++
+      }
+
+      if (!isExecuted) {
+        console.error('Transaction execution status check timed out')
+        if (receipt.status === 1) {
+          console.log(
+            'Transaction was successful but Safe API has not updated yet'
+          )
+          await refreshSafeState()
+          return executeTx
+        }
+        throw new Error('Transaction execution status check timed out')
+      }
+
+      return executeTx
+    } catch (error) {
+      console.error('Error executing transaction:', error)
+      throw error
+    }
+  }
+
+  async function rejectTransaction(safeTxHash: string) {
+    if (!safe || !safeApiKit) throw new Error('Safe not initialized')
+
+    try {
+      // Get the transaction to reject
+      const tx = await safeApiKit.getTransaction(safeTxHash)
+      if (!tx) throw new Error('Transaction not found')
+
+      // Create a rejection transaction with the same nonce
+      const safeTransactionData: SafeTransactionData = {
+        to: safeAddress,
+        value: '0',
+        data: '0x', // Empty data for rejection
+        operation: 0,
+        safeTxGas: '1000000',
+        baseGas: '0',
+        gasPrice: '0',
+        gasToken: ethers.constants.AddressZero,
+        refundReceiver: ethers.constants.AddressZero,
+        nonce: tx.nonce, // Use the same nonce as the transaction we're rejecting
+      }
+
+      return queueSafeTx(safeTransactionData)
+    } catch (err) {
+      console.error('Error rejecting transaction:', err)
+      throw err
+    }
+  }
+
+  async function refreshSafeState() {
+    if (!safe) return
+
+    try {
+      const currentOwners = await safe.getOwners()
+      const currentThreshold = await safe.getThreshold()
+
+      setOwners(currentOwners)
+      setThreshold(currentThreshold)
+
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      await fetchPendingTransactions()
+
+      const provider = await wallets?.[selectedWallet]?.getEthersProvider()
+      const signer = provider?.getSigner()
+      if (signer) {
+        const ethAdapter = new EthersAdapter({
+          ethers,
+          signerOrProvider: signer,
+        })
+
+        const newSafe = await Safe.create({
+          ethAdapter,
+          safeAddress,
+        })
+
+        setSafe(newSafe)
+      }
+    } catch (err) {
+      console.error('Error refreshing Safe state:', err)
+    }
   }
 
   async function fetchPendingTransactions() {
@@ -221,22 +369,25 @@ export default function useSafe(safeAddress: string) {
       const pendingTxs = await safeApiKit.getPendingTransactions(safeAddress)
       setPendingTransactions(pendingTxs.results)
 
-      // Filter transactions that need current user's signature
+      const currentThreshold = await safe.getThreshold()
       const currentAddress = wallets?.[selectedWallet]?.address
+
       if (currentAddress) {
-        const toSign = pendingTxs.results.filter(
-          (tx: PendingTransaction) =>
-            !tx.confirmations.some(
-              (conf: { owner: string }) =>
-                conf.owner.toLowerCase() === currentAddress.toLowerCase()
-            )
-        )
+        // Show all pending transactions, but mark which ones need signing
+        const toSign = pendingTxs.results.filter((tx: PendingTransaction) => {
+          const hasSigned = tx.confirmations.some(
+            (conf: { owner: string }) =>
+              conf.owner.toLowerCase() === currentAddress.toLowerCase()
+          )
+          return !tx.isExecuted // Show all non-executed transactions
+        })
         setTransactionsToSign(toSign)
 
-        // Filter transactions that can be executed (have enough signatures)
+        // Filter transactions that can be executed
         const toExecute = pendingTxs.results.filter(
-          (tx: PendingTransaction) =>
-            tx.confirmations.length >= threshold && !tx.isExecuted
+          (tx: PendingTransaction) => {
+            return tx.confirmations.length >= currentThreshold && !tx.isExecuted
+          }
         )
         setTransactionsToExecute(toExecute)
       }
@@ -277,23 +428,16 @@ export default function useSafe(safeAddress: string) {
         })
 
         setSafe(safe)
-
-        // Get current owners and threshold
-        const currentOwners = await safe.getOwners()
-        const currentThreshold = await safe.getThreshold()
-        setOwners(currentOwners)
-        setThreshold(currentThreshold)
-
-        // Initial fetch of pending transactions
-        await fetchPendingTransactions()
+        await refreshSafeState()
       }
     }
     getSafe()
   }, [wallets, selectedWallet, safeAddress])
 
-  // Poll for new pending transactions
   useEffect(() => {
-    const interval = setInterval(fetchPendingTransactions, 10000) // Check every 10 seconds
+    const interval = setInterval(async () => {
+      await refreshSafeState()
+    }, 5000)
     return () => clearInterval(interval)
   }, [safeApiKit, safe, wallets, selectedWallet, safeAddress])
 
@@ -304,11 +448,11 @@ export default function useSafe(safeAddress: string) {
       const isExecuted = await monitorTransactionExecution(lastSafeTxHash)
       if (isExecuted) {
         setLastSafeTxExecuted(isExecuted)
-        await fetchPendingTransactions() // Refresh the list after execution
+        await fetchPendingTransactions()
       }
     }
 
-    const interval = setInterval(checkExecution, 5000) // Check every 5 seconds
+    const interval = setInterval(checkExecution, 5000)
     return () => clearInterval(interval)
   }, [lastSafeTxHash])
 
@@ -327,5 +471,6 @@ export default function useSafe(safeAddress: string) {
     transactionsToExecute,
     signPendingTransaction,
     fetchPendingTransactions,
+    rejectTransaction,
   }
 }

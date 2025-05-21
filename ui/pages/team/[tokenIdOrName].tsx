@@ -52,6 +52,7 @@ import {
 } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import useSafe from '@/lib/safe/useSafe'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
@@ -178,6 +179,9 @@ export default function TeamDetailPage({
   } = useTeamData(teamContract, hatsContract, nft)
 
   const hats = useSubHats(selectedChain, adminHatId)
+
+  const safeData = useSafe(nft?.owner)
+  const isSigner = safeData?.owners.includes(address || '')
 
   //Subscription Data
   const { data: expiresAt } = useRead({
@@ -624,8 +628,9 @@ export default function TeamDetailPage({
                 isCitizen={citizen}
               />
               {/* Mooney and Voting Power */}
-              {isManager && (
+              {(isManager || isSigner) && (
                 <TeamTreasury
+                  safeData={safeData}
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}
@@ -644,8 +649,9 @@ export default function TeamDetailPage({
                   ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
                   : `The profile has expired, please connect the owner or admin wallet to renew.`}
               </p>
-              {isManager && (
+              {(isManager || isSigner) && (
                 <TeamTreasury
+                  safeData={safeData}
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}

@@ -4,6 +4,7 @@ import StandardButton from '../layout/StandardButton'
 import SafeModal from '../safe/SafeModal'
 
 type TeamTreasuryProps = {
+  safeData: any
   multisigAddress: string
   multisigMooneyBalance: any
   multisigNativeBalance: any
@@ -32,6 +33,7 @@ function TreasuryAsset({
 }
 
 export default function TeamTreasury({
+  safeData,
   multisigAddress,
   multisigMooneyBalance,
   multisigNativeBalance,
@@ -43,6 +45,7 @@ export default function TeamTreasury({
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-24 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
       {safeModalEnabled && (
         <SafeModal
+          safeData={safeData}
           safeAddress={multisigAddress}
           isEnabled={safeModalEnabled}
           setEnabled={setSafeModalEnabled}
