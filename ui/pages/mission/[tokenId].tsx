@@ -180,7 +180,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     <MediaRenderer
                       client={client}
                       src={getIPFSGateway(mission?.metadata?.logoUri)}
-                      className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
+                      className="mt-[-5vw] sm:mt-0 sm:pl-0 sm:rounded-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
                       height={'576'}
                       width={'576'}
                     />
@@ -365,7 +365,14 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           mode="compact"
           popOverEffect={false}
           isProfile
-          preFooter={<ExpandedFooter darkBackground={true} />}
+          preFooter={<ExpandedFooter 
+            calltoaction_title='Join the Network' 
+            calltoaction_body='Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!' 
+            calltoaction_image='/assets/logo-san-cropped.svg'
+            calltoaction_button_text='Join the Network'
+            calltoaction_button_link='/join'
+            has_calltoaction={true}
+            />}
         >
           <div
             id="page-container"
@@ -402,7 +409,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             </div>
             {/* Project Overview */}
             <div className="px-[5vw] w-full flex items-center justify-center">
-              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] xl:min-w-[1200px] xl:bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
+              <div className="z-50 w-[100%] md:pb-[2vw] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] xl:min-w-[1200px] xl:bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}
@@ -421,6 +428,11 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   primaryTerminalAddress={primaryTerminalAddress}
                 />
               </div>
+            </div>
+          </div>
+          <div className="flex px-[7vw] xl:px-[4vw] flex-col items-center justify-center bg-dark-cool h-[100px] w-full">
+            <div id="team-section-container" className="w-full max-w-[1200px]">
+              {'Team slider element here'}
             </div>
           </div>
         </ContentLayout>

@@ -1,3 +1,5 @@
+// Expanded Footer
+
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
@@ -5,143 +7,163 @@ import { useCitizen } from '@/lib/citizen/useCitizen'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import Footer from './Footer'
 
+type LinkItem = {
+  text: string
+  href: string
+}
+
+type LinkListProps = {
+  title: string
+  links: LinkItem[]
+}
+
+function LinkList({ title, links }: LinkListProps) {
+  return (
+    <div className="flex flex-col space-y-2">
+      <h3 className="text-sm font-medium text-gray-400 uppercase mb-2">{title}</h3>
+      <ul className="space-y-2">
+        {links.map((link, index) => (
+          <li key={index}>
+            <Link href={link.href || '#'} className="text-white hover:text-purple-400 transition-colors">
+              {link.text}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 type ExpandedFooterProps = {
-  managerTitle?: string
-  managerImage?: string
-  managerDescription?: string
-  managerButtonText?: string
-  managerButtonLink?: string
-  citizenTitle?: string
-  citizenImage?: string
-  citizenDescription?: string
-  citizenButtonText?: string
-  citizenButtonLink?: string
-  defaultTitle?: string
-  defaultImage?: string
-  defaultDescription?: string
-  defaultButtonText?: string
-  defaultButtonLink?: string
+  calltoaction_image: string
+  calltoaction_body?: string
+  calltoaction_title: string
+  calltoaction_button_text: string
+  calltoaction_button_link: string
+  has_calltoaction: boolean
   darkBackground?: boolean
-  citizenNotice?: boolean
 }
 
 export function ExpandedFooter({
-  defaultTitle = 'Join the Network',
-  defaultImage = '../assets/moondao-logo-white.svg',
-  defaultDescription = 'Be part of the Space Acceleration Network and play a role in establishing a permanent human presence on the Moon and beyond.',
-  defaultButtonText = 'Learn More',
-  defaultButtonLink = '/join',
-  managerTitle = 'Need Help?',
-  managerImage = '../assets/MoonDAO-Logo-White.svg',
-  managerDescription = "Submit a ticket in the support channel on MoonDAO's Discord!",
-  managerButtonText = 'Submit a Ticket',
-  managerButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050',
-  citizenTitle = 'Need Help?',
-  citizenImage = '../assets/MoonDAO-Logo-White.svg',
-  citizenDescription = "Submit a ticket in the support channel on MoonDAO's Discord!",
-  citizenButtonText = 'Submit a Ticket',
-  citizenButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050',
+  calltoaction_image = '',
+  calltoaction_body,
+  calltoaction_title = 'Join the Network',
+  calltoaction_button_text = 'Learn More',
+  calltoaction_button_link = '/join',
+  has_calltoaction = true,
   darkBackground = true,
-  citizenNotice = false,
 }: ExpandedFooterProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const isCitizen = useCitizen(selectedChain)
 
-  const [notice, setNotice] = useState({
-    title: defaultTitle,
-    image: defaultImage,
-    description: defaultDescription,
-    buttonText: defaultButtonText,
-    buttonLink: defaultButtonLink,
+  const [calltoaction, setCalltoaction] = useState({
+    image: calltoaction_image || '',
+    body: calltoaction_body,
+    title: calltoaction_title,
+    has_calltoaction: has_calltoaction,
+    button_text: calltoaction_button_text,
+    button_link: calltoaction_button_link || '/join',
   })
 
   useEffect(() => {
-    if (isCitizen || citizenNotice) {
-      setNotice({
-        title: citizenTitle,
-        image: citizenImage,
-        description: citizenDescription,
-        buttonText: citizenButtonText,
-        buttonLink: citizenButtonLink,
-      })
-    } else {
-      setNotice({
-        title: defaultTitle,
-        image: defaultImage,
-        description: defaultDescription,
-        buttonText: defaultButtonText,
-        buttonLink: defaultButtonLink,
-      })
-    }
+    setCalltoaction({
+      image: calltoaction_image,
+      body: calltoaction_body,
+      title: calltoaction_title,
+      button_text: calltoaction_button_text,
+      button_link: calltoaction_button_link,  
+      has_calltoaction: has_calltoaction,
+    })
   }, [
-    isCitizen,
-    managerTitle,
-    managerImage,
-    managerDescription,
-    managerButtonText,
-    managerButtonLink,
-    citizenTitle,
-    citizenImage,
-    citizenDescription,
-    citizenButtonText,
-    citizenButtonLink,
-    defaultTitle,
-    defaultImage,
-    defaultDescription,
-    defaultButtonText,
-    defaultButtonLink,
-    citizenNotice,
+    calltoaction_image,
+    calltoaction_body,
+    calltoaction_title,
+    calltoaction_button_text,
+    calltoaction_button_link,
+    has_calltoaction,
   ])
 
+  // Navigation link groups
+  const networkLinks = [
+    { text: 'Citizens', href: '/network?tab=citizens' },
+    { text: 'Teams', href: '/network?tab=teams' },
+    { text: 'Map', href: '/map' },
+    { text: 'Create a Team', href: '/team' },
+  ]
+
+  const governLinks = [
+    { text: 'Proposals', href: '/vote' },
+    { text: 'Constitution', href: 'https://docs.moondao.com/Governance/Constitution?_gl=1*xwpa15*_ga*NDEyMzExNTE4LjE3MTcxMjYxODU.*_ga_QPFCD9VH46*czE3NDc4NjI2NTUkbzI1MCRnMSR0MTc0Nzg2Mjc1NCRqMCRsMCRoMA..' },
+    { text: 'Buy $MOONEY', href: '/get-mooney' },
+    { text: 'Lock $MOONEY', href: '/lock' },
+    { text: 'Bridge $MOONEY', href: '/bridge' },
+  ]
+
+  const contributeLinks = [
+    { text: 'Projects', href: '/projects' },
+    { text: 'Get Rewards', href: '/submit?tag=contribution' },
+    { text: 'Jobs', href: '/jobs' },
+  ]
+
+  const learnLinks = [
+    { text: 'News', href: '/news' },
+    { text: 'About', href: '/about' },
+    { text: 'Events', href: '/events' },
+    { text: 'Analytics', href: '/analytics' },
+    { text: 'FAQ', href: 'https://docs.moondao.com/About/FAQ?_gl=1*1g5c5e6*_ga*NDEyMzExNTE4LjE3MTcxMjYxODU.*_ga_QPFCD9VH46*czE3NDc4NjI2NTUkbzI1MCRnMSR0MTc0Nzg2Mjk1MSRqMCRsMCRoMA' },
+  ]
+
+  const marketplaceLinks = [
+    { text: 'Shop', href: '/marketplace' },
+  ]
+
   return (
-    <div
-      id="expanded-footer"
-      className={`pb-10 md:pb-0 ${
-        darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5'
-      }`}
-    >
-      <div className="md:pl-10 flex items-center gap-5 lg:ml-[80px] max-w-[970px] gradient-15 mx-5 md:ml-7 p-5 md:mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
-        <div id="Image container" className="hidden opacity-[90%] lg:block">
-          <Image
-            src={notice.image}
-            alt="MoonDAO Logo"
-            width={150}
-            height={150}
-          />
-        </div>
-        <div id="callout-container" className="flex flex-col">
-          <div className="flex wrap items-center">
-            <div className="flex justify-center">
-              <div id="Image container" className="lg:hidden">
-                <Image
-                  src="../assets/icon-star.svg"
-                  alt="MoonDAO Logo"
-                  width={40}
-                  height={40}
+    <>
+      <div id="expanded-menu" className="relative bg-dark-cool px-6 text-white"> 
+        <div className="container mx-auto max-w-[1200px] sm:pl-[5vw] md:pt-[5vh] md:pl-[5vw] flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10">
+          {has_calltoaction && (
+            <div className="flex flex-col pb-[5vh] pr-[5vw] py-0 justify-center lg:col-span-2 order-2 lg:order-1">
+              <div className="absolute bottom-0 left-0 z-0 h-full">
+                <Image 
+                  className="object-contain object-left object-bottom h-full" 
+                  src={calltoaction.image} 
+                  alt="Join the Space Acceleration Network" 
+                  style={{ width: 'auto', height: '100%' }}
+                  width={1000} 
+                  height={1000} 
                 />
               </div>
-              <h3 className="header opacity-80 font-GoodTimes">
-                {notice.title}
-              </h3>
+              <h2 className="z-50 text-2xl font-bold font-GoodTimes mb-3">{calltoaction.title}</h2>
+              {calltoaction.body && <p className="max-w-[400px] mb-4 opacity-80">{calltoaction.body}</p>}
+              <Link 
+                href={calltoaction.button_link} 
+                className="inline-block"
+              >
+                <div
+                  className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-2 px-5 py-3 inline-block"
+                >
+                  {calltoaction.button_text}
+                </div>
+              </Link>
             </div>
+          )}
+          
+          <div className={`z-50 px-[5vw] md:px-[2vw] pt-[5vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-4 gap-8 order-1 lg:order-2 ${has_calltoaction ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
+            <LinkList title="NETWORK" links={networkLinks} />
+            <LinkList title="GOVERN" links={governLinks} />
+            <div>
+              <LinkList title="CONTRIBUTE" links={contributeLinks} />
+              <div className="mt-8">
+                <LinkList title="MARKETPLACE" links={marketplaceLinks} />
+              </div>
+            </div>
+            <LinkList title="LEARN" links={learnLinks} />
           </div>
-          <p className="opacity-60 pt-2">{notice.description}</p>
-          <Link
-            href={notice.buttonLink}
-            className="inline-block"
-            target="_blank"
-            passHref
-          >
-            <div
-              id="button-container"
-              className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-5 px-5 py-3 inline-block"
-            >
-              {notice.buttonText}
-            </div>
-          </Link>
         </div>
       </div>
-      <Footer darkBackground={darkBackground} />
-    </div>
+      <div id="bottom-footer" className="bg-darkest-cool flex items-center justify-center">
+        <Footer/>
+      </div>
+    </>
   )
 }

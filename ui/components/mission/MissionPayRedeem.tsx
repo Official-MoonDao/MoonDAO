@@ -106,37 +106,12 @@ function MissionPayRedeemContent({
   return (
     <div
       id="mission-pay-redeem-container"
-      className=" md:min-w-[430px] flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center xl:items-start w-full"
-    >
+      className="md:min-w-[430px] flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center xl:items-start w-full"
+      >
       <div
         id="mission-pay-container"
         className="w-full p-2 xl:p-5 md:max-w-[500px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
-      >
-        <div id="mission-pay-header" className="hidden w-full flex justify-between">
-          <PayRedeemStat
-            label="Contributions"
-            value={subgraphData?.paymentsCount}
-          />
-          <PayRedeemStat
-            label="Total Raised"
-            value={subgraphData?.volume / 1e18}
-          />
-          <PayRedeemStat label="Last 7 Days">
-            <div className="flex items-center gap-1">
-              <Image
-                src="/assets/launchpad/upwards.svg"
-                alt="increase"
-                width={30}
-                height={30}
-              />
-              <p className="text-moon-green">{`${
-                subgraphData?.last7DaysPercent === Infinity
-                  ? '0'
-                  : subgraphData?.last7DaysPercent
-              }%`}</p>
-            </div>
-          </PayRedeemStat>
-        </div>
+        >
         {/* You pay */}
         {!isRefundable && (
           <div className="relative flex flex-col gap-4">
@@ -145,7 +120,7 @@ function MissionPayRedeemContent({
                 className={`p-4 pb-12 flex flex-col gap-2 items-start justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl ${
                   token?.tokenSymbol ? '' : 'rounded-bl-2xl'
                 }`}
-              >
+                >
                 <div className="flex flex-col">
                   <h3 className="text-sm opacity-60">You contribute</h3>
                   <input
@@ -172,7 +147,7 @@ function MissionPayRedeemContent({
                 className={`p-4 pb-12 flex flex-col gap-2 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tr-2xl ${
                   token?.tokenSymbol ? '' : 'rounded-br-2xl'
                 }`}
-              >
+                >
                 <div className="mt-5 flex flex-col">
                   <input
                     id="eth-contribution-input"
@@ -286,19 +261,21 @@ function MissionPayRedeemContent({
                 />
               </div>
             </div>  
-            <div className=" hidden md:block xl:hidden">
-              <div className="text-sm opacity-60 pb-2">
-                {'Accepted Payment Methods'}
-              </div>
-              <AcceptedPaymentMethods />
-              <p className="xl:text-sm text-left xl:text-center">
-                {'Want to contribute by wire transfer?'}
-                <br />
-                {'Email us at info@moondao.com'}
-              </p>
-            </div>
           </div>
         )}
+
+        {/* Accepted Payment Methods - Now outside conditional rendering */}
+        <div className="hidden md:block xl:hidden w-full px-2">
+          <div className="text-sm opacity-60 pb-2">
+            {'Accepted Payment Methods'}
+          </div>
+          <AcceptedPaymentMethods />
+          <p className="xl:text-sm text-left xl:text-center">
+            {'Want to contribute by wire transfer?'}
+            <br />
+            {'Email us at info@moondao.com'}
+          </p>
+        </div>
 
         {tokenBalance > 0 || isRefundable ? (
           <div

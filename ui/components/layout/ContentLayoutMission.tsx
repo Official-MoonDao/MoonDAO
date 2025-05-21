@@ -52,7 +52,7 @@ const ContentLayout: React.FC<ContentProps> = ({
           /> */}
         </div>
         <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#3E3DA2] from-0% to-[#020617] to-80%"></div>
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-transparent from-45% sm:from-40% lg:from-80% to-[#090d21] to-45% sm:to-40% lg:to-80%"></div>
+        <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-transparent from-90% sm:from-40% lg:from-80% to-[#090d21] to-90% sm:to-40% lg:to-80%"></div>
         <div id="title-section-container">
           <div id="title" className="relative z-10 flex items-center xl:justify-center">
             <div
