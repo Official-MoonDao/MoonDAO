@@ -184,15 +184,6 @@ export default function WithdrawVMooney() {
   return (
     <div className="flex flex-col md:flex-row gap-4">
       <div className="flex flex-col gap-4 bg-dark-cool p-4">
-        {/* <section className={`py-4 mt-8 flex flex-col ${isMobile ? '' : 'w-1/3'}`}>
-        <Asset
-          name="vMOONEY"
-          amount={String(
-            (Number(withdrawable) / 10 ** MOONEY_DECIMALS).toFixed(2)
-          )}
-          usd=""
-        />
-      </section> */}
         <div className="flex gap-2">
           <Image
             src="/assets/vmooney-shield.svg"
