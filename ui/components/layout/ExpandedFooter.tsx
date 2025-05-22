@@ -119,18 +119,17 @@ export function ExpandedFooter({
 
   return (
     <>
-      <div id="expanded-menu" className="relative bg-dark-cool px-6 text-white"> 
-        <div className="container mx-auto max-w-[1200px] sm:pl-[5vw] md:pt-[5vh] md:pl-[5vw] flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10">
+      <div id="expanded-menu" className="overflow-hidden relative bg-dark-cool px-6 text-white"> 
+        <div className="container mx-auto max-w-[1200px] pb-0 sm:pl-[5vw] md:pt-[5vh] md:pl-[5vw] lg:pl-[2vw] flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10">
           {hasCallToAction && (
-            <div className="flex flex-col pb-[5vh] pr-[5vw] py-0 justify-center lg:col-span-2 order-2 lg:order-1">
-              <div className="absolute bottom-0 left-0 z-0 h-full">
+            <div className="flex flex-col pb-[5vh] p-[2vw]  md:p-0 py-0 lg:col-span-2 order-2 lg:order-1 relative min-h-[250px] lg:min-h-[300px]">
+              <div className="overflow-visible absolute bottom-0 left-0 z-0 w-full flex items-end">
                 <Image 
-                  className="object-contain object-left object-bottom h-full" 
+                  className="overflow-visible object-contain object-left ml-[-10vw] md:ml-0 w-full " 
                   src={callToAction.image} 
                   alt="Join the Space Acceleration Network" 
-                  style={{ width: 'auto', height: '100%' }}
-                  width={1000} 
-                  height={1000} 
+                  width={2000} 
+                  height={2000} 
                 />
               </div>
               <h2 className="z-50 text-2xl font-bold font-GoodTimes mb-3">{callToAction.title}</h2>
@@ -148,7 +147,7 @@ export function ExpandedFooter({
             </div>
           )}
           
-          <div className={`z-50 px-[5vw] md:px-[2vw] pt-[5vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-4 gap-8 order-1 lg:order-2 ${hasCallToAction ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
+          <div className={`z-50 px-[2vw] pt-[5vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-4 gap-8 order-1 lg:order-2 ${hasCallToAction ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
             <LinkList title="NETWORK" links={networkLinks} />
             <LinkList title="GOVERN" links={governLinks} />
             <div>

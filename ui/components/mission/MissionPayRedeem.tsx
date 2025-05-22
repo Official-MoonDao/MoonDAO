@@ -108,137 +108,139 @@ function MissionPayRedeemContent({
       id="mission-pay-redeem-container"
       className="md:min-w-[430px] flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center xl:items-start w-full"
       >
-      <div
-        id="mission-pay-container"
-        className="w-full p-2 xl:p-5 md:max-w-[500px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
-        >
-        {/* You pay */}
-        {!isRefundable && (
-          <div className="relative flex flex-col gap-4">
-            <div className="relative flex gap-2">
-              <div
-                className={`p-4 pb-12 flex flex-col gap-2 items-start justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl ${
-                  token?.tokenSymbol ? '' : 'rounded-bl-2xl'
-                }`}
-                >
-                <div className="flex flex-col">
-                  <h3 className="text-sm opacity-60">You contribute</h3>
-                  <input
-                    id="usd-contribution-input"
-                    type="number"
-                    className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={usdInput}
-                    onChange={handleUsdInputChange}
-                    placeholder="0"
-                  />
+      {(!isRefundable || (token?.tokenSymbol && +tokenCredit?.toString() > 0)) && (
+        <div
+          id="mission-pay-container"
+          className="w-full p-2 xl:p-5 md:max-w-[500px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
+          >
+          {/* You pay */}
+          {!isRefundable && (
+            <div className="relative flex flex-col gap-4">
+              <div className="relative flex gap-2">
+                <div
+                  className={`p-4 pb-12 flex flex-col gap-2 items-start justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl ${
+                    token?.tokenSymbol ? '' : 'rounded-bl-2xl'
+                  }`}
+                  >
+                  <div className="flex flex-col">
+                    <h3 className="text-sm opacity-60">You contribute</h3>
+                    <input
+                      id="usd-contribution-input"
+                      type="number"
+                      className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      value={usdInput}
+                      onChange={handleUsdInputChange}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="flex gap-2 items-center bg-[#111C42] rounded-full w-fit">
+                    <Image
+                      src="/assets/usd.svg"
+                      alt="USD"
+                      width={20}
+                      height={20}
+                      className="w-5 h-5"
+                    />
+                    {'USD'}
+                  </div>
                 </div>
-                <div className="flex gap-2 items-center bg-[#111C42] rounded-full w-fit">
-                  <Image
-                    src="/assets/usd.svg"
-                    alt="USD"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5"
-                  />
-                  {'USD'}
+                <div
+                  className={`p-4 pb-12 flex flex-col gap-2 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tr-2xl ${
+                    token?.tokenSymbol ? '' : 'rounded-br-2xl'
+                  }`}
+                  >
+                  <div className="mt-5 flex flex-col">
+                    <input
+                      id="eth-contribution-input"
+                      type="number"
+                      className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      value={input}
+                      onChange={handleEthInputChange}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="flex gap-2 items-center bg-[#111C42] rounded-full w-fit">
+                    <Image
+                      src="/coins/ETH.svg"
+                      alt="ETH"
+                      width={20}
+                      height={20}
+                      className="w-5 h-5 bg-light-cool rounded-full"
+                    />
+                    {'ETH'}
+                  </div>
                 </div>
+                {token?.tokenSymbol && (
+                  <div className="absolute -bottom-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                    <ArrowDownIcon
+                      className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
+                      color={'#121C42'}
+                    />
+                  </div>
+                )}
               </div>
-              <div
-                className={`p-4 pb-12 flex flex-col gap-2 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tr-2xl ${
-                  token?.tokenSymbol ? '' : 'rounded-br-2xl'
-                }`}
-                >
-                <div className="mt-5 flex flex-col">
-                  <input
-                    id="eth-contribution-input"
-                    type="number"
-                    className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={input}
-                    onChange={handleEthInputChange}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="flex gap-2 items-center bg-[#111C42] rounded-full w-fit">
-                  <Image
-                    src="/coins/ETH.svg"
-                    alt="ETH"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5 bg-light-cool rounded-full"
-                  />
-                  {'ETH'}
-                </div>
-              </div>
+              {/* You receive */}
               {token?.tokenSymbol && (
-                <div className="absolute -bottom-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
-                  <ArrowDownIcon
-                    className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
-                    color={'#121C42'}
-                  />
+                <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
+                  <div className="flex flex-col">
+                    <h3 className="text-sm opacity-60">You receive</h3>
+                    <p id="token-output" className="text-2xl font-bold">
+                      {output.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+                    <Image
+                      src="/assets/icon-star.svg"
+                      alt="ETH"
+                      width={20}
+                      height={20}
+                      className="bg-orange-500 rounded-full p-1w-5 h-5"
+                    />
+                    <Image
+                      src="/coins/ETH.svg"
+                      alt="ETH"
+                      width={20}
+                      height={20}
+                      className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
+                    />
+                    {token?.tokenSymbol}
+                  </div>
                 </div>
               )}
             </div>
-            {/* You receive */}
-            {token?.tokenSymbol && (
-              <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
-                <div className="flex flex-col">
-                  <h3 className="text-sm opacity-60">You receive</h3>
-                  <p id="token-output" className="text-2xl font-bold">
-                    {output.toFixed(2)}
-                  </p>
-                </div>
-                <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
-                  <Image
-                    src="/assets/icon-star.svg"
-                    alt="ETH"
-                    width={20}
-                    height={20}
-                    className="bg-orange-500 rounded-full p-1w-5 h-5"
-                  />
-                  <Image
-                    src="/coins/ETH.svg"
-                    alt="ETH"
-                    width={20}
-                    height={20}
-                    className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
-                  />
-                  {token?.tokenSymbol}
-                </div>
+          )}
+          {!isRefundable && (
+            <>
+              <StandardButton
+                id="open-contribute-modal"
+                className="rounded-full gradient-2 rounded-full w-full py-1"
+                onClick={() => setMissionPayModalEnabled(true)}
+                hoverEffect={false}
+              >
+                Contribute
+              </StandardButton>
+              <div className="md:hidden xl:block">
+                <AcceptedPaymentMethods />
+                <p className="xl:text-sm text-center md:text-left xl:text-center">
+                  {'Want to contribute by wire transfer?'}
+                  <br />
+                  {'Email us at info@moondao.com'}
+                </p>
               </div>
-            )}
-          </div>
-        )}
-        {!isRefundable && (
-          <>
+            </>
+          )}
+          {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
             <StandardButton
-              id="open-contribute-modal"
+              id="claim-button"
               className="rounded-full gradient-2 rounded-full w-full py-1"
-              onClick={() => setMissionPayModalEnabled(true)}
+              onClick={claimTokenCredit}
               hoverEffect={false}
             >
-              Contribute
+              Claim {tokenCredit.toString() / 1e18} ${token?.tokenSymbol}
             </StandardButton>
-            <div className="md:hidden xl:block">
-              <AcceptedPaymentMethods />
-              <p className="xl:text-sm text-center md:text-left xl:text-center">
-                {'Want to contribute by wire transfer?'}
-                <br />
-                {'Email us at info@moondao.com'}
-              </p>
-            </div>
-          </>
-        )}
-        {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
-          <StandardButton
-            id="claim-button"
-            className="rounded-full gradient-2 rounded-full w-full py-1"
-            onClick={claimTokenCredit}
-            hoverEffect={false}
-          >
-            Claim {tokenCredit.toString() / 1e18} ${token?.tokenSymbol}
-          </StandardButton>
-        )}
-      </div>
+          )}
+        </div>
+      )}
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-col justify-between gap-4 w-full">
         {token?.tokenSupply > 0 && !isRefundable && (
@@ -265,17 +267,19 @@ function MissionPayRedeemContent({
         )}
 
         {/* Accepted Payment Methods - Now outside conditional rendering */}
-        <div className="hidden md:block xl:hidden w-full px-2">
-          <div className="text-sm opacity-60 pb-2">
-            {'Accepted Payment Methods'}
+        {(!isRefundable || (token?.tokenSymbol && +tokenCredit?.toString() > 0)) && (
+          <div className="hidden md:block xl:hidden w-full px-2">
+            <div className="text-sm opacity-60 pb-2">
+              {'Accepted Payment Methods'}
+            </div>
+            <AcceptedPaymentMethods />
+            <p className="xl:text-sm text-left xl:text-center">
+              {'Want to contribute by wire transfer?'}
+              <br />
+              {'Email us at info@moondao.com'}
+            </p>
           </div>
-          <AcceptedPaymentMethods />
-          <p className="xl:text-sm text-left xl:text-center">
-            {'Want to contribute by wire transfer?'}
-            <br />
-            {'Email us at info@moondao.com'}
-          </p>
-        </div>
+        )}
 
         {tokenBalance > 0 || isRefundable ? (
           <div
