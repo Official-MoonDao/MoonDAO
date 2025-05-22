@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import StandardButton from '../layout/StandardButton'
 import SafeModal from '../safe/SafeModal'
+import SafeTransactions from '../safe/SafeTransactions'
 
 type TeamTreasuryProps = {
   safeData?: any
@@ -110,6 +111,7 @@ export default function TeamTreasury({
             balance={multisigUSDCBalance}
           />
         </div>
+        <SafeTransactions safeData={safeData} />
       </div>
     </div>
   )

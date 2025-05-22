@@ -628,7 +628,7 @@ export default function TeamDetailPage({
                 isCitizen={citizen}
               />
               {/* Mooney and Voting Power */}
-              {(isManager || isSigner) && (
+              {isSigner && (
                 <TeamTreasury
                   safeData={safeData}
                   multisigAddress={nft.owner}
@@ -649,7 +649,7 @@ export default function TeamDetailPage({
                   ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
                   : `The profile has expired, please connect the owner or admin wallet to renew.`}
               </p>
-              {(isManager || isSigner) && (
+              {isSigner && (
                 <TeamTreasury
                   safeData={safeData}
                   multisigAddress={nft.owner}
