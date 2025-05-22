@@ -57,19 +57,26 @@ export default function Home({ linkSource }: any) {
 }
 
 export async function getServerSideProps(context: any) {
-  const { req } = context
-  const referer = req.headers.referer || req.headers.referrer
+  try {
+    const { req } = context
+    const referer = req.headers.referer || req.headers.referrer
 
-  let linkSource = 'direct'
-  if (referer) {
-    if (referer.startsWith(req.headers.host)) {
-      linkSource = 'internal'
-    } else {
-      linkSource = 'external'
+    let linkSource = 'direct'
+    if (referer) {
+      if (referer.startsWith(req.headers.host)) {
+        linkSource = 'internal'
+      } else {
+        linkSource = 'external'
+      }
     }
-  }
 
-  return {
-    props: { linkSource },
+    return {
+      props: { linkSource },
+    }
+  } catch (error) {
+    console.error('Error in getServerSideProps:', error)
+    return {
+      props: { linkSource: 'direct', error: 'Failed to load page' },
+    }
   }
 }
