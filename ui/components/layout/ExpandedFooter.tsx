@@ -35,52 +35,52 @@ function LinkList({ title, links }: LinkListProps) {
 }
 
 type ExpandedFooterProps = {
-  calltoaction_image: string
-  calltoaction_body?: string
-  calltoaction_title: string
-  calltoaction_button_text: string
-  calltoaction_button_link: string
-  has_calltoaction: boolean
+  callToActionImage: string
+  callToActionBody?: string
+  callToActionTitle: string
+  callToActionButtonText: string
+  callToActionButtonLink: string
+  hasCallToAction: boolean
   darkBackground?: boolean
 }
 
 export function ExpandedFooter({
-  calltoaction_image = '',
-  calltoaction_body,
-  calltoaction_title = 'Join the Network',
-  calltoaction_button_text = 'Learn More',
-  calltoaction_button_link = '/join',
-  has_calltoaction = true,
+  callToActionImage = '',
+  callToActionBody,
+  callToActionTitle = 'Join the Network',
+  callToActionButtonText = 'Learn More',
+  callToActionButtonLink = '/join',
+  hasCallToAction = true,
   darkBackground = true,
 }: ExpandedFooterProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const isCitizen = useCitizen(selectedChain)
 
-  const [calltoaction, setCalltoaction] = useState({
-    image: calltoaction_image || '',
-    body: calltoaction_body,
-    title: calltoaction_title,
-    has_calltoaction: has_calltoaction,
-    button_text: calltoaction_button_text,
-    button_link: calltoaction_button_link || '/join',
+  const [callToAction, setCallToAction] = useState({
+    image: callToActionImage || '',
+    body: callToActionBody,
+    title: callToActionTitle,
+    hasCallToAction: hasCallToAction,
+    buttonText: callToActionButtonText,
+    buttonLink: callToActionButtonLink || '/join',
   })
 
   useEffect(() => {
-    setCalltoaction({
-      image: calltoaction_image,
-      body: calltoaction_body,
-      title: calltoaction_title,
-      button_text: calltoaction_button_text,
-      button_link: calltoaction_button_link,  
-      has_calltoaction: has_calltoaction,
+    setCallToAction({
+      image: callToActionImage,
+      body: callToActionBody,
+      title: callToActionTitle,
+      buttonText: callToActionButtonText,
+      buttonLink: callToActionButtonLink,  
+      hasCallToAction: hasCallToAction,
     })
   }, [
-    calltoaction_image,
-    calltoaction_body,
-    calltoaction_title,
-    calltoaction_button_text,
-    calltoaction_button_link,
-    has_calltoaction,
+    callToActionImage,
+    callToActionBody,
+    callToActionTitle,
+    callToActionButtonText,
+    callToActionButtonLink,
+    hasCallToAction,
   ])
 
   // Navigation link groups
@@ -121,28 +121,28 @@ export function ExpandedFooter({
     <>
       <div id="expanded-menu" className="relative bg-dark-cool px-6 text-white"> 
         <div className="container mx-auto max-w-[1200px] sm:pl-[5vw] md:pt-[5vh] md:pl-[5vw] flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10">
-          {has_calltoaction && (
+          {hasCallToAction && (
             <div className="flex flex-col pb-[5vh] pr-[5vw] py-0 justify-center lg:col-span-2 order-2 lg:order-1">
               <div className="absolute bottom-0 left-0 z-0 h-full">
                 <Image 
                   className="object-contain object-left object-bottom h-full" 
-                  src={calltoaction.image} 
+                  src={callToAction.image} 
                   alt="Join the Space Acceleration Network" 
                   style={{ width: 'auto', height: '100%' }}
                   width={1000} 
                   height={1000} 
                 />
               </div>
-              <h2 className="z-50 text-2xl font-bold font-GoodTimes mb-3">{calltoaction.title}</h2>
-              {calltoaction.body && <p className="max-w-[400px] mb-4 opacity-80">{calltoaction.body}</p>}
+              <h2 className="z-50 text-2xl font-bold font-GoodTimes mb-3">{callToAction.title}</h2>
+              {callToAction.body && <p className="max-w-[400px] mb-4 opacity-80">{callToAction.body}</p>}
               <Link 
-                href={calltoaction.button_link} 
+                href={callToAction.buttonLink} 
                 className="inline-block"
               >
                 <div
                   className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-2 px-5 py-3 inline-block"
                 >
-                  {calltoaction.button_text}
+                  {callToAction.buttonText}
                 </div>
               </Link>
             </div>
