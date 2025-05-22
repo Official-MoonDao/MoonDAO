@@ -456,9 +456,15 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               </div>
             </div>
             <div className="w-full px-[12vw]">
-              <h1 className="text-white text-2xl font-bold font-GoodTimes">
-                Team
-              </h1>
+              <div className="flex gap-5 opacity-[50%]">
+                <Image
+                  src={'/assets/icon-team.svg'}
+                  alt="Job icon"
+                  width={30}
+                  height={30}
+                />
+                <h2 className="header font-GoodTimes">Meet the Team</h2>
+              </div>
               <SlidingCardMenu>
                 <div className="flex gap-4"></div>
                 {teamHats?.[0].id && (
