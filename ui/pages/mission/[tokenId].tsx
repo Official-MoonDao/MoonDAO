@@ -1,3 +1,5 @@
+import CitizenABI from 'const/abis/Citizen.json'
+import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
@@ -6,7 +8,9 @@ import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
+  CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
+  HATS_ADDRESS,
   IPFS_GATEWAY,
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
@@ -24,12 +28,14 @@ import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useSubHats } from '@/lib/hats/useSubHats'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useMissionData from '@/lib/mission/useMissionData'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
+import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
@@ -40,14 +46,16 @@ import { daysUntilDate } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
+import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
-import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
+import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionFundingProgressBar from '@/components/mission/MissionFundingProgressBar'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
+import TeamMembers from '@/components/subscription/TeamMembers'
 
 type ProjectProfileProps = {
   tokenId: string
@@ -63,9 +71,21 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   const [teamNFT, setTeamNFT] = useState<any>()
 
+  const hatsContract = useContract({
+    address: HATS_ADDRESS,
+    abi: HatsABI,
+    chain: selectedChain,
+  })
+
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
+    chain: selectedChain,
+  })
+
+  const citizenContract = useContract({
+    address: CITIZEN_ADDRESSES[chainSlug],
+    abi: CitizenABI as any,
     chain: selectedChain,
   })
 
@@ -114,6 +134,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     jbDirectoryContract,
     jbTokensContract,
   })
+
+  const { adminHatId } = useTeamData(teamContract, hatsContract, teamNFT)
+
+  const teamHats = useSubHats(selectedChain, adminHatId)
 
   const { points, isLoading: isLoadingPoints } = useJBProjectTimeline(
     selectedChain,
@@ -365,14 +389,16 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           mode="compact"
           popOverEffect={false}
           isProfile
-          preFooter={<ExpandedFooter 
-            callToActionTitle='Join the Network' 
-            callToActionBody='Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!' 
-            callToActionImage='/assets/logo-san-cropped.svg'
-            callToActionButtonText='Join the Network'
-            callToActionButtonLink='/join'
-            hasCallToAction={true}
-            />}
+          preFooter={
+            <ExpandedFooter
+              callToActionTitle="Join the Network"
+              callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
+              callToActionImage="/assets/logo-san-cropped.svg"
+              callToActionButtonText="Join the Network"
+              callToActionButtonLink="/join"
+              hasCallToAction={true}
+            />
+          }
         >
           <div
             id="page-container"
@@ -429,10 +455,20 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 />
               </div>
             </div>
-          </div>
-          <div className="flex px-[7vw] xl:px-[4vw] flex-col items-center justify-center bg-dark-cool h-[100px] w-full">
-            <div id="team-section-container" className="w-full max-w-[1200px]">
-              {'Team slider element here'}
+            <div className="w-full px-[12vw]">
+              <h1 className="text-white text-2xl font-bold font-GoodTimes">
+                Team
+              </h1>
+              <SlidingCardMenu>
+                <div className="flex gap-4"></div>
+                {teamHats?.[0].id && (
+                  <TeamMembers
+                    hats={teamHats}
+                    hatsContract={hatsContract}
+                    citizenContract={citizenContract}
+                  />
+                )}
+              </SlidingCardMenu>
             </div>
           </div>
         </ContentLayout>
