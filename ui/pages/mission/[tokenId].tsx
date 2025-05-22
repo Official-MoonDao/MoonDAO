@@ -152,7 +152,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   useChainDefault()
 
-  const duration = useMemo(() => {
+  const deadline = useMemo(() => {
     return daysUntilDate(
       new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
     )
@@ -308,13 +308,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         <div className="ml-2">
                           <p className="text-gray-400 text-sm">DEADLINE</p>
                           <p className="text-white font-GoodTimes">
-                            {daysUntilDate(
-                              new Date(
-                                ruleset?.[0]?.start * 1000 +
-                                  28 * 24 * 60 * 60 * 1000
-                              )
-                            )}{' '}
-                            DAYS
+                            {deadline > 0 ? deadline + ' days' : 'Expired '}
                           </p>
                         </div>
                       </div>
