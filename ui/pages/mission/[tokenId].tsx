@@ -28,6 +28,7 @@ import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
@@ -50,6 +51,7 @@ import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import Tooltip from '@/components/layout/Tooltip'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionFundingProgressBar from '@/components/mission/MissionFundingProgressBar'
 import MissionInfo from '@/components/mission/MissionInfo'
@@ -159,6 +161,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     method: 'balanceOf',
     params: [account?.address],
   })
+
+  const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -283,20 +287,32 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     {/* Purple raised amount tag */}
                     <div className="mb-4">
                       <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-center">
-                        <Image
-                          src="/assets/icon-raised-tokens.svg"
-                          alt="Raised"
-                          width={24}
-                          height={24}
-                          className="mr-2"
-                        />
-                        <span className="mr-2">
-                          {truncateTokenValue(
-                            subgraphData?.volume / 1e18,
-                            'ETH'
-                          )}
-                        </span>
-                        <span className="text-sm md:text-base">ETH RAISED</span>
+                        <div className="flex items-start flex-col">
+                          <div className="flex items-center">
+                            <Image
+                              src="/assets/icon-raised-tokens.svg"
+                              alt="Raised"
+                              width={24}
+                              height={24}
+                              className="mr-2"
+                            />
+                            <span className="mr-2">
+                              {truncateTokenValue(
+                                subgraphData?.volume / 1e18,
+                                'ETH'
+                              )}
+                            </span>
+                            <span className="text-sm md:text-base">
+                              ETH RAISED
+                            </span>
+                          </div>
+                          <p className="font-[Lato] text-sm opacity-60">
+                            {'(~$'}
+                            {Math.round(
+                              (subgraphData?.volume / 1e18) * ethPrice
+                            ).toLocaleString() + ' USD)'}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -317,7 +333,17 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           height={24}
                         />
                         <div className="ml-2">
-                          <p className="text-gray-400 text-sm">GOAL</p>
+                          <div className="flex items-center gap-1">
+                            <p className="text-gray-400 text-sm">GOAL</p>
+                            <Tooltip
+                              text={`~ $${Math.round(
+                                (fundingGoal / 1e18) * ethPrice
+                              ).toLocaleString()} USD`}
+                              buttonClassName="scale-75"
+                            >
+                              ?
+                            </Tooltip>
+                          </div>
                           <p className="text-white font-GoodTimes">
                             {+(fundingGoal / 1e18).toFixed(3)} ETH
                           </p>
