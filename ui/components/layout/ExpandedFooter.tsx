@@ -148,7 +148,7 @@ export function ExpandedFooter({
             </div>
           )}
           
-          <div className={`z-50 px-[5vw] md:px-[2vw] pt-[5vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-4 gap-8 order-1 lg:order-2 ${has_calltoaction ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
+          <div className={`z-50 px-[5vw] md:px-[2vw] pt-[5vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-4 gap-8 order-1 lg:order-2 ${hasCallToAction ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
             <LinkList title="NETWORK" links={networkLinks} />
             <LinkList title="GOVERN" links={governLinks} />
             <div>
