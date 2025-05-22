@@ -366,12 +366,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           popOverEffect={false}
           isProfile
           preFooter={<ExpandedFooter 
-            calltoaction_title='Join the Network' 
-            calltoaction_body='Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!' 
-            calltoaction_image='/assets/logo-san-cropped.svg'
-            calltoaction_button_text='Join the Network'
-            calltoaction_button_link='/join'
-            has_calltoaction={true}
+            callToActionTitle='Join the Network' 
+            callToActionBody='Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!' 
+            callToActionImage='/assets/logo-san-cropped.svg'
+            callToActionButtonText='Join the Network'
+            callToActionButtonLink='/join'
+            hasCallToAction={true}
             />}
         >
           <div
