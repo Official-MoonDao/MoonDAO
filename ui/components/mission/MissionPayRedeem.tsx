@@ -61,6 +61,8 @@ function MissionPayRedeemContent({
   usdInput,
   handleUsdInputChange,
   calculateEthAmount,
+  formattedUsdInput,
+  formatTokenAmount,
 }: any) {
   const isRefundable = stage === 3 && subgraphData?.volume > 0
 
@@ -79,25 +81,25 @@ function MissionPayRedeemContent({
             <div className="relative flex flex-col gap-4">
               {/* You pay - USD input with ETH display */}
               <div className="relative">
-                <div className="p-4 pb-12 flex flex-col gap-4 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-t-2xl">
+                <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-t-2xl">
                   <div className="flex justify-between items-start">
                     <h3 className="text-sm opacity-60">You pay</h3>
                   </div>
                   
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-2xl font-bold">$</span>
+                      <span className="text-xl font-bold">$</span>
                       <input
                         id="usd-contribution-input"
-                        type="number"
-                        className="bg-transparent border-none outline-none text-2xl font-bold min-w-[1ch] w-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        value={usdInput}
+                        type="text"
+                        className="bg-transparent border-none outline-none text-xl font-bold min-w-[1ch] w-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={formattedUsdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
-                        maxLength={7}
-                        style={{ width: `${Math.max(usdInput.length, 1)}ch` }}
+                        maxLength={9}
+                        style={{ width: `${Math.max(formattedUsdInput.length || 1, 1)}ch` }}
                       />
-                      <span className="text-2xl font-bold">USD</span>
+                      <span className="text-xl font-bold">USD</span>
                     </div>
                     <div className="flex gap-2 items-center bg-[#111C42] rounded-full px-3 py-1">
                       <Image
@@ -124,29 +126,32 @@ function MissionPayRedeemContent({
               
               {/* You receive */}
               {token?.tokenSymbol && (
-                <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-b-2xl">
-                  <div className="flex flex-col">
+                <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-b-2xl">
+                  <div className="flex justify-between items-start">
                     <h3 className="text-sm opacity-60">You receive</h3>
-                    <p id="token-output" className="text-2xl font-bold">
-                      {output.toFixed(2)}
-                    </p>
                   </div>
-                  <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
-                    <Image
-                      src="/assets/icon-star.svg"
-                      alt="Token"
-                      width={20}
-                      height={20}
-                      className="bg-orange-500 rounded-full p-1 w-5 h-5"
-                    />
-                    <Image
-                      src="/coins/ETH.svg"
-                      alt="ETH"
-                      width={20}
-                      height={20}
-                      className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
-                    />
-                    {token?.tokenSymbol}
+                  
+                  <div className="flex justify-between items-center">
+                    <p id="token-output" className="text-xl font-bold">
+                      {formatTokenAmount(output, 2)}
+                    </p>
+                    <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+                      <Image
+                        src="/assets/icon-star.svg"
+                        alt="Token"
+                        width={20}
+                        height={20}
+                        className="bg-orange-500 rounded-full p-1 w-5 h-5"
+                      />
+                      <Image
+                        src="/coins/ETH.svg"
+                        alt="ETH"
+                        width={20}
+                        height={20}
+                        className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
+                      />
+                      {token?.tokenSymbol}
+                    </div>
                   </div>
                 </div>
               )}
@@ -179,7 +184,7 @@ function MissionPayRedeemContent({
               onClick={claimTokenCredit}
               hoverEffect={false}
             >
-              Claim {tokenCredit.toString() / 1e18} ${token?.tokenSymbol}
+              Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} ${token?.tokenSymbol}
             </StandardButton>
           )}
         </div>
@@ -195,7 +200,7 @@ function MissionPayRedeemContent({
               <div className="text-lg">
                 <h3 className="opacity-60 text-sm">Current Supply</h3>
                 <p>
-                  {Math.floor(token?.tokenSupply.toString() / 1e18)} $
+                  {formatTokenAmount(Math.floor(token?.tokenSupply.toString() / 1e18), 0)} $
                   {token?.tokenSymbol}
                 </p>
               </div>
@@ -232,7 +237,7 @@ function MissionPayRedeemContent({
             {tokenBalance > 0 && (
               <div>
                 <h3 className="opacity-60 text-sm">Your Balance</h3>
-                <p className="text-2xl">{`${tokenBalance.toFixed(2)} $${
+                <p className="text-xl">{`${formatTokenAmount(tokenBalance, 2)} $${
                   token?.tokenSymbol
                 }`}</p>
               </div>
@@ -310,41 +315,58 @@ export default function MissionPayRedeem({
   const [message, setMessage] = useState('')
   
   // USD input state and handlers
-  const [usdInput, setUsdInput] = useState('0')
+  const [usdInput, setUsdInput] = useState('')
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
     1,
     'ETH_TO_USD'
   )
 
+  // Calculate ETH amount from USD for display
+  const calculateEthAmount = useCallback(() => {
+    if (!usdInput || !ethUsdPrice || isNaN(Number(usdInput))) {
+      return '0.0000'
+    }
+    const ethAmount = (Number(usdInput) / ethUsdPrice).toFixed(4)
+    return parseFloat(ethAmount).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+  }, [usdInput, ethUsdPrice])
+
+  // Format number with commas
+  const formatWithCommas = useCallback((value: string) => {
+    if (!value) return ''
+    const num = parseFloat(value)
+    if (isNaN(num)) return value
+    return num.toLocaleString('en-US')
+  }, [])
+
+  // Format token amount with commas
+  const formatTokenAmount = useCallback((value: number, decimals: number = 2) => {
+    return value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+  }, [])
+
+  // Get formatted display value
+  const formattedUsdInput = formatWithCommas(usdInput)
+
   // When USD input changes, update ETH input
   const handleUsdInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value
+      const inputValue = e.target.value.replace(/[^0-9]/g, '') // Only allow numbers
       
-      // Limit to 7 characters
-      if (value.length > 7) return
+      // Limit to 7 characters (excluding commas)
+      if (inputValue.length > 7) return
       
-      setUsdInput(value)
-      if (value === '' || value === '0') {
+      setUsdInput(inputValue)
+      if (inputValue === '') {
         setInput('0')
         return
       }
-      if (ethUsdPrice && !isNaN(Number(value))) {
-        setInput((Number(value) / ethUsdPrice).toFixed(6))
+      if (ethUsdPrice && !isNaN(Number(inputValue))) {
+        setInput((Number(inputValue) / ethUsdPrice).toFixed(6))
       } else {
         setInput('0')
       }
     },
     [ethUsdPrice, setInput]
   )
-
-  // Calculate ETH amount from USD for display
-  const calculateEthAmount = useCallback(() => {
-    if (!usdInput || usdInput === '0' || !ethUsdPrice || isNaN(Number(usdInput))) {
-      return '0.0000'
-    }
-    return (Number(usdInput) / ethUsdPrice).toFixed(4)
-  }, [usdInput, ethUsdPrice])
 
   const [isTeamSigner, setIsTeamSigner] = useState(false)
   const { safe, queueSafeTx, lastSafeTxExecuted } = useSafe(teamNFT?.owner)
@@ -651,6 +673,8 @@ export default function MissionPayRedeem({
               usdInput={usdInput}
               handleUsdInputChange={handleUsdInputChange}
               calculateEthAmount={calculateEthAmount}
+              formattedUsdInput={formattedUsdInput}
+              formatTokenAmount={formatTokenAmount}
             />
           </div>
         </>
@@ -691,11 +715,11 @@ export default function MissionPayRedeem({
                 <span>$</span>
                 <input
                   id="payment-input"
-                  type="number"
+                  type="text"
                   className="text-right bg-transparent w-[100px] rounded-md px-2 outline-none font-bold border-[1px] border-moon-indigo [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={usdInput}
+                  value={formattedUsdInput}
                   onChange={handleUsdInputChange}
-                  maxLength={7}
+                  maxLength={9}
                 />
                 <span>{'USD'}</span>
               </div>
@@ -704,7 +728,7 @@ export default function MissionPayRedeem({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${output.toFixed(2).toLocaleString()} ${
+                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
                   token?.tokenSymbol
                 }`}</p>
               </div>
@@ -792,7 +816,7 @@ export default function MissionPayRedeem({
               <PrivyWeb3Button
                 id="contribute-button"
                 className="w-1/2 bg-moon-indigo rounded-xl"
-                label={`Contribute $${usdInput} USD`}
+                label={`Contribute $${formattedUsdInput || '0'} USD`}
                 action={buyMissionToken}
                 isDisabled={
                   !agreedToCondition || !usdInput || parseFloat(usdInput) <= 0
