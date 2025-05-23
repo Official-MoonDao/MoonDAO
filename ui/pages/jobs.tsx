@@ -119,46 +119,53 @@ export default function Jobs({ jobs }: JobsProps) {
 }
 
 export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+  try {
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-  const now = Math.floor(Date.now() / 1000)
+    const now = Math.floor(Date.now() / 1000)
 
-  const jobTableContract = getContract({
-    client: serverClient,
-    address: JOBS_TABLE_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: JobsABI as any,
-  })
-  const teamContract = getContract({
-    client: serverClient,
-    address: TEAM_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: TeamABI as any,
-  })
-
-  const jobBoardTableName = await readContract({
-    contract: jobTableContract,
-    method: 'getTableName',
-  })
-
-  const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
-
-  const allJobs = await queryTable(chain, statement)
-
-  const validJobs = allJobs?.filter(async (job: any) => {
-    const teamExpiration = await readContract({
-      contract: teamContract,
-      method: 'expiresAt',
-      params: [job.teamId],
+    const jobTableContract = getContract({
+      client: serverClient,
+      address: JOBS_TABLE_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: JobsABI as any,
     })
-    return +teamExpiration.toString() > now
-  })
+    const teamContract = getContract({
+      client: serverClient,
+      address: TEAM_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: TeamABI as any,
+    })
 
-  return {
-    props: {
-      jobs: validJobs,
-    },
-    revalidate: 60,
+    const jobBoardTableName = await readContract({
+      contract: jobTableContract,
+      method: 'getTableName',
+    })
+
+    const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
+
+    const allJobs = await queryTable(chain, statement)
+
+    const validJobs = allJobs?.filter(async (job: any) => {
+      const teamExpiration = await readContract({
+        contract: teamContract,
+        method: 'expiresAt',
+        params: [job.teamId],
+      })
+      return +teamExpiration.toString() > now
+    })
+
+    return {
+      props: {
+        jobs: validJobs,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      props: { jobs: [] },
+    }
   }
 }
