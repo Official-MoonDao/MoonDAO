@@ -9,9 +9,8 @@ contract MyScript is Script, Config {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        // Juicebox contracts are shared across chains
+        // Juicebox contract addresses are shared across chains
         address JB_CONTROLLER = 0xb291844F213047Eb9e1621AE555B1Eae6700d553;
-        address JB_MULTI_TERMINAL = 0xDB9644369c79C3633cDE70D2Df50d827D7dC7Dbc;
         address JB_RULESETS = 0xDA86EeDb67C6C9FB3E58FE83Efa28674D7C89826;
         address JB_PROJECTS = 0x0b538A02610d7d3Cc91Ce2870F423e0a34D646AD;
         address JB_TERMINAL_STORE = 0x6F6740ddA12033ca9fBAA56693194E38cfD36827;

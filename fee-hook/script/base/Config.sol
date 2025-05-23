@@ -32,6 +32,10 @@ contract Config is Script {
     mapping(uint256 => uint24) public LP_FEE;
     mapping(uint256 => address) public MOONDAO_TEAM_ADDRESSES;
     mapping(uint256 => address) public MOONDAO_TREASURY_ADDRESSES;
+    // Juicebox contract addresses are shared across chains
+    address constant JB_MULTI_TERMINAL = address(0xDB9644369c79C3633cDE70D2Df50d827D7dC7Dbc);
+    address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
+    address constant CROSS_CHAIN_PAY_ADDRESS = 0xda05152e183a57E4Be921E2Df2A98547DE925C76;
 
 
     constructor() {
@@ -54,6 +58,7 @@ contract Config is Script {
         VMOONEY_ADDRESSES[MAINNET] = ethJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[POLYGON] = polygonJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[SEP] = sepJson.readAddress(".vMOONEYToken");
+
 
         LP_FEE[MAINNET] = 10000;
         LP_FEE[ARBITRUM] = 10000;
