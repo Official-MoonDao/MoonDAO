@@ -23,7 +23,7 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
@@ -177,24 +177,24 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     id="mission-image-container"
                     className="pl-[0vw] sm:pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                   >
-                    <MediaRenderer
-                      client={client}
+                    <Image
                       src={getIPFSGateway(mission?.metadata?.logoUri)}
                       className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
-                      height={'576'}
-                      width={'576'}
+                      height={576}
+                      width={576}
+                      alt="Mission Image"
                     />
                     {teamNFT?.metadata?.image && (
                       <div
                         id="team-nft-container"
                         className="absolute bottom-0 lg:right-0 mb-[-5vw] md:mb-[-2vw] mr-[-5vw] md:mr-[-2vw]"
                       >
-                        <MediaRenderer
-                          client={client}
-                          src={teamNFT?.metadata?.image}
+                        <Image
+                          src={getIPFSGateway(teamNFT?.metadata?.image)}
                           className="top-[2vw] rounded-full ml-[5vw] sm:ml-0"
-                          height={'150'}
-                          width={'150'}
+                          height={150}
+                          width={150}
+                          alt="Team Image"
                         />
                       </div>
                     )}

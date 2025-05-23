@@ -1,5 +1,6 @@
+import Image from 'next/image'
 import Link from 'next/link'
-import { MediaRenderer } from 'thirdweb/react'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import client from '@/lib/thirdweb/client'
 import Frame from '@/components/layout/Frame'
 
@@ -42,12 +43,12 @@ export default function StandardDetailCard({
                   className="z-40 w-[75px] h-[75px]"
                 >
                   <Frame noPadding marginBottom="0px" className="aspect-square">
-                    <MediaRenderer
+                    <Image
                       className="w-full h-full object-cover rounded-full"
-                      client={client}
-                      src={image}
-                      width="50px"
-                      height="50px"
+                      src={getIPFSGateway(image)}
+                      width={50}
+                      height={50}
+                      alt="Team Image"
                     />
                   </Frame>
                 </div>

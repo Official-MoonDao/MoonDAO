@@ -10,8 +10,9 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
@@ -280,11 +281,10 @@ export default function TeamMarketplaceListingModal({
         {listingData.image && (
           <>
             {typeof listingData.image === 'string' ? (
-              <MediaRenderer
-                client={client}
-                src={listingData.image}
-                height="200px"
-                width="200px"
+              <Image
+                src={getIPFSGateway(listingData.image)}
+                height={200}
+                width={200}
                 alt=""
               />
             ) : (

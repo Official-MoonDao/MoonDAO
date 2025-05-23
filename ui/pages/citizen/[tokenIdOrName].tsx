@@ -24,10 +24,11 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
@@ -168,12 +169,12 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                   id="citizen-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
-                  <MediaRenderer
-                    client={client}
-                    src={nft?.metadata?.image}
+                  <Image
+                    src={getIPFSGateway(nft?.metadata?.image)}
                     className="rounded-full"
-                    height={'300'}
-                    width={'300'}
+                    height={300}
+                    width={300}
+                    alt="Citizen Image"
                   />
                   <div
                     id="star-asset-container"

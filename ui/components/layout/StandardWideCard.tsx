@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import client from '@/lib/thirdweb/client'
 import StandardButton from '../layout/StandardButton'
 
@@ -78,12 +78,12 @@ export default function StandardWideCard({
                           height={200}
                         />
                       ) : (
-                        <MediaRenderer
+                        <Image
                           className="w-full h-full object-cover"
-                          client={client}
-                          src={image}
-                          width="200px"
-                          height="200px"
+                          src={getIPFSGateway(image)}
+                          width={200}
+                          height={200}
+                          alt="Card image"
                         />
                       )
                     ) : (

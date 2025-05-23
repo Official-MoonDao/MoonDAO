@@ -11,6 +11,7 @@ import {
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
 } from 'const/config'
+import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -19,9 +20,10 @@ import {
   sendAndConfirmTransaction,
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import useTeamEmail from '@/lib/team/useTeamEmail'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -267,11 +269,11 @@ export default function BuyTeamListingModal({
                 id="image-container"
                 className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
               >
-                <MediaRenderer
-                  client={client}
-                  src={listing.image}
-                  width="100%"
-                  height="100%"
+                <Image
+                  src={getIPFSGateway(listing.image)}
+                  width={500}
+                  height={500}
+                  alt="Listing Image"
                 />
               </div>
             )}

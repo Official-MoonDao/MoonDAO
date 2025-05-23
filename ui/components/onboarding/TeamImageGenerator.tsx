@@ -1,7 +1,8 @@
 // Team Image Generator
 import html2canvas from 'html2canvas-pro'
+import Image from 'next/image'
 import { useState } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import client from '@/lib/thirdweb/client'
 import FileInput from '../layout/FileInput'
 import { StageButton } from './StageButton'
@@ -48,12 +49,12 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
             id="teamPic"
             className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] justify-left relative flex"
           >
-            <MediaRenderer
-              client={client}
+            <Image
               className="p-0 m-0"
-              src={currImage}
-              width="100%"
-              height="100%"
+              src={getIPFSGateway(currImage)}
+              width={600}
+              height={600}
+              alt="Team Image"
             />
           </div>
         )}

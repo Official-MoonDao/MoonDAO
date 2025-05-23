@@ -1,8 +1,7 @@
 import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
-import toast from 'react-hot-toast'
-import { MediaRenderer } from 'thirdweb/react'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import client from '@/lib/thirdweb/client'
 import FileInput from '../layout/FileInput'
 import { StageButton } from './StageButton'
@@ -59,13 +58,12 @@ export function ImageGenerator({
         className="mt-4 w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left relative flex"
       >
         {currImage && !inputImage && (
-          <MediaRenderer
-            client={client}
-            src={currImage}
+          <Image
+            src={getIPFSGateway(currImage)}
             className=""
-            width="100%"
-            height="100%"
-            alt={''}
+            width={600}
+            height={600}
+            alt="Citizen Image"
           />
         )}
         {inputImage && (

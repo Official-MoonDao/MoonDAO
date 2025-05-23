@@ -45,13 +45,10 @@ import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import {
-  MediaRenderer,
-  useActiveAccount,
-  useWalletBalance,
-} from 'thirdweb/react'
+import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
@@ -243,10 +240,10 @@ export default function TeamDetailPage({
                   id="org-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
-                  <MediaRenderer
-                    client={client}
+                  <Image
+                    alt="Team Image"
                     className="rounded-full"
-                    src={nft.metadata.image}
+                    src={getIPFSGateway(nft.metadata.image)}
                     height={'300'}
                     width={'300'}
                   />

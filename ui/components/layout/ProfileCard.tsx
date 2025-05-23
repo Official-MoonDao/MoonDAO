@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import {
   generatePrettyLink,
   generatePrettyLinkWithId,
@@ -101,12 +101,12 @@ export default function Card({
           {metadata?.image && (
             <div id="entity-citizen-image-container" className="z-40">
               <Frame noPadding marginBottom="0px" className="">
-                <MediaRenderer
-                  client={client}
+                <Image
+                  alt="Entity Image"
                   className=""
-                  src={metadata.image}
-                  height={'100%'}
-                  width={'100%'}
+                  src={getIPFSGateway(metadata.image)}
+                  height={675}
+                  width={675}
                 />
               </Frame>
             </div>

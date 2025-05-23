@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import client from '@/lib/thirdweb/client'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
@@ -106,12 +106,12 @@ export default function StandardCard({
                     />
                   ) : (
                     // For IPFS/remote URLs
-                    <MediaRenderer
+                    <Image
                       className="w-full h-full object-cover"
-                      client={client}
-                      src={image}
-                      width="100%"
-                      height="100%"
+                      src={getIPFSGateway(image)}
+                      width={500}
+                      height={500}
+                      alt="Card image"
                     />
                   )}
                 </Frame>

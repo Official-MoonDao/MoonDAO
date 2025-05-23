@@ -1,7 +1,8 @@
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import client from '@/lib/thirdweb/client'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -30,12 +31,12 @@ export default function CitizenProfileLink() {
           {isLoading ? (
             <LoadingSpinner />
           ) : (
-            <MediaRenderer
-              client={client}
+            <Image
               className=""
-              src={citizen.metadata.image}
-              width="100%"
-              height="100%"
+              src={getIPFSGateway(citizen.metadata.image || '')}
+              width={40}
+              height={40}
+              alt="Citizen Image"
             />
           )}
         </div>
