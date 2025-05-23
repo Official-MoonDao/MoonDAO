@@ -12,7 +12,7 @@ import CreateCitizen from '@/components/onboarding/CreateCitizen'
 
 export default function Join() {
   const { t } = useTranslation('common')
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
 
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
@@ -25,6 +25,7 @@ export default function Join() {
     return (
       <CreateCitizen
         selectedChain={selectedChain}
+        setSelectedChain={setSelectedChain}
         setSelectedTier={setSelectedTier}
       />
     )

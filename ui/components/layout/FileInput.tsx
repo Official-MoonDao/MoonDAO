@@ -11,6 +11,8 @@ type FileInputProps = {
   setFile: Function
   noBlankImages?: boolean
   dimensions?: number[]
+  accept?: string
+  tooltip?: string
 }
 
 export default function FileInput({
@@ -31,7 +33,7 @@ export default function FileInput({
       {label && <p className={`text-sm font-GoodTimes opacity-50`}>{label}</p>}
       <input
         type="file"
-        accept="image/*"
+        accept={'.png,.jpg,.jpeg,.webp,.gif,.svg'}
         onChange={async (e: any) => {
           const file = e.target.files[0]
           const chosenFileName = file?.name.slice(0, 20) || 'No file chosen'
@@ -73,6 +75,9 @@ export default function FileInput({
         </svg>
         <span>Choose File</span>
       </label>
+      {!file?.name && (
+        <p className="opacity-60">(.png, .jpg, .jpeg, .webp, .gif, .svg)</p>
+      )}
       <span id="file-chosen" className=" text-gray-600 break-words">
         {fileName}
       </span>

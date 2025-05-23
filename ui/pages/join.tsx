@@ -11,7 +11,7 @@ import Pricing from '@/components/onboarding/Pricing'
 
 export default function Join() {
   const { t } = useTranslation('common')
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
 
   // State to manage selected tier for onboarding flow
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
@@ -21,6 +21,7 @@ export default function Join() {
     return (
       <CreateCitizen
         selectedChain={selectedChain}
+        setSelectedChain={setSelectedChain}
         setSelectedTier={setSelectedTier}
       />
     )
