@@ -21,11 +21,11 @@ export function CompetitorPreview({
       {teamNFT && teamNFT?.metadata && (
         <div className="flex items-center">
           <IPFSRenderer
+            className="rounded-[50%]"
             src={teamNFT?.metadata?.image || ''}
             width={66}
             height={66}
             alt="Competitor Image"
-            style={{ borderRadius: '50%' }}
           />
           <div>{teamNFT?.metadata?.name}</div>
         </div>

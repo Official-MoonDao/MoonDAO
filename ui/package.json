@@ -97,7 +97,7 @@
     "shopify-buy": "^2.18.0",
     "swr": "^2.2.5",
     "tailwind-scrollbar-hide": "^1.1.7",
-    "thirdweb": "^5.100.1",
+    "thirdweb": "^5.81.0",
     "typescript": "^5.1.6",
     "urql": "^4.0.4",
     "uuid": "^10.0.0",
