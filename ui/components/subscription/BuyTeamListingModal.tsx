@@ -23,13 +23,13 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import useTeamEmail from '@/lib/team/useTeamEmail'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { TeamListing } from '@/components/subscription/TeamListing'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -269,8 +269,8 @@ export default function BuyTeamListingModal({
                 id="image-container"
                 className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
               >
-                <Image
-                  src={getIPFSGateway(listing.image)}
+                <IPFSRenderer
+                  src={listing.image}
                   width={500}
                   height={500}
                   alt="Listing Image"

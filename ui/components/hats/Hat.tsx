@@ -1,11 +1,10 @@
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useReadContract } from 'thirdweb/react'
 import { useHatData } from '@/lib/hats/useHatData'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import client from '@/lib/thirdweb/client'
+import IPFSRenderer from '../layout/IPFSRenderer'
 
 type HatProps = {
   selectedChain: any
@@ -46,12 +45,12 @@ export function Hat({
       <div className="flex items-center gap-5">
         {teamNFT && (
           <div className="rounded-[2.5vmax] rounded-tl-[10px] overflow-hidden">
-            <Image
+            <IPFSRenderer
+              src={teamNFT.metadata.image || ''}
               alt="Team Image"
-              src={getIPFSGateway(teamNFT.metadata.image || '')}
-              className="object-cover"
               width={compact ? 75 : 150}
               height={compact ? 75 : 150}
+              className="object-cover"
             />
           </div>
         )}

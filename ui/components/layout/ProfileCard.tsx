@@ -2,14 +2,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import {
   generatePrettyLink,
   generatePrettyLinkWithId,
 } from '@/lib/subscription/pretty-links'
-import client from '@/lib/thirdweb/client'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
+import IPFSRenderer from './IPFSRenderer'
 
 interface CardProps {
   icon?: string
@@ -101,10 +100,10 @@ export default function Card({
           {metadata?.image && (
             <div id="entity-citizen-image-container" className="z-40">
               <Frame noPadding marginBottom="0px" className="">
-                <Image
+                <IPFSRenderer
                   alt="Entity Image"
                   className=""
-                  src={getIPFSGateway(metadata.image)}
+                  src={metadata.image}
                   height={675}
                   width={675}
                 />

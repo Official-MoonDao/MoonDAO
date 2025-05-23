@@ -1,8 +1,6 @@
-import Image from 'next/image'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useReadContract } from 'thirdweb/react'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import client from '@/lib/thirdweb/client'
+import IPFSRenderer from '../layout/IPFSRenderer'
 
 type CompetitorPreviewProps = {
   teamId: any
@@ -22,8 +20,8 @@ export function CompetitorPreview({
     <div className="flex items-center gap-5">
       {teamNFT && teamNFT?.metadata && (
         <div className="flex items-center">
-          <Image
-            src={getIPFSGateway(teamNFT?.metadata?.image || '')}
+          <IPFSRenderer
+            src={teamNFT?.metadata?.image || ''}
             width={66}
             height={66}
             alt="Competitor Image"

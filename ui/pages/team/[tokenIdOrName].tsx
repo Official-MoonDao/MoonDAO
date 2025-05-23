@@ -48,7 +48,6 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
@@ -64,6 +63,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
+import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import Action from '@/components/subscription/Action'
@@ -240,12 +240,12 @@ export default function TeamDetailPage({
                   id="org-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
-                  <Image
+                  <IPFSRenderer
                     alt="Team Image"
                     className="rounded-full"
-                    src={getIPFSGateway(nft.metadata.image)}
-                    height={'300'}
-                    width={'300'}
+                    src={nft.metadata.image}
+                    height={300}
+                    width={300}
                   />
                   <div
                     id="star-asset-container"

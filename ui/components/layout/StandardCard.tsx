@@ -2,11 +2,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode } from 'react'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import client from '@/lib/thirdweb/client'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
 import CollapsibleContainer from './CollapsibleContainer'
+import IPFSRenderer from './IPFSRenderer'
 
 type StandardCardProps = {
   id?: string
@@ -106,9 +105,9 @@ export default function StandardCard({
                     />
                   ) : (
                     // For IPFS/remote URLs
-                    <Image
+                    <IPFSRenderer
                       className="w-full h-full object-cover"
-                      src={getIPFSGateway(image)}
+                      src={image}
                       width={500}
                       height={500}
                       alt="Card image"

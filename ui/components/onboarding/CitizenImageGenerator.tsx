@@ -1,9 +1,8 @@
 import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import client from '@/lib/thirdweb/client'
 import FileInput from '../layout/FileInput'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import { StageButton } from './StageButton'
 
 export function ImageGenerator({
@@ -58,8 +57,8 @@ export function ImageGenerator({
         className="mt-4 w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left relative flex"
       >
         {currImage && !inputImage && (
-          <Image
-            src={getIPFSGateway(currImage)}
+          <IPFSRenderer
+            src={currImage}
             className=""
             width={600}
             height={600}

@@ -1,9 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import client from '@/lib/thirdweb/client'
 import StandardButton from '../layout/StandardButton'
+import IPFSRenderer from './IPFSRenderer'
 
 type StandardWideCardProps = {
   header?: string
@@ -78,9 +77,9 @@ export default function StandardWideCard({
                           height={200}
                         />
                       ) : (
-                        <Image
+                        <IPFSRenderer
                           className="w-full h-full object-cover"
-                          src={getIPFSGateway(image)}
+                          src={image}
                           width={200}
                           height={200}
                           alt="Card image"

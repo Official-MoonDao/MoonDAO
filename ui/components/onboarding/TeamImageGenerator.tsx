@@ -2,9 +2,8 @@
 import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
 import { useState } from 'react'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import client from '@/lib/thirdweb/client'
 import FileInput from '../layout/FileInput'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import { StageButton } from './StageButton'
 
 export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
@@ -49,9 +48,9 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
             id="teamPic"
             className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] justify-left relative flex"
           >
-            <Image
+            <IPFSRenderer
               className="p-0 m-0"
-              src={getIPFSGateway(currImage)}
+              src={currImage}
               width={600}
               height={600}
               alt="Team Image"

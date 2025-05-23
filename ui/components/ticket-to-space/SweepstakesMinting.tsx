@@ -4,12 +4,11 @@ import { useEffect, useState } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useMerkleProof } from '../../lib/utils/hooks/useMerkleProof'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import client from '@/lib/thirdweb/client'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { approveToken as approve } from '@/lib/tokens/approve'
 import { TICKET_TO_SPACE_ADDRESS } from '../../const/config'
 import { devWhitelist } from '../../const/tts/whitelist'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import { SubmitTTSInfoModal } from './SubmitTTSInfoModal'
 import { SubmitTTSInfoModalETH } from './SubmitTTSInfoModalETH'
 import { SweepstakesWinners } from './SweepstakesWinners'
@@ -105,10 +104,8 @@ export function SweepstakesMinting({
         <div className="flex flex-col bg-transparent p-4 md:p-5 lg:p-6 xl:p-[30px]">
           <div className="md:flex">
             <div className="m-auto my-2 p-2 flex justify-center md:w-1/2">
-              <Image
-                src={getIPFSGateway(
-                  'ipfs://Qmba3umb3db7DqCA19iRSSbtzv9nYUmP8Cibo5QMkLpgpP'
-                )}
+              <IPFSRenderer
+                src={'ipfs://Qmba3umb3db7DqCA19iRSSbtzv9nYUmP8Cibo5QMkLpgpP'}
                 width={500}
                 height={500}
                 alt="Ticket to Space Image"

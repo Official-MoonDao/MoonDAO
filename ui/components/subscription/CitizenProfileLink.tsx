@@ -1,10 +1,8 @@
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import client from '@/lib/thirdweb/client'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 export default function CitizenProfileLink() {
@@ -31,9 +29,9 @@ export default function CitizenProfileLink() {
           {isLoading ? (
             <LoadingSpinner />
           ) : (
-            <Image
+            <IPFSRenderer
               className=""
-              src={getIPFSGateway(citizen.metadata.image || '')}
+              src={citizen.metadata.image}
               width={40}
               height={40}
               alt="Citizen Image"
