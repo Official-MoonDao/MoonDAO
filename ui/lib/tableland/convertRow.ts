@@ -25,8 +25,6 @@ export type CitizenRow = {
   owner: string
 }
 
-async function x() {}
-
 export function teamRowToNFT(row: TeamRow | Record<string, unknown>) {
   const {
     id,
@@ -59,7 +57,7 @@ export function teamRowToNFT(row: TeamRow | Record<string, unknown>) {
     owner: null,
     tokenURI: '',
     type: 'ERC721',
-  } as NFT
+  } as any
 
   return nft
 }
@@ -101,7 +99,7 @@ export function citizenRowToNFT(row: CitizenRow | Record<string, unknown>) {
     owner,
     tokenURI: '',
     type: 'ERC721',
-  } as NFT
+  } as any
 
   return nft
 }

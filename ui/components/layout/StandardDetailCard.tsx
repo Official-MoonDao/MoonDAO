@@ -1,7 +1,7 @@
+import Image from 'next/image'
 import Link from 'next/link'
-import { MediaRenderer } from 'thirdweb/react'
-import client from '@/lib/thirdweb/client'
 import Frame from '@/components/layout/Frame'
+import IPFSRenderer from './IPFSRenderer'
 
 type StandardDetailCardProps = {
   title?: string
@@ -42,12 +42,12 @@ export default function StandardDetailCard({
                   className="z-40 w-[75px] h-[75px]"
                 >
                   <Frame noPadding marginBottom="0px" className="aspect-square">
-                    <MediaRenderer
+                    <IPFSRenderer
                       className="w-full h-full object-cover rounded-full"
-                      client={client}
                       src={image}
-                      width="50px"
-                      height="50px"
+                      width={50}
+                      height={50}
+                      alt={title || ''}
                     />
                   </Frame>
                 </div>
