@@ -1,6 +1,7 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetwork'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
@@ -148,6 +149,7 @@ export function PrivyWeb3Button({
           className={className}
           onClick={async () => {
             setIsLoading(true)
+            addNetworkToWallet(selectedChain)
             try {
               await action()
               onSuccess && onSuccess()

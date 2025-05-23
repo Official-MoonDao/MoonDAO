@@ -9,6 +9,7 @@ describe('<CreateCitizen />', () => {
     props = {
       address: '0x1234567890abcdef',
       selectedChain: CYPRESS_CHAIN_V5,
+      setSelectedChain: cy.stub(),
       setSelectedTier: cy.stub(),
     }
     cy.mountNextRouter('/')

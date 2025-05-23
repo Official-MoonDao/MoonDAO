@@ -67,7 +67,11 @@ import { ImageGenerator } from './CitizenImageGenerator'
 import { StageButton } from './StageButton'
 import { StageContainer } from './StageContainer'
 
-export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
+export default function CreateCitizen({
+  selectedChain,
+  setSelectedChain,
+  setSelectedTier,
+}: any) {
   const router = useRouter()
 
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -173,11 +177,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [])
 
   const callMint = async () => {
+    if (!account || !address) {
+      return toast.error('Please connect your wallet to continue.')
+    }
     if (!citizenImage)
       return toast.error('Please wait for your image to finish generating.')
 
-    if (!account || !address) {
-      return toast.error('Please connect your wallet to continue.')
+    const imageFileType = citizenImage.name.split('.').pop()
+    if (
+      imageFileType !== 'png' &&
+      imageFileType !== 'jpg' &&
+      imageFileType !== 'jpeg' &&
+      imageFileType !== 'webp' &&
+      imageFileType !== 'gif' &&
+      imageFileType !== 'svg'
+    ) {
+      return toast.error('Please ensure your image is a valid format.')
     }
 
     try {
@@ -327,6 +342,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     }
   }
 
+  //Default to ethereum
+  useEffect(() => {
+    setSelectedChain(
+      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? ethereum : sepolia
+    )
+  }, [])
+
   return (
     <Container>
       <ContentLayout
@@ -470,7 +492,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 </div>
                 {citizenImage && (
                   <div className="mt-4">
-                    <FileInput file={inputImage} setFile={setInputImage} />
+                    <FileInput
+                      file={inputImage}
+                      setFile={setInputImage}
+                      accept=".png,.jpg,.jpeg,.webp,.gif,.svg"
+                    />
                     <StageButton
                       onClick={() => {
                         setCitizenImage(null)
@@ -608,8 +634,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     </p>
                   </label>
                 </div>
-                <NetworkSelector chains={chains} />
+                <div className="flex flex-col w-full md:p-5 mt-4 max-w-[600px]">
+                  <p className="">{`Please select a chain for checkout. Ensure you have enough ETH on this chain to complete the transaction.`}</p>
+                  <NetworkSelector chains={chains} />
+                </div>
                 <PrivyWeb3Button
+                  className="rounded-full "
                   id="citizen-checkout-button"
                   skipNetworkCheck={true}
                   label="Check Out"

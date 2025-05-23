@@ -35,6 +35,7 @@ import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import TeamABI from '../../const/abis/Team.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
+import FileInput from '../layout/FileInput'
 import Footer from '../layout/Footer'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -193,11 +194,10 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         {`Welcome to the future of off-world coordination with MoonDAO.`}
                       </p> */}
 
-                  <Image
-                    src={URL.createObjectURL(teamImage)}
-                    alt="entity-image"
-                    width={600}
-                    height={600}
+                  <FileInput
+                    file={teamImage}
+                    setFile={setTeamImage}
+                    accept=".png,.jpg,.jpeg,.webp,.gif,.svg"
                   />
 
                   <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
@@ -253,7 +253,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                       <h3 className="font-GoodTimes text-2xl mb-2">TREASURY</h3>
                       <p className="mt-2">
                         A self-custodied multisignature treasury will secure
-                        your organization’s assets, allowing interaction with
+                        your organization's assets, allowing interaction with
                         any smart contracts within the Ethereum ecosystem.{' '}
                         <br /> <br />
                         You can add more signers later via your Team management
@@ -263,7 +263,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                     <div className="flex flex-col bg-[#0F152F] rounded-[20px] pb-10 p-5 mt-5">
                       <h3 className="font-GoodTimes text-2xl mb-2">MANAGER</h3>
                       <p className="mt-2">
-                        The manager can modify your organization’s information.
+                        The manager can modify your organization's information.
                         To begin, the currently connected wallet will act as the
                         Manager.
                         <br /> <br />
@@ -335,6 +335,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   </div>
                   <PrivyWeb3Button
                     id="team-checkout-button"
+                    className="rounded-full "
                     label="Check Out"
                     isDisabled={!agreedToCondition || isLoadingMint}
                     action={async () => {
@@ -343,6 +344,21 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           'Please connect your wallet to continue.'
                         )
                       }
+                      //Check the format of the image
+                      const imageFileType = teamImage.name.split('.').pop()
+                      if (
+                        imageFileType !== 'png' &&
+                        imageFileType !== 'jpg' &&
+                        imageFileType !== 'jpeg' &&
+                        imageFileType !== 'webp' &&
+                        imageFileType !== 'gif' &&
+                        imageFileType !== 'svg'
+                      ) {
+                        return toast.error(
+                          'Please ensure your image is a valid format.'
+                        )
+                      }
+
                       try {
                         const cost: any = await readContract({
                           contract: teamContract,
