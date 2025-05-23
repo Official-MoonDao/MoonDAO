@@ -16,13 +16,24 @@ export default function IPFSRenderer({
   height,
   className,
 }: IPFSRendererProps) {
+  const noSrc = !src || src === ''
+
   return (
-    <Image
-      className={className}
-      src={src && src !== '' ? getIPFSGateway(src) : ''}
-      alt={alt}
-      width={width}
-      height={height}
-    />
+    <div className="flex w-full h-full items-center justify-center">
+      {!noSrc && (
+        <Image
+          className={className}
+          src={getIPFSGateway(src)}
+          alt={alt}
+          width={width}
+          height={height}
+        />
+      )}
+      {noSrc && (
+        <p className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-white text-sm text-center">
+          {alt}
+        </p>
+      )}
+    </div>
   )
 }

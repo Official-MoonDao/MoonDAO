@@ -72,7 +72,7 @@ export default function StandardWideCard({
                         <Image
                           className="w-full h-full object-cover"
                           src={image}
-                          alt="Card image"
+                          alt={title || ''}
                           width={200}
                           height={200}
                         />
@@ -82,14 +82,14 @@ export default function StandardWideCard({
                           src={image}
                           width={200}
                           height={200}
-                          alt="Card image"
+                          alt={title || ''}
                         />
                       )
                     ) : (
                       orgimage && (
                         <Image
                           src={orgimage}
-                          alt="Team Image"
+                          alt={title || ''}
                           width={200}
                           height={200}
                           className="w-full h-full object-cover"

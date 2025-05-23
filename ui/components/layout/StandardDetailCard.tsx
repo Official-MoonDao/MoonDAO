@@ -47,7 +47,7 @@ export default function StandardDetailCard({
                       src={image}
                       width={50}
                       height={50}
-                      alt="Team Image"
+                      alt={title || ''}
                     />
                   </Frame>
                 </div>

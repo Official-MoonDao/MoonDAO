@@ -83,7 +83,7 @@ export default function StandardCard({
                   <Image
                     id="featured-image"
                     src={orgimage}
-                    alt="Team Image"
+                    alt={title || ''}
                     width="675"
                     height="675"
                     className="w-full h-full"
@@ -99,7 +99,7 @@ export default function StandardCard({
                     <Image
                       className="w-full h-full object-cover"
                       src={image}
-                      alt="Card image"
+                      alt={title || ''}
                       width={500}
                       height={500}
                     />
@@ -110,7 +110,7 @@ export default function StandardCard({
                       src={image}
                       width={500}
                       height={500}
-                      alt="Card image"
+                      alt={title || ''}
                     />
                   )}
                 </Frame>
