@@ -1,16 +1,19 @@
 import { ethers } from 'ethers'
 import { useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { PendingTransaction, SafeData } from '@/lib/safe/useSafe'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type SafeTransactionsProps = {
+  address: string | undefined
   safeData: SafeData
 }
 
-export default function SafeTransactions({ safeData }: SafeTransactionsProps) {
+export default function SafeTransactions({
+  address,
+  safeData,
+}: SafeTransactionsProps) {
   const {
     signPendingTransaction,
     executeTransaction,
@@ -43,15 +46,11 @@ export default function SafeTransactions({ safeData }: SafeTransactionsProps) {
   const handleRejectTransaction = async (safeTxHash: string) => {
     try {
       await rejectTransaction(safeTxHash)
-      toast.success('Transaction rejected successfully', { style: toastStyle })
     } catch (error) {
       console.error('Error rejecting transaction:', error)
       toast.error('Failed to reject transaction', { style: toastStyle })
     }
   }
-
-  const account = useActiveAccount()
-  const address = account?.address
 
   const groupTransactionsByNonce = (transactions: PendingTransaction[]) => {
     const groupedTxs = transactions.reduce((acc, tx) => {
@@ -136,6 +135,13 @@ export default function SafeTransactions({ safeData }: SafeTransactionsProps) {
                         data-testid={`transaction-${tx.safeTxHash}`}
                         className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0"
                       >
+                        <p
+                          data-testid={`transaction-nonce-${tx.nonce}`}
+                          className="text-gray-300 mb-2"
+                        >
+                          Nonce: {tx.nonce}
+                        </p>
+                        <hr className="my-2 opacity-60" />
                         <p
                           data-testid={`transaction-method-${tx.safeTxHash}`}
                           className="text-gray-300 mb-2 flex items-center gap-2"
