@@ -38,7 +38,13 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col">
-        <FileInput file={inputImage} setFile={setInputImage} noBlankImages />
+        <FileInput
+          file={inputImage}
+          setFile={setInputImage}
+          noBlankImages
+          accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+          acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
+        />
       </div>
 
       {/* Show current team  image if no user image has been uploaded */}
