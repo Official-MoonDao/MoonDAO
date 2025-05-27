@@ -437,10 +437,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
             {/* Pay & Redeem Section */}
-            <div className="xl:hidden w-full px-[5vw]">
+            <div className="flex z-20 xl:hidden w-full px-[5vw]">
               <div
                 id="mission-pay-redeem-container"
-                className="flex justify-center mt-[5vw] md:mt-0 xl:mt-[2vw] p-[2vw] w-full xl:rounded-tl-[2vmax] rounded-[2vmax] xl:pr-0 overflow-hidden xl:rounded-bl-[5vmax] bg-darkest-cool"
+                className="xl:bg-darkest-cool lg:max-w-[650px] mt-[5vw] md:mt-0 xl:mt-[2vw] w-full xl:rounded-tl-[2vmax] rounded-[2vmax] xl:pr-0 overflow-hidden xl:rounded-bl-[5vmax]"
               >
                 {primaryTerminalAddress &&
                 primaryTerminalAddress !==
@@ -463,6 +463,15 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     <p>Loading payment terminal...</p>
                   </div>
                 )}
+              </div>
+              <div className="hidden lg:block xl:hidden ml-[-5vw] w-[50%] h-full">
+                <Image
+                  src="/assets/logo-san-full.svg"
+                  className="w-full h-full"
+                  alt="Space acceleration network logo"
+                  width={200}
+                  height={200}
+                />
               </div>
             </div>
             {/* Project Overview */}

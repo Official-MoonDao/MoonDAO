@@ -46,7 +46,7 @@ const PAYMENT_METHODS = [
 export default function AcceptedPaymentMethods() {
   return (
     <div>
-      <div className="p-1 h-full rounded-2xl flex items-center justify-center md:justify-start xl:justify-between flex-wrap gap-1">
+      <div className="p-1 h-full rounded-2xl flex items-center justify-center xl:justify-between flex-wrap gap-1">
         {PAYMENT_METHODS.map((method: any, i) => (
           <PaymentMethod key={'payment-method' + i} {...method} />
         ))}

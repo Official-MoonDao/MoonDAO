@@ -69,12 +69,12 @@ function MissionPayRedeemContent({
   return (
     <div
       id="mission-pay-redeem-container"
-      className="md:min-w-[430px] flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center xl:items-start w-full"
+      className="z-50 bg-[#020617] rounded-[5vw] md:rounded-[2vw] w-full flex flex-col gap-4 lg:min-w-[430px] xl:items-stretch"
       >
       {(!isRefundable || (token?.tokenSymbol && +tokenCredit?.toString() > 0)) && (
         <div
           id="mission-pay-container"
-          className="w-full p-2 xl:p-5 md:max-w-[500px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
+          className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
           >
           {/* You pay */}
           {!isRefundable && (
@@ -86,7 +86,7 @@ function MissionPayRedeemContent({
                     <h3 className="text-sm opacity-60">You pay</h3>
                   </div>
                   
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between sm:items-center flex-col sm:flex-row ">
                     <div className="flex items-center gap-1">
                       <span className="text-xl font-bold">$</span>
                       <input
@@ -101,13 +101,13 @@ function MissionPayRedeemContent({
                       />
                       <span className="text-xl font-bold">USD</span>
                     </div>
-                    <div className="flex gap-2 items-center bg-[#111C42] rounded-full px-3 py-1">
+                    <div className="flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full sm:px-3 py-1">
                       <Image
                         src="/coins/ETH.svg"
                         alt="ETH"
                         width={16}
                         height={16}
-                        className="w-4 h-4 bg-light-cool rounded-full"
+                        className="w-5 h-5 bg-light-cool rounded-full"
                       />
                       <span className="text-base">{calculateEthAmount()} ETH</span>
                     </div>
@@ -131,24 +131,17 @@ function MissionPayRedeemContent({
                     <h3 className="text-sm opacity-60">You receive</h3>
                   </div>
                   
-                  <div className="flex justify-between items-center">
+                  <div className="sm:flex justify-between items-center">
                     <p id="token-output" className="text-xl font-bold">
                       {formatTokenAmount(output, 2)}
                     </p>
-                    <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
+                    <div className="relative flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full p-1 sm:px-2">
                       <Image
                         src="/assets/icon-star.svg"
                         alt="Token"
                         width={20}
                         height={20}
                         className="bg-orange-500 rounded-full p-1 w-5 h-5"
-                      />
-                      <Image
-                        src="/coins/ETH.svg"
-                        alt="ETH"
-                        width={20}
-                        height={20}
-                        className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
                       />
                       {token?.tokenSymbol}
                     </div>
@@ -167,9 +160,9 @@ function MissionPayRedeemContent({
               >
                 Contribute
               </StandardButton>
-              <div className="md:hidden xl:block">
+              <div className="w-full">
                 <AcceptedPaymentMethods />
-                <p className="xl:text-sm text-center md:text-left xl:text-center">
+                <p className="xl:text-sm text-center">
                   {'Want to contribute by wire transfer?'}
                   <br />
                   {'Email us at info@moondao.com'}
@@ -190,7 +183,7 @@ function MissionPayRedeemContent({
         </div>
       )}
       {/* Token stats and redeem container */}
-      <div className="xl:pt-4 flex flex-col justify-between gap-4 w-full">
+      <div className="xl:pt-4 flex flex-row justify-between gap-4 w-full">
         {token?.tokenSupply > 0 && !isRefundable && (
           <div
             id="mission-token-stats"
@@ -214,20 +207,6 @@ function MissionPayRedeemContent({
           </div>
         )}
 
-        {/* Accepted Payment Methods - Now outside conditional rendering */}
-        {(!isRefundable || (token?.tokenSymbol && +tokenCredit?.toString() > 0)) && (
-          <div className="hidden md:block xl:hidden w-full px-2">
-            <div className="text-sm opacity-60 pb-2">
-              {'Accepted Payment Methods'}
-            </div>
-            <AcceptedPaymentMethods />
-            <p className="xl:text-sm text-left xl:text-center">
-              {'Want to contribute by wire transfer?'}
-              <br />
-              {'Email us at info@moondao.com'}
-            </p>
-          </div>
-        )}
 
         {tokenBalance > 0 || isRefundable ? (
           <div
@@ -705,7 +684,7 @@ export default function MissionPayRedeem({
                   alt="ETH"
                   width={16}
                   height={16}
-                  className="w-4 h-4 bg-light-cool rounded-full"
+                  className="w-5 h-5 bg-light-cool rounded-full"
                 />
                 <span className="text-base">{calculateEthAmount()} ETH</span>
               </div>
