@@ -53,18 +53,25 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
 }
 
 export async function getStaticProps() {
-  const vMooneyData = await getVMOONEYData()
+  try {
+    const vMooneyData = await getVMOONEYData()
 
-  const today = new Date()
-  const formattedDate = `${today.getFullYear()}-${(today.getMonth() + 1)
-    .toString()
-    .padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`
+    const today = new Date()
+    const formattedDate = `${today.getFullYear()}-${(today.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`
 
-  return {
-    props: {
-      vMooneyData,
-      dateUpdated: formattedDate,
-    },
-    revalidate: 60,
+    return {
+      props: {
+        vMooneyData,
+        dateUpdated: formattedDate,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      props: { vMooneyData: [], dateUpdated: '' },
+    }
   }
 }
