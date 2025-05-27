@@ -11,6 +11,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
@@ -41,6 +42,8 @@ export default function Jobs({ jobs }: JobsProps) {
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
   })
+
+  useChainDefault()
 
   useEffect(() => {
     if (jobs && input != '') {
