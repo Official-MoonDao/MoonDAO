@@ -11,7 +11,7 @@ import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 import useSafeApiKit from './useSafeApiKit'
 
-export interface PendingTransaction {
+export type PendingTransaction = {
   safeTxHash: string
   to: string
   value: string
@@ -43,7 +43,27 @@ export interface PendingTransaction {
   } | null
 }
 
-export default function useSafe(safeAddress: string) {
+export type SafeData = {
+  safe: Safe | undefined
+  queueSafeTx: (
+    safeTransactionData: SafeTransactionData | SafeTransactionDataPartial
+  ) => Promise<string>
+  lastSafeTxExecuted: boolean | null
+  addSigner: (newSigner: string, newThreshold?: number) => Promise<string>
+  removeSigner: (signerToRemove: string) => Promise<string>
+  changeThreshold: (newThreshold: number) => Promise<string>
+  executeTransaction: (safeTxHash: string) => Promise<any>
+  owners: string[]
+  threshold: number
+  pendingTransactions: PendingTransaction[]
+  transactionsToSign: PendingTransaction[]
+  transactionsToExecute: PendingTransaction[]
+  signPendingTransaction: (safeTxHash: string) => Promise<any>
+  fetchPendingTransactions: () => Promise<void>
+  rejectTransaction: (safeTxHash: string) => Promise<string>
+}
+
+export default function useSafe(safeAddress: string): SafeData {
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
 
@@ -472,5 +492,5 @@ export default function useSafe(safeAddress: string) {
     signPendingTransaction,
     fetchPendingTransactions,
     rejectTransaction,
-  }
+  } as SafeData
 }

@@ -2,16 +2,14 @@ import { XMarkIcon } from '@heroicons/react/20/solid'
 import { ethers } from 'ethers'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { PendingTransaction } from '@/lib/safe/useSafe'
+import { SafeData } from '@/lib/safe/useSafe'
 import { useENS } from '@/lib/utils/hooks/useENS'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import SafeTransactions from './SafeTransactions'
 
-interface SafeModalProps {
-  safeData: any
+type SafeModalProps = {
+  safeData: SafeData
   safeAddress: string
   isEnabled: boolean
   setEnabled: (enabled: boolean) => void
@@ -37,23 +35,12 @@ export default function SafeModal({
   const [isAddingSigner, setIsAddingSigner] = useState(false)
   const [isChangingThreshold, setIsChangingThreshold] = useState(false)
 
-  const account = useActiveAccount()
-  const address = account?.address
-
   const {
-    safe,
     owners,
-    threshold,
-    pendingTransactions,
-    transactionsToSign,
-    transactionsToExecute,
     addSigner,
     removeSigner,
     changeThreshold,
-    signPendingTransaction,
-    executeTransaction,
     fetchPendingTransactions,
-    rejectTransaction,
   } = safeData
 
   const validateAddress = (address: string) => {

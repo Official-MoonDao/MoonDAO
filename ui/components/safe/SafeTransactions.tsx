@@ -3,11 +3,11 @@ import { useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { PendingTransaction } from '@/lib/safe/useSafe'
+import { PendingTransaction, SafeData } from '@/lib/safe/useSafe'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
-interface SafeTransactionsProps {
-  safeData: any
+type SafeTransactionsProps = {
+  safeData: SafeData
 }
 
 export default function SafeTransactions({ safeData }: SafeTransactionsProps) {
