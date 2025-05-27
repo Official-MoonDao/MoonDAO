@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { PendingTransaction, SafeData } from '@/lib/safe/useSafe'
@@ -14,7 +14,9 @@ export default function SafeTransactions({
   address,
   safeData,
 }: SafeTransactionsProps) {
+  const [currentNonce, setCurrentNonce] = useState<number | null>(null)
   const {
+    safe,
     signPendingTransaction,
     executeTransaction,
     rejectTransaction,
@@ -67,6 +69,19 @@ export default function SafeTransactions({
     }))
   }
 
+  useEffect(() => {
+    async function getCurrentNonce() {
+      if (safe) {
+        try {
+          const nonce = await safe.getNonce()
+          setCurrentNonce(nonce)
+        } catch (err) {
+          console.log(err)
+        }
+      }
+    }
+    getCurrentNonce()
+  }, [safe])
   return (
     <div
       className="max-h-[800px] overflow-y-auto"
@@ -116,7 +131,14 @@ export default function SafeTransactions({
                         conf.owner.toLowerCase() === address?.toLowerCase()
                     )
                     const canExecute =
-                      tx.confirmations.length >= threshold && !tx.isExecuted
+                      tx.confirmations.length >= threshold &&
+                      !tx.isExecuted &&
+                      tx.nonce === currentNonce
+
+                    const canSign =
+                      tx.confirmations.length < threshold &&
+                      !tx.isExecuted &&
+                      tx.nonce === currentNonce
 
                     const isRejectionTx =
                       tx.data === '0x' ||
@@ -206,14 +228,16 @@ export default function SafeTransactions({
                         >
                           {!hasSigned && !hasRejectionInGroup && (
                             <>
-                              <PrivyWeb3Button
-                                dataTestId={`sign-transaction-${tx.safeTxHash}`}
-                                className="rounded-full"
-                                label="Sign"
-                                action={() =>
-                                  handleSignTransaction(tx.safeTxHash)
-                                }
-                              />
+                              {canSign && (
+                                <PrivyWeb3Button
+                                  dataTestId={`sign-transaction-${tx.safeTxHash}`}
+                                  className="rounded-full"
+                                  label="Sign"
+                                  action={() =>
+                                    handleSignTransaction(tx.safeTxHash)
+                                  }
+                                />
+                              )}
                               <PrivyWeb3Button
                                 dataTestId={`reject-transaction-${tx.safeTxHash}`}
                                 className="rounded-full bg-red-500 hover:bg-red-600"
@@ -225,7 +249,7 @@ export default function SafeTransactions({
                             </>
                           )}
 
-                          {!hasSigned && hasRejectionInGroup && (
+                          {!hasSigned && hasRejectionInGroup && canSign && (
                             <PrivyWeb3Button
                               dataTestId={`sign-transaction-with-rejection-${tx.safeTxHash}`}
                               className="rounded-full"

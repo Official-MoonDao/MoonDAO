@@ -8,6 +8,9 @@ import {
 } from '@safe-global/safe-core-sdk-types'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 import useSafeApiKit from './useSafeApiKit'
 
@@ -84,6 +87,7 @@ export default function useSafe(safeAddress: string): SafeData {
   const [transactionsToExecute, setTransactionsToExecute] = useState<
     PendingTransaction[]
   >([])
+  const [currentNonce, setCurrentNonce] = useState<number | null>(null)
 
   async function getNextNonce(): Promise<number> {
     if (!safe || !safeApiKit) throw new Error('Safe not initialized')
@@ -272,10 +276,15 @@ export default function useSafe(safeAddress: string): SafeData {
     if (!provider) throw new Error('No provider available')
     const gasPrice = await provider.getGasPrice()
 
+    // For rejection transactions, we need to ensure we have enough gas
+    const isRejectionTx =
+      safeTx.data === '0x' ||
+      safeTx.dataDecoded?.method?.toLowerCase().includes('reject')
+
     const options: TransactionOptions = {
-      gasLimit: '2000000',
-      maxFeePerGas: gasPrice.mul(2).toString(),
-      maxPriorityFeePerGas: gasPrice.toString(),
+      gasLimit: isRejectionTx ? '3000000' : '2000000', // Higher gas limit for rejections
+      maxFeePerGas: gasPrice.mul(3).toString(), // Higher max fee for rejections
+      maxPriorityFeePerGas: gasPrice.mul(2).toString(), // Higher priority fee for rejections
     }
 
     try {
@@ -290,53 +299,53 @@ export default function useSafe(safeAddress: string): SafeData {
         throw new Error('No transaction hash returned from execution')
       }
 
-      const receipt = await provider.waitForTransaction(txHash)
+      // Wait for transaction receipt with a longer timeout for rejections
+      const receipt = await Promise.race([
+        provider.waitForTransaction(txHash, 1), // Wait for 1 confirmation
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error('Transaction timeout')),
+            isRejectionTx ? 120000 : 60000
+          )
+        ),
+      ])
 
       if (receipt.status === 0) {
+        console.error('Transaction failed with receipt:', receipt)
         throw new Error('Transaction failed')
       }
 
+      // Wait for Safe API to update
       let isExecuted = false
       let attempts = 0
-      const maxAttempts = 60
+      const maxAttempts = isRejectionTx ? 24 : 12 // Longer wait for rejections
 
       while (!isExecuted && attempts < maxAttempts) {
         const tx = await safeApiKit?.getTransaction(safeTxHash)
-        console.log('Transaction status:', tx)
-
         if (tx?.isExecuted) {
-          console.log('Transaction confirmed as executed')
           isExecuted = true
           await refreshSafeState()
           break
         }
-
-        if (receipt.status === 1) {
-          console.log(
-            'Transaction receipt indicates success, waiting for Safe API to update...'
-          )
-          await new Promise((resolve) => setTimeout(resolve, 10000))
-        } else {
-          await new Promise((resolve) => setTimeout(resolve, 2000))
-        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, isRejectionTx ? 10000 : 5000)
+        )
         attempts++
       }
 
       if (!isExecuted) {
-        console.error('Transaction execution status check timed out')
-        if (receipt.status === 1) {
-          console.log(
-            'Transaction was successful but Safe API has not updated yet'
-          )
-          await refreshSafeState()
-          return executeTx
-        }
-        throw new Error('Transaction execution status check timed out')
+        console.warn(
+          'Safe API has not updated yet, but transaction was successful'
+        )
+        await refreshSafeState()
       }
 
       return executeTx
     } catch (error) {
       console.error('Error executing transaction:', error)
+      if (error.message.includes('timeout')) {
+        throw new Error('Transaction timed out waiting for confirmation')
+      }
       throw error
     }
   }
@@ -363,7 +372,29 @@ export default function useSafe(safeAddress: string): SafeData {
         nonce: tx.nonce, // Use the same nonce as the transaction we're rejecting
       }
 
-      return queueSafeTx(safeTransactionData)
+      // Create and sign the transaction directly instead of using queueSafeTx
+      const safeTx = await safe.createTransaction({
+        safeTransactionData,
+      })
+      const newSafeTxHash = await safe.getTransactionHash(safeTx)
+
+      if (!safeTx || !newSafeTxHash)
+        throw new Error('Failed to create transaction or get transaction hash')
+
+      const signature = await safe.signTransactionHash(newSafeTxHash)
+
+      if (!signature) throw new Error('Failed to sign transaction hash')
+
+      await safeApiKit.proposeTransaction({
+        safeAddress,
+        safeTransactionData: safeTx.data,
+        safeTxHash: newSafeTxHash,
+        senderAddress: wallets?.[selectedWallet]?.address,
+        senderSignature: signature.data,
+      })
+
+      setLastSafeTxHash(newSafeTxHash)
+      return newSafeTxHash
     } catch (err) {
       console.error('Error rejecting transaction:', err)
       throw err
@@ -497,6 +528,29 @@ export default function useSafe(safeAddress: string): SafeData {
     const interval = setInterval(checkExecution, 5000)
     return () => clearInterval(interval)
   }, [lastSafeTxHash])
+
+  useEffect(() => {
+    async function getCurrentNonce() {
+      if (safe) {
+        try {
+          const nonce = await safe.getNonce()
+          setCurrentNonce(nonce)
+        } catch (error) {
+          console.error('Error getting current nonce:', error)
+        }
+      }
+    }
+    getCurrentNonce()
+  }, [safe])
+
+  const canExecuteTransaction = (tx: PendingTransaction) => {
+    if (!currentNonce) return false
+    return (
+      tx.nonce === currentNonce && // Check if it's the current nonce
+      tx.confirmations.length >= threshold && // Check if it has enough confirmations
+      !tx.isExecuted // Check if it's not already executed
+    )
+  }
 
   return {
     safe,
