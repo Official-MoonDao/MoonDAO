@@ -45,6 +45,7 @@ export type PendingTransaction = {
 
 export type SafeData = {
   safe: Safe | undefined
+  currentNonce: number | null
   queueSafeTx: (
     safeTransactionData: SafeTransactionData | SafeTransactionDataPartial
   ) => Promise<string>
@@ -84,6 +85,13 @@ export default function useSafe(safeAddress: string): SafeData {
   const [transactionsToExecute, setTransactionsToExecute] = useState<
     PendingTransaction[]
   >([])
+  const [currentNonce, setCurrentNonce] = useState<number | null>(null)
+
+  async function getCurrentNonce() {
+    if (!safe) return null
+    const nonce = await safe.getNonce()
+    setCurrentNonce(nonce)
+  }
 
   async function getNextNonce(): Promise<number> {
     if (!safe || !safeApiKit) throw new Error('Safe not initialized')
@@ -525,8 +533,16 @@ export default function useSafe(safeAddress: string): SafeData {
     return () => clearInterval(interval)
   }, [lastSafeTxHash])
 
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      await getCurrentNonce()
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [safe])
+
   return {
     safe,
+    currentNonce,
     queueSafeTx,
     lastSafeTxExecuted,
     addSigner,

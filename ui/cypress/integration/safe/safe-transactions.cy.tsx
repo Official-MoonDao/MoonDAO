@@ -62,6 +62,7 @@ describe('SafeTransactions', () => {
       transactionsToSign: [],
       transactionsToExecute: [],
       fetchPendingTransactions: fetchPendingTransactionsStub,
+      currentNonce: 1,
     }
 
     cy.mount(
@@ -142,9 +143,11 @@ describe('SafeTransactions', () => {
   it('shows execute button when transaction has enough confirmations', () => {
     const executableSafeData = {
       ...mockSafeData,
+      currentNonce: 1,
       pendingTransactions: [
         {
           ...mockSafeData.pendingTransactions[0],
+          nonce: 1,
           confirmations: [
             {
               owner: mockAddress,
@@ -227,5 +230,38 @@ describe('SafeTransactions', () => {
       )
       cy.get('[data-testid="reject-after-sign-0x123"]').should('exist')
     })
+  })
+
+  it('does not show execute button when transaction has enough confirmations but wrong nonce', () => {
+    const executableSafeData = {
+      ...mockSafeData,
+      currentNonce: 2, // Different from transaction's nonce
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          nonce: 1,
+          confirmations: [
+            {
+              owner: mockAddress,
+              signature: '0x123',
+              submissionDate: new Date().toISOString(),
+              transactionHash: null,
+            },
+            {
+              owner: '0xabc',
+              signature: '0x456',
+              submissionDate: new Date().toISOString(),
+              transactionHash: null,
+            },
+          ],
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions address={mockAddress} safeData={executableSafeData} />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="execute-transaction-0x123"]').should('not.exist')
   })
 })

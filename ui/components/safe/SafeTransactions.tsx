@@ -14,7 +14,6 @@ export default function SafeTransactions({
   address,
   safeData,
 }: SafeTransactionsProps) {
-  const [currentNonce, setCurrentNonce] = useState<number | null>(null)
   const {
     safe,
     signPendingTransaction,
@@ -69,19 +68,6 @@ export default function SafeTransactions({
     }))
   }
 
-  useEffect(() => {
-    async function getCurrentNonce() {
-      if (safe) {
-        try {
-          const nonce = await safe.getNonce()
-          setCurrentNonce(nonce)
-        } catch (err) {
-          console.log(err)
-        }
-      }
-    }
-    getCurrentNonce()
-  }, [safe])
   return (
     <div
       className="max-h-[800px] overflow-y-auto"
@@ -133,12 +119,12 @@ export default function SafeTransactions({
                     const canExecute =
                       tx.confirmations.length >= threshold &&
                       !tx.isExecuted &&
-                      tx.nonce === currentNonce
+                      tx.nonce === safeData?.currentNonce
 
                     const canSign =
                       tx.confirmations.length < threshold &&
                       !tx.isExecuted &&
-                      tx.nonce === currentNonce
+                      tx.nonce === safeData?.currentNonce
 
                     const isRejectionTx =
                       tx.data === '0x' ||
