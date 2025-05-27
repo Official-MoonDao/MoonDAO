@@ -208,11 +208,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     <MediaRenderer
                       client={client}
                       src={getIPFSGateway(mission?.metadata?.logoUri)}
-<<<<<<< HEAD
                       className="mt-[-5vw] sm:mt-0 sm:pl-0 sm:rounded-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
-=======
-                      className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
->>>>>>> cd6bd4b74ae336151891fb4f52729a075e3bcfb7
                       height={'576'}
                       width={'576'}
                     />
@@ -441,17 +437,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
             {/* Pay & Redeem Section */}
-<<<<<<< HEAD
             <div className="flex z-20 xl:hidden w-full px-[5vw]">
               <div
                 id="mission-pay-redeem-container"
                 className="xl:bg-darkest-cool lg:max-w-[650px] mt-[5vw] md:mt-0 xl:mt-[2vw] w-full xl:rounded-tl-[2vmax] rounded-[2vmax] xl:pr-0 overflow-hidden xl:rounded-bl-[5vmax]"
-=======
-            <div className="xl:hidden w-full px-[5vw] md:px-[5vw]">
-              <div
-                id="mission-pay-redeem-container"
-                className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax]"
->>>>>>> cd6bd4b74ae336151891fb4f52729a075e3bcfb7
               >
                 {primaryTerminalAddress &&
                 primaryTerminalAddress !==
@@ -486,20 +475,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
               </div>
             </div>
             {/* Project Overview */}
-<<<<<<< HEAD
             <div className="px-[5vw] w-full flex items-center justify-center">
               <div className="z-50 w-[100%] md:pb-[2vw] md:pr-0 overflow-hidden xl:px-[2vw] max-w-[1200px] xl:min-w-[1200px] xl:bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
-=======
-            <Frame
-              noPadding
-              bottomLeft="0px"
-              bottomRight="0px"
-              topRight="0px"
-              topLeft="0px"
-              className="overflow-auto"
-            >
-              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
->>>>>>> cd6bd4b74ae336151891fb4f52729a075e3bcfb7
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}
@@ -528,7 +505,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     width={30}
                     height={30}
                   />
-                  <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">Meet the Team</h2>
+                  <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
+                    Meet the Team
+                  </h2>
                 </div>
                 <SlidingCardMenu>
                   <div className="flex gap-4"></div>
@@ -539,9 +518,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       citizenContract={citizenContract}
                     />
                   )}
-              </SlidingCardMenu>
+                </SlidingCardMenu>
+              </div>
             </div>
-          </div>
           </div>
         </ContentLayout>
       </Container>
