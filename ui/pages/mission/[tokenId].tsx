@@ -189,7 +189,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   //Profile Header Section
   const ProfileHeader = (
     <div id="citizenheader-container" className="w-[100vw]">
-      <div className="z-50 w-full">
+      <div className="w-full">
         <div id="frame-content-container" className="w-full">
           <div
             id="frame-content"
@@ -496,27 +496,29 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 />
               </div>
             </div>
-            <div className="w-full px-[12vw]">
-              <div className="flex gap-5 opacity-[50%]">
-                <Image
-                  src={'/assets/icon-team.svg'}
-                  alt="Job icon"
-                  width={30}
-                  height={30}
-                />
-                <h2 className="header font-GoodTimes">Meet the Team</h2>
-              </div>
-              <SlidingCardMenu>
-                <div className="flex gap-4"></div>
-                {teamHats?.[0].id && (
-                  <TeamMembers
-                    hats={teamHats}
-                    hatsContract={hatsContract}
-                    citizenContract={citizenContract}
+            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] bg-gradient-to-b from-dark-cool to-darkest-cool flex justify-center">
+              <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
+                <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
+                  <Image
+                    src={'/assets/icon-star-blue.svg'}
+                    alt="Job icon"
+                    width={30}
+                    height={30}
                   />
-                )}
+                  <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">Meet the Team</h2>
+                </div>
+                <SlidingCardMenu>
+                  <div className="flex gap-4"></div>
+                  {teamHats?.[0].id && (
+                    <TeamMembers
+                      hats={teamHats}
+                      hatsContract={hatsContract}
+                      citizenContract={citizenContract}
+                    />
+                  )}
               </SlidingCardMenu>
             </div>
+          </div>
           </div>
         </ContentLayout>
       </Container>
