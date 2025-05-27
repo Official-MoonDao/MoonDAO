@@ -5,15 +5,9 @@ export type TooltipProps = {
   text: string
   children: React.ReactNode
   disabled?: boolean
-  buttonClassName?: string
 }
 
-export default function Tooltip({
-  text,
-  children,
-  disabled,
-  buttonClassName,
-}: TooltipProps) {
+export default function Tooltip({ text, children, disabled }: TooltipProps) {
   const [isHovered, setIsHovered] = useState(false)
 
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -44,7 +38,7 @@ export default function Tooltip({
       <div
         id="tooltip-icon"
         ref={triggerRef}
-        className={`flex justify-center items-center h-6 w-6 bg-white rounded-full font-GoodTimes text-black pl-[1.5px] ${buttonClassName} ${
+        className={`flex justify-center items-center h-6 w-6 bg-white rounded-full font-GoodTimes text-black pl-[1.5px] ${
           !disabled && isHovered ? 'opacity-100' : 'opacity-50'
         } ${!disabled && 'cursor-pointer'}`}
         onMouseEnter={() => {
