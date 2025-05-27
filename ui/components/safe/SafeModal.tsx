@@ -30,10 +30,13 @@ export default function SafeModal({
   isEnabled,
   setEnabled,
 }: SafeModalProps) {
-  const [newSignerAddress, setNewSignerAddress] = useState('')
+  const [newSignerAddressOrENS, setNewSignerAddressOrENS] = useState('')
   const [newThreshold, setNewThreshold] = useState<number>(safeData.threshold)
   const [isAddingSigner, setIsAddingSigner] = useState(false)
   const [isChangingThreshold, setIsChangingThreshold] = useState(false)
+
+  const ens = useENS(newSignerAddressOrENS)
+  const newSignerAddress = ens?.data?.address || newSignerAddressOrENS
 
   const {
     owners,
@@ -53,10 +56,15 @@ export default function SafeModal({
       return
     }
 
+    if (owners.includes(newSignerAddress)) {
+      toast.error('Signer already exists', { style: toastStyle })
+      return
+    }
+
     try {
       setIsAddingSigner(true)
       await addSigner(newSignerAddress)
-      setNewSignerAddress('')
+      setNewSignerAddressOrENS('')
     } catch (error) {
       console.error('Error adding signer:', error)
     } finally {
@@ -95,7 +103,7 @@ export default function SafeModal({
     <Modal id="safe-modal" setEnabled={setEnabled}>
       <div
         data-testid="safe-modal-content"
-        className="bg-dark-cool rounded-[2vmax] p-8 max-w-2xl w-full relative md:min-w-[600px]"
+        className="bg-dark-cool rounded-[2vmax] p-8 max-w-2xl min-w-[350px] w-full relative md:min-w-[600px]"
       >
         <div
           data-testid="safe-modal-header"
@@ -161,9 +169,9 @@ export default function SafeModal({
             <input
               data-testid="new-signer-input"
               type="text"
-              value={newSignerAddress}
-              onChange={(e) => setNewSignerAddress(e.target.value)}
-              placeholder="New signer address"
+              value={newSignerAddressOrENS}
+              onChange={(e) => setNewSignerAddressOrENS(e.target.value)}
+              placeholder="New signer address or ENS"
               className="flex-1 bg-darkest-cool text-white px-4 py-2 rounded-lg"
             />
             <PrivyWeb3Button
