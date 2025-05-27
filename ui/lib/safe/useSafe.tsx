@@ -85,12 +85,37 @@ export default function useSafe(safeAddress: string): SafeData {
     PendingTransaction[]
   >([])
 
+  async function getNextNonce(): Promise<number> {
+    if (!safe || !safeApiKit) throw new Error('Safe not initialized')
+
+    const currentNonce = await safe.getNonce()
+
+    const pendingTxs = await safeApiKit.getPendingTransactions(safeAddress)
+
+    // Find the highest nonce among pending transactions
+    const highestPendingNonce = pendingTxs.results.reduce(
+      (highest: number, tx: PendingTransaction) => {
+        return Math.max(highest, tx.nonce)
+      },
+      -1
+    )
+
+    return Math.max(currentNonce, highestPendingNonce + 1)
+  }
+
   async function queueSafeTx(
     safeTransactionData: SafeTransactionData | SafeTransactionDataPartial
   ) {
     try {
+      // Get the next available nonce that accounts for pending transactions
+      const nextNonce = await getNextNonce()
+
+      // Create a new transaction with the next available nonce
       const safeTx = await safe?.createTransaction({
-        safeTransactionData,
+        safeTransactionData: {
+          ...safeTransactionData,
+          nonce: nextNonce,
+        },
       })
       const safeTxHash = await safe?.getTransactionHash(
         safeTx as SafeTransaction
@@ -141,7 +166,7 @@ export default function useSafe(safeAddress: string): SafeData {
       }
     }
 
-    const safeTransactionData: SafeTransactionData = {
+    const safeTransactionData: SafeTransactionDataPartial = {
       to: safeAddress,
       value: '0',
       data: safe
@@ -156,7 +181,6 @@ export default function useSafe(safeAddress: string): SafeData {
       gasPrice: '0',
       gasToken: ethers.constants.AddressZero,
       refundReceiver: ethers.constants.AddressZero,
-      nonce: await safe.getNonce(),
     }
 
     return queueSafeTx(safeTransactionData)
@@ -184,7 +208,7 @@ export default function useSafe(safeAddress: string): SafeData {
 
     const newThreshold = Math.max(1, threshold - 1)
 
-    const safeTransactionData: SafeTransactionData = {
+    const safeTransactionData: SafeTransactionDataPartial = {
       to: safeAddress,
       value: '0',
       data: safe
@@ -200,7 +224,6 @@ export default function useSafe(safeAddress: string): SafeData {
       gasPrice: '0',
       gasToken: ethers.constants.AddressZero,
       refundReceiver: ethers.constants.AddressZero,
-      nonce: await safe.getNonce(),
     }
 
     return queueSafeTx(safeTransactionData)
@@ -212,7 +235,7 @@ export default function useSafe(safeAddress: string): SafeData {
       throw new Error('Invalid threshold value')
     }
 
-    const safeTransactionData: SafeTransactionData = {
+    const safeTransactionData: SafeTransactionDataPartial = {
       to: safeAddress,
       value: '0',
       data: safe
@@ -224,7 +247,6 @@ export default function useSafe(safeAddress: string): SafeData {
       gasPrice: '0',
       gasToken: ethers.constants.AddressZero,
       refundReceiver: ethers.constants.AddressZero,
-      nonce: await safe.getNonce(),
     }
 
     return queueSafeTx(safeTransactionData)
