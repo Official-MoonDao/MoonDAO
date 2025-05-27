@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
 import StandardButton from '../layout/StandardButton'
 import SafeModal from '../safe/SafeModal'
 import SafeTransactions from '../safe/SafeTransactions'
@@ -41,6 +42,8 @@ export default function TeamTreasury({
   multisigDAIBalance,
   multisigUSDCBalance,
 }: TeamTreasuryProps) {
+  const account = useActiveAccount()
+  const address = account?.address
   const [safeModalEnabled, setSafeModalEnabled] = useState(false)
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-24 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
@@ -111,7 +114,7 @@ export default function TeamTreasury({
             balance={multisigUSDCBalance}
           />
         </div>
-        <SafeTransactions safeData={safeData} />
+        <SafeTransactions address={address} safeData={safeData} />
       </div>
     </div>
   )
