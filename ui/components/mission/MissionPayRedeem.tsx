@@ -70,12 +70,13 @@ function MissionPayRedeemContent({
     <div
       id="mission-pay-redeem-container"
       className="z-50 bg-[#020617] rounded-[5vw] md:rounded-[2vw] w-full flex flex-col gap-4 lg:min-w-[430px] xl:items-stretch"
-      >
-      {(!isRefundable || (token?.tokenSymbol && +tokenCredit?.toString() > 0)) && (
+    >
+      {(!isRefundable ||
+        (token?.tokenSymbol && +tokenCredit?.toString() > 0)) && (
         <div
           id="mission-pay-container"
           className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
-          >
+        >
           {/* You pay */}
           {!isRefundable && (
             <div className="relative flex flex-col gap-4">
@@ -85,7 +86,7 @@ function MissionPayRedeemContent({
                   <div className="flex justify-between items-start">
                     <h3 className="text-sm opacity-60">You pay</h3>
                   </div>
-                  
+
                   <div className="flex justify-between sm:items-center flex-col sm:flex-row ">
                     <div className="flex items-center gap-1">
                       <span className="text-xl font-bold">$</span>
@@ -97,7 +98,12 @@ function MissionPayRedeemContent({
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={9}
-                        style={{ width: `${Math.max(formattedUsdInput.length || 1, 1)}ch` }}
+                        style={{
+                          width: `${Math.max(
+                            formattedUsdInput.length || 1,
+                            1
+                          )}ch`,
+                        }}
                       />
                       <span className="text-xl font-bold">USD</span>
                     </div>
@@ -109,11 +115,13 @@ function MissionPayRedeemContent({
                         height={16}
                         className="w-5 h-5 bg-light-cool rounded-full"
                       />
-                      <span className="text-base">{calculateEthAmount()} ETH</span>
+                      <span className="text-base">
+                        {calculateEthAmount()} ETH
+                      </span>
                     </div>
                   </div>
                 </div>
-                
+
                 {token?.tokenSymbol && (
                   <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center">
                     <ArrowDownIcon
@@ -123,14 +131,14 @@ function MissionPayRedeemContent({
                   </div>
                 )}
               </div>
-              
+
               {/* You receive */}
               {token?.tokenSymbol && (
                 <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-b-2xl">
                   <div className="flex justify-between items-start">
                     <h3 className="text-sm opacity-60">You receive</h3>
                   </div>
-                  
+
                   <div className="sm:flex justify-between items-center">
                     <p id="token-output" className="text-xl font-bold">
                       {formatTokenAmount(output, 2)}
@@ -177,7 +185,8 @@ function MissionPayRedeemContent({
               onClick={claimTokenCredit}
               hoverEffect={false}
             >
-              Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} ${token?.tokenSymbol}
+              Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $
+              {token?.tokenSymbol}
             </StandardButton>
           )}
         </div>
@@ -185,16 +194,16 @@ function MissionPayRedeemContent({
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-row justify-between gap-4 w-full">
         {token?.tokenSupply > 0 && !isRefundable && (
-          <div
-            id="mission-token-stats"
-            className="w-full px-2 rounded-2xl"
-          >
+          <div id="mission-token-stats" className="w-full px-2 rounded-2xl">
             <div className="p-5 pt-0 flex gap-5 items-start justify-center md:justify-start xl:justify-center">
               <div className="text-lg">
                 <h3 className="opacity-60 text-sm">Current Supply</h3>
                 <p>
-                  {formatTokenAmount(Math.floor(token?.tokenSupply.toString() / 1e18), 0)} $
-                  {token?.tokenSymbol}
+                  {formatTokenAmount(
+                    Math.floor(token?.tokenSupply.toString() / 1e18),
+                    0
+                  )}{' '}
+                  ${token?.tokenSymbol}
                 </p>
               </div>
               <div className="">
@@ -203,10 +212,9 @@ function MissionPayRedeemContent({
                   tokenSymbol={token?.tokenSymbol}
                 />
               </div>
-            </div>  
+            </div>
           </div>
         )}
-
 
         {tokenBalance > 0 || isRefundable ? (
           <div
@@ -216,9 +224,10 @@ function MissionPayRedeemContent({
             {tokenBalance > 0 && (
               <div>
                 <h3 className="opacity-60 text-sm">Your Balance</h3>
-                <p className="text-xl">{`${formatTokenAmount(tokenBalance, 2)} $${
-                  token?.tokenSymbol
-                }`}</p>
+                <p className="text-xl">{`${formatTokenAmount(
+                  tokenBalance,
+                  2
+                )} $${token?.tokenSymbol}`}</p>
               </div>
             )}
             {isRefundable && (
@@ -292,7 +301,7 @@ export default function MissionPayRedeem({
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState('')
-  
+
   // USD input state and handlers
   const [usdInput, setUsdInput] = useState('')
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
@@ -306,7 +315,10 @@ export default function MissionPayRedeem({
       return '0.0000'
     }
     const ethAmount = (Number(usdInput) / ethUsdPrice).toFixed(4)
-    return parseFloat(ethAmount).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+    return parseFloat(ethAmount).toLocaleString('en-US', {
+      minimumFractionDigits: 4,
+      maximumFractionDigits: 4,
+    })
   }, [usdInput, ethUsdPrice])
 
   // Format number with commas
@@ -318,9 +330,15 @@ export default function MissionPayRedeem({
   }, [])
 
   // Format token amount with commas
-  const formatTokenAmount = useCallback((value: number, decimals: number = 2) => {
-    return value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-  }, [])
+  const formatTokenAmount = useCallback(
+    (value: number, decimals: number = 2) => {
+      return value.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      })
+    },
+    []
+  )
 
   // Get formatted display value
   const formattedUsdInput = formatWithCommas(usdInput)
@@ -329,10 +347,10 @@ export default function MissionPayRedeem({
   const handleUsdInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const inputValue = e.target.value.replace(/[^0-9]/g, '') // Only allow numbers
-      
+
       // Limit to 7 characters (excluding commas)
       if (inputValue.length > 7) return
-      
+
       setUsdInput(inputValue)
       if (inputValue === '') {
         setInput('0')

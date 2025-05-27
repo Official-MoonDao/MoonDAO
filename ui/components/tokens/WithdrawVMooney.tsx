@@ -181,6 +181,11 @@ export default function WithdrawVMooney() {
     }
   }
 
+  //Hide component if user has no vMOONEY to withdraw
+  if (Number(withdrawable) <= 0) {
+    return null
+  }
+
   return (
     <div className="flex flex-col md:flex-row gap-4">
       <div className="flex flex-col gap-4 bg-dark-cool p-4">

@@ -443,125 +443,132 @@ export default function Network({
 }
 
 export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+  try {
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-  const now = Math.floor(Date.now() / 1000)
+    const now = Math.floor(Date.now() / 1000)
 
-  const teamContract = getContract({
-    client: serverClient,
-    address: TEAM_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: TeamABI as any,
-  })
-
-  const teamTableContract = getContract({
-    client: serverClient,
-    address: TEAM_TABLE_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: TeamTableABI as any,
-  })
-
-  const teamTableName = await readContract({
-    contract: teamTableContract,
-    method: 'getTableName',
-  })
-
-  const teamRows = await queryTable(chain, `SELECT * FROM ${teamTableName}`)
-
-  const citizenTableContract = getContract({
-    client: serverClient,
-    address: CITIZEN_TABLE_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: CitizenTableABI as any,
-  })
-  const citizenTableName = await readContract({
-    contract: citizenTableContract,
-    method: 'getTableName',
-  })
-  const citizenRows: any = await queryTable(
-    chain,
-    `SELECT * FROM ${citizenTableName}`
-  )
-
-  const teams: NFT[] = []
-  for (const row of teamRows) {
-    teams.push(teamRowToNFT(row))
-  }
-
-  const filteredPublicTeams: any = teams?.filter(
-    (nft: any) =>
-      nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-        .value === 'public' && !blockedTeams.includes(nft.metadata.id)
-  )
-
-  const filteredValidTeams: any = filteredPublicTeams?.filter(
-    async (nft: any) => {
-      const expiresAt = await readContract({
-        contract: teamContract,
-        method: 'expiresAt',
-        params: [nft?.metadata?.id],
-      })
-
-      return +expiresAt.toString() > now
-    }
-  )
-
-  const sortedValidTeams = filteredValidTeams
-    .reverse()
-    .sort((a: any, b: any) => {
-      const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
-      const bIsFeatured = featuredTeams.includes(Number(b.metadata.id))
-
-      if (aIsFeatured && bIsFeatured) {
-        return (
-          featuredTeams.indexOf(Number(a.metadata.id)) -
-          featuredTeams.indexOf(Number(b.metadata.id))
-        )
-      } else if (aIsFeatured) {
-        return -1
-      } else if (bIsFeatured) {
-        return 1
-      } else {
-        return 0
-      }
+    const teamContract = getContract({
+      client: serverClient,
+      address: TEAM_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: TeamABI as any,
     })
 
-  const citizenContract = getContract({
-    client: serverClient,
-    address: CITIZEN_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: CitizenABI as any,
-  })
+    const teamTableContract = getContract({
+      client: serverClient,
+      address: TEAM_TABLE_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: TeamTableABI as any,
+    })
 
-  const citizens: NFT[] = []
-  for (const row of citizenRows) {
-    citizens.push(citizenRowToNFT(row))
-  }
+    const teamTableName = await readContract({
+      contract: teamTableContract,
+      method: 'getTableName',
+    })
 
-  const filteredPublicCitizens: any = citizens?.filter(
-    (nft: any) =>
-      nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-        .value === 'public' && !blockedCitizens.includes(nft.metadata.id)
-  )
+    const teamRows = await queryTable(chain, `SELECT * FROM ${teamTableName}`)
 
-  const filteredValidCitizens: any = filteredPublicCitizens?.filter(
-    async (nft: any) => {
-      const expiresAt = await readContract({
-        contract: citizenContract,
-        method: 'expiresAt',
-        params: [nft?.metadata?.id],
+    const citizenTableContract = getContract({
+      client: serverClient,
+      address: CITIZEN_TABLE_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: CitizenTableABI as any,
+    })
+    const citizenTableName = await readContract({
+      contract: citizenTableContract,
+      method: 'getTableName',
+    })
+    const citizenRows: any = await queryTable(
+      chain,
+      `SELECT * FROM ${citizenTableName}`
+    )
+
+    const teams: NFT[] = []
+    for (const row of teamRows) {
+      teams.push(teamRowToNFT(row))
+    }
+
+    const filteredPublicTeams: any = teams?.filter(
+      (nft: any) =>
+        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
+          .value === 'public' && !blockedTeams.includes(nft.metadata.id)
+    )
+
+    const filteredValidTeams: any = filteredPublicTeams?.filter(
+      async (nft: any) => {
+        const expiresAt = await readContract({
+          contract: teamContract,
+          method: 'expiresAt',
+          params: [nft?.metadata?.id],
+        })
+
+        return +expiresAt.toString() > now
+      }
+    )
+
+    const sortedValidTeams = filteredValidTeams
+      .reverse()
+      .sort((a: any, b: any) => {
+        const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
+        const bIsFeatured = featuredTeams.includes(Number(b.metadata.id))
+
+        if (aIsFeatured && bIsFeatured) {
+          return (
+            featuredTeams.indexOf(Number(a.metadata.id)) -
+            featuredTeams.indexOf(Number(b.metadata.id))
+          )
+        } else if (aIsFeatured) {
+          return -1
+        } else if (bIsFeatured) {
+          return 1
+        } else {
+          return 0
+        }
       })
 
-      return +expiresAt.toString() > now
-    }
-  )
+    const citizenContract = getContract({
+      client: serverClient,
+      address: CITIZEN_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: CitizenABI as any,
+    })
 
-  return {
-    props: {
-      filteredTeams: sortedValidTeams,
-      filteredCitizens: filteredValidCitizens.reverse(),
-    },
-    revalidate: 60,
+    const citizens: NFT[] = []
+    for (const row of citizenRows) {
+      citizens.push(citizenRowToNFT(row))
+    }
+
+    const filteredPublicCitizens: any = citizens?.filter(
+      (nft: any) =>
+        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
+          .value === 'public' && !blockedCitizens.includes(nft.metadata.id)
+    )
+
+    const filteredValidCitizens: any = filteredPublicCitizens?.filter(
+      async (nft: any) => {
+        const expiresAt = await readContract({
+          contract: citizenContract,
+          method: 'expiresAt',
+          params: [nft?.metadata?.id],
+        })
+
+        return +expiresAt.toString() > now
+      }
+    )
+
+    return {
+      props: {
+        filteredTeams: sortedValidTeams,
+        filteredCitizens: filteredValidCitizens.reverse(),
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      props: { filteredTeams: [], filteredCitizens: [] },
+    }
   }
 }
