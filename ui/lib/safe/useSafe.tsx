@@ -8,9 +8,6 @@ import {
 } from '@safe-global/safe-core-sdk-types'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
-import { toast } from 'react-hot-toast'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 import useSafeApiKit from './useSafeApiKit'
 
@@ -87,7 +84,6 @@ export default function useSafe(safeAddress: string): SafeData {
   const [transactionsToExecute, setTransactionsToExecute] = useState<
     PendingTransaction[]
   >([])
-  const [currentNonce, setCurrentNonce] = useState<number | null>(null)
 
   async function getNextNonce(): Promise<number> {
     if (!safe || !safeApiKit) throw new Error('Safe not initialized')
@@ -300,7 +296,7 @@ export default function useSafe(safeAddress: string): SafeData {
       }
 
       // Wait for transaction receipt with a longer timeout for rejections
-      const receipt = await Promise.race([
+      const receipt: any = await Promise.race([
         provider.waitForTransaction(txHash, 1), // Wait for 1 confirmation
         new Promise((_, reject) =>
           setTimeout(
@@ -341,7 +337,7 @@ export default function useSafe(safeAddress: string): SafeData {
       }
 
       return executeTx
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error executing transaction:', error)
       if (error.message.includes('timeout')) {
         throw new Error('Transaction timed out waiting for confirmation')
@@ -528,29 +524,6 @@ export default function useSafe(safeAddress: string): SafeData {
     const interval = setInterval(checkExecution, 5000)
     return () => clearInterval(interval)
   }, [lastSafeTxHash])
-
-  useEffect(() => {
-    async function getCurrentNonce() {
-      if (safe) {
-        try {
-          const nonce = await safe.getNonce()
-          setCurrentNonce(nonce)
-        } catch (error) {
-          console.error('Error getting current nonce:', error)
-        }
-      }
-    }
-    getCurrentNonce()
-  }, [safe])
-
-  const canExecuteTransaction = (tx: PendingTransaction) => {
-    if (!currentNonce) return false
-    return (
-      tx.nonce === currentNonce && // Check if it's the current nonce
-      tx.confirmations.length >= threshold && // Check if it has enough confirmations
-      !tx.isExecuted // Check if it's not already executed
-    )
-  }
 
   return {
     safe,
