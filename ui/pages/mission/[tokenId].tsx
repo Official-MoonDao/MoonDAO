@@ -1,5 +1,3 @@
-import CitizenABI from 'const/abis/Citizen.json'
-import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
@@ -8,9 +6,7 @@ import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
-  CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
-  HATS_ADDRESS,
   IPFS_GATEWAY,
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
@@ -28,36 +24,30 @@ import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
-import { useSubHats } from '@/lib/hats/useSubHats'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useMissionData from '@/lib/mission/useMissionData'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
-import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
-import { daysUntilDate, formatTimeUntilDeadline } from '@/lib/utils/dates'
+import { daysUntilDate } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
-import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
-import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
-import Tooltip from '@/components/layout/Tooltip'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionFundingProgressBar from '@/components/mission/MissionFundingProgressBar'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
-import TeamMembers from '@/components/subscription/TeamMembers'
 
 type ProjectProfileProps = {
   tokenId: string
@@ -73,21 +63,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   const [teamNFT, setTeamNFT] = useState<any>()
 
-  const hatsContract = useContract({
-    address: HATS_ADDRESS,
-    abi: HatsABI,
-    chain: selectedChain,
-  })
-
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
-    chain: selectedChain,
-  })
-
-  const citizenContract = useContract({
-    address: CITIZEN_ADDRESSES[chainSlug],
-    abi: CitizenABI as any,
     chain: selectedChain,
   })
 
@@ -137,10 +115,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     jbTokensContract,
   })
 
-  const { adminHatId } = useTeamData(teamContract, hatsContract, teamNFT)
-
-  const teamHats = useSubHats(selectedChain, adminHatId)
-
   const { points, isLoading: isLoadingPoints } = useJBProjectTimeline(
     selectedChain,
     mission?.projectId,
@@ -162,8 +136,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     params: [account?.address],
   })
 
-  const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
-
   useEffect(() => {
     async function getTeamNFT() {
       const teamNFT = await getNFT({
@@ -181,7 +153,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   useChainDefault()
 
   const duration = useMemo(() => {
-    return formatTimeUntilDeadline(
+    return daysUntilDate(
       new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
     )
   }, [ruleset])
@@ -189,7 +161,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   //Profile Header Section
   const ProfileHeader = (
     <div id="citizenheader-container" className="w-[100vw]">
-      <div className="w-full">
+      <div className="z-50 w-full">
         <div id="frame-content-container" className="w-full">
           <div
             id="frame-content"
@@ -208,7 +180,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     <MediaRenderer
                       client={client}
                       src={getIPFSGateway(mission?.metadata?.logoUri)}
-                      className="mt-[-5vw] sm:mt-0 sm:pl-0 sm:rounded-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
+                      className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
                       height={'576'}
                       width={'576'}
                     />
@@ -262,7 +234,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   </div>
 
                   {ruleset && teamNFT?.metadata?.name && (
-                    <div className="flex pb-2 flex-col sm:flex-row items-start ">
+                    <div className="flex items-center gap-2">
                       <p className="opacity-60">
                         {`Created on ${new Date(
                           ruleset?.[0]?.start * 1000
@@ -276,7 +248,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         href={`/team/${generatePrettyLink(
                           teamNFT?.metadata?.name
                         )}`}
-                        className="font-GoodTimes text-white underline sm:pl-2"
+                        className="font-GoodTimes text-white underline"
                       >
                         {teamNFT?.metadata?.name}
                       </Link>
@@ -285,45 +257,22 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
                   <div className="max-w-[500px] w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
                     {/* Purple raised amount tag */}
-                    <div className="mb-4 flex flex-col sm:flex-row md:items-center md:justify-between">
-                      <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex flex-col">
-                        <div className="flex items-center">
-                          <Image
-                            src="/assets/icon-raised-tokens.svg"
-                            alt="Raised"
-                            width={24}
-                            height={24}
-                            className="mr-2"
-                          />
-                          <span className="mr-2">
-                            {truncateTokenValue(
-                              subgraphData?.volume / 1e18,
-                              'ETH'
-                            )}
-                          </span>
-                          <span className="text-sm md:text-base">
-                            ETH RAISED
-                          </span>
-                        </div>
-                        <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                          (subgraphData?.volume / 1e18) * ethPrice
-                        ).toLocaleString()} USD)`}</p>
-                      </div>
-
-                      {/* Contributors section - visible on md screens and above */}
-                      <div className="hidden sm:flex items-center ml-2 md:mt-0">
+                    <div className="mb-4">
+                      <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-center">
                         <Image
-                          src="/assets/icon-backers.svg"
-                          alt="Backers"
+                          src="/assets/icon-raised-tokens.svg"
+                          alt="Raised"
                           width={24}
                           height={24}
+                          className="mr-2"
                         />
-                        <div className="ml-2">
-                          <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
-                          <p className="text-white font-GoodTimes">
-                            {subgraphData?.paymentsCount || 0}
-                          </p>
-                        </div>
+                        <span className="mr-2">
+                          {truncateTokenValue(
+                            subgraphData?.volume / 1e18,
+                            'ETH'
+                          )}
+                        </span>
+                        <span className="text-sm md:text-base">ETH RAISED</span>
                       </div>
                     </div>
 
@@ -335,7 +284,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       />
                     </div>
 
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-between sm:justify-start">
+                    <div className="flex flex-wrap gap-4 justify-between">
                       <div className="flex items-center">
                         <Image
                           src="/assets/launchpad/target.svg"
@@ -344,17 +293,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           height={24}
                         />
                         <div className="ml-2">
-                          <div className="flex items-center gap-1">
-                            <p className="text-gray-400 text-sm">GOAL</p>
-                            <Tooltip
-                              text={`~ $${Math.round(
-                                (fundingGoal / 1e18) * ethPrice
-                              ).toLocaleString()} USD`}
-                              buttonClassName="scale-75"
-                            >
-                              ?
-                            </Tooltip>
-                          </div>
+                          <p className="text-gray-400 text-sm">GOAL</p>
                           <p className="text-white font-GoodTimes">
                             {+(fundingGoal / 1e18).toFixed(3)} ETH
                           </p>
@@ -371,13 +310,18 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         <div className="ml-2">
                           <p className="text-gray-400 text-sm">DEADLINE</p>
                           <p className="text-white font-GoodTimes">
-                            {duration}
+                            {daysUntilDate(
+                              new Date(
+                                ruleset?.[0]?.start * 1000 +
+                                  28 * 24 * 60 * 60 * 1000
+                              )
+                            )}{' '}
+                            DAYS
                           </p>
                         </div>
                       </div>
 
-                      {/* Contributors section - visible only on smaller screens */}
-                      <div className="flex sm:hidden items-center">
+                      <div className="flex items-center">
                         <Image
                           src="/assets/icon-backers.svg"
                           alt="Backers"
@@ -421,26 +365,17 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           mode="compact"
           popOverEffect={false}
           isProfile
-          preFooter={
-            <ExpandedFooter
-              callToActionTitle="Join the Network"
-              callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
-              callToActionImage="/assets/logo-san-cropped.svg"
-              callToActionButtonText="Join the Network"
-              callToActionButtonLink="/join"
-              hasCallToAction={true}
-            />
-          }
+          preFooter={<NoticeFooter darkBackground={true} />}
         >
           <div
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
             {/* Pay & Redeem Section */}
-            <div className="flex z-20 xl:hidden w-full px-[5vw]">
+            <div className="xl:hidden w-full px-[5vw] md:px-[5vw]">
               <div
                 id="mission-pay-redeem-container"
-                className="xl:bg-darkest-cool lg:max-w-[650px] mt-[5vw] md:mt-0 xl:mt-[2vw] w-full xl:rounded-tl-[2vmax] rounded-[2vmax] xl:pr-0 overflow-hidden xl:rounded-bl-[5vmax]"
+                className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax]"
               >
                 {primaryTerminalAddress &&
                 primaryTerminalAddress !==
@@ -464,19 +399,17 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   </div>
                 )}
               </div>
-              <div className="hidden lg:block xl:hidden ml-[-5vw] w-[50%] h-full">
-                <Image
-                  src="/assets/logo-san-full.svg"
-                  className="w-full h-full"
-                  alt="Space acceleration network logo"
-                  width={200}
-                  height={200}
-                />
-              </div>
             </div>
             {/* Project Overview */}
-            <div className="px-[5vw] w-full flex items-center justify-center">
-              <div className="z-50 w-[100%] md:pb-[2vw] md:pr-0 overflow-hidden xl:px-[2vw] max-w-[1200px] xl:min-w-[1200px] xl:bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
+            <Frame
+              noPadding
+              bottomLeft="0px"
+              bottomRight="0px"
+              topRight="0px"
+              topLeft="0px"
+              className="overflow-auto"
+            >
+              <div className="z-50 w-[100%] md:pr-0 overflow-hidden lg:px-[2vw] max-w-[1200px] bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
                 <MissionInfo
                   selectedChain={selectedChain}
                   mission={mission}
@@ -495,30 +428,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   primaryTerminalAddress={primaryTerminalAddress}
                 />
               </div>
-            </div>
-            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] bg-gradient-to-b from-dark-cool to-darkest-cool flex justify-center">
-              <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
-                <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
-                  <Image
-                    src={'/assets/icon-star-blue.svg'}
-                    alt="Job icon"
-                    width={30}
-                    height={30}
-                  />
-                  <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">Meet the Team</h2>
-                </div>
-                <SlidingCardMenu>
-                  <div className="flex gap-4"></div>
-                  {teamHats?.[0].id && (
-                    <TeamMembers
-                      hats={teamHats}
-                      hatsContract={hatsContract}
-                      citizenContract={citizenContract}
-                    />
-                  )}
-              </SlidingCardMenu>
-            </div>
-          </div>
+            </Frame>
           </div>
         </ContentLayout>
       </Container>
