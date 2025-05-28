@@ -523,6 +523,15 @@ export default function TeamDetailPage({
               )}
             </div>
           )}
+          {isManager && (
+            <TeamTreasury
+              multisigAddress={nft.owner}
+              multisigMooneyBalance={MOONEYBalance?.displayValue}
+              multisigNativeBalance={nativeBalance?.displayValue}
+              multisigDAIBalance={DAIBalance?.displayValue}
+              multisigUSDCBalance={USDCBalance?.displayValue}
+            />
+          )}
           {/* Header and socials */}
           <TeamMissions
             selectedChain={selectedChain}
@@ -606,7 +615,6 @@ export default function TeamDetailPage({
                   </SlidingCardMenu>
                 </div>
               </Frame>
-              {/* Jobs */}
               <TeamJobs
                 teamId={tokenId}
                 jobTableContract={jobTableContract}
@@ -621,17 +629,6 @@ export default function TeamDetailPage({
                 teamId={tokenId}
                 isCitizen={citizen}
               />
-              {/* Mooney and Voting Power */}
-              {isManager && (
-                <TeamTreasury
-                  multisigAddress={nft.owner}
-                  multisigMooneyBalance={MOONEYBalance?.displayValue}
-                  multisigNativeBalance={nativeBalance?.displayValue}
-                  multisigDAIBalance={DAIBalance?.displayValue}
-                  multisigUSDCBalance={USDCBalance?.displayValue}
-                />
-              )}
-              {/* General Actions */}
               {isManager && <GeneralActions />}
             </div>
           ) : (
