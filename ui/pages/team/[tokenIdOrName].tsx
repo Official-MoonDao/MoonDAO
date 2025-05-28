@@ -10,9 +10,14 @@ import {
 } from '@heroicons/react/24/outline'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
+import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
+import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import JobBoardTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -23,8 +28,13 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
+  JBV4_CONTROLLER_ADDRESSES,
+  JBV4_TOKENS_ADDRESSES,
+  MISSION_TABLE_ADDRESSES,
   DAI_ADDRESSES,
   USDC_ADDRESSES,
+  JBV4_DIRECTORY_ADDRESSES,
+  MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -35,13 +45,10 @@ import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import {
-  MediaRenderer,
-  useActiveAccount,
-  useWalletBalance,
-} from 'thirdweb/react'
+import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import useSafe from '@/lib/safe/useSafe'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
@@ -57,8 +64,10 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
+import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import SafeModal from '@/components/safe/SafeModal'
 import Action from '@/components/subscription/Action'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -70,6 +79,7 @@ import TeamMarketplace from '@/components/subscription/TeamMarketplace'
 import TeamMarketplaceListingModal from '@/components/subscription/TeamMarketplaceListingModal'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
+import TeamMissions from '@/components/subscription/TeamMissions'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
 
 export default function TeamDetailPage({
@@ -123,6 +133,36 @@ export default function TeamDetailPage({
     chain: selectedChain,
   })
 
+  const missionTableContract = useContract({
+    address: MISSION_TABLE_ADDRESSES[chainSlug],
+    abi: MissionTableABI,
+    chain: selectedChain,
+  })
+
+  const missionCreatorContract = useContract({
+    address: MISSION_CREATOR_ADDRESSES[chainSlug],
+    abi: MissionCreatorABI,
+    chain: selectedChain,
+  })
+
+  const jbControllerContract = useContract({
+    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+    abi: JBV4ControllerABI,
+    chain: selectedChain,
+  })
+
+  const jbDirectoryContract = useContract({
+    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
+    abi: JBV4DirectoryABI,
+    chain: selectedChain,
+  })
+
+  const jbTokensContract = useContract({
+    address: JBV4_TOKENS_ADDRESSES[chainSlug],
+    abi: JBV4TokensABI,
+    chain: selectedChain,
+  })
+
   const {
     socials,
     isPublic,
@@ -136,6 +176,9 @@ export default function TeamDetailPage({
   } = useTeamData(teamContract, hatsContract, nft)
 
   const hats = useSubHats(selectedChain, adminHatId)
+
+  const safeData = useSafe(nft?.owner)
+  const isSigner = safeData?.owners.includes(address || '')
 
   //Subscription Data
   const { data: expiresAt } = useRead({
@@ -202,12 +245,12 @@ export default function TeamDetailPage({
                   id="org-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
-                  <MediaRenderer
-                    client={client}
+                  <IPFSRenderer
+                    alt="Team Image"
                     className="rounded-full"
                     src={nft.metadata.image}
-                    height={'300'}
-                    width={'300'}
+                    height={300}
+                    width={300}
                   />
                   <div
                     id="star-asset-container"
@@ -390,6 +433,7 @@ export default function TeamDetailPage({
             : imageIpfsLink.split('ipfs://')[1]
         }`}
       />
+
       {teamSubscriptionModalEnabled && (
         <SubscriptionModal
           selectedChain={selectedChain}
@@ -456,9 +500,9 @@ export default function TeamDetailPage({
                     <div className="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
                       <Action
                         title="Fund"
-                        description="Submit a proposal to secure space project funding."
+                        description="Launch a mission to raise funds."
                         icon={<BanknotesIcon height={30} width={30} />}
-                        onClick={() => router.push('/propose')}
+                        onClick={() => router.push('/launch')}
                       />
                       <Action
                         title="Hire"
@@ -483,6 +527,17 @@ export default function TeamDetailPage({
             </div>
           )}
           {/* Header and socials */}
+          <TeamMissions
+            selectedChain={selectedChain}
+            isManager={isManager}
+            teamId={tokenId}
+            missionTableContract={missionTableContract}
+            missionCreatorContract={missionCreatorContract}
+            jbControllerContract={jbControllerContract}
+            jbDirectoryContract={jbDirectoryContract}
+            jbTokensContract={jbTokensContract}
+            teamContract={teamContract}
+          />
           {subIsValid && !isDeleted ? (
             <div className="z-50 flex flex-col gap-5 mb-[50px]">
               {/* Team Actions */}
@@ -570,8 +625,9 @@ export default function TeamDetailPage({
                 isCitizen={citizen}
               />
               {/* Mooney and Voting Power */}
-              {isManager && (
+              {isSigner && (
                 <TeamTreasury
+                  safeData={safeData}
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}
@@ -590,8 +646,9 @@ export default function TeamDetailPage({
                   ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
                   : `The profile has expired, please connect the owner or admin wallet to renew.`}
               </p>
-              {isManager && (
+              {isSigner && (
                 <TeamTreasury
+                  safeData={safeData}
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}

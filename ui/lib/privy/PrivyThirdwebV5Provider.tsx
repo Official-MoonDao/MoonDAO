@@ -18,6 +18,11 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     async function setActive() {
       try {
         const wallet = wallets[selectedWallet]
+        if (!wallet) {
+          // If no wallet is selected, we don't need to set an active wallet
+          return
+        }
+
         const provider = await wallet?.getEthersProvider()
         const signer = provider?.getSigner()
 
@@ -36,7 +41,10 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
           adaptedAccount,
           chain: defineChain(selectedChain.id),
           client,
-          onDisconnect: () => {},
+          onDisconnect: () => {
+            // When disconnected, we don't need to set an active wallet
+            return
+          },
           switchChain: () => {},
         })
 
@@ -44,6 +52,8 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
         setActiveWallet(thirdwebWallet)
       } catch (err: any) {
         console.log(err.message)
+        // On error, we don't need to set an active wallet
+        return
       }
     }
 

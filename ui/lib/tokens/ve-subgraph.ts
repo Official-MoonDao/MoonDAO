@@ -44,7 +44,7 @@ function mapHolders(data: any, totalHolders: number) {
 
   let totalVMooney = 0
 
-  const holders = data.holders.map((h: any) => {
+  const holders = data?.holders?.map((h: any) => {
     totalHolders++
 
     const mooney = h.totalLocked / 10 ** 18
@@ -69,7 +69,7 @@ function mapHolders(data: any, totalHolders: number) {
 function combineHolders(holders: any[]) {
   const holderMap: { [key: string]: any } = {}
 
-  holders.forEach((holder) => {
+  holders?.forEach((holder: any) => {
     if (holderMap[holder.address]) {
       holderMap[holder.address].totalLocked += holder.totalLocked
       holderMap[holder.address].totalvMooney += holder.totalvMooney
@@ -82,7 +82,7 @@ function combineHolders(holders: any[]) {
     }
   })
 
-  return Object.values(holderMap)
+  return Object?.values(holderMap) || []
 }
 
 export async function getVMOONEYData() {
@@ -115,33 +115,33 @@ export async function getVMOONEYData() {
   const polygonRes = await PolygonClient.query(query).toPromise()
   const arbRes = await ArbClient.query(query).toPromise()
   const baseRes = await BaseClient.query(query).toPromise()
-  const ethData = mapHolders(ethRes.data, totalHolders)
-  const ethVMooney = ethData.totalVMooney
-  const ethMooney = (ethRes.data.supplies[0]?.supply || 0) / 10 ** 18
+  const ethData = mapHolders(ethRes?.data, totalHolders)
+  const ethVMooney = ethData?.totalVMooney
+  const ethMooney = (ethRes?.data?.supplies[0]?.supply || 0) / 10 ** 18
   totalVMooney += ethVMooney
   totalMooney += ethMooney
-  const ethHolders = ethData.holders
+  const ethHolders = ethData?.holders
 
-  const polygonData = mapHolders(polygonRes.data, totalHolders)
-  const polygonVMooney = polygonData.totalVMooney
-  const polygonMooney = (polygonRes.data.supplies[0]?.supply || 0) / 10 ** 18
+  const polygonData = mapHolders(polygonRes?.data, totalHolders)
+  const polygonVMooney = polygonData?.totalVMooney
+  const polygonMooney = (polygonRes?.data?.supplies[0]?.supply || 0) / 10 ** 18
   totalVMooney += polygonVMooney
   totalMooney += polygonMooney
-  const polygonHolders = polygonData.holders
+  const polygonHolders = polygonData?.holders
 
-  const arbData = mapHolders(arbRes.data, totalHolders)
-  const arbVMooney = arbData.totalVMooney
-  const arbMooney = (arbRes.data.supplies[0]?.supply || 0) / 10 ** 18
+  const arbData = mapHolders(arbRes?.data, totalHolders)
+  const arbVMooney = arbData?.totalVMooney
+  const arbMooney = (arbRes?.data?.supplies[0]?.supply || 0) / 10 ** 18
   totalVMooney += arbVMooney
   totalMooney += arbMooney
-  const arbHolders = arbData.holders
+  const arbHolders = arbData?.holders
 
-  const baseData = mapHolders(baseRes.data, totalHolders)
-  const baseVMooney = baseData.totalVMooney
-  const baseMooney = (baseRes.data.supplies[0]?.supply || 0) / 10 ** 18
+  const baseData = mapHolders(baseRes?.data, totalHolders)
+  const baseVMooney = baseData?.totalVMooney
+  const baseMooney = (baseRes?.data?.supplies[0]?.supply || 0) / 10 ** 18
   totalVMooney += baseVMooney
   totalMooney += baseMooney
-  const baseHolders = baseData.holders
+  const baseHolders = baseData?.holders
 
   const allHolders = [
     ...ethHolders,

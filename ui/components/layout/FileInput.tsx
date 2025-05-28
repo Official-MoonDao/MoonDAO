@@ -5,29 +5,37 @@ import { fitImage } from '@/lib/utils/images'
 
 type FileInputProps = {
   id?: string
-  file: File | undefined
+  file?: File | undefined
+  uri?: string
   label?: string
   setFile: Function
   noBlankImages?: boolean
   dimensions?: number[]
+  accept?: string
+  acceptText?: string
 }
 
 export default function FileInput({
   id,
   label,
   file,
+  uri,
   setFile,
   noBlankImages,
   dimensions,
+  accept = 'image/*',
+  acceptText = '',
 }: FileInputProps) {
   //get file name
-  const [fileName, setFileName] = useState(file?.name || 'No file chosen')
+  const [fileName, setFileName] = useState(
+    uri ? uri : file?.name || 'No file chosen'
+  )
   return (
     <div id={id} className="relative flex flex-col gap-2 max-w-[250px]">
       {label && <p className={`text-sm font-GoodTimes opacity-50`}>{label}</p>}
       <input
         type="file"
-        accept="image/*"
+        accept={accept}
         onChange={async (e: any) => {
           const file = e.target.files[0]
           const chosenFileName = file?.name.slice(0, 20) || 'No file chosen'
@@ -69,9 +77,10 @@ export default function FileInput({
         </svg>
         <span>Choose File</span>
       </label>
-      <span id="file-chosen" className="ml-3 text-gray-600">
+      <span id="file-chosen" className=" text-gray-600 break-words">
         {fileName}
       </span>
+      {acceptText && <p className="text-xs text-gray-500">{acceptText}</p>}
     </div>
   )
 }

@@ -49,7 +49,11 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const { t } = useTranslation('common')
   //Background is defined in this root div.
 
-  const isFullscreen = router.pathname === '/launch'
+  const isFullscreen =
+    router.pathname === '/launch' ||
+    router.pathname === '/about' ||
+    router.pathname === '/news' ||
+    router.pathname === '/mission/[tokenId]'
 
   const layout = (
     <div

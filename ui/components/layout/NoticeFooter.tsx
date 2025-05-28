@@ -95,6 +95,7 @@ export function NoticeFooter({
 
   return (
     <div
+      id="notice-footer"
       className={`pb-10 md:pb-0 ${
         darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5'
       }`}

@@ -1,10 +1,8 @@
 import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
-import toast from 'react-hot-toast'
-import { MediaRenderer } from 'thirdweb/react'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
-import client from '@/lib/thirdweb/client'
 import FileInput from '../layout/FileInput'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import { StageButton } from './StageButton'
 
 export function ImageGenerator({
@@ -52,20 +50,25 @@ export function ImageGenerator({
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col mt-5">
-        <FileInput file={inputImage} setFile={setInputImage} noBlankImages />
+        <FileInput
+          file={inputImage}
+          setFile={setInputImage}
+          noBlankImages
+          accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+          acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
+        />
       </div>
       <div
         id="citizenPic"
         className="mt-4 w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left relative flex"
       >
         {currImage && !inputImage && (
-          <MediaRenderer
-            client={client}
+          <IPFSRenderer
             src={currImage}
             className=""
-            width="100%"
-            height="100%"
-            alt={''}
+            width={600}
+            height={600}
+            alt="Citizen Image"
           />
         )}
         {inputImage && (

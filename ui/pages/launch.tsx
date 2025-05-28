@@ -25,6 +25,7 @@ import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -378,10 +379,8 @@ export default function Launch({ missions }: any) {
             subgraphData={featuredMissionSubgraphData}
             fundingGoal={featuredMissionFundingGoal}
             teamContract={teamContract}
-            jbDirectoryContract={jbDirectoryContract}
-            primaryTerminalAddress={featuredMissionPrimaryTerminalAddress}
             selectedChain={selectedChain}
-            contribute
+            learnMore
             showMore
             compact
             linkToMission
@@ -402,7 +401,7 @@ export default function Launch({ missions }: any) {
             height={200}
           />
         </div>
-        <div className="absolute bottom-[-2px] left-0">
+        <div className="absolute bottom-[-0.5px] left-0">
           <Image
             className="w-[30vw] md:w-[10vw] 2xl:w-[10vw] -scale-y-100"
             src="/assets/navy-blue-divider-tl.svg"
@@ -413,7 +412,7 @@ export default function Launch({ missions }: any) {
         </div>
         <div className="flex flex-col pb-[5vw] md:pb-[2vw] md:items-center">
           <h2 className="mt-[5vw] pb-[2vw] md:pb-0 md:mt-[5vw] font-GoodTimes text-[6vw] md:text-[max(2vw,25px)] 2xl:text-[35px] md:text-center leading-[7vw]">
-            {'New Funding Tools for New Space'}
+            {'New Space Needs New Funding Tools'}
           </h2>
           <p className="md:text-center md:max-w-[500px] lg:max-w-[650px] 2xl:max-w-[800px] md:text-[max(1.2vw,16px)] 2xl:text-[18px] pb-[5vw] md:pb-[2vw]">
             {
@@ -421,28 +420,30 @@ export default function Launch({ missions }: any) {
             }
           </p>
           <StandardButton
+            id="launch-mission-button-1"
             className="md:text-[1.2vw] gradient-2 rounded-full"
             onClick={handleCreateMission}
+            hoverEffect={false}
           >
             {'Launch Your Mission'}
           </StandardButton>
         </div>
         <div className="w-full flex flex-col md:flex-row items-start justify-between">
           <FeatureIcon
-            title="Contribute Confidently"
-            description="If a mission doesn't reach at least 20% of its goal within 28 days, you automatically get refunded."
+            title="Contribute"
+            description="Fund with your debit card, even if you've never used crypto. Get refunded if a mission fails to reach its funding goal."
             icon="/assets/icon-crowdfunding.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#6C407D] to-[#5F4BA2]"
           />
           <FeatureIcon
-            title="Coordinate Effectively"
-            description="Mission tokens give you a stake in the journey, allowing you to help shape and govern the treasury."
+            title="Coordinate"
+            description="Contributions earn mission tokens that give you a stake in the journey, allowing you to help shape and govern the outcome."
             icon="/assets/icon-fasttrack.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#5F4BA2] to-[#5159CC]"
           />
           <FeatureIcon
-            title="Collaborate Transparently"
-            description="100% transparent funding, managed by smart contracts, so your contribution is secure."
+            title="Validate"
+            description="Secured by code, not promises. 100% transparent use of funds onchain, allowing contributors to trace how funds were spent."
             icon="/assets/icon-lightbulb.svg"
             gradient="bg-gradient-to-b md:bg-gradient-to-r from-[#5159CC] to-[#4660E7]"
           />
@@ -493,8 +494,8 @@ export default function Launch({ missions }: any) {
               <Image
                 id="astronauts"
                 className="h-full w-full top-0 p-2 md:p-5"
-                src="/assets/astronauts.png"
-                alt="MoonDAO Astronauts, Dr.Eiman Jahangir and Coby"
+                src="/assets/launchpad/astronauts-v2.png"
+                alt="MoonDAO Astronauts, Dr.Eiman Jahangir and Coby Cotton of Dude Perfect"
                 width={500}
                 height={500}
               />
@@ -525,48 +526,54 @@ export default function Launch({ missions }: any) {
         </div>
         <div className="w-full mt-8 flex flex-col gap-2 items-center">
           <h1 className="mt-8 text-[5vw] md:text-[max(3vw,35px)] font-GoodTimes">
-            {'Mission Trajectory'}
+            {'Mission Countdown'}
           </h1>
         </div>
 
         <div className="w-full md:max-w-[70vw] ">
-          <div className="absolute hidden md:block h-full max-h-[50%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw] pb-[0vw]">
+          <div className="absolute hidden md:block h-full max-h-[65%] md:left-1/2 md:transform md:-translate-x-1/2 mt-[2vw]">
             <VerticalProgressScrollBar sectionId="how-launchpad-works" />
           </div>
           <div className="w-full flex flex-col items-end md:items-start">
             <ExplainerIcon
-              title="Ignition"
-              subtext="2,000 Tokens <br/>per 1 ETH (4x)"
-              description="If the mission doesn't reach 20% of its goal in 28 days, all contributions are refunded—maximizing reward while minimizing risk."
-              icon={<p>1</p>}
+              title="Explore"
+              subtext=""
+              description="Discover missions from Teams within the Space Acceleration Network — a global network of builders, scientists, and dreamers working to accelerate our multiplanetary future."
+              icon={<p>3</p>}
               numberBackground="bg-gradient-to-br from-[#6C407D] to-[#5F4BA2]"
             />
             <div className="relative md:-top-[270px] w-full flex justify-end">
               <ExplainerIcon
-                title="Ascent"
-                subtext="1,000 Tokens <br/>per 1 ETH (2x)"
-                description="With minimum funding secured, the mission has launched and is ascending toward its goal. Contributors now join with confidence, knowing the mission will proceed."
+                title="Support"
+                subtext=""
+                description="Contribute in ETH (yes, even with a debit card) to missions you believe in. Funds go to the Team's multisig, and you receive mission tokens in return, a gateway to future utility and participation."
                 icon={<p>2</p>}
                 numberBackground="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC]"
               />
             </div>
             <div className="relative md:-top-[550px] w-full">
               <ExplainerIcon
-                title="Orbit"
-                subtext="500 Tokens <br/>per 1 ETH (1x)"
-                description="With full funding achieved, rewards adjust to reflect lower risk. Contributions now fuel expansion, stretch goals, and long-term impact."
-                icon={<p>3</p>}
+                title="Accelerate"
+                subtext=""
+                description="Contributions fuel real progress — from hardware to human spaceflight, research to education. You're not just backing a mission — you're joining one."
+                icon={<p>1</p>}
                 numberBackground="bg-gradient-to-br from-[#5159CC] to-[#4660E7]"
               />
             </div>
           </div>
-          <div className="w-full flex flex-col text-center items-center justify-center gap-4 md:mt-[-400px]">
-            <h3 className="font-GoodTimes text-[4vw] md:text-[max(1.5vw,25px)] md:pb-[1vw]">
+          <div className="w-full flex flex-col text-center items-center justify-center gap-4 md:mt-[-475px]">
+            <h3 className="hidden md:block font-GoodTimes text-[4vw] md:text-[max(1.5vw,25px)] md:pb-[1vw]">
               Your tools, your team, your mission
             </h3>
+            <p className="hidden md:block text-[max(1.2vw,16px)] 2xl:text-[18px] max-w-[500px]">
+              Move at the speed of the Internet. Teams using these tools have
+              raised millions of dollars from all over the world in mere days.
+            </p>
             <StandardButton
+              id="launch-mission-button-2"
               className="gradient-2 rounded-full md:text-[min(1.2vw,25px)]"
               hoverEffect={false}
+              onClick={handleCreateMission}
             >
               {'Launch Your Mission'}
             </StandardButton>
@@ -596,7 +603,7 @@ export default function Launch({ missions }: any) {
           <div className="relative z-10">
             <LaunchpadBenefit
               title="Global Access"
-              description="Move at the speed of the internet tapping into a global crypto network with trillions of dollars at your fingertips."
+              description="Tap into a global crypto network with trillions of dollars at your fingertips."
               icon="/assets/icon-globe.svg"
               align="left"
               slideDirection="left"
@@ -704,9 +711,11 @@ export default function Launch({ missions }: any) {
               }
             </p>
             <StandardButton
+              id="launch-mission-button-3"
               className="md:text-[1.2vw] bg-[#FFFFFF] rounded-full w-[60vw] md:w-[20vw]"
               textColor="text-black"
               onClick={handleCreateMission}
+              hoverEffect={false}
             >
               {'Launch Your Mission'}
             </StandardButton>
@@ -744,8 +753,8 @@ export default function Launch({ missions }: any) {
           <LaunchpadFAQs />
         </div>
       </section>
-      <div className="bg-[#020617]">
-        <Footer darkBackground={true} />
+      <div className="bg-[#020617] w-full flex justify-center">
+        <Footer darkBackground={true} centerContent />
       </div>
     </>
   )
@@ -786,22 +795,27 @@ export const getStaticProps: GetStaticProps = async () => {
 
     const missions = await Promise.all(
       filteredMissionRows.map(async (missionRow) => {
-        const metadataURI = await readContract({
-          contract: jbV4ControllerContract,
-          method: 'uriOf' as string,
-          params: [missionRow.projectId],
-        })
+        try {
+          const metadataURI = await readContract({
+            contract: jbV4ControllerContract,
+            method: 'uriOf' as string,
+            params: [missionRow.projectId],
+          })
 
-        const metadataRes = await fetch(
-          `https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`
-        )
-        const metadata = await metadataRes.json()
-
-        return {
-          id: missionRow.id,
-          teamId: missionRow.teamId,
-          projectId: missionRow.projectId,
-          metadata: metadata,
+          const metadataRes = await fetch(getIPFSGateway(metadataURI))
+          const metadata = await metadataRes.json()
+          return {
+            id: missionRow.id,
+            teamId: missionRow.teamId,
+            projectId: missionRow.projectId,
+            metadata: metadata,
+          }
+        } catch (error) {
+          return {
+            id: missionRow.id,
+            teamId: missionRow.teamId,
+            projectId: missionRow.projectId,
+          }
         }
       })
     )

@@ -5,10 +5,9 @@ import useJBProjectData from '../juicebox/useJBProjectData'
 /*
 1: Stage 1
 2: Stage 2
-3: Stage 3
-4: Refund
+3: Refund
 */
-type MissionStage = 1 | 2 | 3 | 4
+type MissionStage = 1 | 2 | 3
 
 export default function useMissionData({
   mission,
@@ -57,12 +56,18 @@ export default function useMissionData({
         method: 'stage' as string,
         params: [mission.id],
       })
-      console.log('stage', stage)
       setStage(+stage.toString() as MissionStage)
     }
     if (missionCreatorContract && mission?.id !== undefined) {
       getStage()
     }
+
+    // Update the stage every minute
+    const interval = setInterval(() => {
+      getStage()
+    }, 60000)
+
+    return () => clearInterval(interval)
   }, [missionCreatorContract, mission?.id])
 
   return { ...jbProjectData, fundingGoal, stage }

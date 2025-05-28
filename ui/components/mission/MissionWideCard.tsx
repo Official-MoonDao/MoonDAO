@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import { daysUntilDate, formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '../layout/StandardButton'
 import StandardWideCard from '../layout/StandardWideCard'
@@ -18,13 +20,14 @@ export type MissionWideCardProps = {
   contribute?: boolean
   stage?: number
   ruleset?: any
-  missionImage?: File
+  missionImage?: File | string
   teamContract?: any
   selectedChain?: any
   jbDirectoryContract?: any
   editable?: boolean
   showMore?: boolean
   showMoreButton?: boolean
+  learnMore?: boolean
   linkToMission?: boolean
   primaryTerminalAddress?: string
   compact?: boolean
@@ -44,6 +47,7 @@ export default function MissionWideCard({
   teamContract,
   showMore,
   showMoreButton = true,
+  learnMore,
   linkToMission,
   primaryTerminalAddress,
   compact,
@@ -52,6 +56,14 @@ export default function MissionWideCard({
   const router = useRouter()
   const [payModalEnabled, setPayModalEnabled] = useState(false)
   const [teamNFT, setTeamNFT] = useState<any>(null)
+
+  const duration = useMemo(() => {
+    return ruleset?.[0]?.duration
+      ? formatTimeUntilDeadline(
+          new Date(ruleset?.[0]?.start * 1000 + ruleset?.[0]?.duration * 1000)
+        )
+      : undefined
+  }, [ruleset])
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -90,7 +102,28 @@ export default function MissionWideCard({
         subheader={mission?.metadata?.tagline}
         stats={
           <div className="w-full">
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 justify-between">
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 justify-between">
+              {duration && (
+                <MissionStat
+                  label="Deadline"
+                  value={duration}
+                  icon={'/assets/launchpad/clock.svg'}
+                />
+              )}
+              {subgraphData?.volume !== undefined && (
+                <MissionStat
+                  label="Total Raised"
+                  value={'Ξ ' + subgraphData.volume / 1e18}
+                  icon={'/assets/launchpad/token.svg'}
+                />
+              )}
+              {token?.tradeable !== undefined && (
+                <MissionStat
+                  icon="/assets/launchpad/token.svg"
+                  label="Token"
+                  value={token?.tradeable ? 'Yes' : 'No'}
+                />
+              )}
               <MissionStat
                 icon="/assets/target.png"
                 label="Goal"
@@ -100,46 +133,14 @@ export default function MissionWideCard({
                     : 0
                 } ETH`}
               />
-              {token?.tradeable !== undefined && (
-                <MissionStat
-                  icon="/assets/launchpad/token.svg"
-                  label="Token"
-                  value={token?.tradeable ? 'Yes' : 'No'}
-                />
-              )}
-              {token?.tokenAddress && (
-                <Link
-                  href={`https://${
-                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-                      ? 'arbiscan.io'
-                      : 'sepolia.etherscan.io'
-                  }/token/${token?.tokenAddress}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MissionStat
-                    icon="/assets/launchpad/token.svg"
-                    label="Token"
-                    value={`$${token?.tokenSymbol}`}
-                  />
-                </Link>
-              )}
-              {subgraphData?.volume !== undefined && (
-                <MissionStat
-                  label="VOLUME"
-                  value={'Ξ ' + subgraphData.volume / 1e18}
-                />
-              )}
             </div>
             <div className="mt-4 w-4/5">
-              {subgraphData?.volume && fundingGoal && (
-                <MissionFundingProgressBar
-                  fundingGoal={fundingGoal}
-                  volume={subgraphData.volume / 1e18}
-                  compact={compact}
-                  stage={stage}
-                />
-              )}
+              <MissionFundingProgressBar
+                fundingGoal={fundingGoal || 0}
+                volume={subgraphData?.volume / 1e18 || 0}
+                compact={compact}
+                stage={stage}
+              />
             </div>
             {contribute && mission.projectId && (
               <StandardButton
@@ -154,6 +155,19 @@ export default function MissionWideCard({
                 Contribute
               </StandardButton>
             )}
+            {learnMore && (
+              <StandardButton
+                className="mt-4 gradient-2 rounded-full"
+                hoverEffect={false}
+                onClick={(e: any) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  router.push(`/mission/${mission.id}`)
+                }}
+              >
+                Learn More
+              </StandardButton>
+            )}
           </div>
         }
         paragraph={
@@ -166,8 +180,10 @@ export default function MissionWideCard({
         }
         image={
           missionImage
-            ? URL.createObjectURL(missionImage)
-            : mission?.metadata?.logoUri
+            ? typeof missionImage === 'string'
+              ? missionImage
+              : URL.createObjectURL(missionImage)
+            : getIPFSGateway(mission?.metadata?.logoUri)
         }
         showMore={showMore}
         showMoreButton={showMoreButton}
