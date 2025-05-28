@@ -13,6 +13,7 @@ Button States:
 
 type PrivyWeb3BtnProps = {
   id?: string
+  dataTestId?: string
   label: any
   type?: string
   action: Function
@@ -28,6 +29,7 @@ type PrivyWeb3BtnProps = {
 
 function Button({
   id,
+  dataTestId,
   type = 'button',
   className,
   onClick,
@@ -38,6 +40,7 @@ function Button({
   return (
     <button
       id={id}
+      data-testid={dataTestId}
       type={type}
       className={`${
         noPadding ? '' : 'px-5 py-3'
@@ -52,6 +55,7 @@ function Button({
 
 export function PrivyWeb3Button({
   id,
+  dataTestId,
   label,
   type = 'button',
   action,
@@ -112,6 +116,7 @@ export function PrivyWeb3Button({
       {btnState === 0 && (
         <Button
           id={id}
+          dataTestId={dataTestId}
           className={className}
           onClick={login}
           noPadding={noPadding}
@@ -122,6 +127,7 @@ export function PrivyWeb3Button({
       {btnState === 1 && (
         <Button
           id={id}
+          dataTestId={dataTestId}
           type="button"
           className={className}
           onClick={async () => {
@@ -144,6 +150,7 @@ export function PrivyWeb3Button({
       {btnState === 2 && (
         <Button
           id={id}
+          dataTestId={dataTestId}
           type={type}
           className={className}
           onClick={async () => {
