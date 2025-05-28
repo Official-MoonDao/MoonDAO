@@ -10,19 +10,19 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { renameFile } from '@/lib/utils/files'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { bytesOfString } from '@/lib/utils/strings'
 import TeamABI from '../../const/abis/Team.json'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { TeamListing } from './TeamListing'
@@ -280,11 +280,10 @@ export default function TeamMarketplaceListingModal({
         {listingData.image && (
           <>
             {typeof listingData.image === 'string' ? (
-              <MediaRenderer
-                client={client}
+              <IPFSRenderer
                 src={listingData.image}
-                height="200px"
-                width="200px"
+                height={200}
+                width={200}
                 alt=""
               />
             ) : (
