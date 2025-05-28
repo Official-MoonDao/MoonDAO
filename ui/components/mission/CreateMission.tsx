@@ -323,7 +323,7 @@ export default function CreateMission({
             teamMultisig,
             missionMetadataIpfsHash,
             fundingGoalInETH * 1e18,
-            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60, // Expires in 28 days
+            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60, // Expires in 300000 days
             missionData.token.tradeable,
             missionData?.token?.name,
             missionData?.token?.symbol,
@@ -689,6 +689,7 @@ export default function CreateMission({
                   </div>
                   <div className="mt-2 w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <FormInput
+                      id="funding-goal-input"
                       label="Funding Goal (USD)"
                       placeholder="Enter a goal in USD"
                       value={formattedFundingGoal}

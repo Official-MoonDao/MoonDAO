@@ -28,6 +28,8 @@ jobs:
       NEXT_PUBLIC_THIRDWEB_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_THIRDWEB_CLIENT_ID }}
       NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET: ${{ secrets.NEXT_PUBLIC_THIRDWEB_SECRET_KEY }}
       NEXT_PUBLIC_PRIVY_APP_ID: ${{secrets.NEXT_PUBLIC_PRIVY_APP_ID}}
+      NEXT_PUBLIC_PRIVY_TEST_PHONE: ${{secrets.NEXT_PUBLIC_PRIVY_TEST_PHONE}}
+      NEXT_PUBLIC_PRIVY_TEST_OTP: ${{secrets.NEXT_PUBLIC_PRIVY_TEST_OTP}}
       NEXT_PUBLIC_MONGO_MOONDAO_API_KEY: ${{secrets.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY}}
       ALLOWED_ORIGIN: "http://localhost:3000"
       TYPEFORM_PERSONAL_ACCESS_TOKEN: ${{secrets.TYPEFORM_PERSONAL_ACCESS_TOKEN}}
@@ -43,6 +45,12 @@ jobs:
       S3_UPLOAD_REGION: ${{secrets.S3_UPLOAD_REGION}}
       IRON_SESSION: ${{secrets.IRON_SESSION}}
       TABLELAND_PRIVATE_KEY: ${{secrets.TABLELAND_PRIVATE_KEY}}
+      UPSTASH_REDIS_URL: ${{secrets.UPSTASH_REDIS_URL}}
+      UPSTASH_REDIS_TOKEN: ${{secrets.UPSTASH_REDIS_TOKEN}}
+      NEXTAUTH_SECRET: ${{secrets.NEXTAUTH_SECRET}}
+      JB_SEPOLIA_SUBGRAPH_ENDPOINT: ${{secrets.JB_SEPOLIA_SUBGRAPH_ENDPOINT}}
+      JB_SEPOLIA_SUBGRAPH_API_KEY: ${{secrets.JB_SEPOLIA_SUBGRAPH_API_KEY}}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -56,6 +64,8 @@ jobs:
           build: yarn build
           start: yarn start
           wait-on: "http://localhost:3000"
+          browser: chrome
+          install-browser: true
 
       #Run cypress component tests
       - name: Run Cypress Component Testing
@@ -66,6 +76,8 @@ jobs:
           start: yarn next start -p 3001
           wait-on: "http://localhost:3001"
           component: true
+          browser: chrome
+          install-browser: true
 
       # Save screenshots on fail
       - name: Upload Cypress Screenshots

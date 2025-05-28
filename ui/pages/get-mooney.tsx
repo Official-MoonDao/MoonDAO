@@ -1,8 +1,9 @@
 import { useFundWallet } from '@privy-io/react-auth'
 import useTranslation from 'next-translate/useTranslation'
 import { useRouter } from 'next/router'
-import React, { useContext } from 'react'
+import React, { useContext, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { ethereum } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -19,9 +20,13 @@ export default function GetMooney() {
   const account = useActiveAccount()
   const address = account?.address
   const router = useRouter()
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const { fundWallet } = useFundWallet()
+
+  useEffect(() => {
+    setSelectedChain(ethereum)
+  }, [setSelectedChain])
 
   return (
     <>

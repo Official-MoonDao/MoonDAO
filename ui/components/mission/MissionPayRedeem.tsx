@@ -36,7 +36,7 @@ import MissionTokenNotice from './MissionTokenNotice'
 
 function PayRedeemStat({ label, value, children }: any) {
   return (
-    <div className="font-GoodTimes w-1/3 flex flex-col">
+    <div className="font-GoodTimes w-full flex-1 flex flex-col">
       <h3 className="opacity-60 text-[60%]">{label}</h3>
       <p>{value}</p>
       {children}
@@ -58,255 +58,196 @@ function MissionPayRedeemContent({
   stage,
   tokenCredit,
   claimTokenCredit,
+  usdInput,
+  handleUsdInputChange,
+  calculateEthAmount,
+  formattedUsdInput,
+  formatTokenAmount,
 }: any) {
   const isRefundable = stage === 3 && subgraphData?.volume > 0
-
-  const [usdInput, setUsdInput] = useState('')
-  const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
-    1,
-    'ETH_TO_USD'
-  )
-
-  // When ETH input changes, update USD input
-  const handleEthInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value
-      setInput(value)
-      if (value === '') {
-        setUsdInput('')
-        return
-      }
-      if (ethUsdPrice && !isNaN(Number(value))) {
-        setUsdInput((Number(value) * ethUsdPrice).toFixed(2))
-      } else {
-        setUsdInput('')
-      }
-    },
-    [ethUsdPrice]
-  )
-
-  // When USD input changes, update ETH input
-  const handleUsdInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value
-      setUsdInput(value)
-      if (value === '') {
-        setInput('')
-        return
-      }
-      if (ethUsdPrice && !isNaN(Number(value))) {
-        setInput((Number(value) / ethUsdPrice).toFixed(6))
-      } else {
-        setInput('')
-      }
-    },
-    [ethUsdPrice]
-  )
 
   return (
     <div
       id="mission-pay-redeem-container"
-      className="w-full flex flex-row flex-col md:flex-row xl:flex-col gap-4 items-center md:items-start"
+      className="z-50 bg-[#020617] rounded-[5vw] md:rounded-[2vw] w-full flex flex-col gap-4 lg:min-w-[430px] xl:items-stretch"
     >
-      <div
-        id="mission-pay-container"
-        className="p-2 max-w-[500px] md:max-w-[425px] flex flex-col gap-4 bg-[#020617] rounded-2xl justify-between"
-      >
-        <div id="mission-pay-header" className="flex justify-between gap-2">
-          <PayRedeemStat
-            label="Contributions"
-            value={subgraphData?.paymentsCount}
-          />
-          <PayRedeemStat
-            label="Total Raised"
-            value={subgraphData?.volume / 1e18}
-          />
-          <PayRedeemStat label="Last 7 Days">
-            <div className="flex items-center gap-1">
-              <Image
-                src="/assets/launchpad/upwards.svg"
-                alt="increase"
-                width={30}
-                height={30}
-              />
-              <p className="text-moon-green">{`${
-                subgraphData?.last7DaysPercent === Infinity
-                  ? '0'
-                  : subgraphData?.last7DaysPercent
-              }%`}</p>
-            </div>
-          </PayRedeemStat>
-        </div>
-        {/* You pay */}
-        {!isRefundable && (
-          <div className="relative flex flex-col gap-4">
-            <div className="relative flex gap-2">
-              <div
-                className={`p-4 pb-12 flex flex-col gap-2 items-start justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tl-2xl ${
-                  token?.tokenSymbol ? '' : 'rounded-bl-2xl'
-                }`}
-              >
-                <div className="flex flex-col">
-                  <h3 className="text-sm opacity-60">You contribute</h3>
-                  <input
-                    id="usd-contribution-input"
-                    type="number"
-                    className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={usdInput}
-                    onChange={handleUsdInputChange}
-                    placeholder="0"
-                  />
+      {(!isRefundable ||
+        (token?.tokenSymbol && +tokenCredit?.toString() > 0)) && (
+        <div
+          id="mission-pay-container"
+          className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
+        >
+          {/* You pay */}
+          {!isRefundable && (
+            <div className="relative flex flex-col gap-4">
+              {/* You pay - USD input with ETH display */}
+              <div className="relative">
+                <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-t-2xl">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-sm opacity-60">You pay</h3>
+                  </div>
+
+                  <div className="flex justify-between sm:items-center flex-col sm:flex-row ">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xl font-bold">$</span>
+                      <input
+                        id="usd-contribution-input"
+                        type="text"
+                        className="bg-transparent border-none outline-none text-xl font-bold min-w-[1ch] w-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={formattedUsdInput}
+                        onChange={handleUsdInputChange}
+                        placeholder="0"
+                        maxLength={9}
+                        style={{
+                          width: `${Math.max(
+                            formattedUsdInput.length || 1,
+                            1
+                          )}ch`,
+                        }}
+                      />
+                      <span className="text-xl font-bold">USD</span>
+                    </div>
+                    <div className="flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full sm:px-3 py-1">
+                      <Image
+                        src="/coins/ETH.svg"
+                        alt="ETH"
+                        width={16}
+                        height={16}
+                        className="w-5 h-5 bg-light-cool rounded-full"
+                      />
+                      <span className="text-base">
+                        {calculateEthAmount()} ETH
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-2 items-center bg-[#111C42] rounded-full w-fit">
-                  <Image
-                    src="/assets/usd.svg"
-                    alt="USD"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5"
-                  />
-                  {'USD'}
-                </div>
+
+                {token?.tokenSymbol && (
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                    <ArrowDownIcon
+                      className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
+                      color={'#121C42'}
+                    />
+                  </div>
+                )}
               </div>
-              <div
-                className={`p-4 pb-12 flex flex-col gap-2 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-tr-2xl ${
-                  token?.tokenSymbol ? '' : 'rounded-br-2xl'
-                }`}
-              >
-                <div className="mt-5 flex flex-col">
-                  <input
-                    id="eth-contribution-input"
-                    type="number"
-                    className="w-full bg-transparent border-none outline-none text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={input}
-                    onChange={handleEthInputChange}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="flex gap-2 items-center bg-[#111C42] rounded-full w-fit">
-                  <Image
-                    src="/coins/ETH.svg"
-                    alt="ETH"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5 bg-light-cool rounded-full"
-                  />
-                  {'ETH'}
-                </div>
-              </div>
+
+              {/* You receive */}
               {token?.tokenSymbol && (
-                <div className="absolute -bottom-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center">
-                  <ArrowDownIcon
-                    className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
-                    color={'#121C42'}
-                  />
+                <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-b-2xl">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-sm opacity-60">You receive</h3>
+                  </div>
+
+                  <div className="sm:flex justify-between items-center">
+                    <p id="token-output" className="text-xl font-bold">
+                      {formatTokenAmount(output, 2)}
+                    </p>
+                    <div className="relative flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full p-1 sm:px-2">
+                      <Image
+                        src="/assets/icon-star.svg"
+                        alt="Token"
+                        width={20}
+                        height={20}
+                        className="bg-orange-500 rounded-full p-1 w-5 h-5"
+                      />
+                      {token?.tokenSymbol}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-            {/* You receive */}
-            {token?.tokenSymbol && (
-              <div className="p-4 pb-12 flex items-center justify-between bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-bl-2xl rounded-br-2xl">
-                <div className="flex flex-col">
-                  <h3 className="text-sm opacity-60">You receive</h3>
-                  <p id="token-output" className="text-2xl font-bold">
-                    {output.toFixed(2)}
-                  </p>
-                </div>
-                <div className="relative flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
-                  <Image
-                    src="/assets/icon-star.svg"
-                    alt="ETH"
-                    width={20}
-                    height={20}
-                    className="bg-orange-500 rounded-full p-1w-5 h-5"
-                  />
-                  <Image
-                    src="/coins/ETH.svg"
-                    alt="ETH"
-                    width={20}
-                    height={20}
-                    className="absolute bottom-0 left-1/4 -translate-x-1/4 w-3 h-3 bg-light-cool rounded-full"
-                  />
-                  {token?.tokenSymbol}
-                </div>
+          )}
+          {!isRefundable && (
+            <>
+              <StandardButton
+                id="open-contribute-modal"
+                className="rounded-full gradient-2 rounded-full w-full py-1"
+                onClick={() => setMissionPayModalEnabled(true)}
+                hoverEffect={false}
+              >
+                Contribute
+              </StandardButton>
+              <div className="w-full">
+                <AcceptedPaymentMethods />
+                <p className="xl:text-sm text-center">
+                  {'Want to contribute by wire transfer?'}
+                  <br />
+                  {'Email us at info@moondao.com'}
+                </p>
               </div>
-            )}
-          </div>
-        )}
-        {!isRefundable && (
-          <>
+            </>
+          )}
+          {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
             <StandardButton
-              id="open-contribute-modal"
+              id="claim-button"
               className="rounded-full gradient-2 rounded-full w-full py-1"
-              onClick={() => setMissionPayModalEnabled(true)}
+              onClick={claimTokenCredit}
               hoverEffect={false}
             >
-              Contribute
+              Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $
+              {token?.tokenSymbol}
             </StandardButton>
-            <AcceptedPaymentMethods />
-            <p className="text-sm text-center">
-              {'Want to contribute by wire transfer?'}
-              <br />
-              {'Email us at info@moondao.com'}
-            </p>
-          </>
-        )}
-        {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
-          <StandardButton
-            id="claim-button"
-            className="rounded-full gradient-2 rounded-full w-full py-1"
-            onClick={claimTokenCredit}
-            hoverEffect={false}
-          >
-            Claim {tokenCredit.toString() / 1e18} ${token?.tokenSymbol}
-          </StandardButton>
-        )}
-      </div>
+          )}
+        </div>
+      )}
       {/* Token stats and redeem container */}
-      <div className="xl:pt-4 flex flex-col justify-between gap-4">
+      <div className="xl:pt-4 flex flex-row justify-between gap-4 w-full">
         {token?.tokenSupply > 0 && !isRefundable && (
-          <div
-            id="mission-token-stats"
-            className="px-2 pt-1 bg-darkest-cool rounded-2xl"
-          >
-            <div className="text-lg">
-              <h3 className="opacity-60 text-sm">Current Supply</h3>
-              <p>
-                {Math.floor(token?.tokenSupply.toString() / 1e18)} $
-                {token?.tokenSymbol}
-              </p>
+          <div id="mission-token-stats" className="w-full px-2 rounded-2xl">
+            <div className="p-5 pt-0 flex gap-5 items-start justify-center md:justify-start xl:justify-center">
+              <div className="text-lg">
+                <h3 className="opacity-60 text-sm">Current Supply</h3>
+                <p>
+                  {formatTokenAmount(
+                    Math.floor(token?.tokenSupply.toString() / 1e18),
+                    0
+                  )}{' '}
+                  ${token?.tokenSymbol}
+                </p>
+              </div>
+              <div className="">
+                <MissionTokenExchangeRates
+                  currentStage={currentStage}
+                  tokenSymbol={token?.tokenSymbol}
+                />
+              </div>
             </div>
-
-            <MissionTokenExchangeRates
-              currentStage={currentStage}
-              tokenSymbol={token?.tokenSymbol}
-            />
           </div>
         )}
-        {tokenBalance > 0 && isRefundable && (
+
+        {tokenBalance > 0 || isRefundable ? (
           <div
             id="mission-redeem-container"
             className="p-2 bg-darkest-cool rounded-2xl flex flex-col gap-4"
           >
-            <div>
-              <h3 className="opacity-60 text-sm">Your Balance</h3>
-              <p className="text-2xl">{`${tokenBalance.toFixed(2)} $${
-                token?.tokenSymbol
-              }`}</p>
-            </div>
-
-            <PrivyWeb3Button
-              id="redeem-button"
-              className="w-full rounded-full py-2"
-              label="Redeem"
-              action={redeem}
-              noPadding
-            />
-            <p className="mt-2 text-sm opacity-60">
-              This mission did not reach its funding goal. You can redeem your
-              tokens for ETH.
-            </p>
+            {tokenBalance > 0 && (
+              <div>
+                <h3 className="opacity-60 text-sm">Your Balance</h3>
+                <p className="text-xl">{`${formatTokenAmount(
+                  tokenBalance,
+                  2
+                )} $${token?.tokenSymbol}`}</p>
+              </div>
+            )}
+            {isRefundable && (
+              <>
+                <PrivyWeb3Button
+                  id="redeem-button"
+                  className="w-full rounded-full py-2"
+                  label="Redeem"
+                  action={redeem}
+                  noPadding
+                />
+                <p className="mt-2 text-sm opacity-60">
+                  This mission did not reach its funding goal. You can claim
+                  your refund here.
+                </p>
+              </>
+            )}
           </div>
+        ) : (
+          <></>
         )}
       </div>
     </div>
@@ -361,6 +302,69 @@ export default function MissionPayRedeem({
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState('')
 
+  // USD input state and handlers
+  const [usdInput, setUsdInput] = useState('')
+  const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
+    1,
+    'ETH_TO_USD'
+  )
+
+  // Calculate ETH amount from USD for display
+  const calculateEthAmount = useCallback(() => {
+    if (!usdInput || !ethUsdPrice || isNaN(Number(usdInput))) {
+      return '0.0000'
+    }
+    const ethAmount = (Number(usdInput) / ethUsdPrice).toFixed(4)
+    return parseFloat(ethAmount).toLocaleString('en-US', {
+      minimumFractionDigits: 4,
+      maximumFractionDigits: 4,
+    })
+  }, [usdInput, ethUsdPrice])
+
+  // Format number with commas
+  const formatWithCommas = useCallback((value: string) => {
+    if (!value) return ''
+    const num = parseFloat(value)
+    if (isNaN(num)) return value
+    return num.toLocaleString('en-US')
+  }, [])
+
+  // Format token amount with commas
+  const formatTokenAmount = useCallback(
+    (value: number, decimals: number = 2) => {
+      return value.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      })
+    },
+    []
+  )
+
+  // Get formatted display value
+  const formattedUsdInput = formatWithCommas(usdInput)
+
+  // When USD input changes, update ETH input
+  const handleUsdInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const inputValue = e.target.value.replace(/[^0-9]/g, '') // Only allow numbers
+
+      // Limit to 7 characters (excluding commas)
+      if (inputValue.length > 7) return
+
+      setUsdInput(inputValue)
+      if (inputValue === '') {
+        setInput('0')
+        return
+      }
+      if (ethUsdPrice && !isNaN(Number(inputValue))) {
+        setInput((Number(inputValue) / ethUsdPrice).toFixed(6))
+      } else {
+        setInput('0')
+      }
+    },
+    [ethUsdPrice, setInput]
+  )
+
   const [isTeamSigner, setIsTeamSigner] = useState(false)
   const { safe, queueSafeTx, lastSafeTxExecuted } = useSafe(teamNFT?.owner)
 
@@ -377,7 +381,10 @@ export default function MissionPayRedeem({
   })
 
   const nativeBalance = useNativeBalance()
-  const tokenBalance = useWatchTokenBalance(selectedChain, token?.tokenAddress)
+  const tokenBalance = useWatchTokenBalance(
+    selectedChain,
+    token?.tokenAddress || JB_NATIVE_TOKEN_ADDRESS
+  )
   const { data: tokenCredit } = useRead({
     contract: jbTokensContract,
     method: 'creditBalanceOf' as string,
@@ -410,7 +417,7 @@ export default function MissionPayRedeem({
           JB_NATIVE_TOKEN_ADDRESS,
           inputValue * 1e18,
           address || ZERO_ADDRESS,
-          0,
+          output * 1e18,
           message,
           '0x00',
         ],
@@ -467,7 +474,7 @@ export default function MissionPayRedeem({
           JB_NATIVE_TOKEN_ADDRESS,
           inputValue * 1e18,
           address,
-          Math.floor(output),
+          output * 1e18,
           message,
           '0x00',
         ],
@@ -531,9 +538,9 @@ export default function MissionPayRedeem({
         params: [
           address,
           mission?.projectId,
-          tokenBalance * 1e18 || 0,
-          '0x000000000000000000000000000000000000EEEe',
-          0,
+          tokenBalance * 1e18 || tokenCredit.toString(),
+          JB_NATIVE_TOKEN_ADDRESS,
+          tokenBalance * 1e18 || tokenCredit.toString(),
           address,
           '',
         ],
@@ -633,7 +640,7 @@ export default function MissionPayRedeem({
               lastSafeTxExecuted={lastSafeTxExecuted}
             />
           )}
-          {!token?.tokenSymbol && isTeamSigner && (
+          {!token?.tokenSymbol && isTeamSigner && stage !== 3 && (
             <div className="p-8 md:p-0 flex md:block justify-center">
               <StandardButton
                 id="deploy-token-button"
@@ -660,6 +667,11 @@ export default function MissionPayRedeem({
               claimTokenCredit={claimTokenCredit}
               currentStage={currentStage}
               stage={stage}
+              usdInput={usdInput}
+              handleUsdInputChange={handleUsdInputChange}
+              calculateEthAmount={calculateEthAmount}
+              formattedUsdInput={formattedUsdInput}
+              formatTokenAmount={formatTokenAmount}
             />
           </div>
         </>
@@ -684,24 +696,36 @@ export default function MissionPayRedeem({
 
             <div className="w-full flex justify-between">
               <p>{'Total Amount'}</p>
-              <div className="flex flex-col lg:flex-row gap-2 items-end lg:items-center">
-                <div className="flex gap-2 items-center">
-                  <input
-                    id="payment-input"
-                    type="number"
-                    className="text-right bg-transparent w-[75px] rounded-md px-2 outline-none font-bold border-[1px] border-moon-indigo [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                  />
-                  {'ETH'}
-                </div>
+              <div className="flex gap-2 items-center bg-moon-indigo/20 rounded-full px-3 py-1">
+                <Image
+                  src="/coins/ETH.svg"
+                  alt="ETH"
+                  width={16}
+                  height={16}
+                  className="w-5 h-5 bg-light-cool rounded-full"
+                />
+                <span className="text-base">{calculateEthAmount()} ETH</span>
+              </div>
+            </div>
+            <div className="w-full flex justify-end">
+              <div className="flex gap-2 items-center">
+                <span>$</span>
+                <input
+                  id="payment-input"
+                  type="text"
+                  className="text-right bg-transparent w-[100px] rounded-md px-2 outline-none font-bold border-[1px] border-moon-indigo [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  value={formattedUsdInput}
+                  onChange={handleUsdInputChange}
+                  maxLength={9}
+                />
+                <span>{'USD'}</span>
               </div>
             </div>
             <hr className="w-full" />
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${output.toFixed(2).toLocaleString()} ${
+                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
                   token?.tokenSymbol
                 }`}</p>
               </div>
@@ -753,6 +777,7 @@ export default function MissionPayRedeem({
 
             <div>
               <ConditionCheckbox
+                id="contribution-terms-checkbox"
                 label={
                   <p className="text-sm">
                     {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
@@ -788,10 +813,10 @@ export default function MissionPayRedeem({
               <PrivyWeb3Button
                 id="contribute-button"
                 className="w-1/2 bg-moon-indigo rounded-xl"
-                label={`Contribute ${input} ETH`}
+                label={`Contribute $${formattedUsdInput || '0'} USD`}
                 action={buyMissionToken}
                 isDisabled={
-                  !agreedToCondition || !input || parseFloat(input) <= 0
+                  !agreedToCondition || !usdInput || parseFloat(usdInput) <= 0
                 }
               />
             </div>

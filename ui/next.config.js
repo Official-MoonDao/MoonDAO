@@ -28,6 +28,7 @@ module.exports = nextTranslate({
       'cdn.discordapp.com',
       'cdn.stamp.fyi',
       'ipfs.io',
+      'gray-main-toad-36.mypinata.cloud',
     ],
   },
   output: 'standalone',
@@ -262,6 +263,11 @@ module.exports = nextTranslate({
         source: '/meet',
         destination:
           'https://discord.com/channels/914720248140279868/917498630510878821',
+        permanent: true,
+      },
+      {
+        source: '/withdraw',
+        destination: '/lock',
         permanent: true,
       },
     ]
