@@ -12,6 +12,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -46,6 +47,8 @@ export default function Marketplace({ listings }: MarketplaceProps) {
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceABI as any,
   })
+
+  useChainDefault()
 
   useEffect(() => {
     if (listings && input != '') {

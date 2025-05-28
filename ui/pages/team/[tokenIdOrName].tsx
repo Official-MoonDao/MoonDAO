@@ -45,13 +45,10 @@ import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import {
-  MediaRenderer,
-  useActiveAccount,
-  useWalletBalance,
-} from 'thirdweb/react'
+import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import useSafe from '@/lib/safe/useSafe'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
@@ -67,8 +64,10 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
+import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import SafeModal from '@/components/safe/SafeModal'
 import Action from '@/components/subscription/Action'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -178,6 +177,9 @@ export default function TeamDetailPage({
 
   const hats = useSubHats(selectedChain, adminHatId)
 
+  const safeData = useSafe(nft?.owner)
+  const isSigner = safeData?.owners.includes(address || '')
+
   //Subscription Data
   const { data: expiresAt } = useRead({
     contract: teamContract,
@@ -243,12 +245,12 @@ export default function TeamDetailPage({
                   id="org-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
-                  <MediaRenderer
-                    client={client}
+                  <IPFSRenderer
+                    alt="Team Image"
                     className="rounded-full"
                     src={nft.metadata.image}
-                    height={'300'}
-                    width={'300'}
+                    height={300}
+                    width={300}
                   />
                   <div
                     id="star-asset-container"
@@ -431,6 +433,7 @@ export default function TeamDetailPage({
             : imageIpfsLink.split('ipfs://')[1]
         }`}
       />
+
       {teamSubscriptionModalEnabled && (
         <SubscriptionModal
           selectedChain={selectedChain}
@@ -622,8 +625,9 @@ export default function TeamDetailPage({
                 isCitizen={citizen}
               />
               {/* Mooney and Voting Power */}
-              {isManager && (
+              {isSigner && (
                 <TeamTreasury
+                  safeData={safeData}
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}
@@ -642,8 +646,9 @@ export default function TeamDetailPage({
                   ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
                   : `The profile has expired, please connect the owner or admin wallet to renew.`}
               </p>
-              {isManager && (
+              {isSigner && (
                 <TeamTreasury
+                  safeData={safeData}
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}

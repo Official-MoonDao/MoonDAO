@@ -1,7 +1,12 @@
 import Image from 'next/image'
+import { useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
 import StandardButton from '../layout/StandardButton'
+import SafeModal from '../safe/SafeModal'
+import SafeTransactions from '../safe/SafeTransactions'
 
 type TeamTreasuryProps = {
+  safeData?: any
   multisigAddress: string
   multisigMooneyBalance: any
   multisigNativeBalance: any
@@ -30,14 +35,26 @@ function TreasuryAsset({
 }
 
 export default function TeamTreasury({
+  safeData,
   multisigAddress,
   multisigMooneyBalance,
   multisigNativeBalance,
   multisigDAIBalance,
   multisigUSDCBalance,
 }: TeamTreasuryProps) {
+  const account = useActiveAccount()
+  const address = account?.address
+  const [safeModalEnabled, setSafeModalEnabled] = useState(false)
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-24 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+      {safeModalEnabled && (
+        <SafeModal
+          safeData={safeData}
+          safeAddress={multisigAddress}
+          isEnabled={safeModalEnabled}
+          setEnabled={setSafeModalEnabled}
+        />
+      )}
       <div className="flex flex-col">
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center pr-12">
           <div className="flex gap-5 opacity-[50%]">
@@ -62,6 +79,16 @@ export default function TeamTreasury({
             >
               {'Treasury'}
             </StandardButton>
+            {safeData && (
+              <StandardButton
+                className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
+                onClick={() => {
+                  setSafeModalEnabled(true)
+                }}
+              >
+                {'Manage'}
+              </StandardButton>
+            )}
           </div>
         </div>
         <div className="mt-4 flex items-center gap-4"></div>
@@ -87,6 +114,7 @@ export default function TeamTreasury({
             balance={multisigUSDCBalance}
           />
         </div>
+        <SafeTransactions address={address} safeData={safeData} />
       </div>
     </div>
   )
