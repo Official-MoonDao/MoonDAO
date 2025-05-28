@@ -11,13 +11,15 @@ contract MyScript is Script, Config {
         vm.startBroadcast(deployerPrivateKey);
         bytes memory constructorArgs = abi.encode(
             deployer,
-            LZ_ENDPOINTS[block.chainid],
-            JB_MULTI_TERMINAL);
+            JB_MULTI_TERMINAL,
+            address(0)
+        );
         (address payAddress, bytes32 salt) =
             Miner.find(CREATE2_DEPLOYER, 0xda0, type(CrossChainPay).creationCode, constructorArgs);
         console.log("salt");
         console.logBytes32(salt);
-        CrossChainPay pay = new CrossChainPay{salt: salt}(deployer, LZ_ENDPOINTS[block.chainid], JB_MULTI_TERMINAL);
+        CrossChainPay pay = new CrossChainPay{salt: salt}(deployer, JB_MULTI_TERMINAL, address(0));
+        pay.setStargateRouter(STARGATE_POOLS[block.chainid]);
 
         require(address(pay) == payAddress, "Fee hook address mismatch");
         vm.stopBroadcast();

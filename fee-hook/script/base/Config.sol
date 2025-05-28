@@ -12,9 +12,11 @@ contract Config is Script {
     uint256 MAINNET = 1;
     uint256 ARBITRUM = 42161;
     uint256 BASE = 8453;
+    uint256 BASE_SEP = 84532;
     uint256 ARB_SEP = 421614;
     uint256 SEP = 11155111;
     uint256 POLYGON = 137;
+    uint256 OPT_SEP = 11155420;
 
     mapping(uint256 => address) public LZ_ENDPOINTS;
     mapping(uint256 => address) public POOL_MANAGERS;
@@ -32,11 +34,11 @@ contract Config is Script {
     mapping(uint256 => uint24) public LP_FEE;
     mapping(uint256 => address) public MOONDAO_TEAM_ADDRESSES;
     mapping(uint256 => address) public MOONDAO_TREASURY_ADDRESSES;
+    mapping(uint256 => address) public STARGATE_POOLS;
     // Juicebox contract addresses are shared across chains
     address constant JB_MULTI_TERMINAL = address(0xDB9644369c79C3633cDE70D2Df50d827D7dC7Dbc);
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
-    address constant CROSS_CHAIN_PAY_ADDRESS = 0xda05152e183a57E4Be921E2Df2A98547DE925C76;
-
+    address payable constant CROSS_CHAIN_PAY_ADDRESS = payable(address(0xDA03e188943C70C53Bb3626750aFc165816F44DC));
 
     constructor() {
         string memory ethJson = vm.readFile("../contracts/deployments/ethereum.json");
@@ -58,6 +60,10 @@ contract Config is Script {
         VMOONEY_ADDRESSES[MAINNET] = ethJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[POLYGON] = polygonJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[SEP] = sepJson.readAddress(".vMOONEYToken");
+
+        STARGATE_POOLS[SEP] = 0x9Cc7e185162Aa5D1425ee924D97a87A0a34A0706;
+        STARGATE_POOLS[ARB_SEP] = 0x6fddB6270F6c71f31B62AE0260cfa8E2e2d186E0;
+        STARGATE_POOLS[OPT_SEP] = 0xa31dCc5C71E25146b598bADA33E303627D7fC97e;
 
 
         LP_FEE[MAINNET] = 10000;
@@ -111,7 +117,9 @@ contract Config is Script {
         LZ_EIDS[BASE] = 30184;
         LZ_EIDS[POLYGON] = 30109;
         LZ_EIDS[ARB_SEP] = 40231;
+        LZ_EIDS[BASE_SEP] = 40245;
         LZ_EIDS[SEP] = 40161;
+        LZ_EIDS[OPT_SEP] = 40232;
 
         POOL_MANAGERS[MAINNET] = 0x000000000004444c5dc75cB358380D2e3dE08A90;
         POOL_MANAGERS[ARBITRUM] = 0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32;
