@@ -499,7 +499,7 @@ export default function TeamDetailPage({
                         title="Fund"
                         description="Launch a mission to raise funds."
                         icon={<BanknotesIcon height={30} width={30} />}
-                        onClick={() => router.push('/launch')}
+                        onClick={() => router.push('/launch?status=create')}
                       />
                       <Action
                         title="Hire"
