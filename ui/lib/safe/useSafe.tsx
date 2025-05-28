@@ -294,7 +294,6 @@ export default function useSafe(safeAddress: string): SafeData {
     try {
       // Execute the existing transaction directly
       const executeTx = await safe.executeTransaction(safeTx, options)
-      console.log('Transaction executed:', executeTx)
 
       // Get the transaction hash from the execution response
       const txHash = executeTx.hash
