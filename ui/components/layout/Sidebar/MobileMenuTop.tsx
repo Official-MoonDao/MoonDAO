@@ -27,7 +27,7 @@ const MobileMenuTop = ({
       <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 justify-between bg-white shadow dark:bg-slate-950">
         <button
           type="button"
-          className={`px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:border-gray-600 dark:focus:ring-moon-gold ${
+          className={`px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:border-gray-600 dark:focus:text-moon-indigo ${
             isFullscreen ? '' : 'md:hidden'
           }`}
           onClick={() => setSidebarOpen(true)}
@@ -38,7 +38,7 @@ const MobileMenuTop = ({
             aria-hidden="true"
           />
         </button>
-        <div className="ml-4 w-full flex justify-center items-center">
+        <div className="ml-2 w-full flex justify-center items-center">
           <PrivyConnectWallet type="mobile" citizenContract={citizenContract} />
         </div>
         <div className={`flex items-center ${isFullscreen && 'mr-8'}`}>
