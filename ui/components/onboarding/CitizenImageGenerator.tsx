@@ -50,7 +50,13 @@ export function ImageGenerator({
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col mt-5">
-        <FileInput file={inputImage} setFile={setInputImage} noBlankImages />
+        <FileInput
+          file={inputImage}
+          setFile={setInputImage}
+          noBlankImages
+          accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+          acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
+        />
       </div>
       <div
         id="citizenPic"

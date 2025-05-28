@@ -22,6 +22,7 @@ import { renameFile } from '@/lib/utils/files'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { bytesOfString } from '@/lib/utils/strings'
 import TeamABI from '../../const/abis/Team.json'
+import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -298,13 +299,13 @@ export default function TeamMarketplaceListingModal({
           </>
         )}
         <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
-          <input
-            id="listing-image-input"
-            type="file"
-            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px]"
-            onChange={(e: any) =>
-              setListingData({ ...listingData, image: e.target.files[0] })
+          <FileInput
+            file={listingData.image}
+            setFile={(file: any) =>
+              setListingData({ ...listingData, image: file })
             }
+            accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+            acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
           />
 
           <input
