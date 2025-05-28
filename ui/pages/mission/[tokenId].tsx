@@ -27,10 +27,9 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useMissionData from '@/lib/mission/useMissionData'
@@ -39,17 +38,19 @@ import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client, { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
-import { daysUntilDate, formatTimeUntilDeadline } from '@/lib/utils/dates'
+import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
+import IPFSRenderer from '@/components/layout/IPFSRenderer'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import Tooltip from '@/components/layout/Tooltip'
 import { Mission } from '@/components/mission/MissionCard'
@@ -205,24 +206,24 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     id="mission-image-container"
                     className="pl-[0vw] sm:pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                   >
-                    <MediaRenderer
-                      client={client}
-                      src={getIPFSGateway(mission?.metadata?.logoUri)}
-                      className="mt-[-5vw] sm:mt-0 sm:pl-0 sm:rounded-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
-                      height={'576'}
-                      width={'576'}
+                    <IPFSRenderer
+                      src={mission?.metadata?.logoUri}
+                      className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
+                      height={576}
+                      width={576}
+                      alt="Mission Image"
                     />
                     {teamNFT?.metadata?.image && (
                       <div
                         id="team-nft-container"
                         className="absolute bottom-0 lg:right-0 mb-[-5vw] md:mb-[-2vw] mr-[-5vw] md:mr-[-2vw]"
                       >
-                        <MediaRenderer
-                          client={client}
+                        <IPFSRenderer
                           src={teamNFT?.metadata?.image}
                           className="top-[2vw] rounded-full ml-[5vw] sm:ml-0"
-                          height={'150'}
-                          width={'150'}
+                          height={150}
+                          width={150}
+                          alt="Team Image"
                         />
                       </div>
                     )}

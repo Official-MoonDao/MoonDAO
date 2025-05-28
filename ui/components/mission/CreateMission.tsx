@@ -645,6 +645,8 @@ export default function CreateMission({
                       setMissionLogoUri(`${IPFS_GATEWAY}${missionLogoIpfsHash}`)
                     }}
                     dimensions={[1024, 1024]}
+                    accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+                    acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
                   />
                   <div>
                     {missionLogoUri && (
