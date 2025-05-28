@@ -65,7 +65,7 @@ export function CitizenOpenGraphImageGenerator({ ipfsImageUrl, username, citizen
     const textHeight = text.scrollHeight
     const widthScale = containerWidth / textWidth
     const heightScale = containerHeight / textHeight
-    const scaleFactor = Math.min(widthScale, heightScale)
+    const scaleFactor = Math.min(widthScale, heightScale) // Fill the full container
     
     text.style.setProperty('--scale-factor', scaleFactor.toString())
   }, [username])
@@ -109,52 +109,75 @@ export function CitizenOpenGraphImageGenerator({ ipfsImageUrl, username, citizen
       >
         <div className="absolute inset-0 flex items-center relative">
           {/* Complete container */}
-          <div className="flex w-[1200px] h-[630px]">
-            <div className="flex">
-                <div className="overflow-hidden h-full w-[500px] bg-gradient-to-r from-white to-[#001a4a] from-80% to-80%">
-                    {/* Citizen image*/}
-                    <MediaRenderer
-                    className="rounded-[5vw] p-5 pr-0"
-                    client={client}
-                    src={ipfsImageUrl}
-                    width="100%"
-                    height="100%"
-                    alt=""
-                    style={{ objectFit: 'contain', objectPosition: 'left' }}
-                    />
+            <div 
+                className="flex w-[1200px] h-[630px]"
+                style={{
+                backgroundImage: 'url(/assets/rainbow-watercolor-og-bg.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+                }}
+            >
+                <div className="flex">
+                    <div className="flex items-center justify-end h-full w-[500px] bg-gradient-to-r from-white to-[#001a4a] from-80% to-80% pl-10 pr-[2px] mr-[-2px]">
+                        {/* Citizen image wrapper for proper rounding */}
+                        <div className="rounded-[32px] overflow-hidden w-[460px] h-[460px] bg-white border-white border-[10px]">
+                            <MediaRenderer
+                                client={client}
+                                src={ipfsImageUrl}
+                                width="420"
+                                height="420"
+                                alt=""
+                                style={{ 
+                                    objectFit: 'cover', 
+                                    objectPosition: 'center',
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'block'
+                                }}
+                            />
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div className="bg-red-500 h-full w-[700px] flex flex-col justify-center items-center">
-                <div className="bg-blue-500 w-[500px] h-[80px] flex items-center justify-center">
-                    <h1 
-                        ref={textRef}
-                        id="username-text"
-                        className="whitespace-nowrap text-center text-white"
+                <div 
+                    className="h-full w-[700px] flex flex-col justify-center items-center"
+                    style={{
+                        background: `url(/assets/san-rainbow-og-bg-overlay.png), linear-gradient(to left, transparent, #001a4a)`,
+                        backgroundSize: 'cover, cover',
+                        backgroundPosition: 'center, center',
+                        backgroundRepeat: 'no-repeat, no-repeat'
+                    }}
+                    >
+                    <div className="mt-[-50px] w-[550px] h-[80px] flex items-end justify-center">
+                        <h1 
+                            ref={textRef}
+                            id="username-text"
+                            className="whitespace-nowrap text-center text-white"
+                            style={{
+                                fontFamily: 'GoodTimesOG, sans-serif',
+                                fontSize: '48px',
+                                lineHeight: '1',
+                                transform: 'scale(var(--scale-factor, 1))',
+                                transformOrigin: 'center'
+                            }}
+                        >
+                            {username}
+                        </h1>
+                    </div>
+                    <h2
+                        className="whitespace-nowrap text-center text-white mt-4"
                         style={{
                             fontFamily: 'GoodTimesOG, sans-serif',
-                            fontSize: '48px',
+                            fontSize: '28px',
                             lineHeight: '1',
-                            transform: 'scale(var(--scale-factor, 1))',
-                            transformOrigin: 'center'
                         }}
                     >
-                        {username}
-                    </h1>
+                        Citizen # {citizenNumber}
+                    </h2>
                 </div>
-                <h2
-                    className="whitespace-nowrap text-center text-white mt-4"
-                    style={{
-                        fontFamily: 'GoodTimesOG, sans-serif',
-                        fontSize: '28px',
-                        lineHeight: '1',
-                    }}
-                >
-                    Citizen # {citizenNumber}
-                </h2>
-            </div>
-        </div>    
+            </div>    
         </div>
-        {/* Username Overlay */}
+        {/* Username Overlay 
         <div className="absolute bottom-0 left-8 text-white w-[560px] h-[100px] flex items-center">
           <Image
             src="/assets/logo-san-sans-icon.svg"
@@ -164,11 +187,12 @@ export function CitizenOpenGraphImageGenerator({ ipfsImageUrl, username, citizen
             className="mr-4"
           />
         </div>
+        */}
       </div>
       <button
         onClick={generateOGImage}
         disabled={!isImageLoaded}
-        className={`px-4 py-2 rounded ${
+        className={`px-4 py-2 ${
           isImageLoaded
             ? 'bg-blue-500 text-white hover:bg-blue-600' 
             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
