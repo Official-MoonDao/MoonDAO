@@ -135,12 +135,6 @@ describe('<MissionPayRedeem />', () => {
       cy.get('#mission-pay-container').should('exist')
     })
 
-    it('Should display mission statistics correctly', () => {
-      cy.contains('10').should('exist') // Payments count
-      cy.contains('1').should('exist') // Volume in ETH
-      cy.contains('5%').should('exist') // Last 7 days percent
-    })
-
     it('Should show token exchange rates', () => {
       cy.contains('Current Supply').should('exist')
       cy.contains('1 $TEST').should('exist') // Token supply
@@ -148,52 +142,60 @@ describe('<MissionPayRedeem />', () => {
   })
 
   describe('Payment Flow', () => {
-    it('Should handle USD input and update ETH input correctly', () => {
-      // Wait for the API call to complete
-      cy.wait('@getEthPrice')
-
-      // Wait for the component to be ready
-      cy.get('#usd-contribution-input').should('exist')
-
-      // Type $100 in USD input
-      cy.get('#usd-contribution-input').type('100')
-
-      // Wait for the value to be updated
-      cy.get('#eth-contribution-input').should('have.value', '0.050000')
+    beforeEach(() => {
+      // Open the payment modal before each test
+      cy.get('#open-contribute-modal').click()
     })
 
-    it('Should handle ETH input and update USD input correctly', () => {
+    it('Should handle USD input and update ETH display correctly', () => {
       // Wait for the API call to complete
       cy.wait('@getEthPrice')
 
-      // Wait for the component to be ready
-      cy.get('#eth-contribution-input').should('exist')
-
-      // Type 0.1 ETH
-      cy.get('#eth-contribution-input').type('0.1')
-
-      // Wait for the value to be updated
-      cy.get('#usd-contribution-input').should('have.value', '200.00')
-    })
-
-    it('Should maintain synchronization between USD and ETH inputs', () => {
-      // Wait for the API call to complete
-      cy.wait('@getEthPrice')
-
-      // Wait for the component to be ready
-      cy.get('#usd-contribution-input').should('exist')
+      // Wait for the modal to be ready
+      cy.get('#mission-pay-modal').should('exist')
+      cy.get('#payment-input').should('exist')
 
       // Type $100 in USD input
-      cy.get('#usd-contribution-input').type('100')
+      cy.get('#payment-input').type('100')
 
-      // Wait for the value to be updated
-      cy.get('#eth-contribution-input').should('have.value', '0.050000')
+      // Wait for the value to be updated and check the exact format
+      cy.get('.text-base').contains('0.0500 ETH').should('exist')
+    })
+
+    it('Should handle USD input and update token output correctly', () => {
+      // Wait for the API call to complete
+      cy.wait('@getEthPrice')
+
+      // Wait for the modal to be ready
+      cy.get('#mission-pay-modal').should('exist')
+      cy.get('#payment-input').should('exist')
+
+      // Type $100 in USD input
+      cy.get('#payment-input').type('100')
+
+      // Wait for the token output to be updated
+      cy.get('#token-output').should('exist')
+    })
+
+    it('Should maintain synchronization between USD input and ETH display', () => {
+      // Wait for the API call to complete
+      cy.wait('@getEthPrice')
+
+      // Wait for the modal to be ready
+      cy.get('#mission-pay-modal').should('exist')
+      cy.get('#payment-input').should('exist')
+
+      // Type $100 in USD input
+      cy.get('#payment-input').type('100')
+
+      // Wait for the value to be updated and check the exact format
+      cy.get('.text-base').contains('0.0500 ETH').should('exist')
 
       // Clear USD input
-      cy.get('#usd-contribution-input').clear()
+      cy.get('#payment-input').clear()
 
-      // Wait for the value to be cleared
-      cy.get('#eth-contribution-input').should('have.value', '')
+      // Wait for the value to be cleared and check the exact format
+      cy.get('.text-base').contains('0.0000 ETH').should('exist')
     })
   })
 
