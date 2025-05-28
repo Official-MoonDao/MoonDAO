@@ -5,6 +5,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/20/solid'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
+import { usePrivy } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN_V5, IPFS_GATEWAY } from 'const/config'
 import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
@@ -118,6 +119,7 @@ const MISSION_DESCRIPTION_TEMPLATE = `
 
 export function CreateMissionStage({
   id,
+  account,
   stage,
   setStage,
   header,
@@ -126,6 +128,7 @@ export function CreateMissionStage({
   customButton,
   children,
 }: any) {
+  const { login } = usePrivy()
   return (
     <div className="w-full flex flex-col gap-4" id={id}>
       <h2 className="font-GoodTimes text-2xl md:text-4xl">{header}</h2>
@@ -156,6 +159,10 @@ export function CreateMissionStage({
               className="gradient-2 rounded-full"
               hoverEffect={false}
               onClick={() => {
+                if (!account) {
+                  login()
+                  return
+                }
                 if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
                   setStage((prev: number) => prev + 1)
                 } else {
@@ -249,7 +256,7 @@ export default function CreateMission({
     useState(false)
 
   const [teamRequirementModalEnabled, setTeamRequirementModalEnabled] =
-    useState(userTeamsAsManager?.[0] === undefined)
+    useState(userTeamsAsManager && userTeamsAsManager?.[0] === undefined)
 
   useEffect(() => {
     if (userTeams)
@@ -464,7 +471,9 @@ export default function CreateMission({
                 />
               </div>
               {teamRequirementModalEnabled && (
-                <TeamRequirementModal setEnabled={() => {}} />
+                <TeamRequirementModal
+                  setEnabled={setTeamRequirementModalEnabled}
+                />
               )}
               {stage === 0 && (
                 <CreateMissionStage
