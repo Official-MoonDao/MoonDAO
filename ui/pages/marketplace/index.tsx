@@ -12,6 +12,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -46,6 +47,8 @@ export default function Marketplace({ listings }: MarketplaceProps) {
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceABI as any,
   })
+
+  useChainDefault()
 
   useEffect(() => {
     if (listings && input != '') {
@@ -112,46 +115,53 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 }
 
 export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+  try {
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-  const now = Math.floor(Date.now() / 1000)
+    const now = Math.floor(Date.now() / 1000)
 
-  const marketplaceTableContract = getContract({
-    client: serverClient,
-    chain,
-    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-    abi: MarketplaceABI as any,
-  })
-  const teamContract = getContract({
-    client: serverClient,
-    chain,
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
-  })
-
-  const marketplaceTableName = await readContract({
-    contract: marketplaceTableContract,
-    method: 'getTableName',
-  })
-
-  const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
-
-  const allListings = await queryTable(chain, statement)
-
-  const validListings = allListings.filter(async (listing: any) => {
-    const teamExpiration = await readContract({
-      contract: teamContract,
-      method: 'expiresAt',
-      params: [listing.teamId],
+    const marketplaceTableContract = getContract({
+      client: serverClient,
+      chain,
+      address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+      abi: MarketplaceABI as any,
     })
-    return +teamExpiration.toString() > now
-  })
+    const teamContract = getContract({
+      client: serverClient,
+      chain,
+      address: TEAM_ADDRESSES[chainSlug],
+      abi: TeamABI as any,
+    })
 
-  return {
-    props: {
-      listings: validListings,
-    },
-    revalidate: 60,
+    const marketplaceTableName = await readContract({
+      contract: marketplaceTableContract,
+      method: 'getTableName',
+    })
+
+    const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
+
+    const allListings = await queryTable(chain, statement)
+
+    const validListings = allListings.filter(async (listing: any) => {
+      const teamExpiration = await readContract({
+        contract: teamContract,
+        method: 'expiresAt',
+        params: [listing.teamId],
+      })
+      return +teamExpiration.toString() > now
+    })
+
+    return {
+      props: {
+        listings: validListings,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      props: { listings: [] },
+    }
   }
 }

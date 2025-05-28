@@ -35,6 +35,7 @@ export const assetImageExtension = {
   JBX: 'png',
   MOONEY: 'png',
   SAFE: 'png',
+  WBTC: 'png',
 } as { [key: string]: string }
 
 /*

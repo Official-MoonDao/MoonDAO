@@ -48,6 +48,7 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import useSafe from '@/lib/safe/useSafe'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
@@ -66,6 +67,7 @@ import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import SafeModal from '@/components/safe/SafeModal'
 import Action from '@/components/subscription/Action'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -174,6 +176,9 @@ export default function TeamDetailPage({
   } = useTeamData(teamContract, hatsContract, nft)
 
   const hats = useSubHats(selectedChain, adminHatId)
+
+  const safeData = useSafe(nft?.owner)
+  const isSigner = safeData?.owners.includes(address || '')
 
   //Subscription Data
   const { data: expiresAt } = useRead({
@@ -428,6 +433,7 @@ export default function TeamDetailPage({
             : imageIpfsLink.split('ipfs://')[1]
         }`}
       />
+
       {teamSubscriptionModalEnabled && (
         <SubscriptionModal
           selectedChain={selectedChain}
@@ -619,8 +625,9 @@ export default function TeamDetailPage({
                 isCitizen={citizen}
               />
               {/* Mooney and Voting Power */}
-              {isManager && (
+              {isSigner && (
                 <TeamTreasury
+                  safeData={safeData}
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}
@@ -639,8 +646,9 @@ export default function TeamDetailPage({
                   ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
                   : `The profile has expired, please connect the owner or admin wallet to renew.`}
               </p>
-              {isManager && (
+              {isSigner && (
                 <TeamTreasury
+                  safeData={safeData}
                   multisigAddress={nft.owner}
                   multisigMooneyBalance={MOONEYBalance?.displayValue}
                   multisigNativeBalance={nativeBalance?.displayValue}

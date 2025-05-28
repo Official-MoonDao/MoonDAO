@@ -241,9 +241,9 @@ export default function ProjectProfile({
                 </div>
               </div>
 
-              <p className="py-4 px-4 md:px-0">
+              <div className="py-4 px-4 md:px-0">
                 <MarkdownWithTOC body={nanceProposal?.body || ''} />
-              </p>
+              </div>
             </div>
           </Frame>
           {finalReportMarkdown && (
@@ -270,9 +270,7 @@ export default function ProjectProfile({
                   </div>
                 </div>
                 <div className="mt-4">
-                  <CollapsibleContainer minHeight="400px">
-                    <MarkdownWithTOC body={finalReportMarkdown} />
-                  </CollapsibleContainer>
+                  <MarkdownWithTOC body={finalReportMarkdown} />
                 </div>
               </div>
             </Frame>
