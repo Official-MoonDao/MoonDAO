@@ -38,7 +38,7 @@ const MobileMenuTop = ({
             aria-hidden="true"
           />
         </button>
-        <div className="ml-4 w-full flex justify-center items-center">
+        <div className="ml-2 w-full flex justify-center items-center">
           <PrivyConnectWallet type="mobile" citizenContract={citizenContract} />
         </div>
         <div className={`flex items-center ${isFullscreen && 'mr-8'}`}>
