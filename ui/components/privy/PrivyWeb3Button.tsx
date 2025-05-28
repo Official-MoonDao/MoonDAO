@@ -1,6 +1,7 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
@@ -136,9 +137,12 @@ export function PrivyWeb3Button({
             }
 
             try {
-              await wallets[selectedWallet]?.switchChain(selectedChain?.id)
+              const success = await addNetworkToWallet(selectedChain)
+              if (success) {
+                await wallets[selectedWallet]?.switchChain(selectedChain?.id)
+              }
             } catch (err: any) {
-              console.log(err.message)
+              console.error('Error switching network:', err.message)
             }
           }}
           isDisabled={isDisabled}
