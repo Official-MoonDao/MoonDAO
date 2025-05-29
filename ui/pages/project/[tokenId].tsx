@@ -4,13 +4,10 @@ import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   CITIZEN_ADDRESSES,
-  DAI_ADDRESSES,
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
-  MOONEY_ADDRESSES,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
-  USDC_ADDRESSES,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -18,7 +15,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import useSafe from '@/lib/safe/useSafe'
@@ -88,27 +85,6 @@ export default function ProjectProfile({
     if (projectContract) getOwner()
   }, [tokenId, projectContract])
 
-  const { data: MOONEYBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    tokenAddress: MOONEY_ADDRESSES[chainSlug],
-    address: owner,
-  })
-
-  const { data: DAIBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    tokenAddress: DAI_ADDRESSES[chainSlug],
-    address: owner,
-  })
-
-  const { data: USDCBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    tokenAddress: USDC_ADDRESSES[chainSlug],
-    address: owner,
-  })
-
   const {
     adminHatId,
     managerHatId,
@@ -126,13 +102,6 @@ export default function ProjectProfile({
   const isSigner = safeData?.owners.includes(address || '')
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
-
-  // get native balance for multisigj
-  const { data: nativeBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: owner,
-  })
 
   useChainDefault()
 
@@ -344,10 +313,6 @@ export default function ProjectProfile({
               isSigner={isSigner}
               safeData={safeData}
               multisigAddress={owner}
-              multisigMooneyBalance={MOONEYBalance?.displayValue}
-              multisigNativeBalance={nativeBalance?.displayValue}
-              multisigDAIBalance={DAIBalance?.displayValue}
-              multisigUSDCBalance={USDCBalance?.displayValue}
             />
           </div>
         </div>
