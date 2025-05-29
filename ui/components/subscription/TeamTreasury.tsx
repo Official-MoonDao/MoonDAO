@@ -1,34 +1,17 @@
-import { COIN_ICONS } from 'const/icons'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
-import { formatUnits } from 'ethers/lib/utils'
 import StandardButton from '../layout/StandardButton'
+import SafeBalances from '../safe/SafeBalances'
 import SafeModal from '../safe/SafeModal'
+import SafeSendModal from '../safe/SafeSendModal'
 import SafeTransactions from '../safe/SafeTransactions'
 
 type TeamTreasuryProps = {
   isSigner: boolean
   safeData: any
   multisigAddress: string
-}
-
-function TreasuryAsset({ label, balance }: { label: string; balance: string }) {
-  return (
-    <div className="flex gap-4 items-center text-lg justify-between">
-      <Image
-        src={COIN_ICONS[label as keyof typeof COIN_ICONS] || '/coins/ETH.svg'}
-        alt={label}
-        width={20}
-        height={20}
-      />
-      <div className="flex gap-2">
-        <p className="font-GoodTimes">{`${label} :`}</p>
-        <p className="pl-6 font-GoodTimes">{balance}</p>
-      </div>
-    </div>
-  )
 }
 
 export default function TeamTreasury({
@@ -39,7 +22,9 @@ export default function TeamTreasury({
   const account = useActiveAccount()
   const address = account?.address
   const [safeModalEnabled, setSafeModalEnabled] = useState(false)
-  const { data: safeBalances, isLoading } = useSafeBalances(
+  const [safeSendModalEnabled, setSafeSendModalEnabled] = useState(false)
+
+  const { data: safeBalances, isLoading: isLoadingBalances } = useSafeBalances(
     multisigAddress,
     !!multisigAddress,
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
@@ -55,6 +40,13 @@ export default function TeamTreasury({
           setEnabled={setSafeModalEnabled}
         />
       )}
+      {safeSendModalEnabled && (
+        <SafeSendModal
+          safeData={safeData}
+          safeAddress={multisigAddress}
+          setEnabled={setSafeSendModalEnabled}
+        />
+      )}
       <div className="flex flex-col">
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center pr-12">
           <div className="flex gap-5 opacity-[50%]">
@@ -66,48 +58,32 @@ export default function TeamTreasury({
             />
             <h2 className="header font-GoodTimes">Treasury</h2>
           </div>
-          <div className="flex flex-col md:flex-row gap-2">
-            <StandardButton
-              className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
-              onClick={() => {
-                const safeNetwork =
-                  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-                window.open(
-                  `https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`
-                )
-              }}
-            >
-              {'Treasury'}
-            </StandardButton>
-            {safeData && isSigner && (
+          {safeData && isSigner && (
+            <div className="flex flex-col md:flex-row gap-2">
               <StandardButton
-                className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
+                className="min-w-[200px] gradient-2 rounded-[5vmax]"
+                onClick={() => {
+                  setSafeSendModalEnabled(true)
+                }}
+              >
+                {'Send'}
+              </StandardButton>
+              <StandardButton
+                className="min-w-[200px] gradient-2 rounded-[5vmax]"
                 onClick={() => {
                   setSafeModalEnabled(true)
                 }}
               >
                 {'Manage'}
               </StandardButton>
-            )}
-          </div>
-        </div>
-        <div className="mt-4 flex items-center gap-4"></div>
-        <div className="w-fit p-4 flex flex-col gap-4">
-          {isLoading ? (
-            <div>Loading balances...</div>
-          ) : (
-            safeBalances?.map((balance) => (
-              <TreasuryAsset
-                key={balance.tokenAddress || 'native'}
-                label={balance.token?.symbol || 'ETH'}
-                balance={formatUnits(
-                  balance.balance,
-                  balance.token?.decimals || 18
-                )}
-              />
-            ))
+            </div>
           )}
         </div>
+        <div className="mt-4 flex items-center gap-4"></div>
+        <SafeBalances
+          safeBalances={safeBalances}
+          isLoading={isLoadingBalances}
+        />
         {isSigner && <SafeTransactions address={address} safeData={safeData} />}
       </div>
     </div>
