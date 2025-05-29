@@ -1,15 +1,12 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { ethers } from 'ethers'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { useSafeBalances } from '@/lib/nance/SafeHooks'
 import { SafeData } from '@/lib/safe/useSafe'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
-import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import { SafeAsset } from './SafeBalances'
 
 type SafeModalProps = {
   safeData: SafeData
@@ -104,8 +101,8 @@ export default function SafeExecutionDisclaimer({
           </p>
           <p className="text-gray-300 mb-2">Nonce: {transaction.nonce}</p>
           <p className="text-gray-300 mb-2">
-            Confirmations: {transaction.confirmations.length}/
-            {transaction.confirmationsRequired}
+            Confirmations: {transaction?.confirmations?.length || 0}/
+            {transaction?.confirmationsRequired || 0}
           </p>
 
           <div className="mb-4">
