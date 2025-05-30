@@ -34,6 +34,7 @@ export default function SafeSendModal({
   const [amount, setAmount] = useState('')
   const [to, setTo] = useState('')
   const [selectedToken, setSelectedToken] = useState<string>('native')
+  const [isValid, setIsValid] = useState(false)
 
   const { data: safeBalances, isLoading } = useSafeBalances(
     safeAddress,
@@ -44,6 +45,13 @@ export default function SafeSendModal({
   useEffect(() => {
     setAmount('')
   }, [selectedToken])
+
+  useEffect(() => {
+    // Validate inputs
+    const isAddressValid = to.length === 42 && to.startsWith('0x')
+    const isAmountValid = Number(amount) > 0
+    setIsValid(isAddressValid && isAmountValid)
+  }, [to, amount])
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,9 +125,14 @@ export default function SafeSendModal({
           </p>
         </div>
 
-        <form onSubmit={handleSend} className="flex flex-col gap-4">
+        <form
+          onSubmit={handleSend}
+          className="flex flex-col gap-4"
+          data-testid="safe-send-form"
+        >
           <div className="flex gap-4 items-center">
             <select
+              data-testid="token-select"
               className="max-w-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
               onChange={({ target }) => setSelectedToken(target.value)}
               value={selectedToken}
@@ -164,6 +177,7 @@ export default function SafeSendModal({
           </div>
 
           <input
+            data-testid="recipient-address"
             type="text"
             value={to}
             onChange={(e) => setTo(e.target.value)}
@@ -171,6 +185,7 @@ export default function SafeSendModal({
             className="flex-1 bg-darkest-cool text-white px-4 py-2 rounded-lg"
           />
           <input
+            data-testid="amount-input"
             type="text"
             value={amount}
             onChange={({ target }) => {
@@ -203,7 +218,13 @@ export default function SafeSendModal({
                   )
                 : 0
 
-              // Allow input if it's less than or equal to max amount
+              // If there's no balance (maxAmount is 0), allow any amount
+              if (maxAmount === 0) {
+                setAmount(value)
+                return
+              }
+
+              // Otherwise, validate against maxAmount
               if (Number(value) <= maxAmount) {
                 setAmount(value)
               } else {
@@ -214,10 +235,12 @@ export default function SafeSendModal({
             className="flex-1 bg-darkest-cool text-white px-4 py-2 rounded-lg"
           />
           <PrivyWeb3Button
+            dataTestId="send-button"
             className="w-full rounded-full"
             label="Send"
             type="submit"
             action={() => {}}
+            isDisabled={!isValid}
           />
         </form>
       </div>
