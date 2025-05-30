@@ -79,13 +79,14 @@ export default function Tier({
                     <div className="flex flex-col pt-5 items-start">
                       <div className="flex flex-row items-center space-x-2">
                         <div className="flex flex-col items-start">
-                          <div className="flex flex-row items-center space-x-2">
-                            <p className="text-lg md:text-2xl">{price} ETH</p>
-                            <p className="text-sm">(Arbitrum) /Year</p>
+                          <div className="flex flex-col lg:flex-row lg:items-center gap-1">
+                            <p className="text-lg md:text-2xl">
+                              {`~$${Math.round(usdPrice)} / Year`}
+                            </p>
+                            <p className="text-sm opacity-60">
+                              ({price} Arbitrum ETH)
+                            </p>
                           </div>
-                          <p className="text-sm opacity-60">
-                            (~${Math.round(usdPrice)})
-                          </p>
                         </div>
                       </div>
                       <p className="text-[#753F73] text-sm md:text-lg">
