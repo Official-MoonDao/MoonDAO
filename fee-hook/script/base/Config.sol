@@ -38,7 +38,7 @@ contract Config is Script {
     // Juicebox contract addresses are shared across chains
     address constant JB_MULTI_TERMINAL = address(0xDB9644369c79C3633cDE70D2Df50d827D7dC7Dbc);
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
-    address payable constant CROSS_CHAIN_PAY_ADDRESS = payable(address(0xDA03e188943C70C53Bb3626750aFc165816F44DC));
+    address payable constant CROSS_CHAIN_PAY_ADDRESS = payable(address(0xb9Ce576bec5D36F89275eb9bE6C1057B3bD3572C));
 
     constructor() {
         string memory ethJson = vm.readFile("../contracts/deployments/ethereum.json");

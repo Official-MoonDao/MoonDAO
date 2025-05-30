@@ -1,35 +1,15 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-import "forge-std/console.sol";
 import "forge-std/Test.sol";
-import "../src/CrossChainPay.sol";
-import "@layerzerolabs/test-devtools-evm-foundry/contracts/mocks/EndpointV2Mock.sol";
-import { TestHelperOz5 } from "@layerzerolabs/test-devtools-evm-foundry/contracts/TestHelperOz5.sol";
-import { OptionsBuilder } from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
-import { OptionsBuilder } from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
+import "forge-std/console.sol";
+import { CrossChainPay } from "../src/CrossChainPay.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Origin, MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 
-
-
-/// @dev Simple mock to capture pay() calls
-contract JBMultiTerminalMock is IJBMultiTerminal {
-    uint256 public lastProjectId;
-    address public lastToken;
-    uint256 public lastAmount;
-    address public lastBeneficiary;
-    uint256 public lastMinReturned;
-    string  public lastMemo;
-    bytes   public lastMetadata;
-
-    event PayCalled(
-        uint256 projectId,
-        address token,
-        uint256 amount,
-        address beneficiary,
-        uint256 minReturnedTokens,
-        string memo,
-        bytes metadata
-    );
+// Mock contracts for testing
+contract MockJBMultiTerminal {
+    mapping(uint256 => uint256) public projectPayments;
 
     function pay(
         uint256 projectId,
@@ -39,119 +19,434 @@ contract JBMultiTerminalMock is IJBMultiTerminal {
         uint256 minReturnedTokens,
         string calldata memo,
         bytes calldata metadata
-    )
-        external
-        payable
-        override
-        returns (uint256 beneficiaryTokenCount)
-    {
-        // store for assertion
-        lastProjectId    = projectId;
-        lastToken        = token;
-        lastAmount       = amount;
-        lastBeneficiary  = beneficiary;
-        lastMinReturned  = minReturnedTokens;
-        lastMemo         = memo;
-        lastMetadata     = metadata;
-
-        emit PayCalled(projectId, token, amount, beneficiary, minReturnedTokens, memo, metadata);
-        return amount;
+    ) external payable returns (uint256 beneficiaryTokenCount) {
+        require(msg.value == amount, "Incorrect ETH amount");
+        projectPayments[projectId] += amount;
+        return amount; // Return amount as token count for simplicity
     }
 }
 
-contract CrossChainPayTest is Test, TestHelperOz5 {
-    EndpointV2Mock    endpointA;
-    EndpointV2Mock    endpointB;
-    CrossChainPay     oappA;
-    CrossChainPay     oappB;
-    JBMultiTerminalMock jbMock;
-
-    uint16 constant   EID_A = 1;
-    uint16 constant   EID_B = 2;
-
-    address constant  OWNER = address(0x3);
-    address constant  USER  = address(0xBEEF);
-
-    function setUp() public virtual override {
-        // 1) deploy two endpoints
-        super.setUp();
-
-        setUpEndpoints(2, LibraryType.UltraLightNode);
-
-
-        endpointA = new EndpointV2Mock(EID_A, address(this));
-        endpointB = new EndpointV2Mock(EID_B, address(this));
-
-        // 2) deploy a single JBMultiTerminalMock to be used by both
-        jbMock = new JBMultiTerminalMock();
-
-        // 3) deploy our two OApps
-        oappA = new CrossChainPay(address(this), address(endpointA), address(jbMock));
-        oappB = new CrossChainPay(address(this), address(endpointB), address(jbMock));
-
-
-        oappA = CrossChainPay(
-            _deployOApp(type(CrossChainPay).creationCode, abi.encode(address(this), address(endpoints[EID_A]), address(jbMock)))
-        );
-        oappB = CrossChainPay(
-            _deployOApp(type(CrossChainPay).creationCode, abi.encode(address(this), address(endpoints[EID_B]), address(jbMock)))
-        );
-
-        address[] memory ofts = new address[](2);
-        ofts[0] = address(oappA);
-        ofts[1] = address(oappB);
-
-        this.wireOApps(ofts);
-
-
-        // 4) wire the endpoints to each other
-        //endpointA.setDestLzEndpoint(address(oappB), address(endpointB));
-        //endpointB.setDestLzEndpoint(address(oappA), address(endpointA));
-
-        //console.log("this", address(this));
-        //// 5) whitelist each OApp as a peer
-        //oappA.setPeer(EID_B, bytes32(uint256(uint160(address(oappB)))));
-        //oappB.setPeer(EID_A, bytes32(uint256(uint160(address(oappA)))));
+contract MockStargate {
+    struct SendParam {
+        uint32 dstEid;
+        bytes32 to;
+        uint256 amountLD;
+        uint256 minAmountLD;
+        bytes extraOptions;
+        bytes composeMsg;
+        bytes oftCmd;
     }
 
-    function testCrossChainPayFlowsThrough() public {
-        // give USER some ETH
-        vm.deal(USER, 10 ether);
+    struct MessagingFee {
+        uint256 nativeFee;
+        uint256 lzTokenFee;
+    }
 
-        // arbitrary params
-        uint256 projectId       = 42;
-        address token           = address(0x1234);
-        uint256 amount          = 2 ether;
-        address beneficiary     = address(0xCAFE);
-        uint256 minReturned     = 0;
-        string memory memo      = "";
-        bytes memory metadata   = hex"";
-        bytes memory options = OptionsBuilder.newOptions();
-        bytes memory options_  = OptionsBuilder.addExecutorLzReceiveOption(options, 200000, 0.1 ether);
+    struct MessagingReceipt {
+        bytes32 guid;
+        uint64 nonce;
+        MessagingFee fee;
+    }
 
+    uint256 public constant MOCK_FEE = 0.001 ether;
+    address public mockCrossChainPay;
 
-        // USER calls crossChainPay on A
-        vm.prank(USER);
-        oappA.crossChainPay{ value: amount }(
-            EID_B,
-            options_,
-            projectId,
-            token,
-            amount,
+    event MockSend(uint32 dstEid, bytes32 to, uint256 amount, bytes composeMsg);
+
+    function setMockCrossChainPay(address _contract) external {
+        mockCrossChainPay = _contract;
+    }
+
+    function send(
+        SendParam calldata _sendParam,
+        MessagingFee calldata _fee,
+        address _refundTo
+    ) external payable returns (MessagingReceipt memory msgReceipt) {
+        require(msg.value >= _sendParam.amountLD + MOCK_FEE, "Insufficient fees");
+
+        emit MockSend(_sendParam.dstEid, _sendParam.to, _sendParam.amountLD, _sendParam.composeMsg);
+
+        // Simulate cross-chain delivery by calling lzCompose on the target contract
+        if (mockCrossChainPay != address(0) && _sendParam.composeMsg.length > 0) {
+            // In a real scenario, this would happen on the destination chain
+            // For testing, we simulate it happening immediately
+            (bool success,) = mockCrossChainPay.call{value: _sendParam.amountLD}(
+                abi.encodeWithSignature(
+                    "lzCompose((uint32,bytes32,uint64),bytes32,bytes,address,bytes)",
+                    _createMockOrigin(),
+                    bytes32(0),
+                    _sendParam.composeMsg,
+                    address(this),
+                    ""
+                )
+            );
+            require(success, "lzCompose call failed");
+        }
+
+        return MessagingReceipt({
+            guid: keccak256(abi.encodePacked(block.timestamp, _sendParam.dstEid)),
+            nonce: 1,
+            fee: MessagingFee(MOCK_FEE, 0)
+        });
+    }
+
+    function quoteSend(
+        SendParam calldata _sendParam,
+        bool _payInLzToken
+    ) external pure returns (MessagingFee memory msgFee) {
+        return MessagingFee(MOCK_FEE, 0);
+    }
+
+    function _createMockOrigin() internal pure returns (bytes memory) {
+        // Create a mock Origin struct for testing
+        return abi.encode(uint32(1), bytes32(0), uint64(1));
+    }
+}
+
+contract MockERC20 is IERC20 {
+    mapping(address => uint256) private _balances;
+    uint256 private _totalSupply;
+
+    function totalSupply() external view override returns (uint256) {
+        return _totalSupply;
+    }
+
+    function balanceOf(address account) external view override returns (uint256) {
+        return _balances[account];
+    }
+
+    function transfer(address to, uint256 amount) external override returns (bool) {
+        _balances[msg.sender] -= amount;
+        _balances[to] += amount;
+        return true;
+    }
+
+    function allowance(address owner, address spender) external view override returns (uint256) {
+        return 0;
+    }
+
+    function approve(address spender, uint256 amount) external override returns (bool) {
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
+        return true;
+    }
+
+    function mint(address to, uint256 amount) external {
+        _balances[to] += amount;
+        _totalSupply += amount;
+    }
+}
+
+contract CrossChainPayTest is Test {
+    CrossChainPay public crossChainPay;
+    MockJBMultiTerminal public mockJBTerminal;
+    MockStargate public mockStargate;
+    MockERC20 public mockToken;
+
+    address public owner = address(0x1);
+    address public user = address(0x2);
+    address public beneficiary = address(0x3);
+
+    uint32 public constant DST_EID = 102; // Polygon
+    uint256 public constant PROJECT_ID = 1;
+    uint256 public constant TRANSFER_AMOUNT = 1 ether;
+    uint256 public constant MIN_RETURNED_TOKENS = 0;
+    string public constant MEMO = "Test cross-chain payment";
+    bytes public constant METADATA = "";
+    bytes public constant EXTRA_OPTIONS = "";
+
+    function setUp() public {
+        // Deploy mock contracts
+        mockJBTerminal = new MockJBMultiTerminal();
+        mockStargate = new MockStargate();
+        mockToken = new MockERC20();
+
+        // Deploy CrossChainPay contract
+        vm.startPrank(owner);
+        crossChainPay = new CrossChainPay(
+            owner,
+            address(mockJBTerminal),
+            address(mockStargate)
+        );
+        vm.stopPrank();
+
+        // Set up mock relationships
+        mockStargate.setMockCrossChainPay(address(crossChainPay));
+
+        // Fund test accounts
+        vm.deal(user, 10 ether);
+        vm.deal(address(crossChainPay), 5 ether);
+    }
+
+    function testConstructor() public {
+        assertEq(address(crossChainPay.jbMultiTerminal()), address(mockJBTerminal));
+        assertEq(address(crossChainPay.stargateRouter()), address(mockStargate));
+        assertEq(crossChainPay.owner(), owner);
+    }
+
+    function testCrossChainPaySuccess() public {
+        uint256 totalAmount = TRANSFER_AMOUNT + mockStargate.MOCK_FEE();
+
+        vm.startPrank(user);
+
+        // Test successful cross-chain payment
+        vm.expectEmit(true, true, false, true);
+        emit CrossChainPayInitiated(DST_EID, PROJECT_ID, TRANSFER_AMOUNT, beneficiary);
+
+        crossChainPay.crossChainPay{value: totalAmount}(
+            DST_EID,
+            PROJECT_ID,
+            TRANSFER_AMOUNT,
             beneficiary,
-            minReturned,
-            memo,
-            metadata
+            MIN_RETURNED_TOKENS,
+            MEMO,
+            METADATA,
+            EXTRA_OPTIONS
         );
 
-        // because _lzSend → EndpointV2Mock.send → oappB._lzReceive happens synchronously,
-        // our mock's pay() has already fired. Let's check it:
-        //assertEq(jbMock.lastProjectId(),   projectId,   "projectId");
-        //assertEq(jbMock.lastToken(),       token,       "token");
-        assertEq(jbMock.lastAmount(),      amount,      "amount");
-        //assertEq(jbMock.lastBeneficiary(), beneficiary, "beneficiary");
-        //assertEq(jbMock.lastMinReturned(), minReturned, "minReturned");
-        //assertEq(jbMock.lastMemo(),        memo,        "memo");
-        //assertEq(jbMock.lastMetadata(),    metadata,    "metadata");
+        vm.stopPrank();
+
+        // Verify the payment was recorded in the mock terminal
+        assertEq(mockJBTerminal.projectPayments(PROJECT_ID), TRANSFER_AMOUNT);
+    }
+
+    function testCrossChainPayInsufficientAmount() public {
+        vm.startPrank(user);
+
+        // Test with insufficient ETH
+        vm.expectRevert("Insufficient ETH sent");
+        crossChainPay.crossChainPay{value: 0.5 ether}(
+            DST_EID,
+            PROJECT_ID,
+            TRANSFER_AMOUNT,
+            beneficiary,
+            MIN_RETURNED_TOKENS,
+            MEMO,
+            METADATA,
+            EXTRA_OPTIONS
+        );
+
+        vm.stopPrank();
+    }
+
+    function testCrossChainPayZeroAmount() public {
+        vm.startPrank(user);
+
+        // Test with zero amount
+        vm.expectRevert("Amount must be greater than 0");
+        crossChainPay.crossChainPay{value: 1 ether}(
+            DST_EID,
+            PROJECT_ID,
+            0,
+            beneficiary,
+            MIN_RETURNED_TOKENS,
+            MEMO,
+            METADATA,
+            EXTRA_OPTIONS
+        );
+
+        vm.stopPrank();
+    }
+
+    function testCrossChainPayInsufficientFees() public {
+        vm.startPrank(user);
+
+        // Test with insufficient fees (amount but no fee)
+        vm.expectRevert("Insufficient ETH for transfer and fees");
+        crossChainPay.crossChainPay{value: TRANSFER_AMOUNT}(
+            DST_EID,
+            PROJECT_ID,
+            TRANSFER_AMOUNT,
+            beneficiary,
+            MIN_RETURNED_TOKENS,
+            MEMO,
+            METADATA,
+            EXTRA_OPTIONS
+        );
+
+        vm.stopPrank();
+    }
+
+    function testQuoteCrossChainPay() public {
+        uint256 quote = crossChainPay.quoteCrossChainPay(
+            DST_EID,
+            TRANSFER_AMOUNT,
+            PROJECT_ID,
+            beneficiary,
+            MIN_RETURNED_TOKENS,
+            MEMO,
+            METADATA,
+            EXTRA_OPTIONS
+        );
+
+        assertEq(quote, TRANSFER_AMOUNT + mockStargate.MOCK_FEE());
+    }
+
+    function testLzComposeUnauthorized() public {
+        bytes memory mockOrigin = abi.encode(uint32(1), bytes32(0), uint64(1));
+        bytes memory message = abi.encode(
+            PROJECT_ID,
+            beneficiary,
+            MIN_RETURNED_TOKENS,
+            MEMO,
+            METADATA
+        );
+
+        vm.startPrank(user); // Not the Stargate router
+
+        vm.expectRevert("Only Stargate router can call");
+        crossChainPay.lzCompose{value: TRANSFER_AMOUNT}(
+            abi.decode(mockOrigin, (Origin)),
+            bytes32(0),
+            message,
+            address(0),
+            ""
+        );
+
+        vm.stopPrank();
+    }
+
+    function testLzComposeSuccess() public {
+        bytes memory mockOrigin = abi.encode(uint32(1), bytes32(0), uint64(1));
+        bytes memory message = abi.encode(
+            PROJECT_ID,
+            beneficiary,
+            MIN_RETURNED_TOKENS,
+            MEMO,
+            METADATA
+        );
+
+        vm.startPrank(address(mockStargate));
+
+        vm.expectEmit(true, false, false, true);
+        emit CrossChainPayReceived(PROJECT_ID, TRANSFER_AMOUNT, beneficiary);
+
+        crossChainPay.lzCompose{value: TRANSFER_AMOUNT}(
+            abi.decode(mockOrigin, (Origin)),
+            bytes32(0),
+            message,
+            address(0),
+            ""
+        );
+
+        vm.stopPrank();
+
+        assertEq(mockJBTerminal.projectPayments(PROJECT_ID), TRANSFER_AMOUNT);
+    }
+
+    function testSetJbMultiTerminalAddress() public {
+        address newTerminal = address(0x999);
+
+        vm.startPrank(owner);
+        crossChainPay.setJbMultiTerminalAddress(newTerminal);
+        vm.stopPrank();
+
+        assertEq(address(crossChainPay.jbMultiTerminal()), newTerminal);
+    }
+
+    function testSetJbMultiTerminalAddressUnauthorized() public {
+        address newTerminal = address(0x999);
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        crossChainPay.setJbMultiTerminalAddress(newTerminal);
+        vm.stopPrank();
+    }
+
+    function testSetStargateRouter() public {
+        address newRouter = address(0x888);
+
+        vm.startPrank(owner);
+        crossChainPay.setStargateRouter(newRouter);
+        vm.stopPrank();
+
+        assertEq(address(crossChainPay.stargateRouter()), newRouter);
+    }
+
+    function testSetStargateRouterUnauthorized() public {
+        address newRouter = address(0x888);
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        crossChainPay.setStargateRouter(newRouter);
+        vm.stopPrank();
+    }
+
+    function testEmergencyWithdraw() public {
+        uint256 initialBalance = owner.balance;
+        uint256 contractBalance = address(crossChainPay).balance;
+
+        vm.startPrank(owner);
+        crossChainPay.emergencyWithdraw();
+        vm.stopPrank();
+
+        assertEq(address(crossChainPay).balance, 0);
+        assertEq(owner.balance, initialBalance + contractBalance);
+    }
+
+    function testEmergencyWithdrawUnauthorized() public {
+        vm.startPrank(user);
+        vm.expectRevert();
+        crossChainPay.emergencyWithdraw();
+        vm.stopPrank();
+    }
+
+    function testReceiveETH() public {
+        uint256 initialBalance = address(crossChainPay).balance;
+        uint256 sendAmount = 1 ether;
+
+        vm.startPrank(user);
+        (bool success,) = address(crossChainPay).call{value: sendAmount}("");
+        vm.stopPrank();
+
+        assertTrue(success);
+        assertEq(address(crossChainPay).balance, initialBalance + sendAmount);
+    }
+
+    // Events for testing
+    event CrossChainPayInitiated(
+        uint32 indexed dstEid,
+        uint256 indexed projectId,
+        uint256 amount,
+        address beneficiary
+    );
+
+    event CrossChainPayReceived(
+        uint256 indexed projectId,
+        uint256 amount,
+        address beneficiary
+    );
+
+    // Fuzz testing
+    function testFuzzCrossChainPay(
+        uint32 dstEid,
+        uint256 projectId,
+        uint256 amount,
+        address beneficiaryAddr
+    ) public {
+        vm.assume(dstEid > 0 && dstEid < 1000);
+        vm.assume(projectId > 0);
+        vm.assume(amount > 0 && amount <= 10 ether);
+        vm.assume(beneficiaryAddr != address(0));
+
+        uint256 totalAmount = amount + mockStargate.MOCK_FEE();
+        vm.deal(user, totalAmount);
+
+        vm.startPrank(user);
+        crossChainPay.crossChainPay{value: totalAmount}(
+            dstEid,
+            projectId,
+            amount,
+            beneficiaryAddr,
+            0,
+            MEMO,
+            METADATA,
+            EXTRA_OPTIONS
+        );
+        vm.stopPrank();
+
+        assertEq(mockJBTerminal.projectPayments(projectId), amount);
     }
 }

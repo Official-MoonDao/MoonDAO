@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Origin, MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
+import { ILayerZeroComposer } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroComposer.sol";
+import { OptionsBuilder } from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
+import { OApp, Origin, MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import {JBConstants} from "@nana-core/libraries/JBConstants.sol";
+import { OFTComposeMsgCodec } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTComposeMsgCodec.sol";
+
 
 // Stargate v2 interfaces
 interface IStargate {
@@ -52,14 +57,15 @@ interface IJBMultiTerminal {
 }
 
 /**
- * Deploy on source and destination chain with appropriate lzEndpoint and Stargate router.
+ * Deploy on source and destination chain with appropriate Stargate router.
  * Stargate v2 contracts: https://stargateprotocol.gitbook.io/stargate/developers/contract-addresses/mainnet
  * Then configure peers using setPeer() function with destination chain EID and contract address.
  */
-contract CrossChainPay is Ownable {
+contract CrossChainPay is ILayerZeroComposer, Ownable {
+    using OptionsBuilder for bytes;
     IJBMultiTerminal public jbMultiTerminal;
     IStargate public stargateRouter;
-    
+
     // Events
     event CrossChainPayInitiated(
         uint32 indexed dstEid,
@@ -67,7 +73,7 @@ contract CrossChainPay is Ownable {
         uint256 amount,
         address beneficiary
     );
-    
+
     event CrossChainPayReceived(
         uint256 indexed projectId,
         uint256 amount,
@@ -90,13 +96,10 @@ contract CrossChainPay is Ownable {
         address _beneficiary,
         uint256 _minReturnedTokens,
         string calldata _memo,
-        bytes calldata _metadata,
-        bytes calldata _extraOptions
+        bytes calldata _metadata
     ) external payable {
         require(_amount > 0, "Amount must be greater than 0");
         require(msg.value >= _amount, "Insufficient ETH sent");
-
-        // Encode the payload for the destination chain
         bytes memory composeMsg = abi.encode(
             _projectId,
             _beneficiary,
@@ -104,25 +107,23 @@ contract CrossChainPay is Ownable {
             _memo,
             _metadata
         );
-
-        // Prepare Stargate send parameters
+        bytes memory extraOptions = composeMsg.length > 0
+            //? OptionsBuilder.newOptions().addExecutorLzComposeOption(0, 200_000, 0) // compose gas limit
+            ? OptionsBuilder.newOptions().addExecutorLzComposeOption(0, 800_000, uint128(_amount * 998 / 1_000)) // compose gas limit
+            : bytes("");
         IStargate.SendParam memory sendParam = IStargate.SendParam({
             dstEid: _dstEid,
             to: bytes32(uint256(uint160(address(this)))), // Convert address to bytes32
             amountLD: _amount,
-            minAmountLD: _amount * 95 / 100, // 5% slippage tolerance
-            extraOptions: _extraOptions,
+            minAmountLD: _amount * 998 / 1_000, // 5% slippage tolerance
+            extraOptions: extraOptions,
             composeMsg: composeMsg,
             oftCmd: ""
         });
 
-        // Get quote for the cross-chain transfer
         IStargate.MessagingFee memory msgFee = stargateRouter.quoteSend(sendParam, false);
-        
-        // Ensure sufficient ETH for both transfer amount and fees
         require(msg.value >= _amount + msgFee.nativeFee, "Insufficient ETH for transfer and fees");
 
-        // Execute the cross-chain transfer
         stargateRouter.send{value: msg.value}(
             sendParam,
             msgFee,
@@ -139,8 +140,7 @@ contract CrossChainPay is Ownable {
         address _beneficiary,
         uint256 _minReturnedTokens,
         string calldata _memo,
-        bytes calldata _metadata,
-        bytes calldata _extraOptions
+        bytes calldata _metadata
     ) external view returns (uint256 nativeFee) {
         bytes memory composeMsg = abi.encode(
             _projectId,
@@ -150,12 +150,15 @@ contract CrossChainPay is Ownable {
             _metadata
         );
 
+        bytes memory extraOptions = composeMsg.length > 0
+            ? OptionsBuilder.newOptions().addExecutorLzComposeOption(0, 800_000, uint128(_amount * 998 / 1_000)) // compose gas limit
+            : bytes("");
         IStargate.SendParam memory sendParam = IStargate.SendParam({
             dstEid: _dstEid,
             to: bytes32(uint256(uint160(address(this)))),
             amountLD: _amount,
-            minAmountLD: _amount * 95 / 100,
-            extraOptions: _extraOptions,
+            minAmountLD: _amount * 998 / 1_000, // 0.5% slippage tolerance
+            extraOptions: extraOptions,
             composeMsg: composeMsg,
             oftCmd: ""
         });
@@ -163,38 +166,32 @@ contract CrossChainPay is Ownable {
         IStargate.MessagingFee memory msgFee = stargateRouter.quoteSend(sendParam, false);
         return msgFee.nativeFee + _amount; // Total ETH needed (transfer + fees)
     }
-
     // This function is called by Stargate when tokens arrive on the destination chain
     function lzCompose(
-        Origin calldata /*_origin*/,
+        address _from /*_origin*/,
         bytes32 /*_guid*/,
         bytes calldata _message,
         address /*_executor*/,
         bytes calldata /*_extraData*/
     ) external payable {
-        // Verify the call is from Stargate router
-        require(msg.sender == address(stargateRouter), "Only Stargate router can call");
-
-        // Decode the message
+        bytes memory _composeMessage = OFTComposeMsgCodec.composeMsg(_message);
         (
             uint256 projectId,
             address beneficiary,
             uint256 minReturnedTokens,
             string memory memo,
             bytes memory metadata
-        ) = abi.decode(_message, (uint256, address, uint256, string, bytes));
+        ) = abi.decode(_composeMessage, (uint256, address, uint256, string, bytes));
 
-        // Execute the payment to Juicebox
         uint256 tokenCount = jbMultiTerminal.pay{value: msg.value}(
             projectId,
-            address(0), // ETH
-            msg.value,
+            JBConstants.NATIVE_TOKEN,
+            0,
             beneficiary,
             minReturnedTokens,
             memo,
             metadata
         );
-
         emit CrossChainPayReceived(projectId, msg.value, beneficiary);
     }
 
@@ -214,4 +211,5 @@ contract CrossChainPay is Ownable {
 
     // Allow contract to receive ETH
     receive() external payable {}
+    fallback() external payable {}
 }

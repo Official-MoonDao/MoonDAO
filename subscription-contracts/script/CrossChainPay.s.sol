@@ -5,23 +5,42 @@ import "base/Config.sol";
 import "base/Miner.sol";
 
 contract MyScript is Script, Config {
+    function currentSalt() public view returns (bytes32) {
+        uint256 interval = 300; // 5 minutes in seconds
+        uint256 saltBase = block.timestamp / interval;
+        return keccak256(abi.encodePacked(saltBase));
+    }
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
+        // Use 0 for chain dependent stargate router address then set after to maintain
+        // deterministic deploys.
         bytes memory constructorArgs = abi.encode(
             deployer,
             JB_MULTI_TERMINAL,
             address(0)
         );
-        (address payAddress, bytes32 salt) =
-            Miner.find(CREATE2_DEPLOYER, 0xda0, type(CrossChainPay).creationCode, constructorArgs);
-        console.log("salt");
-        console.logBytes32(salt);
-        CrossChainPay pay = new CrossChainPay{salt: salt}(deployer, JB_MULTI_TERMINAL, address(0));
+        //(address payAddress, bytes32 salt) =
+            //Miner.find(CREATE2_DEPLOYER, 0xda0, type(CrossChainPay).creationCode, constructorArgs);
+        //console.log("salt");
+        //console.logBytes32(salt);
+        bytes32 salt = 0x0000000000000000000000000000000000000000000000000000000000000420;
+        //bytes32 salt = 0x0000000000000000000000000000000000000000000000000000000000000674;
+        CrossChainPay pay = new CrossChainPay{salt: currentSalt()}(deployer, JB_MULTI_TERMINAL, address(0));
         pay.setStargateRouter(STARGATE_POOLS[block.chainid]);
 
-        require(address(pay) == payAddress, "Fee hook address mismatch");
+        //require(address(pay) == payAddress, "Fee hook address mismatch");
+
+
+
+        if (block.chainid == OPT_SEP){
+            uint256 amount = 0.001 ether;
+            uint256 projectId = 146; // Example project ID
+            pay.crossChainPay{value:amount*3}(LZ_EIDS[SEP], projectId, amount, deployer, 0, "", "");
+
+        }
+
         vm.stopBroadcast();
     }
 }

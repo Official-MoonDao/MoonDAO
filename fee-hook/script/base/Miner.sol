@@ -1,3 +1,4 @@
+// Helper to mine a CREATE2 address with a specific prefix eg. 0xDA0
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
