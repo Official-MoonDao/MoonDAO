@@ -6,7 +6,8 @@ import SafeModal from '../safe/SafeModal'
 import SafeTransactions from '../safe/SafeTransactions'
 
 type TeamTreasuryProps = {
-  safeData?: any
+  isSigner: boolean
+  safeData: any
   multisigAddress: string
   multisigMooneyBalance: any
   multisigNativeBalance: any
@@ -35,6 +36,7 @@ function TreasuryAsset({
 }
 
 export default function TeamTreasury({
+  isSigner,
   safeData,
   multisigAddress,
   multisigMooneyBalance,
@@ -79,7 +81,7 @@ export default function TeamTreasury({
             >
               {'Treasury'}
             </StandardButton>
-            {safeData && (
+            {safeData && isSigner && (
               <StandardButton
                 className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
                 onClick={() => {
@@ -114,7 +116,7 @@ export default function TeamTreasury({
             balance={multisigUSDCBalance}
           />
         </div>
-        <SafeTransactions address={address} safeData={safeData} />
+        {isSigner && <SafeTransactions address={address} safeData={safeData} />}
       </div>
     </div>
   )
