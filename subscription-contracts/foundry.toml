@@ -8,6 +8,11 @@ ffi = true
 fs_permissions = [
     { access = "read", path = "../contracts/deployments/"}
 ]
+# for deterministic deploys
+bytecode_hash = "none"
+cbor_metadata = false
+always_use_create_2_factory = true
+
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"
