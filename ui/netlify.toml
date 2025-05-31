@@ -5,3 +5,4 @@
 
 [functions]
   node_bundler = "esbuild"
+  included_files = ["node_modules/@hpke/**", "node_modules/@privy-io/**"]
