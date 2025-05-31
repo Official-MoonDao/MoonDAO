@@ -2,3 +2,6 @@
   for = "/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+[functions]
+  node_bundler = "esbuild"
