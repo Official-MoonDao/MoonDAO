@@ -1,10 +1,9 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { ethers } from 'ethers'
-import { SafeData } from '@/lib/safe/useSafe'
 import SafeTransactions from '@/components/safe/SafeTransactions'
 
 describe('SafeTransactions', () => {
-  let mockSafeData: SafeData
+  let mockSafeData: any
   const mockAddress = '0xdef'
 
   beforeEach(() => {
@@ -40,7 +39,7 @@ describe('SafeTransactions', () => {
           data: '0x',
           dataDecoded: {
             method: 'transfer',
-            args: [],
+            parameters: [],
           },
           confirmations: [], // Empty confirmations to ensure !hasSigned
           confirmationsRequired: 2,
@@ -50,8 +49,8 @@ describe('SafeTransactions', () => {
           modified: new Date().toISOString(),
           blockNumber: null,
           transactionHash: null,
-          safeTxGas: '0',
-          baseGas: '0',
+          safeTxGas: 0,
+          baseGas: 0,
           gasPrice: '0',
           gasToken: '0x0000000000000000000000000000000000000000',
           refundReceiver: '0x0000000000000000000000000000000000000000',
