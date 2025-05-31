@@ -39,6 +39,8 @@
     "@shutter-network/shutter-crypto": "1.0.1",
     "@snapshot-labs/snapshot.js": "^0.11.23",
     "@solana/web3.js": "^1.98.0",
+    "@stablelib/ed25519": "^2.0.2",
+    "@stablelib/random": "^2.0.1",
     "@tableland/sdk": "^7.2.1",
     "@tanstack/react-query": "^5.49.2",
     "@typeform/embed": "^4.5.0",
