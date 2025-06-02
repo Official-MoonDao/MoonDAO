@@ -108,7 +108,6 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             _metadata
         );
         bytes memory extraOptions = composeMsg.length > 0
-            //? OptionsBuilder.newOptions().addExecutorLzComposeOption(0, 200_000, 0) // compose gas limit
             ? OptionsBuilder.newOptions().addExecutorLzComposeOption(0, 800_000, uint128(_amount * 998 / 1_000)) // compose gas limit
             : bytes("");
         IStargate.SendParam memory sendParam = IStargate.SendParam({
