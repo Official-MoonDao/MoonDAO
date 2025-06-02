@@ -4,7 +4,7 @@ import "../src/CrossChainPay.sol";
 import "base/Config.sol";
 import "base/Miner.sol";
 
-contract MyScript is Script, Config {
+contract CrossChainPayDeploy is Script, Config {
     function currentSalt() public view returns (bytes32) {
         uint256 interval = 300; // 5 minutes in seconds
         uint256 saltBase = block.timestamp / interval;
@@ -21,19 +21,15 @@ contract MyScript is Script, Config {
             JB_MULTI_TERMINAL,
             address(0)
         );
-        //(address payAddress, bytes32 salt) =
-            //Miner.find(CREATE2_DEPLOYER, 0xda0, type(CrossChainPay).creationCode, constructorArgs);
-        //console.log("salt");
-        //console.logBytes32(salt);
-        bytes32 salt = 0x0000000000000000000000000000000000000000000000000000000000000420;
-        //bytes32 salt = 0x0000000000000000000000000000000000000000000000000000000000000674;
+        (address payAddress, bytes32 salt) =
+            Miner.find(CREATE2_DEPLOYER, 0xda0, type(CrossChainPay).creationCode, constructorArgs);
+        console.log("salt");
         CrossChainPay pay = new CrossChainPay{salt: currentSalt()}(deployer, JB_MULTI_TERMINAL, address(0));
         pay.setStargateRouter(STARGATE_POOLS[block.chainid]);
 
-        //require(address(pay) == payAddress, "Fee hook address mismatch");
+        require(address(pay) == payAddress, "Fee hook address mismatch");
 
-
-
+        // For testing, call crossChainPay with a small amount
         if (block.chainid == OPT_SEP){
             uint256 amount = 0.001 ether;
             uint256 projectId = 146; // Example project ID
