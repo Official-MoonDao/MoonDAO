@@ -4,7 +4,14 @@
 `git submodule update --init --recursive`
 
 ```sh
+yarn install
 forge install
+```
+
+## Build Contracts
+
+```bash
+forge build
 ```
 
 ## Deploy a contract
@@ -14,8 +21,6 @@ forge install
 ETHERSCAN_API_KEY=$ARBITRUM_ETHERSCAN_API_KEY PRIVATE_KEY=$PRIVATE_KEY forge script script/Project.s.sol:MyScript --via-ir --rpc-url https://42161.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast --verify -vv
 // sepolia
 ETHERSCAN_API_KEY=$SEPOLIA_ETHERSCAN_API_KEY PRIVATE_KEY=$PRIVATE_KEY forge script script/CrossChainPay.s.sol:MyScript --via-ir --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast --verify -vv
-
-
 ```
 
 ### Running tests on test chain
