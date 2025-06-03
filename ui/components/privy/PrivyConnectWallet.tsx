@@ -494,7 +494,7 @@ export function PrivyConnectWallet({
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className={`cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] gradient-2 font-RobotoMono z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300`}
+            className={`cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] gradient-2 font-lato z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300`}
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}

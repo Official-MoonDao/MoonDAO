@@ -145,13 +145,7 @@ export default function ProjectProfile({
                 </div>
               </div>
             </div>
-            <div
-              id="project-stats-container"
-              className="flex items-center gap-2 "
-            >
-              <p>{`Awarded: ${totalBudget} ETH`}</p>
-              <Image src={'/coins/ETH.svg'} width={15} height={15} alt="ETH" />
-            </div>
+
           </div>
         </div>
       </Frame>
@@ -313,6 +307,13 @@ export default function ProjectProfile({
               isSigner={isSigner}
               safeData={safeData}
               multisigAddress={owner}
+<<<<<<< HEAD
+=======
+              multisigMooneyBalance={MOONEYBalance?.displayValue}
+              multisigNativeBalance={nativeBalance?.displayValue}
+              multisigDAIBalance={DAIBalance?.displayValue}
+              multisigUSDCBalance={USDCBalance?.displayValue}
+>>>>>>> 882c5104bce19d9de0152b2ab37b40c31896c967
             />
           </div>
         </div>
