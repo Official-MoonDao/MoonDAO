@@ -29,7 +29,6 @@ import {
   ethereum,
   sepolia,
   optimismSepolia,
-  arbitrumSepolia,
   Chain,
 } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
@@ -309,12 +308,12 @@ export default function MissionPayRedeem({
   forwardClient,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
-  const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+  const defaultChainSlug = getChainSlug(sepolia)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
   const chains = isTestnet
-    ? [sepolia, optimismSepolia, arbitrumSepolia]
+    ? [sepolia, optimismSepolia]
     : [arbitrum, base, ethereum]
 
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
@@ -497,8 +496,6 @@ export default function MissionPayRedeem({
     }
 
     try {
-      console.log('chainSlug:', chainSlug)
-      console.log('defaultChainSlug:', defaultChainSlug)
       if (chainSlug !== defaultChainSlug) {
         const quoteCrossChainPay = await readContract({
           contract: crossChainPayContract,
@@ -513,7 +510,6 @@ export default function MissionPayRedeem({
             '0x00',
           ],
         })
-        console.log('Quote CrossChainPay:', quoteCrossChainPay)
         const transaction = prepareContractCall({
           contract: crossChainPayContract,
           method: 'crossChainPay' as string,
@@ -527,15 +523,12 @@ export default function MissionPayRedeem({
             '0x00',
           ],
           value: quoteCrossChainPay,
-          //gas: BigInt(500000),
         })
-        console.log('Transaction:', transaction)
 
         const originReceipt: any = await sendAndConfirmTransaction({
           transaction,
           account,
         })
-        console.log('Origin receipt:', originReceipt)
         const destinationMessage = await waitForMessageReceived(
           isTestnet ? 19999 : 1, // 19999 resolves to testnet, 1 to mainnet, see https://cdn.jsdelivr.net/npm/@layerzerolabs/scan-client@0.0.8/dist/client.mjs
           originReceipt.transactionHash
@@ -545,7 +538,6 @@ export default function MissionPayRedeem({
           chain: DEFAULT_CHAIN_V5,
           transactionHash: destinationMessage.dstTxHash as `0x${string}`,
         })
-        console.log('Destination receipt:', receipt)
       } else {
         const transaction = prepareContractCall({
           contract: primaryTerminalContract,
@@ -574,7 +566,7 @@ export default function MissionPayRedeem({
       })
 
       setMissionPayModalEnabled(false)
-      //router.reload()
+      router.reload()
     } catch (error) {
       console.error('Error purchasing tokens:', error)
       toast.error('Failed to purchase tokens', {
