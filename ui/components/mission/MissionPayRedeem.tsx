@@ -522,7 +522,7 @@ export default function MissionPayRedeem({
             message,
             '0x00',
           ],
-          value: quoteCrossChainPay,
+          value: quoteCrossChainPay as BigInt,
         })
 
         const originReceipt: any = await sendAndConfirmTransaction({
