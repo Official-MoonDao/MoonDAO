@@ -1,3 +1,4 @@
+import { COIN_ICONS } from 'const/icons'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'

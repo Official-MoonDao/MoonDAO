@@ -145,13 +145,6 @@ export default function ProjectProfile({
                 </div>
               </div>
             </div>
-            <div
-              id="project-stats-container"
-              className="flex items-center gap-2 "
-            >
-              <p>{`Awarded: ${totalBudget} ETH`}</p>
-              <Image src={'/coins/ETH.svg'} width={15} height={15} alt="ETH" />
-            </div>
           </div>
         </div>
       </Frame>
