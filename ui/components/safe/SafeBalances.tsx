@@ -17,9 +17,9 @@ export function SafeAsset({
         width={20}
         height={20}
       />
-      <div className="flex gap-2">
-        <p className="font-GoodTimes">{`${label} :`}</p>
+      <div className="flex gap-2 w-full">
         <p className="pl-6 font-GoodTimes">{balance}</p>
+        <p className="font-GoodTimes">{`${label}`}</p>
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ import { useSafeBalances } from '@/lib/nance/SafeHooks'
 import StandardButton from '../layout/StandardButton'
 import SafeBalances from '../safe/SafeBalances'
 import SafeModal from '../safe/SafeModal'
+import SafeReceiveModal from '../safe/SafeReceiveModal'
 import SafeSendModal from '../safe/SafeSendModal'
 import SafeTransactions from '../safe/SafeTransactions'
 
@@ -24,6 +25,7 @@ export default function TeamTreasury({
   const address = account?.address
   const [safeModalEnabled, setSafeModalEnabled] = useState(false)
   const [safeSendModalEnabled, setSafeSendModalEnabled] = useState(false)
+  const [safeReceiveModalEnabled, setSafeReceiveModalEnabled] = useState(false)
 
   const { data: safeBalances, isLoading: isLoadingBalances } = useSafeBalances(
     multisigAddress,
@@ -34,7 +36,7 @@ export default function TeamTreasury({
 
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-24 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-      {safeModalEnabled && (
+      {safeModalEnabled && isSigner && (
         <SafeModal
           safeData={safeData}
           safeAddress={multisigAddress}
@@ -42,7 +44,13 @@ export default function TeamTreasury({
           setEnabled={setSafeModalEnabled}
         />
       )}
-      {safeSendModalEnabled && (
+      {safeReceiveModalEnabled && isSigner && (
+        <SafeReceiveModal
+          safeAddress={multisigAddress}
+          setEnabled={setSafeReceiveModalEnabled}
+        />
+      )}
+      {safeSendModalEnabled && isSigner && (
         <SafeSendModal
           safeData={safeData}
           safeAddress={multisigAddress}
@@ -61,7 +69,7 @@ export default function TeamTreasury({
             <h2 className="header font-GoodTimes">Treasury</h2>
           </div>
           {safeData && isSigner && (
-            <div className="flex flex-col md:flex-row gap-2">
+            <div className="flex flex-col md:flex-row md:flex-wrap gap-2">
               <StandardButton
                 className="min-w-[200px] gradient-2 rounded-[5vmax]"
                 onClick={() => {
@@ -69,6 +77,14 @@ export default function TeamTreasury({
                 }}
               >
                 {'Send'}
+              </StandardButton>
+              <StandardButton
+                className="min-w-[200px] gradient-2 rounded-[5vmax]"
+                onClick={() => {
+                  setSafeReceiveModalEnabled(true)
+                }}
+              >
+                {'Receive'}
               </StandardButton>
               <StandardButton
                 className="min-w-[200px] gradient-2 rounded-[5vmax]"
@@ -86,7 +102,12 @@ export default function TeamTreasury({
           safeBalances={safeBalances}
           isLoading={isLoadingBalances}
         />
-        {isSigner && <SafeTransactions address={address} safeData={safeData} />}
+
+        {isSigner && (
+          <div className="mt-4 ml-4">
+            <SafeTransactions address={address} safeData={safeData} />
+          </div>
+        )}
       </div>
     </div>
   )
