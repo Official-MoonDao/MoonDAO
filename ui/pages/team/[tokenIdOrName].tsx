@@ -24,15 +24,12 @@ import {
   TEAM_ADDRESSES,
   HATS_ADDRESS,
   JOBS_TABLE_ADDRESSES,
-  MOONEY_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
-  DAI_ADDRESSES,
-  USDC_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
   MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
@@ -178,6 +175,7 @@ export default function TeamDetailPage({
   const hats = useSubHats(selectedChain, adminHatId)
 
   const safeData = useSafe(nft?.owner)
+
   const isSigner = safeData?.owners.includes(address || '')
 
   //Subscription Data
@@ -187,32 +185,6 @@ export default function TeamDetailPage({
     params: [tokenId],
   })
 
-  const { data: nativeBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: nft?.owner,
-  })
-
-  const { data: MOONEYBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: nft?.owner,
-    tokenAddress: MOONEY_ADDRESSES[chainSlug],
-  })
-
-  const { data: DAIBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: nft?.owner,
-    tokenAddress: DAI_ADDRESSES[chainSlug],
-  })
-
-  const { data: USDCBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: nft?.owner,
-    tokenAddress: USDC_ADDRESSES[chainSlug],
-  })
   useChainDefault()
 
   //Profile Header Section
@@ -497,7 +469,7 @@ export default function TeamDetailPage({
                     topLeft="10px"
                     bottomLeft="2vmax"
                   >
-                    <div className="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+                    <div className="mt-2 px-2 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
                       <Action
                         title="Fund"
                         description="Launch a mission to raise funds."
@@ -531,10 +503,6 @@ export default function TeamDetailPage({
             isSigner={isSigner}
             safeData={safeData}
             multisigAddress={nft.owner}
-            multisigMooneyBalance={MOONEYBalance?.displayValue}
-            multisigNativeBalance={nativeBalance?.displayValue}
-            multisigDAIBalance={DAIBalance?.displayValue}
-            multisigUSDCBalance={USDCBalance?.displayValue}
           />
 
           {/* Header and socials */}
@@ -650,10 +618,6 @@ export default function TeamDetailPage({
                 isSigner={isSigner}
                 safeData={safeData}
                 multisigAddress={nft.owner}
-                multisigMooneyBalance={MOONEYBalance?.displayValue}
-                multisigNativeBalance={nativeBalance?.displayValue}
-                multisigDAIBalance={DAIBalance?.displayValue}
-                multisigUSDCBalance={USDCBalance?.displayValue}
               />
             </Frame>
           )}

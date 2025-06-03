@@ -1,6 +1,9 @@
+import { COIN_ICONS } from 'const/icons'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
+import { useSafeBalances } from '@/lib/nance/SafeHooks'
+import { formatUnits } from 'ethers/lib/utils'
 import StandardButton from '../layout/StandardButton'
 import SafeModal from '../safe/SafeModal'
 import SafeTransactions from '../safe/SafeTransactions'
@@ -9,24 +12,17 @@ type TeamTreasuryProps = {
   isSigner: boolean
   safeData: any
   multisigAddress: string
-  multisigMooneyBalance: any
-  multisigNativeBalance: any
-  multisigDAIBalance: any
-  multisigUSDCBalance: any
 }
 
-function TreasuryAsset({
-  icon,
-  label,
-  balance,
-}: {
-  icon: string
-  label: string
-  balance: string
-}) {
+function TreasuryAsset({ label, balance }: { label: string; balance: string }) {
   return (
     <div className="flex gap-4 items-center text-lg justify-between">
-      <Image src={icon} alt={icon} width={20} height={20} />
+      <Image
+        src={COIN_ICONS[label as keyof typeof COIN_ICONS] || '/coins/ETH.svg'}
+        alt={label}
+        width={20}
+        height={20}
+      />
       <div className="flex gap-2">
         <p className="font-GoodTimes">{`${label} :`}</p>
         <p className="pl-6 font-GoodTimes">{balance}</p>
@@ -39,14 +35,16 @@ export default function TeamTreasury({
   isSigner,
   safeData,
   multisigAddress,
-  multisigMooneyBalance,
-  multisigNativeBalance,
-  multisigDAIBalance,
-  multisigUSDCBalance,
 }: TeamTreasuryProps) {
   const account = useActiveAccount()
   const address = account?.address
   const [safeModalEnabled, setSafeModalEnabled] = useState(false)
+  const { data: safeBalances, isLoading } = useSafeBalances(
+    multisigAddress,
+    !!multisigAddress,
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
+  )
+
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-24 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
       {safeModalEnabled && (
@@ -95,26 +93,20 @@ export default function TeamTreasury({
         </div>
         <div className="mt-4 flex items-center gap-4"></div>
         <div className="w-fit p-4 flex flex-col gap-4">
-          <TreasuryAsset
-            icon={'/coins/MOONEY.png'}
-            label={'MOONEY'}
-            balance={multisigMooneyBalance}
-          />
-          <TreasuryAsset
-            icon={'/coins/ETH.svg'}
-            label={'ETHER'}
-            balance={multisigNativeBalance}
-          />
-          <TreasuryAsset
-            icon={'/coins/DAI.svg'}
-            label={'DAI'}
-            balance={multisigDAIBalance}
-          />
-          <TreasuryAsset
-            icon={'/coins/USDC.svg'}
-            label={'USDC'}
-            balance={multisigUSDCBalance}
-          />
+          {isLoading ? (
+            <div>Loading balances...</div>
+          ) : (
+            safeBalances?.map((balance) => (
+              <TreasuryAsset
+                key={balance.tokenAddress || 'native'}
+                label={balance.token?.symbol || 'ETH'}
+                balance={formatUnits(
+                  balance.balance,
+                  balance.token?.decimals || 18
+                )}
+              />
+            ))
+          )}
         </div>
         {isSigner && <SafeTransactions address={address} safeData={safeData} />}
       </div>
