@@ -15,12 +15,14 @@ type TeamTierProps = {
   compact?: boolean
 }
 
+const PRICE = 0.0333
+
 const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const address = account?.address
-  const { data: usdPrice } = useETHPrice(0.0333, 'ETH_TO_USD')
+  const { data: usdPrice } = useETHPrice(PRICE, 'ETH_TO_USD')
 
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
@@ -53,7 +55,7 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
         <ApplyModal type="team" setEnabled={setApplyModalEnabled} />
       )}
       <Tier
-        price={0.0333}
+        price={PRICE}
         usdPrice={usdPrice}
         label="Create a Team"
         description="Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future. We are all a part of Team Space."
