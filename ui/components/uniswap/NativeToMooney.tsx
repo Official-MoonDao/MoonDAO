@@ -179,12 +179,12 @@ export default function NativeToMooney({ selectedChain }: any) {
         className="mt-2 rounded-[5vmax] rounded-tl-[20px]"
         label={'Swap'}
         action={async () => {
-          if (amount === 0) return toast.error('Enter an amount')
-          if (!swapRoute) return toast.error('No route found')
+          if (amount === 0) return toast.error('Enter an amount.')
+          if (!swapRoute) return toast.error('No route found.')
 
           // check native balance
           if (amount > +nativeBalance) {
-            return toast.error('Insufficient balance')
+            return toast.error('Insufficient balance.')
           }
 
           await executeRoute(swapRoute)

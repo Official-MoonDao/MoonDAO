@@ -213,7 +213,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
       if (!newImageIpfsHash) {
-        return toast.error('Error pinning image to IPFS')
+        return toast.error('Error pinning image to IPFS.')
       }
 
       //mint

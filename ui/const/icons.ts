@@ -1,7 +1,4 @@
 export const COIN_ICONS = {
-  ADA: '/coins/ADA.svg',
-  BNB: '/coins/BNB.svg',
-  BTC: '/coins/BTC.svg',
   DAI: '/coins/DAI.svg',
   ETH: '/coins/ETH.svg',
   JBX: '/coins/JBX.png',

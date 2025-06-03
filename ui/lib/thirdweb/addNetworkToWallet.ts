@@ -85,7 +85,7 @@ const CHAIN_CONFIGS: ChainConfigMap = {
 export async function addNetworkToWallet(chain: Chain): Promise<boolean> {
   const ethereum = window?.ethereum
   if (!ethereum) {
-    toast.error('No Ethereum provider found')
+    toast.error('No Ethereum provider found.')
     return false
   }
 
@@ -107,14 +107,14 @@ export async function addNetworkToWallet(chain: Chain): Promise<boolean> {
           method: 'wallet_addEthereumChain',
           params: [chainData],
         })
-        toast.success(`Added ${chainData.chainName} to your wallet`)
+        toast.success(`Added ${chainData.chainName} to your wallet.`)
         return true
       }
       throw switchError
     }
   } catch (error: any) {
     if (error.code === 4001) {
-      toast.error('Please add the network to continue')
+      toast.error('Please add the network to continue.')
     }
     console.error('Error adding network:', error)
     return false

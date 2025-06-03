@@ -149,11 +149,11 @@ function SendModal({
           e.preventDefault()
 
           if (!to || !amount) {
-            return toast.error('Please fill in all fields')
+            return toast.error('Please fill in all fields.')
           } else if (to.length !== 42 || !to.startsWith('0x')) {
-            return toast.error('Invalid address')
+            return toast.error('Invalid address.')
           } else if (amount <= 0) {
-            return toast.error('Invalid amount')
+            return toast.error('Invalid amount.')
           }
 
           const formattedAmount = ethers.utils.parseEther(amount.toString())
@@ -162,7 +162,7 @@ function SendModal({
             let receipt
             if (selectedToken === 'native') {
               if (+amount > nativeBalance)
-                return toast.error('Insufficient funds')
+                return toast.error('Insufficient funds.')
 
               receipt = await account?.sendTransaction({
                 to,
@@ -170,7 +170,7 @@ function SendModal({
               })
             } else {
               if (+amount > formattedBalances[selectedToken])
-                return toast.error('Insufficient funds')
+                return toast.error('Insufficient funds.')
 
               const transaction = prepareContractCall({
                 contract: tokenContracts[selectedToken],
@@ -184,7 +184,7 @@ function SendModal({
               })
             }
             if (receipt) {
-              toast.success('Your funds have been transferred')
+              toast.success('Your funds have been transferred.')
             }
           } catch (err) {
             console.log(err)
@@ -565,7 +565,7 @@ export function PrivyConnectWallet({
                       className="ml-4"
                       onClick={() => {
                         navigator.clipboard.writeText(address || '')
-                        toast.success('Address copied to clipboard')
+                        toast.success('Address copied to clipboard.')
                       }}
                     >
                       <CopyIcon />
@@ -649,7 +649,7 @@ export function PrivyConnectWallet({
                     icon={<PlusIcon width={25} height={25} />}
                     onClick={async () => {
                       if (!address)
-                        return toast.error('Please connect your wallet')
+                        return toast.error('Please connect your wallet.')
                       fundWallet(address, {
                         chain: viemChains[chainSlug],
                         asset: 'native-currency',

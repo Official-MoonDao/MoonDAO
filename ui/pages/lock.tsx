@@ -185,7 +185,7 @@ export default function Lock() {
             <button
               className="underline"
               onClick={() => {
-                if (!address) return toast.error('Please connect your wallet')
+                if (!address) return toast.error('Please connect your wallet.')
                 fundWallet(address, {
                   chain: viemChains[selectedChain.slug],
                 })
@@ -498,7 +498,7 @@ export default function Lock() {
                                 })
                                 approvalReceipt &&
                                   toast.success(
-                                    'Successfully approved MOONEY for lock'
+                                    'Successfully approved MOONEY for lock.'
                                   )
                               }
 
@@ -527,8 +527,8 @@ export default function Lock() {
                               if (lockReceipt) {
                                 toast.success(
                                   hasLock
-                                    ? 'Successfully Increased lock'
-                                    : 'Successfully Created lock'
+                                    ? 'Successfully Increased lock.'
+                                    : 'Successfully Created lock.'
                                 )
                                 setRefresh((prev) => !prev)
                               }
@@ -580,7 +580,7 @@ export default function Lock() {
                           })
                           receipt &&
                             toast.success(
-                              'Successfully Withdrew your locked MOONEY'
+                              'Successfully Withdrew your locked MOONEY.'
                             )
                         }}
                       />

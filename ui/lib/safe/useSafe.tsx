@@ -3,6 +3,7 @@
  * The Safe is initialized with the chain specified in the ChainContextV5 context aka "selectedChain", this ensures that the app and the safe are always on the same chain.
  */
 import { useWallets } from '@privy-io/react-auth'
+import { SafeMultisigTransactionListResponse } from '@safe-global/api-kit'
 import Safe from '@safe-global/protocol-kit'
 import {
   SafeTransaction,
@@ -10,43 +11,18 @@ import {
   SafeTransactionDataPartial,
   TransactionOptions,
 } from '@safe-global/safe-core-sdk-types'
+import ERC20ABI from 'const/abis/ERC20.json'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
+import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../privy/privy-wallet-context'
+import ChainContextV5 from '../thirdweb/chain-context-v5'
+import client from '../thirdweb/client'
 import useSafeApiKit from './useSafeApiKit'
 
-export type PendingTransaction = {
-  safeTxHash: string
-  to: string
-  value: string
-  data: string
-  operation: number
-  nonce: number
-  submissionDate: string
-  modified: string
-  blockNumber: number | null
-  transactionHash: string | null
-  safeTxGas: string
-  baseGas: string
-  gasPrice: string
-  gasToken: string
-  refundReceiver: string
-  confirmationsRequired: number
-  confirmations: Array<{
-    owner: string
-    submissionDate: string
-    transactionHash: string | null
-    signature: string
-  }>
-  signatures: string | null
-  isExecuted: boolean
-  isSuccessful: boolean | null
-  dataDecoded: {
-    method: string
-    args: any[]
-  } | null
-}
+export type PendingTransaction =
+  SafeMultisigTransactionListResponse['results'][0]
 
 export type SafeData = {
   safe: Safe | undefined
@@ -67,15 +43,21 @@ export type SafeData = {
   signPendingTransaction: (safeTxHash: string) => Promise<any>
   fetchPendingTransactions: () => Promise<void>
   rejectTransaction: (safeTxHash: string) => Promise<string>
+  sendFunds: (
+    to: string,
+    amount: string,
+    tokenAddress?: string
+  ) => Promise<string>
 }
 
 export default function useSafe(safeAddress: string): SafeData {
   const account = useActiveAccount()
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
+  const { selectedChain } = useContext(ChainContextV5)
 
   const [safe, setSafe] = useState<Safe>()
-  const safeApiKit = useSafeApiKit()
+  const safeApiKit = useSafeApiKit(selectedChain)
   const [lastSafeTxHash, setLastSafeTxHash] = useState<string | null>(null)
   const [lastSafeTxExecuted, setLastSafeTxExecuted] = useState<boolean | null>(
     null
@@ -263,7 +245,10 @@ export default function useSafe(safeAddress: string): SafeData {
     // Get current threshold directly from Safe instance
     const currentThreshold = await safe.getThreshold()
 
-    if (safeTx.confirmations.length < currentThreshold) {
+    if (
+      safeTx.confirmations &&
+      safeTx.confirmations.length < currentThreshold
+    ) {
       throw new Error(
         `Not enough confirmations. Need ${currentThreshold}, have ${safeTx.confirmations.length}`
       )
@@ -398,33 +383,42 @@ export default function useSafe(safeAddress: string): SafeData {
     }
   }
 
-  async function refreshSafeState() {
-    if (!safe || !account) return
+  async function initializeSafe() {
+    if (!account?.address) return null
+
+    const provider: any = await wallets?.[selectedWallet]?.getEthereumProvider()
+    if (!provider) return null
 
     try {
-      const currentOwners = await safe.getOwners()
-      const currentThreshold = await safe.getThreshold()
-
-      setOwners(currentOwners)
-      setThreshold(currentThreshold)
-
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      await fetchPendingTransactions()
-
-      const provider: any = await wallets?.[
-        selectedWallet
-      ]?.getEthereumProvider()
-
-      if (!provider) return
-
       const newSafe = await Safe.init({
         provider,
-        signer: account?.address,
+        signer: account.address,
         safeAddress,
       })
 
+      // Get initial state
+      const currentOwners = await newSafe.getOwners()
+      const currentThreshold = await newSafe.getThreshold()
+
+      setOwners(currentOwners)
+      setThreshold(currentThreshold)
       setSafe(newSafe)
+
+      return newSafe
+    } catch (err) {
+      console.error('Error initializing Safe:', err)
+      return null
+    }
+  }
+
+  async function refreshSafeState() {
+    if (!account) return
+
+    try {
+      const newSafe = await initializeSafe()
+      if (!newSafe) return
+
+      await fetchPendingTransactions()
     } catch (err) {
       console.error('Error refreshing Safe state:', err)
     }
@@ -442,21 +436,22 @@ export default function useSafe(safeAddress: string): SafeData {
 
       if (currentAddress) {
         // Show all pending transactions, but mark which ones need signing
-        const toSign = pendingTxs.results.filter((tx: PendingTransaction) => {
-          const hasSigned = tx.confirmations.some(
-            (conf: { owner: string }) =>
-              conf.owner.toLowerCase() === currentAddress.toLowerCase()
+        const toSign = pendingTxs.results.filter((tx) => {
+          const hasSigned = tx.confirmations?.some(
+            (conf) => conf.owner.toLowerCase() === currentAddress.toLowerCase()
           )
           return !tx.isExecuted // Show all non-executed transactions
         })
         setTransactionsToSign(toSign)
 
         // Filter transactions that can be executed
-        const toExecute = pendingTxs.results.filter(
-          (tx: PendingTransaction) => {
-            return tx.confirmations.length >= currentThreshold && !tx.isExecuted
-          }
-        )
+        const toExecute = pendingTxs.results.filter((tx) => {
+          return (
+            tx.confirmations?.length &&
+            tx.confirmations.length >= currentThreshold &&
+            !tx.isExecuted
+          )
+        })
         setTransactionsToExecute(toExecute)
       }
     } catch (err) {
@@ -480,36 +475,114 @@ export default function useSafe(safeAddress: string): SafeData {
     }
   }
 
-  useEffect(() => {
-    async function getSafe() {
-      try {
-        if (!account?.address) return
+  async function sendFunds(to: string, amount: string, tokenAddress?: string) {
+    if (!safe) throw new Error('Safe not initialized')
 
-        const provider: any = await wallets?.[
-          selectedWallet
-        ]?.getEthereumProvider()
+    // Get the provider from the wallet
+    const provider: any = await wallets?.[selectedWallet]?.getEthersProvider()
+    if (!provider) throw new Error('No provider available')
 
-        if (!provider) return
+    let safeTransactionData: SafeTransactionDataPartial
 
-        const safe = await Safe.init({
-          provider: provider,
-          signer: account.address,
-          safeAddress,
-        })
+    if (tokenAddress) {
+      // Check ERC20 balance using thirdweb
+      const contract = getContract({
+        client,
+        address: tokenAddress,
+        chain: selectedChain,
+        abi: ERC20ABI as any,
+      })
 
-        setSafe(safe)
-        await refreshSafeState()
-      } catch (err) {
-        console.error('Error getting safe:', err)
+      if (!contract) throw new Error('Failed to initialize token contract')
+
+      const balance = await readContract({
+        contract,
+        method: 'balanceOf' as any,
+        params: [safeAddress],
+      })
+
+      if (!balance) throw new Error('Failed to fetch token balance')
+
+      // Convert scientific notation to decimal string if needed
+      const amountStr = amount.includes('e')
+        ? Number(amount).toLocaleString('fullwide', { useGrouping: false })
+        : amount
+
+      // Convert amount to a proper string representation without scientific notation
+      const amountBN = ethers.BigNumber.from(amountStr)
+      const formattedAmount = amountBN.toString()
+
+      if (BigInt(balance) < BigInt(formattedAmount)) {
+        throw new Error(
+          `Insufficient token balance. Required: ${formattedAmount}, Available: ${balance.toString()}`
+        )
+      }
+
+      // Get the encoded transfer data
+      const erc20Interface = new ethers.utils.Interface([
+        'function transfer(address to, uint256 amount) returns (bool)',
+      ])
+      const data = erc20Interface.encodeFunctionData('transfer', [
+        to,
+        formattedAmount,
+      ])
+
+      safeTransactionData = {
+        to: tokenAddress,
+        value: '0',
+        data,
+        operation: 0,
+        safeTxGas: '1000000',
+        baseGas: '0',
+        gasPrice: '0',
+        gasToken: ethers.constants.AddressZero,
+        refundReceiver: ethers.constants.AddressZero,
+      }
+    } else {
+      // Check ETH balance
+      const balance = await provider.getBalance(safeAddress)
+      const amountBN = ethers.BigNumber.from(amount)
+
+      if (balance.lt(amountBN)) {
+        throw new Error(
+          `Insufficient ETH balance. Required: ${ethers.utils.formatEther(
+            amount
+          )}, Available: ${ethers.utils.formatEther(balance)}`
+        )
+      }
+
+      safeTransactionData = {
+        to,
+        value: amount,
+        data: '0x',
+        operation: 0,
+        safeTxGas: '1000000',
+        baseGas: '0',
+        gasPrice: '0',
+        gasToken: ethers.constants.AddressZero,
+        refundReceiver: ethers.constants.AddressZero,
       }
     }
-    getSafe()
+
+    console.log(safeTransactionData)
+
+    return queueSafeTx(safeTransactionData)
+  }
+
+  useEffect(() => {
+    async function setupSafe() {
+      const newSafe = await initializeSafe()
+      if (newSafe) {
+        await fetchPendingTransactions()
+      }
+    }
+    setupSafe()
   }, [wallets, selectedWallet, safeAddress, account])
 
   useEffect(() => {
     const interval = setInterval(async () => {
       await refreshSafeState()
-    }, 5000)
+    }, 10000)
     return () => clearInterval(interval)
   }, [safeApiKit, safe, wallets, selectedWallet, safeAddress])
 
@@ -552,5 +625,6 @@ export default function useSafe(safeAddress: string): SafeData {
     signPendingTransaction,
     fetchPendingTransactions,
     rejectTransaction,
+    sendFunds,
   } as SafeData
 }

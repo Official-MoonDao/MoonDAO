@@ -7,7 +7,7 @@ export default function ShareButton({ link }: any) {
       onClick={(e) => {
         e.stopPropagation()
         navigator.clipboard.writeText(link)
-        toast.success('Link copied to clipboard')
+        toast.success('Link copied to clipboard.')
       }}
     >
       <ShareIcon className="h-8 w-8 p-2 gradient-2 hover:text-light-cool rounded-lg" />

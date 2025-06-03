@@ -142,19 +142,19 @@ export default function TeamMarketplaceListingModal({
             listingData.description.trim() === '' ||
             listingData.price.trim() === ''
           )
-            return toast.error('Please fill out all fields')
+            return toast.error('Please fill out all fields.')
 
           if (!listingData.image) {
-            return toast.error('Please upload an image')
+            return toast.error('Please upload an image.')
           }
 
           if (isTimed) {
             if (startTime >= endTime) {
-              return toast.error('Start time must be before end time')
+              return toast.error('Start time must be before end time.')
             } else if (endTime <= startTime) {
-              return toast.error('End time must be after start time')
+              return toast.error('End time must be after start time.')
             } else if (startTime === 0 || endTime === 0) {
-              return toast.error('Please set start and end times')
+              return toast.error('Please set start and end times.')
             }
           }
 
