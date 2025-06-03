@@ -53,8 +53,7 @@ export default function SafeSendModal({
     setIsValid(isAddressValid && isAmountValid)
   }, [to, amount])
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSend = async () => {
     if (!to || !amount) {
       return toast.error('Please fill in all fields')
     } else if (to.length !== 42 || !to.startsWith('0x')) {
@@ -65,10 +64,7 @@ export default function SafeSendModal({
 
     try {
       if (selectedToken === 'native') {
-        const tx = await safeData.sendFunds(
-          to,
-          (Number(amount) * 1e18).toString()
-        )
+        await safeData.sendFunds(to, (Number(amount) * 1e18).toString())
       } else {
         const token = safeBalances?.find(
           (b: SafeBalanceUsdResponse) =>
@@ -83,6 +79,9 @@ export default function SafeSendModal({
           token?.tokenAddress || ''
         )
       }
+      setTo('')
+      setAmount('')
+      setEnabled(false)
     } catch (error: any) {
       console.error(error?.message)
       if (error?.message?.startsWith('Insufficient')) {
@@ -125,11 +124,7 @@ export default function SafeSendModal({
           </p>
         </div>
 
-        <form
-          onSubmit={handleSend}
-          className="flex flex-col gap-4"
-          data-testid="safe-send-form"
-        >
+        <div className="flex flex-col gap-4" data-testid="safe-send-form">
           <div className="flex gap-4 items-center">
             <select
               data-testid="token-select"
@@ -238,11 +233,11 @@ export default function SafeSendModal({
             dataTestId="send-button"
             className="w-full rounded-full"
             label="Send"
-            type="submit"
-            action={() => {}}
+            type="button"
+            action={handleSend}
             isDisabled={!isValid}
           />
-        </form>
+        </div>
       </div>
     </Modal>
   )

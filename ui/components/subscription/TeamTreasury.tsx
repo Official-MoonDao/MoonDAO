@@ -27,7 +27,8 @@ export default function TeamTreasury({
   const { data: safeBalances, isLoading: isLoadingBalances } = useSafeBalances(
     multisigAddress,
     !!multisigAddress,
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia',
+    5000
   )
 
   return (
