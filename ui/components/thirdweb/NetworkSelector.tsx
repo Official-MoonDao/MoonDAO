@@ -39,11 +39,13 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
 
 type NetworkSelectorProps = {
   iconsOnly?: boolean
+  compact?: boolean
   chains?: any[]
 }
 
 export default function NetworkSelector({
   iconsOnly,
+  compact = false,
   chains,
 }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
@@ -64,7 +66,11 @@ export default function NetworkSelector({
   }, [])
 
   return (
-    <div id="network-selector" className="w-[250px] flex flex-col">
+    //
+    <div
+      id="network-selector"
+      className={`${!compact && 'w-[250px]'} flex flex-col`}
+    >
       <div
         id="network-selector-dropdown-button"
         className="flex items-center gap-2 p-2 bg-darkest-cool rounded-lg"

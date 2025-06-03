@@ -497,7 +497,7 @@ export default function MissionPayRedeem({
 
     try {
       if (chainSlug !== defaultChainSlug) {
-        const quoteCrossChainPay = await readContract({
+        const quoteCrossChainPay: any = await readContract({
           contract: crossChainPayContract,
           method: 'quoteCrossChainPay' as string,
           params: [
@@ -522,7 +522,7 @@ export default function MissionPayRedeem({
             message,
             '0x00',
           ],
-          value: quoteCrossChainPay as BigInt,
+          value: BigInt(quoteCrossChainPay),
         })
 
         const originReceipt: any = await sendAndConfirmTransaction({
@@ -895,7 +895,8 @@ export default function MissionPayRedeem({
               />
               <NetworkSelector
                 chains={chains}
-                style={{ width: '' }}
+                compact={true}
+                iconsOnly={true}
               />
             </div>
           </div>
