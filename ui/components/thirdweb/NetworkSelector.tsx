@@ -6,6 +6,7 @@ import {
   base,
   baseSepolia,
   arbitrumSepolia,
+  optimismSepolia,
   ethereum,
   polygon,
   sepolia,
@@ -112,6 +113,10 @@ export default function NetworkSelector({
                   />
                   <NetworkOption
                     chain={arbitrumSepolia}
+                    selectChain={selectChain}
+                  />
+                  <NetworkOption
+                    chain={optimismSepolia}
                     selectChain={selectChain}
                   />
                 </>

@@ -1,6 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Options } from '@layerzerolabs/lz-v2-utilities'
-import { createClient } from '@layerzerolabs/scan-client'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import { useFundWallet } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'

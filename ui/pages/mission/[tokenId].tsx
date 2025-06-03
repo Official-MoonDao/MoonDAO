@@ -68,8 +68,7 @@ type ProjectProfileProps = {
 export default function MissionProfile({ mission }: ProjectProfileProps) {
   const account = useActiveAccount()
 
-  // const { selectedChain } = useContext(ChainContextV5)
-  const selectedChain = sepolia
+  const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>()
