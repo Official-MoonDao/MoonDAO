@@ -145,7 +145,6 @@ export default function ProjectProfile({
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </Frame>
@@ -307,13 +306,6 @@ export default function ProjectProfile({
               isSigner={isSigner}
               safeData={safeData}
               multisigAddress={owner}
-<<<<<<< HEAD
-=======
-              multisigMooneyBalance={MOONEYBalance?.displayValue}
-              multisigNativeBalance={nativeBalance?.displayValue}
-              multisigDAIBalance={DAIBalance?.displayValue}
-              multisigUSDCBalance={USDCBalance?.displayValue}
->>>>>>> 882c5104bce19d9de0152b2ab37b40c31896c967
             />
           </div>
         </div>
