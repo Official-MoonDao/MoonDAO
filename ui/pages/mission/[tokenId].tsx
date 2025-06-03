@@ -446,7 +446,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 primaryTerminalAddress !==
                   '0x0000000000000000000000000000000000000000' ? (
                   <MissionPayRedeem
-                    selectedChain={selectedChain}
                     mission={mission}
                     teamNFT={teamNFT}
                     token={token}
