@@ -13,7 +13,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState, useCallback } from 'react'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -37,6 +36,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
@@ -799,10 +799,9 @@ export default function MissionPayRedeem({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${formatTokenAmount(
-                  output,
-                  2
-                )} ${token?.tokenSymbol}`}</p>
+                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
+                  token?.tokenSymbol
+                }`}</p>
               </div>
             )}
 
@@ -894,7 +893,10 @@ export default function MissionPayRedeem({
                   !agreedToCondition || !usdInput || parseFloat(usdInput) <= 0
                 }
               />
-              <NetworkSelector chains={chains} />
+              <NetworkSelector
+                chains={chains}
+                style={{ width: '' }}
+              />
             </div>
           </div>
         </Modal>
