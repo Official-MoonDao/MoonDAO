@@ -222,7 +222,7 @@ export function SubmitTTSInfoModalETH({
 
               try {
                 if (!email || !fullName || !email.includes('@'))
-                  return toast.error('Please fill in all fields')
+                  return toast.error('Please fill in all fields.')
 
                 setStatus('Reserving ticket')
 
@@ -260,7 +260,7 @@ export function SubmitTTSInfoModalETH({
                   }
                 } catch (err: any) {
                   toast.error(
-                    'Error verifying identity. Please contact MoonDAO support'
+                    'Error verifying identity. Please contact MoonDAO support.'
                   )
                   setChain(polygon)
                   return setEnabled(false)

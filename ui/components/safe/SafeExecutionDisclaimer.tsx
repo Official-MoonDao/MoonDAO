@@ -55,7 +55,7 @@ export default function SafeExecutionDisclaimer({
     try {
       await onExecute(safeTxHash)
       setEnabled(false)
-      toast.success('Transaction executed successfully', { style: toastStyle })
+      toast.success('Transaction executed successfully!', { style: toastStyle })
     } catch (error) {
       console.error('Error executing transaction:', error)
       toast.error('Failed to execute transaction', { style: toastStyle })

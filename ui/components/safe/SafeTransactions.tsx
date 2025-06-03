@@ -30,10 +30,10 @@ export default function SafeTransactions({
   const handleSignTransaction = async (safeTxHash: string) => {
     try {
       await signPendingTransaction(safeTxHash)
-      toast.success('Transaction signed successfully', { style: toastStyle })
+      toast.success('Transaction signed successfully!', { style: toastStyle })
     } catch (error) {
       console.error('Error signing transaction:', error)
-      toast.error('Failed to sign transaction', { style: toastStyle })
+      toast.error('Failed to sign transaction.', { style: toastStyle })
     }
   }
 
@@ -47,7 +47,7 @@ export default function SafeTransactions({
       await rejectTransaction(safeTxHash)
     } catch (error) {
       console.error('Error rejecting transaction:', error)
-      toast.error('Failed to reject transaction', { style: toastStyle })
+      toast.error('Failed to reject transaction.', { style: toastStyle })
     }
   }
 

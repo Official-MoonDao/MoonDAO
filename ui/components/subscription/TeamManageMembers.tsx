@@ -248,7 +248,7 @@ function TeamManageMembersModal({
           onSubmit={async (e) => {
             e.preventDefault()
             if (!validateEthereumAddress(newMemberAddress))
-              return toast.error('Invalid address')
+              return toast.error('Invalid address.')
 
             const iface = new ethers.utils.Interface(HatsABI)
             const txData = iface.encodeFunctionData('mintHat', [
@@ -274,7 +274,7 @@ function TeamManageMembersModal({
                   value: '0',
                   gas: 1000000,
                 })
-                toast.success('Member added successfully')
+                toast.success('Member added successfully!')
               }
               setNewMemberAddress('')
               setIsValidAddress(false)

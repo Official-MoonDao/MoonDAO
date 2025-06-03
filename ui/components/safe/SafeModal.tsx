@@ -53,12 +53,12 @@ export default function SafeModal({
 
   const handleAddSigner = async () => {
     if (!validateAddress(newSignerAddress)) {
-      toast.error('Invalid Ethereum address', { style: toastStyle })
+      toast.error('Invalid address.', { style: toastStyle })
       return
     }
 
     if (owners.includes(newSignerAddress)) {
-      toast.error('Signer already exists', { style: toastStyle })
+      toast.error('Signer already exists.', { style: toastStyle })
       return
     }
 
@@ -85,7 +85,7 @@ export default function SafeModal({
 
   const handleChangeThreshold = async () => {
     if (newThreshold < 1 || newThreshold > owners.length) {
-      toast.error('Invalid threshold value', { style: toastStyle })
+      toast.error('Invalid threshold value.', { style: toastStyle })
       return
     }
 

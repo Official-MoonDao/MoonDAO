@@ -25,13 +25,14 @@ export default function TeamDonation({ recipient }: TeamDonationProps) {
     if (
       DEFAULT_CHAIN_V5.id !== +wallets[selectedWallet]?.chainId.split(':')[1]
     ) {
-      toast.error(`Please switch to ${selectedChain.name}`)
+      toast.error(`Please switch to ${selectedChain.name}.`)
       return wallets[selectedWallet]?.switchChain(DEFAULT_CHAIN_V5.id)
     }
 
     try {
-      if (!account) return toast.error('Please connect your wallet')
-      if (donationAmount <= 0) return toast.error('Please enter a valid amount')
+      if (!account) return toast.error('Please connect your wallet.')
+      if (donationAmount <= 0)
+        return toast.error('Please enter a valid amount.')
 
       await account.sendTransaction({
         to: recipient,
@@ -41,7 +42,7 @@ export default function TeamDonation({ recipient }: TeamDonationProps) {
     } catch (err: any) {
       console.log(err.message)
       if (err.message.includes('insufficient funds')) {
-        toast.error('Insufficient funds')
+        toast.error('Insufficient funds.')
       }
     }
   }

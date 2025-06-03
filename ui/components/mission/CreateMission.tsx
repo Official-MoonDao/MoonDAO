@@ -362,7 +362,7 @@ export default function CreateMission({
 
       if (receipt) {
         setTimeout(() => {
-          toast.success('Mission created successfully')
+          toast.success('Mission created successfully!')
           setMissionData({
             name: '',
             description: '',
@@ -488,23 +488,23 @@ export default function CreateMission({
                       userTeamsAsManager.length === 0
                     ) {
                       return toast.error(
-                        'Please create a team or join one as a manager',
+                        'Please create a team or join one as a manager.',
                         {
                           style: toastStyle,
                         }
                       )
                     } else if (selectedTeamId === undefined) {
-                      return toast.error('Please select a team', {
+                      return toast.error('Please select a team.', {
                         style: toastStyle,
                       })
                     }
                     if (missionData.name.length === 0) {
-                      return toast.error('Please enter a mission title', {
+                      return toast.error('Please enter a mission title.', {
                         style: toastStyle,
                       })
                     }
                     if (!missionLogoUri) {
-                      return toast.error('Please upload a mission image', {
+                      return toast.error('Please upload a mission image.', {
                         style: toastStyle,
                       })
                     }
@@ -670,18 +670,18 @@ export default function CreateMission({
                       !missionData?.fundingGoal ||
                       missionData.fundingGoal <= 0
                     ) {
-                      return toast.error('Please enter a funding goal', {
+                      return toast.error('Please enter a funding goal.', {
                         style: toastStyle,
                       })
                     }
                     if (missionData.token.tradeable) {
                       if (missionData.token.name.trim().length === 0) {
-                        return toast.error('Please enter a token name', {
+                        return toast.error('Please enter a token name.', {
                           style: toastStyle,
                         })
                       }
                       if (missionData.token.symbol.trim().length === 0) {
-                        return toast.error('Please enter a token symbol', {
+                        return toast.error('Please enter a token symbol.', {
                           style: toastStyle,
                         })
                       }

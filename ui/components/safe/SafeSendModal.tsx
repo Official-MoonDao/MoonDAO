@@ -55,11 +55,11 @@ export default function SafeSendModal({
 
   const handleSend = async () => {
     if (!to || !amount) {
-      return toast.error('Please fill in all fields')
+      return toast.error('Please fill in all fields.')
     } else if (to.length !== 42 || !to.startsWith('0x')) {
-      return toast.error('Invalid address')
+      return toast.error('Invalid address.')
     } else if (Number(amount) <= 0) {
-      return toast.error('Invalid amount')
+      return toast.error('Invalid amount.')
     }
 
     try {
@@ -71,7 +71,7 @@ export default function SafeSendModal({
             b.token?.symbol?.toLowerCase() === selectedToken
         )
         if (!token) {
-          return toast.error('Token not found')
+          return toast.error('Token not found.')
         }
         await safeData.sendFunds(
           to,
@@ -85,7 +85,7 @@ export default function SafeSendModal({
     } catch (error: any) {
       console.error(error?.message)
       if (error?.message?.startsWith('Insufficient')) {
-        toast.error('Insufficient balance')
+        toast.error('Insufficient balance.')
       }
     }
   }

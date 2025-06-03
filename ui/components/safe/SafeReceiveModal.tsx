@@ -51,7 +51,7 @@ export default function SafeReceiveModal({
             className="gradient-2 rounded-full"
             onClick={() => {
               navigator.clipboard.writeText(safeAddress)
-              toast.success('Address copied to clipboard')
+              toast.success('Address copied to clipboard.')
             }}
             hoverEffect={false}
           >

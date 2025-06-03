@@ -434,7 +434,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         )
 
                         if (!newImageIpfsHash) {
-                          return toast.error('Error pinning image to IPFS')
+                          return toast.error('Error pinning image to IPFS.')
                         }
 
                         setIsLoadingMint(true)

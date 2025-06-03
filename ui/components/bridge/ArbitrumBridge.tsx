@@ -59,7 +59,7 @@ export default function ArbitrumBridge() {
         erc20L1Address: MOONEY_ADDRESSES['ethereum'],
       })
       const approveReceipt = await approveTx.wait()
-      toast.success('Approved MOONEY')
+      toast.success('Approved MOONEY.')
       return approveReceipt
     }
   }
@@ -400,7 +400,7 @@ export default function ArbitrumBridge() {
               err.message.includes('insufficient funds') ||
               err.message.includes('No retryable data found in error')
             )
-              toast.error('Insufficient balance')
+              toast.error('Insufficient balance.')
           }
         }}
       />
