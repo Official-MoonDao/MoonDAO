@@ -53,7 +53,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/launch' ||
     router.pathname === '/about' ||
     router.pathname === '/news' ||
-    router.pathname === '/mission/[tokenId]'
+    router.pathname === '/mission/[tokenId]' || 
+    router.pathname === '/dude-perfect'
 
   const layout = (
     <div
