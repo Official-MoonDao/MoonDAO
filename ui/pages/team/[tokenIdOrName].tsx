@@ -526,6 +526,17 @@ export default function TeamDetailPage({
               )}
             </div>
           )}
+
+          <TeamTreasury
+            isSigner={isSigner}
+            safeData={safeData}
+            multisigAddress={nft.owner}
+            multisigMooneyBalance={MOONEYBalance?.displayValue}
+            multisigNativeBalance={nativeBalance?.displayValue}
+            multisigDAIBalance={DAIBalance?.displayValue}
+            multisigUSDCBalance={USDCBalance?.displayValue}
+          />
+
           {/* Header and socials */}
           <TeamMissions
             selectedChain={selectedChain}
@@ -609,7 +620,6 @@ export default function TeamDetailPage({
                   </SlidingCardMenu>
                 </div>
               </Frame>
-              {/* Jobs */}
               <TeamJobs
                 teamId={tokenId}
                 jobTableContract={jobTableContract}
@@ -624,17 +634,6 @@ export default function TeamDetailPage({
                 teamId={tokenId}
                 isCitizen={citizen}
               />
-              {/* Mooney and Voting Power */}
-              {isSigner && (
-                <TeamTreasury
-                  safeData={safeData}
-                  multisigAddress={nft.owner}
-                  multisigMooneyBalance={MOONEYBalance?.displayValue}
-                  multisigNativeBalance={nativeBalance?.displayValue}
-                  multisigDAIBalance={DAIBalance?.displayValue}
-                  multisigUSDCBalance={USDCBalance?.displayValue}
-                />
-              )}
               {/* General Actions */}
               {isManager && <GeneralActions />}
             </div>
@@ -646,16 +645,16 @@ export default function TeamDetailPage({
                   ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
                   : `The profile has expired, please connect the owner or admin wallet to renew.`}
               </p>
-              {isSigner && (
-                <TeamTreasury
-                  safeData={safeData}
-                  multisigAddress={nft.owner}
-                  multisigMooneyBalance={MOONEYBalance?.displayValue}
-                  multisigNativeBalance={nativeBalance?.displayValue}
-                  multisigDAIBalance={DAIBalance?.displayValue}
-                  multisigUSDCBalance={USDCBalance?.displayValue}
-                />
-              )}
+
+              <TeamTreasury
+                isSigner={isSigner}
+                safeData={safeData}
+                multisigAddress={nft.owner}
+                multisigMooneyBalance={MOONEYBalance?.displayValue}
+                multisigNativeBalance={nativeBalance?.displayValue}
+                multisigDAIBalance={DAIBalance?.displayValue}
+                multisigUSDCBalance={USDCBalance?.displayValue}
+              />
             </Frame>
           )}
         </div>

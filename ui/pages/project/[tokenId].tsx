@@ -21,6 +21,7 @@ import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
+import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -50,6 +51,7 @@ export default function ProjectProfile({
   project,
 }: ProjectProfileProps) {
   const account = useActiveAccount()
+  const address = account?.address
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -119,6 +121,9 @@ export default function ProjectProfile({
     MDP,
     isLoading: isLoadingProjectData,
   } = useProjectData(projectContract, hatsContract, project)
+
+  const safeData = useSafe(owner)
+  const isSigner = safeData?.owners.includes(address || '')
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
 
@@ -329,15 +334,15 @@ export default function ProjectProfile({
               </div>
             </Frame>
             {/* Mooney and Voting Power */}
-            {isManager && (
-              <TeamTreasury
-                multisigAddress={owner}
-                multisigMooneyBalance={MOONEYBalance?.displayValue}
-                multisigNativeBalance={nativeBalance?.displayValue}
-                multisigDAIBalance={DAIBalance?.displayValue}
-                multisigUSDCBalance={USDCBalance?.displayValue}
-              />
-            )}
+            <TeamTreasury
+              isSigner={isSigner}
+              safeData={safeData}
+              multisigAddress={owner}
+              multisigMooneyBalance={MOONEYBalance?.displayValue}
+              multisigNativeBalance={nativeBalance?.displayValue}
+              multisigDAIBalance={DAIBalance?.displayValue}
+              multisigUSDCBalance={USDCBalance?.displayValue}
+            />
           </div>
         </div>
       </ContentLayout>
