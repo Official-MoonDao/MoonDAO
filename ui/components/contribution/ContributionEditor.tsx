@@ -1,10 +1,15 @@
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { usePrivy } from '@privy-io/react-auth'
+import { DEPLOYED_ORIGIN } from 'const/config'
 import dynamic from 'next/dynamic'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
+import CitizenContext from '@/lib/citizen/citizen-context'
+import { useCitizen } from '@/lib/citizen/useCitizen'
+import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import useAccount from '@/lib/nance/useAccountAddress'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
@@ -53,7 +58,7 @@ const ContributionEditor: React.FC = () => {
   const [submitting, setSubmitting] = useState(false)
   const [coordinapeLink, setCoordinapeLink] = useState<string | null>(null)
   const { address } = useAccount()
-
+  const { citizen } = useContext(CitizenContext)
   useEffect(() => {
     if (setMarkdown) {
       setMarkdown(CONTRIBUTION_TEMPLATE)
@@ -90,6 +95,22 @@ const ContributionEditor: React.FC = () => {
 
       setCoordinapeLink(
         `https://app.coordinape.com/circles/${data.insert_contributions_one.circle_id}`
+      )
+
+      sendDiscordMessage(
+        'networkNotifications',
+        `## **New Contribution made by ${
+          citizen?.metadata?.name
+            ? `[${
+                citizen?.metadata?.name
+              }](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(
+                citizen?.metadata?.name,
+                citizen?.id
+              )})`
+            : `${address.slice(0, 6)}...${address.slice(-4)}`
+        }**
+      ${getMarkdown()?.trim()}
+      `
       )
       toast.success('Contribution submitted successfully!')
     } catch (err) {

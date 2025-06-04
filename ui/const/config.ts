@@ -5,7 +5,7 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 export const DEPLOYED_ORIGIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://moondao.com'
-    : 'https://moondao-ce-demo.netlify.app'
+    : 'https://moondao-git-ng-safe-send-moondao.vercel.app'
 
 interface DeploymentConfig {
   MOONEYToken: string
@@ -295,7 +295,8 @@ export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
 export const OPERATOR_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
-export const MOONDAO_TREASURY: string = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
+export const MOONDAO_TREASURY: string =
+  '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
 export const DEAD_ADDRESS: string =
@@ -374,4 +375,4 @@ export const POLYGON_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/137/safes/0x8C0252c3232A2c7379DDC2E44214697ae8fF097a/balances/usd?trusted=true'
 export const BASE_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/8453/safes/0x871e232Eb935E54Eb90B812cf6fe0934D45e7354/balances/usd?trusted=true'
-export const STAKED_ETH_ADDRESS = "0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8";
+export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
