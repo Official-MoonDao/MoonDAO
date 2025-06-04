@@ -93,7 +93,7 @@ const ContributionEditor: React.FC = () => {
       )
       toast.success('Contribution submitted successfully!')
     } catch (err) {
-      toast.error('Failed to submit contribution')
+      toast.error('Failed to submit contribution.')
     } finally {
       toast.dismiss(loadingToast)
       setSubmitting(false)

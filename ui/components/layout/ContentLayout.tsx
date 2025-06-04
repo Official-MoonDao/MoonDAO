@@ -87,7 +87,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                                     } 
                                     ${
                                       children
-                                        ? 'pb-0 md:pb-[30px] lg:pb-[120px]'
+                                        ? `pb-0 md:pb-[30px] ${popOverEffect ? 'lg:pb-[170px]' : 'lg:pb-[120px]'}`
                                         : 'flex md:items-start lg:items-center min-h-[60vh] lg:min-h-[90vh]'
                                     }
                                     ${isProfile ? 'lg:mb-[-100px]' : ''}

@@ -43,7 +43,7 @@ export default function GetMooney() {
                   className="underline"
                   onClick={() => {
                     if (!address)
-                      return toast.error('Please connect your wallet')
+                      return toast.error('Please connect your wallet.')
                     fundWallet(address, {
                       chain: viemChains[chainSlug],
                     })

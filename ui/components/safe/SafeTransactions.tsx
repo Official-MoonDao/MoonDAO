@@ -1,9 +1,10 @@
 import { ethers } from 'ethers'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { PendingTransaction, SafeData } from '@/lib/safe/useSafe'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import SafeExecutionDisclaimer from './SafeExecutionDisclaimer'
 
 type SafeTransactionsProps = {
   address: string | undefined
@@ -23,25 +24,22 @@ export default function SafeTransactions({
     pendingTransactions,
   } = safeData
   const [expandedTx, setExpandedTx] = useState<string | null>(null)
+  const [showDisclaimer, setShowDisclaimer] = useState(false)
+  const [selectedTxHash, setSelectedTxHash] = useState<string | null>(null)
 
   const handleSignTransaction = async (safeTxHash: string) => {
     try {
       await signPendingTransaction(safeTxHash)
-      toast.success('Transaction signed successfully', { style: toastStyle })
+      toast.success('Transaction signed successfully!', { style: toastStyle })
     } catch (error) {
       console.error('Error signing transaction:', error)
-      toast.error('Failed to sign transaction', { style: toastStyle })
+      toast.error('Failed to sign transaction.', { style: toastStyle })
     }
   }
 
   const handleExecuteTransaction = async (safeTxHash: string) => {
-    try {
-      await executeTransaction(safeTxHash)
-      toast.success('Transaction executed successfully', { style: toastStyle })
-    } catch (error) {
-      console.error('Error executing transaction:', error)
-      toast.error('Failed to execute transaction', { style: toastStyle })
-    }
+    setSelectedTxHash(safeTxHash)
+    setShowDisclaimer(true)
   }
 
   const handleRejectTransaction = async (safeTxHash: string) => {
@@ -49,7 +47,7 @@ export default function SafeTransactions({
       await rejectTransaction(safeTxHash)
     } catch (error) {
       console.error('Error rejecting transaction:', error)
-      toast.error('Failed to reject transaction', { style: toastStyle })
+      toast.error('Failed to reject transaction.', { style: toastStyle })
     }
   }
 
@@ -86,11 +84,11 @@ export default function SafeTransactions({
             ({ nonce, transactions }) => {
               const hasRejectionInGroup = transactions.some(
                 (tx) =>
-                  tx.data === '0x' ||
-                  tx.data === null ||
                   tx.dataDecoded?.method === 'rejectTransaction' ||
                   tx.dataDecoded?.method === 'Reject Transaction' ||
-                  tx.dataDecoded?.method?.toLowerCase().includes('reject')
+                  tx.dataDecoded?.method?.toLowerCase().includes('reject') ||
+                  ((tx.data === '0x' || tx.data === null) &&
+                    ethers.BigNumber.from(tx.value).eq(0))
               )
 
               return (
@@ -111,9 +109,9 @@ export default function SafeTransactions({
                     </div>
                   )}
 
-                  {transactions.map((tx) => {
+                  {transactions.map((tx: any) => {
                     const hasSigned = tx.confirmations.some(
-                      (conf) =>
+                      (conf: any) =>
                         conf.owner.toLowerCase() === address?.toLowerCase()
                     )
                     const canExecute =
@@ -126,14 +124,22 @@ export default function SafeTransactions({
                       !tx.isExecuted &&
                       tx.nonce === safeData?.currentNonce
 
+                    const isEthTransfer =
+                      (tx.data === '0x' || tx.data === null) &&
+                      ethers.BigNumber.from(tx.value).gt(0)
+
                     const isRejectionTx =
-                      tx.data === '0x' ||
-                      tx.data === null ||
                       tx.dataDecoded?.method === 'rejectTransaction' ||
                       tx.dataDecoded?.method === 'Reject Transaction' ||
-                      tx.dataDecoded?.method?.toLowerCase().includes('reject')
+                      tx.dataDecoded?.method
+                        ?.toLowerCase()
+                        .includes('reject') ||
+                      ((tx.data === '0x' || tx.data === null) &&
+                        ethers.BigNumber.from(tx.value).eq(0))
 
-                    const method = isRejectionTx
+                    const method = isEthTransfer
+                      ? 'Transfer ETH'
+                      : isRejectionTx
                       ? 'Reject Transaction'
                       : tx.dataDecoded?.method || 'Unknown Method'
 
@@ -291,6 +297,15 @@ export default function SafeTransactions({
         <p data-testid="no-transactions-message" className="text-gray-400">
           No pending transactions
         </p>
+      )}
+
+      {showDisclaimer && selectedTxHash && (
+        <SafeExecutionDisclaimer
+          safeData={safeData}
+          setEnabled={setShowDisclaimer}
+          safeTxHash={selectedTxHash}
+          onExecute={executeTransaction}
+        />
       )}
     </div>
   )

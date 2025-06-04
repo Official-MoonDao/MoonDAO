@@ -184,7 +184,7 @@ export default function ProposalEditor() {
 
   async function signAndSendProposal(proposal: Proposal) {
     if (!proposal.title) {
-      toast.error('Please enter a title for the proposal', {
+      toast.error('Please enter a title for the proposal.', {
         style: toastStyle,
       })
       return
@@ -220,7 +220,7 @@ export default function ProposalEditor() {
             } else {
               setSigningStatus('error')
               toast.dismiss(t)
-              toast.error('Error saving proposal', { style: toastStyle })
+              toast.error('Error saving proposal.', { style: toastStyle })
             }
           })
           .catch((error) => {

@@ -64,6 +64,7 @@ function TeamMember({
           contract: citizenContract,
           tokenId: BigInt(ownedToken.toString()),
         })
+
         setNft(nft)
       } catch (err) {}
       setIsLoadingNFT(false)
@@ -98,7 +99,7 @@ function TeamMember({
     <div className="w-[350px]">
       <ProfileCard
         inline
-        metadata={metadata}
+        metadata={{ id: metadata?.id || nft?.id, ...metadata }}
         owner={address}
         type="citizen"
         hovertext={metadata?.name && 'Explore Profile'}

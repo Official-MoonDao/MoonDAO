@@ -92,8 +92,12 @@ export function ExpandedFooter({
   ]
 
   const governLinks = [
+    { text: 'Governance', href: '/governance' },
     { text: 'Proposals', href: '/vote' },
     { text: 'Constitution', href: 'https://docs.moondao.com/Governance/Constitution?_gl=1*xwpa15*_ga*NDEyMzExNTE4LjE3MTcxMjYxODU.*_ga_QPFCD9VH46*czE3NDc4NjI2NTUkbzI1MCRnMSR0MTc0Nzg2Mjc1NCRqMCRsMCRoMA..' },
+  ]
+
+  const tokenLinks = [
     { text: 'Buy $MOONEY', href: '/get-mooney' },
     { text: 'Lock $MOONEY', href: '/lock' },
     { text: 'Bridge $MOONEY', href: '/bridge' },
@@ -120,7 +124,7 @@ export function ExpandedFooter({
   return (
     <>
       <div id="expanded-menu" className="overflow-hidden relative bg-dark-cool px-6 text-white"> 
-        <div className="container mx-auto max-w-[1200px] pb-0 sm:pl-[5vw] md:pt-[5vh] md:pl-[5vw] lg:pl-[2vw] flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10">
+        <div className="container mx-auto max-w-[1200px] pb-0 md:pt-[5vh] md:pl-[5vw] lg:pl-[2vw] flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10">
           {hasCallToAction && (
             <div className="flex flex-col pb-[5vh] p-[2vw]  md:p-0 py-0 lg:col-span-2 order-2 lg:order-1 relative min-h-[250px] lg:min-h-[300px]">
               <div className="overflow-visible absolute bottom-0 left-0 z-0 w-full flex items-end">
@@ -147,16 +151,42 @@ export function ExpandedFooter({
             </div>
           )}
           
-          <div className={`z-50 px-[2vw] pt-[5vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-4 gap-8 order-1 lg:order-2 ${hasCallToAction ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
+          <div className={`z-50 px-[2vw] pt-[5vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 order-1 lg:order-2 ${hasCallToAction ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
+            {/* Always visible sections */}
             <LinkList title="NETWORK" links={networkLinks} />
             <LinkList title="GOVERN" links={governLinks} />
-            <div>
+            
+            {/* Mobile only - swapped order */}
+            <div className="md:hidden">
+              <LinkList title="LEARN" links={learnLinks} />
+            </div>
+            <div className="md:hidden">
+              <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
+            </div>
+            
+            {/* Tablet and up - original order */}
+            <div className="hidden md:block">
+              <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
+            </div>
+            <div className="hidden md:block">
+              <LinkList title="LEARN" links={learnLinks} />
+            </div>
+            
+            {/* Desktop only: Combined contribute/marketplace column */}
+            <div className="hidden lg:block">
               <LinkList title="CONTRIBUTE" links={contributeLinks} />
               <div className="mt-8">
                 <LinkList title="MARKETPLACE" links={marketplaceLinks} />
               </div>
             </div>
-            <LinkList title="LEARN" links={learnLinks} />
+            
+            {/* Mobile and tablet: Separate contribute and marketplace columns */}
+            <div className="lg:hidden">
+              <LinkList title="CONTRIBUTE" links={contributeLinks} />
+            </div>
+            <div className="lg:hidden">
+              <LinkList title="MARKETPLACE" links={marketplaceLinks} />
+            </div>
           </div>
         </div>
       </div>

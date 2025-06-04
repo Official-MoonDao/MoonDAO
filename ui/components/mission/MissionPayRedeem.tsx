@@ -475,7 +475,7 @@ export default function MissionPayRedeem({
       return
     }
     if (!agreedToCondition) {
-      toast.error('Please agree to the terms', {
+      toast.error('Please agree to the terms.', {
         style: toastStyle,
       })
       return
@@ -483,7 +483,7 @@ export default function MissionPayRedeem({
 
     const inputValue = parseFloat(input) || 0
     if (inputValue <= 0) {
-      toast.error('Please enter a valid amount', {
+      toast.error('Please enter a valid amount.', {
         style: toastStyle,
       })
       return
@@ -561,7 +561,7 @@ export default function MissionPayRedeem({
         })
       }
 
-      toast.success('Mission token purchased', {
+      toast.success('Mission token purchased.', {
         style: toastStyle,
       })
 
@@ -599,7 +599,7 @@ export default function MissionPayRedeem({
     }
 
     if (tokenBalance < 0) {
-      toast.error('You have no tokens to redeem', {
+      toast.error('You have no tokens to redeem.', {
         style: toastStyle,
       })
       return
@@ -626,7 +626,7 @@ export default function MissionPayRedeem({
         account,
       })
 
-      toast.success('Tokens redeemed successfully', {
+      toast.success('Tokens redeemed successfully!', {
         style: toastStyle,
       })
       router.reload()
@@ -640,7 +640,7 @@ export default function MissionPayRedeem({
           }
         )
       } else {
-        toast.error('Failed to redeem tokens', {
+        toast.error('Failed to redeem tokens.', {
           style: toastStyle,
         })
       }
@@ -662,7 +662,7 @@ export default function MissionPayRedeem({
     }
 
     if (tokenCredit <= 0) {
-      toast.error('You have no token credit to claim', {
+      toast.error('You have no token credit to claim.', {
         style: toastStyle,
       })
       return
@@ -681,13 +681,13 @@ export default function MissionPayRedeem({
         account,
       })
 
-      toast.success('Token credit claimed successfully', {
+      toast.success('Token credit claimed successfully!', {
         style: toastStyle,
       })
       router.reload()
     } catch (error) {
       console.error('Error claiming token credit:', error)
-      toast.error('Failed to claim token credit', {
+      toast.error('Failed to claim token credit.', {
         style: toastStyle,
       })
     }
@@ -811,7 +811,7 @@ export default function MissionPayRedeem({
                 className="p-1 px-4 flex items-center gap-2 bg-moon-indigo rounded-xl"
                 onClick={(e: any) => {
                   navigator.clipboard.writeText(address || '')
-                  toast.success('Address copied to clipboard', {
+                  toast.success('Address copied to clipboard.', {
                     style: toastStyle,
                   })
                 }}
