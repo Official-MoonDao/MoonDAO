@@ -23,8 +23,6 @@ contract CrossChainPayDeploy is Script, Config {
         );
         (address payAddress, bytes32 salt) =
             Miner.find(CREATE2_DEPLOYER, 0xda0, type(CrossChainPay).creationCode, constructorArgs);
-        console.log("salt");
-        console.logBytes32(salt);
         CrossChainPay pay = new CrossChainPay{salt: salt}(deployer, JB_MULTI_TERMINAL, address(0));
         pay.setStargateRouter(STARGATE_POOLS[block.chainid]);
 
