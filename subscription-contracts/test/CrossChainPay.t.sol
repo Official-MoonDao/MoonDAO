@@ -21,9 +21,13 @@ contract MockJBMultiTerminal {
         string calldata memo,
         bytes calldata metadata
     ) external payable returns (uint256 beneficiaryTokenCount) {
-        require(msg.value == amount, "Incorrect ETH amount");
-        projectPayments[projectId] += amount;
-        return amount; // Return amount as token count for simplicity
+        if (amount == 0) {
+            require(msg.value > 0, "Incorrect ETH amount");
+        } else {
+            require(msg.value == amount, "Incorrect ETH amount");
+        }
+        projectPayments[projectId] += msg.value;
+        return msg.value; // Return paid amount as token count for simplicity
     }
 }
 
@@ -182,9 +186,6 @@ contract CrossChainPayTest is Test {
         uint256 totalAmount = TRANSFER_AMOUNT + mockStargate.MOCK_FEE();
 
         vm.startPrank(user);
-
-        // FIXME make sure mock parses message properly to fix this test
-        vm.expectRevert();
         crossChainPay.crossChainPay{value: totalAmount}(
             DST_EID,
             PROJECT_ID,
@@ -194,6 +195,8 @@ contract CrossChainPayTest is Test {
             MEMO,
             METADATA
         );
+
+        assertEq(mockJBTerminal.projectPayments(PROJECT_ID), TRANSFER_AMOUNT);
 
         vm.stopPrank();
     }
