@@ -1,9 +1,15 @@
 ## Installation
 
-`git clone --recurse-submodules <repo-URL>`
-`git submodule update --init --recursive`
 
-```sh
+```bash
+git clone --recurse-submodules <repo-URL>
+git submodule update --init --recursive
+# install foundry
+curl -L https://foundry.paradigm.xyz/ | bash
+# source shell profile to add then foundryup to path then run
+foundryup
+
+# install dependencies
 yarn install
 forge install
 ```
