@@ -167,6 +167,7 @@ export function CreateMissionStage({
                   setStage((prev: number) => prev + 1)
                 } else {
                   action()
+                  setStage((prev: number) => prev + 1)
                 }
               }}
             >
@@ -380,9 +381,8 @@ export default function CreateMission({
           })
           setFormattedFundingGoal('')
           clearMissionCache()
-
-          setStatus('idle')
           setCreatedMission(false)
+
           router.push(`/mission/${missionId}`)
         }, 30000)
       }
@@ -478,6 +478,7 @@ export default function CreateMission({
               {stage === 0 && (
                 <CreateMissionStage
                   id="mission-overview-stage"
+                  account={account}
                   stage={stage}
                   setStage={setStage}
                   description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential backers and compel them to contribute.
@@ -508,7 +509,6 @@ export default function CreateMission({
                         style: toastStyle,
                       })
                     }
-                    setStage((prev: number) => prev + 1)
                   }}
                 >
                   <div className="flex justify-between">
@@ -663,6 +663,7 @@ export default function CreateMission({
               {stage === 1 && (
                 <CreateMissionStage
                   id="mission-goals-stage"
+                  account={account}
                   stage={stage}
                   setStage={setStage}
                   action={() => {
@@ -686,7 +687,6 @@ export default function CreateMission({
                         })
                       }
                     }
-                    setStage((prev: number) => prev + 1)
                   }}
                 >
                   <div className="">
@@ -814,6 +814,7 @@ export default function CreateMission({
               {stage === 2 && (
                 <CreateMissionStage
                   id="mission-details-stage"
+                  account={account}
                   stage={stage}
                   setStage={setStage}
                   action={async () => {
@@ -825,7 +826,6 @@ export default function CreateMission({
                     const html = await marked(missionData.description)
                     console.log(html)
                     setMissionData({ ...missionData, description: html })
-                    setStage((prev: number) => prev + 1)
                   }}
                 >
                   <StandardButton
@@ -862,6 +862,7 @@ export default function CreateMission({
               {stage === 3 && (
                 <CreateMissionStage
                   id="mission-confirmation-stage"
+                  account={account}
                   stage={stage}
                   setStage={setStage}
                   description="Please review your mission details:"
