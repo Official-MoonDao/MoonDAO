@@ -179,7 +179,7 @@ export default function MissionInfo({
         </div>
 
         <div className="flex items-center md:justify-end gap-2 w-full">
-          <p className="text-sm text-gray-400">{'CONNECT WITH THE TEAM'}</p>
+          <div className="text-sm text-gray-400">{'CONNECT WITH THE TEAM'}</div>
           <div className="flex gap-2 justify-start justify-end">
             {teamSocials.communications && (
               <Link
