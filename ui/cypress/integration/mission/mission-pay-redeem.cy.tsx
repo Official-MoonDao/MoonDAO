@@ -87,7 +87,6 @@ describe('<MissionPayRedeem />', () => {
     }).as('getEthPrice')
 
     props = {
-      selectedChain: CYPRESS_CHAIN_V5,
       mission: {
         id: '1',
         projectId: '1',

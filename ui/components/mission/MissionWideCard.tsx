@@ -83,7 +83,6 @@ export default function MissionWideCard({
         <div id="pay-modal">
           <MissionPayRedeem
             stage={stage}
-            selectedChain={selectedChain}
             mission={mission}
             token={token}
             subgraphData={subgraphData}
