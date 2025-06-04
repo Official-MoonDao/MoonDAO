@@ -7,6 +7,7 @@ import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
+import JBMultiTerminal from 'const/abis/IJBMultiTerminal.json'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -18,6 +19,7 @@ import {
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
+  JBV4_TERMINAL_ADDRESSES
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -95,6 +97,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const jbControllerContract = useContract({
     address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
     abi: JBV4ControllerABI as any,
+    chain: selectedChain,
+  })
+
+  const jbTerminalContract = useContract({
+    address: JBV4_TERMINAL_ADDRESSES[chainSlug],
+    abi: JBMultiTerminal.abi as any,
     chain: selectedChain,
   })
 
