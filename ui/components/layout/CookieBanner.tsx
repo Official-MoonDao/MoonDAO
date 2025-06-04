@@ -40,7 +40,7 @@ export default function CookieBanner() {
         >
           <p className="text-sm">
             {`We use cookies to enhance your experience. By clicking "Allow
-            Cookies", you agree to the use of cookies for analytics,
+            Cookies" you agree to the use of cookies for analytics,
             personalization, and marketing. Learn more in our `}
             <Link
               className="underline text-blue-500"
