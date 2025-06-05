@@ -34,23 +34,18 @@ export default function CookieBanner() {
       } px-3 md:px-4 py-3 justify-between items-center flex-col gap-4 bg-dark-cool rounded-lg shadow`}
     >
       <div className="text-left">
-        <Link
-          href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
-          passHref
-        >
-          <p className="text-sm">
-            {`We use cookies to enhance your experience. By clicking "Allow
+        <p className="text-sm">
+          {`We use cookies to enhance your experience. By clicking "Allow
             Cookies" you agree to the use of cookies for analytics,
             personalization, and marketing. Learn more in our `}
-            <Link
-              className="underline text-blue-500"
-              href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
-            >
-              Privacy Policy
-            </Link>
-            .
-          </p>
-        </Link>
+          <Link
+            className="underline text-blue-500"
+            href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
 
       <div className="flex gap-2">
