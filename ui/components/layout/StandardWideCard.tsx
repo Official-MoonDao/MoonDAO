@@ -106,7 +106,7 @@ export default function StandardWideCard({
                       {header || title || (profile && 'Anon')}
                     </h2>
                     {subheader && (
-                      <p className="text-gray-400 text-lg">{subheader}</p>
+                      <div className="text-gray-400 text-lg">{subheader}</div>
                     )}
                   </div>
                   {stats && (
