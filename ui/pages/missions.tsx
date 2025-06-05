@@ -14,6 +14,7 @@ import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -260,9 +261,22 @@ export const getStaticProps: GetStaticProps = async () => {
           params: [missionRow.projectId],
         })
 
-        const metadataRes = await fetch(
-          `https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`
-        )
+        if (!metadataURI) {
+          console.warn(
+            `No metadata URI found for project ${missionRow.projectId}`
+          )
+          return {
+            id: missionRow.id,
+            teamId: missionRow.teamId,
+            projectId: missionRow.projectId,
+            metadata: {
+              name: 'Unknown Mission',
+              description: 'No metadata available',
+            },
+          }
+        }
+
+        const metadataRes = await fetch(getIPFSGateway(metadataURI))
         const metadata = await metadataRes.json()
 
         return {

@@ -185,6 +185,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   useEffect(() => {
     async function getTeamNFT() {
+      if (!mission.teamId || !teamContract) return
+
       const teamNFT = await getNFT({
         contract: teamContract,
         tokenId: BigInt(mission.teamId),
@@ -192,9 +194,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       })
       setTeamNFT(teamNFT)
     }
-    if (teamContract ?? mission.teamId) {
-      getTeamNFT()
-    }
+
+    getTeamNFT()
   }, [teamContract, mission.teamId])
 
   useChainDefault()
@@ -368,7 +369,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           />
                           <span className="mr-2">
                             {truncateTokenValue(
-                              subgraphData?.volume / 1e18,
+                              subgraphData?.volume / 1e18 || 0,
                               'ETH'
                             )}
                           </span>
@@ -377,7 +378,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           </span>
                         </div>
                         <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                          (subgraphData?.volume / 1e18) * ethPrice
+                          (subgraphData?.volume / 1e18 || 0) * ethPrice
                         ).toLocaleString()} USD)`}</p>
                       </div>
 
@@ -618,71 +619,77 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  const tokenId: any = params?.tokenId
+  try {
+    const tokenId: any = params?.tokenId
 
-  const chain = sepolia
-  const chainSlug = getChainSlug(chain)
+    const chain = sepolia
+    const chainSlug = getChainSlug(chain)
 
-  if (tokenId === undefined) {
+    if (tokenId === undefined) {
+      return {
+        notFound: true,
+      }
+    }
+
+    const missionTableContract = getContract({
+      client: serverClient,
+      address: MISSION_TABLE_ADDRESSES[chainSlug],
+      abi: MissionTableABI as any,
+      chain: chain,
+    })
+
+    const missionTableName = await readContract({
+      contract: missionTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
+
+    const statement = `SELECT * FROM ${missionTableName} WHERE id = ${tokenId}`
+
+    const missionRows = await queryTable(chain, statement)
+    const missionRow = missionRows?.[0]
+
+    if (!missionRow || blockedMissions.includes(Number(tokenId))) {
+      return {
+        notFound: true,
+      }
+    }
+
+    const jbV4ControllerContract = getContract({
+      client: serverClient,
+      address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+      abi: JBV4ControllerABI as any,
+      chain: chain,
+    })
+
+    const metadataURI = await readContract({
+      contract: jbV4ControllerContract,
+      method: 'uriOf' as string,
+      params: [missionRow.projectId],
+    })
+
+    const ipfsHash = metadataURI.startsWith('ipfs://')
+      ? metadataURI.replace('ipfs://', '')
+      : metadataURI
+
+    const metadataRes = await fetch(`${IPFS_GATEWAY}${ipfsHash}`)
+    const metadata = await metadataRes.json()
+
+    const mission = {
+      id: missionRow.id,
+      teamId: missionRow.teamId,
+      projectId: missionRow.projectId,
+      metadata: metadata,
+    }
+
+    return {
+      props: {
+        mission,
+      },
+    }
+  } catch (error) {
     return {
       notFound: true,
     }
-  }
-
-  const missionTableContract = getContract({
-    client: serverClient,
-    address: MISSION_TABLE_ADDRESSES[chainSlug],
-    abi: MissionTableABI as any,
-    chain: chain,
-  })
-
-  const missionTableName = await readContract({
-    contract: missionTableContract,
-    method: 'getTableName' as string,
-    params: [],
-  })
-
-  const statement = `SELECT * FROM ${missionTableName} WHERE id = ${tokenId}`
-
-  const missionRows = await queryTable(chain, statement)
-  const missionRow = missionRows?.[0]
-
-  if (!missionRow || blockedMissions.includes(Number(tokenId))) {
-    return {
-      notFound: true,
-    }
-  }
-
-  const jbV4ControllerContract = getContract({
-    client: serverClient,
-    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
-    abi: JBV4ControllerABI as any,
-    chain: chain,
-  })
-
-  const metadataURI = await readContract({
-    contract: jbV4ControllerContract,
-    method: 'uriOf' as string,
-    params: [missionRow.projectId],
-  })
-
-  const ipfsHash = metadataURI.startsWith('ipfs://')
-    ? metadataURI.replace('ipfs://', '')
-    : metadataURI
-
-  const metadataRes = await fetch(`${IPFS_GATEWAY}${ipfsHash}`)
-  const metadata = await metadataRes.json()
-
-  const mission = {
-    id: missionRow.id,
-    teamId: missionRow.teamId,
-    projectId: missionRow.projectId,
-    metadata: metadata,
-  }
-
-  return {
-    props: {
-      mission,
-    },
   }
 }
