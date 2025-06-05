@@ -157,7 +157,7 @@ export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
 }
 
 export const FEE_HOOK_ADDRESSES: Index = {
-    sepolia: '0x730051F4cffB74a4AD00ba74C18c148942528844'
+    sepolia: '0xAe019281733Bb13A09A67e5c7Ede189035eD8844'
 }
 
 export const REVNET_ADDRESSES: Index = {
