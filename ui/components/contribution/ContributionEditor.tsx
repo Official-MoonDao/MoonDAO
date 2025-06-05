@@ -78,27 +78,27 @@ const ContributionEditor: React.FC = () => {
     const loadingToast = toast.loading('Submitting contribution...')
 
     try {
-      // const body = JSON.stringify({
-      //   description: getMarkdown(),
-      //   address,
-      // })
+      const body = JSON.stringify({
+        description: getMarkdown(),
+        address,
+      })
 
-      // const res = await fetch('/api/coordinape/createContribution', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body,
-      // })
-      // const data = await res.json()
+      const res = await fetch('/api/coordinape/createContribution', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body,
+      })
+      const data = await res.json()
 
-      // if (!res.ok) {
-      //   throw new Error(data.error)
-      // }
+      if (!res.ok) {
+        throw new Error(data.error)
+      }
 
-      // setCoordinapeLink(
-      //   `https://app.coordinape.com/circles/${data.insert_contributions_one.circle_id}`
-      // )
+      setCoordinapeLink(
+        `https://app.coordinape.com/circles/${data.insert_contributions_one.circle_id}`
+      )
 
       sendDiscordMessage(
         'networkNotifications',
