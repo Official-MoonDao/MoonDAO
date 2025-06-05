@@ -5,6 +5,7 @@ import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import IJBTerminalStoreABI from 'const/abis/IJBTerminalStore.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import JBMultiTerminal from 'const/abis/IJBMultiTerminal.json'
@@ -154,7 +155,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     jbTokensContract,
   })
 
-  const { adminHatId } = useTeamData(teamContract, hatsContract, teamNFT)
+  const { adminHatId, isManager } = useTeamData(teamContract, hatsContract, teamNFT)
 
   const teamHats = useSubHats(selectedChain, adminHatId)
 
@@ -222,17 +223,30 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const sendPayouts = async () => {
     if (!account) return
     try {
+      const storeAddress: any = await readContract({
+        contract: jbTerminalContract,
+        method: 'STORE' as string,
+        params: [],
+      })
+
+      const jbTerminalStoreContract = getContract({
+        address: storeAddress,
+        abi: IJBTerminalStoreABI.abi as any,
+        chain: selectedChain,
+      })
+
+      const balance: any = await readContract({
+        contract: jbTerminalStoreContract,
+        method: 'balanceOf' as string,
+        params: [jbTerminalContract.address, mission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+      })
+
       const tx = prepareContractCall({
         contract: jbTerminalContract,
         method: 'sendPayoutsOf' as string,
-        params: [
-          mission.projectId,
-          JB_NATIVE_TOKEN_ADDRESS,
-          BigInt(subgraphData?.volume ?? 0),
-          61166,
-          0,
-        ],
+        params: [mission.projectId, JB_NATIVE_TOKEN_ADDRESS, balance, 61166, 0],
       })
+
       await sendAndConfirmTransaction({ transaction: tx, account })
       toast.success('Payouts sent')
     } catch (err) {
@@ -551,7 +565,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 />
               </div>
             </div>
-            {account && (
+            {account && isManager && (
               <div className="px-[5vw] w-full flex justify-center my-4 gap-4">
                 <StandardButton
                   styleOnly
