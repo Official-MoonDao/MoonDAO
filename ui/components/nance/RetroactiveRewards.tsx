@@ -241,8 +241,11 @@ export function RetroactiveRewards({
     .concat(baseTokens)
     .concat([{ symbol: 'stETH', balance: stakedEth }])
 
-  const { ethBudgetCurrent, usdBudgetCurrent, mooneyBudget, ethPrice } =
-    getBudget(tokens, year, quarter)
+  const {
+    ethBudget: ethBudgetCurrent,
+    mooneyBudget,
+    ethPrice,
+  } = getBudget(tokens, year, quarter)
   console.log('Retroactive Rewards ETH Budget (current):', ethBudgetCurrent)
   const ethBudget = 15.4072
   const usdBudget = ethBudget * ethPrice
