@@ -245,7 +245,7 @@ export function RetroactiveRewards({
     getBudget(tokens, year, quarter)
   console.log('Retroactive Rewards ETH Budget (current):', ethBudgetCurrent)
   const ethBudget = 15.4072
-  const useBudget = ethBudget * ethPrice
+  const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
