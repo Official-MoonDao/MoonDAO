@@ -183,12 +183,12 @@ export default function Launch({ missions }: any) {
         <div id="hero-content-container" className="">
           <div
             id="hero-content"
-            className="relative md:pt-0 md:pb-0 h-[50vw] md:h-[max(40vh,500px)] 2xl:h-[400px] flex justify-between items-center overflow-hidden"
+            className="relative md:pt-0 md:pb-0 h-[45vw] md:h-[max(30vh,400px)] 2xl:h-[400px] flex justify-between items-center overflow-hidden"
           >
             <div className="relative h-full w-full 2xl:hidden">
               <video
                 id="video-background-mobile"
-                className="bg-[#010618] min-w-[100vw] h-full w-full object-contain object-right md:h-[max(40vh,500px)]"
+                className="bg-[#010618] min-w-[100vw] h-full w-full object-contain object-right md:h-[max(30vh,400px)]"
                 autoPlay
                 loop
                 muted
@@ -229,44 +229,28 @@ export default function Launch({ missions }: any) {
               />
               <div
                 id="logo-and-graphics-container"
-                className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-start ml-[5vw] md:ml-0 md:items-center md:justify-center z-[1]"
+                className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-center md:justify-center z-[1]"
                 >
-                <div id="logo-container">
-                  <Image
-                    id="desktop-logo"
-                    className="w-[min(30vw,350px)] h-[min(30vw,350px)] 2xl:ml-[-1.5vw]"
-                    src="/assets/logo-san-full-white.svg"
-                    alt="Logo"
-                    width={250}
-                    height={250}
-                  />
-                </div>
                 <div
                   id="graphics-container"
-                  className="md:h-full flex flex-col items-center md:items-start md:items-left justify-center md:pb-0"
-                >
-                  <div
-                    id="desktop-title-container"
-                    className="items-start justify-start"
-                  >
-                    <h1 className="font-GoodTimes text-left text-white text-[5vw] md:text-[max(2vw,45px)] leading-[2vw] pb-[5vw] md:pb-[2vw]">
-                      {'Launchpad'}
-                    </h1>
-                  </div>
-                  
+                  className="md:h-full flex flex-col items-center justify-center md:pb-0"
+                  >                  
                   <div
                     id="desktop-tagline-container"
-                    className="hidden w-full md:flex justify-center items-center"
-                  >
+                    className="w-full justify-center items-center px-[2vw] md:px-[5vw]"
+                    >
                     <Image
                       id="desktop-tagline"
-                      className="w-[90vw] h-auto md:w-[min(40vw,450px)]"
-                      src="/assets/Launchpad-Tagline-Desktop.svg"
+                      className="w-[70vw] md:w-[max(50vw,500px)] h-auto md:w-[min(70vw,650px)]"
+                      src="/assets/Tagline Animation - inline centered.svg"
                       alt="Org"
                       width={450}
                       height={450}
                     />
                   </div>
+                  <h1 className="font-GoodTimes text-left text-white text-[9vw] md:text-[max(3.5vw,45px)]">
+                    {'Launchpad'}
+                  </h1>
                 </div>
                 
               </div>
@@ -276,25 +260,10 @@ export default function Launch({ missions }: any) {
           </div>
         </div>
       </section>
-      <div
-        id="mobile-tagline-container"
-        className="bg-[#010618] md:hidden w-full flex justify-start px-[5vw] items-center"
-        >
-          <Image
-            id="mobile-tagline"
-            className="w-[min(100vw,450px)] sm:h-[min(17vw,450px)] md:w-[40vw] md:h-[6.86vw]"
-            src="/assets/Launchpad-Tagline-Desktop.svg"
-            alt="Org"
-            width={450}
-            height={450}
-          />
-        </div>
-
       <section
         id="initial-callout-section"
-        className="z-10 overflow-visible relative px-[5vw] flex flex-row items-center justify-start md:justify-center text-center pt-[5vw] md:pt-[2vw] lg:pt-[0px] pb-[2vw] lg:pb-[0px] md:pb-[2vw] gap-4 md:gap-4 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[20%] to-[#1B1C4B] to-[100%] md:to-[60%]"
-      >
-        
+        className="z-10 overflow-visible relative px-[5vw] flex flex-row items-center justify-center text-center pt-[5vw] md:pt-[2vw] lg:pt-[0px] pb-[2vw] lg:pb-[0px] md:pb-[2vw] gap-4 md:gap-4 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[20%] to-[#1B1C4B] to-[100%] md:to-[60%]"
+        >
         <div className="flex flex-row items-center gap-4">
           <Image
             id="spotlight-icon"
@@ -307,7 +276,7 @@ export default function Launch({ missions }: any) {
           <p
             id="callout"
             className="z-20 text-white font-GoodTimes text-[5vw] md:text-[max(2vw,35px)] leading-[6vw]"
-          >
+            >
             {'Mission Spotlight'}
           </p>
         </div>
