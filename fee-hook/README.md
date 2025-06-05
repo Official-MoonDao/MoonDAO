@@ -8,6 +8,8 @@
 - After swaps, fees are automatically withdrawn once a threshold is hit.
 - If the pool is not on the destination chain, the fees are sent to the FeeHook contract on the destination chain using layerzero.
 - vMOONEY holders can claim their fees using the withdrawFees function.
+- Withdraw amounts are calculated using the time weighted average of each
+  holder's vMOONEY balance.
 
 ## Local Testing
 ```

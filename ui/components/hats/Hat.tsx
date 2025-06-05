@@ -1,9 +1,10 @@
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useReadContract } from 'thirdweb/react'
+import { useReadContract } from 'thirdweb/react'
 import { useHatData } from '@/lib/hats/useHatData'
 import client from '@/lib/thirdweb/client'
+import IPFSRenderer from '../layout/IPFSRenderer'
 
 type HatProps = {
   selectedChain: any
@@ -44,12 +45,12 @@ export function Hat({
       <div className="flex items-center gap-5">
         {teamNFT && (
           <div className="rounded-[2.5vmax] rounded-tl-[10px] overflow-hidden">
-            <MediaRenderer
-              client={client}
-              src={teamNFT.metadata.image}
+            <IPFSRenderer
+              src={teamNFT.metadata.image || ''}
+              alt="Team Image"
+              width={compact ? 75 : 150}
+              height={compact ? 75 : 150}
               className="object-cover"
-              width={compact ? '75px' : '150px'}
-              height={compact ? '75px' : '150px'}
             />
           </div>
         )}

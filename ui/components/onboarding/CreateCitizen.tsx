@@ -213,7 +213,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
       if (!newImageIpfsHash) {
-        return toast.error('Error pinning image to IPFS')
+        return toast.error('Error pinning image to IPFS.')
       }
 
       //mint
@@ -470,7 +470,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 </div>
                 {citizenImage && (
                   <div className="mt-4">
-                    <FileInput file={inputImage} setFile={setInputImage} />
+                    <FileInput
+                      file={inputImage}
+                      setFile={setInputImage}
+                      accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+                      acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
+                    />
                     <StageButton
                       onClick={() => {
                         setCitizenImage(null)

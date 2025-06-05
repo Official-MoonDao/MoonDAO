@@ -24,15 +24,12 @@ import {
   TEAM_ADDRESSES,
   HATS_ADDRESS,
   JOBS_TABLE_ADDRESSES,
-  MOONEY_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JBV4_CONTROLLER_ADDRESSES,
   JBV4_TOKENS_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
-  DAI_ADDRESSES,
-  USDC_ADDRESSES,
   JBV4_DIRECTORY_ADDRESSES,
   MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
@@ -45,13 +42,10 @@ import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import {
-  MediaRenderer,
-  useActiveAccount,
-  useWalletBalance,
-} from 'thirdweb/react'
+import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import useSafe from '@/lib/safe/useSafe'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
@@ -67,8 +61,10 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
+import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import SafeModal from '@/components/safe/SafeModal'
 import Action from '@/components/subscription/Action'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
@@ -178,6 +174,10 @@ export default function TeamDetailPage({
 
   const hats = useSubHats(selectedChain, adminHatId)
 
+  const safeData = useSafe(nft?.owner)
+
+  const isSigner = safeData?.owners.includes(address || '')
+
   //Subscription Data
   const { data: expiresAt } = useRead({
     contract: teamContract,
@@ -185,32 +185,6 @@ export default function TeamDetailPage({
     params: [tokenId],
   })
 
-  const { data: nativeBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: nft?.owner,
-  })
-
-  const { data: MOONEYBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: nft?.owner,
-    tokenAddress: MOONEY_ADDRESSES[chainSlug],
-  })
-
-  const { data: DAIBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: nft?.owner,
-    tokenAddress: DAI_ADDRESSES[chainSlug],
-  })
-
-  const { data: USDCBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: nft?.owner,
-    tokenAddress: USDC_ADDRESSES[chainSlug],
-  })
   useChainDefault()
 
   //Profile Header Section
@@ -243,12 +217,12 @@ export default function TeamDetailPage({
                   id="org-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
-                  <MediaRenderer
-                    client={client}
+                  <IPFSRenderer
+                    alt="Team Image"
                     className="rounded-full"
                     src={nft.metadata.image}
-                    height={'300'}
-                    width={'300'}
+                    height={300}
+                    width={300}
                   />
                   <div
                     id="star-asset-container"
@@ -431,6 +405,7 @@ export default function TeamDetailPage({
             : imageIpfsLink.split('ipfs://')[1]
         }`}
       />
+
       {teamSubscriptionModalEnabled && (
         <SubscriptionModal
           selectedChain={selectedChain}
@@ -494,12 +469,12 @@ export default function TeamDetailPage({
                     topLeft="10px"
                     bottomLeft="2vmax"
                   >
-                    <div className="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+                    <div className="mt-2 px-2 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
                       <Action
                         title="Fund"
                         description="Launch a mission to raise funds."
                         icon={<BanknotesIcon height={30} width={30} />}
-                        onClick={() => router.push('/launch')}
+                        onClick={() => router.push('/launch?status=create')}
                       />
                       <Action
                         title="Hire"
@@ -523,6 +498,13 @@ export default function TeamDetailPage({
               )}
             </div>
           )}
+
+          <TeamTreasury
+            isSigner={isSigner}
+            safeData={safeData}
+            multisigAddress={nft.owner}
+          />
+
           {/* Header and socials */}
           <TeamMissions
             selectedChain={selectedChain}
@@ -606,7 +588,6 @@ export default function TeamDetailPage({
                   </SlidingCardMenu>
                 </div>
               </Frame>
-              {/* Jobs */}
               <TeamJobs
                 teamId={tokenId}
                 jobTableContract={jobTableContract}
@@ -621,16 +602,6 @@ export default function TeamDetailPage({
                 teamId={tokenId}
                 isCitizen={citizen}
               />
-              {/* Mooney and Voting Power */}
-              {isManager && (
-                <TeamTreasury
-                  multisigAddress={nft.owner}
-                  multisigMooneyBalance={MOONEYBalance?.displayValue}
-                  multisigNativeBalance={nativeBalance?.displayValue}
-                  multisigDAIBalance={DAIBalance?.displayValue}
-                  multisigUSDCBalance={USDCBalance?.displayValue}
-                />
-              )}
               {/* General Actions */}
               {isManager && <GeneralActions />}
             </div>
@@ -642,15 +613,12 @@ export default function TeamDetailPage({
                   ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
                   : `The profile has expired, please connect the owner or admin wallet to renew.`}
               </p>
-              {isManager && (
-                <TeamTreasury
-                  multisigAddress={nft.owner}
-                  multisigMooneyBalance={MOONEYBalance?.displayValue}
-                  multisigNativeBalance={nativeBalance?.displayValue}
-                  multisigDAIBalance={DAIBalance?.displayValue}
-                  multisigUSDCBalance={USDCBalance?.displayValue}
-                />
-              )}
+
+              <TeamTreasury
+                isSigner={isSigner}
+                safeData={safeData}
+                multisigAddress={nft.owner}
+              />
             </Frame>
           )}
         </div>

@@ -40,7 +40,7 @@ export const AllowanceWarning = ({
                   tokenContract,
                   spender,
                 })
-                if (receipt) toast.success('Allowance revoked')
+                if (receipt) toast.success('Allowance revoked.')
               } catch (err) {
                 console.log(err)
               }

@@ -31,6 +31,7 @@ import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import LockPresets from '../components/thirdweb/LockPresets'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
+import WithdrawVMooney from '@/components/tokens/WithdrawVMooney'
 import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrowABI from '../const/abis/VotingEscrow.json'
 import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
@@ -184,7 +185,7 @@ export default function Lock() {
             <button
               className="underline"
               onClick={() => {
-                if (!address) return toast.error('Please connect your wallet')
+                if (!address) return toast.error('Please connect your wallet.')
                 fundWallet(address, {
                   chain: viemChains[selectedChain.slug],
                 })
@@ -217,8 +218,9 @@ export default function Lock() {
         mainPadding
         preFooter={<NoticeFooter />}
       >
-        <main className="animate-fadeIn font-RobotoMono">
+        <main className="animate-fadeIn font-Lato">
           <Head title="Voting Power" />
+          <WithdrawVMooney />
           <div className="mt-3 w-full">
             <LockData
               hasLock={hasLock}
@@ -496,7 +498,7 @@ export default function Lock() {
                                 })
                                 approvalReceipt &&
                                   toast.success(
-                                    'Successfully approved MOONEY for lock'
+                                    'Successfully approved MOONEY for lock.'
                                   )
                               }
 
@@ -525,8 +527,8 @@ export default function Lock() {
                               if (lockReceipt) {
                                 toast.success(
                                   hasLock
-                                    ? 'Successfully Increased lock'
-                                    : 'Successfully Created lock'
+                                    ? 'Successfully Increased lock.'
+                                    : 'Successfully Created lock.'
                                 )
                                 setRefresh((prev) => !prev)
                               }
@@ -578,7 +580,7 @@ export default function Lock() {
                           })
                           receipt &&
                             toast.success(
-                              'Successfully Withdrew your locked MOONEY'
+                              'Successfully Withdrew your locked MOONEY.'
                             )
                         }}
                       />

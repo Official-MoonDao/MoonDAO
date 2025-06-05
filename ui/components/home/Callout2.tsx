@@ -65,9 +65,9 @@ export default function Callout2() {
             id="paragraph"
             className="pt-2 pb-5 text-lg w-[100%] md:w-[100%] lg:max-w-[500px]"
           >
-            We are an open source space community where everything is proposed,
-            governed, and created by our members. Co-govern the treasury by
-            locking $MOONEY to become a fully-fledged voter.
+            This is an open source space platform where everything is proposed,
+            governed, and created by members. Co-govern the treasury by locking
+            $MOONEY to become a voter.
           </p>
           <div className="flex items-center gap-2 mb-5">
             <button
@@ -75,7 +75,7 @@ export default function Callout2() {
                 navigator.clipboard.writeText(
                   '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395'
                 )
-                toast.success('Address copied to clipboard')
+                toast.success('Address copied to clipboard.')
               }}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >

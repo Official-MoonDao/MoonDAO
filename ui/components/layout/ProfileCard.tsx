@@ -2,14 +2,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
 import {
   generatePrettyLink,
   generatePrettyLinkWithId,
 } from '@/lib/subscription/pretty-links'
-import client from '@/lib/thirdweb/client'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
+import IPFSRenderer from './IPFSRenderer'
 
 interface CardProps {
   icon?: string
@@ -101,13 +100,29 @@ export default function Card({
           {metadata?.image && (
             <div id="entity-citizen-image-container" className="z-40">
               <Frame noPadding marginBottom="0px" className="">
-                <MediaRenderer
-                  client={client}
-                  className=""
-                  src={metadata.image}
-                  height={'100%'}
-                  width={'100%'}
-                />
+                {metadata?.image && (
+                  <div id="entity-citizen-image-container" className="z-40">
+                    <Frame noPadding marginBottom="0px" className="">
+                      {metadata.image.includes('ipfs') ? (
+                        <IPFSRenderer
+                          alt="Entity Image"
+                          className=""
+                          src={metadata.image}
+                          height={675}
+                          width={675}
+                        />
+                      ) : (
+                        <Image
+                          alt="Entity Image"
+                          className=""
+                          src={metadata.image}
+                          height={675}
+                          width={675}
+                        />
+                      )}
+                    </Frame>
+                  </div>
+                )}
               </Frame>
             </div>
           )}

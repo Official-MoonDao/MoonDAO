@@ -12,7 +12,7 @@ export default function Address({ address, className }: AddressProps) {
       onClick={() => {
         if (address) {
           navigator.clipboard.writeText(address)
-          toast.success('Copied to clipboard')
+          toast.success('Copied to clipboard.')
         }
       }}
     >

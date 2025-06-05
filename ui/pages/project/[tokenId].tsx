@@ -4,13 +4,10 @@ import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   CITIZEN_ADDRESSES,
-  DAI_ADDRESSES,
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
-  MOONEY_ADDRESSES,
   PROJECT_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
-  USDC_ADDRESSES,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -18,9 +15,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
+import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -50,6 +48,7 @@ export default function ProjectProfile({
   project,
 }: ProjectProfileProps) {
   const account = useActiveAccount()
+  const address = account?.address
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -86,27 +85,6 @@ export default function ProjectProfile({
     if (projectContract) getOwner()
   }, [tokenId, projectContract])
 
-  const { data: MOONEYBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    tokenAddress: MOONEY_ADDRESSES[chainSlug],
-    address: owner,
-  })
-
-  const { data: DAIBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    tokenAddress: DAI_ADDRESSES[chainSlug],
-    address: owner,
-  })
-
-  const { data: USDCBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    tokenAddress: USDC_ADDRESSES[chainSlug],
-    address: owner,
-  })
-
   const {
     adminHatId,
     managerHatId,
@@ -119,15 +97,11 @@ export default function ProjectProfile({
     MDP,
     isLoading: isLoadingProjectData,
   } = useProjectData(projectContract, hatsContract, project)
+
+  const safeData = useSafe(owner)
+  const isSigner = safeData?.owners.includes(address || '')
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
-
-  // get native balance for multisigj
-  const { data: nativeBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: owner,
-  })
 
   useChainDefault()
 
@@ -170,13 +144,6 @@ export default function ProjectProfile({
                   )}
                 </div>
               </div>
-            </div>
-            <div
-              id="project-stats-container"
-              className="flex items-center gap-2 "
-            >
-              <p>{`Awarded: ${totalBudget} ETH`}</p>
-              <Image src={'/coins/ETH.svg'} width={15} height={15} alt="ETH" />
             </div>
           </div>
         </div>
@@ -241,9 +208,9 @@ export default function ProjectProfile({
                 </div>
               </div>
 
-              <p className="py-4 px-4 md:px-0">
+              <div className="py-4 px-4 md:px-0">
                 <MarkdownWithTOC body={nanceProposal?.body || ''} />
-              </p>
+              </div>
             </div>
           </Frame>
           {finalReportMarkdown && (
@@ -270,9 +237,7 @@ export default function ProjectProfile({
                   </div>
                 </div>
                 <div className="mt-4">
-                  <CollapsibleContainer minHeight="400px">
-                    <MarkdownWithTOC body={finalReportMarkdown} />
-                  </CollapsibleContainer>
+                  <MarkdownWithTOC body={finalReportMarkdown} />
                 </div>
               </div>
             </Frame>
@@ -337,15 +302,11 @@ export default function ProjectProfile({
               </div>
             </Frame>
             {/* Mooney and Voting Power */}
-            {isManager && (
-              <TeamTreasury
-                multisigAddress={owner}
-                multisigMooneyBalance={MOONEYBalance?.displayValue}
-                multisigNativeBalance={nativeBalance?.displayValue}
-                multisigDAIBalance={DAIBalance?.displayValue}
-                multisigUSDCBalance={USDCBalance?.displayValue}
-              />
-            )}
+            <TeamTreasury
+              isSigner={isSigner}
+              safeData={safeData}
+              multisigAddress={owner}
+            />
           </div>
         </div>
       </ContentLayout>

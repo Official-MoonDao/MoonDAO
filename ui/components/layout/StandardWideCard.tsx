@@ -1,9 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
-import client from '@/lib/thirdweb/client'
 import StandardButton from '../layout/StandardButton'
+import IPFSRenderer from './IPFSRenderer'
 
 type StandardWideCardProps = {
   header?: string
@@ -73,24 +72,24 @@ export default function StandardWideCard({
                         <Image
                           className="w-full h-full object-cover"
                           src={image}
-                          alt="Card image"
+                          alt={title || ''}
                           width={200}
                           height={200}
                         />
                       ) : (
-                        <MediaRenderer
+                        <IPFSRenderer
                           className="w-full h-full object-cover"
-                          client={client}
                           src={image}
-                          width="200px"
-                          height="200px"
+                          width={200}
+                          height={200}
+                          alt={title || ''}
                         />
                       )
                     ) : (
                       orgimage && (
                         <Image
                           src={orgimage}
-                          alt="Team Image"
+                          alt={title || ''}
                           width={200}
                           height={200}
                           className="w-full h-full object-cover"
@@ -107,7 +106,7 @@ export default function StandardWideCard({
                       {header || title || (profile && 'Anon')}
                     </h2>
                     {subheader && (
-                      <p className="text-gray-400 text-lg">{subheader}</p>
+                      <div className="text-gray-400 text-lg">{subheader}</div>
                     )}
                   </div>
                   {stats && (

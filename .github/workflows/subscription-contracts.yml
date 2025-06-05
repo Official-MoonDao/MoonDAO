@@ -26,15 +26,21 @@ jobs:
         with:
           path: |
             .git
-            node_modules
-            lib
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+            subscription-contracts/node_modules
+            subscription-contracts/lib
+            subscription-contracts/out
+          key: key-${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-npm-
+            key-${{ runner.os }}-npm-
 
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Run apply_patch.sh
+        run: |
+          chmod +x ./subscription-contracts/apply_patch.sh
+          ./subscription-contracts/apply_patch.sh
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -61,5 +67,12 @@ jobs:
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: |
-          cd subscription-contracts && forge test --via-ir --optimize --optimizer-runs 200 --fork-url http://localhost:8545 -vvvv
+          cd subscription-contracts && forge coverage --via-ir --fork-url 127.0.0.1:8545 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov
         id: test
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: Official-MoonDao/MoonDAO
+        id: upload-coverage

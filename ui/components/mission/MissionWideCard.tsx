@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import { daysUntilDate } from '@/lib/utils/dates'
+import { daysUntilDate, formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '../layout/StandardButton'
 import StandardWideCard from '../layout/StandardWideCard'
@@ -58,9 +58,11 @@ export default function MissionWideCard({
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
   const duration = useMemo(() => {
-    return daysUntilDate(
-      new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
-    )
+    return ruleset?.[0]?.duration
+      ? formatTimeUntilDeadline(
+          new Date(ruleset?.[0]?.start * 1000 + ruleset?.[0]?.duration * 1000)
+        )
+      : undefined
   }, [ruleset])
 
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function MissionWideCard({
               {duration && (
                 <MissionStat
                   label="Deadline"
-                  value={`${duration > 0 ? `${duration} days` : 'Expired'}`}
+                  value={duration}
                   icon={'/assets/launchpad/clock.svg'}
                 />
               )}

@@ -153,7 +153,7 @@ export default function ProposalInfo({
               router.push(`/proposal/${res.data.uuid}`)
             } else {
               setSigningStatus('error')
-              toast.error('Error saving draft', { style: toastStyle })
+              toast.error('Error saving draft.', { style: toastStyle })
             }
           })
           .catch((error) => {
@@ -176,9 +176,11 @@ export default function ProposalInfo({
       <div className="min-w-0 flex-auto">
         {/* Title and Status */}
         <div className="flex items-center">
-          <div className="mr-2">{showStatus && <ProposalStatus status={proposalPacket.status} />}</div>
-          {showTitle && (
-            !linkDisabled ? (
+          <div className="mr-2">
+            {showStatus && <ProposalStatus status={proposalPacket.status} />}
+          </div>
+          {showTitle &&
+            (!linkDisabled ? (
               <Link
                 href={`/proposal/${
                   proposalPacket.proposalId?.toString() || proposalPacket.uuid
@@ -190,8 +192,7 @@ export default function ProposalInfo({
               </Link>
             ) : (
               <span>{`${preTitleDisplay}${proposalPacket.title}`}</span>
-            )
-          )}
+            ))}
         </div>
         {/* Metadata */}
         <div className="mt-2 flex flex-col md:flex-row items-start md:items-center gap-x-6 text-xs">
@@ -213,18 +214,18 @@ export default function ProposalInfo({
               </div>
             </div>
           </div>
-                    {/* Due / Cycle */}
-                    {proposalPacket.status === "Voting" && votingInfo?.end && (
+          {/* Due / Cycle */}
+          {proposalPacket.status === 'Voting' && votingInfo?.end && (
             <div className="flex items-center gap-x-1">
               <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full text-gray-900 dark:text-white" />
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400">Due</p>
-                  <div className="text-center">
-                    {formatDistanceToNow(fromUnixTime(votingInfo.end), {
-                      addSuffix: true,
-                    })}
-                  </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400">Due</p>
+                <div className="text-center">
+                  {formatDistanceToNow(fromUnixTime(votingInfo.end), {
+                    addSuffix: true,
+                  })}
                 </div>
+              </div>
             </div>
           )}
           {/* Tokens */}
@@ -273,14 +274,17 @@ export default function ProposalInfo({
 
 function ProposalStatus({ status }: { status: string }) {
   const statusColors = {
-    Voting: 'bg-gradient-to-r from-yellow-300 to-yellow-600 text-yellow-800 text-sm',
+    Voting:
+      'bg-gradient-to-r from-yellow-300 to-yellow-600 text-yellow-800 text-sm',
     Archived: 'bg-gradient-to-r from-gray-800 to-gray-600 text-white text-sm',
     Approved: 'bg-gradient-to-r from-green-800 to-green-600 text-white text-sm',
     Discussion: 'bg-gradient-to-r from-[#425EEB] to-[#6D3F79] text-white',
     Cancelled: 'bg-gradient-to-r from-red-800 to-red-600 text-white',
   }
 
-  const colorClass = statusColors[status as keyof typeof statusColors] || 'bg-gray-200 text-gray-800'
+  const colorClass =
+    statusColors[status as keyof typeof statusColors] ||
+    'bg-gray-200 text-gray-800'
 
   return (
     <div>

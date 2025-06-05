@@ -27,7 +27,6 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     using FunctionsRequest for FunctionsRequest.Request;
     using Strings for uint256;
 
-
     mapping(address => uint256) public totalWithdrawnPerUser;
     uint256 public totalWithdrawn;
     uint256 public totalReceived;
@@ -46,6 +45,10 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
     uint32 gasLimit = 300000;
     uint64 subscriptionId; // Chainlink subscription ID
     bytes32 donID; // DON ID for Chainlink Functions
+    mapping(address => uint256) public balanceTimeWeighted;
+    mapping(address => uint256) public lastBalanceUpdate;
+    uint256 public supplyTimeWeighted;
+    uint256 public lastSupplyUpdate;
     // Event to log responses
     event Withdraw(
         bytes32 indexed requestId,
@@ -107,6 +110,7 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         vMooneyAddress = _vMooneyAddress;
         donID = _donID;
         subscriptionId = _subscriptionId;
+        lastSupplyUpdate = block.timestamp;
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
@@ -289,10 +293,21 @@ contract FeeHook is BaseHook, OApp, FunctionsClient{
         (uint256 totalSupply, uint256 userBalance) = abi.decode(response, (uint256, uint256));
         require(totalSupply > 0, "Total supply is zero");
         require(userBalance > 0, "User balance is zero");
-        uint256 userProportion = userBalance * 1e18 / totalSupply; // Multiply by 1e18 to preserve precision
-        uint256 allocated = (userProportion * totalReceived) / 1e18; // Divide by 1e18 to normalize
+        uint256 ts = block.timestamp;
         address withdrawAddress = requestIdToSender[requestId];
         require(withdrawAddress != address(0), "Unknown requestId");
+        // Update time weighted values
+        if (lastSupplyUpdate != 0) {
+            supplyTimeWeighted += totalSupply * (ts - lastSupplyUpdate);
+        }
+        lastSupplyUpdate = ts;
+        if (lastBalanceUpdate[withdrawAddress] != 0) {
+            balanceTimeWeighted[withdrawAddress] += userBalance * (ts - lastBalanceUpdate[withdrawAddress]);
+        }
+        lastBalanceUpdate[withdrawAddress] = ts;
+        require(supplyTimeWeighted > 0, "No supply history");
+        uint256 userProportion = (balanceTimeWeighted[withdrawAddress] * 1e18) / supplyTimeWeighted;
+        uint256 allocated = (userProportion * totalReceived) / 1e18;
         uint256 withdrawnByUser = totalWithdrawnPerUser[withdrawAddress];
         uint256 withdrawAmount = allocated - withdrawnByUser;
         require(withdrawAmount > 0, "Nothing to withdraw");
