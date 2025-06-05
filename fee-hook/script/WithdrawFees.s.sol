@@ -14,7 +14,7 @@ contract WithdrawFees is Script, Config {
         address payable hookAddress = payable(FEE_HOOK_ADDRESSES[block.chainid]);
         FeeHook feeHook = FeeHook(hookAddress);
         string[] memory args = new string[](1);
-        bytes32 requestId = feeHook.withdrawFees();
+        uint256 withdrawAmounts = feeHook.withdrawFees();
 
         vm.stopBroadcast();
     }

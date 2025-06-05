@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import {Config} from "../script/base/Config.sol";
 import {Constants} from "../script/base/Constants.sol";
@@ -41,10 +42,6 @@ contract FeeHookTest is Test, Config, Constants {
     // Mainnet
     uint256 CHAIN = MAINNET;
     address lzEndpoint = LZ_ENDPOINTS[block.chainid];
-    address chainlinkRouter = CHAINLINK_ROUTERS[block.chainid];
-    bytes32 donID = CHAINLINK_DONS[block.chainid];
-    uint256 DESTINATION_CHAIN_ID = block.chainid;
-    uint16 DESTINATION_EID = uint16(LZ_EIDS[ARBITRUM]);
     uint128 SWAP_AMOUNT = 1 ether;
     address fakeTokenAddress;
     FeeHook feeHook;
@@ -68,7 +65,7 @@ contract FeeHookTest is Test, Config, Constants {
         vm.deal(deployerAddress, DEPLOYER_FUNDS);
 
         vm.startBroadcast(deployerAddress);
-        FakeERC20 fakeToken = new FakeERC20(DEPLOYER_TOKEN_BALANCE, "Fake Token", "FAKE");
+        FakeERC20 fakeToken = new FakeERC20(DEPLOYER_TOKEN_BALANCE, "Fake Token", "FAKE", deployerAddress);
         fakeTokenAddress = address(fakeToken);
         vm.stopBroadcast();
     }
@@ -77,6 +74,7 @@ contract FeeHookTest is Test, Config, Constants {
         vm.startBroadcast(deployerAddress);
         feeHook = deployHook();
         vm.stopBroadcast();
+        skip(1 days);
         address hookAddress = address(feeHook);
 
         // test the lifecycle (create pool, add liquidity, swap)
@@ -93,9 +91,9 @@ contract FeeHookTest is Test, Config, Constants {
 
         // Mine a salt that will produce a hook address with the correct permissions
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, CHAINLINK_ROUTERS[block.chainid], donID, CHAINLINK_SUBS[block.chainid]));
+            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, fakeTokenAddress));
 
-        feeHook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter, donID, CHAINLINK_SUBS[block.chainid]);
+        feeHook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), fakeTokenAddress);
         require(address(feeHook) == hookAddress, "FeeHookTest: hook address mismatch");
         return feeHook;
     }
@@ -139,14 +137,14 @@ contract FeeHookTest is Test, Config, Constants {
 
 
         // FIXME uncomment after local chainlink integration
-        //uint256 balanceBefore = address(deployerAddress).balance;
+        uint256 balanceBefore = address(deployerAddress).balance;
         uint256 withdrawableAmount = SWAP_AMOUNT * FEE / FEE_DENOMINATOR;
-        //feeHook.withdrawFees();
-        //uint256 balanceAfter = address(deployerAddress).balance;
-        //assertEq(balanceAfter - balanceBefore, withdrawableAmount);
+        feeHook.withdrawFees();
+        uint256 balanceAfter = address(deployerAddress).balance;
+        assertEq(balanceAfter - balanceBefore, withdrawableAmount);
 
-        //vm.expectRevert("Nothing to withdraw");
-        //feeHook.withdrawFees();
+        vm.expectRevert("Nothing to withdraw");
+        feeHook.withdrawFees();
 
 
         // transfer the position back to the deployer to allow closing the position
@@ -160,7 +158,7 @@ contract FeeHookTest is Test, Config, Constants {
         burn(poolKey, tokenId);
         uint256 deployerTokenBalanceAfter = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(deployerAddress);
         uint256 balanceAfterBurn = address(deployerAddress).balance;
-        assertApproxEqAbs(balanceAfterBurn + withdrawableAmount, DEPLOYER_FUNDS, 8);
+        assertApproxEqAbs(balanceAfterBurn, DEPLOYER_FUNDS, 8);
         assertApproxEqAbs(deployerTokenBalanceAfter, DEPLOYER_TOKEN_BALANCE * 1e18 - burntAmount, 4);
     }
 
