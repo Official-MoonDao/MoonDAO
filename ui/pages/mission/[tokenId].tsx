@@ -68,6 +68,7 @@ import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
 import StandardButton from '@/components/layout/StandardButton'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import toast from 'react-hot-toast'
 import TeamMembers from '@/components/subscription/TeamMembers'
 
@@ -567,22 +568,20 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             </div>
             {account && isManager && (
               <div className="px-[5vw] w-full flex justify-center my-4 gap-4">
-                <StandardButton
-                  styleOnly
+                <PrivyWeb3Button
+                  requiredChain={DEFAULT_CHAIN_V5}
                   className="gradient-2 rounded-full"
-                  onClick={sendReservedTokens}
-                  hoverEffect={false}
-                >
-                  Send Reserved Tokens
-                </StandardButton>
-                <StandardButton
-                  styleOnly
+                  noPadding
+                  label="Send Reserved Tokens"
+                  action={sendReservedTokens}
+                />
+                <PrivyWeb3Button
+                  requiredChain={DEFAULT_CHAIN_V5}
                   className="gradient-2 rounded-full"
-                  onClick={sendPayouts}
-                  hoverEffect={false}
-                >
-                  Send Payouts
-                </StandardButton>
+                  noPadding
+                  label="Send Payouts"
+                  action={sendPayouts}
+                />
               </div>
             )}
             <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] bg-gradient-to-b from-dark-cool to-darkest-cool flex justify-center">
