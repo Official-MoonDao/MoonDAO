@@ -438,20 +438,23 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
             {/* Youtube Video Section */}
-            <div className="w-full px-[5vw]">
-              <div className="w-full h-full">
-                <iframe
-                  src={mission?.metadata?.youtubeLink?.replace(
-                    'watch?v=',
-                    'embed/'
-                  )}
-                  width="100%"
-                  height="500"
-                  allowFullScreen
-                  className="rounded-lg"
-                />
-              </div>
-            </div>
+            {mission?.metadata?.youtubeLink &&
+              mission?.metadata?.youtubeLink !== '' && (
+                <div className="w-full px-[5vw]">
+                  <div className="w-full h-full">
+                    <iframe
+                      src={mission?.metadata?.youtubeLink?.replace(
+                        'watch?v=',
+                        'embed/'
+                      )}
+                      width="100%"
+                      height="500"
+                      allowFullScreen
+                      className="rounded-lg"
+                    />
+                  </div>
+                </div>
+              )}
             {/* Pay & Redeem Section */}
             <div className="flex z-20 xl:hidden w-full px-[5vw]">
               <div
