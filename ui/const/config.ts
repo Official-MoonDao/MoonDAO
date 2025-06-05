@@ -161,6 +161,10 @@ export const VMOONEY_FAUCET_ADDRESSES: Index = {
   arbitrum: '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
 }
 
+export const FEE_HOOK_ADDRESSES: Index = {
+    sepolia: '0x2B2a03842F10d649D8D49BE5EFe838d29baf8844',
+}
+
 export const REVNET_ADDRESSES: Index = {
   sepolia: '0x25bc5d5a708c2e426ef3a5196cc18de6b2d5a3d1',
 }
