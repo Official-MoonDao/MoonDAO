@@ -2,9 +2,8 @@ import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import { HATS_ADDRESS, PROJECT_ADDRESSES } from 'const/config'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState, useEffect, useCallback, useContext } from 'react'
+import { useState, useEffect, useCallback, useContext, useMemo } from 'react'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -22,6 +21,10 @@ type PastProjectProps = {
 }
 
 export default function PastProjects({ projects }: PastProjectProps) {
+  const finalReportProjects = useMemo(
+    () => projects.filter((p) => p.finalReportIPFS || p.finalReportLink),
+    [projects]
+  )
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
@@ -62,10 +65,12 @@ export default function PastProjects({ projects }: PastProjectProps) {
 
   useEffect(() => {
     const totalProjects =
-      input != '' ? filterBySearch(projects).length : projects.length
+      input != ''
+        ? filterBySearch(finalReportProjects).length
+        : finalReportProjects.length
 
     setMaxPage(Math.ceil(totalProjects / 9))
-  }, [input, projects])
+  }, [input, finalReportProjects])
 
   const [cachedNFTs, setCachedNFTs] = useState<Project[]>([])
 
@@ -79,8 +84,10 @@ export default function PastProjects({ projects }: PastProjectProps) {
   }, [router.query])
 
   useEffect(() => {
-    setCachedNFTs(input != '' ? filterBySearch(projects) : projects)
-  }, [input, projects, router.query])
+    setCachedNFTs(
+      input != '' ? filterBySearch(finalReportProjects) : finalReportProjects
+    )
+  }, [input, finalReportProjects, router.query])
 
   useChainDefault()
 
