@@ -1,3 +1,4 @@
+import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { usePrivy } from '@privy-io/react-auth'
 import { DEPLOYED_ORIGIN } from 'const/config'
@@ -14,6 +15,7 @@ import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import EditorMarkdownUpload from '../nance/EditorMarkdownUpload'
+import MarkdownWithTOC from '../nance/MarkdownWithTOC'
 
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
@@ -57,11 +59,12 @@ const ContributionEditor: React.FC = () => {
   const { authenticated } = usePrivy()
   const [submitting, setSubmitting] = useState(false)
   const [coordinapeLink, setCoordinapeLink] = useState<string | null>(null)
+  const [templateExpanded, setTemplateExpanded] = useState(false)
   const { address } = useAccount()
   const { citizen } = useContext(CitizenContext)
   useEffect(() => {
     if (setMarkdown) {
-      setMarkdown(CONTRIBUTION_TEMPLATE)
+      setMarkdown('')
     }
   }, [])
 
@@ -75,27 +78,27 @@ const ContributionEditor: React.FC = () => {
     const loadingToast = toast.loading('Submitting contribution...')
 
     try {
-      const body = JSON.stringify({
-        description: getMarkdown(),
-        address,
-      })
+      // const body = JSON.stringify({
+      //   description: getMarkdown(),
+      //   address,
+      // })
 
-      const res = await fetch('/api/coordinape/createContribution', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body,
-      })
-      const data = await res.json()
+      // const res = await fetch('/api/coordinape/createContribution', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body,
+      // })
+      // const data = await res.json()
 
-      if (!res.ok) {
-        throw new Error(data.error)
-      }
+      // if (!res.ok) {
+      //   throw new Error(data.error)
+      // }
 
-      setCoordinapeLink(
-        `https://app.coordinape.com/circles/${data.insert_contributions_one.circle_id}`
-      )
+      // setCoordinapeLink(
+      //   `https://app.coordinape.com/circles/${data.insert_contributions_one.circle_id}`
+      // )
 
       sendDiscordMessage(
         'networkNotifications',
@@ -150,20 +153,34 @@ const ContributionEditor: React.FC = () => {
 
   return (
     <div className="w-full md:w-auto px-4 sm:px-0">
-      <div className="h-[600px]">
-        <div className="w-full flex justify-end">
-          <div className="w-full md:max-w-[200px]">
-            <EditorMarkdownUpload setMarkdown={setMarkdown} />
+      <div className="h-full">
+        <div className="relative flex flex-col items-center">
+          <button
+            className="flex items-center gap-2 relative -top-5"
+            onClick={() => setTemplateExpanded(!templateExpanded)}
+          >
+            <p>What should I write?</p>
+            <ChevronDownIcon
+              className={`h-6 w-6 ${
+                templateExpanded ? 'rotate-180 duration-150' : ''
+              }`}
+            />
+          </button>
+          <div className="text-sm text-gray-500">
+            {templateExpanded && (
+              <MarkdownWithTOC body={CONTRIBUTION_TEMPLATE} />
+            )}
           </div>
         </div>
-        <NanceEditor
-          initialValue={CONTRIBUTION_TEMPLATE}
-          fileUploadExternal={async (val) => {
-            const res = await pinBlobOrFile(val)
-            return res.url
-          }}
-          darkMode={true}
-        />
+        <div className="h-[600px]">
+          <NanceEditor
+            fileUploadExternal={async (val) => {
+              const res = await pinBlobOrFile(val)
+              return res.url
+            }}
+            darkMode={true}
+          />
+        </div>
       </div>
       <div className="mt-4 flex justify-end">
         <button
