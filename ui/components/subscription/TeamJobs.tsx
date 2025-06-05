@@ -80,6 +80,8 @@ export default function TeamJobs({
     }
   }, [router])
 
+  if (!jobs?.[0]) return null
+
   return (
     <section
       id="jobs section"

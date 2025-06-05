@@ -223,7 +223,7 @@ export default function BuyTeamListingModal({
     } catch (err: any) {
       console.log(err)
       if (err && !err.message.startsWith('user rejected transaction')) {
-        toast.error('Insufficient funds')
+        toast.error('Insufficient funds.')
       }
     }
     setIsLoading(false)
@@ -357,7 +357,7 @@ export default function BuyTeamListingModal({
             label="Buy"
             action={async () => {
               if (!email || email.trim() === '' || !email.includes('@'))
-                return toast.error('Please enter a valid email')
+                return toast.error('Please enter a valid email.')
               if (listing.shipping === 'true') {
                 if (
                   shippingInfo.streetAddress.trim() === '' ||
@@ -366,7 +366,7 @@ export default function BuyTeamListingModal({
                   shippingInfo.postalCode.trim() === '' ||
                   shippingInfo.country.trim() === ''
                 )
-                  return toast.error('Please fill out all fields')
+                  return toast.error('Please fill out all fields.')
               }
               buyListing()
             }}

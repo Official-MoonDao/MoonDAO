@@ -32,7 +32,7 @@ export async function pinBlobOrFile(blob: Blob | File): Promise<PinResponse> {
     return { cid, url }
   } catch (err: any) {
     console.log(err)
-    toast.error(`Error pinning file to IPFS`, { duration: 10000 })
+    toast.error(`Error pinning file to IPFS.`, { duration: 10000 })
     return Promise.reject(err)
   }
 }

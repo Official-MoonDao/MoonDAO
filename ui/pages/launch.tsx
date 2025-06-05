@@ -20,6 +20,7 @@ import {
 import { blockedMissions } from 'const/whitelist'
 import { GetStaticProps } from 'next'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import React, { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
@@ -32,6 +33,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
@@ -45,9 +47,12 @@ import MissionWideCard from '@/components/mission/MissionWideCard'
 const FEATURED_MISSION_INDEX = 0
 
 export default function Launch({ missions }: any) {
+  const router = useRouter()
+  const shallowQuery = useShallowQueryRoute()
+
   const [status, setStatus] = useState<
     'idle' | 'loggingIn' | 'apply' | 'create'
-  >('idle')
+  >(router.query.status as any)
 
   const account = useActiveAccount()
   const address = account?.address
@@ -162,6 +167,27 @@ export default function Launch({ missions }: any) {
       setStatus('apply')
     }
   }
+
+  useEffect(() => {
+    if (status) {
+      shallowQuery({
+        status: status,
+      })
+    }
+  }, [status])
+
+  useEffect(() => {
+    if (router.query.status) {
+      setStatus(router.query.status as any)
+    }
+    if (
+      (router.query.status === 'create' ||
+        router.query.status === 'loggingIn') &&
+      !account
+    ) {
+      login()
+    }
+  }, [router.query.status, account])
 
   if (status === 'create') {
     return (

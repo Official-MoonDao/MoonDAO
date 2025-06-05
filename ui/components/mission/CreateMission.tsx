@@ -5,6 +5,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/20/solid'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
+import { usePrivy } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN_V5, IPFS_GATEWAY } from 'const/config'
 import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
@@ -118,6 +119,7 @@ const MISSION_DESCRIPTION_TEMPLATE = `
 
 export function CreateMissionStage({
   id,
+  account,
   stage,
   setStage,
   header,
@@ -126,6 +128,7 @@ export function CreateMissionStage({
   customButton,
   children,
 }: any) {
+  const { login } = usePrivy()
   return (
     <div className="w-full flex flex-col gap-4" id={id}>
       <h2 className="font-GoodTimes text-2xl md:text-4xl">{header}</h2>
@@ -156,10 +159,15 @@ export function CreateMissionStage({
               className="gradient-2 rounded-full"
               hoverEffect={false}
               onClick={() => {
+                if (!account) {
+                  login()
+                  return
+                }
                 if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
                   setStage((prev: number) => prev + 1)
                 } else {
                   action()
+                  setStage((prev: number) => prev + 1)
                 }
               }}
             >
@@ -249,7 +257,7 @@ export default function CreateMission({
     useState(false)
 
   const [teamRequirementModalEnabled, setTeamRequirementModalEnabled] =
-    useState(userTeamsAsManager?.[0] === undefined)
+    useState(userTeamsAsManager && userTeamsAsManager?.[0] === undefined)
 
   useEffect(() => {
     if (userTeams)
@@ -355,7 +363,7 @@ export default function CreateMission({
 
       if (receipt) {
         setTimeout(() => {
-          toast.success('Mission created successfully')
+          toast.success('Mission created successfully!')
           setMissionData({
             name: '',
             description: '',
@@ -373,9 +381,8 @@ export default function CreateMission({
           })
           setFormattedFundingGoal('')
           clearMissionCache()
-
-          setStatus('idle')
           setCreatedMission(false)
+
           router.push(`/mission/${missionId}`)
         }, 30000)
       }
@@ -464,11 +471,14 @@ export default function CreateMission({
                 />
               </div>
               {teamRequirementModalEnabled && (
-                <TeamRequirementModal setEnabled={() => {}} />
+                <TeamRequirementModal
+                  setEnabled={setTeamRequirementModalEnabled}
+                />
               )}
               {stage === 0 && (
                 <CreateMissionStage
                   id="mission-overview-stage"
+                  account={account}
                   stage={stage}
                   setStage={setStage}
                   description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential backers and compel them to contribute.
@@ -479,27 +489,26 @@ export default function CreateMission({
                       userTeamsAsManager.length === 0
                     ) {
                       return toast.error(
-                        'Please create a team or join one as a manager',
+                        'Please create a team or join one as a manager.',
                         {
                           style: toastStyle,
                         }
                       )
                     } else if (selectedTeamId === undefined) {
-                      return toast.error('Please select a team', {
+                      return toast.error('Please select a team.', {
                         style: toastStyle,
                       })
                     }
                     if (missionData.name.length === 0) {
-                      return toast.error('Please enter a mission title', {
+                      return toast.error('Please enter a mission title.', {
                         style: toastStyle,
                       })
                     }
                     if (!missionLogoUri) {
-                      return toast.error('Please upload a mission image', {
+                      return toast.error('Please upload a mission image.', {
                         style: toastStyle,
                       })
                     }
-                    setStage((prev: number) => prev + 1)
                   }}
                 >
                   <div className="flex justify-between">
@@ -654,6 +663,7 @@ export default function CreateMission({
               {stage === 1 && (
                 <CreateMissionStage
                   id="mission-goals-stage"
+                  account={account}
                   stage={stage}
                   setStage={setStage}
                   action={() => {
@@ -661,23 +671,22 @@ export default function CreateMission({
                       !missionData?.fundingGoal ||
                       missionData.fundingGoal <= 0
                     ) {
-                      return toast.error('Please enter a funding goal', {
+                      return toast.error('Please enter a funding goal.', {
                         style: toastStyle,
                       })
                     }
                     if (missionData.token.tradeable) {
                       if (missionData.token.name.trim().length === 0) {
-                        return toast.error('Please enter a token name', {
+                        return toast.error('Please enter a token name.', {
                           style: toastStyle,
                         })
                       }
                       if (missionData.token.symbol.trim().length === 0) {
-                        return toast.error('Please enter a token symbol', {
+                        return toast.error('Please enter a token symbol.', {
                           style: toastStyle,
                         })
                       }
                     }
-                    setStage((prev: number) => prev + 1)
                   }}
                 >
                   <div className="">
@@ -805,6 +814,7 @@ export default function CreateMission({
               {stage === 2 && (
                 <CreateMissionStage
                   id="mission-details-stage"
+                  account={account}
                   stage={stage}
                   setStage={setStage}
                   action={async () => {
@@ -816,7 +826,6 @@ export default function CreateMission({
                     const html = await marked(missionData.description)
                     console.log(html)
                     setMissionData({ ...missionData, description: html })
-                    setStage((prev: number) => prev + 1)
                   }}
                 >
                   <StandardButton
@@ -853,6 +862,7 @@ export default function CreateMission({
               {stage === 3 && (
                 <CreateMissionStage
                   id="mission-confirmation-stage"
+                  account={account}
                   stage={stage}
                   setStage={setStage}
                   description="Please review your mission details:"

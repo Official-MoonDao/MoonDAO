@@ -1,5 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { ethers } from 'ethers'
+import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -52,12 +53,12 @@ export default function SafeModal({
 
   const handleAddSigner = async () => {
     if (!validateAddress(newSignerAddress)) {
-      toast.error('Invalid Ethereum address', { style: toastStyle })
+      toast.error('Invalid address.', { style: toastStyle })
       return
     }
 
     if (owners.includes(newSignerAddress)) {
-      toast.error('Signer already exists', { style: toastStyle })
+      toast.error('Signer already exists.', { style: toastStyle })
       return
     }
 
@@ -84,7 +85,7 @@ export default function SafeModal({
 
   const handleChangeThreshold = async () => {
     if (newThreshold < 1 || newThreshold > owners.length) {
-      toast.error('Invalid threshold value', { style: toastStyle })
+      toast.error('Invalid threshold value.', { style: toastStyle })
       return
     }
 
@@ -129,7 +130,17 @@ export default function SafeModal({
         {/* Current Safe Info */}
         <div data-testid="safe-info" className="mb-8">
           <p data-testid="safe-address" className="text-gray-400 mb-2">
-            Address: {safeAddress.slice(0, 6)}...{safeAddress.slice(-4)}
+            Address:
+            <Link
+              className="hover:underline"
+              href={`https://app.safe.global/home?safe=${
+                process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+              }:${safeAddress}`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              {safeAddress.slice(0, 6)}...{safeAddress.slice(-4)}
+            </Link>
           </p>
         </div>
 

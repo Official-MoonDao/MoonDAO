@@ -100,13 +100,29 @@ export default function Card({
           {metadata?.image && (
             <div id="entity-citizen-image-container" className="z-40">
               <Frame noPadding marginBottom="0px" className="">
-                <IPFSRenderer
-                  alt="Entity Image"
-                  className=""
-                  src={metadata.image}
-                  height={675}
-                  width={675}
-                />
+                {metadata?.image && (
+                  <div id="entity-citizen-image-container" className="z-40">
+                    <Frame noPadding marginBottom="0px" className="">
+                      {metadata.image.includes('ipfs') ? (
+                        <IPFSRenderer
+                          alt="Entity Image"
+                          className=""
+                          src={metadata.image}
+                          height={675}
+                          width={675}
+                        />
+                      ) : (
+                        <Image
+                          alt="Entity Image"
+                          className=""
+                          src={metadata.image}
+                          height={675}
+                          width={675}
+                        />
+                      )}
+                    </Frame>
+                  </div>
+                )}
               </Frame>
             </div>
           )}

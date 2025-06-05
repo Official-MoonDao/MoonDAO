@@ -283,7 +283,7 @@ export function RetroactiveRewards({
       0
     )
     if (totalPercentage !== 100) {
-      toast.error('Total distribution must equal 100%', {
+      toast.error('Total distribution must equal 100%.', {
         style: toastStyle,
       })
       return
