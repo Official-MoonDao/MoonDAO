@@ -10,7 +10,10 @@ import {
   MOONEY_DECIMALS,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
-import { BigNumber } from 'ethers'
+
+import { BigNumber, ethers } from 'ethers'
+import { getVMOONEYData } from '@/lib/tokens/ve-subgraph'
+
 import { useRouter } from 'next/router'
 import React, { useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
@@ -24,7 +27,6 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { approveToken } from '@/lib/tokens/approve'
-import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -69,7 +71,108 @@ export default function Withdraw() {
     chain: selectedChain,
   })
 
-  const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
+  const { data: balanceTimeWeighted } = useRead({
+    contract: feeHookContract,
+    method: 'balanceTimeWeighted' as string,
+    params: [address],
+  })
+
+  const { data: supplyTimeWeighted } = useRead({
+    contract: feeHookContract,
+    method: 'supplyTimeWeighted' as string,
+    params: [],
+  })
+
+  const { data: totalReceived } = useRead({
+    contract: feeHookContract,
+    method: 'totalReceived' as string,
+    params: [],
+  })
+
+  const { data: lastSupplyUpdate } = useRead({
+    contract: feeHookContract,
+    method: 'lastSupplyUpdate' as string,
+    params: [],
+  })
+
+  const { data: lastBalanceUpdate } = useRead({
+    contract: feeHookContract,
+    method: 'lastBalanceUpdate' as string,
+    params: [address],
+  })
+
+  const { data: totalWithdrawnPerUser } = useRead({
+    contract: feeHookContract,
+    method: 'totalWithdrawnPerUser' as string,
+    params: [address],
+  })
+
+  const [withdrawableFees, setWithdrawableFees] = useState<BigNumber>(BigNumber.from(0))
+
+  useEffect(() => {
+    async function calculateWithdrawable() {
+      if (
+        balanceTimeWeighted === undefined ||
+        supplyTimeWeighted === undefined ||
+        totalReceived === undefined ||
+        totalWithdrawnPerUser === undefined ||
+        lastBalanceUpdate === undefined ||
+        lastSupplyUpdate === undefined ||
+        !address
+      )
+        return
+
+      try {
+        const vMooneyData = await getVMOONEYData()
+        const holder = vMooneyData.holders.find(
+          (h: any) => h.address.toLowerCase() === address.toLowerCase()
+        )
+        const totalSupplySum = ethers.utils.parseUnits(
+          (vMooneyData.totals.all.vMooney || 0).toString(),
+          18
+        )
+        const userBalanceSum = ethers.utils.parseUnits(
+          ((holder && holder.totalvMooney) || 0).toString(),
+          18
+        )
+
+        const ts = Math.floor(Date.now() / 1000)
+        const updatedSupplyTimeWeighted = BigNumber.from(supplyTimeWeighted).add(
+          BigNumber.from(totalSupplySum).mul(ts - Number(lastSupplyUpdate))
+        )
+        const updatedBalanceTimeWeighted = BigNumber.from(balanceTimeWeighted).add(
+          BigNumber.from(userBalanceSum).mul(ts - Number(lastBalanceUpdate))
+        )
+
+        if (updatedSupplyTimeWeighted.gt(0)) {
+          const userProportion = updatedBalanceTimeWeighted
+            .mul(BigNumber.from(10).pow(18))
+            .div(updatedSupplyTimeWeighted)
+          const allocated = userProportion
+            .mul(BigNumber.from(totalReceived))
+            .div(BigNumber.from(10).pow(18))
+          const withdrawAmt = allocated.sub(BigNumber.from(totalWithdrawnPerUser))
+          setWithdrawableFees(withdrawAmt.gt(0) ? withdrawAmt : BigNumber.from(0))
+        } else {
+          setWithdrawableFees(BigNumber.from(0))
+        }
+      } catch (err) {
+        console.error('Failed to calculate withdrawable fees', err)
+        setWithdrawableFees(BigNumber.from(0))
+      }
+    }
+
+    calculateWithdrawable()
+  }, [
+    address,
+    balanceTimeWeighted,
+    supplyTimeWeighted,
+    totalReceived,
+    totalWithdrawnPerUser,
+    lastBalanceUpdate,
+    lastSupplyUpdate,
+  ])
+
   const { isMobile } = useWindowSize()
 
   const { data: VMOONEYLock, isLoading: VMOONEYLockLoading } = useRead({
@@ -155,10 +258,8 @@ export default function Withdraw() {
                 className={`py-4 mt-8 flex flex-col ${isMobile ? '' : 'w-1/3'}`}
               >
                 <Asset
-                  name="vMOONEY"
-                  amount={String(
-                    (Number(withdrawable) / MOONEY_DECIMALS).toFixed(2)
-                  )}
+                  name="ETH"
+                  amount={ethers.utils.formatEther(withdrawableFees)}
                   usd=""
                 />
               </section>
