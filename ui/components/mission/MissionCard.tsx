@@ -25,6 +25,7 @@ export type Mission = {
     version: number
     payButton: string
     payDisclosure: string
+    youtubeLink: string
   }
 }
 
