@@ -1,6 +1,7 @@
 //This component dipslays a project card using project data directly from tableland
 import Link from 'next/link'
 import React, { useContext, memo } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
@@ -33,16 +34,16 @@ const ProjectCardContent = memo(
     return (
       <div
         id="card-container"
-        className="p-4 pb-10 flex flex-col gap-2 relative bg-dark-cool w-full h-full rounded-2xl flex-1 border-b-2 border-[#020617]"
+        className="p-4 pb-10 flex flex-col gap-2 relative w-full h-full flex-1"
       >
         <div className="flex justify-between">
-          <div className="w-full flex flex-col xl:flex-row gap-2 xl:items-center justify-between">
+          <div className="w-full flex flex-col gap-2">
             <Link href={`/project/${project?.id}`} passHref>
               <h1 className="font-GoodTimes">{project?.name || ''}</h1>
             </Link>
             {project?.finalReportLink || project?.finalReportIPFS ? (
               <StandardButton
-                className={`gradient-2 xl:w-[200px] font-[14px] ${
+                className={`gradient-2 w-fit font-[14px] ${
                   distribute && 'mr-4'
                 }`}
                 link={
@@ -81,10 +82,25 @@ const ProjectCardContent = memo(
             ))}
         </div>
         <div className="flex gap-2"></div>
-        <div>
-          <p className="text-[80%] pr-4 break-words">
-            {proposalJSON?.abstract}
-          </p>
+        <div className="flex-1">
+          <div className="pr-4 break-words">
+            <ReactMarkdown
+              components={{
+                p: ({ node, ...props }) => <p className="font-Lato text-[16px] break-words m-0" {...props} />,
+                a: ({ node, ...props }) => (
+                  <a 
+                    className="font-Lato text-[16px] text-moon-blue hover:text-moon-gold underline" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    onClick={(e) => e.stopPropagation()}
+                    {...props} 
+                  />
+                ),
+              }}
+            >
+              {proposalJSON?.abstract || ''}
+            </ReactMarkdown>
+          </div>
         </div>
       </div>
     )
