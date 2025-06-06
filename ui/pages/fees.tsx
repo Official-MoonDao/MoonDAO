@@ -12,7 +12,32 @@ import {
 } from 'const/config'
 
 const ETH_DECIMALS = 18
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
+
+const INFURA_KEY = '357d367444db45688746488a06064e7c'
+const CROSS_CHAIN_VMOONEY = [
+  {
+    rpc: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
+    address: '0xCc71C80d803381FD6Ee984FAff408f8501DB1740',
+  },
+  {
+    rpc: `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`,
+    address: '0xB255c74F8576f18357cE6184DA033c6d93C71899',
+  },
+  {
+    rpc: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+    address: '0xe2d1BFef0A642B717d294711356b468ccE68BEa6',
+  },
+  {
+    rpc: `https://base-mainnet.infura.io/v3/${INFURA_KEY}`,
+    address: '0x7f8f1B45c3FD6Be4F467520Fc1Cf030d5CaBAcF5',
+  },
+]
+
+const ERC20_MIN_ABI = [
+  'function totalSupply() view returns (uint256)',
+  'function balanceOf(address) view returns (uint256)',
+]
 import { useRouter } from 'next/router'
 import React, { useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
@@ -88,6 +113,18 @@ export default function Withdraw() {
     params: [],
   })
 
+  const { data: lastSupplyUpdate } = useRead({
+    contract: feeHookContract,
+    method: 'lastSupplyUpdate' as string,
+    params: [],
+  })
+
+  const { data: lastBalanceUpdate } = useRead({
+    contract: feeHookContract,
+    method: 'lastBalanceUpdate' as string,
+    params: [address],
+  })
+
   const { data: totalWithdrawnPerUser } = useRead({
     contract: feeHookContract,
     method: 'totalWithdrawnPerUser' as string,
@@ -97,24 +134,71 @@ export default function Withdraw() {
   const [withdrawableFees, setWithdrawableFees] = useState<BigNumber>(BigNumber.from(0))
 
   useEffect(() => {
-    if (
-      balanceTimeWeighted !== undefined &&
-      supplyTimeWeighted !== undefined &&
-      totalReceived !== undefined &&
-      totalWithdrawnPerUser !== undefined &&
-      BigNumber.from(supplyTimeWeighted).gt(0)
-    ) {
-      const allocated = BigNumber.from(balanceTimeWeighted)
-        .mul(BigNumber.from(totalReceived))
-        .div(BigNumber.from(supplyTimeWeighted))
-
-      setWithdrawableFees(
-        allocated.sub(BigNumber.from(totalWithdrawnPerUser))
+    async function calculateWithdrawable() {
+      if (
+        balanceTimeWeighted === undefined ||
+        supplyTimeWeighted === undefined ||
+        totalReceived === undefined ||
+        totalWithdrawnPerUser === undefined ||
+        lastBalanceUpdate === undefined ||
+        lastSupplyUpdate === undefined ||
+        !address
       )
-    } else {
-      setWithdrawableFees(BigNumber.from(0))
+        return
+
+      try {
+        let totalSupplySum = BigNumber.from(0)
+        let userBalanceSum = BigNumber.from(0)
+
+        await Promise.all(
+          CROSS_CHAIN_VMOONEY.map(async (c) => {
+            const provider = new ethers.providers.JsonRpcProvider(c.rpc)
+            const contract = new ethers.Contract(c.address, ERC20_MIN_ABI, provider)
+            const [supply, balance] = await Promise.all([
+              contract.totalSupply(),
+              contract.balanceOf(address),
+            ])
+            totalSupplySum = totalSupplySum.add(BigNumber.from(supply))
+            userBalanceSum = userBalanceSum.add(BigNumber.from(balance))
+          })
+        )
+
+        const ts = Math.floor(Date.now() / 1000)
+        const updatedSupplyTimeWeighted = BigNumber.from(supplyTimeWeighted).add(
+          BigNumber.from(totalSupplySum).mul(ts - Number(lastSupplyUpdate))
+        )
+        const updatedBalanceTimeWeighted = BigNumber.from(balanceTimeWeighted).add(
+          BigNumber.from(userBalanceSum).mul(ts - Number(lastBalanceUpdate))
+        )
+
+        if (updatedSupplyTimeWeighted.gt(0)) {
+          const userProportion = updatedBalanceTimeWeighted
+            .mul(BigNumber.from(10).pow(18))
+            .div(updatedSupplyTimeWeighted)
+          const allocated = userProportion
+            .mul(BigNumber.from(totalReceived))
+            .div(BigNumber.from(10).pow(18))
+          const withdrawAmt = allocated.sub(BigNumber.from(totalWithdrawnPerUser))
+          setWithdrawableFees(withdrawAmt.gt(0) ? withdrawAmt : BigNumber.from(0))
+        } else {
+          setWithdrawableFees(BigNumber.from(0))
+        }
+      } catch (err) {
+        console.error('Failed to calculate withdrawable fees', err)
+        setWithdrawableFees(BigNumber.from(0))
+      }
     }
-  }, [balanceTimeWeighted, supplyTimeWeighted, totalReceived, totalWithdrawnPerUser])
+
+    calculateWithdrawable()
+  }, [
+    address,
+    balanceTimeWeighted,
+    supplyTimeWeighted,
+    totalReceived,
+    totalWithdrawnPerUser,
+    lastBalanceUpdate,
+    lastSupplyUpdate,
+  ])
 
   const { isMobile } = useWindowSize()
 
