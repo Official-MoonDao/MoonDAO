@@ -36,9 +36,9 @@ contract FeeHookScript is Script, Constants, Config {
         uint256 DESTINATION_CHAIN_ID = ARBITRUM;
         uint16 DESTINATION_EID = uint16(LZ_EIDS[ARBITRUM]);
         if (block.chainid == ARB_SEP || block.chainid == SEP) { // test nets
-            DESTINATION_CHAIN_ID = SEP;
-            DESTINATION_EID = uint16(LZ_EIDS[SEP]);
-            vMooneyAddress = TEST_TOKEN_ADDRESSES[SEP];
+            DESTINATION_CHAIN_ID = ARB_SEP;
+            DESTINATION_EID = uint16(LZ_EIDS[ARB_SEP]);
+            vMooneyAddress = TEST_TOKEN_ADDRESSES[ARB_SEP];
         }
 
         // Mine a salt that will produce a hook address with the correct flags
