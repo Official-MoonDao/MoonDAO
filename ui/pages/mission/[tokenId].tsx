@@ -274,11 +274,11 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 <div className="pr-0 md:pr-[2vw] pb-[5vw] md:pb-[2vw]">
                   <div
                     id="mission-image-container"
-                    className="pl-[0vw] sm:pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
+                    className="pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                   >
                     <IPFSRenderer
                       src={mission?.metadata?.logoUri}
-                      className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
+                      className="sm:rounded-full rounded-tr-none sm:rounded-tr-full mt-[-3vw] sm:mt-0 w-[100vw] sm:w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
                       height={576}
                       width={576}
                       alt="Mission Image"
@@ -333,7 +333,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   </div>
 
                   {ruleset && teamNFT?.metadata?.name && (
-                    <div className="flex pb-2 flex-col sm:flex-row items-start ">
+                    <div className="hidden sm:flex pb-2 flex-col sm:flex-row items-start ">
                       <p className="opacity-60">
                         {`Created on ${new Date(
                           ruleset?.[0]?.start * 1000
@@ -391,11 +391,65 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             width={24}
                             height={24}
                           />
-                          <div className="ml-2">
-                            <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
-                            <p className="text-white font-GoodTimes">
-                              {subgraphData?.paymentsCount || 0}
-                            </p>
+                          <span className="mr-2">
+                            {truncateTokenValue(
+                              subgraphData?.volume / 1e18 || 0,
+                              'ETH'
+                            )}
+                          </span>
+                          <span className="text-sm md:text-base">
+                            ETH RAISED
+                          </span>
+                        </div>
+                        <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
+                          (subgraphData?.volume / 1e18 || 0) * ethPrice
+                        ).toLocaleString()} USD)`}</p>
+                      </div>
+
+                      {/* Contributors section - visible on md screens and above */}
+                      <div className="hidden sm:flex items-center ml-2 md:mt-0">
+                        <Image
+                          src="/assets/icon-backers.svg"
+                          alt="Backers"
+                          width={24}
+                          height={24}
+                        />
+                        <div className="mx-2">
+                          <p className="sm:hidden text-gray-400 text-sm">CONTRIBUTIONS</p>
+                          <p className="text-white font-GoodTimes">
+                            {subgraphData?.paymentsCount || 0}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full">
+                      <MissionFundingProgressBar
+                        fundingGoal={fundingGoal}
+                        volume={subgraphData?.volume / 1e18}
+                        stage={stage ?? 0}
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-between sm:justify-start">
+                      <div className="flex items-center">
+                        <Image
+                          src="/assets/launchpad/target.svg"
+                          alt="Goal"
+                          width={24}
+                          height={24}
+                        />
+                        <div className="ml-2">
+                          <div className="flex items-center gap-1">
+                            <p className="text-gray-400 text-sm">GOAL</p>
+                            <Tooltip
+                              text={`~ $${Math.round(
+                                (fundingGoal / 1e18) * ethPrice
+                              ).toLocaleString()} USD`}
+                              buttonClassName="scale-75"
+                            >
+                              ?
+                            </Tooltip>
                           </div>
                         </div>
                       </div>
@@ -466,74 +520,37 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Buttons container - positioned with absolute positioning */}
-                    {account && (
-                      <div className="absolute right-8 top-[250px] flex flex-col items-end gap-2 w-[200px]">
-                        <PrivyWeb3Button
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
-                          label={<span className="whitespace-nowrap">Send Reserved Tokens</span>}
-                          action={sendReservedTokens}
-                        />
-                        <PrivyWeb3Button
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
-                          label={<span className="whitespace-nowrap">Send Payouts</span>}
-                          action={sendPayouts}
-                        />
-                      </div>
-                    )}
-                   </div>
                   {ruleset && teamNFT?.metadata?.name && (
-                    <>
-                      <div className="flex sm:hidden pt-2 flex-col sm:flex-row items-start">
-                        <p className="opacity-60">
-                          {`Created on ${new Date(
-                            ruleset?.[0]?.start * 1000
-                          ).toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })} by: `}
-                        </p>
-                        <Link
-                          href={`/team/${generatePrettyLink(
-                            teamNFT?.metadata?.name
-                          )}`}
-                          className="font-GoodTimes text-white underline"
-                        >
-                          {teamNFT?.metadata?.name}
-                        </Link>
-                      </div>
-
-                      {/* Buttons container */}
-                      {account && (
-                        <div className="absolute right-8 top-[250px] flex flex-col items-end gap-2 w-[200px]">
-                          <PrivyWeb3Button
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
-                            label={<span className="whitespace-nowrap">Send Reserved Tokens</span>}
-                            action={sendReservedTokens}
-                          />
-                          <PrivyWeb3Button
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
-                            label={<span className="whitespace-nowrap">Send Payouts</span>}
-                            action={sendPayouts}
-                          />
-                        </div>
-                      )}
-                    </>
+                    <div className="flex sm:hidden pt-2 flex-col sm:flex-row items-start ">
+                      <p className="opacity-60">
+                        {`Created on ${new Date(
+                          ruleset?.[0]?.start * 1000
+                        ).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })} by: `}
+                      </p>
+                      <Link
+                        href={`/team/${generatePrettyLink(
+                          teamNFT?.metadata?.name
+                        )}`}
+                        className="font-GoodTimes text-white underline"
+                      >
+                        {teamNFT?.metadata?.name}
+                      </Link>
+                    </div>
                   )}
-                 </div>
-               </div>
-             </div>
-           </div>
-         </div>
-       </div>
-     </div>
-   )
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <JuiceProviders
@@ -558,7 +575,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             <ExpandedFooter
               callToActionTitle="Join the Network"
               callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
-              callToActionImage="/assets/logo-san-cropped.svg"
+              callToActionImage="/assets/SAN-logo-dark.svg"
               callToActionButtonText="Join the Network"
               callToActionButtonLink="/join"
               hasCallToAction={true}
