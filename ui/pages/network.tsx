@@ -359,7 +359,24 @@ export default function Network({
       />
       <Container>
         <ContentLayout
-          header="The Network"
+          logo={
+            <Image
+              src="/assets/san-logo.svg"
+              alt="SAN Logo"
+              width={275}
+              height={275}
+            />
+          }
+          header={
+            <div className="flex flex-row items-center">
+              <Image
+                src="/assets/network-title.svg"
+                alt="Org"
+                width={300}
+                height={300}
+              />
+            </div>
+          }
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
           preFooter={<NoticeFooter />}
