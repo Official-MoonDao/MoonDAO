@@ -166,8 +166,9 @@ export function CreateMissionStage({
                 if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
                   setStage((prev: number) => prev + 1)
                 } else {
-                  action()
-                  setStage((prev: number) => prev + 1)
+                  if (action() === true) {
+                    setStage((prev: number) => prev + 1)
+                  }
                 }
               }}
             >
@@ -471,9 +472,7 @@ export default function CreateMission({
                 />
               </div>
               {teamRequirementModalEnabled && (
-                <TeamRequirementModal
-                  setEnabled={setTeamRequirementModalEnabled}
-                />
+                <TeamRequirementModal setStatus={setStatus} />
               )}
               {stage === 0 && (
                 <CreateMissionStage
@@ -509,6 +508,7 @@ export default function CreateMission({
                         style: toastStyle,
                       })
                     }
+                    return true
                   }}
                 >
                   <div className="flex justify-between">
@@ -686,6 +686,7 @@ export default function CreateMission({
                           style: toastStyle,
                         })
                       }
+                      return true
                     }
                   }}
                 >
@@ -824,8 +825,8 @@ export default function CreateMission({
                       })
                     }
                     const html = await marked(missionData.description)
-                    console.log(html)
                     setMissionData({ ...missionData, description: html })
+                    return true
                   }}
                 >
                   <StandardButton
