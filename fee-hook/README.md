@@ -27,9 +27,9 @@ PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$ARB forge script script/FakeERC20.s.sol --rpc
 # Update TEST_TOKEN_ADDRESSES for each chain in Config.sol
 
 # Deploy the FeeHook contract, 1 per chain
-PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/FeeHook.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir --optimize --optimizer-runs 2000
+PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/FeeHook.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir --optimize --optimizer-runs 2000 --delay 10 --retries 10
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$ARB forge script script/FeeHook.s.sol --rpc-url https://421614.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir --optimize --optimizer-runs 2000
-...
+
 # Update FEE_HOOK_ADDRESSES for each chain in Config.sol
 
 # Set FeeHook contracts as peers for layerzero, 1 per chain
