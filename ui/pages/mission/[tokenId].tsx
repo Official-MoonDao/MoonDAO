@@ -568,24 +568,22 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 />
               </div>
             </div>
-            {account && isManager && (
+             {account && (
               <div className="px-[5vw] w-full flex justify-center my-4 gap-4">
                 <PrivyWeb3Button
                   requiredChain={DEFAULT_CHAIN_V5}
                   className="gradient-2 rounded-full"
-                  noPadding
-                  label="Send Reserved Tokens"
+                  label={<span>Send Reserved Tokens</span>}
                   action={sendReservedTokens}
                 />
                 <PrivyWeb3Button
                   requiredChain={DEFAULT_CHAIN_V5}
                   className="gradient-2 rounded-full"
-                  noPadding
-                  label="Send Payouts"
+                  label={<span>Send Payouts</span>}
                   action={sendPayouts}
                 />
               </div>
-            )}
+             )}
             <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] bg-gradient-to-b from-dark-cool to-darkest-cool flex justify-center">
               <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
                 <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
