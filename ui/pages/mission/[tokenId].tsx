@@ -5,6 +5,7 @@ import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import IJBTerminalStoreABI from 'const/abis/IJBTerminalStore.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import JBMultiTerminal from 'const/abis/IJBMultiTerminal.json'
@@ -19,14 +20,20 @@ import {
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
-  JBV4_TERMINAL_ADDRESSES
+  JBV4_TERMINAL_ADDRESSES,
+  JB_NATIVE_TOKEN_ADDRESS
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useMemo, useState } from 'react'
-import { getContract, readContract } from 'thirdweb'
+import {
+  getContract,
+  readContract,
+  prepareContractCall,
+  sendAndConfirmTransaction,
+} from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
@@ -60,6 +67,9 @@ import MissionFundingProgressBar from '@/components/mission/MissionFundingProgre
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
+import StandardButton from '@/components/layout/StandardButton'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import toast from 'react-hot-toast'
 import TeamMembers from '@/components/subscription/TeamMembers'
 
 type ProjectProfileProps = {
@@ -146,7 +156,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     jbTokensContract,
   })
 
-  const { adminHatId } = useTeamData(teamContract, hatsContract, teamNFT)
+  const { adminHatId, isManager } = useTeamData(teamContract, hatsContract, teamNFT)
 
   const teamHats = useSubHats(selectedChain, adminHatId)
 
@@ -194,6 +204,58 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
     )
   }, [ruleset])
+
+  const sendReservedTokens = async () => {
+    if (!account) return
+    try {
+      const tx = prepareContractCall({
+        contract: jbControllerContract,
+        method: 'sendReservedTokensToSplitsOf' as string,
+        params: [mission.projectId],
+      })
+      await sendAndConfirmTransaction({ transaction: tx, account })
+      toast.success('Reserved tokens sent')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to send reserved tokens')
+    }
+  }
+
+  const sendPayouts = async () => {
+    if (!account) return
+    try {
+      const storeAddress: any = await readContract({
+        contract: jbTerminalContract,
+        method: 'STORE' as string,
+        params: [],
+      })
+
+      const jbTerminalStoreContract = getContract({
+        client: serverClient,
+        address: storeAddress,
+        abi: IJBTerminalStoreABI.abi as any,
+        chain: selectedChain,
+      })
+
+      const balance: any = await readContract({
+        contract: jbTerminalStoreContract,
+        method: 'balanceOf' as string,
+        params: [jbTerminalContract.address, mission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+      })
+
+      const tx = prepareContractCall({
+        contract: jbTerminalContract,
+        method: 'sendPayoutsOf' as string,
+        params: [mission.projectId, JB_NATIVE_TOKEN_ADDRESS, balance, 61166, 0],
+      })
+
+      await sendAndConfirmTransaction({ transaction: tx, account })
+      toast.success('Payouts sent')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to send payouts')
+    }
+  }
 
   //Profile Header Section
   const ProfileHeader = (
@@ -505,6 +567,24 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 />
               </div>
             </div>
+            {account && isManager && (
+              <div className="px-[5vw] w-full flex justify-center my-4 gap-4">
+                <PrivyWeb3Button
+                  requiredChain={DEFAULT_CHAIN_V5}
+                  className="gradient-2 rounded-full"
+                  noPadding
+                  label="Send Reserved Tokens"
+                  action={sendReservedTokens}
+                />
+                <PrivyWeb3Button
+                  requiredChain={DEFAULT_CHAIN_V5}
+                  className="gradient-2 rounded-full"
+                  noPadding
+                  label="Send Payouts"
+                  action={sendPayouts}
+                />
+              </div>
+            )}
             <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] bg-gradient-to-b from-dark-cool to-darkest-cool flex justify-center">
               <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
                 <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
