@@ -231,6 +231,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       })
 
       const jbTerminalStoreContract = getContract({
+        client: serverClient,
         address: storeAddress,
         abi: IJBTerminalStoreABI.abi as any,
         chain: selectedChain,
