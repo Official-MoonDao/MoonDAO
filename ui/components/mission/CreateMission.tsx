@@ -68,6 +68,7 @@ export type MissionData = {
   socialLink: string
   tagline: string
   fundingGoal: number | undefined
+  youtubeLink: string
   token: {
     name: string
     symbol: string
@@ -220,6 +221,7 @@ export default function CreateMission({
       '',
     tagline: missionCache?.tagline || '',
     fundingGoal: missionCache?.fundingGoal || undefined,
+    youtubeLink: missionCache?.youtubeLink || '',
     token: missionCache?.token || {
       name: '',
       symbol: '',
@@ -292,6 +294,7 @@ export default function CreateMission({
             infoUri: missionData.infoUri,
             socialLink: missionData.socialLink,
             logoUri: missionLogoUri,
+            youtubeLink: missionData.youtubeLink,
             tokens: [],
             payButton: 'Brew',
             payDisclosure: '',
@@ -373,6 +376,7 @@ export default function CreateMission({
             socialLink: '',
             tagline: '',
             fundingGoal: undefined,
+            youtubeLink: '',
             token: {
               name: '',
               symbol: '',
@@ -405,6 +409,7 @@ export default function CreateMission({
         socialLink: missionData.socialLink,
         tagline: missionData.tagline,
         fundingGoal: missionData.fundingGoal,
+        youtubeLink: missionData.youtubeLink,
         token: missionData.token,
         timestamp: getUnixTime(new Date()),
       })
@@ -628,6 +633,21 @@ export default function CreateMission({
                       }
                       maxLength={500}
                       mode="dark"
+                    />
+                    <FormInput
+                      id="mission-youtube"
+                      label="YouTube Video Link"
+                      placeholder="Enter a YouTube video link"
+                      value={missionData.youtubeLink}
+                      onChange={(e: any) =>
+                        setMissionData({
+                          ...missionData,
+                          youtubeLink: e.target.value,
+                        })
+                      }
+                      maxLength={500}
+                      mode="dark"
+                      tooltip="Add a YouTube video link to showcase your mission. This will be displayed on the mission page."
                     />
                   </div>
                   <FileInput
