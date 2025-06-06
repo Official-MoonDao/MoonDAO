@@ -67,7 +67,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                                     z-50 w-full overflow-x-hidden pt-0
                                     ${
                                       isCompact
-                                        ? ' pt-[0vw] '
+                                        ? ''
                                         : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5'
                                     } 
                                     ${
