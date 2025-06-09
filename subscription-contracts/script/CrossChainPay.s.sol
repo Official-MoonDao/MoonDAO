@@ -5,11 +5,6 @@ import "base/Config.sol";
 import "base/Miner.sol";
 
 contract CrossChainPayDeploy is Script, Config {
-    function currentSalt() public view returns (bytes32) {
-        uint256 interval = 300; // 5 minutes in seconds
-        uint256 saltBase = block.timestamp / interval;
-        return keccak256(abi.encodePacked(saltBase));
-    }
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
