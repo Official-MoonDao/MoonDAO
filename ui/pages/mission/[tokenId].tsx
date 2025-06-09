@@ -485,6 +485,47 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       </div>
                     )}
                    </div>
+                  {ruleset && teamNFT?.metadata?.name && (
+                    <>
+                      <div className="flex sm:hidden pt-2 flex-col sm:flex-row items-start">
+                        <p className="opacity-60">
+                          {`Created on ${new Date(
+                            ruleset?.[0]?.start * 1000
+                          ).toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })} by: `}
+                        </p>
+                        <Link
+                          href={`/team/${generatePrettyLink(
+                            teamNFT?.metadata?.name
+                          )}`}
+                          className="font-GoodTimes text-white underline"
+                        >
+                          {teamNFT?.metadata?.name}
+                        </Link>
+                      </div>
+
+                      {/* Buttons container */}
+                      {account && (
+                        <div className="absolute right-8 top-[250px] flex flex-col items-end gap-2 w-[200px]">
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
+                            label={<span className="whitespace-nowrap">Send Reserved Tokens</span>}
+                            action={sendReservedTokens}
+                          />
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
+                            label={<span className="whitespace-nowrap">Send Payouts</span>}
+                            action={sendPayouts}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
                  </div>
                </div>
              </div>
