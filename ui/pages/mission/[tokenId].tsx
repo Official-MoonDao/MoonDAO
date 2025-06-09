@@ -536,15 +536,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   </div>
                 )}
               </div>
-              <div className="hidden lg:block xl:hidden ml-[-5vw] w-[50%] h-full">
-                <Image
-                  src="/assets/logo-san-full.svg"
-                  className="w-full h-full"
-                  alt="Space acceleration network logo"
-                  width={200}
-                  height={200}
-                />
-              </div>
             </div>
             {/* Project Overview */}
             <div className="px-[5vw] w-full flex items-center justify-center">
@@ -568,24 +559,26 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 />
               </div>
             </div>
-             {account && (
-              <div className="px-[5vw] w-full flex justify-center my-4 gap-4">
-                <PrivyWeb3Button
-                  requiredChain={DEFAULT_CHAIN_V5}
-                  className="gradient-2 rounded-full"
-                  label={<span>Send Reserved Tokens</span>}
-                  action={sendReservedTokens}
-                />
-                <PrivyWeb3Button
-                  requiredChain={DEFAULT_CHAIN_V5}
-                  className="gradient-2 rounded-full"
-                  label={<span>Send Payouts</span>}
-                  action={sendPayouts}
-                />
-              </div>
-             )}
             <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] bg-gradient-to-b from-dark-cool to-darkest-cool flex justify-center">
               <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
+                {/* Buttons moved to the top right */}
+                {account && (
+                  <div className="flex justify-end mt-4 gap-4 px-[5vw]">
+                    <PrivyWeb3Button
+                      requiredChain={DEFAULT_CHAIN_V5}
+                      className="gradient-2 rounded-full noPadding"
+                      label={<span>Send Reserved Tokens</span>}
+                      action={sendReservedTokens}
+                    />
+                    <PrivyWeb3Button
+                      requiredChain={DEFAULT_CHAIN_V5}
+                      className="gradient-2 rounded-full noPadding"
+                      label={<span>Send Payouts</span>}
+                      action={sendPayouts}
+                    />
+                  </div>
+                )}
+
                 <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
                   <Image
                     src={'/assets/icon-star-blue.svg'}
