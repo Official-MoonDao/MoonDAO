@@ -104,8 +104,8 @@ export default function MissionWideCard({
         </div>
       )}
       <StandardWideCard
-        title={compact ? '' : mission?.metadata?.name}
-        subheader={compact ? '' : mission?.metadata?.tagline}
+        title={mission?.metadata?.name}
+        subheader={mission?.metadata?.tagline}
         stats={
           <div className="w-full flex flex-col gap-4">
             {}
@@ -114,7 +114,7 @@ export default function MissionWideCard({
                 <div>
                   {ethPrice && (
                     <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex-col">
-                      <div className="flex items-center">
+                      <div className="flex items-center md:min-w-[200px]">
                         <Image
                           src="/assets/icon-raised-tokens.svg"
                           alt="Raised"
@@ -147,6 +147,9 @@ export default function MissionWideCard({
                     height={24}
                   />
                   <div className="mx-2">
+                    <p className="sm:hidden text-gray-400 text-sm">
+                      CONTRIBUTIONS
+                    </p>
                     <p className="text-white font-GoodTimes">
                       {subgraphData?.paymentsCount || 0}
                     </p>
@@ -178,7 +181,7 @@ export default function MissionWideCard({
                   />
                 )}
               </div>
-              <div className="flex justify-center">
+              <div className="flex md:justify-center">
                 {learnMore && (
                   <StandardButton
                     className="gradient-2 rounded-full"
@@ -234,6 +237,7 @@ export default function MissionWideCard({
               : URL.createObjectURL(missionImage)
             : getIPFSGateway(mission?.metadata?.logoUri)
         }
+        secondaryImage={getIPFSGateway(teamNFT?.metadata?.image)}
         showMore={showMore}
         showMoreButton={showMoreButton}
         onClick={() => {
