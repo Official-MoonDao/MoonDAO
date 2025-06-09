@@ -19,7 +19,6 @@ export type MissionWideCardProps = {
   token: any
   subgraphData: any
   fundingGoal: number
-  ethPrice: number
   contribute?: boolean
   stage?: number
   ruleset?: any
