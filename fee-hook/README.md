@@ -6,14 +6,13 @@
 - Fee Hook uses [uniswap v4 hooks](https://docs.uniswap.org/contracts/v4/concepts/hooks) to automatically collect liquidity fees and distribute them to vMOONEY holders.
 - Pools are registered with the _beforeAddLiquidity callback.
 - After swaps, fees are automatically withdrawn once a threshold is hit.
-- If the pool is not on the destination chain, the fees are sent to the FeeHook contract on the destination chain using layerzero.
 - vMOONEY holders can claim their fees using the withdrawFees function.
 - Withdraw amounts are calculated using the time weighted average of each
   holder's vMOONEY balance.
 
 ## Local Testing
 ```
-# Start local chain. Layerzero is not supported on local chains, so some functions won't work as expected.
+# Start local chain.
 anvil --fork-url https://1.rpc.thirdweb.com/$THIRDWEB_TOKEN
 forge script script/Anvil.s.sol --rpc-url localhost:8545 --private-key <PK> --broadcast --via-ir -vvvv --verify
 ```
