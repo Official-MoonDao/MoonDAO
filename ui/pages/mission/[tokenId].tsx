@@ -355,124 +355,145 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     </div>
                   )}
 
-                  <div className="max-w-[500px] w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
-                    {/* Purple raised amount tag */}
-                    <div className="mb-4 flex flex-col sm:flex-row md:items-center md:justify-between">
-                      <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex flex-col">
-                        <div className="flex items-center">
+                  <div className="flex items-start justify-between w-full">
+                    {/* Stats container */}
+                    <div className="w-[500px] bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
+                      {/* Purple raised amount tag */}
+                      <div className="mb-4 flex flex-col sm:flex-row md:items-center md:justify-between">
+                        <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex flex-col">
+                          <div className="flex items-center">
+                            <Image
+                              src="/assets/icon-raised-tokens.svg"
+                              alt="Raised"
+                              width={24}
+                              height={24}
+                              className="mr-2"
+                            />
+                            <span className="mr-2">
+                              {truncateTokenValue(
+                                subgraphData?.volume / 1e18 || 0,
+                                'ETH'
+                              )}
+                            </span>
+                            <span className="text-sm md:text-base">
+                              ETH RAISED
+                            </span>
+                          </div>
+                          <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
+                            (subgraphData?.volume / 1e18 || 0) * ethPrice
+                          ).toLocaleString()} USD)`}</p>
+                        </div>
+
+                        {/* Contributors section - visible on md screens and above */}
+                        <div className="hidden sm:flex items-center ml-2 md:mt-0">
                           <Image
-                            src="/assets/icon-raised-tokens.svg"
-                            alt="Raised"
+                            src="/assets/icon-backers.svg"
+                            alt="Backers"
                             width={24}
                             height={24}
-                            className="mr-2"
                           />
-                          <span className="mr-2">
-                            {truncateTokenValue(
-                              subgraphData?.volume / 1e18 || 0,
-                              'ETH'
-                            )}
-                          </span>
-                          <span className="text-sm md:text-base">
-                            ETH RAISED
-                          </span>
-                        </div>
-                        <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                          (subgraphData?.volume / 1e18 || 0) * ethPrice
-                        ).toLocaleString()} USD)`}</p>
-                      </div>
-
-                      {/* Contributors section - visible on md screens and above */}
-                      <div className="hidden sm:flex items-center ml-2 md:mt-0">
-                        <Image
-                          src="/assets/icon-backers.svg"
-                          alt="Backers"
-                          width={24}
-                          height={24}
-                        />
-                        <div className="ml-2">
-                          <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
-                          <p className="text-white font-GoodTimes">
-                            {subgraphData?.paymentsCount || 0}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="w-full">
-                      <MissionFundingProgressBar
-                        fundingGoal={fundingGoal}
-                        volume={subgraphData?.volume / 1e18}
-                        stage={stage ?? 0}
-                      />
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-between sm:justify-start">
-                      <div className="flex items-center">
-                        <Image
-                          src="/assets/launchpad/target.svg"
-                          alt="Goal"
-                          width={24}
-                          height={24}
-                        />
-                        <div className="ml-2">
-                          <div className="flex items-center gap-1">
-                            <p className="text-gray-400 text-sm">GOAL</p>
-                            <Tooltip
-                              text={`~ $${Math.round(
-                                (fundingGoal / 1e18) * ethPrice
-                              ).toLocaleString()} USD`}
-                              buttonClassName="scale-75"
-                            >
-                              ?
-                            </Tooltip>
+                          <div className="ml-2">
+                            <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
+                            <p className="text-white font-GoodTimes">
+                              {subgraphData?.paymentsCount || 0}
+                            </p>
                           </div>
-                          <p className="text-white font-GoodTimes">
-                            {+(fundingGoal / 1e18).toFixed(3)} ETH
-                          </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center">
-                        <Image
-                          src="/assets/launchpad/clock.svg"
-                          alt="Deadline"
-                          width={24}
-                          height={24}
+                      <div className="w-full">
+                        <MissionFundingProgressBar
+                          fundingGoal={fundingGoal}
+                          volume={subgraphData?.volume / 1e18}
+                          stage={stage ?? 0}
                         />
-                        <div className="ml-2">
-                          <p className="text-gray-400 text-sm">DEADLINE</p>
-                          <p className="text-white font-GoodTimes">
-                            {duration}
-                          </p>
-                        </div>
                       </div>
 
-                      {/* Contributors section - visible only on smaller screens */}
-                      <div className="flex sm:hidden items-center">
-                        <Image
-                          src="/assets/icon-backers.svg"
-                          alt="Backers"
-                          width={24}
-                          height={24}
-                        />
-                        <div className="ml-2">
-                          <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
-                          <p className="text-white font-GoodTimes">
-                            {subgraphData?.paymentsCount || 0}
-                          </p>
+                      <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-between sm:justify-start">
+                        <div className="flex items-center">
+                          <Image
+                            src="/assets/launchpad/target.svg"
+                            alt="Goal"
+                            width={24}
+                            height={24}
+                          />
+                          <div className="ml-2">
+                            <div className="flex items-center gap-1">
+                              <p className="text-gray-400 text-sm">GOAL</p>
+                              <Tooltip
+                                text={`~ $${Math.round(
+                                  (fundingGoal / 1e18) * ethPrice
+                                ).toLocaleString()} USD`}
+                                buttonClassName="scale-75"
+                              >
+                                ?
+                              </Tooltip>
+                            </div>
+                            <p className="text-white font-GoodTimes">
+                              {+(fundingGoal / 1e18).toFixed(3)} ETH
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center">
+                          <Image
+                            src="/assets/launchpad/clock.svg"
+                            alt="Deadline"
+                            width={24}
+                            height={24}
+                          />
+                          <div className="ml-2">
+                            <p className="text-gray-400 text-sm">DEADLINE</p>
+                            <p className="text-white font-GoodTimes">
+                              {duration}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Contributors section - visible only on smaller screens */}
+                        <div className="flex sm:hidden items-center">
+                          <Image
+                            src="/assets/icon-backers.svg"
+                            alt="Backers"
+                            width={24}
+                            height={24}
+                          />
+                          <div className="ml-2">
+                            <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
+                            <p className="text-white font-GoodTimes">
+                              {subgraphData?.paymentsCount || 0}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+
+                    {/* Buttons container - positioned with absolute positioning */}
+                    {account && (
+                      <div className="absolute right-8 top-[250px] flex flex-col items-end gap-2 w-[200px]">
+                        <PrivyWeb3Button
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
+                          label={<span className="whitespace-nowrap">Send Reserved Tokens</span>}
+                          action={sendReservedTokens}
+                        />
+                        <PrivyWeb3Button
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
+                          label={<span className="whitespace-nowrap">Send Payouts</span>}
+                          action={sendPayouts}
+                        />
+                      </div>
+                    )}
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   )
 
   return (
     <JuiceProviders
@@ -561,24 +582,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             </div>
             <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] bg-gradient-to-b from-dark-cool to-darkest-cool flex justify-center">
               <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
-                {/* Buttons moved to the top right */}
-                {account && (
-                  <div className="flex justify-end mt-4 gap-4 px-[5vw]">
-                    <PrivyWeb3Button
-                      requiredChain={DEFAULT_CHAIN_V5}
-                      className="gradient-2 rounded-full noPadding"
-                      label={<span>Send Reserved Tokens</span>}
-                      action={sendReservedTokens}
-                    />
-                    <PrivyWeb3Button
-                      requiredChain={DEFAULT_CHAIN_V5}
-                      className="gradient-2 rounded-full noPadding"
-                      label={<span>Send Payouts</span>}
-                      action={sendPayouts}
-                    />
-                  </div>
-                )}
-
+              
                 <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
                   <Image
                     src={'/assets/icon-star-blue.svg'}
