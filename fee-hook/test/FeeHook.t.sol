@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {console} from "forge-std/console.sol";
 import "forge-std/Test.sol";
 import {Config} from "../script/base/Config.sol";
 import {Constants} from "../script/base/Constants.sol";
