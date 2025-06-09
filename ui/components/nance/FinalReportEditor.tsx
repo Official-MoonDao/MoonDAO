@@ -229,6 +229,8 @@ export default function FinalReportEditor({
     setQuery({ proposalId: id })
   }
 
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+
   return (
     <div className="flex flex-col justify-center items-start animate-fadeIn w-[90vw] md:w-full">
       <Head title="Final Report Editor" />
@@ -252,16 +254,32 @@ export default function FinalReportEditor({
               <EditorMarkdownUpload setMarkdown={setMarkdown} />
             </div>
           </div>
-          <div className="pt-0 rounded-t-[20px] rounded-b-[0px] bg-dark-cool">
+          <div className="pt-0 rounded-t-[20px] rounded-b-[0px] bg-dark-cool relative">
             <NanceEditor
               initialValue={FINAL_REPORT_TEMPLATE}
               fileUploadExternal={async (val) => {
-                const res = await pinBlobOrFile(val)
-                return res.url
+                try {
+                  setIsUploadingImage(true)
+                  const res = await pinBlobOrFile(val)
+                  return res.url
+                } finally {
+                  setIsUploadingImage(false)
+                }
               }}
               darkMode={true}
               onEditorChange={(m) => {}}
             />
+            {isUploadingImage && (
+              <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 rounded-b-[0px]">
+                <img
+                  src="/assets/MoonDAO-Loading-Animation.svg"
+                  alt="Uploading..."
+                  className="w-16 h-16 mb-4"
+                />
+                <p className="text-white text-lg font-medium">Uploading image to IPFS...</p>
+                <p className="text-gray-300 text-sm mt-2">Please wait, do not close this window</p>
+              </div>
+            )}
           </div>
 
           <div className="p-5 rounded-b-[20px] rounded-t-[0px] bg-dark-cool"></div>
@@ -273,9 +291,9 @@ export default function FinalReportEditor({
               <PrivyWeb3Button
                 requiredChain={DEFAULT_CHAIN_V5}
                 className="rounded-[20px] rounded-tl-[10px] px-5 py-3 gradient-2 border border-transparent font-RobotoMono duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40"
-                label={signingStatus === 'loading' ? 'Signing...' : 'Submit'}
+                label={signingStatus === 'loading' ? 'Signing...' : isUploadingImage ? 'Uploading image...' : 'Submit'}
                 action={onSubmit}
-                isDisabled={buttonsDisabled}
+                isDisabled={buttonsDisabled || isUploadingImage}
               />
             </div>
           </div>
