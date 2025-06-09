@@ -17,16 +17,12 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import useRead from '@/lib/thirdweb/hooks/useRead'
-import { approveToken } from '@/lib/tokens/approve'
-import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 
 export default function Withdraw() {
   useChainDefault()
