@@ -159,7 +159,7 @@ export function CreateMissionStage({
               id="continue-button"
               className="gradient-2 rounded-full"
               hoverEffect={false}
-              onClick={() => {
+              onClick={async () => {
                 if (!account) {
                   login()
                   return
@@ -167,7 +167,7 @@ export function CreateMissionStage({
                 if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
                   setStage((prev: number) => prev + 1)
                 } else {
-                  if (action() === true) {
+                  if ((await action()) === true) {
                     setStage((prev: number) => prev + 1)
                   }
                 }
@@ -706,8 +706,8 @@ export default function CreateMission({
                           style: toastStyle,
                         })
                       }
-                      return true
                     }
+                    return true
                   }}
                 >
                   <div className="">
@@ -927,6 +927,7 @@ export default function CreateMission({
                     missionImage={missionLogoUri}
                     showMore={true}
                     showMoreButton={false}
+                    onlyGoalStat
                   />
                   <MissionTokenomicsExplainer />
                   <ConditionCheckbox

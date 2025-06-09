@@ -1,9 +1,11 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import { daysUntilDate, formatTimeUntilDeadline } from '@/lib/utils/dates'
+import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '../layout/StandardButton'
 import StandardWideCard from '../layout/StandardWideCard'
@@ -17,6 +19,7 @@ export type MissionWideCardProps = {
   token: any
   subgraphData: any
   fundingGoal: number
+  ethPrice: number
   contribute?: boolean
   stage?: number
   ruleset?: any
@@ -32,6 +35,7 @@ export type MissionWideCardProps = {
   primaryTerminalAddress?: string
   compact?: boolean
   onClick?: () => void
+  onlyGoalStat?: boolean
 }
 
 export default function MissionWideCard({
@@ -52,15 +56,18 @@ export default function MissionWideCard({
   primaryTerminalAddress,
   compact,
   onClick,
+  onlyGoalStat,
 }: MissionWideCardProps) {
   const router = useRouter()
   const [payModalEnabled, setPayModalEnabled] = useState(false)
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
+  const { data: ethPrice } = useETHPrice(1)
+
   const duration = useMemo(() => {
-    return ruleset?.[0]?.duration
+    return ruleset?.[0]?.start
       ? formatTimeUntilDeadline(
-          new Date(ruleset?.[0]?.start * 1000 + ruleset?.[0]?.duration * 1000)
+          new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
         )
       : undefined
   }, [ruleset])
@@ -98,50 +105,106 @@ export default function MissionWideCard({
         </div>
       )}
       <StandardWideCard
-        title={mission?.metadata?.name}
-        subheader={mission?.metadata?.tagline}
+        title={compact ? '' : mission?.metadata?.name}
+        subheader={compact ? '' : mission?.metadata?.tagline}
         stats={
-          <div className="w-full">
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 justify-between">
-              {duration && (
-                <MissionStat
-                  label="Deadline"
-                  value={duration}
-                  icon={'/assets/launchpad/clock.svg'}
-                />
+          <div className="w-full flex flex-col gap-4">
+            {}
+            <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              {!onlyGoalStat && (
+                <div>
+                  {ethPrice && (
+                    <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex-col">
+                      <div className="flex items-center">
+                        <Image
+                          src="/assets/icon-raised-tokens.svg"
+                          alt="Raised"
+                          width={24}
+                          height={24}
+                          className="mr-2"
+                        />
+                        <span className="mr-2">
+                          {truncateTokenValue(
+                            subgraphData?.volume / 1e18 || 0,
+                            'ETH'
+                          )}
+                        </span>
+                        <span className="text-sm md:text-base">ETH RAISED</span>
+                      </div>
+                      <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
+                        (subgraphData?.volume / 1e18 || 0) * ethPrice
+                      ).toLocaleString()} USD)`}</p>
+                    </div>
+                  )}
+                </div>
               )}
-              {subgraphData?.volume !== undefined && (
-                <MissionStat
-                  label="Total Raised"
-                  value={'Ξ ' + subgraphData.volume / 1e18}
-                  icon={'/assets/launchpad/token.svg'}
-                />
+              <div />
+              {!onlyGoalStat && (
+                <div className="flex items-center md:justify-center">
+                  <Image
+                    src="/assets/icon-backers.svg"
+                    alt="Backers"
+                    width={24}
+                    height={24}
+                  />
+                  <div className="mx-2">
+                    <p className="text-white font-GoodTimes">
+                      {subgraphData?.paymentsCount || 0}
+                    </p>
+                  </div>
+                </div>
               )}
-              {token?.tradeable !== undefined && (
-                <MissionStat
-                  icon="/assets/launchpad/token.svg"
-                  label="Token"
-                  value={token?.tradeable ? 'Yes' : 'No'}
-                />
-              )}
-              <MissionStat
-                icon="/assets/target.png"
-                label="Goal"
-                value={`${
-                  fundingGoal
-                    ? truncateTokenValue(fundingGoal / 1e18, 'ETH')
-                    : 0
-                } ETH`}
-              />
             </div>
-            <div className="mt-4 w-4/5">
-              <MissionFundingProgressBar
-                fundingGoal={fundingGoal || 0}
-                volume={subgraphData?.volume / 1e18 || 0}
-                compact={compact}
-                stage={stage}
-              />
+            <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div className={`${onlyGoalStat ? 'col-span-3' : 'col-span-1'}`}>
+                <MissionStat
+                  icon="/assets/target.png"
+                  label="Goal"
+                  value={`${
+                    fundingGoal
+                      ? truncateTokenValue(fundingGoal / 1e18, 'ETH')
+                      : 0
+                  } ETH`}
+                  tooltip={`~ $${Math.round(
+                    (fundingGoal / 1e18) * ethPrice
+                  ).toLocaleString()} USD`}
+                />
+              </div>
+              <div>
+                {duration && (
+                  <MissionStat
+                    label="Deadline"
+                    value={duration}
+                    icon={'/assets/launchpad/clock.svg'}
+                  />
+                )}
+              </div>
+              <div className="flex justify-center">
+                {learnMore && (
+                  <StandardButton
+                    className="gradient-2 rounded-full"
+                    hoverEffect={false}
+                    onClick={(e: any) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      router.push(`/mission/${mission.id}`)
+                    }}
+                  >
+                    Learn More
+                  </StandardButton>
+                )}
+              </div>
             </div>
+            {!onlyGoalStat && (
+              <div className="mt-4 w-4/5">
+                <MissionFundingProgressBar
+                  fundingGoal={fundingGoal || 0}
+                  volume={subgraphData?.volume / 1e18 || 0}
+                  compact={compact}
+                  stage={stage}
+                />
+              </div>
+            )}
             {contribute && mission.projectId && (
               <StandardButton
                 className="mt-4 gradient-2 rounded-full"
@@ -153,19 +216,6 @@ export default function MissionWideCard({
                 }}
               >
                 Contribute
-              </StandardButton>
-            )}
-            {learnMore && (
-              <StandardButton
-                className="mt-4 gradient-2 rounded-full"
-                hoverEffect={false}
-                onClick={(e: any) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  router.push(`/mission/${mission.id}`)
-                }}
-              >
-                Learn More
               </StandardButton>
             )}
           </div>
