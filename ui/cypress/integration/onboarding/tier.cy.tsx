@@ -10,6 +10,7 @@ describe('<Tier />', () => {
       description: 'Test Description',
       points: ['Point 1: Description 1', 'Point 2: Description 2'],
       price: 1.5,
+      usdPrice: 1000,
       onClick: cy.stub(),
       buttoncta: 'Click Me',
       type: 'team',
@@ -39,7 +40,8 @@ describe('<Tier />', () => {
   })
 
   it('Displays price correctly', () => {
-    cy.get('p').contains(`${props.price} ETH`)
+    cy.get('p').contains(`~$${props.usdPrice} / Year`)
+    cy.get('p').contains(`(${props.price} Arbitrum ETH)`)
   })
 
   it('Renders compact view correctly', () => {

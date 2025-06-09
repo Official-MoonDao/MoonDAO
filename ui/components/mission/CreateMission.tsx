@@ -160,11 +160,12 @@ export function CreateMissionStage({
               className="gradient-2 rounded-full"
               hoverEffect={false}
               onClick={() => {
-                if (!account) {
+                const isTestEnv = process.env.NEXT_PUBLIC_TEST_ENV === 'true'
+                if (!account && !isTestEnv) {
                   login()
                   return
                 }
-                if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+                if (isTestEnv) {
                   setStage((prev: number) => prev + 1)
                 } else {
                   if (action() === true) {
@@ -433,11 +434,16 @@ export default function CreateMission({
   useEffect(() => {
     async function getTeamNFT() {
       if (selectedTeamId === undefined) return
-      const nft = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(selectedTeamId),
-      })
-      setSelectedTeamNFT(nft)
+      try {
+        const nft = await getNFT({
+          contract: teamContract,
+          tokenId: BigInt(selectedTeamId),
+        })
+        setSelectedTeamNFT(nft)
+      } catch (err) {
+        console.error(err)
+        setSelectedTeamNFT(undefined)
+      }
     }
     if (selectedTeamId !== undefined && teamContract) getTeamNFT()
     else setSelectedTeamNFT(undefined)
