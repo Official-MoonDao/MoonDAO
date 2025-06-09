@@ -53,6 +53,7 @@ const ContributionEditor: React.FC = () => {
   const [submitting, setSubmitting] = useState(false)
   const [coordinapeLink, setCoordinapeLink] = useState<string | null>(null)
   const { address } = useAccount()
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   useEffect(() => {
     if (setMarkdown) {
@@ -129,8 +130,8 @@ const ContributionEditor: React.FC = () => {
 
   return (
     <div className="w-full md:w-auto px-4 sm:px-0">
-      <div className="h-[600px]">
-        <div className="w-full flex justify-end">
+      <div className="h-[600px] relative">
+        <div className={`w-full flex justify-end ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
           <div className="w-full md:max-w-[200px]">
             <EditorMarkdownUpload setMarkdown={setMarkdown} />
           </div>
@@ -138,20 +139,36 @@ const ContributionEditor: React.FC = () => {
         <NanceEditor
           initialValue={CONTRIBUTION_TEMPLATE}
           fileUploadExternal={async (val) => {
-            const res = await pinBlobOrFile(val)
-            return res.url
+            try {
+              setIsUploadingImage(true)
+              const res = await pinBlobOrFile(val)
+              return res.url
+            } finally {
+              setIsUploadingImage(false)
+            }
           }}
           darkMode={true}
         />
+        {isUploadingImage && (
+          <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 rounded-b-[0px]">
+            <img
+              src="/assets/MoonDAO-Loading-Animation.svg"
+              alt="Uploading..."
+              className="w-16 h-16 mb-4"
+            />
+            <p className="text-white text-lg font-medium">Uploading image...</p>
+            <p className="text-gray-300 text-sm mt-2">Please wait, do not close this window</p>
+          </div>
+        )}
       </div>
       <div className="mt-4 flex justify-end">
         <button
           type="submit"
           className="gradient-2 hover:pl-7 disabled:pl-5 disabled:opacity-30 transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-5 px-5 py-3 inline-block disabled:transform-none disabled:cursor-not-allowed"
-          disabled={submitting}
+          disabled={submitting || isUploadingImage}
           onClick={handleSubmit}
         >
-          Submit Contribution
+          {isUploadingImage ? 'Uploading image...' : 'Submit Contribution'}
         </button>
       </div>
     </div>
