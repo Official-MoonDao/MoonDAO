@@ -74,6 +74,11 @@ const ContributionEditor: React.FC = () => {
       return
     }
 
+    if (getMarkdown()?.trim() === '') {
+      toast.error('Please write a contribution!')
+      return
+    }
+
     setSubmitting(true)
     const loadingToast = toast.loading('Submitting contribution...')
 
