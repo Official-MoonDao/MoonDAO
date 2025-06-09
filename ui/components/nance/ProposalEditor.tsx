@@ -330,7 +330,7 @@ export default function ProposalEditor() {
                   alt="Uploading..."
                   className="w-16 h-16 mb-4"
                 />
-                <p className="text-white text-lg font-medium">Uploading image to IPFS...</p>
+                <p className="text-white text-lg font-medium">Uploading image...</p>
                 <p className="text-gray-300 text-sm mt-2">Please wait, do not close this window</p>
               </div>
             )}

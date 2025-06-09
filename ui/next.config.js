@@ -4,7 +4,7 @@ const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://*.ipfscdn.io https://r2.comfy.icu https://ipfs.io https://cdn.discordapp.com https://cdn.stamp.fyi https://cdn.shopify.com https://cryptologos.cc https://ipfs.cf-ipfs.com https://*.walletconnect.com https://unpkg.com ipfs://* https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://safe-transaction-assets.safe.global;
+    img-src 'self' blob: data: https://*.ipfscdn.io https://r2.comfy.icu https://ipfs.io https://cdn.discordapp.com https://cdn.stamp.fyi https://cdn.shopify.com https://cryptologos.cc https://ipfs.cf-ipfs.com https://*.walletconnect.com https://unpkg.com ipfs://* https://gray-main-toad-36.mypinata.cloud  https://safe-transaction-assets.safe.global;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';

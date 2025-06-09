@@ -8,11 +8,6 @@ interface PinResponse {
 
 export async function pinBlobOrFile(blob: Blob | File): Promise<PinResponse> {
   try {
-    console.log('🔍 Starting pinBlobOrFile with blob:', {
-      size: blob.size,
-      type: blob.type,
-      name: blob instanceof File ? blob.name : 'blob'
-    })
 
     const imageFormData = new FormData()
     imageFormData.append('file', blob)
@@ -22,8 +17,6 @@ export async function pinBlobOrFile(blob: Blob | File): Promise<PinResponse> {
       credentials: 'include',
       body: imageFormData,
     })
-
-    console.log('📡 API response status:', pin.status)
     
     if (pin.status === 401) {
       console.error('❌ Authentication failed (401)')
@@ -39,7 +32,6 @@ export async function pinBlobOrFile(blob: Blob | File): Promise<PinResponse> {
     }
 
     const response = await pin.json()
-    console.log('✅ API response:', response)
 
     const { cid } = response
     if (!cid) {
@@ -49,7 +41,6 @@ export async function pinBlobOrFile(blob: Blob | File): Promise<PinResponse> {
     }
 
     const url = `${IPFS_GATEWAY}${cid}`
-    console.log('🌐 Generated URL:', url)
     
     return { cid, url }
   } catch (err: any) {

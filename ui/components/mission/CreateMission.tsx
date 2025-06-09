@@ -273,6 +273,8 @@ export default function CreateMission({
     refresh: getFundingGoalInETH,
   } = useETHPrice(missionData?.fundingGoal || 0, 'USD_TO_ETH')
 
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+
   async function createMission() {
     try {
       if (!account) throw new Error('Please connect your wallet')
@@ -853,15 +855,14 @@ export default function CreateMission({
                     className="gradient-2 rounded-full"
                     hoverEffect={false}
                     onClick={() => {
+                      if (isUploadingImage) return
                       setMarkdown(MISSION_DESCRIPTION_TEMPLATE)
                     }}
+                    disabled={isUploadingImage}
                   >
                     Restore Template
                   </StandardButton>
-                  <div
-                    id="mission-description-editor"
-                    className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50%"
-                  >
+                  <div id="mission-description-editor" className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50% relative">
                     <NanceEditor
                       initialValue={
                         missionData.description.length === 0
@@ -869,14 +870,30 @@ export default function CreateMission({
                           : missionData.description
                       }
                       fileUploadExternal={async (val) => {
-                        const res = await pinBlobOrFile(val)
-                        return res.url
+                        try {
+                          setIsUploadingImage(true)
+                          const res = await pinBlobOrFile(val)
+                          return res.url
+                        } finally {
+                          setIsUploadingImage(false)
+                        }
                       }}
                       darkMode={true}
                       onEditorChange={(m: string) => {
                         setMissionData({ ...missionData, description: m })
                       }}
                     />
+                    {isUploadingImage && (
+                      <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 rounded-b-[0px]">
+                        <img
+                          src="/assets/MoonDAO-Loading-Animation.svg"
+                          alt="Uploading..."
+                          className="w-16 h-16 mb-4"
+                        />
+                        <p className="text-white text-lg font-medium">Uploading image...</p>
+                        <p className="text-gray-300 text-sm mt-2">Please wait, do not close this window</p>
+                      </div>
+                    )}
                   </div>
                 </CreateMissionStage>
               )}
