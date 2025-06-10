@@ -182,11 +182,13 @@ export default function MissionWideCard({
                   />
                 )}
               </div>
-              <MissionStat
-                label="Contributions"
-                value={subgraphData?.paymentsCount || 0}
-                icon="/assets/icon-backers.svg"
-              />
+              {!onlyGoalStat && (
+                <MissionStat
+                  label="Contributions"
+                  value={subgraphData?.paymentsCount || 0}
+                  icon="/assets/icon-backers.svg"
+                />
+              )}
               {learnMore && (
                 <StandardButton
                   className="gradient-2 rounded-full"
