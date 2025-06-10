@@ -64,10 +64,10 @@ const ContentLayout: React.FC<ContentProps> = ({
               <div
                 id="title-wrapper"
                 className={`
-                                    z-50 w-full overflow-x-hidden  pt-0
+                                    z-50 w-full overflow-x-hidden pt-0
                                     ${
                                       isCompact
-                                        ? ' pt-[2vw] '
+                                        ? ''
                                         : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5'
                                     } 
                                     ${

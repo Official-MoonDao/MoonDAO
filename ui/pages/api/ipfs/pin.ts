@@ -28,7 +28,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const formData = new FormData()
       formData.append('pinataMetadata', JSON.stringify({ name: fileName }))
       formData.append('pinataOptions', JSON.stringify({ cidVersion: 0 }))
-      formData.append('file', new Blob([fileContent]))
+      formData.append('file', new Blob([fileContent], { type: file.mimetype || 'application/octet-stream' }))
 
       const imageRes = await fetch(
         'https://api.pinata.cloud/pinning/pinFileToIPFS',
@@ -44,14 +44,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const json = await imageRes.json()
 
       if (imageRes.status !== 200) {
-        return res.status(400).json('Error pinning file to IPFS')
+        return res.status(400).json(`Error pinning file to IPFS: ${JSON.stringify(json)}`)
       }
 
       const { IpfsHash } = json
       return res.send({ cid: IpfsHash })
-    } catch (error) {
-      console.error('Error processing request:', error)
-      return res.status(500).json('Error processing request')
+    } catch (error: any) {
+      return res.status(500).json(`Error processing request: ${error.message}`)
     }
   } else {
     return res.status(400).json('Invalid method')

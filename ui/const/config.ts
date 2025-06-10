@@ -367,7 +367,10 @@ export const CHAIN_TOKEN_NAMES: Index = {
   sepolia: 'ETH',
 }
 
-export const IPFS_GATEWAY = 'https://gray-main-toad-36.mypinata.cloud/ipfs/'
+export const IPFS_GATEWAY =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? 'https://gray-main-toad-36.mypinata.cloud/ipfs/'
+    : 'https://gray-main-toad-36.mypinata.cloud/ipfs/' // Use mainnet gateway for testnet too since testnet gateway returns 403
 
 export const ARBITRUM_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/42161/safes/0xAF26a002d716508b7e375f1f620338442F5470c0/balances/usd?trusted=true'

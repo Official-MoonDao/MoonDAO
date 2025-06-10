@@ -62,6 +62,8 @@ const ContributionEditor: React.FC = () => {
   const [templateExpanded, setTemplateExpanded] = useState(false)
   const { address } = useAccount()
   const { citizen } = useContext(CitizenContext)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+
   useEffect(() => {
     if (setMarkdown) {
       setMarkdown('')
@@ -185,16 +187,31 @@ const ContributionEditor: React.FC = () => {
             }}
             darkMode={true}
           />
+          {isUploadingImage && (
+            <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 rounded-b-[0px]">
+              <img
+                src="/assets/MoonDAO-Loading-Animation.svg"
+                alt="Uploading..."
+                className="w-16 h-16 mb-4"
+              />
+              <p className="text-white text-lg font-medium">
+                Uploading image...
+              </p>
+              <p className="text-gray-300 text-sm mt-2">
+                Please wait, do not close this window
+              </p>
+            </div>
+          )}
         </div>
       </div>
       <div className="mt-4 flex justify-end">
         <button
           type="submit"
           className="gradient-2 hover:pl-7 disabled:pl-5 disabled:opacity-30 transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-5 px-5 py-3 inline-block disabled:transform-none disabled:cursor-not-allowed"
-          disabled={submitting}
+          disabled={submitting || isUploadingImage}
           onClick={handleSubmit}
         >
-          Submit Contribution
+          {isUploadingImage ? 'Uploading image...' : 'Submit Contribution'}
         </button>
       </div>
     </div>

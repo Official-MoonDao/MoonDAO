@@ -23,7 +23,7 @@ export default function CardGridContainer({
       style={gridStyle}
       className={`h-full w-full mb-10 grid mt-5 ${noGap ? '' : 'gap-5'} ${
         center ? 'items-center justify-items-center' : ''
-      } [&>*]:self-start
+      } [&>*]:self-stretch [&>*]:bg-dark-cool [&>*]:rounded-2xl [&>*]:border-b-2 [&>*]:border-[#020617]
         [grid-template-columns:repeat(var(--xs-cols),minmax(0,1fr))]
         min-[900px]:[grid-template-columns:repeat(var(--sm-cols),minmax(0,1fr))]
         min-[900px]:justify-items-start

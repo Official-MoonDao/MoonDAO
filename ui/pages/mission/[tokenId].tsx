@@ -167,6 +167,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   useEffect(() => {
     async function getTeamNFT() {
+      if (mission?.teamId === undefined || !teamContract) return
       const teamNFT = await getNFT({
         contract: teamContract,
         tokenId: BigInt(mission.teamId),
@@ -174,9 +175,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       })
       setTeamNFT(teamNFT)
     }
-    if (teamContract ?? mission.teamId) {
-      getTeamNFT()
-    }
+
+    getTeamNFT()
   }, [teamContract, mission.teamId])
 
   useChainDefault()
@@ -204,11 +204,11 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 <div className="pr-0 md:pr-[2vw] pb-[5vw] md:pb-[2vw]">
                   <div
                     id="mission-image-container"
-                    className="pl-[0vw] sm:pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
+                    className="pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                   >
                     <IPFSRenderer
                       src={mission?.metadata?.logoUri}
-                      className="pl-[5vw] sm:pl-0 rounded-full rounded-tr-none sm:rounded-tr-full w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
+                      className="sm:rounded-full rounded-tr-none sm:rounded-tr-full mt-[-3vw] sm:mt-0 w-[100vw] sm:w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
                       height={576}
                       width={576}
                       alt="Mission Image"
@@ -263,7 +263,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   </div>
 
                   {ruleset && teamNFT?.metadata?.name && (
-                    <div className="flex pb-2 flex-col sm:flex-row items-start ">
+                    <div className="hidden sm:flex pb-2 flex-col sm:flex-row items-start ">
                       <p className="opacity-60">
                         {`Created on ${new Date(
                           ruleset?.[0]?.start * 1000
@@ -298,7 +298,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           />
                           <span className="mr-2">
                             {truncateTokenValue(
-                              subgraphData?.volume / 1e18,
+                              subgraphData?.volume / 1e18 || 0,
                               'ETH'
                             )}
                           </span>
@@ -307,7 +307,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           </span>
                         </div>
                         <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                          (subgraphData?.volume / 1e18) * ethPrice
+                          (subgraphData?.volume / 1e18 || 0) * ethPrice
                         ).toLocaleString()} USD)`}</p>
                       </div>
 
@@ -319,8 +319,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           width={24}
                           height={24}
                         />
-                        <div className="ml-2">
-                          <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
+                        <div className="mx-2">
+                          <p className="sm:hidden text-gray-400 text-sm">CONTRIBUTIONS</p>
                           <p className="text-white font-GoodTimes">
                             {subgraphData?.paymentsCount || 0}
                           </p>
@@ -394,6 +394,28 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       </div>
                     </div>
                   </div>
+
+                  {ruleset && teamNFT?.metadata?.name && (
+                    <div className="flex sm:hidden pt-2 flex-col sm:flex-row items-start ">
+                      <p className="opacity-60">
+                        {`Created on ${new Date(
+                          ruleset?.[0]?.start * 1000
+                        ).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })} by: `}
+                      </p>
+                      <Link
+                        href={`/team/${generatePrettyLink(
+                          teamNFT?.metadata?.name
+                        )}`}
+                        className="font-GoodTimes text-white underline"
+                      >
+                        {teamNFT?.metadata?.name}
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -426,7 +448,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             <ExpandedFooter
               callToActionTitle="Join the Network"
               callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
-              callToActionImage="/assets/logo-san-cropped.svg"
+              callToActionImage="/assets/SAN-logo-dark.svg"
               callToActionButtonText="Join the Network"
               callToActionButtonLink="/join"
               hasCallToAction={true}
@@ -437,6 +459,24 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
+            {/* Youtube Video Section */}
+            {mission?.metadata?.youtubeLink &&
+              mission?.metadata?.youtubeLink !== '' && (
+                <div className="w-full px-[5vw]">
+                  <div className="w-full h-full">
+                    <iframe
+                      src={mission?.metadata?.youtubeLink?.replace(
+                        'watch?v=',
+                        'embed/'
+                      )}
+                      width="100%"
+                      height="500"
+                      allowFullScreen
+                      className="rounded-lg"
+                    />
+                  </div>
+                </div>
+              )}
             {/* Pay & Redeem Section */}
             <div className="flex z-20 xl:hidden w-full px-[5vw]">
               <div
@@ -530,71 +570,77 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  const tokenId: any = params?.tokenId
+  try {
+    const tokenId: any = params?.tokenId
 
-  const chain = sepolia
-  const chainSlug = getChainSlug(chain)
+    const chain = sepolia
+    const chainSlug = getChainSlug(chain)
 
-  if (tokenId === undefined) {
+    if (tokenId === undefined) {
+      return {
+        notFound: true,
+      }
+    }
+
+    const missionTableContract = getContract({
+      client: serverClient,
+      address: MISSION_TABLE_ADDRESSES[chainSlug],
+      abi: MissionTableABI as any,
+      chain: chain,
+    })
+
+    const missionTableName = await readContract({
+      contract: missionTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
+
+    const statement = `SELECT * FROM ${missionTableName} WHERE id = ${tokenId}`
+
+    const missionRows = await queryTable(chain, statement)
+    const missionRow = missionRows?.[0]
+
+    if (!missionRow || blockedMissions.includes(Number(tokenId))) {
+      return {
+        notFound: true,
+      }
+    }
+
+    const jbV4ControllerContract = getContract({
+      client: serverClient,
+      address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+      abi: JBV4ControllerABI as any,
+      chain: chain,
+    })
+
+    const metadataURI = await readContract({
+      contract: jbV4ControllerContract,
+      method: 'uriOf' as string,
+      params: [missionRow.projectId],
+    })
+
+    const ipfsHash = metadataURI.startsWith('ipfs://')
+      ? metadataURI.replace('ipfs://', '')
+      : metadataURI
+
+    const metadataRes = await fetch(`${IPFS_GATEWAY}${ipfsHash}`)
+    const metadata = await metadataRes.json()
+
+    const mission = {
+      id: missionRow.id,
+      teamId: missionRow.teamId,
+      projectId: missionRow.projectId,
+      metadata: metadata,
+    }
+
+    return {
+      props: {
+        mission,
+      },
+    }
+  } catch (error) {
     return {
       notFound: true,
     }
-  }
-
-  const missionTableContract = getContract({
-    client: serverClient,
-    address: MISSION_TABLE_ADDRESSES[chainSlug],
-    abi: MissionTableABI as any,
-    chain: chain,
-  })
-
-  const missionTableName = await readContract({
-    contract: missionTableContract,
-    method: 'getTableName' as string,
-    params: [],
-  })
-
-  const statement = `SELECT * FROM ${missionTableName} WHERE id = ${tokenId}`
-
-  const missionRows = await queryTable(chain, statement)
-  const missionRow = missionRows?.[0]
-
-  if (!missionRow || blockedMissions.includes(Number(tokenId))) {
-    return {
-      notFound: true,
-    }
-  }
-
-  const jbV4ControllerContract = getContract({
-    client: serverClient,
-    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
-    abi: JBV4ControllerABI as any,
-    chain: chain,
-  })
-
-  const metadataURI = await readContract({
-    contract: jbV4ControllerContract,
-    method: 'uriOf' as string,
-    params: [missionRow.projectId],
-  })
-
-  const ipfsHash = metadataURI.startsWith('ipfs://')
-    ? metadataURI.replace('ipfs://', '')
-    : metadataURI
-
-  const metadataRes = await fetch(`${IPFS_GATEWAY}${ipfsHash}`)
-  const metadata = await metadataRes.json()
-
-  const mission = {
-    id: missionRow.id,
-    teamId: missionRow.teamId,
-    projectId: missionRow.projectId,
-    metadata: metadata,
-  }
-
-  return {
-    props: {
-      mission,
-    },
   }
 }

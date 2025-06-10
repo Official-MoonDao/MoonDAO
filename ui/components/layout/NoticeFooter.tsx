@@ -27,7 +27,7 @@ type NoticeFooterProps = {
 
 export function NoticeFooter({
   defaultTitle = 'Join the Network',
-  defaultImage = '../assets/moondao-logo-white.svg',
+  defaultImage = '../assets/MoonDAO-Logo-White.svg',
   defaultDescription = 'Be part of the Space Acceleration Network and play a role in establishing a permanent human presence on the Moon and beyond.',
   defaultButtonText = 'Learn More',
   defaultButtonLink = '/join',

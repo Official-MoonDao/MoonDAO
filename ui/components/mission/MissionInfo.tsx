@@ -179,7 +179,7 @@ export default function MissionInfo({
         </div>
 
         <div className="flex items-center md:justify-end gap-2 w-full">
-          <p className="text-sm text-gray-400">{'CONNECT WITH THE TEAM'}</p>
+          <div className="text-sm text-gray-400">{'CONNECT WITH THE TEAM'}</div>
           <div className="flex gap-2 justify-start justify-end">
             {teamSocials.communications && (
               <Link
@@ -218,7 +218,7 @@ export default function MissionInfo({
       <div id="mission-info-content" className="mt-8 w-full flex gap-4">
         <div className="flex-1 overflow-auto">
           {tab === 'about' && (
-            <div className="flex gap-4 w-full">
+            <div className="flex gap-4 mb-[5vw] md:mb-[2vw] w-full">
               <div className="w-full">
                 <MissionInfoHeader
                   title="About the Mission"
@@ -230,87 +230,7 @@ export default function MissionInfo({
                     __html: mission?.metadata?.description || '',
                   }}
                 />
-                <div className="mt-8 flex gap-2 text-light-cool max-w-none">
-                  <Image
-                    src="/assets/icon-star-blue.svg"
-                    alt="Star Icon"
-                    width={30}
-                    height={30}
-                  />
-                  <h1 className="header font-GoodTimes text-moon-indigo">
-                    About the Team
-                  </h1>
-                </div>
-                <div className="mt-4">
-                  {teamNFT && (
-                    <StandardWideCard
-                      title={teamNFT?.metadata.name}
-                      link={`/team/${generatePrettyLink(
-                        teamNFT?.metadata?.name || ''
-                      )}`}
-                      subheader={
-                        <div className="flex flex-col gap-2">
-                          <div
-                            id="socials-container"
-                            className="p-1.5 mb-2 mr-2 md:mb-0 px-5 w-fit gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
-                          >
-                            {mission?.metadata?.discord && (
-                              <Link
-                                className="flex gap-2"
-                                href={mission?.metadata?.discord}
-                                target="_blank"
-                                passHref
-                              >
-                                <DiscordIcon />
-                              </Link>
-                            )}
-                            {mission?.metadata?.twitter && (
-                              <Link
-                                className="flex gap-2"
-                                href={mission?.metadata?.twitter}
-                                target="_blank"
-                                passHref
-                              >
-                                <TwitterIcon />
-                              </Link>
-                            )}
-                            {mission?.metadata?.infoUri && (
-                              <Link
-                                className="flex gap-2"
-                                href={mission?.metadata?.infoUri}
-                                target="_blank"
-                                passHref
-                              >
-                                <GlobeAltIcon height={25} width={25} />
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      }
-                      paragraph={
-                        <div className="flex flex-col gap-2">
-                          <p>{teamNFT?.metadata.description}</p>
-                        </div>
-                      }
-                      fullParagraph={true}
-                      showMore={false}
-                      showMoreButton={false}
-                      image={teamNFT?.metadata.image}
-                      footer={
-                        <Link
-                          href={`/team/${generatePrettyLink(
-                            teamNFT?.metadata?.name || ''
-                          )}`}
-                          passHref
-                          className="flex gap-2 items-center hover:underline"
-                        >
-                          <InformationCircleIcon width={20} height={20} />
-                          {'Learn more about the team'}
-                        </Link>
-                      }
-                    />
-                  )}
-                </div>
+                
               </div>
             </div>
           )}

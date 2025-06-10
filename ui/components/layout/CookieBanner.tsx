@@ -29,20 +29,23 @@ export default function CookieBanner() {
 
   return (
     <div
-      className={`my-10 mx-auto max-w-max md:max-w-screen-sm fixed bottom-0 left-0 right-0 ${
+      className={`my-10 mx-auto max-w-max md:max-w-screen-sm fixed bottom-0 left-0 right-0 z-[100] ${
         cookieConsent != null ? 'hidden' : 'flex'
-      } px-3 md:px-4 py-3 justify-between items-center flex-col sm:flex-row gap-4 bg-dark-cool rounded-lg shadow`}
+      } px-3 md:px-4 py-3 justify-between items-center flex-col gap-4 bg-dark-cool rounded-lg shadow`}
     >
-      <div className="text-center">
-        <Link
-          href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
-          passHref
-        >
-          <p>
-            We use <span className="font-bold text-light-warm">cookies</span> on
-            our site
-          </p>
-        </Link>
+      <div className="text-left">
+        <p className="text-sm">
+          {`We use cookies to enhance your experience. By clicking "Allow
+            Cookies" you agree to the use of cookies for analytics,
+            personalization, and marketing. Learn more in our `}
+          <Link
+            className="underline text-blue-500"
+            href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
 
       <div className="flex gap-2">

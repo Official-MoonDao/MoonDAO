@@ -41,6 +41,7 @@ describe('MissionCard', () => {
       version: 1,
       payButton: 'Pay Now',
       payDisclosure: 'Test Disclosure',
+      youtubeLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     },
   }
 
