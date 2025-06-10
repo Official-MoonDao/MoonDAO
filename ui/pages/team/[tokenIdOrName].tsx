@@ -47,6 +47,7 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useSafe from '@/lib/safe/useSafe'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
+import { teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -636,7 +637,7 @@ export const getServerSideProps: GetServerSideProps = async ({
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
-  const teamTableStatement = `SELECT name, id FROM ${TEAM_TABLE_NAMES[chainSlug]}`
+  const teamTableStatement = `SELECT * FROM ${TEAM_TABLE_NAMES[chainSlug]}`
   const allTeams = (await queryTable(chain, teamTableStatement)) as any
   const { prettyLinks } = generatePrettyLinks(allTeams)
 
@@ -660,11 +661,14 @@ export const getServerSideProps: GetServerSideProps = async ({
     chain: chain,
   })
 
-  const nft = await getNFT({
+  const owner = await readContract({
     contract: teamContract,
-    tokenId: BigInt(tokenId),
-    includeOwner: true,
+    method: 'ownerOf',
+    params: [tokenId],
   })
+
+  const nft = teamRowToNFT(allTeams.find((team: any) => team.id === tokenId))
+  nft.owner = owner
 
   if (!nft || blockedTeams.includes(Number(nft.metadata.id))) {
     return {

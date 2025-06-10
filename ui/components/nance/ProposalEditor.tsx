@@ -83,6 +83,7 @@ export default function ProposalEditor() {
   const [proposalTitle, setProposalTitle] = useState<string | undefined>()
   const [proposalStatus, setProposalStatus] =
     useState<ProposalStatus>('Discussion')
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false)
 
   const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
   const spaceInfo = spaceInfoData?.data
@@ -168,7 +169,7 @@ export default function ProposalEditor() {
   const { wallet } = useAccount()
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
-  const buttonsDisabled = !address || signingStatus === 'loading'
+  const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
 
   const buildProposal = (status: ProposalStatus) => {
     return {
@@ -281,35 +282,58 @@ export default function ProposalEditor() {
             />
           </div>
           <div className="py-0 rounded-[20px] flex flex-col md:flex-row justify-between gap-4">
-            <ProposalTitleInput
-              value={proposalTitle}
-              onChange={(s) => {
-                setProposalTitle(s)
-                console.debug('setProposalTitle', s)
-                const cache = proposalCache || {
-                  body: loadedProposal?.body || TEMPLATE,
-                }
-                setProposalCache({
-                  ...cache,
-                  title: s,
-                  timestamp: getUnixTime(new Date()),
-                })
-              }}
-            />
-            <EditorMarkdownUpload setMarkdown={setMarkdown} />
+            <div className={`${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+              <ProposalTitleInput
+                value={proposalTitle}
+                onChange={(s) => {
+                  if (isUploadingImage) return // Prevent changes during upload
+                  setProposalTitle(s)
+                  console.debug('setProposalTitle', s)
+                  const cache = proposalCache || {
+                    body: loadedProposal?.body || TEMPLATE,
+                  }
+                  setProposalCache({
+                    ...cache,
+                    title: s,
+                    timestamp: getUnixTime(new Date()),
+                  })
+                }}
+              />
+            </div>
+            <div className={`${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+              <EditorMarkdownUpload setMarkdown={setMarkdown} />
+            </div>
           </div>
-          <div className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50%">
+                    <div className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50% relative">
             <NanceEditor
               initialValue={loadedProposal?.body || TEMPLATE}
               fileUploadExternal={async (val) => {
-                const res = await pinBlobOrFile(val)
-                return res.url
+                try {
+                  setIsUploadingImage(true)
+                  const res = await pinBlobOrFile(val)
+                  return res.url
+                } finally {
+                  setIsUploadingImage(false)
+                }
               }}
               darkMode={true}
               onEditorChange={(m) => {
                 saveProposalBodyCache()
               }}
             />
+            
+            {/* Image Upload Loading Overlay */}
+            {isUploadingImage && (
+              <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 rounded-b-[0px]">
+                <img
+                  src="/assets/MoonDAO-Loading-Animation.svg"
+                  alt="Uploading..."
+                  className="w-16 h-16 mb-4"
+                />
+                <p className="text-white text-lg font-medium">Uploading image...</p>
+                <p className="text-gray-300 text-sm mt-2">Please wait, do not close this window</p>
+              </div>
+            )}
           </div>
 
           <div className="p-5 rounded-b-[20px] rounded-t-[0px] ">
@@ -370,6 +394,8 @@ export default function ProposalEditor() {
                 data-tip={
                   signingStatus === 'loading'
                     ? 'Signing...'
+                    : isUploadingImage
+                    ? 'Uploading image...'
                     : 'You need to connect wallet first.'
                 }
               >
@@ -393,6 +419,8 @@ export default function ProposalEditor() {
                 data-tip={
                   signingStatus === 'loading'
                     ? 'Signing...'
+                    : isUploadingImage
+                    ? 'Uploading image...'
                     : 'You need to connect wallet first.'
                 }
               >
