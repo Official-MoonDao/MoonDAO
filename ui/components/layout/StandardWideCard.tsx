@@ -67,8 +67,8 @@ export default function StandardWideCard({
               <div className="relative flex flex-col lg:flex-row gap-4 items-center">
                 {/* Image section */}
                 {(image || orgimage) && (
-                  <div className="relative w-full h-full md:w-[200px] md:h-[200px]">
-                    <div className="relative w-full h-full md:w-[200px] md:h-[200px] md:rounded-full overflow-hidden bg-gray-300 flex-shrink-0">
+                  <div className="relative w-full h-full md:w-[275px] md:h-[275px] md:mx-8">
+                    <div className="relative w-full h-full md:w-[275px] md:h-[275px] md:rounded-full overflow-hidden bg-gray-300 flex-shrink-0">
                       {image ? (
                         typeof image !== 'string' ||
                         image?.startsWith('blob:') ? (
@@ -104,9 +104,9 @@ export default function StandardWideCard({
                       <Image
                         src={secondaryImage}
                         alt={title || ''}
-                        width={200}
-                        height={200}
-                        className="absolute -bottom-12 left-0 md:-bottom-14 md:left-14 rounded-full scale-75 md:scale-50 z-[100]"
+                        width={250}
+                        height={250}
+                        className="absolute -bottom-12 left-0 md:-bottom-20 md:left-24 rounded-full scale-75 md:scale-50 z-[100]"
                       />
                     )}
                   </div>

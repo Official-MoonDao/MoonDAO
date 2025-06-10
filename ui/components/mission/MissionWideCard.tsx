@@ -107,11 +107,11 @@ export default function MissionWideCard({
         title={mission?.metadata?.name}
         subheader={mission?.metadata?.tagline}
         stats={
-          <div className="w-full flex flex-col gap-4">
+          <div className="w-full flex flex-col">
             {}
-            <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <div className="w-full grid grid-cols-1 md:grid-cols-3  items-center">
               {!onlyGoalStat && (
-                <div>
+                <div className="w-full flex flex-col gap-4 col-span-3">
                   {ethPrice && (
                     <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex-col">
                       <div className="flex items-center md:min-w-[200px]">
@@ -135,27 +135,18 @@ export default function MissionWideCard({
                       ).toLocaleString()} USD)`}</p>
                     </div>
                   )}
+                  {!onlyGoalStat && (
+                    <div className="w-full">
+                      <MissionFundingProgressBar
+                        fundingGoal={fundingGoal || 0}
+                        volume={0.12}
+                        compact={compact}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
               <div />
-              {!onlyGoalStat && (
-                <div className="flex items-center md:justify-center">
-                  <Image
-                    src="/assets/icon-backers.svg"
-                    alt="Backers"
-                    width={24}
-                    height={24}
-                  />
-                  <div className="mx-2">
-                    <p className="sm:hidden text-gray-400 text-sm">
-                      CONTRIBUTIONS
-                    </p>
-                    <p className="text-white font-GoodTimes">
-                      {subgraphData?.paymentsCount || 0}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
             <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
               <div className={`${onlyGoalStat ? 'col-span-3' : 'col-span-1'}`}>
@@ -175,38 +166,42 @@ export default function MissionWideCard({
               <div>
                 {duration && (
                   <MissionStat
-                    label="Deadline"
-                    value={duration}
-                    icon={'/assets/launchpad/clock.svg'}
+                    label={duration === 'PASSED' ? 'Status' : 'Deadline'}
+                    value={
+                      duration === 'PASSED' && stage === 3
+                        ? 'Refunded'
+                        : duration === 'PASSED'
+                        ? 'Launched'
+                        : duration
+                    }
+                    icon={
+                      duration === 'PASSED'
+                        ? '/assets/launchpad/status-icon.svg'
+                        : '/assets/launchpad/clock.svg'
+                    }
                   />
                 )}
               </div>
-              <div className="flex md:justify-center">
-                {learnMore && (
-                  <StandardButton
-                    className="gradient-2 rounded-full"
-                    hoverEffect={false}
-                    onClick={(e: any) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      router.push(`/mission/${mission.id}`)
-                    }}
-                  >
-                    Learn More
-                  </StandardButton>
-                )}
-              </div>
+              <MissionStat
+                label="Contributions"
+                value={subgraphData?.paymentsCount || 0}
+                icon="/assets/icon-backers.svg"
+              />
+              {learnMore && (
+                <StandardButton
+                  className="gradient-2 rounded-full"
+                  hoverEffect={false}
+                  onClick={(e: any) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    router.push(`/mission/${mission.id}`)
+                  }}
+                >
+                  Learn More
+                </StandardButton>
+              )}
             </div>
-            {!onlyGoalStat && (
-              <div className="mt-4 w-4/5">
-                <MissionFundingProgressBar
-                  fundingGoal={fundingGoal || 0}
-                  volume={subgraphData?.volume / 1e18 || 0}
-                  compact={compact}
-                  stage={stage}
-                />
-              </div>
-            )}
+
             {contribute && mission.projectId && (
               <StandardButton
                 className="mt-4 gradient-2 rounded-full"
