@@ -243,7 +243,7 @@ export default function TeamMarketplaceListingModal({
             const teamName = team?.metadata.name as string
             sendDiscordMessage(
               'networkNotifications',
-              `[**${teamName}** has ${
+              `## [**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
               } listing ](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
                 teamName
