@@ -182,7 +182,7 @@ export default function TeamJobModal({
             const teamName = team?.metadata.name as string
             sendDiscordMessage(
               'networkNotifications',
-              `[**${teamName}** has ${
+              `## [**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
               } job](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
                 teamName
