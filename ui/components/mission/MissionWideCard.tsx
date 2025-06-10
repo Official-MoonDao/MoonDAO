@@ -139,7 +139,7 @@ export default function MissionWideCard({
                     <div className="w-full">
                       <MissionFundingProgressBar
                         fundingGoal={fundingGoal || 0}
-                        volume={0.12}
+                        volume={subgraphData?.volume / 1e18 || 0}
                         compact={compact}
                       />
                     </div>
