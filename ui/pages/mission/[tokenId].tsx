@@ -86,6 +86,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   const [teamNFT, setTeamNFT] = useState<any>()
 
+  const [availableTokens, setAvailableTokens] = useState<string>('Loading...')
+  const [availablePayouts, setAvailablePayouts] = useState<string>('Loading...')
+
   const hatsContract = useContract({
     address: HATS_ADDRESS,
     abi: HatsABI,
@@ -207,6 +210,67 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
     )
   }, [ruleset])
+
+  useEffect(() => {
+    async function fetchAvailableAmounts() {
+      if (!jbTerminalContract || !mission?.projectId) return
+
+      try {
+        // Get available payouts
+        const storeAddress: any = await readContract({
+          contract: jbTerminalContract,
+          method: 'STORE' as string,
+          params: [],
+        })
+
+        const jbTerminalStoreContract = getContract({
+          client: serverClient,
+          address: storeAddress,
+          abi: IJBTerminalStoreABI.abi as any,
+          chain: selectedChain,
+        })
+
+        const balance: any = await readContract({
+          contract: jbTerminalStoreContract,
+          method: 'balanceOf' as string,
+          params: [jbTerminalContract.address, mission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+        })
+
+        if (balance === 0) {
+          setAvailablePayouts('No payouts to send')
+        } else {
+          setAvailablePayouts(`${(balance / 1e18).toFixed(4)} ETH`)
+        }
+
+        // Get available reserved tokens
+        const reservedTokenBalance: any = await readContract({
+          contract: jbControllerContract,
+          method: 'reservedTokenBalanceOf' as string,
+          params: [mission.projectId],
+        })
+
+        if (reservedTokenBalance === 0) {
+          setAvailableTokens('No tokens to send')
+        } else {
+          setAvailableTokens(`${(reservedTokenBalance / 1e18).toFixed(0)} Tokens`)
+        }
+      } catch (err: any) {
+        if (err?.message?.includes('store')) {
+          setAvailablePayouts('Contract not accessible')
+        } else if (err?.message?.includes('balance')) {
+          setAvailablePayouts('Cannot check ETH balance')
+        } else if (err?.message?.includes('token')) {
+          setAvailableTokens('Cannot check token balance')
+        } else {
+          setAvailableTokens('No tokens to send')
+          setAvailablePayouts('No payouts to send')
+        }
+        console.error('Error fetching available amounts:', err)
+      }
+    }
+
+    fetchAvailableAmounts()
+  }, [jbTerminalContract, jbControllerContract, mission?.projectId])
 
   const sendReservedTokens = async () => {
     if (!account) return
@@ -489,20 +553,30 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     </div>
                   )}
                     {/* Send payouts and tokens Buttons - only shown to managers */}
-                    {account && isManager &&(
+                    {account && isManager && (
                       <div className="flex flex-col sm:flex-row gap-2 mt-4 w-full sm:w-auto sm:absolute sm:right-0.5 sm:top-[250px]">
-                        <PrivyWeb3Button
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding text-sm leading-none flex-1 sm:w-[175px]"
-                          label={<span className="whitespace-nowrap">Send Tokens</span>}
-                          action={sendReservedTokens}
-                        />
-                        <PrivyWeb3Button
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding text-sm leading-none flex-1 sm:w-[175px]"
-                          label={<span className="whitespace-nowrap">Send Payouts</span>}
-                          action={sendPayouts}
-                        />
+                        <Tooltip
+                          text={`${availableTokens}`}
+                          buttonClassName="w-full bg-transparent"
+                        >
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding text-xs leading-none flex-1 sm:w-[180px]"
+                            label={<span className="whitespace-nowrap">Send Tokens</span>}
+                            action={sendReservedTokens}
+                          />
+                        </Tooltip>
+                        <Tooltip
+                          text={`${availablePayouts}`}
+                          buttonClassName="w-full bg-transparent"
+                        >
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding text-xs leading-none flex-1 sm:w-[180px]"
+                            label={<span className="whitespace-nowrap">Send Payouts</span>}
+                            action={sendPayouts}
+                          />
+                        </Tooltip>
                       </div>
                     )}
                 </div>
