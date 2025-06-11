@@ -1,17 +1,15 @@
 import FeeHook from 'const/abis/FeeHook.json'
 import { FEE_HOOK_ADDRESSES } from 'const/config'
-import { BigNumber, ethers } from 'ethers'
-import { useRouter } from 'next/router'
+import { BigNumber } from 'ethers'
 import React, { useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
-  simulateTransaction,
   sendAndConfirmTransaction,
+  readContract,
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -20,17 +18,14 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
-import Asset from '@/components/dashboard/treasury/balance/Asset'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
-export default function Withdraw() {
+export default function Fees() {
   useChainDefault()
-  const router = useRouter()
 
   const account = useActiveAccount()
   const address = account?.address
-  const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -42,56 +37,81 @@ export default function Withdraw() {
   })
   const { isMobile } = useWindowSize()
 
-  const [withdrawableFees, setWithdrawableFees] = useState<BigNumber>(
-    BigNumber.from(0)
-  )
+  const WEEK = 7 * 24 * 60 * 60
+
+  const [isCheckedIn, setIsCheckedIn] = useState(false)
+  const [canDistribute, setCanDistribute] = useState(false)
 
   useEffect(() => {
-    const fetchWithdrawableFees = async () => {
+    const fetchStatus = async () => {
       if (!feeHookContract || !address) return
 
       try {
-        const withdrawTx = prepareContractCall({
+        const start = (await readContract({
           contract: feeHookContract,
-          method: 'withdrawFees' as string,
+          method: 'weekStart' as string,
           params: [],
-        })
-        const fees = await simulateTransaction({
-          transaction: withdrawTx,
-          account: account,
-        })
+        })) as bigint
 
-        setWithdrawableFees(BigNumber.from(fees))
+        const last = (await readContract({
+          contract: feeHookContract,
+          method: 'lastCheckIn' as string,
+          params: [address],
+        })) as bigint
+
+        setIsCheckedIn(BigNumber.from(last).eq(BigNumber.from(start)))
+        setCanDistribute(
+          Math.floor(Date.now() / 1000) >=
+            BigNumber.from(start).add(WEEK).toNumber()
+        )
       } catch (error) {
-        console.error('Error fetching withdrawable fees:', error)
+        console.error('Error fetching fee status:', error)
       }
     }
-    fetchWithdrawableFees()
+    fetchStatus()
   }, [feeHookContract, address])
 
-  const handleWithdrawFees = async () => {
+  const handleCheckIn = async () => {
     try {
       if (!account) throw new Error('No account found')
-      const withdrawTx = prepareContractCall({
+      const tx = prepareContractCall({
         contract: feeHookContract,
-        method: 'withdrawFees' as string,
+        method: 'checkIn' as string,
         params: [],
       })
-      const withdrawReceipt = await sendAndConfirmTransaction({
-        transaction: withdrawTx,
+      const receipt = await sendAndConfirmTransaction({
+        transaction: tx,
         account,
       })
-      if (withdrawReceipt) {
-        toast.success('Withdrawal submitted!', {
-          style: toastStyle,
-        })
-        setTimeout(() => {
-          router.reload()
-        }, 5000)
+      if (receipt) {
+        toast.success('Checked in!', { style: toastStyle })
+        setIsCheckedIn(true)
       }
     } catch (error) {
-      console.error('Error withdrawing:', error)
-      toast.error('Error withdrawing. Please try again.', {
+      console.error('Error checking in:', error)
+      toast.error('Error checking in. Please try again.', { style: toastStyle })
+    }
+  }
+
+  const handleDistributeFees = async () => {
+    try {
+      if (!account) throw new Error('No account found')
+      const tx = prepareContractCall({
+        contract: feeHookContract,
+        method: 'distributeFees' as string,
+        params: [],
+      })
+      const receipt = await sendAndConfirmTransaction({
+        transaction: tx,
+        account,
+      })
+      if (receipt) {
+        toast.success('Fees distributed!', { style: toastStyle })
+        setCanDistribute(false)
+      }
+    } catch (error) {
+      console.error('Error distributing fees:', error)
+      toast.error('Error distributing fees. Please try again.', {
         style: toastStyle,
       })
     }
@@ -100,41 +120,33 @@ export default function Withdraw() {
   return (
     <>
       <WebsiteHead
-        title={'Withdraw'}
-        description={'Withdraw liquidity fees.'}
+        title={'Liquidity Rewards'}
+        description={'Check in weekly and distribute accrued fees.'}
       />
       <section className="w-[calc(100vw-20px)]">
         <Container>
           <ContentLayout
-            header={'Withdraw Rewards'}
+            header={'Liquidity Rewards'}
             headerSize="max(20px, 3vw)"
-            description={'Withdraw liquidity fees.'}
+            description={'Manage weekly fee distribution.'}
             preFooter={<NoticeFooter />}
             mainPadding
             isProfile
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full">
-              <section
-                className={`py-4 mt-8 flex flex-col ${isMobile ? '' : 'w-1/3'}`}
-              >
-                <Asset
-                  name="ETH"
-                  amount={parseFloat(
-                    ethers.utils.formatEther(withdrawableFees)
-                  ).toFixed(5)}
-                  usd={(
-                    parseFloat(ethers.utils.formatEther(withdrawableFees)) *
-                    ethPrice
-                  ).toFixed(2)}
-                />
-              </section>
+            <div className="mt-3 w-full flex flex-col gap-4">
               <PrivyWeb3Button
-                action={handleWithdrawFees}
-                label="Withdraw Fees"
-                className="mt-2 rounded-[5vmax] rounded-tl-[20px]"
-                isDisabled={!withdrawableFees.gt(0) || !address}
+                action={handleCheckIn}
+                label={isCheckedIn ? 'Checked In' : 'Check In'}
+                className="rounded-[5vmax] rounded-tl-[20px]"
+                isDisabled={!address || isCheckedIn}
+              />
+              <PrivyWeb3Button
+                action={handleDistributeFees}
+                label="Distribute Fees"
+                className="rounded-[5vmax] rounded-tl-[20px]"
+                isDisabled={!canDistribute}
               />
             </div>
           </ContentLayout>
