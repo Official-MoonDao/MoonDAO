@@ -160,8 +160,8 @@ export default function Fees() {
             <SectionCard>
               <div className="mt-3 w-[25vw] flex flex-col gap-4">
                 <div className="mb-2">
-                  <div className="text-lg font-semibold">
-                    Rewards available this week:
+                  <div className="text-xl font-GoodTimes opacity-80">
+                    Rewards This Week :
                   </div>
                   <Asset
                     name="ETH"
@@ -174,7 +174,7 @@ export default function Fees() {
                         : 'Loading...'
                     }
                   />
-                  <div className="text-lg font-semibold">
+                  <div className="mt-4 opacity-75">
                     {checkedInCount !== null
                       ? checkedInCount > 0
                         ? checkedInCount === 1
@@ -187,13 +187,13 @@ export default function Fees() {
                 <PrivyWeb3Button
                   action={handleCheckIn}
                   label={isCheckedIn ? 'Checked In' : 'Check In'}
-                  className="rounded-[5vmax] rounded-tl-[20px]"
+                  className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
                   isDisabled={!address || isCheckedIn}
                 />
                 <PrivyWeb3Button
                   action={handleDistributeFees}
                   label="Distribute Fees"
-                  className="rounded-[5vmax] rounded-tl-[20px]"
+                  className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
                   isDisabled={!canDistribute}
                 />
               </div>
