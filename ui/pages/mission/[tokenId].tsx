@@ -246,7 +246,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       const tx = prepareContractCall({
         contract: jbTerminalContract,
         method: 'sendPayoutsOf' as string,
-        params: [mission.projectId, JB_NATIVE_TOKEN_ADDRESS, balance, 61166, 0],
+        params: [mission.projectId, JB_NATIVE_TOKEN_ADDRESS, balance, 61166, 0], // 61166 is the Memo ID for project payout transactions
       })
 
       await sendAndConfirmTransaction({ transaction: tx, account })
