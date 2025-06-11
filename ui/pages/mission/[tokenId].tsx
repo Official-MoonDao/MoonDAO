@@ -543,6 +543,23 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       </Link>
                     </div>
                   )}
+                  {/* Buttons container */}
+                  {account && isManager && (  // Added isManager check here
+                    <div className="absolute right-8 top-[250px] flex flex-col items-end gap-2 w-[200px]">
+                      <PrivyWeb3Button
+                        requiredChain={DEFAULT_CHAIN_V5}
+                        className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
+                        label={<span className="whitespace-nowrap">Send Reserved Tokens</span>}
+                        action={sendReservedTokens}
+                      />
+                      <PrivyWeb3Button
+                        requiredChain={DEFAULT_CHAIN_V5}
+                        className="gradient-2 rounded-full noPadding text-sm leading-none w-full"
+                        label={<span className="whitespace-nowrap">Send Payouts</span>}
+                        action={sendPayouts}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
