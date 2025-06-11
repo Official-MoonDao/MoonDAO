@@ -160,11 +160,12 @@ export function CreateMissionStage({
               className="gradient-2 rounded-full"
               hoverEffect={false}
               onClick={async () => {
-                if (!account) {
+                const isTestEnv = process.env.NEXT_PUBLIC_TEST_ENV === 'true'
+                if (!account && !isTestEnv) {
                   login()
                   return
                 }
-                if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+                if (isTestEnv) {
                   setStage((prev: number) => prev + 1)
                 } else {
                   if ((await action()) === true) {
@@ -435,11 +436,16 @@ export default function CreateMission({
   useEffect(() => {
     async function getTeamNFT() {
       if (selectedTeamId === undefined) return
-      const nft = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(selectedTeamId),
-      })
-      setSelectedTeamNFT(nft)
+      try {
+        const nft = await getNFT({
+          contract: teamContract,
+          tokenId: BigInt(selectedTeamId),
+        })
+        setSelectedTeamNFT(nft)
+      } catch (err) {
+        console.error(err)
+        setSelectedTeamNFT(undefined)
+      }
     }
     if (selectedTeamId !== undefined && teamContract) getTeamNFT()
     else setSelectedTeamNFT(undefined)
@@ -729,8 +735,8 @@ export default function CreateMission({
                       value={formattedFundingGoal}
                       onChange={(e: any) => {
                         const value = e.target.value
-                        // Remove any commas from the input for storage
-                        const rawValue = value.replace(/,/g, '')
+                        // Remove any commas and dollar signs from the input for storage
+                        const rawValue = value.replace(/[,$]/g, '')
                         setMissionData({
                           ...missionData,
                           fundingGoal: rawValue,
@@ -739,7 +745,9 @@ export default function CreateMission({
                         if (rawValue) {
                           const numValue = parseFloat(rawValue)
                           if (!isNaN(numValue)) {
-                            setFormattedFundingGoal(numValue.toLocaleString())
+                            setFormattedFundingGoal(
+                              `$${numValue.toLocaleString()}`
+                            )
                           }
                         } else {
                           setFormattedFundingGoal('') // Allow empty value
@@ -748,7 +756,7 @@ export default function CreateMission({
                       disabled={false}
                       mode="dark"
                       tooltip="How much would you like to raise? Set something ambitious but achievable while accounting for the 20% set aside of the total raise. We will automatically convert the US Dollar amount into Ethereum, the native currency of the Launchpad."
-                      maxLength={14}
+                      maxLength={15}
                       extra={
                         <div className="w-full">
                           <p className="opacity-60">
@@ -862,7 +870,10 @@ export default function CreateMission({
                   >
                     Restore Template
                   </StandardButton>
-                  <div id="mission-description-editor" className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50% relative">
+                  <div
+                    id="mission-description-editor"
+                    className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50% relative"
+                  >
                     <NanceEditor
                       initialValue={
                         missionData.description.length === 0
@@ -890,8 +901,12 @@ export default function CreateMission({
                           alt="Uploading..."
                           className="w-16 h-16 mb-4"
                         />
-                        <p className="text-white text-lg font-medium">Uploading image...</p>
-                        <p className="text-gray-300 text-sm mt-2">Please wait, do not close this window</p>
+                        <p className="text-white text-lg font-medium">
+                          Uploading image...
+                        </p>
+                        <p className="text-gray-300 text-sm mt-2">
+                          Please wait, do not close this window
+                        </p>
                       </div>
                     )}
                   </div>

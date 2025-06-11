@@ -5,7 +5,7 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 export const DEPLOYED_ORIGIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://moondao.com'
-    : 'https://moondao-ce-demo.netlify.app'
+    : 'https://moondao-git-ng-safe-send-moondao.vercel.app'
 
 interface DeploymentConfig {
   MOONEYToken: string
