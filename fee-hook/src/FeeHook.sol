@@ -25,9 +25,6 @@ contract FeeHook is BaseHook, Ownable {
     using StateLibrary for IPoolManager;
     using Strings for uint256;
 
-    mapping(address => uint256) public totalWithdrawnPerUser;
-    uint256 public totalWithdrawn;
-    uint256 public totalReceived;
     bytes32[] public poolIds; // Pools created with this hook
     bytes32[] public transferredPoolIds; // Pools transferred to other addresses
     mapping(PoolId => uint256) public uncollectedFees; // Uncollected fees for each LP position
@@ -35,24 +32,21 @@ contract FeeHook is BaseHook, Ownable {
     IPositionManager posm;
     uint256 public minWithdraw = 0.01 ether;
     address public vMooneyAddress;
+    uint256 public totalReceived;
 
-    mapping(address => uint256) public balanceTimeWeighted;
-    mapping(address => uint256) public lastBalanceUpdate;
-    uint256 public supplyTimeWeighted;
-    uint256 public lastSupplyUpdate;
-    uint256 public contractDeploymentTime;
-    // Event to log responses
-    event Withdraw(
-        uint256 totalSupply,
-        uint256 userBalance,
-        address user,
-        uint256 withdrawAmount
-    );
+    // Weekly check-in state
+    uint256 public weekStart;
+    address[] public checkedIn;
+    mapping(address => uint256) public lastCheckIn;
+    uint256 constant WEEK = 7 days;
+
+    event CheckedIn(address indexed user, uint256 weekStart);
+    event FeesDistributed(uint256 amount);
 
     constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _vMooneyAddress) BaseHook(_poolManager) Ownable(owner) {
         posm = _posm;
         vMooneyAddress = _vMooneyAddress;
-        contractDeploymentTime = block.timestamp;
+        weekStart = block.timestamp;
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
@@ -139,38 +133,41 @@ contract FeeHook is BaseHook, Ownable {
         PositionManager(payable(address(posm))).safeTransferFrom(address(this), to, tokenId, "");
     }
 
-    function withdrawFees() external returns (uint256) {
-        address withdrawAddress = msg.sender;
-        uint256 totalSupply = IERC20(vMooneyAddress).totalSupply();
-        uint256 userBalance = IERC20(vMooneyAddress).balanceOf(msg.sender);
-        require(totalSupply > 0, "Total supply is zero");
-        require(userBalance > 0, "User balance is zero");
-        uint256 ts = block.timestamp;
-        if (lastSupplyUpdate == 0) {
-            lastSupplyUpdate = contractDeploymentTime;
+    /// @notice Mark the caller as participating in the current week
+    function checkIn() external {
+        require(block.timestamp < weekStart + WEEK, "Week over");
+        if (lastCheckIn[msg.sender] < weekStart) {
+            lastCheckIn[msg.sender] = weekStart;
+            checkedIn.push(msg.sender);
+            emit CheckedIn(msg.sender, weekStart);
         }
-        supplyTimeWeighted += totalSupply * (ts - lastSupplyUpdate);
-        lastSupplyUpdate = ts;
+    }
 
-        if (lastBalanceUpdate[withdrawAddress] == 0) {
-            lastBalanceUpdate[withdrawAddress] = contractDeploymentTime;
+    /// @notice Distribute all accrued fees to checked in users
+    function distributeFees() external {
+        require(block.timestamp >= weekStart + WEEK, "Week not finished");
+        uint256 length = checkedIn.length;
+        require(length > 0, "No checkins");
+
+        uint256 total;
+        for (uint256 i = 0; i < length; i++) {
+            total += IERC20(vMooneyAddress).balanceOf(checkedIn[i]);
         }
-        balanceTimeWeighted[withdrawAddress] += userBalance * (ts - lastBalanceUpdate[withdrawAddress]);
-        lastBalanceUpdate[withdrawAddress] = ts;
+        require(total > 0, "No balance");
 
-        require(supplyTimeWeighted > 0, "No supply history");
-        uint256 userProportion = (balanceTimeWeighted[withdrawAddress] * 1e18) / supplyTimeWeighted;
-        uint256 allocated = (userProportion * totalReceived) / 1e18;
-        uint256 withdrawnByUser = totalWithdrawnPerUser[withdrawAddress];
-        uint256 withdrawAmount = allocated - withdrawnByUser;
-        require(withdrawAmount > 0, "Nothing to withdraw");
-        totalWithdrawnPerUser[withdrawAddress] += withdrawAmount;
-        totalWithdrawn += withdrawAmount;
-        transferETH(withdrawAddress, withdrawAmount);
+        uint256 fees = address(this).balance;
+        uint256 remaining = fees;
+        for (uint256 i = 0; i < length; i++) {
+            address user = checkedIn[i];
+            uint256 bal = IERC20(vMooneyAddress).balanceOf(user);
+            uint256 share = (i == length - 1) ? remaining : (fees * bal) / total;
+            if (share > 0) transferETH(user, share);
+            remaining -= share;
+        }
 
-        // Emit an event to log the response
-        emit Withdraw(totalSupply, userBalance, withdrawAddress, withdrawAmount);
-        return withdrawAmount;
+        delete checkedIn;
+        weekStart = block.timestamp;
+        emit FeesDistributed(fees);
     }
 
     function transferETH(address to, uint256 amount) internal {
