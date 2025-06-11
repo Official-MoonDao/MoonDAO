@@ -74,8 +74,7 @@ export async function getStaticProps() {
     const pastProjects = []
     for (let i = 0; i < projects.length; i++) {
       if (!blockedProjects.includes(i)) {
-        const current =
-          projects[i].quarter === quarter && projects[i].year === year
+        const current = projects[i].active
         if (!current) {
           pastProjects.push(projects[i])
         } else {
