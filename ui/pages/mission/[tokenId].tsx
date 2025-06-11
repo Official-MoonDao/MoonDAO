@@ -214,10 +214,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         params: [mission.projectId],
       })
       await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Reserved tokens sent')
+      toast.success('Reserved tokens sent.')
     } catch (err) {
       console.error(err)
-      toast.error('Failed to send reserved tokens')
+      toast.error('Failed to send reserved tokens.')
     }
   }
 
@@ -250,10 +250,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       })
 
       await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Payouts sent')
+      toast.success('Payouts sent.')
     } catch (err) {
       console.error(err)
-      toast.error('Failed to send payouts')
+      toast.error('Failed to send payouts.')
     }
   }
 
