@@ -191,7 +191,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         tokenId: BigInt(mission.teamId),
         includeOwner: true,
       })
-      setTeamNFT(teamNFT)
+      setTeamNFT({
+        ...teamNFT,
+        metadata: { ...teamNFT.metadata, id: teamNFT.id.toString() },
+      })
     }
 
     getTeamNFT()
