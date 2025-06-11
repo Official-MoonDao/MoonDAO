@@ -139,7 +139,7 @@ contract FeeHookTest is Test, Config, Constants {
         uint256 balanceBefore = address(deployerAddress).balance;
         uint256 withdrawableAmount = SWAP_AMOUNT * FEE / FEE_DENOMINATOR;
         feeHook.checkIn();
-        skip(7 days);
+        skip(6 days);
         feeHook.distributeFees();
         uint256 balanceAfter = address(deployerAddress).balance;
         assertEq(balanceAfter - balanceBefore, withdrawableAmount);
@@ -170,7 +170,7 @@ contract FeeHookTest is Test, Config, Constants {
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1, ActionConstants.MSG_SENDER);
         posm.modifyLiquidities(
             abi.encode(actions, params),
-            block.timestamp + 20
+            block.timestamp + 30 days
         );
     }
 
