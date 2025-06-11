@@ -485,8 +485,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       </Link>
                     </div>
                   )}
-                    {/* Admin Buttons - only shown to managers */}
-                    {account && (
+                    {/* Send payouts and tokens Buttons - only shown to managers */}
+                    {account && isManager &&(
                       <div className="flex flex-col sm:flex-row gap-2 mt-4 w-full sm:w-auto sm:absolute sm:right-0.5 sm:top-[250px]">
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
