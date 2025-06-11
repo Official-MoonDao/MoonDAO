@@ -81,7 +81,9 @@ export default function Fees() {
 
         setIsCheckedIn(BigNumber.from(last).eq(BigNumber.from(start)))
         setCheckedInCount(checkedInCount ? Number(checkedInCount) : 0)
-        setFeesAvailable(balance ? ethers.utils.formatEther(balance) : '0')
+        setFeesAvailable(
+          balance ? ethers.utils.formatEther(Number(balance)) : '0'
+        )
         setCanDistribute(
           Math.floor(Date.now() / 1000) >=
             BigNumber.from(start).add(WEEK).toNumber()
