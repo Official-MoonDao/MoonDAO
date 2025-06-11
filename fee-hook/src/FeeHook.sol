@@ -143,6 +143,14 @@ contract FeeHook is BaseHook, Ownable {
         }
     }
 
+    function getCheckedInCount() external view returns (uint256) {
+        return checkedIn.length;
+    }
+
+    function balanceOf() external view returns (uint256) {
+        return address(this).balance;
+    }
+
     /// @notice Distribute all accrued fees to checked in users
     function distributeFees() external {
         require(block.timestamp >= weekStart + WEEK, "Week not finished");
