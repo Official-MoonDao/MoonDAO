@@ -47,17 +47,17 @@ export default function Fees() {
       if (!feeHookContract || !address) return
 
       try {
-        const start = (await readContract({
+        const start = await readContract({
           contract: feeHookContract,
           method: 'weekStart' as string,
           params: [],
-        })) as bigint
+        })
 
-        const last = (await readContract({
+        const last = await readContract({
           contract: feeHookContract,
           method: 'lastCheckIn' as string,
           params: [address],
-        })) as bigint
+        })
 
         setIsCheckedIn(BigNumber.from(last).eq(BigNumber.from(start)))
         setCanDistribute(
