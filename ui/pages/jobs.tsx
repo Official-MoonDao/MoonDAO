@@ -92,9 +92,9 @@ export default function Jobs({ jobs }: JobsProps) {
           isProfile
         >
           {citizen ? (
-            <CardGridContainer>
-              {filteredJobs &&
-                filteredJobs.map((job: JobType, i: number) => (
+            filteredJobs?.[0] ? (
+              <CardGridContainer>
+                {filteredJobs.map((job: JobType, i: number) => (
                   <Job
                     key={`job-${i}`}
                     job={job}
@@ -102,7 +102,12 @@ export default function Jobs({ jobs }: JobsProps) {
                     teamContract={teamContract}
                   />
                 ))}
-            </CardGridContainer>
+              </CardGridContainer>
+            ) : (
+              <div className="mt-4 w-full h-[400px] flex justify-center items-center">
+                <p className="">No jobs found.</p>
+              </div>
+            )
           ) : (
             <>
               <p className="">
