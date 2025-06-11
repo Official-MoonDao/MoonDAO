@@ -138,12 +138,14 @@ contract FeeHookTest is Test, Config, Constants {
         // FIXME uncomment after local chainlink integration
         uint256 balanceBefore = address(deployerAddress).balance;
         uint256 withdrawableAmount = SWAP_AMOUNT * FEE / FEE_DENOMINATOR;
-        feeHook.withdrawFees();
+        feeHook.checkIn();
+        skip(7 days);
+        feeHook.distributeFees();
         uint256 balanceAfter = address(deployerAddress).balance;
         assertEq(balanceAfter - balanceBefore, withdrawableAmount);
 
-        vm.expectRevert("Nothing to withdraw");
-        feeHook.withdrawFees();
+        vm.expectRevert("Week not finished");
+        feeHook.distributeFees();
 
 
         // transfer the position back to the deployer to allow closing the position
