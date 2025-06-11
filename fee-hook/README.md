@@ -19,9 +19,6 @@ forge script script/Anvil.s.sol --rpc-url localhost:8545 --private-key <PK> --br
 
 ## Testnet Deployment
 ```
-# Deploy a mock vMOONEY contract, 1 per chain
-PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/FakeERC20.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vvvv
-
 # Deploy the FeeHook contract, 1 per chain
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/FeeHook.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir --optimize --optimizer-runs 2000 --delay 10 --retries 10
 # Update FEE_HOOK_ADDRESSES and TEST_TOKEN_ADDRESSES for each chain in Config.sol

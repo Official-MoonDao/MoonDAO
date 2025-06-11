@@ -3,10 +3,14 @@ import { FEE_HOOK_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
 import React, { useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import SectionCard from '@/components/layout/SectionCard'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
+import Asset from '@/components/dashboard/treasury/balance/Asset'
 import {
   prepareContractCall,
   sendAndConfirmTransaction,
   readContract,
+  getContract,
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
@@ -20,6 +24,7 @@ import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import { ethers } from 'ethers'
 
 export default function Fees() {
   useChainDefault()
@@ -36,11 +41,14 @@ export default function Fees() {
     chain: selectedChain,
   })
   const { isMobile } = useWindowSize()
+  const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   const WEEK = 7 * 24 * 60 * 60
 
   const [isCheckedIn, setIsCheckedIn] = useState(false)
   const [canDistribute, setCanDistribute] = useState(false)
+  const [checkedInCount, setCheckedInCount] = useState<number | null>(null)
+  const [feesAvailable, setFeesAvailable] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -59,7 +67,21 @@ export default function Fees() {
           params: [address],
         })
 
+        const checkedInCount = await readContract({
+          contract: feeHookContract,
+          method: 'getCheckedInCount' as string,
+          params: [],
+        })
+
+        const balance = await readContract({
+          contract: feeHookContract,
+          method: 'balanceOf' as string,
+          params: [],
+        })
+
         setIsCheckedIn(BigNumber.from(last).eq(BigNumber.from(start)))
+        setCheckedInCount(checkedInCount ? Number(checkedInCount) : 0)
+        setFeesAvailable(balance ? ethers.utils.formatEther(balance) : '0')
         setCanDistribute(
           Math.floor(Date.now() / 1000) >=
             BigNumber.from(start).add(WEEK).toNumber()
@@ -69,7 +91,7 @@ export default function Fees() {
       }
     }
     fetchStatus()
-  }, [feeHookContract, address])
+  }, [feeHookContract, address, isCheckedIn])
 
   const handleCheckIn = async () => {
     try {
@@ -128,27 +150,54 @@ export default function Fees() {
           <ContentLayout
             header={'Liquidity Rewards'}
             headerSize="max(20px, 3vw)"
-            description={'Manage weekly fee distribution.'}
+            description={'Get liquidity rewards by checking in weekly.'}
             preFooter={<NoticeFooter />}
             mainPadding
             isProfile
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full flex flex-col gap-4">
-              <PrivyWeb3Button
-                action={handleCheckIn}
-                label={isCheckedIn ? 'Checked In' : 'Check In'}
-                className="rounded-[5vmax] rounded-tl-[20px]"
-                isDisabled={!address || isCheckedIn}
-              />
-              <PrivyWeb3Button
-                action={handleDistributeFees}
-                label="Distribute Fees"
-                className="rounded-[5vmax] rounded-tl-[20px]"
-                isDisabled={!canDistribute}
-              />
-            </div>
+            <SectionCard>
+              <div className="mt-3 w-[25vw] flex flex-col gap-4">
+                <div className="mb-2">
+                  <div className="text-lg font-semibold">
+                    Rewards available this week:
+                  </div>
+                  <Asset
+                    name="ETH"
+                    amount={
+                      feesAvailable !== null ? feesAvailable : 'Loading...'
+                    }
+                    usd={
+                      feesAvailable !== null && ethPrice
+                        ? (Number(feesAvailable) * ethPrice).toFixed(2)
+                        : 'Loading...'
+                    }
+                  />
+                  <div className="text-lg font-semibold">
+                    {checkedInCount !== null
+                      ? checkedInCount > 0
+                        ? checkedInCount === 1
+                          ? '1 person has checked in this week!'
+                          : `${checkedInCount} people have checked in this week!`
+                        : 'No one has checked in yet!'
+                      : 'Loading...'}
+                  </div>
+                </div>
+                <PrivyWeb3Button
+                  action={handleCheckIn}
+                  label={isCheckedIn ? 'Checked In' : 'Check In'}
+                  className="rounded-[5vmax] rounded-tl-[20px]"
+                  isDisabled={!address || isCheckedIn}
+                />
+                <PrivyWeb3Button
+                  action={handleDistributeFees}
+                  label="Distribute Fees"
+                  className="rounded-[5vmax] rounded-tl-[20px]"
+                  isDisabled={!canDistribute}
+                />
+              </div>
+            </SectionCard>
           </ContentLayout>
         </Container>
       </section>
