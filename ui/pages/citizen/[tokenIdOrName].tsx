@@ -30,6 +30,7 @@ import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
+import { citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -579,7 +580,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
-  let nft, tokenId
+  let nft, tokenId: any
   if (tokenIdOrName === 'guest') {
     nft = {
       metadata: {
@@ -608,7 +609,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
+    const statement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
     const allCitizens = (await queryTable(chain, statement)) as any
 
     const { prettyLinks } = generatePrettyLinks(allCitizens, {
@@ -627,36 +628,27 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const citizenContract = getContract({
-      client: serverClient,
-      chain: chain,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      abi: CitizenABI as any,
-    })
+    const citizen = allCitizens.find((citizen: any) => citizen.id === tokenId)
 
-    nft = await getNFT({
-      contract: citizenContract,
-      tokenId: BigInt(tokenId),
-      includeOwner: true,
-    })
+    const nft = citizenRowToNFT(citizen)
 
     if (!nft || blockedCitizens.includes(Number(nft?.metadata?.id))) {
       return {
         notFound: true,
       }
     }
+
+    return {
+      props: {
+        nft,
+        tokenId,
+      },
+    }
   }
 
   return {
     props: {
-      nft: {
-        ...nft,
-        id: tokenId,
-        metadata: {
-          ...nft?.metadata,
-          id: tokenId,
-        },
-      },
+      nft,
       tokenId,
     },
   }
