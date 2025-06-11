@@ -21,6 +21,7 @@ export default function useMissionData({
 }: any) {
   const [fundingGoal, setFundingGoal] = useState(0)
   const [stage, setStage] = useState<MissionStage>()
+  const [backers, setBackers] = useState<any[]>([])
 
   const jbProjectData = useJBProjectData({
     projectId: mission?.projectId,
@@ -70,5 +71,26 @@ export default function useMissionData({
     return () => clearInterval(interval)
   }, [missionCreatorContract, mission?.id])
 
-  return { ...jbProjectData, fundingGoal, stage }
+  //Backers
+  useEffect(() => {
+    async function getBackers() {
+      const res = await fetch(
+        `/api/mission/backers?projectId=${mission?.projectId}`
+      )
+      const data = await res.json()
+      setBackers(data.backers)
+    }
+    if (mission?.projectId !== undefined) {
+      getBackers()
+    }
+
+    //Update backers every minute
+    const interval = setInterval(() => {
+      getBackers()
+    }, 60000)
+
+    return () => clearInterval(interval)
+  }, [mission?.projectId])
+
+  return { ...jbProjectData, fundingGoal, stage, backers }
 }
