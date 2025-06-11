@@ -6,9 +6,9 @@
 - Fee Hook uses [uniswap v4 hooks](https://docs.uniswap.org/contracts/v4/concepts/hooks) to automatically collect liquidity fees and distribute them to vMOONEY holders.
 - Pools are registered with the _beforeAddLiquidity callback.
 - After swaps, fees are automatically withdrawn once a threshold is hit.
-- vMOONEY holders can claim their fees using the withdrawFees function.
-- Withdraw amounts are calculated using the time weighted average of each
-  holder's vMOONEY balance.
+- vMOONEY holders must call `checkIn` each week to register for rewards.
+- After the week ends a single call to `distributeFees` pays out the accrued
+  fees proportionally to the checked in holders' current balances.
 
 ## Local Testing
 ```
