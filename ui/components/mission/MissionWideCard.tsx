@@ -1,9 +1,11 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import { daysUntilDate, formatTimeUntilDeadline } from '@/lib/utils/dates'
+import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '../layout/StandardButton'
 import StandardWideCard from '../layout/StandardWideCard'
@@ -32,6 +34,7 @@ export type MissionWideCardProps = {
   primaryTerminalAddress?: string
   compact?: boolean
   onClick?: () => void
+  onlyGoalStat?: boolean
 }
 
 export default function MissionWideCard({
@@ -52,15 +55,18 @@ export default function MissionWideCard({
   primaryTerminalAddress,
   compact,
   onClick,
+  onlyGoalStat,
 }: MissionWideCardProps) {
   const router = useRouter()
   const [payModalEnabled, setPayModalEnabled] = useState(false)
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
+  const { data: ethPrice } = useETHPrice(1)
+
   const duration = useMemo(() => {
-    return ruleset?.[0]?.duration
+    return ruleset?.[0]?.start
       ? formatTimeUntilDeadline(
-          new Date(ruleset?.[0]?.start * 1000 + ruleset?.[0]?.duration * 1000)
+          new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
         )
       : undefined
   }, [ruleset])
@@ -101,47 +107,103 @@ export default function MissionWideCard({
         title={mission?.metadata?.name}
         subheader={mission?.metadata?.tagline}
         stats={
-          <div className="w-full">
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 justify-between">
-              {duration && (
-                <MissionStat
-                  label="Deadline"
-                  value={duration}
-                  icon={'/assets/launchpad/clock.svg'}
-                />
+          <div className="w-full flex flex-col">
+            {}
+            <div className="w-full grid grid-cols-1 md:grid-cols-3  items-center">
+              {!onlyGoalStat && (
+                <div className="w-full flex flex-col gap-4 col-span-3">
+                  {ethPrice && (
+                    <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex-col">
+                      <div className="flex items-center md:min-w-[200px]">
+                        <Image
+                          src="/assets/icon-raised-tokens.svg"
+                          alt="Raised"
+                          width={24}
+                          height={24}
+                          className="mr-2"
+                        />
+                        <span className="mr-2">
+                          {truncateTokenValue(
+                            subgraphData?.volume / 1e18 || 0,
+                            'ETH'
+                          )}
+                        </span>
+                        <span className="text-sm md:text-base">ETH RAISED</span>
+                      </div>
+                      <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
+                        (subgraphData?.volume / 1e18 || 0) * ethPrice
+                      ).toLocaleString()} USD)`}</p>
+                    </div>
+                  )}
+                  {!onlyGoalStat && (
+                    <div className="w-full">
+                      <MissionFundingProgressBar
+                        fundingGoal={fundingGoal || 0}
+                        volume={subgraphData?.volume / 1e18 || 0}
+                        compact={compact}
+                      />
+                    </div>
+                  )}
+                </div>
               )}
-              {subgraphData?.volume !== undefined && (
-                <MissionStat
-                  label="Total Raised"
-                  value={'Ξ ' + subgraphData.volume / 1e18}
-                  icon={'/assets/launchpad/token.svg'}
-                />
-              )}
-              {token?.tradeable !== undefined && (
-                <MissionStat
-                  icon="/assets/launchpad/token.svg"
-                  label="Token"
-                  value={token?.tradeable ? 'Yes' : 'No'}
-                />
-              )}
-              <MissionStat
-                icon="/assets/target.png"
-                label="Goal"
-                value={`${
-                  fundingGoal
-                    ? truncateTokenValue(fundingGoal / 1e18, 'ETH')
-                    : 0
-                } ETH`}
-              />
+              <div />
             </div>
-            <div className="mt-4 w-4/5">
-              <MissionFundingProgressBar
-                fundingGoal={fundingGoal || 0}
-                volume={subgraphData?.volume / 1e18 || 0}
-                compact={compact}
-                stage={stage}
-              />
+            <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div className={`${onlyGoalStat ? 'col-span-3' : 'col-span-1'}`}>
+                <MissionStat
+                  icon="/assets/target.png"
+                  label="Goal"
+                  value={`${
+                    fundingGoal
+                      ? truncateTokenValue(fundingGoal / 1e18, 'ETH')
+                      : 0
+                  } ETH`}
+                  tooltip={`~ $${Math.round(
+                    (fundingGoal / 1e18) * ethPrice
+                  ).toLocaleString()} USD`}
+                />
+              </div>
+              <div>
+                {duration && (
+                  <MissionStat
+                    label={duration === 'PASSED' ? 'Status' : 'Deadline'}
+                    value={
+                      duration === 'PASSED' && stage === 3
+                        ? 'Refunded'
+                        : duration === 'PASSED'
+                        ? 'Launched'
+                        : duration
+                    }
+                    icon={
+                      duration === 'PASSED'
+                        ? '/assets/launchpad/status-icon.svg'
+                        : '/assets/launchpad/clock.svg'
+                    }
+                  />
+                )}
+              </div>
+              {!onlyGoalStat && (
+                <MissionStat
+                  label="Contributions"
+                  value={subgraphData?.paymentsCount || 0}
+                  icon="/assets/icon-backers.svg"
+                />
+              )}
+              {learnMore && (
+                <StandardButton
+                  className="gradient-2 rounded-full"
+                  hoverEffect={false}
+                  onClick={(e: any) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    router.push(`/mission/${mission.id}`)
+                  }}
+                >
+                  Learn More
+                </StandardButton>
+              )}
             </div>
+
             {contribute && mission.projectId && (
               <StandardButton
                 className="mt-4 gradient-2 rounded-full"
@@ -153,19 +215,6 @@ export default function MissionWideCard({
                 }}
               >
                 Contribute
-              </StandardButton>
-            )}
-            {learnMore && (
-              <StandardButton
-                className="mt-4 gradient-2 rounded-full"
-                hoverEffect={false}
-                onClick={(e: any) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  router.push(`/mission/${mission.id}`)
-                }}
-              >
-                Learn More
               </StandardButton>
             )}
           </div>
@@ -185,6 +234,7 @@ export default function MissionWideCard({
               : URL.createObjectURL(missionImage)
             : getIPFSGateway(mission?.metadata?.logoUri)
         }
+        secondaryImage={getIPFSGateway(teamNFT?.metadata?.image)}
         showMore={showMore}
         showMoreButton={showMoreButton}
         onClick={() => {

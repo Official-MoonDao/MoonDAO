@@ -44,7 +44,7 @@ import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrol
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
 
-const FEATURED_MISSION_INDEX = 0
+const FEATURED_MISSION_INDEX = 21
 
 export default function Launch({ missions }: any) {
   const router = useRouter()
@@ -220,10 +220,12 @@ export default function Launch({ missions }: any) {
                 muted
                 playsInline
               >
-                <source src="/assets/moondao-video-cropped-fade-left.mp4" type="video/mp4" />
+                <source
+                  src="/assets/moondao-video-cropped-fade-left.mp4"
+                  type="video/mp4"
+                />
               </video>
-              <div className="absolute inset-0 bg-gradient-to-tr md:bg-gradient-to-r w-full from-[10%] from-[#010618] to-transparent">
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-tr md:bg-gradient-to-r w-full from-[10%] from-[#010618] to-transparent"></div>
             </div>
             <div className="relative hidden 2xl:block w-full 2xl:flex 2xl:justify-end">
               <video
@@ -256,15 +258,15 @@ export default function Launch({ missions }: any) {
               <div
                 id="logo-and-graphics-container"
                 className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-center md:justify-center z-[1]"
-                >
+              >
                 <div
                   id="graphics-container"
                   className="md:h-full flex flex-col items-center justify-center md:pb-0"
-                  >                  
+                >
                   <div
                     id="desktop-tagline-container"
                     className="w-full justify-center items-center px-[2vw] md:px-[5vw]"
-                    >
+                  >
                     <Image
                       id="desktop-tagline"
                       className="w-[70vw] md:w-[max(50vw,500px)] h-auto md:w-[min(70vw,650px)]"
@@ -278,18 +280,15 @@ export default function Launch({ missions }: any) {
                     {'Launchpad'}
                   </h1>
                 </div>
-                
               </div>
-              
             </div>
-            
           </div>
         </div>
       </section>
       <section
         id="initial-callout-section"
         className="z-10 overflow-visible relative px-[5vw] flex flex-row items-center justify-center text-center pt-[5vw] md:pt-[2vw] lg:pt-[0px] pb-[2vw] lg:pb-[0px] md:pb-[2vw] gap-4 md:gap-4 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[20%] to-[#1B1C4B] to-[100%] md:to-[60%]"
-        >
+      >
         <div className="flex flex-row items-center gap-4">
           <Image
             id="spotlight-icon"
@@ -302,7 +301,7 @@ export default function Launch({ missions }: any) {
           <p
             id="callout"
             className="z-20 text-white font-GoodTimes text-[5vw] md:text-[max(2vw,35px)] leading-[6vw]"
-            >
+          >
             {'Mission Spotlight'}
           </p>
         </div>
@@ -756,7 +755,7 @@ export const getStaticProps: GetStaticProps = async () => {
       params: [],
     })
 
-    const statement = `SELECT * FROM ${missionTableName} LIMIT 10`
+    const statement = `SELECT * FROM ${missionTableName}`
 
     const missionRows = await queryTable(chain, statement)
 

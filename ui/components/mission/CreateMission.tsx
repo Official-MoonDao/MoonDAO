@@ -944,6 +944,7 @@ export default function CreateMission({
                     missionImage={missionLogoUri}
                     showMore={true}
                     showMoreButton={false}
+                    onlyGoalStat
                   />
                   <MissionTokenomicsExplainer />
                   <ConditionCheckbox

@@ -456,7 +456,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           height={24}
                         />
                         <div className="mx-2">
-                          <p className="sm:hidden text-gray-400 text-sm">CONTRIBUTIONS</p>
+                          <p className="sm:hidden text-gray-400 text-sm">
+                            CONTRIBUTIONS
+                          </p>
                           <p className="text-white font-GoodTimes">
                             {subgraphData?.paymentsCount || 0}
                           </p>
@@ -468,7 +470,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <MissionFundingProgressBar
                         fundingGoal={fundingGoal}
                         volume={subgraphData?.volume / 1e18}
-                        stage={stage ?? 0}
                       />
                     </div>
 
