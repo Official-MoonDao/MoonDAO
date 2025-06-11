@@ -5,7 +5,6 @@ describe('<MissionFundingProgressBar />', () => {
   const defaultProps = {
     fundingGoal: 1000000000000000000, // 1 ETH in wei
     volume: 200000000000000000, // 0.2 ETH in wei
-    stage: 1,
   }
 
   beforeEach(() => {
@@ -36,7 +35,7 @@ describe('<MissionFundingProgressBar />', () => {
   it('Should not render when stage is invalid', () => {
     cy.mount(
       <TestnetProviders>
-        <MissionFundingProgressBar {...defaultProps} stage={0} />
+        <MissionFundingProgressBar {...defaultProps} />
       </TestnetProviders>
     )
   })
