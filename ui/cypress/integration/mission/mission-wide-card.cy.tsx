@@ -88,7 +88,7 @@ describe('MissionWideCard', () => {
   })
 
   it('Displays mission tagline correctly', () => {
-    cy.get('#content p').should('contain', mockMission.metadata.tagline)
+    cy.get('#content div').should('contain', mockMission.metadata.tagline)
   })
 
   it('Shows funding goal correctly', () => {
