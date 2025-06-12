@@ -13,6 +13,14 @@ jobs:
   distribute:
     runs-on: ubuntu-latest
     steps:
+      - name: Restore Git cache
+        uses: actions/cache@v3
+        with:
+          path: .git
+          key: key-${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}
+          restore-keys: |
+            key-${{ runner.os }}-git-
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
