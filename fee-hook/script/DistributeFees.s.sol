@@ -12,7 +12,8 @@ contract DistributeFees is Script, Config {
 
         address payable hookAddress = payable(FEE_HOOK_ADDRESSES[block.chainid]);
         FeeHook feeHook = FeeHook(hookAddress);
-        feeHook.distributeFees();
+        //feeHook.distributeFees();
+        feeHook.setWeekStart(1749164043);
 
         vm.stopBroadcast();
     }
