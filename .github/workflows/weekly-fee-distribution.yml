@@ -44,6 +44,8 @@ jobs:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: |
           cd fee-hook
+          # sepolia
+          forge script script/DistributeFees.s.sol --rpc-url https://11155111.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --broadcast --via-ir -vvvv
           # mainnet
           forge script script/DistributeFees.s.sol --rpc-url https://1.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --broadcast --via-ir -vvvv
           # arb
