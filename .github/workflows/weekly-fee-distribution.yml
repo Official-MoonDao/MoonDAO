@@ -44,6 +44,7 @@ jobs:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: |
           cd fee-hook
+          # sepolia, mainnet, arbitrum, and polygon
           CHAINS=(11155111 1 42161 137)
           for CHAIN in "${CHAINS[@]}"; do
             forge script script/DistributeFees.s.sol --rpc-url "https://${CHAIN}.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }}" --broadcast --via-ir -vvvv || true
