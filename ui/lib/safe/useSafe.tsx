@@ -58,8 +58,9 @@ export default function useSafe(
   const account = useActiveAccount()
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
+  const { contextChain } = useContext(ChainContextV5)
   if (!selectedChain) {
-    let { selectedChain } = useContext(ChainContextV5)
+    selectedChain = contextChain
   }
 
   const [safe, setSafe] = useState<Safe>()
