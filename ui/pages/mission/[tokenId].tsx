@@ -237,7 +237,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         })
 
         if (balance === 0) {
-          setAvailablePayouts('No payouts to send')
+          setAvailablePayouts('No payouts to send.')
         } else {
           setAvailablePayouts(`${(balance / 1e18).toFixed(4)} ETH`)
         }
@@ -250,20 +250,20 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         })
 
         if (reservedTokenBalance === 0) {
-          setAvailableTokens('No tokens to send')
+          setAvailableTokens('No tokens to send.')
         } else {
           setAvailableTokens(`${(reservedTokenBalance / 1e18).toFixed(0)} Tokens`)
         }
       } catch (err: any) {
         if (err?.message?.includes('store')) {
-          setAvailablePayouts('Contract not accessible')
+          setAvailablePayouts('Contract not accessible.')
         } else if (err?.message?.includes('balance')) {
-          setAvailablePayouts('Cannot check ETH balance')
+          setAvailablePayouts('Cannot check ETH balance.')
         } else if (err?.message?.includes('token')) {
-          setAvailableTokens('Cannot check token balance')
+          setAvailableTokens('Cannot check token balance.')
         } else {
-          setAvailableTokens('No tokens to send')
-          setAvailablePayouts('No payouts to send')
+          setAvailableTokens('No tokens to send.')
+          setAvailablePayouts('No payouts to send.')
         }
         console.error('Error fetching available amounts:', err)
       }
