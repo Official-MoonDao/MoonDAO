@@ -1,13 +1,23 @@
 //Juicebox V4
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
-import { JB_NATIVE_TOKEN_ADDRESS, ZERO_ADDRESS } from 'const/config'
+import {
+  JB_NATIVE_TOKEN_ADDRESS,
+  MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
+  ZERO_ADDRESS,
+} from 'const/config'
 import { BigNumber } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { cacheExchange, createClient, fetchExchange } from 'urql'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 import useContract from '../thirdweb/hooks/useContract'
 import { projectQuery } from './subgraph'
 import useJBProjectTrendingPercentageIncrease from './useJBProjectTrendingPercentageIncrease'
+
+const primaryTerminalSubgraphClient = createClient({
+  url: MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
+  exchanges: [fetchExchange, cacheExchange],
+})
 
 export default function useJBProjectData({
   projectId,
@@ -125,7 +135,7 @@ export default function useJBProjectData({
     if (tokenContract) getTokenData()
   }, [tokenContract])
 
-  //Project Subgraph Data
+  //Project and Payment terminal Subgraph Data
   useEffect(() => {
     async function getSubgraphData() {
       if (!projectId) return

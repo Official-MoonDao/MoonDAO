@@ -19,6 +19,7 @@ export type MissionWideCardProps = {
   token: any
   subgraphData: any
   fundingGoal: number
+  backers?: any[]
   contribute?: boolean
   stage?: number
   ruleset?: any
@@ -44,6 +45,7 @@ export default function MissionWideCard({
   stage,
   subgraphData,
   fundingGoal,
+  backers,
   missionImage,
   contribute,
   selectedChain,
@@ -182,10 +184,10 @@ export default function MissionWideCard({
                   />
                 )}
               </div>
-              {!onlyGoalStat && (
+              {!onlyGoalStat && backers && (
                 <MissionStat
-                  label="Contributions"
-                  value={subgraphData?.paymentsCount || 0}
+                  label="Backers"
+                  value={backers?.length || 0}
                   icon="/assets/icon-backers.svg"
                 />
               )}

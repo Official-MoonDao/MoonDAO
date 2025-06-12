@@ -383,3 +383,6 @@ export const POLYGON_ASSETS_URL =
 export const BASE_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/8453/safes/0x871e232Eb935E54Eb90B812cf6fe0934D45e7354/balances/usd?trusted=true'
 export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
+
+export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
+  'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'
