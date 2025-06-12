@@ -1,3 +1,4 @@
+import Safe from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
@@ -7,6 +8,7 @@ import {
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
+  PROJECT_CREATOR_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
@@ -15,6 +17,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
+import { getRpcUrlForChain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
@@ -41,11 +44,13 @@ import TeamTreasury from '@/components/subscription/TeamTreasury'
 type ProjectProfileProps = {
   tokenId: string
   project: Project
+  safeOwners: string[]
 }
 
 export default function ProjectProfile({
   tokenId,
   project,
+  safeOwners,
 }: ProjectProfileProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -99,7 +104,7 @@ export default function ProjectProfile({
   } = useProjectData(projectContract, hatsContract, project)
 
   const safeData = useSafe(owner)
-  const isSigner = safeData?.owners.includes(address || '')
+  const isSigner = safeOwners.includes(address || '')
   //Hats
   const hats = useSubHats(selectedChain, adminHatId)
 
@@ -350,10 +355,36 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
   }
 
+  const projectContract = getContract({
+    client: serverClient,
+    address: PROJECT_ADDRESSES[chainSlug],
+    abi: ProjectABI as any,
+    chain: chain,
+  })
+
+  const safeAddress = await readContract({
+    contract: projectContract,
+    method: 'ownerOf' as string,
+    params: [tokenId],
+  })
+
+  const rpcUrl = getRpcUrlForChain({
+    client: serverClient,
+    chain: chain,
+  })
+
+  const safe = await Safe.init({
+    provider: rpcUrl,
+    safeAddress: safeAddress,
+  })
+
+  const safeOwners = await safe.getOwners()
+
   return {
     props: {
       project,
       tokenId,
+      safeOwners,
     },
   }
 }
