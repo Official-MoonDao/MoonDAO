@@ -65,7 +65,7 @@ contract FeeHookTest is Test, Config, Constants {
         vm.deal(deployerAddress, DEPLOYER_FUNDS);
 
         vm.startBroadcast(deployerAddress);
-        FakeERC20 fakeToken = new FakeERC20(DEPLOYER_TOKEN_BALANCE, "Fake Token", "FAKE", deployerAddress);
+        FakeERC20 fakeToken = new FakeERC20(DEPLOYER_TOKEN_BALANCE * 1e18, "Fake Token", "FAKE", deployerAddress);
         fakeTokenAddress = address(fakeToken);
         vm.stopBroadcast();
     }
@@ -249,12 +249,14 @@ contract FeeHookTest is Test, Config, Constants {
         vm.prank(user2);
         feeHook.checkIn();
 
+        uint256 user1BalanceBefore = user1.balance;
+        uint256 user2BalanceBefore = user2.balance;
         vm.deal(address(feeHook), 4 ether);
         skip(8 days);
         feeHook.distributeFees();
 
-        assertEq(user1.balance, 1 ether);
-        assertEq(user2.balance, 3 ether);
+        assertEq(user1.balance - user1BalanceBefore, 1 ether);
+        assertEq(user2.balance - user2BalanceBefore, 3 ether);
         assertEq(address(feeHook).balance, 0);
     }
 
