@@ -2,7 +2,8 @@ name: Weekly Fee Distribution
 
 on:
   schedule:
-    - cron: '0 0 * * 0'
+    # Run at 1pm Pacific Time every Thursday (21:00 UTC)
+    - cron: '0 21 * * 4'
   workflow_dispatch:
 
 env:
