@@ -151,6 +151,10 @@ contract FeeHook is BaseHook, Ownable {
         return address(this).balance;
     }
 
+    function setWeekStart(uint256 newWeekStart) external onlyOwner {
+        weekStart = newWeekStart;
+    }
+
     /// @notice Distribute all accrued fees to checked in users
     function distributeFees() external {
         require(block.timestamp >= weekStart + WEEK, "Week not finished");
