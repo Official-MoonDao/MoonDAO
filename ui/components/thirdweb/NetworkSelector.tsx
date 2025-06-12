@@ -94,7 +94,9 @@ export default function NetworkSelector({
       {dropdown && (
         <div
           id="network-selector-dropdown"
-          className="w-[250px] absolute flex flex-col items-start gap-2 text-black z-10"
+          className={`${
+            !compact && 'w-[250px]'
+          } absolute flex flex-col items-start gap-2 text-black z-10`}
         >
           {chains && chains.length > 0 ? (
             chains.map((chain) => (

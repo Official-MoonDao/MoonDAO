@@ -803,9 +803,10 @@ export default function MissionPayRedeem({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
-                  token?.tokenSymbol
-                }`}</p>
+                <p id="token-output">{`${formatTokenAmount(
+                  output,
+                  2
+                )} ${token?.tokenSymbol}`}</p>
               </div>
             )}
 
@@ -897,11 +898,7 @@ export default function MissionPayRedeem({
                   !agreedToCondition || !usdInput || parseFloat(usdInput) <= 0
                 }
               />
-              <NetworkSelector
-                chains={chains}
-                compact={true}
-                iconsOnly={true}
-              />
+              <NetworkSelector chains={chains} compact={true} />
             </div>
           </div>
         </Modal>
