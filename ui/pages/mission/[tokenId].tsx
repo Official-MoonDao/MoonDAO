@@ -129,6 +129,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     fundingGoal,
     primaryTerminalAddress,
     stage,
+    backers,
   } = useMissionData({
     mission,
     missionTableContract,
@@ -321,10 +322,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         />
                         <div className="mx-2">
                           <p className="sm:hidden text-gray-400 text-sm">
-                            CONTRIBUTIONS
+                            BACKERS
                           </p>
                           <p className="text-white font-GoodTimes">
-                            {subgraphData?.paymentsCount || 0}
+                            {backers?.length || 0}
                           </p>
                         </div>
                       </div>
@@ -387,9 +388,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           height={24}
                         />
                         <div className="ml-2">
-                          <p className="text-gray-400 text-sm">CONTRIBUTIONS</p>
+                          <p className="text-gray-400 text-sm">BACKERS</p>
                           <p className="text-white font-GoodTimes">
-                            {subgraphData?.paymentsCount || 0}
+                            {backers?.length || 0}
                           </p>
                         </div>
                       </div>
