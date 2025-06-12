@@ -46,6 +46,7 @@ contract FeeHookTest is Test, Config, Constants {
     FeeHook feeHook;
 
     address user1 = address(0x1);
+    address user2 = address(0x3);
     address dead = address(0x000000000000000000000000000000000000dEaD);
     address deployerAddress = address(0x2);
     uint256 DEPLOYER_FUNDS =100_000_000_000 ether;
@@ -186,6 +187,75 @@ contract FeeHookTest is Test, Config, Constants {
         );
 
         return 0;
+    }
+
+    function testCheckInWeekOver() public {
+        vm.startBroadcast(deployerAddress);
+        feeHook = deployHook();
+        vm.stopBroadcast();
+
+        skip(8 days);
+        vm.prank(user1);
+        vm.expectRevert("Week over");
+        feeHook.checkIn();
+    }
+
+    function testCheckInDuplicate() public {
+        vm.startBroadcast(deployerAddress);
+        feeHook = deployHook();
+        vm.stopBroadcast();
+
+        vm.prank(user1);
+        feeHook.checkIn();
+        assertEq(feeHook.getCheckedInCount(), 1);
+
+        vm.prank(user1);
+        feeHook.checkIn();
+        assertEq(feeHook.getCheckedInCount(), 1);
+    }
+
+    function testDistributeFeesNoCheckins() public {
+        vm.startBroadcast(deployerAddress);
+        feeHook = deployHook();
+        vm.stopBroadcast();
+
+        skip(8 days);
+        vm.expectRevert("No checkins");
+        feeHook.distributeFees();
+    }
+
+    function testDistributeFeesNoBalance() public {
+        vm.startBroadcast(deployerAddress);
+        feeHook = deployHook();
+        vm.stopBroadcast();
+
+        vm.prank(user1);
+        feeHook.checkIn();
+        skip(8 days);
+        vm.expectRevert("No balance");
+        feeHook.distributeFees();
+    }
+
+    function testDistributeFeesMultipleUsers() public {
+        vm.startBroadcast(deployerAddress);
+        feeHook = deployHook();
+        FakeERC20 token = FakeERC20(fakeTokenAddress);
+        token.transfer(user1, 10 ether);
+        token.transfer(user2, 30 ether);
+        vm.stopBroadcast();
+
+        vm.prank(user1);
+        feeHook.checkIn();
+        vm.prank(user2);
+        feeHook.checkIn();
+
+        vm.deal(address(feeHook), 4 ether);
+        skip(8 days);
+        feeHook.distributeFees();
+
+        assertEq(user1.balance, 1 ether);
+        assertEq(user2.balance, 3 ether);
+        assertEq(address(feeHook).balance, 0);
     }
 
     // trade eth for tokens
