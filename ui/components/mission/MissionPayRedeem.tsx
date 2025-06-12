@@ -390,7 +390,11 @@ export default function MissionPayRedeem({
   )
 
   const [isTeamSigner, setIsTeamSigner] = useState(false)
-  const { safe, queueSafeTx, lastSafeTxExecuted } = useSafe(teamNFT?.owner)
+  // Use default chain for safe so that cross chain payments don't update safe chain
+  const { safe, queueSafeTx, lastSafeTxExecuted } = useSafe(
+    teamNFT?.owner,
+    DEFAULT_CHAIN_V5
+  )
 
   const { fundWallet } = useFundWallet()
   const [agreedToCondition, setAgreedToCondition] = useState(false)

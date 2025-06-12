@@ -5,6 +5,7 @@
 import { useWallets } from '@privy-io/react-auth'
 import { SafeMultisigTransactionListResponse } from '@safe-global/api-kit'
 import Safe from '@safe-global/protocol-kit'
+import { Chain } from 'thirdweb/chains'
 import {
   SafeTransaction,
   SafeTransactionData,
@@ -50,11 +51,16 @@ export type SafeData = {
   ) => Promise<string>
 }
 
-export default function useSafe(safeAddress: string): SafeData {
+export default function useSafe(
+  safeAddress: string,
+  selectedChain: Chain
+): SafeData {
   const account = useActiveAccount()
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain } = useContext(ChainContextV5)
+  if (!selectedChain) {
+    let { selectedChain } = useContext(ChainContextV5)
+  }
 
   const [safe, setSafe] = useState<Safe>()
   const safeApiKit = useSafeApiKit(selectedChain)
