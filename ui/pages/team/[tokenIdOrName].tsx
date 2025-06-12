@@ -667,7 +667,7 @@ export const getServerSideProps: GetServerSideProps = async ({
     params: [tokenId],
   })
 
-  const nft = teamRowToNFT(allTeams.find((team: any) => team.id === tokenId))
+  const nft = teamRowToNFT(allTeams.find((team: any) => +team.id === +tokenId))
   nft.owner = owner
 
   if (!nft || blockedTeams.includes(Number(nft.metadata.id))) {
