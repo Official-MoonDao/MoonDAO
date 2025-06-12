@@ -69,6 +69,7 @@ export default function SafeModal({
       setIsAddingSigner(true)
       await addSigner(newSignerAddress)
       setNewSignerAddressOrENS('')
+      setEnabled(false)
     } catch (error) {
       console.error('Error adding signer:', error)
     } finally {
@@ -81,6 +82,7 @@ export default function SafeModal({
       await removeSigner(signerAddress)
       await new Promise((resolve) => setTimeout(resolve, 2000))
       await fetchPendingTransactions()
+      setEnabled(false)
     } catch (error) {
       console.error('Error removing signer:', error)
     }
@@ -96,6 +98,7 @@ export default function SafeModal({
       setIsChangingThreshold(true)
       await changeThreshold(newThreshold)
       setNewThreshold(0)
+      setEnabled(false)
     } catch (error) {
       console.error('Error changing threshold:', error)
     } finally {
@@ -229,6 +232,11 @@ export default function SafeModal({
                     max={owners.length}
                     placeholder="New threshold"
                     className="w-20 bg-darkest-cool text-white px-4 py-2 rounded-lg"
+                    disabled={
+                      owners.length < 2 ||
+                      newThreshold === safeData.threshold ||
+                      isChangingThreshold
+                    }
                   />
                   <span data-testid="threshold-max" className="text-gray-400">
                     / {owners.length}
@@ -239,7 +247,13 @@ export default function SafeModal({
                   className="rounded-full"
                   label="Update Threshold"
                   action={handleChangeThreshold}
-                  isDisabled={!newThreshold || isChangingThreshold}
+                  isDisabled={
+                    !newThreshold ||
+                    isChangingThreshold ||
+                    owners.length < 2 ||
+                    newThreshold === safeData.threshold ||
+                    newThreshold === 0
+                  }
                 />
               </div>
             </div>

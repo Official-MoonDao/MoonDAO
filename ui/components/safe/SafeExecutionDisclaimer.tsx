@@ -7,6 +7,7 @@ import { SafeData } from '@/lib/safe/useSafe'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import SafeTransactionData from './SafeTransactionData'
 
 type SafeModalProps = {
   safeData: SafeData
@@ -105,25 +106,11 @@ export default function SafeExecutionDisclaimer({
             {transaction?.confirmationsRequired || 0}
           </p>
 
-          <div className="mb-4">
-            <button
-              onClick={() => setExpandedTx(!expandedTx)}
-              className="text-sm text-gray-400 hover:text-gray-300 flex items-center gap-2"
-            >
-              {expandedTx ? '▼' : '▶'} Show Transaction Data
-            </button>
-            {expandedTx && (
-              <div className="mt-2 p-3 bg-gray-800/50 rounded-lg overflow-x-auto">
-                <pre className="text-xs text-gray-300 whitespace-pre-wrap">
-                  {JSON.stringify(
-                    transaction.dataDecoded || transaction.data,
-                    null,
-                    2
-                  )}
-                </pre>
-              </div>
-            )}
-          </div>
+          <SafeTransactionData
+            transaction={transaction}
+            expanded={expandedTx}
+            onToggle={() => setExpandedTx(!expandedTx)}
+          />
         </div>
 
         <p className="text-white my-4">
