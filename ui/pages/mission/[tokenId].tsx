@@ -554,10 +554,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                   )}
                     {/* Send payouts and tokens Buttons - only shown to managers */}
                     {account && isManager && (
-                      <div className="flex flex-col sm:flex-row gap-2 mt-4 w-full sm:w-auto sm:absolute sm:right-0.5 sm:top-[250px]">
+                      <div className="flex flex-col sm:flex-row gap-40 mt-4 w-full sm:w-auto sm:absolute sm:right-3 sm:top-[250px]">
                         <Tooltip
                           text={`${availableTokens}`}
-                          buttonClassName="w-full bg-transparent"
+                          buttonClassName="bg-transparent"
                         >
                           <PrivyWeb3Button
                             requiredChain={DEFAULT_CHAIN_V5}
@@ -568,7 +568,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         </Tooltip>
                         <Tooltip
                           text={`${availablePayouts}`}
-                          buttonClassName="w-full bg-transparent"
+                          buttonClassName="bg-transparent"
                         >
                           <PrivyWeb3Button
                             requiredChain={DEFAULT_CHAIN_V5}
