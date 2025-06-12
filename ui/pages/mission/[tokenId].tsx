@@ -213,7 +213,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   useEffect(() => {
     async function fetchAvailableAmounts() {
-      if (!jbTerminalContract || !mission?.projectId) return
+      if (!jbTerminalContract || mission?.projectId === undefined || mission?.projectId === null) return
 
       try {
         // Get available payouts
