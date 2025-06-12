@@ -124,6 +124,7 @@ export default function Launch({ missions }: any) {
     primaryTerminalAddress: featuredMissionPrimaryTerminalAddress,
     ruleset: featuredMissionRuleset,
     stage: featuredMissionStage,
+    backers: featuredMissionBackers,
   } = useMissionData({
     mission: missions?.[FEATURED_MISSION_INDEX],
     missionTableContract,
@@ -351,6 +352,7 @@ export default function Launch({ missions }: any) {
               } as any
             }
             stage={featuredMissionStage}
+            backers={featuredMissionBackers}
             token={featuredMissionToken}
             ruleset={featuredMissionRuleset}
             subgraphData={featuredMissionSubgraphData}
