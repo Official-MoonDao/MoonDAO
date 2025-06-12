@@ -85,7 +85,7 @@ export default function useSafe(safeAddress: string): SafeData {
     }
   }
 
-  async function getNextNonce(): Promise<number> {
+  async function getNextNonce(): Promise<number | undefined> {
     if (!safe || !safeApiKit) throw new Error('Safe not initialized')
 
     try {

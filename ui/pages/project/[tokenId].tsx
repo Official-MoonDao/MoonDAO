@@ -311,6 +311,7 @@ export default function ProjectProfile({
               isSigner={isSigner}
               safeData={safeData}
               multisigAddress={owner}
+              safeOwners={safeOwners}
             />
           </div>
         </div>
