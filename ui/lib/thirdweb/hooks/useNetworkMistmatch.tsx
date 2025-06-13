@@ -9,5 +9,9 @@ export default function useNetworkMistmatch() {
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
 
-  return selectedChain.id !== +wallets[selectedWallet].chainId.split(':')[1]
+  if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+    return false
+  }
+
+  return selectedChain.id !== +wallets?.[selectedWallet]?.chainId?.split(':')[1]
 }

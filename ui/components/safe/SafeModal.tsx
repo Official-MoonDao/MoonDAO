@@ -8,6 +8,7 @@ import { SafeData } from '@/lib/safe/useSafe'
 import useNetworkMistmatch from '@/lib/thirdweb/hooks/useNetworkMistmatch'
 import { useENS } from '@/lib/utils/hooks/useENS'
 import Modal from '../layout/Modal'
+import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import SafeNetworkMismatch from './SafeNetworkMismatch'
 
@@ -140,7 +141,7 @@ export default function SafeModal({
             {/* Current Safe Info */}
             <div data-testid="safe-info" className="mb-8">
               <p data-testid="safe-address" className="text-gray-400 mb-2">
-                Address:
+                {'Address: '}
                 <Link
                   className="hover:underline"
                   href={`https://app.safe.global/home?safe=${
@@ -156,12 +157,17 @@ export default function SafeModal({
 
             {/* Signers Management */}
             <div data-testid="signers-section" className="mb-8">
-              <h3
-                data-testid="signers-title"
-                className="text-xl font-GoodTimes mb-4"
-              >
-                Signers
-              </h3>
+              <div className="flex items-center gap-2 mb-4">
+                <h3
+                  data-testid="signers-title"
+                  className="text-xl font-GoodTimes"
+                >
+                  Signers
+                </h3>
+                <Tooltip text="The signers are the addresses that are allowed to sign or execute transactions.">
+                  ?
+                </Tooltip>
+              </div>
               <div data-testid="signers-list" className="space-y-4">
                 {owners.map((owner: string) => (
                   <div
@@ -209,12 +215,17 @@ export default function SafeModal({
 
             {/* Threshold Management */}
             <div data-testid="threshold-section" className="mb-8">
-              <h3
-                data-testid="threshold-title"
-                className="text-xl font-GoodTimes mb-4"
-              >
-                Threshold
-              </h3>
+              <div className="flex items-center gap-2 mb-4">
+                <h3
+                  data-testid="threshold-title"
+                  className="text-xl font-GoodTimes"
+                >
+                  Threshold
+                </h3>
+                <Tooltip text="The threshold is the number of signers it will take in order to be able to execute a transaction.">
+                  ?
+                </Tooltip>
+              </div>
               <div
                 data-testid="threshold-controls"
                 className="flex flex-col md:flex-row gap-4 justify-between"
@@ -232,11 +243,7 @@ export default function SafeModal({
                     max={owners.length}
                     placeholder="New threshold"
                     className="w-20 bg-darkest-cool text-white px-4 py-2 rounded-lg"
-                    disabled={
-                      owners.length < 2 ||
-                      newThreshold === safeData.threshold ||
-                      isChangingThreshold
-                    }
+                    disabled={owners.length < 2 || isChangingThreshold}
                   />
                   <span data-testid="threshold-max" className="text-gray-400">
                     / {owners.length}
@@ -248,11 +255,12 @@ export default function SafeModal({
                   label="Update Threshold"
                   action={handleChangeThreshold}
                   isDisabled={
-                    !newThreshold ||
                     isChangingThreshold ||
                     owners.length < 2 ||
-                    newThreshold === safeData.threshold ||
-                    newThreshold === 0
+                    !newThreshold ||
+                    newThreshold === 0 ||
+                    newThreshold > owners.length ||
+                    newThreshold === safeData.threshold
                   }
                 />
               </div>

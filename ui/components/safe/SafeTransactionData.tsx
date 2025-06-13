@@ -1,5 +1,9 @@
+import ERC20ABI from 'const/abis/ERC20.json'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
 import { PendingTransaction } from '@/lib/safe/useSafe'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 
 type SafeTransactionDataProps = {
   transaction: PendingTransaction
@@ -22,6 +26,24 @@ export default function SafeTransactionData({
     transaction.dataDecoded?.method?.toLowerCase().includes('reject') ||
     ((transaction.data === '0x' || transaction.data === null) &&
       ethers.BigNumber.from(transaction.value).eq(0))
+
+  const tokenContract = useContract({
+    address: transaction.to,
+    chain: DEFAULT_CHAIN_V5,
+    abi: ERC20ABI,
+  })
+
+  const { data: tokenSymbol } = useRead({
+    contract: tokenContract,
+    method: 'symbol',
+    params: [],
+  })
+
+  const { data: tokenDecimals } = useRead({
+    contract: tokenContract,
+    method: 'decimals',
+    params: [],
+  })
 
   const renderTransactionDetails = () => {
     if (isEthTransfer) {
@@ -79,22 +101,23 @@ export default function SafeTransactionData({
       )
     }
 
-    // // Handle send transactions
-    // if (
-    //   transaction.dataDecoded?.method === 'transfer' ||
-    //   transaction.dataDecoded?.method === 'transferFrom'
-    // ) {
-    //   const [to, value] = transaction.dataDecoded.parameters || []
-    //   return (
-    //     <div className="space-y-2">
-    //       <p className="text-gray-300">Type: Token Transfer</p>
-    //       <p className="text-gray-300">To: {to?.value}</p>
-    //       <p className="text-gray-300">
-    //         Amount: {ethers.utils.formatUnits(value?.value || '0', 18)}
-    //       </p>
-    //     </div>
-    //   )
-    // }
+    if (
+      transaction.dataDecoded?.method === 'transfer' ||
+      transaction.dataDecoded?.method === 'transferFrom'
+    ) {
+      const [to, value] = transaction.dataDecoded.parameters || []
+
+      return (
+        <div className="space-y-2">
+          <p className="text-gray-300">Type: Token Transfer</p>
+          <p className="text-gray-300">Token: {tokenSymbol}</p>
+          <p className="text-gray-300">
+            Amount:{' '}
+            {ethers.utils.formatUnits(value?.value || '0', tokenDecimals || 18)}
+          </p>
+        </div>
+      )
+    }
 
     // For other transaction types, show the raw data
     return (
