@@ -53,7 +53,7 @@ export type SafeData = {
 
 export default function useSafe(
   safeAddress: string,
-  selectedChain: Chain | null = null
+  selectedChain?: Chain
 ): SafeData {
   const account = useActiveAccount()
   const { wallets } = useWallets()
@@ -496,7 +496,7 @@ export default function useSafe(
       const contract = getContract({
         client,
         address: tokenAddress,
-        chain: selectedChain,
+        chain: selectedChain!,
         abi: ERC20ABI as any,
       })
 
