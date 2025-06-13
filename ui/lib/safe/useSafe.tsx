@@ -53,7 +53,7 @@ export type SafeData = {
 
 export default function useSafe(
   safeAddress: string,
-  selectedChain: Chain
+  selectedChain: Chain | null = null
 ): SafeData {
   const account = useActiveAccount()
   const { wallets } = useWallets()
