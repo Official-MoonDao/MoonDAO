@@ -20,7 +20,6 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
-import { ethers } from 'ethers'
 import { useNativeTokenSurplus } from 'juice-sdk-react'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
@@ -303,9 +302,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             />
                             <span className="mr-2">
                               {truncateTokenValue(
-                                ethers.utils.formatEther(
-                                  nativeTokenSurplus || 0
-                                ),
+                                Number(nativeTokenSurplus || 0) / 1e18,
                                 'ETH'
                               )}
                             </span>
@@ -340,9 +337,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <div className="w-full">
                         <MissionFundingProgressBar
                           fundingGoal={fundingGoal}
-                          volume={ethers.utils.formatEther(
-                            nativeTokenSurplus || 0
-                          )}
+                          volume={Number(nativeTokenSurplus || 0) / 1e18}
                         />
                       </div>
 
