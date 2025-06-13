@@ -303,8 +303,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             />
                             <span className="mr-2">
                               {truncateTokenValue(
-                                ethers.utils.formatEther(nativeTokenSurplus) ||
-                                  0,
+                                ethers.utils.formatEther(
+                                  nativeTokenSurplus || 0
+                                ),
                                 'ETH'
                               )}
                             </span>
@@ -340,7 +341,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <div className="w-full">
                         <MissionFundingProgressBar
                           fundingGoal={fundingGoal}
-                          volume={ethers.utils.formatEther(nativeTokenSurplus)}
+                          volume={ethers.utils.formatEther(nativeTokenSurplus || 0)}
                         />
                       </div>
 
