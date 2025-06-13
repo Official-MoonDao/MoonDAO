@@ -374,7 +374,8 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
         />
         {!isDeleted && subIsValid && isOwner && (
           <CitizenActions
-            isOwner={isOwner}
+            nft={nft}
+            address={address || ''}
             incompleteProfile={incompleteProfile}
             isTeamMember={hats?.length > 0}
             mooneyBalance={MOONEYBalance}
