@@ -120,7 +120,7 @@ export default function SafeExecutionDisclaimer({
           details.
         </p>
         <ConditionCheckbox
-          label="I understand and agree to execute this transaction"
+          label="I understand and agree to execute this transaction."
           agreedToCondition={agreedToDisclaimer}
           setAgreedToCondition={setAgreedToDisclaimer}
         />
