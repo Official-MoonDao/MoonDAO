@@ -112,6 +112,38 @@ describe('Main E2E Testing', () => {
       })
     })
   })
+
+  describe('MoonDAO App | Map', () => {
+    it('should load the map page', () => {
+      cy.visit('/map')
+    })
+
+    it('should have citizen locations that are not in Antarctica', () => {
+      cy.visit('/map')
+
+      // Access the Next.js data from the window object
+      cy.window().then((win) => {
+        const nextData = (win as any).__NEXT_DATA__
+        const citizensData = nextData.props.pageProps.citizensLocationData
+
+        // Verify we have some data
+        expect(citizensData).to.be.an('array')
+        expect(citizensData.length).to.be.greaterThan(0)
+
+        // Check that not all locations are Antarctica
+        const antarcticaLocations = citizensData.filter(
+          (citizen: any) => citizen.formattedAddress === 'Antarctica'
+        )
+        expect(antarcticaLocations.length).to.be.lessThan(citizensData.length)
+
+        // Verify we have some valid coordinates
+        const validLocations = citizensData.filter(
+          (citizen: any) => citizen.lat !== -90 && citizen.lng !== 0
+        )
+        expect(validLocations.length).to.be.greaterThan(0)
+      })
+    })
+  })
 })
 
 export {}

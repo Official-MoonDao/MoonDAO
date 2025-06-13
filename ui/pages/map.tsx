@@ -117,7 +117,10 @@ export default function NetworkMap({
 export async function getStaticProps() {
   try {
     let citizensLocationData = []
-    if (process.env.NEXT_PUBLIC_ENV === 'prod') {
+    if (
+      process.env.NEXT_PUBLIC_ENV === 'prod' ||
+      process.env.NEXT_PUBLIC_TEST_ENV === 'true'
+    ) {
       const chain = DEFAULT_CHAIN_V5
       const chainSlug = getChainSlug(chain)
 
