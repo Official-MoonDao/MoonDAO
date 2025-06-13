@@ -14,6 +14,7 @@ type TeamTreasuryProps = {
   isSigner: boolean
   safeData: any
   multisigAddress: string
+  safeOwners: string[]
 }
 
 export default function TeamTreasury({

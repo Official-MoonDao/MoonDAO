@@ -8,6 +8,7 @@ import {
   GlobeAltIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
+import Safe, { SafeConfig } from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
@@ -34,6 +35,7 @@ import {
   MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
+import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -41,8 +43,11 @@ import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
+import { getRpcUrlForChain } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
+import { privateKeyToAccount } from 'thirdweb/wallets'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useSafe from '@/lib/safe/useSafe'
@@ -56,6 +61,7 @@ import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
+import { serialize } from '@/lib/utils/serialize'
 import { TwitterIcon } from '@/components/assets'
 import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
@@ -86,6 +92,7 @@ export default function TeamDetailPage({
   imageIpfsLink,
   queriedJob,
   queriedListing,
+  safeOwners,
 }: any) {
   const router = useRouter()
   const account = useActiveAccount()
@@ -177,7 +184,7 @@ export default function TeamDetailPage({
 
   const safeData = useSafe(nft?.owner)
 
-  const isSigner = safeData?.owners.includes(address || '')
+  const isSigner = safeOwners.includes(address || '')
 
   //Subscription Data
   const { data: expiresAt } = useRead({
@@ -504,6 +511,7 @@ export default function TeamDetailPage({
             isSigner={isSigner}
             safeData={safeData}
             multisigAddress={nft.owner}
+            safeOwners={safeOwners}
           />
 
           {/* Header and socials */}
@@ -619,6 +627,7 @@ export default function TeamDetailPage({
                 isSigner={isSigner}
                 safeData={safeData}
                 multisigAddress={nft.owner}
+                safeOwners={safeOwners}
               />
             </Frame>
           )}
@@ -675,6 +684,18 @@ export const getServerSideProps: GetServerSideProps = async ({
       notFound: true,
     }
   }
+
+  const rpcUrl = getRpcUrlForChain({
+    client: serverClient,
+    chain: DEFAULT_CHAIN_V5,
+  })
+
+  const teamSafe = await Safe.init({
+    provider: rpcUrl,
+    safeAddress: nft.owner,
+  })
+
+  const safeOwners = await teamSafe.getOwners()
 
   const imageIpfsLink = nft.metadata.image
 
@@ -734,6 +755,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       imageIpfsLink,
       queriedJob,
       queriedListing,
+      safeOwners,
     },
   }
 }

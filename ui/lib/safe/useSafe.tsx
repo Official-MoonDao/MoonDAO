@@ -77,26 +77,34 @@ export default function useSafe(safeAddress: string): SafeData {
 
   async function getCurrentNonce() {
     if (!safe) return null
-    const nonce = await safe.getNonce()
-    setCurrentNonce(nonce)
+    try {
+      const nonce = await safe?.getNonce()
+      setCurrentNonce(nonce)
+    } catch (err) {
+      console.error('Error getting current nonce:', err)
+    }
   }
 
-  async function getNextNonce(): Promise<number> {
+  async function getNextNonce(): Promise<number | undefined> {
     if (!safe || !safeApiKit) throw new Error('Safe not initialized')
 
-    const currentNonce = await safe.getNonce()
+    try {
+      const currentNonce = await safe.getNonce()
 
-    const pendingTxs = await safeApiKit.getPendingTransactions(safeAddress)
+      const pendingTxs = await safeApiKit.getPendingTransactions(safeAddress)
 
-    // Find the highest nonce among pending transactions
-    const highestPendingNonce = pendingTxs.results.reduce(
-      (highest: number, tx: PendingTransaction) => {
-        return Math.max(highest, tx.nonce)
-      },
-      -1
-    )
+      // Find the highest nonce among pending transactions
+      const highestPendingNonce = pendingTxs.results.reduce(
+        (highest: number, tx: PendingTransaction) => {
+          return Math.max(highest, tx.nonce)
+        },
+        -1
+      )
 
-    return Math.max(currentNonce, highestPendingNonce + 1)
+      return Math.max(currentNonce, highestPendingNonce + 1)
+    } catch (err) {
+      console.error('Error getting next nonce:', err)
+    }
   }
 
   async function queueSafeTx(
@@ -386,8 +394,11 @@ export default function useSafe(safeAddress: string): SafeData {
   async function initializeSafe() {
     if (!account?.address) return null
 
-    const provider: any = await wallets?.[selectedWallet]?.getEthereumProvider()
+    const wallet = wallets?.[selectedWallet]
+    const provider: any = await wallet?.getEthereumProvider()
+
     if (!provider) return null
+    if (selectedChain.id !== +wallet?.chainId.split(':')[1]) return null
 
     try {
       const newSafe = await Safe.init({

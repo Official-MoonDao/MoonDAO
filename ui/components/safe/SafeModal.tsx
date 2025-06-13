@@ -5,9 +5,11 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SafeData } from '@/lib/safe/useSafe'
+import useNetworkMistmatch from '@/lib/thirdweb/hooks/useNetworkMistmatch'
 import { useENS } from '@/lib/utils/hooks/useENS'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import SafeNetworkMismatch from './SafeNetworkMismatch'
 
 type SafeModalProps = {
   safeData: SafeData
@@ -35,6 +37,7 @@ export default function SafeModal({
   const [newThreshold, setNewThreshold] = useState<number>(safeData.threshold)
   const [isAddingSigner, setIsAddingSigner] = useState(false)
   const [isChangingThreshold, setIsChangingThreshold] = useState(false)
+  const isNetworkMismatch = useNetworkMistmatch()
 
   const ens = useENS(newSignerAddressOrENS)
   const newSignerAddress = ens?.data?.address || newSignerAddressOrENS
@@ -127,113 +130,121 @@ export default function SafeModal({
           </button>
         </div>
 
-        {/* Current Safe Info */}
-        <div data-testid="safe-info" className="mb-8">
-          <p data-testid="safe-address" className="text-gray-400 mb-2">
-            Address:
-            <Link
-              className="hover:underline"
-              href={`https://app.safe.global/home?safe=${
-                process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-              }:${safeAddress}`}
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              {safeAddress.slice(0, 6)}...{safeAddress.slice(-4)}
-            </Link>
-          </p>
-        </div>
-
-        {/* Signers Management */}
-        <div data-testid="signers-section" className="mb-8">
-          <h3
-            data-testid="signers-title"
-            className="text-xl font-GoodTimes mb-4"
-          >
-            Signers
-          </h3>
-          <div data-testid="signers-list" className="space-y-4">
-            {owners.map((owner: string) => (
-              <div
-                key={owner}
-                data-testid={`signer-${owner}`}
-                className="flex items-center justify-between bg-darkest-cool p-4 rounded-lg"
-              >
-                <SafeOwner owner={owner} />
-                {owners.length > 1 && (
-                  <button
-                    data-testid={`remove-signer-${owner}`}
-                    onClick={() => handleRemoveSigner(owner)}
-                    className="text-red-500 hover:text-red-400"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div
-            data-testid="add-signer-section"
-            className="mt-4 flex gap-4 flex-col md:flex-row"
-          >
-            <input
-              data-testid="new-signer-input"
-              type="text"
-              value={newSignerAddressOrENS}
-              onChange={(e) => setNewSignerAddressOrENS(e.target.value)}
-              placeholder="New signer address or ENS"
-              className="flex-1 bg-darkest-cool text-white px-4 py-2 rounded-lg"
-            />
-            <PrivyWeb3Button
-              dataTestId="add-signer-button"
-              className="rounded-full"
-              label="Add Signer"
-              action={handleAddSigner}
-              isDisabled={!validateAddress(newSignerAddress) || isAddingSigner}
-            />
-          </div>
-        </div>
-
-        {/* Threshold Management */}
-        <div data-testid="threshold-section" className="mb-8">
-          <h3
-            data-testid="threshold-title"
-            className="text-xl font-GoodTimes mb-4"
-          >
-            Threshold
-          </h3>
-          <div
-            data-testid="threshold-controls"
-            className="flex flex-col md:flex-row gap-4 justify-between"
-          >
-            <div
-              data-testid="threshold-input-group"
-              className="flex items-center gap-2"
-            >
-              <input
-                data-testid="threshold-input"
-                type="number"
-                value={newThreshold || ''}
-                onChange={(e) => setNewThreshold(Number(e.target.value))}
-                min={1}
-                max={owners.length}
-                placeholder="New threshold"
-                className="w-20 bg-darkest-cool text-white px-4 py-2 rounded-lg"
-              />
-              <span data-testid="threshold-max" className="text-gray-400">
-                / {owners.length}
-              </span>
+        {isNetworkMismatch ? (
+          <SafeNetworkMismatch />
+        ) : (
+          <div>
+            {/* Current Safe Info */}
+            <div data-testid="safe-info" className="mb-8">
+              <p data-testid="safe-address" className="text-gray-400 mb-2">
+                Address:
+                <Link
+                  className="hover:underline"
+                  href={`https://app.safe.global/home?safe=${
+                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+                  }:${safeAddress}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  {safeAddress.slice(0, 6)}...{safeAddress.slice(-4)}
+                </Link>
+              </p>
             </div>
-            <PrivyWeb3Button
-              dataTestId="update-threshold-button"
-              className="rounded-full"
-              label="Update Threshold"
-              action={handleChangeThreshold}
-              isDisabled={!newThreshold || isChangingThreshold}
-            />
+
+            {/* Signers Management */}
+            <div data-testid="signers-section" className="mb-8">
+              <h3
+                data-testid="signers-title"
+                className="text-xl font-GoodTimes mb-4"
+              >
+                Signers
+              </h3>
+              <div data-testid="signers-list" className="space-y-4">
+                {owners.map((owner: string) => (
+                  <div
+                    key={owner}
+                    data-testid={`signer-${owner}`}
+                    className="flex items-center justify-between bg-darkest-cool p-4 rounded-lg"
+                  >
+                    <SafeOwner owner={owner} />
+                    {owners.length > 1 && (
+                      <button
+                        data-testid={`remove-signer-${owner}`}
+                        onClick={() => handleRemoveSigner(owner)}
+                        className="text-red-500 hover:text-red-400"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div
+                data-testid="add-signer-section"
+                className="mt-4 flex gap-4 flex-col md:flex-row"
+              >
+                <input
+                  data-testid="new-signer-input"
+                  type="text"
+                  value={newSignerAddressOrENS}
+                  onChange={(e) => setNewSignerAddressOrENS(e.target.value)}
+                  placeholder="New signer address or ENS"
+                  className="flex-1 bg-darkest-cool text-white px-4 py-2 rounded-lg"
+                />
+                <PrivyWeb3Button
+                  dataTestId="add-signer-button"
+                  className="rounded-full"
+                  label="Add Signer"
+                  action={handleAddSigner}
+                  isDisabled={
+                    !validateAddress(newSignerAddress) || isAddingSigner
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Threshold Management */}
+            <div data-testid="threshold-section" className="mb-8">
+              <h3
+                data-testid="threshold-title"
+                className="text-xl font-GoodTimes mb-4"
+              >
+                Threshold
+              </h3>
+              <div
+                data-testid="threshold-controls"
+                className="flex flex-col md:flex-row gap-4 justify-between"
+              >
+                <div
+                  data-testid="threshold-input-group"
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    data-testid="threshold-input"
+                    type="number"
+                    value={newThreshold || ''}
+                    onChange={(e) => setNewThreshold(Number(e.target.value))}
+                    min={1}
+                    max={owners.length}
+                    placeholder="New threshold"
+                    className="w-20 bg-darkest-cool text-white px-4 py-2 rounded-lg"
+                  />
+                  <span data-testid="threshold-max" className="text-gray-400">
+                    / {owners.length}
+                  </span>
+                </div>
+                <PrivyWeb3Button
+                  dataTestId="update-threshold-button"
+                  className="rounded-full"
+                  label="Update Threshold"
+                  action={handleChangeThreshold}
+                  isDisabled={!newThreshold || isChangingThreshold}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </Modal>
   )

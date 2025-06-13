@@ -1,8 +1,13 @@
+import { useWallets } from '@privy-io/react-auth'
 import { ethers } from 'ethers'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { PendingTransaction, SafeData } from '@/lib/safe/useSafe'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import useNetworkMistmatch from '@/lib/thirdweb/hooks/useNetworkMistmatch'
+import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import SafeExecutionDisclaimer from './SafeExecutionDisclaimer'
 
@@ -23,9 +28,14 @@ export default function SafeTransactions({
     threshold,
     pendingTransactions,
   } = safeData
+  const { selectedChain } = useContext(ChainContextV5)
+  const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
   const [expandedTx, setExpandedTx] = useState<string | null>(null)
   const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [selectedTxHash, setSelectedTxHash] = useState<string | null>(null)
+
+  const isNetworkMismatch = useNetworkMistmatch()
 
   const handleSignTransaction = async (safeTxHash: string) => {
     try {
@@ -293,10 +303,24 @@ export default function SafeTransactions({
         </div>
       )}
 
-      {pendingTransactions.length === 0 && (
+      {isNetworkMismatch ? (
+        <div>
+          <p>Please switch to {selectedChain.name} to view transactions.</p>
+          <StandardButton
+            className="mt-2 gradient-2 rounded-full"
+            onClick={() => {
+              wallets[selectedWallet].switchChain(selectedChain.id)
+            }}
+          >
+            Switch Network
+          </StandardButton>
+        </div>
+      ) : pendingTransactions.length === 0 ? (
         <p data-testid="no-transactions-message" className="text-gray-400">
           No pending transactions
         </p>
+      ) : (
+        <></>
       )}
 
       {showDisclaimer && selectedTxHash && (
