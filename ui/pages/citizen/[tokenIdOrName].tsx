@@ -628,7 +628,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const citizen = allCitizens.find((citizen: any) => citizen.id === tokenId)
+    const citizen = allCitizens.find((citizen: any) => +citizen.id === +tokenId)
 
     const nft = citizenRowToNFT(citizen)
 
