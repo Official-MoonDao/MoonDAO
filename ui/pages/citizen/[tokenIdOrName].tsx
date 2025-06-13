@@ -115,6 +115,8 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
     isLoading: isLoadingCitizenData,
   } = useCitizenData(nft, citizenContract)
 
+  const isOwner = address?.toLowerCase() === nft?.owner?.toLowerCase()
+
   // Balances
   const nativeBalance = useNativeBalance()
 
@@ -201,12 +203,11 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                     id="team-name-container"
                     className="mt-5 lg:mt-0 flex flex-col flex-col-reverse w-full items-start justify-start"
                   >
-                    {subIsValid && address === nft?.owner && (
+                    {subIsValid && isOwner && (
                       <button
                         className={'absolute top-6 right-6'}
                         onClick={() => {
-                          if (address === nft?.owner)
-                            setCitizenMetadataModalEnabled(true)
+                          if (isOwner) setCitizenMetadataModalEnabled(true)
                           else
                             return toast.error(
                               'Connect the entity admin wallet or multisig to edit metadata.'
@@ -280,7 +281,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                         )}
                       </div>
                     ) : null}
-                    {/* {address === nft.owner ? (
+                    {/* {isOwner ? (
                       <div id="manager-container">
                         {expiresAt && (
                           <div
@@ -294,7 +295,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                               >
                                 <Button
                                   onClick={() => {
-                                    if (address === nft?.owner)
+                                    if (isOwner)
                                       setSubModalEnabled(true)
                                     else
                                       return toast.error(
@@ -314,7 +315,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                     )} */}
                   </div>
                 </div>
-                {/* {address === nft.owner ? (
+                {/* {isOwner ? (
                   <p className="opacity-50 mt-2 lg:ml-5 text-sm">
                     {'Exp: '}
                     {new Date(expiresAt?.toString() * 1000).toLocaleString()}
@@ -371,10 +372,9 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
             nft?.metadata?.image.split('ipfs://')[1]
           }`}
         />
-        {!isDeleted && subIsValid && nft.owner === address && (
+        {!isDeleted && subIsValid && isOwner && (
           <CitizenActions
-            address={address}
-            nft={nft}
+            isOwner={isOwner}
             incompleteProfile={incompleteProfile}
             isTeamMember={hats?.length > 0}
             mooneyBalance={MOONEYBalance}
@@ -413,7 +413,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
         {subIsValid && !isDeleted && !isGuest ? (
           <div className="z-50 mb-10">
             {/* Mooney and Voting Power */}
-            {citizen || address === nft.owner ? (
+            {citizen || isOwner ? (
               <Frame
                 noPadding
                 bottomLeft="0px"
@@ -445,7 +445,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                       </p>
                     </div>
                   </div>
-                  {address === nft.owner && (
+                  {isOwner && (
                     <div className="flex flex-col md:flex-row mt-4 md:px-4 flex items-start xl:items-end gap-2">
                       <StandardButton
                         className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:rounded-bl-[20px] md:hover:pl-5"
@@ -466,7 +466,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
             ) : (
               <></>
             )}
-            {address === nft.owner && (
+            {isOwner && (
               <div className="mt-4">
                 <Frame
                   noPadding
@@ -515,7 +515,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                 </div>
               </Frame>
             )}
-            {address === nft.owner && (
+            {isOwner && (
               <>
                 <Frame
                   noPadding
