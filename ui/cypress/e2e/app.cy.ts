@@ -1,5 +1,3 @@
-import common from '../../locales/en/common.json'
-
 //MAIN
 describe('Main E2E Testing', () => {
   describe('MoonDAO App Layout', () => {
@@ -109,6 +107,75 @@ describe('Main E2E Testing', () => {
             expect(Math.abs(iframeWidth - viewportWidth)).to.be.lessThan(2)
             expect(Math.abs(iframeHeight - viewportHeight)).to.be.lessThan(2)
           })
+      })
+    })
+  })
+
+  describe('MoonDAO App | Map', () => {
+    it('should load the map page', () => {
+      cy.visit('/map')
+    })
+
+    it('should have citizen locations with correct data structure and not all in Antarctica', () => {
+      cy.visit('/map')
+      cy.window().then((win) => {
+        const nextData = (win as any).__NEXT_DATA__
+        const citizensData = nextData.props.pageProps.citizensLocationData
+
+        // Verify we have some data
+        expect(citizensData).to.be.an('array')
+        expect(citizensData.length).to.be.greaterThan(0)
+
+        // Check that not all locations are Antarctica
+        const antarcticaLocations = citizensData.filter(
+          (location: any) => location.formattedAddress === 'Antarctica'
+        )
+        expect(antarcticaLocations.length).to.be.lessThan(citizensData.length)
+
+        // Verify we have some valid coordinates
+        const validLocations = citizensData.filter(
+          (location: any) => location.lat !== -90 && location.lng !== 0
+        )
+        expect(validLocations.length).to.be.greaterThan(0)
+
+        // Verify the data structure matches what Earth.tsx expects
+        citizensData.forEach((location: any) => {
+          // Check required properties
+          expect(location).to.have.property('citizens').that.is.an('array')
+          expect(location).to.have.property('names').that.is.an('array')
+          expect(location)
+            .to.have.property('formattedAddress')
+            .that.is.a('string')
+          expect(location).to.have.property('lat').that.is.a('number')
+          expect(location).to.have.property('lng').that.is.a('number')
+          expect(location).to.have.property('color').that.is.a('string')
+          expect(location).to.have.property('size').that.is.a('number')
+
+          // Verify color values match the logic in map.tsx
+          if (location.citizens.length > 3) {
+            expect(location.color).to.equal('#6a3d79')
+          } else if (location.citizens.length > 1) {
+            expect(location.color).to.equal('#5e4dbf')
+          } else {
+            expect(location.color).to.equal('#5556eb')
+          }
+
+          // Verify size values match the logic in map.tsx
+          if (location.citizens.length > 1) {
+            expect(location.size).to.equal(
+              Math.min(location.citizens.length * 0.01, 0.4)
+            )
+          } else {
+            expect(location.size).to.equal(0.01)
+          }
+
+          // Verify each citizen in the citizens array has required properties
+          location.citizens.forEach((citizen: any) => {
+            expect(citizen).to.have.property('id')
+            expect(citizen).to.have.property('name')
+            expect(citizen).to.have.property('image')
+          })
+        })
       })
     })
   })
