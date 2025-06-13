@@ -13,6 +13,14 @@ jobs:
   distribute:
     runs-on: ubuntu-latest
     steps:
+      - name: Restore Git cache
+        uses: actions/cache@v3
+        with:
+          path: .git
+          key: key-${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}
+          restore-keys: |
+            key-${{ runner.os }}-git-
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -36,9 +44,8 @@ jobs:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: |
           cd fee-hook
-          # mainnet
-          forge script script/DistributeFees.s.sol --rpc-url https://1.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --broadcast --via-ir -vvvv
-          # arb
-          forge script script/DistributeFees.s.sol --rpc-url https://42161.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --broadcast --via-ir -vvvv
-          # polygon
-          forge script script/DistributeFees.s.sol --rpc-url https://137.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --broadcast --via-ir -vvvv
+          # sepolia, mainnet, arbitrum, and polygon
+          CHAINS=(11155111 1 42161 137)
+          for CHAIN in "${CHAINS[@]}"; do
+            forge script script/DistributeFees.s.sol --rpc-url "https://${CHAIN}.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }}" --broadcast --via-ir -vvvv || true
+          done
