@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
+import { arbitrum } from 'thirdweb/chains'
 import { CitizenRow, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -121,7 +122,7 @@ export async function getStaticProps() {
       process.env.NEXT_PUBLIC_ENV === 'prod' ||
       process.env.NEXT_PUBLIC_TEST_ENV === 'true'
     ) {
-      const chain = DEFAULT_CHAIN_V5
+      const chain = arbitrum
       const chainSlug = getChainSlug(chain)
 
       const citizenContract = getContract({
