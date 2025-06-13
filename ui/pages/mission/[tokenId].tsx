@@ -5,8 +5,10 @@ import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import IJBTerminalStoreABI from 'const/abis/IJBTerminalStore.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
+import JBMultiTerminal from 'const/abis/IJBMultiTerminal.json'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -18,13 +20,20 @@ import {
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
+  JBV4_TERMINAL_ADDRESSES,
+  JB_NATIVE_TOKEN_ADDRESS
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useMemo, useState } from 'react'
-import { getContract, readContract } from 'thirdweb'
+import {
+  getContract,
+  readContract,
+  prepareContractCall,
+  sendAndConfirmTransaction,
+} from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
@@ -58,6 +67,9 @@ import MissionFundingProgressBar from '@/components/mission/MissionFundingProgre
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
+import StandardButton from '@/components/layout/StandardButton'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import toast from 'react-hot-toast'
 import TeamMembers from '@/components/subscription/TeamMembers'
 
 type ProjectProfileProps = {
@@ -73,6 +85,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>()
+
+  const [availableTokens, setAvailableTokens] = useState<string>('Loading...')
+  const [availablePayouts, setAvailablePayouts] = useState<string>('Loading...')
 
   const hatsContract = useContract({
     address: HATS_ADDRESS,
@@ -95,6 +110,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const jbControllerContract = useContract({
     address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
     abi: JBV4ControllerABI as any,
+    chain: selectedChain,
+  })
+
+  const jbTerminalContract = useContract({
+    address: JBV4_TERMINAL_ADDRESSES[chainSlug],
+    abi: JBMultiTerminal.abi as any,
     chain: selectedChain,
   })
 
@@ -139,7 +160,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     jbTokensContract,
   })
 
-  const { adminHatId } = useTeamData(teamContract, hatsContract, teamNFT)
+  const { adminHatId, isManager } = useTeamData(teamContract, hatsContract, teamNFT)
 
   const teamHats = useSubHats(selectedChain, adminHatId)
 
@@ -174,7 +195,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         tokenId: BigInt(mission.teamId),
         includeOwner: true,
       })
-      setTeamNFT(teamNFT)
+      setTeamNFT({
+        ...teamNFT,
+        metadata: { ...teamNFT.metadata, id: teamNFT.id.toString() },
+      })
     }
 
     getTeamNFT()
@@ -188,7 +212,119 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     )
   }, [ruleset])
 
-  //Profile Header Section
+  useEffect(() => {
+    async function fetchAvailableAmounts() {
+      if (!jbTerminalContract || mission?.projectId === undefined || mission?.projectId === null) return
+
+      try {
+        // Get available payouts
+        const storeAddress: any = await readContract({
+          contract: jbTerminalContract,
+          method: 'STORE' as string,
+          params: [],
+        })
+
+        const jbTerminalStoreContract = getContract({
+          client: serverClient,
+          address: storeAddress,
+          abi: IJBTerminalStoreABI.abi as any,
+          chain: selectedChain,
+        })
+
+        const balance: any = await readContract({
+          contract: jbTerminalStoreContract,
+          method: 'balanceOf' as string,
+          params: [jbTerminalContract.address, mission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+        })
+
+        if (balance === 0) {
+          setAvailablePayouts('No payouts to send.')
+        } else {
+          setAvailablePayouts(`${(balance / 1e18).toFixed(4)} ETH`)
+        }
+
+        // Get available reserved tokens
+        const reservedTokenBalance: any = await readContract({
+          contract: jbControllerContract,
+          method: 'reservedTokenBalanceOf' as string,
+          params: [mission.projectId],
+        })
+
+        if (reservedTokenBalance === 0) {
+          setAvailableTokens('No tokens to send.')
+        } else {
+          setAvailableTokens(`${(reservedTokenBalance / 1e18).toFixed(0)} Tokens`)
+        }
+      } catch (err: any) {
+        if (err?.message?.includes('store')) {
+          setAvailablePayouts('Contract not accessible.')
+        } else if (err?.message?.includes('balance')) {
+          setAvailablePayouts('Cannot check ETH balance.')
+        } else if (err?.message?.includes('token')) {
+          setAvailableTokens('Cannot check token balance.')
+        } else {
+          setAvailableTokens('No tokens to send.')
+          setAvailablePayouts('No payouts to send.')
+        }
+        console.error('Error fetching available amounts:', err)
+      }
+    }
+
+    fetchAvailableAmounts()
+  }, [jbTerminalContract, jbControllerContract, mission?.projectId])
+
+  const sendReservedTokens = async () => {
+    if (!account) return
+    try {
+      const tx = prepareContractCall({
+        contract: jbControllerContract,
+        method: 'sendReservedTokensToSplitsOf' as string,
+        params: [mission.projectId],
+      })
+      await sendAndConfirmTransaction({ transaction: tx, account })
+      toast.success('Reserved tokens sent.')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to send reserved tokens.')
+    }
+  }
+
+  const sendPayouts = async () => {
+    if (!account) return
+    try {
+      const storeAddress: any = await readContract({
+        contract: jbTerminalContract,
+        method: 'STORE' as string,
+        params: [],
+      })
+
+      const jbTerminalStoreContract = getContract({
+        client: serverClient,
+        address: storeAddress,
+        abi: IJBTerminalStoreABI.abi as any,
+        chain: selectedChain,
+      })
+
+      const balance: any = await readContract({
+        contract: jbTerminalStoreContract,
+        method: 'balanceOf' as string,
+        params: [jbTerminalContract.address, mission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+      })
+
+      const tx = prepareContractCall({
+        contract: jbTerminalContract,
+        method: 'sendPayoutsOf' as string,
+        params: [mission.projectId, JB_NATIVE_TOKEN_ADDRESS, balance, 61166, 0], // 61166 is the Memo ID for project payout transactions
+      })
+
+      await sendAndConfirmTransaction({ transaction: tx, account })
+      toast.success('Payouts sent.')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to send payouts.')
+    }
+  }
+
   const ProfileHeader = (
     <div id="citizenheader-container" className="w-[100vw]">
       <div className="w-full">
@@ -418,6 +554,33 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       </Link>
                     </div>
                   )}
+                    {/* Send payouts and tokens Buttons - only shown to managers */}
+                    {account && isManager && (
+                      <div className="flex flex-col sm:flex-row gap-40 mt-4 w-full sm:w-auto sm:absolute sm:right-3 sm:top-[250px]">
+                        <Tooltip
+                          text={`${availableTokens}`}
+                          buttonClassName="bg-transparent"
+                        >
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding text-xs leading-none flex-1 sm:w-[180px]"
+                            label={<span className="whitespace-nowrap">Send Tokens</span>}
+                            action={sendReservedTokens}
+                          />
+                        </Tooltip>
+                        <Tooltip
+                          text={`${availablePayouts}`}
+                          buttonClassName="bg-transparent"
+                        >
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding text-xs leading-none flex-1 sm:w-[180px]"
+                            label={<span className="whitespace-nowrap">Send Payouts</span>}
+                            action={sendPayouts}
+                          />
+                        </Tooltip>
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
